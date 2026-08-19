@@ -79,8 +79,9 @@ class SyncCubit extends Cubit<SyncState> {
   /// The distinction matters to anything reading
   /// [lastSyncSkippedEntityTxIdsByDrive] as evidence: the map starts empty, so
   /// "no sync has run" and "a sync ran and skipped nothing" are otherwise the
-  /// same value. A cancelled sync returns before the capture, so it leaves
-  /// this at whatever the previous completed sync set.
+  /// same value. A sync that did not run to the end of its progress stream -
+  /// cancelled, or failed - leaves this at whatever the previous completed
+  /// sync set.
   DateTime? get lastSyncCompletedAt => _lastSyncCompletedAt;
 
   /// The drives the last completed sync covered, or `null` when it covered
@@ -92,10 +93,32 @@ class SyncCubit extends Cubit<SyncState> {
   /// be read as that drive being clean.
   Set<String>? get lastSyncCoveredDriveIds => _lastSyncCoveredDriveIds;
 
+  /// Records what a sync that **reached its end** left out.
+  ///
+  /// [reachedTheEnd] is the whole guard, and it is not defensive. Both entry
+  /// points call this after their `try`/`catch`, which is the right place for
+  /// the state emission that follows it and the wrong place for this: a sync
+  /// whose progress stream ended in an error arrives here too, having produced
+  /// no final report, and stamping [lastSyncCompletedAt] then would say a sync
+  /// finished and found nothing to skip when in truth it stopped early and
+  /// never looked.
+  ///
+  /// What reads that stamp is `driveStateSyncSkipStatus`, the precondition on
+  /// publishing a drive state artifact. An artifact records the gap it was
+  /// built over permanently and immutably on Arweave, so this being wrong is
+  /// not a stale reading - it is a permanent one.
+  ///
+  /// A sync that ran to the end and *failed some drives* still counts as
+  /// reaching its end: it produced a real report, and the drives it failed are
+  /// named in [SyncCompleteWithErrors] for the skip check to refuse
+  /// individually.
   void _captureSkippedEntities(
     SyncProgress progress, {
+    required bool reachedTheEnd,
     Set<String>? coveredDriveIds,
   }) {
+    if (!reachedTheEnd) return;
+
     _lastSyncSkippedEntityTxIdsByDrive = progress.skippedEntityTxIdsByDrive;
     _lastSyncCompletedAt = DateTime.now();
     _lastSyncCoveredDriveIds = coveredDriveIds;
@@ -298,6 +321,11 @@ class SyncCubit extends Cubit<SyncState> {
     _currentSyncToken?.dispose(); // Clean up any previous token
     _currentSyncToken = SyncCancellationToken();
 
+    /// Set only where the progress stream ran to its natural end. Everything
+    /// after the `catch` below runs for a failed sync as well as a successful
+    /// one, so this is what tells the two apart. See [_captureSkippedEntities].
+    var reachedTheEnd = false;
+
     try {
       final profile = _profileCubit.state;
       Wallet? wallet;
@@ -387,6 +415,10 @@ class SyncCubit extends Cubit<SyncState> {
         syncProgressController.add(_syncProgress);
       }
 
+      // The stream closed without an error, so the sync's final report - the
+      // progress carrying `skippedEntityTxIdsByDrive` - has been seen.
+      reachedTheEnd = true;
+
       // Only refresh balance if drives were actually synced (skip after no-op)
       if (profile is ProfileLoggedIn && _syncProgress.drivesSynced > 0) {
         _profileCubit.refreshBalance();
@@ -433,6 +465,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     _captureSkippedEntities(
       _syncProgress,
+      reachedTheEnd: reachedTheEnd,
       // A retry sync visits only the drives it was handed; anything else is a
       // sweep of every attached drive.
       coveredDriveIds: driveIdsToRetry?.toSet(),
@@ -481,6 +514,9 @@ class SyncCubit extends Cubit<SyncState> {
     // Create a new cancellation token for this sync
     _currentSyncToken?.dispose();
     _currentSyncToken = SyncCancellationToken();
+
+    /// See [_captureSkippedEntities] - the same reason as in [startSync].
+    var reachedTheEnd = false;
 
     try {
       final profile = _profileCubit.state;
@@ -546,6 +582,10 @@ class SyncCubit extends Cubit<SyncState> {
         syncProgressController.add(_syncProgress);
       }
 
+      // The stream closed without an error, so the sync's final report has
+      // been seen.
+      reachedTheEnd = true;
+
       // Only refresh balance if drives were actually synced
       if (profile is ProfileLoggedIn && _syncProgress.drivesSynced > 0) {
         _profileCubit.refreshBalance();
@@ -583,7 +623,11 @@ class SyncCubit extends Cubit<SyncState> {
 
     _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
 
-    _captureSkippedEntities(_syncProgress, coveredDriveIds: {driveId});
+    _captureSkippedEntities(
+      _syncProgress,
+      reachedTheEnd: reachedTheEnd,
+      coveredDriveIds: {driveId},
+    );
 
     // Check if sync completed with errors
     if (_syncProgress.hasErrors) {

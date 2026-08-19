@@ -268,6 +268,29 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    /// The switch that decides whether a sync reads a drive state artifact
+    /// before it reads snapshots.
+    ///
+    /// Here for the same reason as the publishing switch below, and for one
+    /// more: without it there was no way to turn this on at all. The flag
+    /// exists in `AppConfig` and is read by `SyncRepository`, but a flag with
+    /// no key in the shipped config and no control anywhere is a feature that
+    /// no build can use - which would leave the app able to *publish*
+    /// artifacts that nothing can read.
+    final ArDriveDevToolOption enableSyncFromDriveStateOption =
+        ArDriveDevToolOption(
+      name: 'enableSyncFromDriveState',
+      value: config.enableSyncFromDriveState,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(
+            config.copyWith(enableSyncFromDriveState: value),
+          );
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
     /// The switch that decides whether the New menu offers to publish a drive
     /// state artifact at all.
     ///
@@ -391,6 +414,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       useTurboOption,
       useTurboPaymentOption,
       enableSyncFromSnapshotOption,
+      enableSyncFromDriveStateOption,
       enableDriveStatePublishingOption,
       stripePublishableKey,
       allowedDataItemSizeForTurboOption,

@@ -198,8 +198,9 @@ void main() {
         )).thenAnswer((_) async => artifact.body);
   }
 
-  Future<List<SyncProgress>> sync() =>
-      syncRepository.syncSingleDrive(driveId: driveId).toList();
+  Future<List<SyncProgress>> sync({bool syncDeep = false}) => syncRepository
+      .syncSingleDrive(driveId: driveId, syncDeep: syncDeep)
+      .toList();
 
   /// Where the GraphQL pass actually started. The whole composition reduces to
   /// this number.
@@ -516,6 +517,82 @@ void main() {
       expect(progress.last.errorMessages, isEmpty);
       expect(gqlStartedAt(), startsFromWithoutArtifact);
       expectExactlyOneOutcome(DriveStateOutcome.integrityFailed);
+    });
+  });
+
+  /// A deep sync is the app's only "start over" remedy — offered from the top
+  /// bar, from two places on the drive detail page, and from the explorer's
+  /// item menu — and it means *distrust what is local and rebuild this drive
+  /// from the chain*. An artifact is local state, just someone else's, so a
+  /// deep sync that read one would answer the request by starting from a
+  /// stranger's copy of where the drive already was.
+  ///
+  /// The flag being on made that the remedy's behaviour: `syncDeep` passes
+  /// `lastBlockHeight: 0`, which exempts nothing on its own — discovery still
+  /// runs, the artifact still imports, and `[0, tip]` still collapses to
+  /// `[Block-End, tip]`. A user whose drive looked wrong because of an
+  /// artifact would have had no way out from inside the app.
+  group('a deep sync', () {
+    setUp(() => buildRepository(enableSyncFromDriveState: true));
+
+    test('never asks whether the drive has an artifact', () async {
+      await publish();
+
+      final progress = await sync(syncDeep: true);
+
+      expect(progress.last.failedDriveIds, isEmpty);
+      expect(discovery.calls, isEmpty);
+      expect(outcomeLines(), isEmpty);
+      verifyNever(() => arweave.getEntityDataFromNetwork(
+            txId: any(named: 'txId'),
+            largeBody: any(named: 'largeBody'),
+          ));
+    });
+
+    test('walks the whole range from the beginning of the drive', () async {
+      await publish();
+
+      await sync(syncDeep: true);
+
+      expect(
+        gqlStartedAt(),
+        0,
+        reason: 'a deep sync asked for [0, tip]; an artifact that moved the '
+            'start to its Block-End would re-apply whatever the user is '
+            'trying to undo',
+      );
+      expect(await fileRows(), isEmpty);
+      expect(await folderRows(), isEmpty);
+    });
+
+    test('an ordinary sync of the same drive still uses the artifact',
+        () async {
+      // The control. Without it the two tests above would pass just as
+      // happily against a flag that was simply off.
+      await publish();
+
+      await sync();
+
+      expect(discovery.calls, hasLength(1));
+      expect(gqlStartedAt(), artifactBlockEnd);
+    });
+
+    test('is exempt through syncAllDrives too, not just syncSingleDrive',
+        () async {
+      // Both deep entry points reach `_syncDrive` by different routes, and
+      // `startSync(deepSync: true)` — the top bar's — is this one.
+      await publish();
+
+      try {
+        await syncRepository.syncAllDrives(syncDeep: true).toList();
+      } catch (_) {
+        // The post-sync phase of a full sync wants more of the app than this
+        // harness stands up. The drive itself has already been synced by the
+        // time it runs, which is what these assertions are about.
+      }
+
+      expect(discovery.calls, isEmpty);
+      expect(gqlStartedAt(), 0);
     });
   });
 

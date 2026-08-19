@@ -65,17 +65,16 @@ const _txConfirmationBatchTimeout = Duration(seconds: 15);
 const _txStatusUpdateTimeout = Duration(seconds: 30);
 
 abstract class SyncRepository {
-  Stream<double> syncDriveById({
-    required String driveId,
-    required String ownerAddress,
-
-    /// This was required because the usage of the `PromptToSnapshotBloc` in the
-    /// `SyncCubit` and the `PromptToSnapshotBloc` is not available in the `SyncRepository`
-    ///
-    /// This functionality should be refactored. The count of synced tx must be done
-    /// at the `SyncRepository` level, not at the `PromptToSnapshotBloc` level.
-    Function(String driveId, int txCount)? txFechedCallback,
-  });
+  // `syncDriveById` used to live here. It had no callers anywhere in the app -
+  // not on this branch, not on `dev` - and it passed `currentBlockHeight: 0`
+  // into `_syncDrive`, which writes that value back as the drive's
+  // `lastBlockHeight` at the end of a successful sync. Wiring it up would have
+  // reset a drive's watermark to zero.
+  //
+  // Removed rather than repaired: an unreachable method cannot be verified
+  // against a caller's intent, so "correct" has no meaning for it, and a
+  // corrected version would still be a second, untested entry point beside
+  // [syncSingleDrive], which does the same job and is the one the app calls.
 
   /// Syncs a single drive by its ID, with optional deep sync.
   /// Returns a stream of SyncProgress that can be used to track progress.
@@ -523,6 +522,7 @@ class _SyncRepository implements SyncRepository {
                 ? 0
                 : _calculateSyncLastBlockHeight(drive.lastBlockHeight ?? 0),
             currentBlockHeight: currentBlockHeight,
+            syncDeep: syncDeep,
             transactionParseBatchSize:
                 200 ~/ (syncProgress.drivesCount - syncProgress.drivesSynced),
             ownerAddress: drive.ownerAddress,
@@ -794,23 +794,6 @@ class _SyncRepository implements SyncRepository {
   }
 
   @override
-  Stream<double> syncDriveById({
-    required String driveId,
-    required String ownerAddress,
-    Function(String driveId, int txCount)? txFechedCallback,
-  }) {
-    _lastSync = DateTime.now();
-    return _syncDrive(
-      driveId,
-      ownerAddress: ownerAddress,
-      lastBlockHeight: 0,
-      currentBlockHeight: 0,
-      transactionParseBatchSize: 200,
-      txFechedCallback: txFechedCallback,
-    );
-  }
-
-  @override
   Stream<SyncProgress> syncSingleDrive({
     required String driveId,
     bool syncDeep = false,
@@ -870,6 +853,7 @@ class _SyncRepository implements SyncRepository {
               ? 0
               : _calculateSyncLastBlockHeight(drive.lastBlockHeight ?? 0),
           currentBlockHeight: currentBlockHeight,
+          syncDeep: syncDeep,
           transactionParseBatchSize: 200,
           ownerAddress: drive.ownerAddress,
           txFechedCallback: txFechedCallback,
@@ -1598,12 +1582,14 @@ class _SyncRepository implements SyncRepository {
   /// `obscuredBy`/[HeightRange.difference] arithmetic that already composes
   /// snapshots - one mechanism, one more range in it.
   ///
-  /// Three gates, in the order they cost anything:
+  /// Four gates, in the order they cost anything:
   ///
   ///  * the config flag, off by default, so nothing changes for anyone until
   ///    it is switched on;
   ///  * a drive key, because v1 is private-drive only (§2.6) - a public drive
   ///    never issues a discovery query;
+  ///  * [syncDeep], because a deep sync is the one thing an artifact must not
+  ///    accelerate - see below;
   ///  * a `try` around everything, because no drive may fail over an artifact.
   ///
   /// Returns [lastBlockHeight] unchanged on every path but a successful
@@ -1614,8 +1600,31 @@ class _SyncRepository implements SyncRepository {
     required SecretKey? driveKey,
     required int lastBlockHeight,
     required int currentBlockHeight,
+    required bool syncDeep,
   }) async {
     if (!_configService.config.enableSyncFromDriveState || driveKey == null) {
+      return lastBlockHeight;
+    }
+
+    // A deep sync means "distrust what is local and rebuild this drive from
+    // the chain". An artifact is local state - someone else's, arrived at by
+    // the same reasoning this sync has been asked to stop trusting - so
+    // reading one here would answer a request to start over by starting from
+    // a stranger's copy of where we already were.
+    //
+    // That matters more than it sounds, because deep sync is the *only*
+    // remedy the UI offers for a drive that looks wrong, and it is offered in
+    // four places. A user who reaches for it because an artifact left their
+    // drive incomplete would, with the flag on, re-apply the cause, and have
+    // no way out from inside the app.
+    //
+    // Stated here rather than left to fall out of the `lastBlockHeight: 0` the
+    // deep paths already pass, because that exempts nothing: discovery still
+    // runs, the artifact still imports, and `[0, tip]` still collapses to
+    // `[Block-End, tip]`.
+    if (syncDeep) {
+      logger.i('${DriveStateOutcomeReporter.logPrefix} $driveId: deep sync, so '
+          'the artifact is not read and the whole range is walked');
       return lastBlockHeight;
     }
 
@@ -1630,9 +1639,9 @@ class _SyncRepository implements SyncRepository {
       // Never past the tip. The range below is built as
       // `Range(start: <this>, end: currentBlockHeight)`, and `Range` throws
       // when start runs past end - which would fail the drive, the one thing
-      // this feature may not do. Two ordinary things put them in that order:
-      // `Block-End` is a tag on a transaction nobody has to trust, and
-      // [syncDriveById] passes a tip of 0.
+      // this feature may not do. `Block-End` is a tag on a transaction nobody
+      // has to trust, so an artifact claiming more than this node has seen is
+      // an ordinary thing to meet, not a malformed one.
       return min(
         max(lastBlockHeight, result.coveredThroughBlock),
         max(lastBlockHeight, currentBlockHeight),
@@ -1659,6 +1668,13 @@ class _SyncRepository implements SyncRepository {
     SyncCancellationToken? cancellationToken,
     List<SnapshotEntityTransaction>? prefetchedSnapshots,
     bool skipPendingTxFetch = false,
+
+    /// The caller asked to rebuild this drive from the chain rather than
+    /// resume from where it left off. Both deep entry points already express
+    /// that by passing `lastBlockHeight: 0`, but a height alone cannot say
+    /// *why* it is zero - a never-synced drive passes zero too - and the drive
+    /// state artifact has to tell those apart. See [_readDriveStateArtifact].
+    bool syncDeep = false,
   }) async* {
     final token = cancellationToken ?? SyncCancellationToken();
 
@@ -1685,14 +1701,16 @@ class _SyncRepository implements SyncRepository {
 
     // The first of the three sources §5 composes: whatever the artifact
     // covered, the snapshot and GraphQL passes below need not. Off by default,
-    // private drives only, and every failure inside is a fallback - so this
-    // can only ever move the start of the work below forward.
+    // private drives only, never on a deep sync, and every failure inside is a
+    // fallback - so this can only ever move the start of the work below
+    // forward.
     final syncFromBlockHeight = await _readDriveStateArtifact(
       driveId: driveId,
       ownerAddress: ownerAddress,
       driveKey: driveKey?.key,
       lastBlockHeight: lastBlockHeight,
       currentBlockHeight: currentBlockHeight,
+      syncDeep: syncDeep,
     );
 
     final fetchPhaseStartDT = DateTime.now();

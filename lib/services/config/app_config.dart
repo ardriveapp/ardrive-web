@@ -25,6 +25,13 @@ class AppConfig {
   /// published to chain, so no drive has one to read and turning this on can
   /// only cost a discovery query - and every failure behind it is a fallback,
   /// never a failed drive. It ships dark and is switched on deliberately.
+  ///
+  /// Present as a key in every flavour's `assets/config/*.json` and as a
+  /// dev-tools switch, like [enableDriveStatePublishing]. "Switched on
+  /// deliberately" needs somewhere to do the switching: a flag readable only
+  /// from Dart source is a flag nobody can turn on, and this one being
+  /// unreachable while the publishing one was not is how the app came to be
+  /// able to write artifacts that no build could read.
   final bool enableSyncFromDriveState;
 
   /// Whether the app offers to **publish** a drive state artifact.

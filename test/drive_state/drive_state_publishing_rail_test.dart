@@ -16,7 +16,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// the loop". The capability now exists behind a human click, and these are
 /// the properties that keep the rail where it was:
 ///
-/// 1. the flag is off in every flavour's shipped config;
+/// 1. both feature flags are off in every flavour's shipped config, are named
+///    there rather than merely absent, and can each be switched on;
 /// 2. with the flag off, nothing that can reach a network is even
 ///    constructed;
 /// 3. with the flag off, the menu offers nothing, whatever else is true;
@@ -88,49 +89,93 @@ void main() {
     });
   });
 
-  group('the flag ships off', () {
-    test('AppConfig defaults publishing to off', () {
-      expect(
-        AppConfig(
-          allowedDataItemSizeForTurbo: 0,
-          stripePublishableKey: '',
-        ).enableDriveStatePublishing,
-        isFalse,
-      );
-    });
+  /// Both flags, not one.
+  ///
+  /// `AppConfig` documents these as "two risks, two switches" — reading an
+  /// artifact costs nothing and every failure behind it is a fallback;
+  /// publishing one spends real money and cannot be undone. That only holds
+  /// while both switches exist. `enableSyncFromDriveState` had no key in any
+  /// shipped config and no control anywhere, so the half of the feature that
+  /// spends money was the reachable half: a user could publish artifacts that
+  /// no build could read.
+  ///
+  /// So the assertions below are parameterised over both. The *presence* of
+  /// the key is asserted as its own property, because a flag defaulting to
+  /// false with nothing naming it reads identically to a flag that ships off
+  /// deliberately, and only one of those can be switched on.
+  group('the flags ship off', () {
+    const flags = <String, bool Function(AppConfig)>{
+      'enableSyncFromDriveState': _syncFromDriveState,
+      'enableDriveStatePublishing': _publishing,
+    };
 
-    test('a config JSON with no opinion is off, not on', () {
-      final config = AppConfig.fromJson(const {
-        'allowedDataItemSizeForTurbo': 0,
-        'stripePublishableKey': '',
-      });
+    AppConfig configFor(Map<String, dynamic> extra) => AppConfig.fromJson({
+          'allowedDataItemSizeForTurbo': 0,
+          'stripePublishableKey': '',
+          ...extra,
+        });
 
-      expect(config.enableDriveStatePublishing, isFalse);
-    });
+    Map<String, dynamic> flavourJson(String flavour) =>
+        json.decode(File('assets/config/$flavour.json').readAsStringSync())
+            as Map<String, dynamic>;
 
-    // Without this, every "ships off" assertion below would pass just as
-    // happily against a key the deserialiser silently ignores.
-    test('the key is actually read, so "off" means something', () {
-      final config = AppConfig.fromJson(const {
-        'allowedDataItemSizeForTurbo': 0,
-        'stripePublishableKey': '',
-        'enableDriveStatePublishing': true,
-      });
+    for (final entry in flags.entries) {
+      final name = entry.key;
+      final read = entry.value;
 
-      expect(config.enableDriveStatePublishing, isTrue);
-    });
-
-    // Read off disk rather than asserted from memory: the shipped default is
-    // whatever these files say, and a flavour switched on by accident is the
-    // failure this whole rail exists to prevent.
-    for (final flavour in ['dev', 'staging', 'prod']) {
-      test('$flavour.json ships with publishing off', () {
-        final config = AppConfig.fromJson(
-          json.decode(File('assets/config/$flavour.json').readAsStringSync())
-              as Map<String, dynamic>,
+      test('AppConfig defaults $name to off', () {
+        expect(
+          read(AppConfig(
+            allowedDataItemSizeForTurbo: 0,
+            stripePublishableKey: '',
+          )),
+          isFalse,
         );
+      });
 
-        expect(config.enableDriveStatePublishing, isFalse);
+      test('a config JSON with no opinion on $name is off, not on', () {
+        expect(read(configFor(const {})), isFalse);
+      });
+
+      // Without this, every "ships off" assertion would pass just as happily
+      // against a key the deserialiser silently ignores.
+      test('$name is actually read, so "off" means something', () {
+        expect(read(configFor({name: true})), isTrue);
+      });
+
+      // Read off disk rather than asserted from memory: the shipped default is
+      // whatever these files say, and a flavour switched on by accident is the
+      // failure this whole rail exists to prevent.
+      for (final flavour in ['dev', 'staging', 'prod']) {
+        test('$flavour.json ships with $name off', () {
+          expect(read(AppConfig.fromJson(flavourJson(flavour))), isFalse);
+        });
+
+        // A key that is absent is not a key that is off. It deserialises the
+        // same way, and that is the point: the flavour files are where a
+        // release decides what ships, and a flag they do not mention is one
+        // nobody reviewing them knows exists.
+        test('$flavour.json says so explicitly, rather than by omission', () {
+          expect(flavourJson(flavour), containsPair(name, false));
+        });
+      }
+
+      // The switch a person actually reaches for. `ConfigFetcher` only
+      // replaces a stored config when the asset's `configVersion` grows, and
+      // bumping that wipes every other stored preference — so for anyone who
+      // has already run the app, editing the JSON does nothing. Dev tools is
+      // the only way to turn either of these on.
+      test('$name can be switched on from dev tools', () {
+        final source =
+            File('lib/dev_tools/app_dev_tools.dart').readAsStringSync();
+
+        expect(
+          source,
+          contains("name: '$name'"),
+          reason: 'a flag with no config key that reaches a user and no '
+              'dev-tools control is a flag nobody can turn on',
+        );
+        expect(source, contains('copyWith($name: value)'));
       });
     }
   });
@@ -193,6 +238,13 @@ void main() {
     }
   });
 }
+
+// Torn off rather than written as closures in the map literal so the map can
+// be `const`, and so a renamed field is a compile error here rather than a
+// silently unasserted flag.
+bool _syncFromDriveState(AppConfig c) => c.enableSyncFromDriveState;
+
+bool _publishing(AppConfig c) => c.enableDriveStatePublishing;
 
 PreparedDriveStateArtifact _artifact() => PreparedDriveStateArtifact(
       entity: DriveStateEntity(),

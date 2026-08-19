@@ -45,17 +45,56 @@ class DriveStateSyncSource {
     required DriveStateDiscovery discovery,
     required DriveStateImporter importer,
     DriveStateOutcomeReporter reporter = const DriveStateOutcomeReporter(),
+    int maxCandidateAttempts = defaultMaxCandidateAttempts,
   })  : _arweave = arweave,
         _discovery = discovery,
         _importer = importer,
-        _reporter = reporter;
+        _reporter = reporter,
+        _maxCandidateAttempts = max(1, maxCandidateAttempts);
+
+  /// How many of a drive's artifacts a single sync will pay to download before
+  /// giving up and walking the range itself.
+  ///
+  /// Three, and the number is a budget rather than a policy about artifacts.
+  /// Each attempt costs a download sized like a snapshot, so the cost of
+  /// looking is the thing to bound; the benefit falls away much faster than
+  /// the cost does.
+  ///
+  ///  * **One is not enough**, which is the whole of this bound's reason to
+  ///    exist. An L1 artifact is indexed by GraphQL before its data is
+  ///    retrievable, so every publication opens a window in which the newest
+  ///    candidate 404s and the previous one - already found, already ordered -
+  ///    is fine. One retry closes that window.
+  ///  * **A second retry** covers the case that window overlaps something
+  ///    else: a publication that failed to seed at all, immediately followed
+  ///    by another. Two consecutive unusable artifacts is a real, if unlikely,
+  ///    state.
+  ///  * **Beyond that the failures stop being independent.** Three unusable
+  ///    artifacts in a row is a producer that is broken or hostile, not a
+  ///    gateway that is slow, and the fourth download is not more likely to
+  ///    help than the third was. The ordinary sync below is the answer at that
+  ///    point, and it always works.
+  ///
+  /// The worst case is bounded at three wasted downloads per drive per sync,
+  /// against the alternative of a full GraphQL walk of the drive's history -
+  /// which is what the feature exists to avoid, and what happens anyway if
+  /// every attempt fails.
+  static const int defaultMaxCandidateAttempts = 3;
 
   final ArweaveService _arweave;
   final DriveStateDiscovery _discovery;
   final DriveStateImporter _importer;
   final DriveStateOutcomeReporter _reporter;
+  final int _maxCandidateAttempts;
 
-  /// Reads the best artifact this drive has, if it has one, and merges it.
+  /// Reads the best usable artifact this drive has, if it has one, and merges
+  /// it.
+  ///
+  /// *Usable*, not merely newest: discovery returns an ordered list and this
+  /// walks it, up to [defaultMaxCandidateAttempts], because the newest
+  /// candidate failing is a routine state rather than an end to the matter.
+  /// Whatever the walk cost, the drive gets exactly one verdict (§7) - the one
+  /// belonging to the candidate that decided the sync.
   ///
   /// [lastBlockHeight] is the height the sync would otherwise start from -
   /// already stepped back by the look-back window. It is used to skip
@@ -116,9 +155,9 @@ class DriveStateSyncSource {
       minBlockHeight: lastBlockHeight > 0 ? lastBlockHeight : null,
     );
 
-    final candidate = discovered.newest;
+    final candidates = discovered.candidates;
 
-    if (candidate == null) {
+    if (candidates.isEmpty) {
       // "The indexer did not answer" and "this drive has no artifact" are
       // different facts, and §7 forbids letting them look the same. There is
       // no outcome for the first - the vocabulary describes what happened to
@@ -133,6 +172,76 @@ class DriveStateSyncSource {
             );
     }
 
+    // The candidates are newest-first, and until this loop existed only the
+    // first of them was ever tried. One unusable artifact took the feature off
+    // for the drive entirely - including for the window every publication
+    // opens, where the newest is indexed but not yet retrievable and the
+    // previous one, in this same list, is fine.
+    //
+    // So: attempt them in order, up to [_maxCandidateAttempts]. Two outcomes
+    // end the walk rather than continue it, and everything else is worth one
+    // more try:
+    //
+    //  * a *used* artifact, obviously - there is nothing better below it;
+    //  * `rangeAlreadyCovered`, which is an early exit and not a failure. The
+    //    list is ordered by `Block-End` descending, so a candidate at or below
+    //    the local watermark guarantees every candidate after it is too.
+    //    Walking on would download artifacts that are, by construction,
+    //    already covered.
+    final budget = min(candidates.length, _maxCandidateAttempts);
+    late DriveStateSyncResult result;
+    var tried = 0;
+
+    while (tried < budget) {
+      final candidate = candidates[tried];
+      tried++;
+
+      result = await _attempt(
+        candidate: candidate,
+        ownerAddress: ownerAddress,
+        driveKey: driveKey,
+        lastBlockHeight: lastBlockHeight,
+      );
+
+      if (result.artifactWasUsed ||
+          result.outcome == DriveStateOutcome.rangeAlreadyCovered) {
+        break;
+      }
+
+      if (tried < budget) {
+        // Not an outcome. §7 gives a drive exactly one verdict per sync, and
+        // the verdict is what the sync ended up with; an artifact that was
+        // turned down while a usable one was still to come is something that
+        // happened on the way to it. [DriveStateOutcomeReporter.note] is
+        // worded so neither outcome grep can pick these up.
+        _reporter.note(
+          driveId: driveId,
+          message: 'candidate $tried of ${candidates.length} '
+              '(tx=${candidate.txId}) was not usable '
+              '(${result.outcome?.code}); trying the next one: '
+              '${result.detail}',
+          level: DriveStateLogLevel.warning,
+        );
+      }
+    }
+
+    // The one verdict says how it was arrived at when that was not obvious:
+    // "artifact rejected - outcome=fetch-failed" reads very differently once
+    // it is known that three artifacts were tried and every one of them
+    // failed, and a `used` line that took two attempts is the window this
+    // whole loop exists for, showing up in the log.
+    return tried > 1 ? result._afterAttempts(tried, candidates.length) : result;
+  }
+
+  /// One candidate, start to finish: the cheap coverage check, the download,
+  /// and the import. Never throws - [read]'s outer net is the backstop, not
+  /// the mechanism.
+  Future<DriveStateSyncResult> _attempt({
+    required DriveStateArtifactCandidate candidate,
+    required String ownerAddress,
+    required SecretKey driveKey,
+    required int lastBlockHeight,
+  }) async {
     // Cheap enough to be worth doing before a download of tens of megabytes,
     // and only ever an early exit: the authoritative version of this rule is
     // the importer's, against the drive row rather than this sync's
@@ -261,6 +370,26 @@ class DriveStateSyncResult {
       outcome: imported.outcome,
       detail: imported.detail,
       txId: candidate.txId,
+    );
+  }
+
+  /// The same verdict, with the walk that produced it named in its detail.
+  ///
+  /// Only the detail moves. The outcome, the range and the transaction id all
+  /// belong to the candidate that actually decided the sync, and a count that
+  /// changed any of them would make "an artifact was used" ambiguous about
+  /// *which* artifact - which is the confusion §7's vocabulary exists to
+  /// prevent.
+  DriveStateSyncResult _afterAttempts(int tried, int discovered) {
+    final walked = 'after $tried of $discovered candidate(s)';
+    final existing = detail;
+
+    return DriveStateSyncResult._(
+      covered: covered,
+      outcome: outcome,
+      detail:
+          existing == null || existing.isEmpty ? walked : '$existing - $walked',
+      txId: txId,
     );
   }
 

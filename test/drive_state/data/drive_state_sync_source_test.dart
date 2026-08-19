@@ -84,9 +84,10 @@ void main() {
     int blockStart = 0,
     int? blockEnd = 900,
     int entityCount = 3,
+    String id = txId,
   }) =>
       DriveStateArtifactCandidate(
-        txId: txId,
+        txId: id,
         ownerAddress: ownerAddress,
         tags: {
           EntityTag.entityType: EntityTypeTag.driveState,
@@ -99,8 +100,9 @@ void main() {
       );
 
   DriveStateSyncSource sourceFor(
-    DriveStateDiscovery discovery,
-  ) =>
+    DriveStateDiscovery discovery, {
+    int? maxCandidateAttempts,
+  }) =>
       DriveStateSyncSource(
         arweave: arweave,
         discovery: discovery,
@@ -111,13 +113,16 @@ void main() {
             message: message,
           )),
         ),
+        maxCandidateAttempts: maxCandidateAttempts ??
+            DriveStateSyncSource.defaultMaxCandidateAttempts,
       );
 
   Future<DriveStateSyncResult> read(
     DriveStateDiscovery discovery, {
     int lastBlockHeight = 100,
+    int? maxCandidateAttempts,
   }) =>
-      sourceFor(discovery).read(
+      sourceFor(discovery, maxCandidateAttempts: maxCandidateAttempts).read(
         driveId: driveId,
         ownerAddress: ownerAddress,
         driveKey: driveKey,
@@ -408,6 +413,265 @@ void main() {
 
       expect(result.coveredThroughBlock, 0);
       expectExactlyOneOutcome(DriveStateOutcome.integrityFailed);
+    });
+  });
+
+  /// Discovery returns an ordered list and this walks it. Until it did, the
+  /// newest candidate failing ended the attempt and discarded artifacts the
+  /// same query had already found and ordered — which closed the feature for
+  /// the drive during the window every publication opens, where the newest is
+  /// indexed but not yet retrievable.
+  ///
+  /// The properties that keep the walk honest are as much about §7 as about
+  /// fallback: a drive still gets exactly one verdict, and the verdict is the
+  /// one belonging to the candidate that actually decided the sync.
+  group('more than one candidate', () {
+    _SpyDiscovery foundAll(List<DriveStateArtifactCandidate> cs) =>
+        _SpyDiscovery(() => DriveStateDiscoveryResult(candidates: cs));
+
+    /// Newest first, as `GraphQLDriveStateDiscovery` sorts them.
+    List<DriveStateArtifactCandidate> ordered(List<(String, int)> spec) => [
+          for (final (id, blockEnd) in spec)
+            candidate(id: id, blockEnd: blockEnd),
+        ];
+
+    void fetchFails(String id, [String reason = '404 from the gateway']) {
+      when(() => arweave.getEntityDataFromNetwork(
+            txId: id,
+            largeBody: any(named: 'largeBody'),
+          )).thenThrow(Exception(reason));
+    }
+
+    void fetchSucceeds(String id) {
+      when(() => arweave.getEntityDataFromNetwork(
+            txId: id,
+            largeBody: any(named: 'largeBody'),
+          )).thenAnswer((_) async => body);
+    }
+
+    /// Every transaction id a body was asked for, in order.
+    List<String> fetched() {
+      final captured = verify(() => arweave.getEntityDataFromNetwork(
+            txId: captureAny(named: 'txId'),
+            largeBody: any(named: 'largeBody'),
+          )).captured;
+      return captured.cast<String>();
+    }
+
+    setUp(() => stubImport(importedThrough(800)));
+
+    test('falls back to the next one when the newest cannot be fetched',
+        () async {
+      fetchFails('newest');
+      fetchSucceeds('older');
+
+      final result = await read(foundAll(ordered([
+        ('newest', 900),
+        ('older', 800),
+      ])));
+
+      expect(result.artifactWasUsed, isTrue);
+      expect(result.coveredThroughBlock, 800);
+      expect(fetched(), ['newest', 'older']);
+    });
+
+    test('falls back when the newest is fetched but will not verify', () async {
+      // Not only unreachable bodies. An artifact that decrypts to nothing
+      // usable is just as permanent a block on the feature, and the older one
+      // beneath it is just as good.
+      when(() => importer.import(
+            candidate: any(named: 'candidate'),
+            body: any(named: 'body'),
+            driveKey: any(named: 'driveKey'),
+            expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
+          )).thenAnswer((invocation) async {
+        final c = invocation.namedArguments[#candidate]
+            as DriveStateArtifactCandidate;
+        return c.txId == 'newest'
+            ? const DriveStateImportResult.rejected(
+                DriveStateOutcome.signatureFailed,
+                'the payload was not signed by the owner',
+              )
+            : importedThrough(800);
+      });
+
+      final result = await read(foundAll(ordered([
+        ('newest', 900),
+        ('older', 800),
+      ])));
+
+      expect(result.artifactWasUsed, isTrue);
+      expect(result.coveredThroughBlock, 800);
+    });
+
+    test('reports one verdict, and it belongs to the artifact that decided',
+        () async {
+      fetchFails('newest');
+      fetchSucceeds('older');
+
+      await read(foundAll(ordered([
+        ('newest', 900),
+        ('older', 800),
+      ])));
+
+      expectExactlyOneOutcome(DriveStateOutcome.used);
+      expect(outcomeLines().single, contains('tx=older'));
+      expect(
+        outcomeLines().single,
+        isNot(contains('tx=newest')),
+        reason: 'the used artifact is `older`; naming the one that failed in '
+            'the same line makes "artifact used - tx=..." unreadable',
+      );
+    });
+
+    test('says in that verdict how many candidates it took', () async {
+      fetchFails('newest');
+      fetchSucceeds('older');
+
+      await read(foundAll(ordered([
+        ('newest', 900),
+        ('older', 800),
+        ('oldest', 700),
+      ])));
+
+      expect(outcomeLines().single, contains('after 2 of 3 candidate(s)'));
+    });
+
+    test('leaves the discarded ones as notes, not as second verdicts',
+        () async {
+      // §7's rule is countable: a consumer counting `artifact rejected` lines
+      // to find drives that could not use an artifact must not see this drive,
+      // because it used one.
+      fetchFails('newest', 'not seeded yet');
+      fetchSucceeds('older');
+
+      await read(foundAll(ordered([
+        ('newest', 900),
+        ('older', 800),
+      ])));
+
+      expect(outcomeLines(), hasLength(1));
+
+      final notes = logged
+          .map((l) => l.message)
+          .where((m) => !outcomeLines().contains(m))
+          .toList();
+      expect(notes, hasLength(1));
+      expect(notes.single, contains('tx=newest'));
+      expect(notes.single, contains('fetch-failed'));
+      expect(notes.single, contains('not seeded yet'));
+    });
+
+    test('stops after the attempt budget, however many were discovered',
+        () async {
+      // Each attempt is a download sized like a snapshot. A drive with a long
+      // history of unusable artifacts must not be able to make a sync pay for
+      // all of them.
+      for (final id in ['a', 'b', 'c', 'd', 'e']) {
+        fetchFails(id);
+      }
+
+      final result = await read(foundAll(ordered([
+        ('a', 900),
+        ('b', 890),
+        ('c', 880),
+        ('d', 870),
+        ('e', 860),
+      ])));
+
+      expect(fetched(), ['a', 'b', 'c']);
+      expect(result.artifactWasUsed, isFalse);
+      expectExactlyOneOutcome(DriveStateOutcome.fetchFailed);
+      expect(outcomeLines().single, contains('after 3 of 5 candidate(s)'));
+    });
+
+    test('the budget is what bounds it, not the number discovered', () async {
+      for (final id in ['a', 'b', 'c', 'd']) {
+        fetchFails(id);
+      }
+
+      await read(
+        foundAll(ordered([('a', 900), ('b', 890), ('c', 880), ('d', 870)])),
+        maxCandidateAttempts: 2,
+      );
+
+      expect(fetched(), ['a', 'b']);
+    });
+
+    test(
+        'an already-covered candidate ends the walk rather than being '
+        'skipped over', () async {
+      // The list is ordered by `Block-End` descending, so a candidate at or
+      // below the local watermark guarantees every candidate after it is too.
+      // `rangeAlreadyCovered` is an early exit, not a failure, and treating it
+      // as one more reason to try the next one turns the cheapest path there
+      // is into the most expensive.
+      final result = await read(
+        foundAll(ordered([
+          ('covered', 50),
+          ('even-older', 40),
+        ])),
+        lastBlockHeight: 100,
+      );
+
+      expect(result.artifactWasUsed, isFalse);
+      expectExactlyOneOutcome(DriveStateOutcome.rangeAlreadyCovered);
+      expect(
+        logged,
+        hasLength(1),
+        reason: 'the walk stopped at the first covered candidate, so there is '
+            'nothing else it discarded to note: $logged',
+      );
+      expect(outcomeLines().single, isNot(contains('candidate(s)')));
+      verifyNever(() => arweave.getEntityDataFromNetwork(
+            txId: any(named: 'txId'),
+            largeBody: any(named: 'largeBody'),
+          ));
+    });
+
+    test('and does not go on to pay for one it cannot rule out cheaply',
+        () async {
+      // `_newestFirst` sorts a candidate with no parseable `Block-End` last
+      // rather than dropping it, and the cheap coverage check cannot rule that
+      // one out — so it is the candidate a walk that did not stop would
+      // download. This is where continuing past an early exit actually costs
+      // money.
+      stubImport(const DriveStateImportResult.rejected(
+        DriveStateOutcome.integrityFailed,
+        'a required tag is missing',
+      ));
+
+      await read(
+        foundAll([
+          candidate(id: 'covered', blockEnd: 50),
+          candidate(id: 'unparseable', blockEnd: null),
+        ]),
+        lastBlockHeight: 100,
+      );
+
+      expectExactlyOneOutcome(DriveStateOutcome.rangeAlreadyCovered);
+      verifyNever(() => arweave.getEntityDataFromNetwork(
+            txId: any(named: 'txId'),
+            largeBody: any(named: 'largeBody'),
+          ));
+    });
+
+    test('a usable newest one costs nothing extra', () async {
+      fetchSucceeds('newest');
+
+      final result = await read(foundAll(ordered([
+        ('newest', 900),
+        ('older', 800),
+      ])));
+
+      expect(result.artifactWasUsed, isTrue);
+      expect(fetched(), ['newest']);
+      expectExactlyOneOutcome(DriveStateOutcome.used);
+      expect(
+        outcomeLines().single,
+        isNot(contains('candidate(s)')),
+        reason: 'nothing was walked, so there is no walk to describe',
+      );
     });
   });
 }
