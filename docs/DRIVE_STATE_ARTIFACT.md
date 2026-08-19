@@ -244,7 +244,7 @@ Drive-State-Id:   "<uuid of this drive-state entity>"
 State-Version:    "1"
 Content-Type:     "application/octet-stream"
 Content-Encoding: "gzip"
-Block-Start:      "<minimum block height accounted for, eg 0>"
+Block-Start:      "0"          (always — see 3.4)
 Block-End:        "<maximum block height accounted for, eg 1814228>"
 Data-Start:       "<first block in which data was found>"
 Data-End:         "<last block in which data was found>"
@@ -283,7 +283,40 @@ serialise rows  →  sign (drive owner's wallet)  →  gzip  →  AES256-GCM
 The payload is a container of **named sections**. Section one is the drive's
 exported rows; the signature covers the whole plaintext container.
 
-### 3.4 A warning from the existing spec
+### 3.4 Every artifact is a full copy
+
+`Block-Start` is **always 0**. Each artifact carries the drive's entire state as
+of its `Block-End`, and supersedes every earlier one outright. There are no
+diffs, no increments, and no chain to assemble.
+
+This is worth stating because the recommendation **inverts** between snapshots
+and artifacts, and for a reason:
+
+| | cost of producing | therefore |
+|---|---|---|
+| Snapshot | re-reads the chain — ~420 queries and ~42,000 fetches | incremental, so production stays affordable |
+| Artifact | a local database export | **full copy**, because production was never the expensive part |
+
+For an artifact the only cost is the upload, and a full copy buys back the
+property that matters most: it is **self-contained**. Any single artifact is
+sufficient on its own. There is no ancestor to locate, no ancestor to still be
+retrievable, and no way for one missing link to invalidate a chain — which is
+precisely the residual risk that hangs over snapshot chains
+(`SNAPSHOT_CREATION_FROM_SNAPSHOTS.md`). One fetch, one signature to verify, one
+decryption, and either it works or the client falls back.
+
+The format does not forbid the alternative. `Block-Start` is a tag, not a
+constant, and the range composition in §5 already handles several sources
+covering different spans — an incremental artifact would simply be one with a
+non-zero `Block-Start`. So this is a **policy for v1, not a limitation**, and
+can be revisited without a format break if it ever needs to be.
+
+It would need revisiting for a drive large enough that republishing the whole
+state is expensive: at 6.65 MiB compressed this drive is nowhere near that, but
+a 500k-entity drive published weekly would be. Until then, self-contained is
+worth more than small.
+
+### 3.5 A warning from the existing spec
 
 Checking the spec against reality surfaced a divergence in the *existing*
 Snapshot format:
@@ -483,7 +516,7 @@ is not real until it is documented there.
 **Correction, independent of this work:**
 
 - `entity-types.mdx` — the Snapshot data field is `jsonMetadata`, not
-  `dataJson`, in both prose and example (§3.4). A live bug against every
+  `dataJson`, in both prose and example (§3.5). A live bug against every
   snapshot on chain; it should be fixed on its own, not bundled into a
   new-feature change.
 
@@ -501,7 +534,9 @@ is not real until it is documented there.
    often, an L1 wallet-only user favours publishing rarely.
 4. **Revision depth.** Full history, or current state plus a pointer to
    snapshots for older revisions? Current-state-only is much smaller and covers
-   what the explorer shows; history matters for the activity view.
+   what the explorer shows; history matters for the activity view. This is the
+   lever that keeps the full copy of §3.4 affordable as a drive grows, and is
+   worth deciding before the artifact size is what forces increments.
 5. **Multi-part authentication** above the GCM boundary (§2.3): a manifest of
    authenticated parts is preferred, but the manifest's own integrity needs
    specifying.
