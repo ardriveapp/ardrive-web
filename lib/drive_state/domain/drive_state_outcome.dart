@@ -112,6 +112,21 @@ enum DriveStateOutcome {
     description: 'the coverage tags disagreed with the signed payload',
   ),
 
+  /// Discovery named an artifact and its body could not be read from the
+  /// gateway.
+  ///
+  /// Inside the vocabulary, where "the indexer never answered" deliberately is
+  /// not (§7). The line between them is that by this point a *specific*
+  /// artifact has been identified, by transaction id, so the fact recorded is
+  /// about that artifact rather than about the lookup. A consumer asking how
+  /// many drives that had an artifact actually used one gets a wrong
+  /// denominator if this is only a log line.
+  fetchFailed(
+    code: 'fetch-failed',
+    kind: DriveStateOutcomeKind.rejected,
+    description: 'the artifact was found but its body could not be fetched',
+  ),
+
   /// The artifact covers a range the local database already holds, so reading
   /// it would cost a download and change nothing. Found and declined, which is
   /// why it is a rejection and not `noneFound` — but it is not a fault.

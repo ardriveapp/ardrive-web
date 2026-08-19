@@ -148,10 +148,31 @@ header, so `GET /tx/<id>` returns **404** for it, and the transaction's owner is
 knowable only through the GraphQL indexer. A signed payload makes bundled and
 top-level artifacts verify identically.
 
-Order of operations, and it matters: **serialise → sign → compress → encrypt**.
-Signing the plaintext binds the author to the content rather than to a
-particular encoding; compressing before encrypting is the only order that
-compresses at all.
+Order of operations, and it matters: **serialise → compress → sign → encrypt**.
+
+Compressing *before* signing rather than after, because the signature is an
+ANS-104 **data item** signature and not a signature over raw bytes. That is not
+a stylistic choice: wallet extensions no longer grant arbitrary-byte signing,
+and a data item is what ArConnect and Wander still sign. A data item wraps the
+bytes it authenticates, so the signed object is itself the container — sign
+first and the gzip layer would sit *outside* the data item, where a reader must
+decompress before it can even parse the thing that would have told it whether
+the bytes were worth decompressing.
+
+The order the implementation uses inverts that, and gives a reader a chain in
+which every step's input has already been vouched for by the step before:
+
+```
+decrypt (GCM, authenticated)  →  parse data item  →  verify owner  →  gunzip
+```
+
+Only an authenticated payload is ever inflated. That is what makes a bound on
+the decompressed size meaningful rather than decorative (§2.4), and it is the
+same discipline as never handing an untrusted file to SQLite: spend nothing on
+input until something has attested to it.
+
+Compressing before encrypting remains, as ever, the only order that compresses
+at all.
 
 ### 2.3 AES-GCM, and never CTR
 
@@ -180,11 +201,29 @@ This also stops the wire format being welded to `schemaVersion`: a row format
 the client maps onto whatever schema it runs, rather than a file only one
 version can open. Two independent reasons for the same decision.
 
+The same suspicion applies one layer down, to the gzip. **Bound the
+decompression, and bound it during inflation rather than after.** A gzip stream
+of a few kilobytes expands to gigabytes at will; a reader that inflates into
+memory and checks the size afterwards has already lost. The gzip trailer's
+`ISIZE` field is not the bound either — it is chosen by whoever wrote the
+stream, which is to say by the attacker.
+
+The bound belongs on the output sink, refusing at the first byte past the
+limit. Reuse the AES-GCM size boundary from §2.3: a payload that inflates past
+what a producer is allowed to seal is, by construction, not a payload this
+format produced.
+
+This check is cheap because of the ordering in §2.2 — the signature has already
+verified by the time anything is inflated, so the bound is a backstop against a
+*compromised or buggy owner client*, not the front line against anonymous
+input.
+
 ### 2.5 Trust, replay and failure
 
 - **Signature first.** An artifact whose signature does not verify against the
   drive owner is discarded before anything else is examined.
-- **Newest wins** by coverage tags, not arrival order.
+- **Newest wins** by the signed coverage claim — cross-checked against the
+  tags before it is believed (§3.3) — and never by arrival order.
 - **No rollback.** An artifact covering less than what is already synced is a
   no-op, never a regression.
 - **Failure is silence, not error.** A drive key that cannot open an artifact
@@ -243,7 +282,6 @@ Drive-Id:         "<drive uuid this state belongs to>"
 Drive-State-Id:   "<uuid of this drive-state entity>"
 State-Version:    "1"
 Content-Type:     "application/octet-stream"
-Content-Encoding: "gzip"
 Block-Start:      "0"          (always — see 3.4)
 Block-End:        "<maximum block height accounted for, eg 1814228>"
 Data-Start:       "<first block in which data was found>"
@@ -259,14 +297,34 @@ meanings the Snapshot entity gives them — the range *searched* against the ran
 where data was actually *found*, which lets a client size the work, and know an
 artifact is empty, without fetching it.
 
-Two tags are specific to this entity:
+One tag is specific to this entity:
 
-- **`Content-Encoding`** — the payload is compressed before encryption
-  (34.63 → 6.65 MiB, a 5.2× reduction, far larger than the snapshot comparison).
-  A client cannot discover this from an encrypted body, so it must be declared.
 - **`Entity-Count`** — an integrity check, not a statistic. GCM proves the
   ciphertext arrived intact; the count proves the body meant what the tags
   promised. A mismatch after import is decisive and cheap.
+
+**Never set `Content-Encoding: gzip` on this entity.** An earlier draft of this
+document specified it, on the reasoning that a client cannot discover
+compression from an encrypted body so it ought to be declared. That reasoning
+is sound and the conclusion is still wrong, because the tag is not
+documentation — it is an instruction to the transport:
+
+- `ar-io-node` indexes `Content-Encoding` from both L1 transactions
+  (`src/database/standalone-sqlite.ts`) and bundled data items
+  (`src/lib/ans-104.ts`), then echoes it onto the data response —
+  `res.header('Content-Encoding', dataAttributes.contentEncoding)` in
+  `src/routes/data/handlers.ts`.
+- What the gateway then serves is **GCM ciphertext**; the gzip layer is two
+  steps further in (§3.3). A browser `fetch` will try to gunzip that ciphertext
+  at the network layer and fail with `ERR_CONTENT_DECODING_FAILED`. There is no
+  opt-out in the browser, and `dart:io` auto-decompresses by default.
+- **Tags are immutable.** An artifact published with this tag is unfetchable
+  for as long as it exists, by every client, with no remedy but republishing.
+
+Compression stays an internal detail of the payload, discovered by decompressing
+it after the signature verifies. A reader must bound that decompression (§2.4);
+the ratio here is roughly 5.2× on real data (34.63 → 6.65 MiB), and a payload
+that inflates past the AES-GCM size boundary is refused rather than buffered.
 
 **Deliberately absent.** No size tag — `data.size` is already queryable. No
 `Supersedes` pointer — derivable from `Block-End` ordering, and a tag that
@@ -277,11 +335,46 @@ files? superseded revisions?); a candidate for §6 instead.
 ### 3.3 Payload
 
 ```
-serialise rows  →  sign (drive owner's wallet)  →  gzip  →  AES256-GCM
+serialise rows  →  gzip  →  sign as a data item (owner's wallet)  →  AES256-GCM
 ```
 
-The payload is a container of **named sections**. Section one is the drive's
-exported rows; the signature covers the whole plaintext container.
+The payload is a container of **named sections**, plus a top-level `version`
+and a top-level `coverage` object. The signature covers the whole container —
+sections, version and coverage alike. See §2.2 for why the gzip step comes
+before the signature and not after.
+
+**`coverage` is load-bearing, not informational.**
+
+```json
+{ "version": 1, "coverage": { "blockStart": 0, "blockEnd": 1814228 }, "...": "sections" }
+```
+
+It states the block range the rows in *this* payload account for, and it is the
+value a reader adopts as its own sync watermark. The same numbers appear in the
+`Block-Start` / `Block-End` tags, which is deliberate duplication: the tags let
+discovery order candidates without downloading them, and the payload copy is
+the one that is signed.
+
+**A reader must refuse any artifact whose tags disagree with the payload's
+claim, on either end.** Tags are chosen by whoever posts the transaction and
+nobody signs them. Re-tagging a genuine artifact with a higher `Block-End` and
+re-posting it would have every client that imports it advance its watermark
+across blocks whose rows the artifact never carried — the entities in that gap
+are then never queried, and the drive is quietly missing files with no error
+anywhere. `Block-Start` matters for the same reason and is not the lesser half:
+re-tagging a `[700, 900]` artifact as starting at 0 jumps the watermark across
+200 blocks of unread history.
+
+A producer must therefore read its watermark and its rows in **one database
+transaction**, and tag from the claim it sealed rather than re-reading. A
+producer that reads the watermark twice can have a sync land in between and
+publish an artifact whose tags contradict its own payload — permanently
+unusable, and paid for.
+
+The claim is also clamped on read: `Block-End` above the current block height
+is honoured only up to that height. An artifact may legitimately claim more
+than a lagging gateway has seen, and that must cost a wasted download rather
+than fail the drive.
 
 ### 3.4 Every artifact is a full copy
 
@@ -470,12 +563,25 @@ Per drive, per sync:
 - whether an artifact was used;
 - if not, an **enumerated reason** — `none found`, `unknown State-Version`,
   `signature failed`, `decrypt failed`, `integrity failed`, `entity count
-  mismatch`, `range already covered`;
+  mismatch`, `coverage mismatch`, `range already covered`, `fetch failed`;
 - entities imported from artifact / snapshot / GraphQL;
 - time in bulk import against time in parse.
 
 The `[snapshot]` instrumentation already merged is the right shape; this extends
 it rather than inventing a second vocabulary.
+
+One case sits outside the vocabulary on purpose: **the indexer never
+answered**. That is a fact about the lookup, not about an artifact, and giving
+it a reason code would let "this drive has no artifact" and "we could not tell"
+read identically — the exact confusion this section exists to prevent. It is
+reported as a warning, and the discovery result carries the distinction as a
+separate flag so no caller has to infer it from an empty list.
+
+**`fetch failed` is inside the vocabulary**, and the line between the two is
+worth stating because it is easy to get wrong: by then a specific artifact has
+been identified, by transaction id, and the fact recorded is about *that
+artifact*. A consumer asking "of the drives that had an artifact, how many
+actually used one?" gets a wrong denominator if this is only a log line.
 
 ---
 

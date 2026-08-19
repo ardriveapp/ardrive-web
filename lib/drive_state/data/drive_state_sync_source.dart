@@ -158,17 +158,16 @@ class DriveStateSyncSource {
         largeBody: true,
       );
     } catch (e) {
-      // Same reasoning as a discovery query that did not answer: nothing was
-      // learned about the artifact, so there is no outcome to report. Noted,
-      // at warning, because an artifact that exists and cannot be fetched is
-      // worth seeing.
-      _reporter.note(
-        driveId: driveId,
-        message: 'the body of ${candidate.txId} could not be fetched; '
-            'syncing without an artifact: $e',
-        level: DriveStateLogLevel.warning,
+      // A verdict, unlike a discovery query that did not answer. The
+      // difference is that this artifact is *identified* - there is a
+      // transaction id - so the fact recorded is about the artifact rather
+      // than about the lookup, and a count of "drives that had an artifact
+      // and used one" needs it in the denominator. See §7.
+      return DriveStateSyncResult._rejected(
+        DriveStateOutcome.fetchFailed,
+        'the body could not be fetched: $e',
+        txId: candidate.txId,
       );
-      return DriveStateSyncResult.none;
     }
 
     final imported = await _importer.import(

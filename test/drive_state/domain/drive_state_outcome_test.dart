@@ -41,6 +41,7 @@ void main() {
           'integrity-failed',
           'count-mismatch',
           'coverage-mismatch',
+          'fetch-failed',
           'range-already-covered',
         },
       );

@@ -344,9 +344,12 @@ void main() {
     });
   });
 
-  group('a failure that is not about the artifact', () {
-    test('notes an unfetchable body without claiming an outcome for it',
-        () async {
+  group('an artifact that was found but could not be read', () {
+    /// A verdict rather than a bare note, and the distinction is §7's: the
+    /// artifact is identified by transaction id, so this is a fact about that
+    /// artifact. Only "the indexer never answered" stays outside the
+    /// vocabulary, because there is nothing there to have a verdict about.
+    test('reports fetchFailed, naming the artifact it failed on', () async {
       when(() => arweave.getEntityDataFromNetwork(
             txId: any(named: 'txId'),
             largeBody: any(named: 'largeBody'),
@@ -355,16 +358,27 @@ void main() {
       final result = await read(found(candidate()));
 
       expect(result.coveredThroughBlock, 0);
-      expect(outcomeLines(), isEmpty);
-      expect(logged, hasLength(1));
-      expect(logged.single.level, DriveStateLogLevel.warning);
-      expect(logged.single.message, contains('could not be fetched'));
+      expectExactlyOneOutcome(DriveStateOutcome.fetchFailed);
+      expect(outcomeLines().single, contains(txId));
+      expect(outcomeLines().single, contains('gateway is down'));
       verifyNever(() => importer.import(
             candidate: any(named: 'candidate'),
             body: any(named: 'body'),
             driveKey: any(named: 'driveKey'),
             expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
           ));
+    });
+
+    test('is a fault, so it is logged loudly enough to be seen', () async {
+      when(() => arweave.getEntityDataFromNetwork(
+            txId: any(named: 'txId'),
+            largeBody: any(named: 'largeBody'),
+          )).thenThrow(Exception('gateway is down'));
+
+      await read(found(candidate()));
+
+      expect(DriveStateOutcome.fetchFailed.isFault, isTrue);
+      expect(logged.single.level, DriveStateLogLevel.warning);
     });
   });
 
