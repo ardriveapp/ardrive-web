@@ -589,34 +589,49 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       false,
     );
 
-    return BlocProvider<FsEntryPreviewCubit>(
-      create: (context) => FsEntryPreviewCubit(
-        crypto: ArDriveCrypto(),
-        isSharedFile: true,
-        driveId: revision.driveId,
-        fileKey: widget.state.fileKey,
-        maybeSelectedItem: item,
-        driveDao: context.read<DriveDao>(),
-        profileCubit: context.read<ProfileCubit>(),
-        arweave: context.read<ArweaveService>(),
-        configService: context.read<ConfigService>(),
-      ),
-      child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
-        builder: (context, previewState) {
-          final preview = _buildPreviewBody(context, previewState, item);
+    return AnimatedSwitcher(
+      // Short, and a fade rather than a slide: the pane is not moving, its
+      // contents are being replaced. Long enough not to read as a flicker,
+      // short enough that picking a version still feels immediate.
+      duration: const Duration(milliseconds: 180),
+      child: BlocProvider<FsEntryPreviewCubit>(
+        // Keyed on the bytes being previewed.
+        //
+        // Without this the provider builds its cubit once and keeps it, so
+        // moving the target left the preview showing the revision the page
+        // opened on while Download fetched a different one - two answers to
+        // "what am I looking at", and the quieter one was wrong. That was
+        // already reachable through "Get latest" before the version list
+        // existed; the list only made it easy to hit.
+        key: ValueKey(revision.dataTxId),
+        create: (context) => FsEntryPreviewCubit(
+          crypto: ArDriveCrypto(),
+          isSharedFile: true,
+          driveId: revision.driveId,
+          fileKey: widget.state.fileKey,
+          maybeSelectedItem: item,
+          driveDao: context.read<DriveDao>(),
+          profileCubit: context.read<ProfileCubit>(),
+          arweave: context.read<ArweaveService>(),
+          configService: context.read<ConfigService>(),
+        ),
+        child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
+          builder: (context, previewState) {
+            final preview = _buildPreviewBody(context, previewState, item);
 
-          if (!isInline) {
-            return preview;
-          }
+            if (!isInline) {
+              return preview;
+            }
 
-          // On a phone the preview is part of a scrolling column, so a state
-          // whose content is one sentence gets the height of one sentence. A
-          // fixed 360 band around it left dead space above and below it and
-          // pushed the drawers under it off the screen.
-          return _previewFillsItsBox(previewState)
-              ? SizedBox(height: _inlinePreviewHeight, child: preview)
-              : preview;
-        },
+            // On a phone the preview is part of a scrolling column, so a state
+            // whose content is one sentence gets the height of one sentence. A
+            // fixed 360 band around it left dead space above and below it and
+            // pushed the drawers under it off the screen.
+            return _previewFillsItsBox(previewState)
+                ? SizedBox(height: _inlinePreviewHeight, child: preview)
+                : preview;
+          },
+        ),
       ),
     );
   }
