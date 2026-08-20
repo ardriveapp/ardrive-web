@@ -144,12 +144,28 @@ class DriveStateCreationModal extends StatelessWidget {
 
 const _title = 'Publish drive state';
 
+// Every state below passes `scrollableContent: true`, and none of them is free
+// to stop.
+//
+// Not one of them controls the height of what it renders: the drive name, the
+// refusal sentence, the uploader's failure message and the transaction id all
+// arrive from somewhere else and can be any length. Left unbounded, a long one
+// overflows a short screen and takes the Close button off the bottom with it —
+// leaving the barrier as the only way out of the modal that was trying to
+// explain why something had been refused. Bounded, the body scrolls and the
+// button stays reachable.
+//
+// It is opt-in on `ArDriveStandardModalNew` because content that manages its
+// own height — an `Expanded`, a `ListView` — breaks under a scroll view. None
+// of these do.
+
 Widget _preparingModal(BuildContext context, String driveName) {
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return ArDriveStandardModalNew(
     title: _title,
+    scrollableContent: true,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,6 +200,7 @@ Widget _refusedModal(BuildContext context, DriveStateCreationRefused state) {
 
   return ArDriveStandardModalNew(
     title: _title,
+    scrollableContent: true,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,6 +427,7 @@ Widget _publishingModal(BuildContext context) {
 
   return ArDriveStandardModalNew(
     title: _title,
+    scrollableContent: true,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -434,6 +452,7 @@ Widget _publishedModal(
 
   return ArDriveStandardModalNew(
     title: _title,
+    scrollableContent: true,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,6 +479,7 @@ Widget _failureModal(BuildContext context, String message) {
 
   return ArDriveStandardModalNew(
     title: _title,
+    scrollableContent: true,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,

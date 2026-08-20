@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/components/payment_method_selector_widget.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
@@ -7,6 +8,7 @@ import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_creation_cubit/drive_state_creation_cubit.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_creation_modal.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 
 /// The confirmation surface. Three things are worth a widget test here: that
 /// the user is told what would be published *and what it costs* before they
@@ -51,20 +54,25 @@ void main() {
     );
   }
 
-  PreparedDriveStateArtifact artifact() => PreparedDriveStateArtifact(
+  PreparedDriveStateArtifact artifact({
+    String driveName = 'My Drive',
+    int entityCount = 12,
+    int blockEnd = 1814228,
+  }) =>
+      PreparedDriveStateArtifact(
         entity: DriveStateEntity(
           id: 'artifact-id',
           driveId: 'drive-id',
-          blockEnd: 1814228,
+          blockEnd: blockEnd,
           dataStart: 0,
-          dataEnd: 1814228,
-          entityCount: 12,
+          dataEnd: blockEnd,
+          entityCount: entityCount,
           cipher: 'AES256-GCM',
           cipherIv: 'aXY=',
         ),
         driveId: 'drive-id',
-        driveName: 'My Drive',
-        entityCount: 12,
+        driveName: driveName,
+        entityCount: entityCount,
         sizeInBytes: 6979321,
       );
 
@@ -100,10 +108,11 @@ void main() {
 
   DriveStateCreationReady ready({
     DriveStatePublishCost? withCost,
+    PreparedDriveStateArtifact? withArtifact,
     UploadMethod method = UploadMethod.turbo,
   }) =>
       DriveStateCreationReady(
-        artifact: artifact(),
+        artifact: withArtifact ?? artifact(),
         cost: withCost ?? cost(),
         method: method,
       );
@@ -241,6 +250,296 @@ void main() {
 
     expect(find.text('Publish'), findsNothing);
     verifyNever(() => cubit.publish());
+  });
+
+  /// The same modal, on the screens it actually ships to.
+  ///
+  /// These pump through [showArDriveDialog] rather than dropping the modal
+  /// into a `Scaffold` body, because the geometry a phone breaks on is the
+  /// geometry the dialog decides. And what it decides is not what a reading of
+  /// `Dialog` suggests: `showAnimatedDialog` passes `insetPadding` explicitly
+  /// — `null` above 600 logical pixels of height, an explicit zero below it —
+  /// and `Dialog` reads a null `insetPadding` as [EdgeInsets.zero] rather than
+  /// falling back to its 40-pixel default. So the dialog reserves *no*
+  /// horizontal margin at any size, and [modalStandardMaxWidthSize] is the
+  /// only thing standing between this modal and the edge of the screen. That
+  /// is measured, not assumed: with a fixed `width:` reintroduced, the modal
+  /// renders 390 wide on a 390-wide phone.
+  ///
+  /// Every one of these asserts [WidgetTester.takeException] is null. A
+  /// `RenderFlex overflowed` is reported through `FlutterError.onError`
+  /// during paint, so it would fail these tests anyway — the explicit check
+  /// is there to name the failure rather than to create it.
+  group('on the screens it ships to', () {
+    // An iPhone 14: the common case, and wide enough that nothing is
+    // expected to be tight.
+    const phone = Size(390, 844);
+    // An iPhone SE: the narrowest screen worth supporting, and short enough
+    // (< 600) to take `showAnimatedDialog`'s low-screen inset path.
+    const smallPhone = Size(320, 568);
+    const desktop = Size(1440, 900);
+
+    late ActivityTracker activityTracker;
+
+    setUp(() => activityTracker = ActivityTracker());
+
+    /// The production entry path's chrome, minus the services
+    /// [promptToCreateDriveState] needs to build a real cubit.
+    Future<void> openModal(
+      WidgetTester tester,
+      DriveStateCreationState state, {
+      required Size surface,
+      String driveName = 'My Drive',
+    }) async {
+      tester.view.physicalSize = surface;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      when(() => cubit.state).thenReturn(state);
+      when(() => cubit.publish()).thenAnswer((_) async {});
+      whenListen(cubit, const Stream<DriveStateCreationState>.empty());
+
+      await tester.pumpWidget(
+        ArDriveTheme(
+          themeData: lightTheme(),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', '')],
+            // Provided exactly as `main.dart` provides it, since
+            // `showArDriveDialog` reads it out of the tree.
+            home: ChangeNotifierProvider<ActivityTracker>.value(
+              value: activityTracker,
+              child: Scaffold(
+                body: Builder(
+                  builder: (context) => TextButton(
+                    onPressed: () => showArDriveDialog(
+                      context,
+                      content: BlocProvider<DriveStateCreationCubit>.value(
+                        value: cubit,
+                        child: DriveStateCreationModal(driveName: driveName),
+                      ),
+                    ),
+                    child: const Text('open'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+    }
+
+    /// The modal is laid out inside the screen, in both axes, with nothing
+    /// clipped off an edge, and no wider than its own component's rule.
+    ///
+    /// `takeException` catches a `RenderFlex` that overflowed its own box;
+    /// the rect catches the box itself being placed outside the viewport,
+    /// which no `RenderFlex` reports.
+    ///
+    /// The width cap is the third check and it is not redundant. A fixed
+    /// `width:` handed to [ArDriveStandardModalNew] replaces
+    /// [modalStandardMaxWidthSize] in a `ConstrainedBox`'s `maxWidth`, and
+    /// `BoxConstraints.enforce` quietly clamps that back down to whatever the
+    /// `Dialog` left — so on a phone an overridden cap overflows nothing and
+    /// is invisible to the two checks above. It is visible here, on any
+    /// screen with room to honour it.
+    void expectFitsOnScreen(WidgetTester tester, Size surface) {
+      expect(tester.takeException(), isNull);
+
+      final rect = tester.getRect(find.byType(ArDriveStandardModalNew));
+      expect(rect.left, greaterThanOrEqualTo(0));
+      expect(rect.right, lessThanOrEqualTo(surface.width));
+      expect(rect.top, greaterThanOrEqualTo(0));
+      expect(rect.bottom, lessThanOrEqualTo(surface.height));
+      expect(rect.width, lessThanOrEqualTo(modalStandardMaxWidthSize));
+    }
+
+    for (final surface in {
+      'a phone': phone,
+      'a small phone': smallPhone,
+      'a desktop': desktop,
+    }.entries) {
+      testWidgets('the confirmation is usable on ${surface.key}',
+          (tester) async {
+        await openModal(tester, ready(), surface: surface.value);
+
+        expectFitsOnScreen(tester, surface.value);
+
+        // What it costs, and the selector that decides who pays, are both
+        // readable — not merely present in the tree.
+        await tester.ensureVisible(find.text('0.003 Credits'));
+        expect(find.byType(PaymentMethodSelector), findsOneWidget);
+        await tester.ensureVisible(find.byType(PaymentMethodSelector));
+
+        // Both actions exist...
+        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Publish'), findsOneWidget);
+
+        // ...and the one that spends money can actually be reached and hit.
+        // `tap` hit-tests, so a button pushed under another widget or off
+        // the bottom of a short viewport fails here.
+        await tester.ensureVisible(find.text('Publish'));
+        await tester.tap(find.text('Publish'));
+        await tester.pump();
+
+        verify(() => cubit.publish()).called(1);
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('a long drive name and a large count do not overflow a phone',
+        (tester) async {
+      await openModal(
+        tester,
+        ready(
+          withArtifact: artifact(
+            driveName: 'Quarterly Financial Reporting And Archived '
+                'Correspondence 2019-2026',
+            entityCount: 1234567890,
+            blockEnd: 1814228999,
+          ),
+        ),
+        surface: smallPhone,
+        driveName: 'Quarterly Financial Reporting And Archived '
+            'Correspondence 2019-2026',
+      );
+
+      expectFitsOnScreen(tester, smallPhone);
+
+      // The long values are shown in full rather than dropped, and the
+      // confirm button survives them.
+      expect(
+          find.textContaining('Quarterly Financial Reporting'), findsOneWidget);
+      expect(find.text('1234567890'), findsOneWidget);
+      expect(find.text('0 to 1814228999'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Publish'));
+      await tester.tap(find.text('Publish'));
+      await tester.pump();
+
+      verify(() => cubit.publish()).called(1);
+      expect(tester.takeException(), isNull);
+    });
+
+    // The refusal is the longest thing this modal ever renders — the D3 rail
+    // adds a paragraph above a reason the service writes — and it is the one
+    // the user cannot dismiss any other way, since it has no confirm button
+    // and the barrier is the only alternative to its Close.
+    testWidgets('a long refusal stays on screen and keeps its close button',
+        (tester) async {
+      await openModal(
+        tester,
+        DriveStateCreationRefused(
+          refusal: DriveStateCreationRefusal.syncSkippedEntities,
+          reason: 'The last sync of this drive could not read 37 items, so '
+              'the drive on this device is not a complete copy of the drive '
+              'on chain. Publishing its state now would record that gap in a '
+              'permanent artifact that every future reader would trust. Sync '
+              'this drive again, and if the same items are still missing '
+              'afterwards, contact support before publishing.',
+        ),
+        surface: smallPhone,
+      );
+
+      expectFitsOnScreen(tester, smallPhone);
+
+      expect(find.textContaining('could not read 37 items'), findsOneWidget);
+      expect(find.text('Publish'), findsNothing);
+
+      await tester.ensureVisible(find.text('Close'));
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      // Reached, hit, and it dismissed the dialog.
+      expect(find.byType(DriveStateCreationModal), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a long failure stays on screen and keeps its close button',
+        (tester) async {
+      await openModal(
+        tester,
+        DriveStateCreationFailure(
+          'The upload was rejected by every route it was offered to: Turbo '
+          'returned an error for the bundled data item, and the direct '
+          'gateway upload did not complete either. Nothing was published and '
+          'nothing was charged. Check your connection and try again.',
+        ),
+        surface: smallPhone,
+      );
+
+      expectFitsOnScreen(tester, smallPhone);
+
+      expect(find.textContaining('Nothing was published'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Close'));
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DriveStateCreationModal), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a published artifact reports its id without overflowing',
+        (tester) async {
+      await openModal(
+        tester,
+        DriveStateCreationPublished(
+          artifact: artifact(
+            driveName: 'Quarterly Financial Reporting And Archived '
+                'Correspondence 2019-2026',
+          ),
+          // A real Arweave transaction id: 43 unbroken base64url characters,
+          // which is wider than a small phone's modal and has nowhere to
+          // wrap.
+          txId: 'PmwoP4jL1ZQVAKGSCP2NmFCiwYbnUpKMPZmKGpKQwvE',
+        ),
+        surface: smallPhone,
+      );
+
+      expectFitsOnScreen(tester, smallPhone);
+
+      expect(
+        find.textContaining('PmwoP4jL1ZQVAKGSCP2NmFCiwYbnUpKMPZmKGpKQwvE'),
+        findsOneWidget,
+      );
+
+      await tester.ensureVisible(find.text('Close'));
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DriveStateCreationModal), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('an unaffordable artifact still fits, with its own warning',
+        (tester) async {
+      await openModal(
+        tester,
+        ready(
+          withCost: cost(
+            sufficientArBalance: false,
+            sufficientTurboBalance: false,
+          ),
+        ),
+        surface: smallPhone,
+      );
+
+      expectFitsOnScreen(tester, smallPhone);
+
+      await tester.ensureVisible(find.textContaining('cannot be published'));
+      await tester.ensureVisible(find.text('Publish'));
+      expect(publishButton(tester).isDisabled, isTrue);
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 

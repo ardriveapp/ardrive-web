@@ -75,11 +75,24 @@ class DriveStateFormatVersion extends Equatable
   /// differently while comparing equal.
   ///
   /// Nine digits because an `int` is 64-bit on the VM and a double in a
-  /// browser, and this app ships to both. A longer run of digits parses to
-  /// different values on the two platforms — or to a value that prints back as
-  /// something else — so it is refused rather than accepted into a comparison
-  /// whose answer depends on where it ran. Nine digits is ~10^9 format
-  /// revisions, which is not the constraint anyone will meet.
+  /// browser, and this app ships to both.
+  ///
+  /// The two stop agreeing at **sixteen** digits, where a browser's
+  /// `int.parse` starts rounding — `'9999999999999999'` comes back as
+  /// `10000000000000000`, silently, with nothing thrown for a caller to catch
+  /// — while the VM is still exact; and they disagree again at **nineteen**,
+  /// where the VM throws `FormatException` and a browser does not. Which is
+  /// also why [tryParse] refuses on the pattern rather than by catching a
+  /// parse failure: a `try`/`catch` would return null on one platform and a
+  /// wrong version on the other.
+  ///
+  /// Nine sits well below the nearer of those on purpose. The boundary is
+  /// itself a platform fact, so a cap drawn *on* it would be one too, and
+  /// ~10^9 format revisions is not a constraint anyone will meet. Both
+  /// boundaries are measured, on whichever platform it runs, by
+  /// `test/drive_state/domain/drive_state_web_platform_test.dart` — the one
+  /// test in `drive_state` that runs under `--platform chrome` as well as on
+  /// the VM.
   static final RegExp _pattern =
       RegExp(r'^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$');
 

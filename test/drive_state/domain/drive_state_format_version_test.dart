@@ -60,9 +60,14 @@ void main() {
           '01.0',
           '1.00',
           '1.01',
-          // Longer than an int is identical on both the VM and a browser.
+          // More digits than the nine-digit cap admits. Ten is still exact on
+          // both the VM and a browser — the cap sits deliberately below where
+          // they stop agreeing, which is sixteen digits. See
+          // drive_state_web_platform_test.dart, which measures that.
           '1000000000.0',
           '0.1000000000',
+          // And one no platform holds the same way: the VM's `int.parse`
+          // throws on it, a browser's rounds it.
           '99999999999999999999.0',
           '1.0\n',
           'v1.0',
