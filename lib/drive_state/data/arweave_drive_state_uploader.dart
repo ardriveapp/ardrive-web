@@ -54,6 +54,25 @@ DriveStateUploader driveStateUploaderFor({
 ///   user who switches tabs during a signature prompt otherwise loses the
 ///   artifact they just paid to prepare.
 ///
+/// ## The two transports fail differently, and are reported differently
+///
+/// A data item is one request: Turbo either accepted it or it did not, so a
+/// failure there is a failure, and nothing was spent.
+///
+/// An L1 transaction is not one request. `TransactionUploader.upload`
+/// (arweave-dart v4.0.2) posts the **header** first — `_postTransactionHeader`
+/// is awaited before the first event is yielded — and only then streams the
+/// chunks, retrying each up to fifteen times. So a failure part-way leaves a
+/// transaction that exists on the network, will be charged for, and is
+/// missing some of its data. An artifact is tens of MiB and therefore always
+/// many chunks, so that window is always open.
+///
+/// Reporting that as an ordinary failure would tell the user nothing was
+/// spent and invite a retry that prepares a second transaction and pays for
+/// it too. It is reported as [DriveStateUploadResult.uncertain] instead,
+/// carrying the id, which is knowable because a transaction is signed before
+/// it is posted.
+///
 /// ## What it deliberately does not do
 ///
 /// No row is written to `network_transactions`. A snapshot does that so the
@@ -106,6 +125,12 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
     final isArConnectProfile = await _profileCubit.isCurrentProfileArConnect();
     final useTurbo = method == UploadMethod.turbo;
 
+    /// Set the moment the L1 transaction header is accepted, which is before
+    /// a single chunk is sent. From then on the transaction exists and is
+    /// paid for, so no failure after this point may be reported as one that
+    /// spent nothing. See [DriveStateUploadResult.uncertain].
+    String? postedTxId;
+
     try {
       if (useTurbo) {
         final dataItem = await _prepareDataItem(
@@ -131,11 +156,40 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
       // Chunked, one request at a time, exactly as a snapshot is posted: an
       // artifact runs to tens of MiB, and firing chunks concurrently before
       // the gateway has indexed the data root earns 400s.
-      await _arweave.uploadTx(tx, maxConcurrentUploadCount: 1);
+      //
+      // Tens of MiB is also why the header/chunk split matters here and not
+      // for a small transaction: an artifact is always many chunks, so the
+      // window between "the transaction exists" and "its data is all there"
+      // is always open, and every one of those chunk requests can fail.
+      await _arweave.uploadTx(
+        tx,
+        maxConcurrentUploadCount: 1,
+        onTransactionPosted: () => postedTxId = tx.id,
+      );
 
       return DriveStateUploadResult.published(tx.id);
     } catch (e, stackTrace) {
       logger.e('[drive-state] publishing an artifact failed', e, stackTrace);
+
+      final txId = postedTxId;
+      if (txId != null) {
+        // The one outcome the user must not be told was free. The header was
+        // accepted, so the network has a transaction it will charge for; only
+        // its data is in doubt. Saying "try again" here without saying what
+        // that costs is how someone pays twice for one artifact.
+        logger.e(
+          '[drive-state] artifact transaction $txId was posted before the '
+          'upload failed; it is paid for and its data may be incomplete',
+        );
+        return DriveStateUploadResult.uncertain(
+          txId: txId,
+          reason: 'The transaction for this artifact ($txId) reached the '
+              'network before the upload failed, so it has been paid for, but '
+              'its data may be incomplete. Look it up on a gateway before '
+              'publishing again — a second attempt creates a second '
+              'transaction and pays for it a second time.',
+        );
+      }
 
       if (isTurboPaymentError(e)) {
         return const DriveStateUploadResult.failed(

@@ -403,14 +403,26 @@ class _SyncRepository implements SyncRepository {
     final numberOfDrivesToSync = drivesToSync.length;
 
     if (numberOfDrivesToSync == 0) {
-      // Probe found no drives with activity — this is a successful no-op sync
+      // Probe found no drives with activity — this is a successful no-op sync.
+      // It examined nothing, and `emptySyncCompleted` says so: a sync that
+      // looked at no drive vouches for no drive.
       logger.i('No drives need syncing');
       yield SyncProgress.emptySyncCompleted();
       _lastSync = DateTime.now();
       return;
     }
 
-    syncProgress = syncProgress.copyWith(drivesCount: numberOfDrivesToSync);
+    // Name the drives this sync is about to open, before it opens any of them.
+    // The probe above may have set some aside as unchanged; those are neither
+    // synced nor failed, so nothing else in this report distinguishes them
+    // from drives that were read and found clean. See
+    // [SyncProgress.examinedDriveIds] - the publish precondition reads this,
+    // and it is announced up front so that a sync which dies part-way has
+    // still said which drives it may have advanced.
+    syncProgress = syncProgress.copyWith(
+      drivesCount: numberOfDrivesToSync,
+      examinedDriveIds: {for (final drive in drivesToSync) drive.id},
+    );
     yield syncProgress;
 
     // Batch-fetch snapshots for all drives per owner (1 GQL query per owner
@@ -822,6 +834,11 @@ class _SyncRepository implements SyncRepository {
       drivesCount: 1,
       isSingleDriveSync: true,
       driveName: drive.name,
+      // The one drive this sync opens. Announced here, before any of its work,
+      // for the reason given on [SyncProgress.examinedDriveIds]. Note the
+      // early return above: a drive that is not in the database is *not*
+      // examined, and `emptySyncCompleted` names nobody.
+      examinedDriveIds: {driveId},
     );
     yield syncProgress;
 

@@ -1958,18 +1958,56 @@ class ArweaveService {
   /// header then chunks with [maxConcurrentUploadCount] (default 1) to avoid
   /// gateway 400s from data_root propagation when many chunk requests hit
   /// before the tx is indexed.
+  ///
+  /// [onTransactionPosted] fires once the transaction **header** has been
+  /// accepted, before any chunk is sent. That ordering is
+  /// `TransactionUploader`'s (arweave-dart v4.0.2): `upload()` awaits
+  /// `_postTransactionHeader()` and only then yields its first event, so a
+  /// caller that never sees the callback knows nothing reached the network,
+  /// and one that does knows a transaction now exists and will be paid for
+  /// whether or not its chunks follow. Without it a chunk failure and a
+  /// refused header are the same exception, and a caller can only guess which
+  /// of the two it is holding.
   Future<void> uploadTx(
     Transaction transaction, {
     int maxConcurrentUploadCount = 1,
     bool dryRun = false,
-  }) async {
-    await client.transactions
-        .upload(
+    void Function()? onTransactionPosted,
+  }) =>
+      drainUpload(
+        client.transactions.upload(
           transaction,
           maxConcurrentUploadCount: maxConcurrentUploadCount,
           dryRun: dryRun,
-        )
-        .drain();
+        ),
+        dryRun: dryRun,
+        onTransactionPosted: onTransactionPosted,
+      );
+
+  /// Drains an upload's event stream, reporting the header post the first time
+  /// the stream says anything.
+  ///
+  /// Separate from [uploadTx], and typed on `Object?` rather than on the
+  /// uploader, because `ArweaveTransactionsApi` is not exported by
+  /// `package:arweave` and so cannot be named - or mocked - from here. This is
+  /// the whole rule, and it is the part that can be got wrong: firing eagerly
+  /// would invent a charge that never happened, and firing on every event
+  /// would report one transaction many times.
+  @visibleForTesting
+  static Future<void> drainUpload(
+    Stream<Object?> events, {
+    required bool dryRun,
+    void Function()? onTransactionPosted,
+  }) async {
+    var posted = false;
+
+    await for (final _ in events) {
+      // A dry run yields the uploader without posting anything, so it must not
+      // be reported as a transaction that exists.
+      if (posted || dryRun) continue;
+      posted = true;
+      onTransactionPosted?.call();
+    }
   }
 
   // TODO: replace with the method on ardrive_utils
