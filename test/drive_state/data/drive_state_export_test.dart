@@ -491,7 +491,11 @@ void main() {
               pinnedDataOwnerAddress: Value('pinned-owner'),
               customJsonMetadata: Value('{"a":1}'),
               customGQLTags: Value('[{"name":"a"}]'),
-              assignedNames: Value('["name"]'),
+              // The wrapped shape `DriveDao._encodeAssignedNames` writes, not
+              // a bare array: `parseAssignedNamesFromString` returns null for
+              // the latter, so a fixture using it would be a value the app
+              // never produces and the UI never renders.
+              assignedNames: Value('{"assignedNames":["name"]}'),
               fallbackTxId: Value('fallback-tx'),
               originalOwner: Value('original-owner'),
               importSource: Value('import-source'),
