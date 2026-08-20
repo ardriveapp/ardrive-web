@@ -129,8 +129,6 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       children: [
         ..._buildNotice(context, isWide: false),
         ..._buildActions(context, revision, previewIsInline: true),
-        const SizedBox(height: 12),
-        _buildFooter(context),
       ],
     );
   }
@@ -178,8 +176,6 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
             Expanded(flex: 3, child: _buildPreviewPane(context, revision)),
           ],
         ),
-        const SizedBox(height: 16),
-        _buildFooter(context),
       ],
     );
   }
@@ -319,16 +315,6 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         onOpened: () => context.read<SharedFileCubit>().loadActivity(),
       ),
     ];
-  }
-
-  Widget _buildFooter(BuildContext context) {
-    return Text(
-      appLocalizationsOf(context).sharedFileStoredPermanently,
-      textAlign: TextAlign.center,
-      style: ArDriveTypography.body.captionRegular(
-        color: SharedFileColors.subtle(context),
-      ),
-    );
   }
 
   /// Where the file goes on a wide screen.

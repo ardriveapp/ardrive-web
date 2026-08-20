@@ -190,7 +190,6 @@ class _RawTransactionReadyViewState extends State<_RawTransactionReadyView> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
     final state = widget.state;
 
     return Column(
@@ -215,14 +214,6 @@ class _RawTransactionReadyViewState extends State<_RawTransactionReadyView> {
         RawTransactionPreview(state: state),
         const SizedBox(height: 16),
         _RawTransactionDetailsDrawer(state: state),
-        const SizedBox(height: 12),
-        Text(
-          appLocalizationsOf(context).sharedFileStoredPermanently,
-          textAlign: TextAlign.center,
-          style: ArDriveTypography.body.captionRegular(
-            color: colors.themeFgSubtle,
-          ),
-        ),
       ],
     );
   }

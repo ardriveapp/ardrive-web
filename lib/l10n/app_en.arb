@@ -2298,10 +2298,6 @@
       }
     }
   },
-  "sharedFileStoredPermanently": "This file is stored permanently and can be downloaded any time.",
-  "@sharedFileStoredPermanently": {
-    "description": "Reassurance shown at the bottom of the shared file page"
-  },
   "sharedFileUnlockedWithAccessKey": "Unlocked with your access key. This file stays encrypted for everyone else.",
   "@sharedFileUnlockedWithAccessKey": {
     "description": "Shown after a private shared file has been unlocked with an access key"
