@@ -101,7 +101,14 @@ void main() {
     when(() => arweave.uploadTx(
           any(),
           maxConcurrentUploadCount: any(named: 'maxConcurrentUploadCount'),
-        )).thenAnswer((_) async {});
+          onTransactionPosted: any(named: 'onTransactionPosted'),
+        )).thenAnswer((invocation) async {
+      // The real `uploadTx` fires this the moment the transaction header is
+      // accepted and before any chunk is sent. A successful upload has been
+      // through that point, so the happy path stands in for it too.
+      (invocation.namedArguments[#onTransactionPosted] as void Function()?)
+          ?.call();
+    });
 
     when(() => tabVisibility.isTabFocused()).thenReturn(true);
   });
@@ -137,8 +144,11 @@ void main() {
             dataItem: dataItem,
             wallet: wallet,
           )).called(1);
-      verifyNever(() => arweave.uploadTx(any(),
-          maxConcurrentUploadCount: any(named: 'maxConcurrentUploadCount')));
+      verifyNever(() => arweave.uploadTx(
+            any(),
+            maxConcurrentUploadCount: any(named: 'maxConcurrentUploadCount'),
+            onTransactionPosted: any(named: 'onTransactionPosted'),
+          ));
     });
 
     test('AR publishes a top-level transaction and reports its id', () async {
@@ -150,8 +160,11 @@ void main() {
       expect(result.isPublished, isTrue);
       expect(result.txId, 'transaction-id');
 
-      verify(() => arweave.uploadTx(transaction, maxConcurrentUploadCount: 1))
-          .called(1);
+      verify(() => arweave.uploadTx(
+            transaction,
+            maxConcurrentUploadCount: 1,
+            onTransactionPosted: any(named: 'onTransactionPosted'),
+          )).called(1);
       verifyNever(() => turboUploadService.postDataItem(
             dataItem: any(named: 'dataItem'),
             wallet: any(named: 'wallet'),
@@ -359,6 +372,7 @@ void main() {
       when(() => arweave.uploadTx(
             any(),
             maxConcurrentUploadCount: any(named: 'maxConcurrentUploadCount'),
+            onTransactionPosted: any(named: 'onTransactionPosted'),
           )).thenThrow(Exception('the node went away'));
 
       final result = await uploader.publish(
@@ -368,6 +382,143 @@ void main() {
 
       expect(result.isFailed, isTrue);
       expect(result.reason, contains('could not be published'));
+    });
+  });
+
+  /// An L1 transaction is not posted in one piece.
+  ///
+  /// `TransactionUploader.upload` (arweave-dart v4.0.2, the pinned ref) awaits
+  /// `_postTransactionHeader()` and only then streams the chunks. So there is
+  /// a window — always open for an artifact, which runs to tens of MiB and is
+  /// therefore always many chunks — in which the transaction exists, will be
+  /// charged for, and has no data behind it.
+  ///
+  /// Reporting that as an ordinary failure tells the user nothing was spent
+  /// and invites the retry that prepares a second transaction and pays for it
+  /// too. These tests are about not doing that.
+  group('an L1 upload that failed after the transaction was posted', () {
+    /// Stands in for the real sequencing: the header is accepted, the
+    /// callback fires, and a chunk fails afterwards.
+    void headerPostedThenChunksFail() {
+      when(() => arweave.uploadTx(
+            any(),
+            maxConcurrentUploadCount: any(named: 'maxConcurrentUploadCount'),
+            onTransactionPosted: any(named: 'onTransactionPosted'),
+          )).thenAnswer((invocation) async {
+        (invocation.namedArguments[#onTransactionPosted] as void Function()?)
+            ?.call();
+        throw Exception('chunk 41 rejected after fifteen attempts');
+      });
+    }
+
+    test('is not reported as a failure that spent nothing', () async {
+      headerPostedThenChunksFail();
+
+      final result = await uploader.publish(
+        artifact(),
+        method: UploadMethod.ar,
+      );
+
+      expect(result.isPublished, isFalse);
+      expect(
+        result.isFailed,
+        isFalse,
+        reason: 'a transaction exists and will be paid for; calling that a '
+            'failure is what makes the user pay twice',
+      );
+      expect(result.isUncertain, isTrue);
+    });
+
+    test('carries the id of the transaction that was posted', () async {
+      headerPostedThenChunksFail();
+
+      final result = await uploader.publish(
+        artifact(),
+        method: UploadMethod.ar,
+      );
+
+      expect(
+        result.txId,
+        'transaction-id',
+        reason: 'the one useful thing to do with this outcome is look the '
+            'transaction up, which needs its id - knowable because a '
+            'transaction is signed before it is posted',
+      );
+    });
+
+    test('says that a second attempt pays a second time', () async {
+      headerPostedThenChunksFail();
+
+      final result = await uploader.publish(
+        artifact(),
+        method: UploadMethod.ar,
+      );
+
+      expect(result.reason, contains('transaction-id'));
+      expect(result.reason, contains('second time'));
+      expect(
+        result.reason,
+        isNot(contains('nothing was spent')),
+        reason: 'the sentence this outcome exists to stop being shown',
+      );
+    });
+
+    test('a failure before the header was accepted still spent nothing',
+        () async {
+      // The other side of the same window, and why the flag is set from the
+      // upload rather than from "we got as far as calling it": a refused
+      // header posts no transaction.
+      when(() => arweave.uploadTx(
+            any(),
+            maxConcurrentUploadCount: any(named: 'maxConcurrentUploadCount'),
+            onTransactionPosted: any(named: 'onTransactionPosted'),
+          )).thenThrow(Exception('the node refused the header'));
+
+      final result = await uploader.publish(
+        artifact(),
+        method: UploadMethod.ar,
+      );
+
+      expect(result.isFailed, isTrue);
+      expect(result.isUncertain, isFalse);
+      expect(result.txId, isNull);
+    });
+
+    test('a failure while preparing or signing spent nothing', () async {
+      when(() => transaction.sign(any()))
+          .thenThrow(Exception('the wallet said no'));
+
+      final result = await uploader.publish(
+        artifact(),
+        method: UploadMethod.ar,
+      );
+
+      expect(result.isFailed, isTrue);
+      expect(result.isUncertain, isFalse);
+      verifyNever(() => arweave.uploadTx(
+            any(),
+            maxConcurrentUploadCount: any(named: 'maxConcurrentUploadCount'),
+            onTransactionPosted: any(named: 'onTransactionPosted'),
+          ));
+    });
+
+    test('a Turbo failure is a plain failure, because it is one request',
+        () async {
+      // Turbo takes the whole data item in a single request: it accepted it
+      // or it did not. There is no half-posted data item to warn about, and
+      // saying there might be would be its own kind of dishonest.
+      when(() => turboUploadService.postDataItem(
+            dataItem: any(named: 'dataItem'),
+            wallet: any(named: 'wallet'),
+          )).thenThrow(Exception('turbo went away'));
+
+      final result = await uploader.publish(
+        artifact(),
+        method: UploadMethod.turbo,
+      );
+
+      expect(result.isFailed, isTrue);
+      expect(result.isUncertain, isFalse);
     });
   });
 }
