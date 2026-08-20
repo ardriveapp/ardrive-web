@@ -235,12 +235,38 @@ drive's figure, not a law — at 2.0 the crossover falls to roughly 55,000
 files). A drive of 50k heavily-revised files with long paths can reach the
 boundary; the D5 refusal is a path users will meet, not a theoretical one.
 
-Note which number the refusal weighs: the **uncompressed** payload. The
-artifact that actually travels is 9.55 MiB gzipped (§1.1), so a drive can be
-refused for being too large while the thing it would have published is small
-enough to send several times over. That is a deliberate consequence of sealing
-after compressing — the bound is on what AES-GCM must hold in one piece, not on
-what the network carries.
+Note which number the refusal weighs: the **uncompressed** payload — and that
+this is the *only* place that number appears. Measured end to end at 41,767
+files:
+
+| stage | size |
+|---|---|
+| serialised JSON — **what D5 weighs** | 52.16 MiB |
+| gzipped | 9.55 MiB |
+| signed ANS-104 data item | 9.55 MiB + 1,046 B of header |
+| **what AES-GCM encrypts** | 9.55 MiB |
+| what the network carries | 9.55 MiB |
+
+So the 100 MiB bound guards neither the cipher nor the transport: AES-GCM
+holds exactly what the network carries, 5.46× less than the figure being
+checked. An earlier revision of this section claimed the bound was "on what
+AES-GCM must hold in one piece" — that is wrong, and the measurement above is
+what disproves it.
+
+What the bound actually guards is the **producer's memory**, which is where
+the cost really lands. Building a payload of this size takes a process from a
+263 MiB baseline to a peak of roughly 950 MiB: the exported object graph adds
+~310 MiB, `jsonEncode` plus UTF-8 another ~175 MiB, and sealing sets a further
+high-water mark before releasing it. The consumer is cheaper — importing never
+set a new peak in the same run. That asymmetry is worth stating plainly:
+**producing an artifact is the expensive half, and it is the half that runs in
+the user's browser tab.**
+
+Two caveats on those figures. They are VM resident-set size, not a browser
+heap — and a browser is likely worse, because dart2js strings are UTF-16, so
+the 52 MiB of JSON is nearer 104 MB there, and a tab has a hard ceiling where
+this process had the operating system. Reproduce them with
+`test/drive_state/drive_state_scale_measurement_test.dart`.
 
 ### 2.4 Never hand an untrusted file to SQLite
 

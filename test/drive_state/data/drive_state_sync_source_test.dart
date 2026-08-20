@@ -172,6 +172,119 @@ void main() {
         mergeDuration: const Duration(milliseconds: 9),
       ));
 
+  /// Measured on a 41,767 file drive: re-importing the same artifact costs a
+  /// 9.55 MiB download, ~173,000 statements and about 8.5 seconds, and writes
+  /// zero rows. A successful import leaves `Block-End` and the watermark
+  /// *equal*, and the no-rollback guard refuses only `Block-End < watermark`,
+  /// so nothing stopped the next sync repeating all of it on the `autoSync`
+  /// interval, forever.
+  ///
+  /// These reuse one source across two `read`s on purpose — the record is per
+  /// session, and a fresh source per sync is exactly what would defeat it.
+  group('an artifact this session already imported', () {
+    test('is not fetched or imported a second time', () async {
+      final source = sourceFor(found(candidate(blockEnd: 900)));
+      stubImport(importedThrough(900));
+
+      final first = await source.read(
+        driveId: driveId,
+        ownerAddress: ownerAddress,
+        driveKey: driveKey,
+        lastBlockHeight: 100,
+      );
+      expect(first.artifactWasUsed, isTrue, reason: first.detail);
+
+      logged.clear();
+      // The first read fetched and imported legitimately; `verifyNever` counts
+      // every call ever made, so the second sync is what these must be about.
+      clearInteractions(arweave);
+      clearInteractions(importer);
+
+      final second = await source.read(
+        driveId: driveId,
+        ownerAddress: ownerAddress,
+        driveKey: driveKey,
+        // What the drive's watermark is after the first import: equal to
+        // Block-End, which is why the range guard does not catch this.
+        lastBlockHeight: 900,
+      );
+
+      expect(second.outcome, DriveStateOutcome.rangeAlreadyCovered);
+      expectExactlyOneOutcome(DriveStateOutcome.rangeAlreadyCovered);
+
+      // The download is the expensive half, and it must not happen at all.
+      verifyNever(() => arweave.getEntityDataFromNetwork(
+            txId: any(named: 'txId'),
+            largeBody: any(named: 'largeBody'),
+          ));
+      verifyNever(() => importer.import(
+            candidate: any(named: 'candidate'),
+            body: any(named: 'body'),
+            driveKey: any(named: 'driveKey'),
+            expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
+          ));
+    });
+
+    /// The distinction that makes this a check on identity and not on range.
+    /// An artifact covering ground the drive already holds can still carry
+    /// entities *this consumer's* sync skipped, and importing it is how those
+    /// are repaired — so a different artifact at the same height is still
+    /// worth reading. Widening the importer's guard to `<=` would lose that;
+    /// this does not.
+    test('does not block a different artifact at the same height', () async {
+      var current = candidate(blockEnd: 900);
+      final source = sourceFor(_SpyDiscovery(
+        () => DriveStateDiscoveryResult(candidates: [current]),
+      ));
+      stubImport(importedThrough(900));
+
+      await source.read(
+        driveId: driveId,
+        ownerAddress: ownerAddress,
+        driveKey: driveKey,
+        lastBlockHeight: 100,
+      );
+
+      current = candidate(blockEnd: 900, id: 'a-different-artifact');
+      logged.clear();
+
+      final second = await source.read(
+        driveId: driveId,
+        ownerAddress: ownerAddress,
+        driveKey: driveKey,
+        lastBlockHeight: 900,
+      );
+
+      expect(second.artifactWasUsed, isTrue, reason: second.detail);
+    });
+
+    test('is not remembered when the import did not succeed', () async {
+      final source = sourceFor(found(candidate(blockEnd: 900)));
+      stubImport(const DriveStateImportResult.rejected(
+        DriveStateOutcome.integrityFailed,
+        'a bad day at the gateway',
+      ));
+
+      await source.read(
+        driveId: driveId,
+        ownerAddress: ownerAddress,
+        driveKey: driveKey,
+        lastBlockHeight: 100,
+      );
+
+      // Next sync the gateway may answer differently, so it must be retried.
+      stubImport(importedThrough(900));
+      final second = await source.read(
+        driveId: driveId,
+        ownerAddress: ownerAddress,
+        driveKey: driveKey,
+        lastBlockHeight: 100,
+      );
+
+      expect(second.artifactWasUsed, isTrue, reason: second.detail);
+    });
+  });
+
   group('an artifact that imports', () {
     test('reports it used, once, and hands back the range it covered',
         () async {

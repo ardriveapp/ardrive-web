@@ -84,6 +84,13 @@ class DriveStateSyncSource {
   final ArweaveService _arweave;
   final DriveStateDiscovery _discovery;
   final DriveStateImporter _importer;
+
+  /// The artifact most recently imported into each drive, this session.
+  ///
+  /// Not a cache of anything - a record of work already done, so it is not
+  /// done again. See the check in [_attempt] for why identity is the
+  /// transaction id rather than the block range, and why this is per session.
+  final Map<String, String> _importedThisSession = {};
   final DriveStateOutcomeReporter _reporter;
   final int _maxCandidateAttempts;
 
@@ -197,6 +204,7 @@ class DriveStateSyncSource {
       tried++;
 
       result = await _attempt(
+        driveId: driveId,
         candidate: candidate,
         ownerAddress: ownerAddress,
         driveKey: driveKey,
@@ -237,11 +245,43 @@ class DriveStateSyncSource {
   /// and the import. Never throws - [read]'s outer net is the backstop, not
   /// the mechanism.
   Future<DriveStateSyncResult> _attempt({
+    required String driveId,
     required DriveStateArtifactCandidate candidate,
     required String ownerAddress,
     required SecretKey driveKey,
     required int lastBlockHeight,
   }) async {
+    // An artifact this session already imported into this drive.
+    //
+    // Measured on a 41,767 file drive: re-importing the same artifact costs a
+    // 9.55 MiB download, ~173,000 statements and about 8.5 seconds - and
+    // writes **zero** rows, because everything in it is already there. That
+    // is not a one-off. A successful import leaves `Block-End` and the drive's
+    // watermark *equal*, and the importer's no-rollback guard refuses only
+    // `Block-End < watermark`, so nothing stops the next sync from doing it
+    // all again, on the `autoSync` interval, forever.
+    //
+    // The guard has to stay `<` rather than become `<=`: an artifact whose
+    // range the drive already covers can still carry entities a *consumer's*
+    // sync skipped, and importing it is how those get repaired. What must not
+    // repeat is re-importing **this same artifact**, whose rows this drive
+    // demonstrably already holds. So the identity checked here is the
+    // transaction id, not the range - a different artifact at the same
+    // `Block-End` is still worth reading.
+    //
+    // Per session, deliberately. Persisting it would mean a schema migration
+    // to hold one transaction id per drive, and the cost this avoids is
+    // per-sync rather than per-launch: a user pays it once after a restart
+    // instead of every few minutes.
+    if (_importedThisSession[driveId] == candidate.txId) {
+      return DriveStateSyncResult._rejected(
+        DriveStateOutcome.rangeAlreadyCovered,
+        'this artifact was already imported into this drive during this '
+        'session',
+        txId: candidate.txId,
+      );
+    }
+
     // Cheap enough to be worth doing before a download of tens of megabytes,
     // and only ever an early exit: the authoritative version of this rule is
     // the importer's, against the drive row rather than this sync's
@@ -285,6 +325,13 @@ class DriveStateSyncSource {
       driveKey: driveKey,
       expectedOwnerAddress: ownerAddress,
     );
+
+    // Recorded only on success. A rejected artifact is not "work already
+    // done" - a fetch that failed or a payload that did not verify is worth
+    // retrying next sync, when the gateway may answer differently.
+    if (imported.outcome.artifactWasUsed) {
+      _importedThisSession[driveId] = candidate.txId;
+    }
 
     return DriveStateSyncResult._fromImport(imported, candidate);
   }
