@@ -4,6 +4,8 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/shared_file/shared_file_key_session.dart';
 import 'package:ardrive/pages/shared_file/shared_file_page.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/pages/shared_file/shared_file_ready_view.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/session_key_value_store.dart';
@@ -16,6 +18,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../test_utils/mocks.dart';
 
 class MockSharedFileCubit extends MockCubit<SharedFileState>
     implements SharedFileCubit {}
@@ -72,6 +76,10 @@ void main() {
   const wellFormedKey = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopQ';
 
   late MockSharedFileCubit cubit;
+  late MockDriveDao driveDao;
+  late MockArweaveService arweave;
+  late MockConfigService configService;
+  late MockProfileCubit profileCubit;
   late StreamController<SharedFileState> states;
 
   /// The value rendered beside [label] in the details drawer, scoped to that
@@ -163,18 +171,39 @@ void main() {
         mayStillBePropagating: mayStillBePropagating,
       );
 
+  /// The page's own dependencies, plus the four the preview reaches for.
+  ///
+  /// [FsEntryPreviewCubit] resolves `DriveDao`, `ProfileCubit`,
+  /// `ArweaveService` and `ConfigService` out of the tree when it is built.
+  /// Nothing here opened a preview while it was opt-in, so the harness never
+  /// carried them; now that the preview opens on arrival, every test builds one
+  /// and they are all required.
+  ///
+  /// They are inert: the preview is not what these tests are about, and a
+  /// preview that reaches the network from a widget test would be worse than
+  /// one that does nothing.
   Widget wrap(Widget child) {
-    return ArDriveTheme(
-      themeData: lightTheme(),
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [Locale('en', '')],
-        home: child,
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<DriveDao>.value(value: driveDao),
+        RepositoryProvider<ArweaveService>.value(value: arweave),
+        RepositoryProvider<ConfigService>.value(value: configService),
+      ],
+      child: BlocProvider<ProfileCubit>.value(
+        value: profileCubit,
+        child: ArDriveTheme(
+          themeData: lightTheme(),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', '')],
+            home: child,
+          ),
+        ),
       ),
     );
   }
@@ -209,6 +238,25 @@ void main() {
 
   setUp(() {
     cubit = MockSharedFileCubit();
+    driveDao = MockDriveDao();
+    arweave = MockArweaveService();
+    configService = MockConfigService();
+    profileCubit = MockProfileCubit();
+
+    when(() => profileCubit.state).thenReturn(ProfilePromptAdd());
+    // The preview reads the config the moment it is built, and reaches the
+    // gateway url out of it. A real AppConfig is simpler than stubbing the
+    // fields one refusal at a time.
+    when(() => configService.config).thenReturn(
+      AppConfig(
+        allowedDataItemSizeForTurbo: 1,
+        stripePublishableKey: 'stripePublishableKey',
+        arweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'Gateway',
+          url: 'https://example.com',
+        ),
+      ),
+    );
     states = StreamController<SharedFileState>.broadcast();
 
     when(() => cubit.fileId).thenReturn(fileId);
@@ -501,7 +549,9 @@ void main() {
         (tester) async {
       await pumpPage(tester, success());
 
-      expect(find.text('Q3 Report.pdf'), findsOneWidget);
+      // The preview opens on arrival and names the file too, so the name is
+      // legitimately on screen more than once.
+      expect(find.text('Q3 Report.pdf'), findsWidgets);
       expect(find.text('Download'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('sharedFileDownload_data-tx-newest')),
@@ -706,6 +756,36 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => cubit.showRevision(any())).called(1);
+    });
+
+    testWidgets('a version with no date is never dated 1970', (tester) async {
+      // The list seeds itself with the version the link named so that opening
+      // it costs nothing - but a link carries no timestamps, so that row has
+      // the epoch placeholder. Rendered, it read as 1 Jan 1970 and then
+      // silently corrected itself when the history arrived.
+      await pumpPage(
+        tester,
+        success(
+          revision: fileRevision(
+            dateCreated: SharedFileCubit.unknownDate,
+            lastModifiedDate: SharedFileCubit.unknownDate,
+          ),
+          activityRevisions: [
+            fileRevision(
+              dateCreated: SharedFileCubit.unknownDate,
+              lastModifiedDate: SharedFileCubit.unknownDate,
+            ),
+          ],
+          activityStatus: SharedFileActivityStatus.loading,
+        ),
+      );
+
+      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('1970'), findsNothing);
+      // Named by what it is instead, so the row still says something true.
+      expect(find.text('This link'), findsOneWidget);
     });
 
     testWidgets('a pinned link names its version pinned, and still lets go',

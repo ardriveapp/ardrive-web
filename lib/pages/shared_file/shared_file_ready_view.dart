@@ -91,7 +91,17 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// to look like a mistake.
   static const double _panePictureSize = 200;
 
-  bool _isPreviewOpen = false;
+  /// Open on arrival.
+  ///
+  /// The page exists to show someone a file, so making them ask to see it is
+  /// one click that should not exist. The pane is laid out either way on the
+  /// desktop card, so this fills a box that was already there rather than
+  /// moving anything; the toggle stays, so it can still be closed.
+  ///
+  /// A type that cannot be shown answers with its own sentence rather than
+  /// nothing, which is a better answer than making the recipient press Preview
+  /// to be told the same thing.
+  bool _isPreviewOpen = true;
 
   /// Whether a download is in flight.
   ///
@@ -1118,6 +1128,20 @@ class _SharedFileVersionRow extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colors;
     final subtle = SharedFileColors.subtle(context);
 
+    final hasDate = !SharedFileCubit.isUnknownDate(revision.dateCreated);
+
+    // "Pinned" says the sharer chose this version; "This link" says only that
+    // the link carried it. On a pinned link the first is the fact worth
+    // knowing, and it is what makes the way back obvious after selecting
+    // something else.
+    final label = isFromLink
+        ? (isPinned
+            ? appLocalizationsOf(context).sharedFileVersionPinned
+            : appLocalizationsOf(context).sharedFileVersionFromLink)
+        : (isNewest
+            ? appLocalizationsOf(context).sharedFileVersionLatest
+            : null);
+
     return Semantics(
       selected: isSelected,
       inMutuallyExclusiveGroup: true,
@@ -1135,23 +1159,41 @@ class _SharedFileVersionRow extends StatelessWidget {
             children: [
               _VersionRadio(isSelected: isSelected),
               const SizedBox(width: 11),
-              Expanded(
-                child: ArDriveTooltip(
-                  // The row shows the short date so that it still fits beside
-                  // a size and a chip on a phone; the exact timestamp is one
-                  // hover away, the same pairing the drive explorer uses.
-                  message: formatDateToUtcString(revision.dateCreated),
+              // A row's label is what identifies that version, which is
+              // normally its date. The row seeded from the link has no date to
+              // give - a link carries no timestamps - so it is named by what it
+              // is instead, and its chip is not repeated after the label.
+              //
+              // Rendering the placeholder would put "Jan 1, 1970" in front of
+              // the recipient and then silently correct it when the history
+              // arrived, which is exactly what it looked like.
+              if (hasDate)
+                Expanded(
+                  child: ArDriveTooltip(
+                    // The row shows the short date so that it still fits beside
+                    // a size and a chip on a phone; the exact timestamp is one
+                    // hover away, the same pairing the drive explorer uses.
+                    message: formatDateToUtcString(revision.dateCreated),
+                    child: Text(
+                      yMMdDateFormatter.format(revision.dateCreated),
+                      overflow: TextOverflow.ellipsis,
+                      style: isSelected
+                          ? ArDriveTypography.body
+                              .captionBold(color: colors.themeFgDefault)
+                          : ArDriveTypography.body
+                              .captionRegular(color: colors.themeFgDefault),
+                    ),
+                  ),
+                )
+              else
+                Expanded(
                   child: Text(
-                    yMMdDateFormatter.format(revision.dateCreated),
+                    label ?? '',
                     overflow: TextOverflow.ellipsis,
-                    style: isSelected
-                        ? ArDriveTypography.body
-                            .captionBold(color: colors.themeFgDefault)
-                        : ArDriveTypography.body
-                            .captionRegular(color: colors.themeFgDefault),
+                    style: ArDriveTypography.body
+                        .captionBold(color: colors.themeFgDefault),
                   ),
                 ),
-              ),
               const SizedBox(width: 8),
               Text(
                 filesize(revision.size),
@@ -1160,22 +1202,9 @@ class _SharedFileVersionRow extends StatelessWidget {
               // At most one chip. A row that is both the newest and the one the
               // link named would otherwise carry two labels saying much the
               // same thing, and on a phone that is what pushes it over.
-              if (isFromLink) ...[
+              if (hasDate && label != null) ...[
                 const SizedBox(width: 8),
-                _VersionChip(
-                  // "Pinned" says the sharer chose this version; "This link"
-                  // says only that the link carried it. On a pinned link the
-                  // first is the fact worth knowing, and it is what makes the
-                  // way back obvious after selecting something else.
-                  isPinned
-                      ? appLocalizationsOf(context).sharedFileVersionPinned
-                      : appLocalizationsOf(context).sharedFileVersionFromLink,
-                ),
-              ] else if (isNewest) ...[
-                const SizedBox(width: 8),
-                _VersionChip(
-                  appLocalizationsOf(context).sharedFileVersionLatest,
-                ),
+                _VersionChip(label),
               ],
             ],
           ),

@@ -1731,8 +1731,8 @@ class SharedFileCubit extends Cubit<SharedFileState> {
         parentFolderId: '',
         name: payload.name ?? '',
         size: payload.size ?? 0,
-        lastModifiedDate: _unknownDate,
-        dateCreated: _unknownDate,
+        lastModifiedDate: unknownDate,
+        dateCreated: unknownDate,
         metadataTxId: payload.metadataTxId ?? '',
         dataTxId: payload.dataTxId!,
         dataContentType: payload.contentType,
@@ -1853,7 +1853,14 @@ class SharedFileCubit extends Cubit<SharedFileState> {
   bool _isStale(int resolution) => isClosed || resolution != _resolution;
 
   /// The link carries no timestamps. Rendered as "unknown", never as 1970.
-  static final _unknownDate = DateTime.fromMillisecondsSinceEpoch(0);
+  static final unknownDate = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// Whether [date] is the placeholder a link-derived revision carries.
+  ///
+  /// A link carries no timestamps, so anything painted from one has this in
+  /// place of a date. The UI asks rather than rendering it: shown, it reads as
+  /// 1 January 1970, which is worse than showing nothing.
+  static bool isUnknownDate(DateTime date) => date == unknownDate;
 }
 
 /// A revision resolved straight from its metadata transaction.
