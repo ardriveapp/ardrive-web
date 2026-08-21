@@ -788,6 +788,28 @@ void main() {
       expect(find.text('Shared'), findsOneWidget);
     });
 
+    testWidgets('hiding the preview does not unload it', (tester) async {
+      // Hiding used to remove the subtree, which disposed the preview cubit -
+      // so reopening fetched the file again. On a rate-limited connection that
+      // second fetch is one that can fail, meaning hiding a file you already
+      // had could lose it.
+      //
+      // The provider is keyed on the bytes it previews, so its presence is
+      // exactly the question "is the preview still loaded".
+      const preview = ValueKey('data-tx-newest');
+
+      await pumpPage(tester, success());
+
+      expect(find.byKey(preview, skipOffstage: false), findsOneWidget);
+
+      await tester.tap(find.text('Hide preview'));
+      await tester.pumpAndSettle();
+
+      // Off screen, still mounted: nothing to fetch again on the way back.
+      expect(find.byKey(preview, skipOffstage: false), findsOneWidget);
+      expect(find.byKey(preview), findsNothing);
+    });
+
     testWidgets('a pinned link names its version pinned, and still lets go',
         (tester) async {
       // Pinning is the sharer saying which version they mean, not a limit on

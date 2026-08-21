@@ -286,10 +286,19 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       if (previewIsInline && state.detailsAreResolved) ...[
         const SizedBox(height: 8),
         _buildPreviewToggle(context),
-        if (_isPreviewOpen) ...[
-          const SizedBox(height: 8),
-          _buildPreview(context, revision, isInline: true),
-        ],
+        // Kept mounted while hidden, for the reason given on the desktop
+        // pane: unloading it turns "hide" into "download again".
+        Visibility(
+          visible: _isPreviewOpen,
+          maintainState: true,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              _buildPreview(context, revision, isInline: true),
+            ],
+          ),
+        ),
       ],
       if (state.fileKey != null) ...[
         const SizedBox(height: 16),
@@ -364,9 +373,32 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
           Expanded(
             // Centred the way `DetailsPanel` centres the same widget.
             child: Center(
-              child: _isPreviewOpen
-                  ? _buildPreview(context, revision, isInline: false)
-                  : _buildPaneAtRest(context, revision),
+              // Both are built; only one is shown.
+              //
+              // Swapping them meant hiding the preview *unloaded* it: the
+              // subtree went, its cubit went with it, and reopening fetched the
+              // file again. On a connection the gateway is rate limiting, that
+              // second fetch is one that can simply fail - so hiding a file you
+              // had could lose it.
+              //
+              // `maintainState` keeps the preview mounted and its bytes in
+              // hand while it is out of sight. Nothing is cached anywhere new;
+              // the thing just never unloads.
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Visibility(
+                    visible: !_isPreviewOpen,
+                    maintainState: true,
+                    child: _buildPaneAtRest(context, revision),
+                  ),
+                  Visibility(
+                    visible: _isPreviewOpen,
+                    maintainState: true,
+                    child: _buildPreview(context, revision, isInline: false),
+                  ),
+                ],
+              ),
             ),
           ),
           if (widget.state.detailsAreResolved) _buildPaneBar(context),
