@@ -750,7 +750,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Latest'), findsOneWidget);
-      expect(find.text('This link'), findsOneWidget);
+      expect(find.text('Shared'), findsOneWidget);
 
       await tester.tap(find.text('Latest'));
       await tester.pumpAndSettle();
@@ -785,7 +785,7 @@ void main() {
 
       expect(find.textContaining('1970'), findsNothing);
       // Named by what it is instead, so the row still says something true.
-      expect(find.text('This link'), findsOneWidget);
+      expect(find.text('Shared'), findsOneWidget);
     });
 
     testWidgets('a pinned link names its version pinned, and still lets go',
@@ -810,7 +810,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Pinned'), findsOneWidget);
-      expect(find.text('This link'), findsNothing);
+      expect(find.text('Shared'), findsNothing);
 
       // And the newer one is still selectable.
       await tester.tap(find.text('Latest'));

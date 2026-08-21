@@ -1137,7 +1137,7 @@ class _SharedFileVersionRow extends StatelessWidget {
     final label = isFromLink
         ? (isPinned
             ? appLocalizationsOf(context).sharedFileVersionPinned
-            : appLocalizationsOf(context).sharedFileVersionFromLink)
+            : appLocalizationsOf(context).sharedFileSharedVersion)
         : (isNewest
             ? appLocalizationsOf(context).sharedFileVersionLatest
             : null);
@@ -1223,7 +1223,9 @@ class _VersionRadio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final theme = ArDriveTheme.of(context).themeData;
+    final colors = theme.colors;
+    final colorTokens = theme.colorTokens;
 
     return ExcludeSemantics(
       child: Container(
@@ -1231,10 +1233,11 @@ class _VersionRadio extends StatelessWidget {
         height: 16,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isSelected ? colorTokens.containerRed : null,
+          color: isSelected ? colors.themeFgDefault : null,
           border: Border.all(
-            color: isSelected ? colorTokens.containerRed : colorTokens.strokeMid,
-            width: isSelected ? 5 : 1.5,
+            color:
+                isSelected ? colors.themeFgDefault : colorTokens.strokeMid,
+            width: isSelected ? 4.5 : 1.5,
           ),
         ),
       ),

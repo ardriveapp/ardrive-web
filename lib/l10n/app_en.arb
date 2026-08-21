@@ -2370,10 +2370,6 @@
   "@sharedFileVersionPinned": {
     "description": "Chip marking the version a pinned share link deliberately points at, as opposed to merely the version the link carried"
   },
-  "sharedFileVersionFromLink": "This link",
-  "@sharedFileVersionFromLink": {
-    "description": "Chip marking the version the share link points at"
-  },
   "sharedFileVersionsLooking": "Looking for other versions\u2026",
   "@sharedFileVersionsLooking": {
     "description": "Shown while the rest of a file's version history is being fetched"
