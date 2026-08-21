@@ -930,14 +930,57 @@ class SharedFileDetailsDrawer extends StatelessWidget {
   final bool detailsAreResolved;
 
   @override
+  Widget build(BuildContext context) => _SharedFileDrawer(
+        title: appLocalizationsOf(context).sharedFileDetailsDrawerTitle,
+        children: [
+          SharedFileDetailsContent(
+            revision: revision,
+            ownerAddress: ownerAddress,
+            licenseName: licenseName,
+            detailsAreResolved: detailsAreResolved,
+          ),
+        ],
+      );
+}
+
+/// What the details panel says, without the panel.
+///
+/// Split out from [SharedFileDetailsDrawer] so the same rows can be a tab's
+/// content as easily as a disclosure's: the page is moving from stacked
+/// accordions - each of which resized the card - to one panel that swaps its
+/// contents in place. This holds the content half of that.
+class SharedFileDetailsContent extends StatelessWidget {
+  const SharedFileDetailsContent({
+    super.key,
+    required this.revision,
+    this.ownerAddress,
+    this.licenseName,
+    this.detailsAreResolved = true,
+  });
+
+  final FileRevision revision;
+  final String? ownerAddress;
+  final String? licenseName;
+
+  /// Whether [revision] holds the file's own record rather than what the link
+  /// claimed.
+  ///
+  /// A v2 link carries no timestamps, so until the metadata resolves the dates
+  /// on [revision] are the epoch placeholder. Showing those would put
+  /// "1970-01-01" in front of a recipient as though it were the upload date,
+  /// which is worse than showing nothing.
+  final bool detailsAreResolved;
+
+  @override
   Widget build(BuildContext context) {
     final ownerAddress = this.ownerAddress;
     final licenseName = this.licenseName;
 
     final contentType = revision.dataContentType;
 
-    return _SharedFileDrawer(
-      title: appLocalizationsOf(context).sharedFileDetailsDrawerTitle,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Type and dates lead, ahead of the identifiers. A recipient who was
         // sent a link by a stranger has almost no way to judge what they are
@@ -1058,18 +1101,81 @@ class SharedFileVersionsDrawer extends StatelessWidget {
   final bool isPinned;
 
   @override
+  Widget build(BuildContext context) => _SharedFileDrawer(
+        title: appLocalizationsOf(context).sharedFileVersionHistoryTitle,
+        onExpansionChanged: (isExpanded) {
+          if (isExpanded) {
+            onOpened();
+          }
+        },
+        children: [
+          SharedFileVersionsContent(
+            revisions: revisions,
+            status: status,
+            sharedRevision: sharedRevision,
+            currentRevision: currentRevision,
+            onOpened: onOpened,
+            onSelected: onSelected,
+            isDisabled: isDisabled,
+            isPinned: isPinned,
+          ),
+        ],
+      );
+}
+
+/// The version list, without the panel around it.
+///
+/// Split out from [SharedFileVersionsDrawer] for the same reason the details
+/// rows were: the page is moving from stacked accordions - each of which
+/// resized the card - to one panel that swaps its contents in place.
+class SharedFileVersionsContent extends StatelessWidget {
+  const SharedFileVersionsContent({
+    super.key,
+    required this.revisions,
+    required this.status,
+    required this.sharedRevision,
+    required this.currentRevision,
+    required this.onOpened,
+    required this.onSelected,
+    this.isDisabled = false,
+    this.isPinned = false,
+  });
+
+  /// Newest first. Seeded with the shared revision the moment the list opens.
+  final List<FileRevision> revisions;
+
+  final SharedFileActivityStatus status;
+
+  /// The revision the link named - the one that wears the "shared" chip.
+  final FileRevision sharedRevision;
+
+  /// The revision the page is currently showing and would download.
+  final FileRevision currentRevision;
+
+  /// Asks the resolver for the history. Answered once, ignored while it is
+  /// loading or loaded, and tried again after a failure - so it doubles as the
+  /// retry.
+  final VoidCallback onOpened;
+
+  /// Called with the revision the recipient picked.
+  final ValueChanged<FileRevision> onSelected;
+
+  /// True while a download or another selection is in flight - nothing may
+  /// move the target while bytes are on their way.
+  final bool isDisabled;
+
+  /// Whether the link deliberately names one revision.
+  final bool isPinned;
+
+  @override
   Widget build(BuildContext context) {
     final isLoading = status == SharedFileActivityStatus.notLoaded ||
         status == SharedFileActivityStatus.loading;
     final hasFailed = status == SharedFileActivityStatus.failed;
 
-    return _SharedFileDrawer(
-      title: appLocalizationsOf(context).sharedFileVersionHistoryTitle,
-      onExpansionChanged: (isExpanded) {
-        if (isExpanded) {
-          onOpened();
-        }
-      },
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (revisions.length > 1)
           Padding(
