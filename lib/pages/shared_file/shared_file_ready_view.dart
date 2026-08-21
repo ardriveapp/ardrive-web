@@ -84,6 +84,16 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// sentence gets the height of the sentence; see [_previewFillsItsBox].
   static const double _inlinePreviewHeight = 360;
 
+  /// The info panel's height, fixed so that swapping tabs never resizes it.
+  ///
+  /// Wide matches the preview pane beside it, so the two regions line up.
+  /// Narrow is shorter than the tallest tab on purpose: a phone column is
+  /// already scrolling, and a panel tall enough for every version of every file
+  /// would push the preview off the top of the screen.
+  static const double _infoPanelHeightWide = _previewPaneHeight;
+
+  static const double _infoPanelHeightNarrow = 300;
+
   /// The largest the file's own thumbnail is drawn in the preview pane.
   ///
   /// ArDrive generates thumbnails at a 100px minimum edge, so this is roughly
@@ -310,28 +320,35 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         ),
       ],
       const SizedBox(height: 16),
-      SharedFileDetailsDrawer(
-        revision: revision,
-        ownerAddress: state.ownerAddress ?? payload?.ownerAddress,
-        licenseName: state.latestLicense?.meta.nameWithShortName,
-        detailsAreResolved: state.detailsAreResolved,
-      ),
-      SharedFileVersionsDrawer(
-        revisions: state.activityRevisions,
-        status: state.activityStatus,
-        currentRevision: revision,
-        isPinned: state.isPinned,
-        // Nothing may move the target while bytes are on their way, and
-        // nothing may start a second change while one is running - the same
-        // guard the freshness banner's actions use.
-        isDisabled: _isDownloading || _isChangingRevision,
-        onSelected: (picked) => _changeRevision(
-          () => context.read<SharedFileCubit>().showRevision(picked),
+      // One panel, two tabs, one height. These were two stacked accordions, so
+      // opening either pushed everything below it down and reading a date
+      // moved the download button.
+      SharedFileInfoPanel(
+        height: previewIsInline
+            ? _infoPanelHeightNarrow
+            : _infoPanelHeightWide,
+        onVersionsOpened: () => context.read<SharedFileCubit>().loadActivity(),
+        details: SharedFileDetailsContent(
+          revision: revision,
+          ownerAddress: state.ownerAddress ?? payload?.ownerAddress,
+          licenseName: state.latestLicense?.meta.nameWithShortName,
+          detailsAreResolved: state.detailsAreResolved,
         ),
-        // The revision the link named, which stays marked as the shared one
-        // even while the newest is being shown.
-        sharedRevision: state.sharedRevision,
-        onOpened: () => context.read<SharedFileCubit>().loadActivity(),
+        versions: SharedFileVersionsContent(
+          revisions: state.activityRevisions,
+          status: state.activityStatus,
+          currentRevision: revision,
+          sharedRevision: state.sharedRevision,
+          isPinned: state.isPinned,
+          // Nothing may move the target while bytes are on their way, and
+          // nothing may start a second change while one is running - the same
+          // guard the freshness banner's actions use.
+          isDisabled: _isDownloading || _isChangingRevision,
+          onOpened: () => context.read<SharedFileCubit>().loadActivity(),
+          onSelected: (picked) => _changeRevision(
+            () => context.read<SharedFileCubit>().showRevision(picked),
+          ),
+        ),
       ),
     ];
   }
@@ -1006,20 +1023,6 @@ class SharedFileDetailsContent extends StatelessWidget {
             canCopy: false,
           ),
         ],
-        _SharedFileDetailRow(
-          label: appLocalizationsOf(context).fileID,
-          value: revision.fileId,
-        ),
-        if (revision.dataTxId.isNotEmpty)
-          _SharedFileDetailRow(
-            label: appLocalizationsOf(context).sharedFileDetailsTransaction,
-            value: revision.dataTxId,
-          ),
-        if (revision.metadataTxId.isNotEmpty)
-          _SharedFileDetailRow(
-            label: appLocalizationsOf(context).sharedFileDetailsMetadata,
-            value: revision.metadataTxId,
-          ),
         if (ownerAddress != null && ownerAddress.isNotEmpty)
           _SharedFileDetailRow(
             label: appLocalizationsOf(context).sharedFileDetailsOwner,
@@ -1031,6 +1034,32 @@ class SharedFileDetailsContent extends StatelessWidget {
             value: licenseName,
             canCopy: false,
           ),
+        // The identifiers, one step further in.
+        //
+        // This file's own rule is that a recipient should be able to get their
+        // file without ever learning what a transaction id is - and until the
+        // details became a tab, a closed drawer was what kept that true. A tab
+        // that opens by default cannot, so the ids move behind their own
+        // disclosure and the tab leads with what a person can actually use.
+        _SharedFileDrawer(
+          title: appLocalizationsOf(context).sharedFileTransactionDetails,
+          children: [
+            _SharedFileDetailRow(
+              label: appLocalizationsOf(context).fileID,
+              value: revision.fileId,
+            ),
+            if (revision.dataTxId.isNotEmpty)
+              _SharedFileDetailRow(
+                label: appLocalizationsOf(context).sharedFileDetailsTransaction,
+                value: revision.dataTxId,
+              ),
+            if (revision.metadataTxId.isNotEmpty)
+              _SharedFileDetailRow(
+                label: appLocalizationsOf(context).sharedFileDetailsMetadata,
+                value: revision.metadataTxId,
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -1402,6 +1431,150 @@ class _VersionChip extends StatelessWidget {
         label,
         style: ArDriveTypography.body.captionBold(
           color: SharedFileColors.subtle(context),
+        ),
+      ),
+    );
+  }
+}
+
+/// Everything *about* the file, in a panel that does not change size.
+///
+/// The card used to carry two accordions and a preview toggle, so opening any
+/// of them pushed everything below it down: reading a date moved the download
+/// button. Details and Versions are tabs here instead. They swap in place, the
+/// panel keeps its height, and nothing outside it moves.
+///
+/// The height is fixed rather than fitted for exactly that reason - a panel
+/// sized to its tallest tab would still jump between them. Content longer than
+/// the panel scrolls inside it.
+class SharedFileInfoPanel extends StatefulWidget {
+  const SharedFileInfoPanel({
+    super.key,
+    required this.details,
+    required this.versions,
+    required this.onVersionsOpened,
+    required this.height,
+  });
+
+  final Widget details;
+  final Widget versions;
+
+  /// Asks the resolver for the history, the first time the Versions tab is
+  /// chosen. The history costs one metadata fetch per revision, so it stays
+  /// unasked-for until somebody looks.
+  final VoidCallback onVersionsOpened;
+
+  final double height;
+
+  @override
+  State<SharedFileInfoPanel> createState() => _SharedFileInfoPanelState();
+}
+
+class _SharedFileInfoPanelState extends State<SharedFileInfoPanel> {
+  int _tab = 0;
+
+  void _select(int tab) {
+    if (tab == _tab) {
+      return;
+    }
+
+    setState(() => _tab = tab);
+
+    if (tab == 1) {
+      widget.onVersionsOpened();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+
+    return Container(
+      height: widget.height,
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.themeBorderDefault),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _SharedFileTab(
+                    label: appLocalizationsOf(context)
+                        .sharedFileDetailsDrawerTitle,
+                    isSelected: _tab == 0,
+                    onSelected: () => _select(0),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: _SharedFileTab(
+                    label: appLocalizationsOf(context)
+                        .sharedFileVersionHistoryTitle,
+                    isSelected: _tab == 1,
+                    onSelected: () => _select(1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(14, 2, 14, 14),
+              child: _tab == 0 ? widget.details : widget.versions,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One of the panel's two tabs.
+class _SharedFileTab extends StatelessWidget {
+  const _SharedFileTab({
+    required this.label,
+    required this.isSelected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+
+    return Semantics(
+      selected: isSelected,
+      button: true,
+      child: InkWell(
+        onTap: isSelected ? null : onSelected,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          // The same floor the version rows use, so a tab is never a smaller
+          // target than the list it opens.
+          constraints: const BoxConstraints(minHeight: 44),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? colors.themeBgSubtle : null,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            label,
+            style: isSelected
+                ? ArDriveTypography.body.captionBold(
+                    color: colors.themeFgDefault,
+                  )
+                : ArDriveTypography.body.captionRegular(
+                    color: SharedFileColors.subtle(context),
+                  ),
+          ),
         ),
       ),
     );

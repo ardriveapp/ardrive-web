@@ -2146,6 +2146,10 @@
   "@sharedFileAccessKeyStaysOnThisDevice": {
     "description": "Reassurance shown under the access key field on the shared file page"
   },
+  "sharedFileTransactionDetails": "Transaction details",
+  "@sharedFileTransactionDetails": {
+    "description": "Nested disclosure inside the file details tab, holding the identifiers a recipient never needs to see"
+  },
   "sharedFileDetailsDrawerTitle": "File details",
   "@sharedFileDetailsDrawerTitle": {
     "description": "Title of the collapsed drawer holding the technical details of a shared file"

@@ -558,11 +558,13 @@ void main() {
         findsOneWidget,
       );
 
-      // Nothing technical before the recipient asks for it.
+      // Nothing technical before the recipient asks for it. The details tab
+      // is open by default now, so what keeps that true is the identifiers
+      // sitting one step further in.
       expect(find.text('data-tx-newest'), findsNothing);
       expect(find.text('metadata-tx'), findsNothing);
 
-      await tester.tap(find.byType(ExpansionTile).first);
+      await tester.tap(find.text('Transaction details'));
       await tester.pumpAndSettle();
 
       expect(find.text('data-tx-newest'), findsOneWidget);
@@ -578,9 +580,6 @@ void main() {
       // the sole date on the page sat inside the version history, which is
       // collapsed and not fetched until opened.
       await pumpPage(tester, success());
-
-      await tester.tap(find.byType(ExpansionTile).first);
-      await tester.pumpAndSettle();
 
       // Each value is scoped to the row its label is in, so two rows cannot
       // satisfy each other's assertion - a swap between created and modified
@@ -604,7 +603,7 @@ void main() {
 
       verifyNever(() => cubit.loadActivity());
 
-      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.tap(find.text('Version history'));
       await tester.pump();
 
       verify(() => cubit.loadActivity()).called(1);
@@ -633,7 +632,7 @@ void main() {
         'spins for ever', (tester) async {
       await pumpPage(tester, success());
 
-      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.tap(find.text('Version history'));
       await tester.pump();
 
       states.add(success(activityStatus: SharedFileActivityStatus.failed));
@@ -648,7 +647,7 @@ void main() {
         (tester) async {
       await pumpPage(tester, success());
 
-      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.tap(find.text('Version history'));
       await tester.pump();
 
       states.add(success(activityStatus: SharedFileActivityStatus.loaded));
@@ -699,9 +698,6 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(ExpansionTile).first);
-      await tester.pumpAndSettle();
-
       expect(find.text('Date created'), findsNothing);
       expect(find.text('Last updated'), findsNothing);
       expect(find.textContaining('1970'), findsNothing);
@@ -722,7 +718,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.tap(find.text('Version history'));
       await tester.pumpAndSettle();
 
       expect(
@@ -746,7 +742,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.tap(find.text('Version history'));
       await tester.pumpAndSettle();
 
       expect(find.text('Latest'), findsOneWidget);
@@ -780,7 +776,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.tap(find.text('Version history'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('1970'), findsNothing);
@@ -828,7 +824,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.tap(find.text('Version history'));
       await tester.pumpAndSettle();
 
       expect(find.text('Pinned'), findsOneWidget);
@@ -1086,8 +1082,8 @@ void main() {
       // An open drawer can push the card past the bottom of a phone, so each
       // header is scrolled to before it is pressed.
       for (final drawer in [
-        find.byType(ExpansionTile).first,
-        find.byType(ExpansionTile).last,
+        find.text('Version history'),
+        find.text('File details'),
       ]) {
         await tester.ensureVisible(drawer);
         await tester.pumpAndSettle();
