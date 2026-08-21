@@ -266,7 +266,7 @@ class _RawTransactionReadyViewState extends State<_RawTransactionReadyView> {
 
 /// Where the protocol lives, one deliberate tap away.
 ///
-/// Mirrors `SharedFileDetailsDrawer`, whose row and drawer helpers are private
+/// Mirrors `SharedFileDetailsContent`, whose row and drawer helpers are private
 /// to `shared_file_ready_view.dart` and are built around a `FileRevision` that a
 /// raw transaction does not have. Extracting them would mean reshaping the
 /// recipient page's ready view around a second caller for two rows; this copy

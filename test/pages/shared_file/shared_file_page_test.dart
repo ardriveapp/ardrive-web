@@ -1055,12 +1055,12 @@ void main() {
       expect(download.bottom, lessThanOrEqualTo(laptop.height));
       expect(download.height, greaterThanOrEqualTo(44));
 
-      // Download stays a button, not a 1000px banner, and it stays on the
-      // reading side of the card - to the left of the preview, and above it,
-      // so it is the first thing found by eye, pointer and Tab key alike.
+      // Download stays a button, not a 1000px banner, and it stays ahead of
+      // the file itself - in the header across the top rather than beside the
+      // preview, so it is the first thing found by eye, pointer and Tab key
+      // alike whatever the two regions below are doing.
       expect(download.width, lessThanOrEqualTo(368));
-      expect(download.right, lessThanOrEqualTo(pane.left));
-      expect(download.top, lessThan(pane.bottom));
+      expect(download.bottom, lessThanOrEqualTo(pane.top));
       expect(tester.takeException(), isNull);
     });
 
