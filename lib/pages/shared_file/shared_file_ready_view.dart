@@ -58,6 +58,14 @@ class SharedFileReadyView extends StatefulWidget {
   State<SharedFileReadyView> createState() => _SharedFileReadyViewState();
 }
 
+/// The height every row in the info panel sits on, in both tabs.
+///
+/// 44 is the smallest a touch target may be, which is what the copy controls
+/// and the version rows were already using; holding the detail rows to it as
+/// well is what makes the two lists read as one instead of alternating between
+/// two rhythms.
+const double _rowHeight = 44;
+
 /// The preview pane, which a widget test measures to prove that opening the
 /// preview cannot move anything.
 @visibleForTesting
@@ -86,7 +94,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// would push the preview off the top of the screen.
   static const double _infoPanelHeightWide = _previewPaneHeight;
 
-  static const double _infoPanelHeightNarrow = 300;
+
 
   /// The largest the file's own thumbnail is drawn in the preview pane.
   ///
@@ -166,7 +174,11 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
           ),
         ],
         const SizedBox(height: 16),
-        _buildInfoPanel(context, revision, height: _infoPanelHeightNarrow),
+        // No fixed height on a phone: the column already scrolls, and a panel
+        // that scrolled inside it would put a second scrollbar under the
+        // thumb - and would hide the transaction details behind it rather than
+        // letting the card grow to hold them.
+        _buildInfoPanel(context, revision),
       ],
     );
   }
@@ -340,7 +352,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   Widget _buildInfoPanel(
     BuildContext context,
     FileRevision revision, {
-    required double height,
+    double? height,
   }) {
     final state = widget.state;
     final payload = state.payload;
@@ -383,10 +395,9 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// as something that failed to load, so at rest the pane shows the file's own
   /// thumbnail when the link carried one - real content, already fetched, and
   /// the closest thing to the file itself that costs nothing - and otherwise a
-  /// deliberate placeholder that says what the pane is for. The bar along the
-  /// bottom is the only thing that opens and closes the preview, and it sits in
-  /// the same place in both states so that pressing it never moves it out from
-  /// under the pointer or drops the keyboard's focus.
+  /// deliberate placeholder that says what the pane is for - and the whole box
+  /// is the control that opens it, so there is nothing small to aim at and
+  /// nothing to move out from under the pointer.
   ///
   /// Nothing here is fetched before it is asked for. Opening the preview
   /// automatically would spend every desktop recipient's bandwidth on bytes
@@ -437,13 +448,23 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
               ),
             ),
           ),
-          if (widget.state.detailsAreResolved) _buildPaneBar(context),
+          if (widget.state.detailsAreResolved && _isPreviewOpen)
+            _buildPaneBar(context),
         ],
       ),
     );
   }
 
-  /// The pane before anything has been asked of it.
+  /// The pane before anything has been asked of it - and the way in.
+  ///
+  /// Pressing the box shows the file. It is already the size and shape of the
+  /// preview, carrying the file's own thumbnail where the preview will be, so
+  /// it reads as the thing it opens; a separate "Preview" button below it was
+  /// a second control for a box that already looked pressable.
+  ///
+  /// Closing keeps its own control, in the bar under the open preview: a
+  /// recipient who has decided they do not want to look at what a stranger sent
+  /// them should not have to find the picture to get rid of it.
   Widget _buildPaneAtRest(BuildContext context, FileRevision revision) {
     final state = widget.state;
     final contentType = revision.dataContentType ?? state.payload?.contentType;
@@ -459,36 +480,47 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       ),
     );
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (thumbnailTxId != null)
-            SharedFileThumbnail(
-              txId: thumbnailTxId,
-              size: _panePictureSize,
-              // The picture is of the file, and here it is the picture the
-              // recipient came to look at rather than a 44px decoration.
-              fit: BoxFit.contain,
-              semanticLabel: revision.name.isEmpty ? null : revision.name,
-              isPrivate: state.fileKey != null,
-              fileKey: state.fileKey,
-              fallback: _buildIconTile(context, icon),
-            )
-          else
-            _buildIconTile(context, icon),
-          const SizedBox(height: 16),
-          Text(
-            state.detailsAreResolved
-                ? appLocalizationsOf(context).sharedFilePreviewPaneHint
-                : appLocalizationsOf(context).sharedFileLoadingDetails,
-            textAlign: TextAlign.center,
-            style: ArDriveTypography.body.captionRegular(
-              color: SharedFileColors.subtle(context),
-            ),
+    final canOpen = state.detailsAreResolved;
+
+    return Semantics(
+      button: canOpen,
+      label: canOpen ? appLocalizationsOf(context).preview : null,
+      child: InkWell(
+        onTap: canOpen
+            ? () => setState(() => _isPreviewOpen = true)
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (thumbnailTxId != null)
+                SharedFileThumbnail(
+                  txId: thumbnailTxId,
+                  size: _panePictureSize,
+                  // The picture is of the file, and here it is the picture the
+                  // recipient came to look at rather than a 44px decoration.
+                  fit: BoxFit.contain,
+                  semanticLabel: revision.name.isEmpty ? null : revision.name,
+                  isPrivate: state.fileKey != null,
+                  fileKey: state.fileKey,
+                  fallback: _buildIconTile(context, icon),
+                )
+              else
+                _buildIconTile(context, icon),
+              const SizedBox(height: 16),
+              Text(
+                canOpen
+                    ? appLocalizationsOf(context).sharedFilePreviewPaneHint
+                    : appLocalizationsOf(context).sharedFileLoadingDetails,
+                textAlign: TextAlign.center,
+                style: ArDriveTypography.body.captionRegular(
+                  color: SharedFileColors.subtle(context),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -509,7 +541,8 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     );
   }
 
-  /// The pane's own footer: one control, in one place, in both states.
+  /// The pane's own footer, present only while the preview is: the box itself
+  /// is what opens it, so the only thing left for a button is Hide.
   Widget _buildPaneBar(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
@@ -521,6 +554,12 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     );
   }
 
+  /// Hide, when there is something to hide; Preview, when the box that would
+  /// have been pressed is not the one on screen.
+  ///
+  /// On the desktop card the resting pane is itself the way in, so this only
+  /// ever says Hide there. The phone column has no resting pane - the preview
+  /// is simply absent when closed - so it keeps both directions.
   Widget _buildPreviewToggle(BuildContext context) {
     return ArDriveButton(
       style: ArDriveButtonStyle.tertiary,
@@ -997,14 +1036,19 @@ class SharedFileDetailsContent extends StatelessWidget {
             canCopy: false,
           ),
         if (detailsAreResolved) ...[
+          // Read like dates, not like timestamps. The exact instant is a
+          // hover away, which is the pairing the version rows and the drive
+          // explorer both use.
           _SharedFileDetailRow(
             label: appLocalizationsOf(context).dateCreated,
-            value: formatDateToUtcString(revision.dateCreated),
+            value: yMMdDateFormatter.format(revision.dateCreated),
+            tooltip: formatDateToUtcString(revision.dateCreated),
             canCopy: false,
           ),
           _SharedFileDetailRow(
             label: appLocalizationsOf(context).lastUpdated,
-            value: formatDateToUtcString(revision.lastModifiedDate),
+            value: yMMdDateFormatter.format(revision.lastModifiedDate),
+            tooltip: formatDateToUtcString(revision.lastModifiedDate),
             canCopy: false,
           ),
         ],
@@ -1227,7 +1271,7 @@ class _SharedFileVersionRow extends StatelessWidget {
         onTap: isDisabled || isSelected ? null : onSelected,
         borderRadius: BorderRadius.circular(6),
         child: Container(
-          constraints: const BoxConstraints(minHeight: 44),
+          constraints: const BoxConstraints(minHeight: _rowHeight),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected ? colors.themeBgSubtle : null,
@@ -1364,7 +1408,7 @@ class SharedFileInfoPanel extends StatefulWidget {
     required this.details,
     required this.versions,
     required this.onVersionsOpened,
-    required this.height,
+    this.height,
   });
 
   final Widget details;
@@ -1375,7 +1419,13 @@ class SharedFileInfoPanel extends StatefulWidget {
   /// unasked-for until somebody looks.
   final VoidCallback onVersionsOpened;
 
-  final double height;
+  /// A fixed height, or `null` to size to the content.
+  ///
+  /// Fixed on the desktop card, where it lines the panel up with the preview
+  /// pane beside it and where a tab swap would otherwise resize half the card.
+  /// Null on a phone, where the column already scrolls and a panel scrolling
+  /// inside it would be a scroll within a scroll.
+  final double? height;
 
   @override
   State<SharedFileInfoPanel> createState() => _SharedFileInfoPanelState();
@@ -1400,6 +1450,8 @@ class _SharedFileInfoPanelState extends State<SharedFileInfoPanel> {
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
+    final isFixed = widget.height != null;
+
     return Container(
       height: widget.height,
       decoration: BoxDecoration(
@@ -1408,6 +1460,7 @@ class _SharedFileInfoPanelState extends State<SharedFileInfoPanel> {
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
+        mainAxisSize: isFixed ? MainAxisSize.max : MainAxisSize.min,
         children: [
           Padding(
             padding: const EdgeInsets.all(6),
@@ -1433,12 +1486,18 @@ class _SharedFileInfoPanelState extends State<SharedFileInfoPanel> {
               ],
             ),
           ),
-          Expanded(
-            child: SingleChildScrollView(
+          if (isFixed)
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(14, 2, 14, 14),
+                child: _tab == 0 ? widget.details : widget.versions,
+              ),
+            )
+          else
+            Padding(
               padding: const EdgeInsets.fromLTRB(14, 2, 14, 14),
               child: _tab == 0 ? widget.details : widget.versions,
             ),
-          ),
         ],
       ),
     );
@@ -1468,9 +1527,9 @@ class _SharedFileTab extends StatelessWidget {
         onTap: isSelected ? null : onSelected,
         borderRadius: BorderRadius.circular(6),
         child: Container(
-          // The same floor the version rows use, so a tab is never a smaller
-          // target than the list it opens.
-          constraints: const BoxConstraints(minHeight: 44),
+          // The same floor the rows use, so a tab is never a smaller target
+          // than the list it opens.
+          constraints: const BoxConstraints(minHeight: _rowHeight),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected ? colors.themeBgSubtle : null,
@@ -1549,18 +1608,30 @@ class _SharedFileDetailRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.canCopy = true,
+    this.tooltip,
   });
 
   final String label;
   final String value;
   final bool canCopy;
 
+  /// The long form of [value], when the row shows a short one.
+  final String? tooltip;
+
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+    return Container(
+      // Every row is the same height whether or not it can be copied.
+      //
+      // Only some values are copyable, and the copy control is 44px because
+      // that is the smallest a touch target may be - so rows with one stood a
+      // head taller than rows without, and a list of six alternated between two
+      // rhythms. The floor is the same 44 the version rows use, so the two
+      // lists in this panel now read as one.
+      constraints: const BoxConstraints(minHeight: _rowHeight),
+      alignment: Alignment.centerLeft,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -1574,13 +1645,24 @@ class _SharedFileDetailRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              overflow: TextOverflow.ellipsis,
-              style: ArDriveTypography.body.captionRegular(
-                color: colors.themeFgDefault,
-              ),
-            ),
+            child: tooltip == null
+                ? Text(
+                    value,
+                    overflow: TextOverflow.ellipsis,
+                    style: ArDriveTypography.body.captionRegular(
+                      color: colors.themeFgDefault,
+                    ),
+                  )
+                : ArDriveTooltip(
+                    message: tooltip!,
+                    child: Text(
+                      value,
+                      overflow: TextOverflow.ellipsis,
+                      style: ArDriveTypography.body.captionRegular(
+                        color: colors.themeFgDefault,
+                      ),
+                    ),
+                  ),
           ),
           if (canCopy) ...[
             const SizedBox(width: 8),

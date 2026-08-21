@@ -588,11 +588,12 @@ void main() {
       // change rewrite the production output and the expectation together.
       expect(detailRowValue('File type', 'application/pdf'), findsOneWidget);
       expect(
-        detailRowValue('Date created', '2024-03-03 00:00:00 GMT+0'),
+        // Friendly, with the exact instant in the tooltip.
+        detailRowValue('Date created', 'Mar 3, 2024'),
         findsOneWidget,
       );
       expect(
-        detailRowValue('Last updated', '2023-11-09 00:00:00 GMT+0'),
+        detailRowValue('Last updated', 'Nov 9, 2023'),
         findsOneWidget,
       );
     });
@@ -804,6 +805,34 @@ void main() {
       // Off screen, still mounted: nothing to fetch again on the way back.
       expect(find.byKey(preview, skipOffstage: false), findsOneWidget);
       expect(find.byKey(preview), findsNothing);
+    });
+
+    testWidgets('the resting pane is itself the way into the preview',
+        (tester) async {
+      // The box is already the size and shape of the preview, with the file's
+      // own thumbnail in it - so it is the thing to press. A separate button
+      // underneath was a second control for something that already looked
+      // pressable.
+      await pumpPage(tester, success(), surface: const Size(1440, 1000));
+
+      await tester.tap(find.text('Hide preview'));
+      await tester.pumpAndSettle();
+
+      // And the box is the ONLY way in - the bar below it is gone, rather
+      // than offering a second button for the same thing.
+      expect(find.byKey(sharedFilePreviewPaneKey), findsOneWidget);
+      expect(find.text('Preview'), findsNothing);
+
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(sharedFilePreviewPaneKey),
+          matching: find.byType(InkWell),
+        ).first,
+      );
+      await tester.pumpAndSettle();
+
+      // Back open, and offering the only direction that still needs a control.
+      expect(find.text('Hide preview'), findsOneWidget);
     });
 
     testWidgets('a pinned link names its version pinned, and still lets go',
