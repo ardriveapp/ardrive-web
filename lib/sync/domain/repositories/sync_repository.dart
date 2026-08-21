@@ -1751,11 +1751,44 @@ class _SyncRepository implements SyncRepository {
             : _arweave.getAllSnapshotsOfDrive(
                 driveId, syncFromBlockHeight, ownerAddress: ownerAddress);
 
-        snapshotItems = await SnapshotItem.instantiateAll(
+        final instantiated = await SnapshotItem.instantiateAll(
           snapshotsStream,
           lastBlockHeight: syncFromBlockHeight,
           arweave: _arweave,
         ).toList();
+
+        // Snapshots whose every block is already accounted for.
+        //
+        // `instantiateAll` hands each snapshot the range left after the
+        // obscuring accumulator - seeded here with everything through
+        // [syncFromBlockHeight] - has taken its share, so one that ends below
+        // that line is left with no sub-ranges at all. It can serve no block:
+        // [SnapshotDriveHistory] maps items by their sub-ranges, and an item
+        // with none belongs to no range and is never read from.
+        //
+        // Dropping it is worth these lines because keeping it costs a network
+        // probe - [SnapshotValidationService] retries a HEAD for up to ~50s
+        // before giving up - whose answer cannot change this sync either way.
+        // The batched prefetch makes these routine rather than rare: it
+        // queries once per owner from the *lowest* start height across their
+        // drives and gives every result to every drive, so a drive that a
+        // drive state artifact moved far ahead is handed the snapshots its
+        // neighbours needed.
+        final coversNothing = <SnapshotItem>[];
+        snapshotItems = <SnapshotItem>[];
+        for (final item in instantiated) {
+          if (item.subRanges.rangeSegments.isEmpty) {
+            coversNothing.add(item);
+          } else {
+            snapshotItems.add(item);
+          }
+        }
+
+        if (coversNothing.isNotEmpty) {
+          logger.i('[snapshot] $driveId: ${coversNothing.length} already '
+              'covered at or below block $syncFromBlockHeight, so not '
+              'probed: ${coversNothing.map((i) => i.txId).join(', ')}');
+        }
 
         logger.i('[snapshot] $driveId: ${snapshotItems.length} usable '
             'from $source source (above block $syncFromBlockHeight)');
