@@ -635,6 +635,33 @@ composes them already exists.
 - **Import is a merge, not a replace.** The database holds every drive and
   profile. Rows land in a sandbox, are validated, then merge for one drive,
   reconciling against anything newer already held locally.
+
+Three rules a reader has to get right, each of which cost time to learn here:
+
+- **A deep sync must not read an artifact.** "Rebuild this drive from the
+  chain" is a request to stop trusting local state, and an artifact is local
+  state — someone else's, arrived at by the same reasoning being distrusted.
+  It is also usually the *only* remedy an interface offers for a drive that
+  looks wrong, so an artifact that left a drive incomplete would otherwise
+  re-apply itself as the fix.
+
+- **Do not re-import an artifact already imported.** A successful import
+  leaves the artifact's `Block-End` and the drive's watermark **equal**, and
+  the no-rollback rule refuses only `Block-End < watermark` — so nothing stops
+  the next sync doing all of it again, forever. Measured at 41,767 files, that
+  repeat costs a 9.55 MiB download, ~173,000 statements and about 8.5 seconds,
+  and writes **zero** rows. Key the check on the artifact's transaction id and
+  not on its range: a *different* artifact covering the same range can still
+  carry entities a consumer's own sync skipped, and importing it is how those
+  get repaired.
+
+- **Skip snapshots the artifact has already covered — before validating
+  them.** Once the artifact's range seeds the obscuring accumulator, a
+  snapshot wholly below `Block-End` is left with no sub-ranges and can serve
+  no block, so any work spent on it is wasted. If validation involves a
+  network probe, that waste is measured in tens of seconds per snapshot, and a
+  client that prefetches snapshots per *owner* rather than per *drive* will
+  hand a drive its neighbours' snapshots routinely.
 - **A sync that reported skipped entities must not produce an artifact.** Sync
   advances `lastBlockHeight` regardless of skips
   (`SYNC_SKIPPED_ENTITY_PERSISTENCE.md`), so publishing from that state would

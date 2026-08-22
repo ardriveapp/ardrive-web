@@ -62,10 +62,14 @@ each other.
 | 1.6 | Import + merge, validate-before-write, watermark from the payload's **signed** coverage claim (the `Block-End` tag is cross-checked against it, never believed on its own) | ✅ |
 | 1.7 | Sync composition behind an `AppConfig` flag defaulting to false | ✅ |
 | 1.8 | Creation service + confirmation UI | ✅ |
-| 1.8a | **Carry revisions, licences and derived `network_transactions`** (D2 reversal). Entry rows alone render an empty drive: `filesInFolderWithLicenseAndRevisionTransactions` INNER JOINs `network_transactions` through the newest `file_revisions` row, so a restored drive with no revisions shows zero files | 🔨 |
-| 1.8b | **A publish path and an app entry point.** A real Turbo/L1 uploader behind the `DriveStateUploader` seam, cost shown before the click, and a flag-gated item in the new button — until this lands the modal has no caller and the uploader publishes nothing | 🔨 |
-| 1.9 | Independent QA gate — an agent that wrote none of it | ⬜ |
-| 1.10 | Adversarial audit of every layer, findings ranked and re-verified | 🔨 |
+| 1.8a | **Carry revisions, licences and derived `network_transactions`** (D2 reversal). Entry rows alone render an empty drive: `filesInFolderWithLicenseAndRevisionTransactions` INNER JOINs `network_transactions` through the newest `file_revisions` row, so a restored drive with no revisions shows zero files | ✅ |
+| 1.8b | **A publish path and an app entry point.** A real Turbo/L1 uploader behind the `DriveStateUploader` seam, cost shown before the click, and a flag-gated item in the new button — until this lands the modal has no caller and the uploader publishes nothing | ✅ |
+| 1.9 | Independent QA gate — an agent that wrote none of it | ✅ 10 findings, all closed |
+| 1.10 | Adversarial audit of every layer, findings ranked and re-verified | ✅ |
+| 1.14 | **Measured at production scale.** Export, seal, import and render at 41,767 files; sizes, timings and the producer's memory peak recorded in §1.1/§2.3 and reproducible from `drive_state_scale_measurement_test.dart` | ✅ |
+| 1.15 | **Composition with snapshots.** Artifact, snapshots and GraphQL proven to cover the range once, including a snapshot straddling `Block-End` | ✅ |
+| 1.16 | Localisation — every string the feature adds is hardcoded English by decision, pending a single `.arb` pass across all six locales at ship time | ⬜ ship-time |
+| 1.17 | Persist the sync skip ledger and the imported-artifact record across sessions (`SYNC_SKIPPED_ENTITY_PERSISTENCE.md`); both are in-memory today, so a restart re-pays one import and forgets one refusal | ⬜ |
 | 1.11 | Export views replacing the typed projection (D7 deferral — needs a schema migration) | 🔒 |
 | 1.12 | ArNS discovery (D6 deferral — needs an undername convention) | 🔒 |
 | 1.13 | Execute an upload | 🔒 human only — costs money, publishes permanently |
