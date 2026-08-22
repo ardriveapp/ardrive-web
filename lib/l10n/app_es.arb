@@ -1877,10 +1877,6 @@
   "@sharedFilePasteAccessKey": {
     "description": "Placeholder of the access key field on the shared file page"
   },
-  "sharedFilePermanentFileSharing": "Compartir archivos de forma permanente",
-  "@sharedFilePermanentFileSharing": {
-    "description": "Tagline shown under the ArDrive logo on the shared file page"
-  },
   "sharedFilePreviewPaneHint": "Previsualiza este archivo aquí, sin descargarlo.",
   "@sharedFilePreviewPaneHint": {
     "description": "Caption in the preview pane of the shared file page, on a desktop screen, saying what pressing Preview will do"

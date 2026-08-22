@@ -68,6 +68,9 @@ final fileRevisionFallback = FileRevision(
   isHidden: false,
 );
 
+/// The row height `shared_file_ready_view.dart` lays its lists out on.
+const double _rowHeight = 44;
+
 void main() {
   const fileId = 'file-id';
 
@@ -805,6 +808,57 @@ void main() {
       // Off screen, still mounted: nothing to fetch again on the way back.
       expect(find.byKey(preview, skipOffstage: false), findsOneWidget);
       expect(find.byKey(preview), findsNothing);
+    });
+
+    testWidgets('every row in the panel is the same height', (tester) async {
+      // The two lists sit in the same panel and the reader switches between
+      // them, so a row that is a few pixels taller than its neighbours reads
+      // as sloppiness rather than as structure. The copy control sets the
+      // floor at 44 - the smallest a touch target may be - and everything
+      // else meets it: rows with no copy button, the disclosure header that
+      // used to come from a ListTile at 58, and the version rows on the
+      // other tab.
+      await pumpPage(tester, success(), surface: const Size(1440, 1000));
+
+      final rows = find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_SharedFileDetailRow');
+      expect(rows, findsWidgets);
+      for (var i = 0; i < rows.evaluate().length; i++) {
+        expect(tester.getSize(rows.at(i)).height, _rowHeight,
+            reason: 'detail row $i');
+      }
+
+      expect(
+        tester
+            .getSize(find
+                .ancestor(
+                  of: find.text('Transaction details'),
+                  matching: find.byType(InkWell),
+                )
+                .first)
+            .height,
+        _rowHeight,
+        reason: 'the disclosure header',
+      );
+
+      states.add(success(
+        activityRevisions: [
+          fileRevision(),
+          fileRevision(dataTxId: 'data-tx-first', size: 12),
+        ],
+        activityStatus: SharedFileActivityStatus.loaded,
+      ));
+      await tester.pump();
+      await tester.tap(find.text('Version history'));
+      await tester.pumpAndSettle();
+
+      final versions = find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_SharedFileVersionRow');
+      expect(versions, findsNWidgets(2));
+      for (var i = 0; i < versions.evaluate().length; i++) {
+        expect(tester.getSize(versions.at(i)).height, _rowHeight,
+            reason: 'version row $i');
+      }
     });
 
     testWidgets('the resting pane is itself the way into the preview',

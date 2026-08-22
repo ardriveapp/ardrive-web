@@ -1574,31 +1574,53 @@ class _SharedFileDrawerState extends State<_SharedFileDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      // The material divider lines fight the card's own border.
-      data: Theme.of(context).copyWith(
-        dividerColor: Colors.transparent,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-      ),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: EdgeInsets.zero,
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        onExpansionChanged: (isExpanded) =>
-            setState(() => _isExpanded = isExpanded),
-        title: Semantics(
+    // Built from the same row primitive as everything else in this panel
+    // rather than from `ExpansionTile`.
+    //
+    // The tile is a `ListTile`, whose one-line minimum is its own - it
+    // measured 58 against the 44 of the rows either side of it, so the list
+    // visibly changed rhythm at the header and changed back after it. None of
+    // the knobs `ExpansionTile` exposes here reach 44: `visualDensity` moves in
+    // steps of four, which overshoots to 42.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
           header: true,
+          button: true,
           expanded: _isExpanded,
-          child: Text(
-            widget.title,
-            style: ArDriveTypography.body.captionBold(
-              color: SharedFileColors.subtle(context),
+          child: InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: _rowHeight),
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: ArDriveTypography.body.captionBold(
+                        color: SharedFileColors.subtle(context),
+                      ),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 150),
+                    child: ArDriveIcons.chevronDown(
+                      size: 16,
+                      color: SharedFileColors.subtle(context),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        children: widget.children,
-      ),
+        if (_isExpanded) ...widget.children,
+      ],
     );
   }
 }
