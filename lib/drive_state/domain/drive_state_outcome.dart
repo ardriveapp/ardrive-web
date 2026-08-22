@@ -122,6 +122,25 @@ enum DriveStateOutcome {
     description: 'the coverage tags disagreed with the signed payload',
   ),
 
+  /// The artifact's cipher-presence contradicts the privacy of the drive it
+  /// claims to be for (§2.6): an unencrypted artifact offered to a private
+  /// drive, or an encrypted one offered to a public drive.
+  ///
+  /// Its own code rather than [integrityFailed], and for the same reason
+  /// [coverageMismatch] has one. The two directions are both worth seeing in a
+  /// log and neither is ordinary. A private drive being offered an artifact in
+  /// the clear means some producer published a private drive's entire
+  /// structure — every name, size and relationship — where anyone can read it,
+  /// permanently; that is the worst thing this feature could do, and it should
+  /// never arrive as a shade of "the payload did not match its tags". An
+  /// encrypted artifact for a public drive is the milder half, and reporting
+  /// it as `decryptFailed` would blame a key the reader never had.
+  privacyMismatch(
+    code: 'privacy-mismatch',
+    kind: DriveStateOutcomeKind.rejected,
+    description: 'the artifact\'s cipher contradicts the drive\'s privacy',
+  ),
+
   /// Discovery named an artifact and its body could not be read from the
   /// gateway.
   ///

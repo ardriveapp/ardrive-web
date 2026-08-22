@@ -4,7 +4,9 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart' show Cipher;
+import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
 import 'package:ardrive_uploader/ardrive_uploader.dart'
     show maxSizeSupportedByGCMEncryption;
 import 'package:arweave/arweave.dart';
@@ -24,6 +26,22 @@ void main() {
   late SecretKey driveKey;
   late Uint8List plaintext;
 
+  /// The two protections, built the only way they can be built: from a drive's
+  /// `privacy` column and whatever key came with it. Nothing in this file
+  /// fabricates one, because nothing anywhere can.
+  ///
+  /// [publicDrive] is what makes the second half of this file possible at all,
+  /// and its existence is the whole reversal: a public drive's artifact is the
+  /// private chain with the encryption step absent.
+  late DriveStateProtection privateDrive;
+  late DriveStateProtection publicDrive;
+
+  DriveStateProtection protectionFor(SecretKey key) =>
+      DriveStateProtection.forDrive(
+        privacy: DrivePrivacyTag.private,
+        driveKey: key,
+      ).protection!;
+
   /// Offsets into an Arweave signed ANS-104 data item. The tests know the
   /// layout on purpose: reaching a particular field is how you prove the codec
   /// notices when that field is wrong.
@@ -37,7 +55,7 @@ void main() {
   /// tampering test needs in order to put different bytes inside a body that
   /// still decrypts.
   Future<Uint8List> unsealItem(DriveStateEnvelope envelope) async =>
-      crypto.decrypt(envelope.body, driveKey, envelope.cipherIv);
+      crypto.decrypt(envelope.body, driveKey, envelope.cipherIv!);
 
   /// Encrypts arbitrary bytes the way [DriveStateEnvelopeCodec.seal] would, so
   /// a test can hand the codec a body that is validly encrypted but wrong
@@ -45,7 +63,7 @@ void main() {
   Future<DriveStateEnvelope> sealBytes(List<int> body) async {
     final secretBox = await crypto.encrypt(Uint8List.fromList(body), driveKey);
 
-    return DriveStateEnvelope(
+    return DriveStateEnvelope.encrypted(
       body: secretBox.concatenation(nonce: false),
       cipherIv: Uint8List.fromList(secretBox.nonce),
     );
@@ -65,6 +83,11 @@ void main() {
     owner = await Wallet.generate();
     ownerAddress = await owner.getAddress();
     driveKey = await aesGcm.newSecretKey();
+    privateDrive = protectionFor(driveKey);
+    publicDrive = DriveStateProtection.forDrive(
+      privacy: DrivePrivacyTag.public,
+      driveKey: null,
+    ).protection!;
     // Compressible, like the JSON container this carries in production, and
     // long enough that gzip and the data item both have something to do.
     plaintext = Uint8List.fromList(utf8.encode(
@@ -87,7 +110,7 @@ void main() {
           'without the drive key', () async {
         final result = await codec.seal(
           plaintext: plaintext,
-          driveKey: driveKey,
+          protection: privateDrive,
           wallet: owner,
         );
 
@@ -95,7 +118,7 @@ void main() {
         final envelope = result.envelope!;
 
         expect(envelope.cipher, Cipher.aes256gcm);
-        expect(envelope.cipherIv.length, 12);
+        expect(envelope.cipherIv!.length, 12);
         expect(envelope.body, isNot(equals(plaintext)));
         expect(
           envelope.body.length,
@@ -112,7 +135,7 @@ void main() {
           () async {
         final result = await codec.seal(
           plaintext: plaintext,
-          driveKey: driveKey,
+          protection: privateDrive,
           wallet: owner,
         );
 
@@ -146,11 +169,13 @@ void main() {
         expect(binary.length, lessThan(plaintext.length));
       });
 
-      test('refuses a payload sitting exactly on the AES-GCM boundary',
+      test('refuses a payload sitting exactly on the payload boundary',
           () async {
         final result = await codec.seal(
-          plaintext: Uint8List(maxSizeSupportedByGCMEncryption),
-          driveKey: driveKey,
+          plaintext: Uint8List(
+            DriveStateEnvelopeCodec.defaultMaxPlaintextBytes,
+          ),
+          protection: privateDrive,
           wallet: owner,
         );
 
@@ -160,24 +185,47 @@ void main() {
       });
 
       test(
-          'refuses a payload above the AES-GCM boundary rather than '
+          'refuses a payload above the boundary rather than '
           'reaching for CTR', () async {
         final result = await codec.seal(
-          plaintext: Uint8List(maxSizeSupportedByGCMEncryption + 1),
-          driveKey: driveKey,
+          plaintext: Uint8List(
+            DriveStateEnvelopeCodec.defaultMaxPlaintextBytes + 1,
+          ),
+          protection: privateDrive,
           wallet: owner,
         );
 
         expect(result.isRefused, isTrue);
         expect(result.envelope, isNull);
         expect(result.failure, DriveStateEnvelopeFailure.plaintextTooLarge);
-        expect(result.reason, contains('AES-GCM boundary'));
+        expect(result.reason, contains('payload boundary'));
+      });
+
+      test(
+          'refuses the same payload for a public drive, where there is no '
+          'cipher for the bound to have come from', () async {
+        // D5's bound is on the producer's memory, not on AES-GCM: the export,
+        // the `jsonEncode` and the UTF-8 encoding are the whole of the peak,
+        // and every one of them is spent before a cipher is reached. So it
+        // holds at the same number on a path with no cipher in it, and a
+        // bound that only applied when encrypting would be the wrong shape.
+        final result = await codec.seal(
+          plaintext: Uint8List(
+            DriveStateEnvelopeCodec.defaultMaxPlaintextBytes,
+          ),
+          protection: publicDrive,
+          wallet: owner,
+        );
+
+        expect(result.isRefused, isTrue);
+        expect(result.envelope, isNull);
+        expect(result.failure, DriveStateEnvelopeFailure.plaintextTooLarge);
       });
 
       test('reports a wallet whose public key cannot be read', () async {
         final result = await codec.seal(
           plaintext: plaintext,
-          driveKey: driveKey,
+          protection: privateDrive,
           wallet: _GarbledWallet(),
         );
 
@@ -189,7 +237,7 @@ void main() {
       test('reports a wallet that will not sign', () async {
         final result = await codec.seal(
           plaintext: plaintext,
-          driveKey: driveKey,
+          protection: privateDrive,
           wallet: _RefusingWallet(),
         );
 
@@ -204,7 +252,7 @@ void main() {
       setUpAll(() async {
         final result = await codec.seal(
           plaintext: plaintext,
-          driveKey: driveKey,
+          protection: privateDrive,
           wallet: owner,
         );
         sealed = result.envelope!;
@@ -213,7 +261,7 @@ void main() {
       test('round trips the plaintext byte for byte', () async {
         final result = await codec.open(
           envelope: sealed,
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -227,11 +275,11 @@ void main() {
         tampered[tampered.length ~/ 2] ^= 0xFF;
 
         final result = await codec.open(
-          envelope: DriveStateEnvelope(
+          envelope: DriveStateEnvelope.encrypted(
             body: tampered,
-            cipherIv: sealed.cipherIv,
+            cipherIv: sealed.cipherIv!,
           ),
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -245,11 +293,11 @@ void main() {
         tampered[tampered.length - 1] ^= 0xFF;
 
         final result = await codec.open(
-          envelope: DriveStateEnvelope(
+          envelope: DriveStateEnvelope.encrypted(
             body: tampered,
-            cipherIv: sealed.cipherIv,
+            cipherIv: sealed.cipherIv!,
           ),
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -258,11 +306,11 @@ void main() {
 
       test('rejects a truncated body', () async {
         final result = await codec.open(
-          envelope: DriveStateEnvelope(
+          envelope: DriveStateEnvelope.encrypted(
             body: Uint8List.sublistView(sealed.body, 0, 32),
-            cipherIv: sealed.cipherIv,
+            cipherIv: sealed.cipherIv!,
           ),
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -272,7 +320,7 @@ void main() {
       test('rejects a body sealed under a different drive key', () async {
         final result = await codec.open(
           envelope: sealed,
-          driveKey: await aesGcm.newSecretKey(),
+          protection: protectionFor(await aesGcm.newSecretKey()),
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -282,12 +330,12 @@ void main() {
       test('rejects tags that declare anything other than AES256-GCM',
           () async {
         final result = await codec.open(
-          envelope: DriveStateEnvelope(
+          envelope: DriveStateEnvelope.encrypted(
             body: sealed.body,
-            cipherIv: sealed.cipherIv,
+            cipherIv: sealed.cipherIv!,
             cipher: Cipher.aes256ctr,
           ),
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -300,14 +348,14 @@ void main() {
 
         final theirs = await codec.seal(
           plaintext: plaintext,
-          driveKey: driveKey,
+          protection: privateDrive,
           wallet: stranger,
         );
 
         // It opens for its own owner...
         final forThem = await codec.open(
           envelope: theirs.envelope!,
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: await stranger.getAddress(),
         );
         expect(forThem.isOpened, isTrue, reason: forThem.toString());
@@ -316,7 +364,7 @@ void main() {
         // the signature are both perfectly valid.
         final forUs = await codec.open(
           envelope: theirs.envelope!,
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -334,7 +382,7 @@ void main() {
 
         final result = await codec.open(
           envelope: await sealBytes(binary),
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -351,7 +399,7 @@ void main() {
 
         final result = await codec.open(
           envelope: await sealBytes(binary),
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -367,7 +415,7 @@ void main() {
           envelope: await sealBytes(
             await signedItemOver(utf8.encode('never compressed'), owner),
           ),
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -400,7 +448,7 @@ void main() {
 
         final result = await bounded.open(
           envelope: await sealBomb(4 * 1024 * 1024),
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -428,11 +476,11 @@ void main() {
         final result = await bounded.open(
           envelope: (await bounded.seal(
             plaintext: payload,
-            driveKey: driveKey,
+            protection: privateDrive,
             wallet: owner,
           ))
               .envelope!,
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -446,11 +494,11 @@ void main() {
         final result = await bounded.open(
           envelope: (await bounded.seal(
             plaintext: Uint8List(64 * 1024 + 1),
-            driveKey: driveKey,
+            protection: privateDrive,
             wallet: owner,
           ))
               .envelope!,
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -464,14 +512,32 @@ void main() {
         // readable and unwritable.
         expect(
           DriveStateEnvelopeCodec().maxPlaintextBytes,
-          maxSizeSupportedByGCMEncryption,
+          DriveStateEnvelopeCodec.defaultMaxPlaintextBytes,
+        );
+      });
+
+      test('the payload bound stays inside what AES-GCM will hold', () {
+        // The bound is the producer's, not the cipher's, so this is a
+        // consequence rather than the reason - and a consequence worth
+        // checking, because the private path still runs through AES-GCM. If
+        // the payload bound ever grew past what the uploader considers GCM
+        // territory, a private drive could seal a payload this codebase says
+        // elsewhere is too large to authenticate in one piece.
+        //
+        // It compares the *payload* bound against the cipher's limit, which
+        // is conservative by 5.46x: what GCM actually holds is the compressed,
+        // signed item (9.55 MiB against a 52.16 MiB payload, measured at
+        // 41,767 files in §2.3).
+        expect(
+          DriveStateEnvelopeCodec.defaultMaxPlaintextBytes,
+          lessThanOrEqualTo(maxSizeSupportedByGCMEncryption),
         );
       });
 
       test('rejects bytes too short to be a data item at all', () async {
         final result = await codec.open(
           envelope: await sealBytes(utf8.encode('not a data item')),
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -488,7 +554,7 @@ void main() {
 
         final result = await codec.open(
           envelope: await sealBytes(binary),
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -508,7 +574,7 @@ void main() {
 
         final result = await codec.open(
           envelope: await sealBytes(binary),
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -522,7 +588,7 @@ void main() {
           () async {
         final result = await codec.open(
           envelope: sealed,
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: '',
         );
 
@@ -541,13 +607,13 @@ void main() {
 
       final result = await codec.seal(
         plaintext: awkward,
-        driveKey: driveKey,
+        protection: privateDrive,
         wallet: owner,
       );
 
       final opened = await codec.open(
         envelope: result.envelope!,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -558,13 +624,13 @@ void main() {
     test('opens an empty payload', () async {
       final result = await codec.seal(
         plaintext: Uint8List(0),
-        driveKey: driveKey,
+        protection: privateDrive,
         wallet: owner,
       );
 
       final opened = await codec.open(
         envelope: result.envelope!,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -585,7 +651,7 @@ void main() {
       Future<DriveStateOpenResult> openWithFailingStream(Object error) async {
         final sealed = await codec.seal(
           plaintext: plaintext,
-          driveKey: driveKey,
+          protection: privateDrive,
           wallet: owner,
         );
 
@@ -613,7 +679,7 @@ void main() {
 
         return codecWithBrokenItem.open(
           envelope: sealed.envelope!,
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
       }
@@ -636,6 +702,234 @@ void main() {
 
         expect(result.isOpened, isFalse);
         expect(result.failure, DriveStateEnvelopeFailure.malformedFrame);
+      });
+    });
+
+    /// A public drive's artifact: the same chain with the encryption step
+    /// absent.
+    ///
+    /// These do not restate the private path's tests. What they establish is
+    /// that the *differences* are the intended ones — no cipher tags, the body
+    /// is the signed item itself — and that everything the private path relies
+    /// on below the cipher still holds when the cipher is gone, which for a
+    /// public drive is the whole of the defence.
+    group('a public drive', () {
+      test('seals without a cipher, and the body is the signed data item',
+          () async {
+        final result = await codec.seal(
+          plaintext: plaintext,
+          protection: publicDrive,
+          wallet: owner,
+        );
+
+        expect(result.isSealed, isTrue, reason: result.toString());
+        final envelope = result.envelope!;
+
+        // The discriminator, in the form a reader sees it: no `Cipher`, no
+        // `Cipher-IV`, and nothing to put in either tag.
+        expect(envelope.cipher, isNull);
+        expect(envelope.cipherIv, isNull);
+        expect(envelope.cipherIvAsBase64, isNull);
+        expect(envelope.isEncrypted, isFalse);
+
+        // And the body really is an ANS-104 item rather than ciphertext: the
+        // signature type is 1, little endian, in the first two bytes.
+        expect(
+          utils.byteArrayToLong(
+            Uint8List.sublistView(envelope.body, 0, 2),
+          ),
+          1,
+        );
+
+        // The compressed payload is inside the item, so the whole body is
+        // smaller than the plaintext it carries.
+        expect(envelope.body.length, lessThan(plaintext.length));
+      });
+
+      test('round trips the plaintext byte for byte', () async {
+        final sealed = await codec.seal(
+          plaintext: plaintext,
+          protection: publicDrive,
+          wallet: owner,
+        );
+
+        final result = await codec.open(
+          envelope: sealed.envelope!,
+          protection: publicDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.isOpened, isTrue, reason: result.toString());
+        expect(result.plaintext, equals(plaintext));
+        expect(result.ownerAddress, ownerAddress);
+      });
+
+      test('still refuses an artifact signed by another wallet', () async {
+        // The check that matters most here. A private drive's artifact has a
+        // second filter - a stranger's bytes do not decrypt under the drive
+        // key - and a public drive's has none, so the signature is the only
+        // thing turning anonymous bytes away.
+        final stranger = await Wallet.generate();
+
+        final theirs = await codec.seal(
+          plaintext: plaintext,
+          protection: publicDrive,
+          wallet: stranger,
+        );
+
+        final forUs = await codec.open(
+          envelope: theirs.envelope!,
+          protection: publicDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(forUs.isOpened, isFalse);
+        expect(forUs.plaintext, isNull);
+        expect(forUs.failure, DriveStateEnvelopeFailure.ownerMismatch);
+      });
+
+      test('still refuses a payload the owner did not sign', () async {
+        final sealed = await codec.seal(
+          plaintext: plaintext,
+          protection: publicDrive,
+          wallet: owner,
+        );
+
+        final tampered = Uint8List.fromList(sealed.envelope!.body);
+        tampered[tampered.length - 1] ^= 0xFF;
+
+        final result = await codec.open(
+          envelope: DriveStateEnvelope.inTheClear(body: tampered),
+          protection: publicDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.isOpened, isFalse);
+        expect(result.failure, DriveStateEnvelopeFailure.signatureInvalid);
+      });
+
+      test('still bounds the decompression', () async {
+        // No cipher ran before this, so the signature is the only thing that
+        // vouched for the bytes - and a signature says the owner produced
+        // them, not that they are safe to expand.
+        final bounded = DriveStateEnvelopeCodec(maxPlaintextBytes: 64 * 1024);
+        final compressed = GZipEncoder().encode(Uint8List(4 * 1024 * 1024))!;
+
+        final result = await bounded.open(
+          envelope: DriveStateEnvelope.inTheClear(
+            body: await signedItemOver(compressed, owner),
+          ),
+          protection: publicDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(
+          result.failure,
+          DriveStateEnvelopeFailure.decompressedTooLarge,
+        );
+      });
+
+      test('still refuses bytes too short to be a data item', () async {
+        final result = await codec.open(
+          envelope: DriveStateEnvelope.inTheClear(
+            body: Uint8List.fromList(utf8.encode('not a data item')),
+          ),
+          protection: publicDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.failure, DriveStateEnvelopeFailure.malformedFrame);
+      });
+    });
+
+    /// The cipher/privacy cross-check, in both directions.
+    ///
+    /// The untrusted claim is the artifact's cipher-presence; the trustworthy
+    /// fact is the privacy of the drive in this client's database. Neither
+    /// direction may be met half way, and the private one is the direction
+    /// that matters: accepting a plaintext artifact for a private drive is
+    /// this reader agreeing to a format no correct producer can emit.
+    group('cipher-presence is checked against the drive', () {
+      test('a plaintext artifact is refused for a private drive', () async {
+        final asPublic = await codec.seal(
+          plaintext: plaintext,
+          protection: publicDrive,
+          wallet: owner,
+        );
+
+        // Genuinely the owner's, genuinely signed, and genuinely readable -
+        // it opens perfectly well for the drive it was made for. What is
+        // wrong is only which drive it is being offered to.
+        expect(
+          (await codec.open(
+            envelope: asPublic.envelope!,
+            protection: publicDrive,
+            expectedOwnerAddress: ownerAddress,
+          ))
+              .isOpened,
+          isTrue,
+        );
+
+        final result = await codec.open(
+          envelope: asPublic.envelope!,
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.isOpened, isFalse);
+        expect(result.plaintext, isNull);
+        expect(
+          result.failure,
+          DriveStateEnvelopeFailure.plaintextForPrivateDrive,
+        );
+        expect(result.reason, contains('never published in the clear'));
+      });
+
+      test('an encrypted artifact is refused for a public drive', () async {
+        final asPrivate = await codec.seal(
+          plaintext: plaintext,
+          protection: privateDrive,
+          wallet: owner,
+        );
+
+        final result = await codec.open(
+          envelope: asPrivate.envelope!,
+          protection: publicDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.isOpened, isFalse);
+        expect(result.plaintext, isNull);
+        expect(
+          result.failure,
+          DriveStateEnvelopeFailure.ciphertextForPublicDrive,
+        );
+
+        // Not `decryptFailed`, which would blame a key this reader never had.
+        expect(
+          result.failure,
+          isNot(DriveStateEnvelopeFailure.decryptionFailed),
+        );
+      });
+
+      test('the cross-check runs before anything else is examined', () async {
+        // A body that is not a data item, not signed, and not long enough to
+        // be either. If any of the later checks ran first this would come
+        // back as `malformedFrame` or `signatureInvalid`; the cross-check is
+        // the reason it does not, and the reason a plaintext body for a
+        // private drive is never parsed at all.
+        final result = await codec.open(
+          envelope: DriveStateEnvelope.inTheClear(
+            body: Uint8List.fromList([1, 2, 3]),
+          ),
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(
+          result.failure,
+          DriveStateEnvelopeFailure.plaintextForPrivateDrive,
+        );
       });
     });
   });

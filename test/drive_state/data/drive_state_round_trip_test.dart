@@ -6,6 +6,7 @@ import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/file_entity.dart' show Thumbnail;
 import 'package:ardrive/models/models.dart';
@@ -139,6 +140,10 @@ void main() {
   late String ownerAddress;
   late SecretKey driveKey;
 
+  /// The two chains, resolved rather than fabricated.
+  late DriveStateProtection privateDrive;
+  late DriveStateProtection publicDrive;
+
   late Database producerDb;
   late Database consumerDb;
   late DriveStateImporter importer;
@@ -151,6 +156,14 @@ void main() {
     owner = await Wallet.generate();
     ownerAddress = await owner.getAddress();
     driveKey = await aesGcm.newSecretKey();
+    privateDrive = DriveStateProtection.forDrive(
+      privacy: DrivePrivacyTag.private,
+      driveKey: driveKey,
+    ).protection!;
+    publicDrive = DriveStateProtection.forDrive(
+      privacy: DrivePrivacyTag.public,
+      driveKey: null,
+    ).protection!;
   });
 
   /// The producer's drive, seeded the way sync leaves one: entries, the
@@ -357,13 +370,16 @@ void main() {
   /// Export, seal, and hand back exactly what a consumer receives: the
   /// transaction body and the tags an indexer reported for it.
   Future<({DriveStateArtifactCandidate candidate, Uint8List body})>
-      publishArtifact({String drive = driveId}) async {
+      publishArtifact({
+    String drive = driveId,
+    DriveStateProtection? protection,
+  }) async {
     final export = await exportDriveState(producerDb.driveDao, drive);
     final payload = jsonEncode(export.toJson());
 
     final sealed = await codec.seal(
       plaintext: Uint8List.fromList(utf8.encode(payload)),
-      driveKey: driveKey,
+      protection: protection ?? privateDrive,
       wallet: owner,
     );
     expect(sealed.isSealed, isTrue, reason: sealed.toString());
@@ -383,8 +399,12 @@ void main() {
           EntityTag.blockStart: '${export.coverage.blockStart}',
           EntityTag.blockEnd: '${export.coverage.blockEnd}',
           EntityTag.entityCount: '${export.entityCount}',
-          EntityTag.cipher: Cipher.aes256,
-          EntityTag.cipherIv: envelope.cipherIvAsBase64,
+          // Written from what was actually sealed, so a public drive's
+          // artifact carries neither tag - which is how a reader tells the
+          // two chains apart.
+          if (envelope.isEncrypted) EntityTag.cipher: Cipher.aes256,
+          if (envelope.isEncrypted)
+            EntityTag.cipherIv: envelope.cipherIvAsBase64!,
         },
         minedAtHeight: export.coverage.blockEnd,
       ),
@@ -394,12 +414,16 @@ void main() {
 
   Future<DriveStateImportResult> publishAndImport({
     String drive = driveId,
+    DriveStateProtection? protection,
   }) async {
-    final artifact = await publishArtifact(drive: drive);
+    final artifact = await publishArtifact(
+      drive: drive,
+      protection: protection,
+    );
     return importer.import(
       candidate: artifact.candidate,
       body: artifact.body,
-      driveKey: driveKey,
+      protection: protection ?? privateDrive,
       expectedOwnerAddress: ownerAddress,
     );
   }
@@ -526,6 +550,176 @@ void main() {
       expect(driveRevisions.single.metadataTx.id, 'drive-metadata-tx');
       expect(folderRevisions, hasLength(1));
       expect(folderRevisions.single.metadataTx.id, 'nested-folder-metadata-tx');
+    });
+  });
+
+  /// The same acceptance question, for a public drive.
+  ///
+  /// A public drive's artifact is the private chain with the encryption step
+  /// absent, and the point of this group is that *absent* is the only
+  /// difference: the same rows, the same revisions, the same licence, the same
+  /// values, rendered through the same query the file list uses.
+  group('a public drive restored from an artifact', () {
+    setUp(() async {
+      // Public on both sides. The producer's row is what the payload's
+      // `privacy` field is read from, and the consumer's is what the reader
+      // cross-checks the artifact's cipher-presence against - so they have to
+      // agree, and a real pair of clients holding the same drive always does.
+      await producerDb.driveDao.writeToDrive(const DrivesCompanion(
+        id: Value(driveId),
+        privacy: Value(DrivePrivacyTag.public),
+      ));
+      await consumerDb.driveDao.writeToDrive(const DrivesCompanion(
+        id: Value(driveId),
+        privacy: Value(DrivePrivacyTag.public),
+        encryptedKey: Value(null),
+        keyEncryptionIv: Value(null),
+        driveKeyGenerated: Value(false),
+      ));
+    });
+
+    Future<DriveStateImportResult> publishAndImportPublicly() =>
+        publishAndImport(protection: publicDrive);
+
+    test('publishes a body with no cipher tags on it', () async {
+      final artifact = await publishArtifact(protection: publicDrive);
+
+      expect(artifact.candidate.cipher, isNull);
+      expect(artifact.candidate.cipherIv, isNull);
+      expect(
+        artifact.candidate.tags.containsKey(EntityTag.cipher),
+        isFalse,
+      );
+    });
+
+    test('renders its files the way the file list asks for them', () async {
+      final result = await publishAndImportPublicly();
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+
+      final contents = await consumerDb.driveDao
+          .watchFolderContents(driveId, folderId: rootFolderId)
+          .first
+          .timeout(const Duration(seconds: 10));
+
+      expect(
+        contents.files.map((f) => f.id).toSet(),
+        {revisedFileId, licensedFileId},
+      );
+      expect(contents.subfolders.map((f) => f.id), [nestedFolderId]);
+      expect(contents.folder.id, rootFolderId);
+    });
+
+    test('carries the same values a private drive would', () async {
+      await publishAndImportPublicly();
+
+      final contents = await consumerDb.driveDao
+          .watchFolderContents(driveId, folderId: rootFolderId)
+          .first
+          .timeout(const Duration(seconds: 10));
+
+      final revised = contents.files.firstWhere((f) => f.id == revisedFileId);
+      expect(revised.name, 'renamed.txt');
+      expect(revised.metadataTx.id, latestMetadataTxId);
+      expect(revised.dataTx.id, latestDataTxId);
+      expect(
+        fileStatusFromTransactions(revised.metadataTx, revised.dataTx),
+        TransactionStatus.confirmed,
+      );
+
+      final licensed = contents.files.firstWhere((f) => f.id == licensedFileId);
+      expect(licensed.license, isNotNull);
+      expect(licensed.license!.licenseTxId, licenseTxId);
+      expect(licensed.license!.licenseType, LicenseType.udl.name);
+    });
+
+    test('carries the whole version history', () async {
+      await publishAndImportPublicly();
+
+      final revisions = await consumerDb.driveDao
+          .latestFileRevisionsByFileIdWithLicenseAndTransactions(
+            driveId: driveId,
+            fileId: revisedFileId,
+          )
+          .get();
+
+      expect(revisions, hasLength(2));
+      expect(
+        revisions.map((r) => r.metadataTxId),
+        [latestMetadataTxId, firstMetadataTxId],
+      );
+    });
+
+    test('leaves the drive public and on the artifact\'s watermark', () async {
+      final result = await publishAndImportPublicly();
+
+      final drive = await (consumerDb.select(consumerDb.drives)
+            ..where((d) => d.id.equals(driveId)))
+          .getSingle();
+
+      expect(drive.privacy, DrivePrivacyTag.public);
+      expect(drive.lastBlockHeight, 900);
+      expect(result.stats!.watermark, 900);
+      // Never conjured: an import that gave a public drive key material would
+      // be inventing something the payload cannot carry.
+      expect(drive.encryptedKey, isNull);
+      expect(drive.keyEncryptionIv, isNull);
+    });
+  });
+
+  /// The cipher/privacy cross-check, end to end: a genuine artifact, correctly
+  /// signed by the drive's real owner, offered to a drive of the other
+  /// privacy.
+  ///
+  /// These are not malformed artifacts. Each one opens perfectly for the drive
+  /// it was made for; what is wrong is only which drive it is being read into.
+  group('an artifact whose cipher contradicts the drive', () {
+    test('a plaintext artifact is refused for a private drive', () async {
+      // The producer's drive is still private here, so the payload says
+      // `private` and only the *sealing* is wrong - which is precisely the
+      // shape a buggy producer would publish, and the one that must never be
+      // accepted.
+      final artifact = await publishArtifact(protection: publicDrive);
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.privacyMismatch);
+      expect(result.detail, contains('never published in the clear'));
+
+      // And nothing landed.
+      final files = await (consumerDb.select(consumerDb.fileEntries)
+            ..where((f) => f.driveId.equals(driveId)))
+          .get();
+      expect(files, isEmpty);
+    });
+
+    test('an encrypted artifact is refused for a public drive', () async {
+      await consumerDb.driveDao.writeToDrive(const DrivesCompanion(
+        id: Value(driveId),
+        privacy: Value(DrivePrivacyTag.public),
+      ));
+
+      final artifact = await publishArtifact(protection: privateDrive);
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: publicDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.privacyMismatch);
+      // Not `decryptFailed`, which would blame a key this reader never had.
+      expect(result.outcome, isNot(DriveStateOutcome.decryptFailed));
+
+      final files = await (consumerDb.select(consumerDb.fileEntries)
+            ..where((f) => f.driveId.equals(driveId)))
+          .get();
+      expect(files, isEmpty);
     });
   });
 

@@ -1,7 +1,8 @@
 # The drive state artifact
 
-A published, encrypted, signed blob of a drive's parsed state, which a client
-imports in bulk instead of replaying the drive's history entity by entity.
+A published, signed blob of a drive's parsed state — encrypted under the drive
+key when the drive is private — which a client imports in bulk instead of
+replaying the drive's history entity by entity.
 
 **Additive.** Snapshots remain an ArFS interchange format and the fallback. A
 client that does not understand a state artifact, cannot decrypt one, or never
@@ -99,6 +100,11 @@ but not weaker — anyone holding the drive key can already derive every file ke
 A holder of a single shared file key simply cannot use an artifact, and was
 never its audience.
 
+All of the above is about **private** drives, which are the only ones with
+anything to hide. A public drive's artifact is unencrypted and leaks exactly
+what a public drive's snapshot already leaks, which is everything; §2.6 works
+through why that is not a reason to withhold the format from it.
+
 ---
 
 ## 2. Security
@@ -158,7 +164,21 @@ header, so `GET /tx/<id>` returns **404** for it, and the transaction's owner is
 knowable only through the GraphQL indexer. A signed payload makes bundled and
 top-level artifacts verify identically.
 
-Order of operations, and it matters: **serialise → compress → sign → encrypt**.
+Order of operations, and it matters:
+
+```
+private:  serialise → compress → sign → encrypt
+public:   serialise → compress → sign
+```
+
+The public path is the same chain with the last step absent, because a public
+drive has no drive key. **The signature is therefore load-bearing in a way it
+is not for a private drive**: it is the only thing binding a public artifact to
+the drive's owner. A private drive's artifact has a second filter — a stranger's
+bytes will not decrypt under the drive key, whatever they claim — and a public
+drive's has none, so anyone can post bytes tagged with a `Drive-Id` and the
+signature check is the whole of what turns them away. This is an argument for
+signing more carefully, not for signing less.
 
 Compressing *before* signing rather than after, because the signature is an
 ANS-104 **data item** signature and not a signature over raw bytes. That is not
@@ -173,20 +193,32 @@ The order the implementation uses inverts that, and gives a reader a chain in
 which every step's input has already been vouched for by the step before:
 
 ```
-decrypt (GCM, authenticated)  →  parse data item  →  verify owner  →  gunzip
+private:  decrypt (GCM, authenticated)  →  parse data item  →  verify owner  →  gunzip
+public:                                    parse data item  →  verify owner  →  gunzip
 ```
 
-Only an authenticated payload is ever inflated. That is what makes a bound on
-the decompressed size meaningful rather than decorative (§2.4), and it is the
-same discipline as never handing an untrusted file to SQLite: spend nothing on
-input until something has attested to it.
+**Only a payload the owner signed is ever inflated**, on both paths. That is
+the property that makes a bound on the decompressed size meaningful rather than
+decorative (§2.4), and it is the same discipline as never handing an untrusted
+file to SQLite: spend nothing on input until something has attested to it.
+
+What the private path has in addition is an earlier and cheaper filter. GCM
+authenticates before an ANS-104 parse is attempted at all, so a body that
+arrived wrong — or was never this drive's — is turned away before any parser
+sees it. A public drive reaches the parser with unverified bytes and rejects
+them a step later. That is a difference in how much work a bad artifact costs,
+not in what is accepted.
 
 Compressing before encrypting remains, as ever, the only order that compresses
-at all.
+at all — and on the public path compression is simply the last thing that
+happens to the payload before it is signed.
 
-### 2.3 AES-GCM, and never CTR
+### 2.3 AES-GCM, and never CTR — and the size bound is not the cipher's
 
-Encrypt with the drive key using AES256-GCM, per `arfs/privacy.mdx`.
+Encrypt with the drive key using AES256-GCM, per `arfs/privacy.mdx`. **A public
+drive's artifact is not encrypted at all** (§2.6); everything in this subsection
+about *which* cipher applies to the private path only, and everything about the
+size bound applies to both.
 
 CTR was considered. Its advantages are streaming and random access, which is why
 this codebase uses it above `maxSizeSupportedByGCMEncryption` (100 MiB) for file
@@ -197,8 +229,15 @@ observed serving wrong data — a truncated GraphQL response under an open
 `UPSTREAM_CIRCUIT_OPEN` breaker silently dropped a drive from a user's list.
 GCM detects a body that arrived wrong; CTR would import it as state.
 
-Above the 100 MiB boundary the artifact must **split into authenticated parts
-with a manifest**, never fall through to CTR.
+A public drive gets neither cipher and so gets neither property: a body that
+arrived wrong is caught one step later, by the data item signature, which every
+path checks (§2.2).
+
+**The 100 MiB refusal is a bound on the producer, not on the cipher.** D5 was
+originally justified as an AES-GCM constraint — GCM should not authenticate
+more than about this much in one piece — and that justification does not
+survive either of the two things below. It is kept, at the same number, on its
+own reasoning.
 
 **Where that boundary actually is.** An earlier draft of this section put it
 near 120k entities, extrapolating from the 34.63 MiB in §1.1. That
@@ -219,8 +258,10 @@ Neither is wrong. A row's serialised width is dominated by its **name and
 path**, and the two fixtures assume different ones — so the honest answer is a
 range, not a number:
 
-> **The AES-GCM boundary is crossed somewhere between 70,000 and 80,000 files,
-> depending on how long that drive's names and paths are.**
+> **The 100 MiB payload boundary is crossed somewhere between 70,000 and 80,000 files, depending on how long that drive's names and paths are.**
+> The same figures apply to a public drive: what is weighed is the serialised
+> payload, and the cipher — which a public drive does not have — is downstream
+> of it.
 
 The end-to-end figure is the one to plan against, because it weighs what `seal`
 weighs: **52.16 MiB for 41,767 files**, 1,306 bytes per entity, of a 100 MiB
@@ -244,14 +285,22 @@ files:
 | serialised JSON — **what D5 weighs** | 52.16 MiB |
 | gzipped | 9.55 MiB |
 | signed ANS-104 data item | 9.55 MiB + 1,046 B of header |
-| **what AES-GCM encrypts** | 9.55 MiB |
-| what the network carries | 9.55 MiB |
+| **what AES-GCM encrypts** (private drives only) | 9.55 MiB |
+| what the network carries | 9.55 MiB, either privacy |
 
 So the 100 MiB bound guards neither the cipher nor the transport: AES-GCM
 holds exactly what the network carries, 5.46× less than the figure being
 checked. An earlier revision of this section claimed the bound was "on what
 AES-GCM must hold in one piece" — that is wrong, and the measurement above is
 what disproves it.
+
+**And there is now a path with no cipher in it at all.** A public drive's
+artifact is signed and not encrypted, so a bound inherited from AES-GCM would
+have nothing to inherit from and would have to be dropped for public drives —
+which is plainly the wrong answer, because the cost the bound guards is the
+same on both paths and is spent before any cipher is reached. A justification
+that produces the wrong answer on a case it did not anticipate was never the
+real reason.
 
 What the bound actually guards is the **producer's memory**, which is where
 the cost really lands. Building a payload of this size takes a process from a
@@ -261,6 +310,20 @@ high-water mark before releasing it. The consumer is cheaper — importing never
 set a new peak in the same run. That asymmetry is worth stating plainly:
 **producing an artifact is the expensive half, and it is the half that runs in
 the user's browser tab.**
+
+That cost is **identical for a public drive**. The export, the `jsonEncode` and
+the UTF-8 encoding are the whole of the peak; encryption adds one buffer of the
+*compressed* size, 9.55 MiB, to a figure near 950 MiB. So the bound is the same
+number for both privacies, deliberately. Two numbers would mean the reader's
+inflation limit (§2.4) differed by drive, which is a window in which a payload
+is writable by one path and unreadable by another. One number is checkable; two
+drift.
+
+The private path stays inside AES-GCM's own comfortable range as a
+*consequence* of this bound rather than by construction — 100 MiB of payload is
+9.55 MiB of ciphertext — and `drive_state_envelope_test.dart` asserts the
+constant never grows past `maxSizeSupportedByGCMEncryption` so that consequence
+keeps holding.
 
 Two caveats on those figures. They are VM resident-set size, not a browser
 heap — and a browser is likely worse, because dart2js strings are UTF-16, so
@@ -286,14 +349,15 @@ memory and checks the size afterwards has already lost. The gzip trailer's
 stream, which is to say by the attacker.
 
 The bound belongs on the output sink, refusing at the first byte past the
-limit. Reuse the AES-GCM size boundary from §2.3: a payload that inflates past
-what a producer is allowed to seal is, by construction, not a payload this
-format produced.
+limit. Reuse the payload boundary from §2.3, unchanged for either privacy: a
+payload that inflates past what a producer is allowed to seal is, by
+construction, not a payload this format produced.
 
 This check is cheap because of the ordering in §2.2 — the signature has already
 verified by the time anything is inflated, so the bound is a backstop against a
 *compromised or buggy owner client*, not the front line against anonymous
-input.
+input. That holds for a public drive too, where the signature is the only thing
+that ran before it.
 
 ### 2.5 Trust, replay and failure
 
@@ -311,15 +375,114 @@ input.
   is a cache and never the only copy — and why §5 forbids producing one from a
   sync that reported skipped entities.
 
-### 2.6 Public drives
+### 2.6 Public drives — supported, and the earlier recommendation was wrong
 
-A public drive has no drive key, so its artifact would be unencrypted. The
-contents are already public, but a single blob enumerating every name, size and
-relationship is more useful to an adversary than the same facts scattered across
-transactions — though §1.3 shows snapshots already concede most of this.
+A public drive has no drive key, so its artifact is **signed and not
+encrypted**. The chain is the private one minus a layer, and inverted on read:
 
-**Recommend private-only for v1.** Public drives skip the per-entity
-decryptions entirely, so they have least to gain.
+```
+private:  serialise → gzip → sign as a data item → AES256-GCM
+public:   serialise → gzip → sign as a data item
+```
+
+`Cipher` and `Cipher-IV` are absent for a public artifact, and **their absence
+is the discriminator**. Everything else about the entity — the ArFS tags, the
+coverage claim, `Entity-Count`, the signature, the size bound, the section
+rules — is unchanged.
+
+#### The earlier recommendation, and why it does not hold
+
+An earlier revision of this section recommended private-only for v1, on two
+arguments. Both are wrong, and it is worth saying how, because the shape of the
+design follows from it.
+
+**"Public drives have least to gain."** This was the load-bearing claim and it
+is simply false. What an artifact buys is §1.2: not paying ~420 paginated
+GraphQL queries and ~42,000 metadata fetches to replay a drive's history. A
+public drive pays every one of those, identically. What it does *not* pay is
+the per-entity AES decryption — one of the three costs per entity, alongside a
+JSON parse and an insert, and by far the cheapest of the three to skip in bulk.
+So a public drive gains nearly all of what a private drive gains. The
+recommendation inverted the size of the win it was weighing.
+
+**"A single blob enumerating every name, size and relationship is more useful
+to an adversary."** True as a statement about aggregation, and already conceded
+in full. **A snapshot of a public drive is exactly that blob**, unencrypted,
+enumerating the same names, sizes and relationships, and snapshots are produced
+and published today. §1.3 makes the same point about private drives from the
+other direction — a private drive's snapshot already leaks its whole shape in
+plaintext — and this section half-admitted it ("snapshots already concede most
+of this") and recommended against anyway. A public artifact concedes **nothing
+a public drive's snapshot does not already concede**. There is no new exposure
+to weigh, so there is nothing on the other side of the scale.
+
+Note what this argument is *not*. It is not "public data is public, so nothing
+matters" — aggregation is a real distinction and a format that introduced it
+would deserve the scrutiny. It is that this format does not introduce it: the
+aggregated form is already published by the mechanism this one sits beside.
+
+#### The guard that replaces it, and it runs in both directions
+
+Dropping the privacy gate makes one thing critical, and it is the inverse of
+what the old recommendation worried about:
+
+**A private drive must never publish an unencrypted artifact.** That would
+expose the drive's entire structure — every name, every size, every
+relationship — permanently and irrevocably. It is the single worst thing this
+feature could do, and unlike every other failure here it is not a fallback to
+today's behaviour; it is worse than today's behaviour, for ever.
+
+So it is not implemented as a check. `DriveStateProtection`
+(`lib/drive_state/domain/drive_state_protection.dart`) is a sealed type with
+two variants and private constructors, reachable only through a factory that
+takes the drive's own `privacy` column and its key together. The unencrypted
+variant is only produced by the `public` arm. A caller does not assert how an
+artifact is protected — it hands over what the drive row says and is told. The
+codec switches exhaustively over the type, so a third variant would be a
+compile error rather than a silent fall-through to the clear. **Publishing a
+private drive in the clear is not a check that could be skipped; it is a value
+that cannot be constructed.**
+
+**A reader refuses any artifact whose cipher-presence contradicts the privacy
+of the drive it claims to be for**, in both directions:
+
+| the drive | the artifact | outcome |
+|---|---|---|
+| private | no `Cipher` tag | `privacy-mismatch` |
+| public | a `Cipher` tag | `privacy-mismatch` |
+| either | `Cipher` without `Cipher-IV`, or the reverse | `integrity-failed` |
+
+This follows the `Block-Start`/`Block-End` cross-check of §3.3 rather than
+inventing a second convention: a claim from an untrusted source — the
+transaction's tags, chosen by whoever posted it — checked against something
+trustworthy, here the privacy of the drive in the reader's own database. It is
+checked twice for the same reason the size bound is: once against the tags,
+before the body is touched, and once in the codec, which is the layer that
+decides whether to decrypt and must not decide it from anything else. The
+signed payload's own `privacy` field is checked against the same trustworthy
+value a step later — that one matters because the merge writes the payload's
+`privacy` onto the local drive row.
+
+The refusal has its own outcome code rather than being folded into
+`integrity-failed`, for the reason `coverage-mismatch` has one: a private drive
+being offered an artifact in the clear is a producer somewhere having published
+the thing this design most exists to prevent, and it should not arrive as a
+shade of "the payload did not match its tags".
+
+#### What does not change
+
+`State-Version` stays at **1.0**. Public support is folded into the initial
+format rather than added as a minor bump, because nothing has been published to
+chain — so there is never a fragmented world in which some 1.0 readers handle
+public drives and others do not. Had anything been published this would have
+been a clean minor bump under §6: a 1.0 reader meeting a cipher-less artifact
+finds no `Cipher` tag and refuses it, which is a correct refusal rather than a
+misread. That fallback exists and is not needed.
+
+Every other gate on publishing still applies to a public drive, unchanged: the
+D3 skip precondition, drive ownership, write permissions, a non-empty drive, a
+sync watermark, and the payload size bound. The only condition removed is the
+privacy one.
 
 ---
 
@@ -365,9 +528,22 @@ Data-Start:       "<first block in which data was found>"
 Data-End:         "<last block in which data was found>"
 Entity-Count:     "<number of entities in the payload>"
 Unix-Time:        "<seconds since unix epoch>"
-Cipher:           "AES256-GCM"
-Cipher-IV:        "<12 byte IV as Base64>"
+Cipher:           "AES256-GCM"                      (private drives only)
+Cipher-IV:        "<12 byte IV as Base64>"          (private drives only)
 ```
+
+**`Cipher` and `Cipher-IV` are present together or absent together**, and a
+public drive's artifact carries neither, because nothing about it is encrypted
+(§2.6). Their absence is how a reader tells the two chains apart, so it is a
+state the format names rather than an omission: there is no `Cipher: "none"`
+and no empty value. One without the other is refused as `integrity-failed` —
+a `Cipher` with no `Cipher-IV` is ciphertext nothing can address, and a
+`Cipher-IV` with no `Cipher` reads to every consumer as an unencrypted
+artifact, which for a private drive is the far end of the cross-check.
+
+A reader that finds these tags disagreeing with the privacy of the drive in its
+own database refuses the artifact in either direction (§2.6). A producer cannot
+construct that disagreement at all.
 
 `Drive-State-Id` mirrors `Snapshot-Id`. `Block-*` and `Data-*` carry the same
 meanings the Snapshot entity gives them — the range *searched* against the range
@@ -376,9 +552,11 @@ artifact is empty, without fetching it.
 
 One tag is specific to this entity:
 
-- **`Entity-Count`** — an integrity check, not a statistic. GCM proves the
-  ciphertext arrived intact; the count proves the body meant what the tags
-  promised. A mismatch after import is decisive and cheap.
+- **`Entity-Count`** — an integrity check, not a statistic. On a private drive
+  GCM proves the ciphertext arrived intact and the count proves the body meant
+  what the tags promised; on a public drive the data item signature proves the
+  first and the count still proves the second. A mismatch after import is
+  decisive and cheap, and it is the same check on both paths.
 
 **Never set `Content-Encoding: gzip` on this entity.** An earlier draft of this
 document specified it, on the reasoning that a client cannot discover
@@ -391,15 +569,20 @@ documentation — it is an instruction to the transport:
   (`src/lib/ans-104.ts`), then echoes it onto the data response —
   `res.header('Content-Encoding', dataAttributes.contentEncoding)` in
   `src/routes/data/handlers.ts`.
-- What the gateway then serves is **GCM ciphertext**; the gzip layer is two
-  steps further in (§3.3). A browser `fetch` will try to gunzip that ciphertext
-  at the network layer and fail with `ERR_CONTENT_DECODING_FAILED`. There is no
-  opt-out in the browser, and `dart:io` auto-decompresses by default.
+- What the gateway then serves is **GCM ciphertext** for a private drive, and
+  for a public drive a **signed ANS-104 data item** whose framing wraps the
+  gzip stream; the gzip layer is two steps further in on one path and one step
+  further in on the other (§3.3), and never the outermost thing. A browser
+  `fetch` will try to gunzip whichever of those arrives, at the network layer,
+  and fail with `ERR_CONTENT_DECODING_FAILED`. There is no opt-out in the
+  browser, and `dart:io` auto-decompresses by default.
 - **Tags are immutable.** An artifact published with this tag is unfetchable
   for as long as it exists, by every client, with no remedy but republishing.
 
 Compression stays an internal detail of the payload, discovered by decompressing
-it after the signature verifies. A reader must bound that decompression (§2.4);
+it after the signature verifies — on both paths, since it is the signature and
+not the cipher that gates inflation (§2.2). A reader must bound that
+decompression (§2.4);
 the ratio here is roughly 5.2× on real data (34.63 → 6.65 MiB), and a payload
 that inflates past the AES-GCM size boundary is refused rather than buffered.
 
@@ -412,13 +595,22 @@ files? superseded revisions?); a candidate for §6 instead.
 ### 3.3 Payload
 
 ```
-serialise rows  →  gzip  →  sign as a data item (owner's wallet)  →  AES256-GCM
+private:  serialise rows → gzip → sign as a data item (owner's wallet) → AES256-GCM
+public:   serialise rows → gzip → sign as a data item (owner's wallet)
 ```
 
 The payload is a container of **named sections**, plus a top-level `version`
 and a top-level `coverage` object. The signature covers the whole container —
 sections, version and coverage alike. See §2.2 for why the gzip step comes
-before the signature and not after.
+before the signature and not after, and §2.6 for why the last step is absent
+for a public drive.
+
+The container itself is **identical between the two privacies**. Nothing in it
+is conditioned on the drive's privacy, no section appears or disappears, and
+the `drives` section carries the drive's own `privacy` value on both paths —
+which a reader checks against the privacy of the drive it holds locally, for
+the same reason it checks the coverage tags: the merge writes that value onto
+the local drive row, and the payload is the half somebody signed.
 
 `version` is the same `major.minor` string the `State-Version` tag carries, and
 a producer writes both from one constant. **A reader must refuse an artifact
@@ -434,7 +626,7 @@ a `rows` array. All seven are required and any may be empty (§6.1).
 
 | section | carries |
 |---|---|
-| `drives` | exactly one row: the drive itself, minus its key material, sync cursor and watermark |
+| `drives` | exactly one row: the drive itself, including its `privacy`, and minus its key material, sync cursor and watermark |
 | `folder_entries` | current folder rows |
 | `file_entries` | current file rows, including `thumbnail`, `pinnedDataOwnerAddress`, `assignedNames`, `licenseTxId`, `isHidden` and both custom-metadata columns |
 | `drive_revisions` | every drive revision |
@@ -768,7 +960,9 @@ Per drive, per sync:
 - if not, an **enumerated reason** — `none found`, `unknown State-Version`
   (a major this build does not read, in either direction),
   `signature failed`, `decrypt failed`, `integrity failed`, `entity count
-  mismatch`, `coverage mismatch`, `range already covered`, `fetch failed`;
+  mismatch`, `coverage mismatch`, `privacy mismatch` (the artifact's
+  cipher-presence contradicts the drive's privacy, §2.6), `range already
+  covered`, `fetch failed`;
 - entities imported from artifact / snapshot / GraphQL;
 - time in bulk import against time in parse.
 
@@ -820,9 +1014,11 @@ is not real until it is documented there.
   entities.
 - `reading-data.mdx` — the read order in §5, discovery in §4, and the rule that
   any failure falls back rather than fails.
-- `privacy.mdx` — that the payload is signed and encrypted with the **drive**
-  key as a single unit, unlike a snapshot's per-entity ciphertext, and that
-  public drives are out of scope for v1.
+- `privacy.mdx` — that a private drive's payload is signed and encrypted with
+  the **drive** key as a single unit, unlike a snapshot's per-entity
+  ciphertext; that a public drive's is signed and not encrypted, with `Cipher`
+  and `Cipher-IV` absent; and that a reader refuses an artifact whose
+  cipher-presence contradicts the privacy of the drive it names (§2.6).
 
 **Correction, independent of this work:**
 

@@ -15,7 +15,21 @@ enum DriveStatePublishOffer {
   offered,
 }
 
-/// Decides the offer from the five conditions that make publishing possible.
+/// Decides the offer from the four conditions that make publishing possible.
+///
+/// ## Privacy is not one of them
+///
+/// It was. The gate hid the entry for every public drive, because v1 sealed an
+/// artifact under the drive key and a public drive has none. That is no longer
+/// true: a public drive publishes the same artifact with the encryption step
+/// absent, and gains the same thing from it — the ~420 GraphQL queries and
+/// ~42,000 metadata fetches an artifact replaces, of which the per-entity
+/// decryption a public drive skips anyway is a small fraction (§1.2, §2.6).
+///
+/// So there is no privacy parameter here at all, rather than one that is
+/// always true. A parameter every caller passes the same value for is a
+/// question nobody is asking, and leaving it in place would leave two call
+/// sites free to answer it differently.
 ///
 /// ## Hidden versus disabled
 ///
@@ -26,32 +40,28 @@ enum DriveStatePublishOffer {
 /// - **[publishingEnabled]** — the feature is off for this build. Advertising
 ///   a greyed-out entry for something unreleased is noise with no remedy.
 ///   Hidden.
-/// - **[isPrivateDrive]** — `DriveStateCreationRefusal.publicDriveUnsupported`.
-///   A drive's privacy is fixed when it is created and there is no way to
-///   change it, so a disabled item here would be permanent furniture in every
-///   public drive's menu. Hidden.
 /// - **[isDriveOwner]** — `DriveStateCreationRefusal.notDriveOwner`. Not
 ///   something the user can become. Hidden.
 /// - **[hasWritePermissions]** — on someone else's shared drive. The user
 ///   cannot grant themselves write access, and in practice this travels with
 ///   ownership. Hidden. (The neighbouring snapshot item merely disables on
 ///   this; a snapshot is a public read of the chain, whereas an artifact is
-///   sealed with a drive key and signed as the owner, so the two are not the
-///   same question.)
+///   signed as the owner and, for a private drive, sealed with the drive key,
+///   so the two are not the same question.)
 /// - **[driveIsEmpty]** — this one the user *can* fix, by uploading a file.
 ///   Disabled and visible, so the menu explains why it is not available yet
 ///   instead of the entry silently appearing later.
+///
+/// The gates the service still applies behind this — the D3 skip
+/// precondition, the watermark, ownership again, and the payload size — are
+/// unchanged and apply to a public drive exactly as they do to a private one.
 DriveStatePublishOffer driveStatePublishOffer({
   required bool publishingEnabled,
-  required bool isPrivateDrive,
   required bool isDriveOwner,
   required bool hasWritePermissions,
   required bool driveIsEmpty,
 }) {
-  if (!publishingEnabled ||
-      !isPrivateDrive ||
-      !isDriveOwner ||
-      !hasWritePermissions) {
+  if (!publishingEnabled || !isDriveOwner || !hasWritePermissions) {
     return DriveStatePublishOffer.hidden;
   }
 

@@ -260,8 +260,9 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
         artifact.entity,
         wallet,
         // The body is already sealed by `DriveStateEnvelopeCodec`; handing a
-        // key here would ask the entity to encrypt what is already
-        // ciphertext, and `DriveStateEntity` throws rather than allow it.
+        // key here would ask the entity to encrypt a body that is either
+        // already ciphertext or deliberately in the clear, and
+        // `DriveStateEntity` throws rather than allow either.
         null,
         skipSignature: true,
       );

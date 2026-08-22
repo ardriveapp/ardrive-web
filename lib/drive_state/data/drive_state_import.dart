@@ -5,12 +5,13 @@ import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/sync/utils/network_transaction_utils.dart';
-import 'package:ardrive_utils/ardrive_utils.dart' show EntityTag;
+import 'package:ardrive_utils/ardrive_utils.dart'
+    show DrivePrivacyTag, EntityTag;
 import 'package:arweave/utils.dart' as utils;
-import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:drift/drift.dart';
 
 /// Opening a drive state artifact and merging it into the local database.
@@ -154,10 +155,10 @@ class DriveStateImportResult {
 extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
   /// The coarser outcome this codec failure reports as.
   ///
-  /// The codec distinguishes eleven ways an artifact can be unreadable because
-  /// it is the layer that can tell them apart. A reader of a sync log wants
-  /// the answer to *why did this drive not use its artifact*, and eleven
-  /// shades of "it did not open" would bury it — so §7's vocabulary is coarser
+  /// The codec distinguishes thirteen ways an artifact can be unreadable
+  /// because it is the layer that can tell them apart. A reader of a sync log
+  /// wants the answer to *why did this drive not use its artifact*, and
+  /// thirteen shades of "it did not open" would bury it — so §7's vocabulary is coarser
   /// on purpose, and the envelope lane left this mapping to whoever composes
   /// it. The precision is not lost: it travels in
   /// [DriveStateImportResult.detail], which carries the codec's own reason
@@ -183,6 +184,18 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
         // side (§6), not a defect.
         DriveStateEnvelopeFailure.unsupportedCipher =>
           DriveStateOutcome.unknownVersion,
+
+        // The cipher/privacy cross-check, both directions. Not
+        // `integrityFailed`: the payload may be perfectly well formed, and
+        // what is wrong is that its cipher-presence contradicts the privacy
+        // of the drive it claims to be for. Its own code for the same reason
+        // `coverageMismatch` has one — a log that blurred it into "the
+        // payload did not match its tags" would hide a private drive being
+        // offered an artifact in the clear.
+        DriveStateEnvelopeFailure.plaintextForPrivateDrive =>
+          DriveStateOutcome.privacyMismatch,
+        DriveStateEnvelopeFailure.ciphertextForPublicDrive =>
+          DriveStateOutcome.privacyMismatch,
 
         // A signature scheme this build cannot verify is *not* that. Nothing
         // about the artifact's authorship has been established - the check
@@ -327,27 +340,31 @@ class DriveStateImporter {
     DriveStateEnvelopeCodec? codec,
   }) : _codec = codec ?? DriveStateEnvelopeCodec();
 
-  /// Opens [body] — the artifact transaction's data — under [driveKey], checks
-  /// it was signed by [expectedOwnerAddress], and merges it into the drive
-  /// named by [candidate]'s `Drive-Id` tag.
+  /// Opens [body] — the artifact transaction's data — under [protection],
+  /// checks it was signed by [expectedOwnerAddress], and merges it into the
+  /// drive named by [candidate]'s `Drive-Id` tag.
   ///
   /// [candidate] is the discovery lane's product: a transaction id and the
   /// tags an untrusted indexer reported for it. Nothing it says is believed
   /// here either — the tags are what the payload is checked *against*, which
   /// is the only reason they are worth having.
   ///
+  /// [protection] is the opposite kind of value: it is resolved from this
+  /// client's own drive row, so it is the trustworthy half of the
+  /// cipher/privacy cross-check the tag checks below run.
+  ///
   /// Never throws.
   Future<DriveStateImportResult> import({
     required DriveStateArtifactCandidate candidate,
     required Uint8List body,
-    required SecretKey driveKey,
+    required DriveStateProtection protection,
     required String expectedOwnerAddress,
   }) async {
     try {
       return await _import(
         candidate: candidate,
         body: body,
-        driveKey: driveKey,
+        protection: protection,
         expectedOwnerAddress: expectedOwnerAddress,
       );
     } catch (e) {
@@ -365,7 +382,7 @@ class DriveStateImporter {
   Future<DriveStateImportResult> _import({
     required DriveStateArtifactCandidate candidate,
     required Uint8List body,
-    required SecretKey driveKey,
+    required DriveStateProtection protection,
     required String expectedOwnerAddress,
   }) async {
     final stopwatch = Stopwatch()..start();
@@ -382,17 +399,56 @@ class DriveStateImporter {
     final cipher = candidate.cipher;
     final cipherIv = candidate.cipherIv;
 
-    if (driveId == null ||
-        blockEnd == null ||
-        declaredCount == null ||
-        cipher == null ||
-        cipherIv == null) {
+    if (driveId == null || blockEnd == null || declaredCount == null) {
       return DriveStateImportResult.rejected(
         DriveStateOutcome.integrityFailed,
         'a required tag is missing or unreadable on ${candidate.txId}: '
         'Drive-Id=$driveId Block-End=${candidate.tag(EntityTag.blockEnd)} '
-        'Entity-Count=${candidate.tag(EntityTag.entityCount)} '
-        'Cipher=$cipher Cipher-IV=${cipherIv == null ? 'absent' : 'set'}',
+        'Entity-Count=${candidate.tag(EntityTag.entityCount)}',
+      );
+    }
+
+    // 1b. The cipher tags, which are required together or not at all.
+    //
+    //     A `Cipher` with no `Cipher-IV` is ciphertext nothing can address; a
+    //     `Cipher-IV` with no `Cipher` reads as an unencrypted artifact to
+    //     anything that dispatches on cipher-presence, which is what the check
+    //     after this one does. Neither is a shape a producer can emit, and
+    //     letting either through would mean deciding privacy from one of two
+    //     tags that disagree.
+    if ((cipher == null) != (cipherIv == null)) {
+      return DriveStateImportResult.rejected(
+        DriveStateOutcome.integrityFailed,
+        'the cipher tags on ${candidate.txId} are incomplete: '
+        'Cipher=${cipher ?? 'absent'} '
+        'Cipher-IV=${cipherIv == null ? 'absent' : 'set'}',
+      );
+    }
+
+    // 1c. The cipher/privacy cross-check, in both directions (§2.6).
+    //
+    //     The same shape as the `Block-Start`/`Block-End` check at step 8: a
+    //     claim from an untrusted source, checked against something
+    //     trustworthy. What the tags say about encryption is chosen by
+    //     whoever posted the transaction; [protection] came from this
+    //     client's own drive row.
+    //
+    //     Run here, before the body is touched, so a plaintext body offered
+    //     to a private drive is never parsed and an encrypted one offered to
+    //     a public drive is never handed to a decryptor with no key. The
+    //     codec repeats the check as its own guard — it must, because it is
+    //     the layer that decides whether to decrypt — and this one exists so
+    //     the rejection can be reported against the *tags*, which is where
+    //     the contradiction actually is.
+    final artifactIsEncrypted = cipher != null;
+    if (protection.isEncrypted != artifactIsEncrypted) {
+      return DriveStateImportResult.rejected(
+        DriveStateOutcome.privacyMismatch,
+        protection.isEncrypted
+            ? 'drive $driveId is private and ${candidate.txId} carries no '
+                'Cipher tag; a private drive is never published in the clear'
+            : 'drive $driveId is public and ${candidate.txId} declares '
+                'Cipher=$cipher; a public drive has no key to open it with',
       );
     }
 
@@ -445,21 +501,41 @@ class DriveStateImporter {
       );
     }
 
-    final Uint8List iv;
-    try {
-      iv = utils.decodeBase64ToBytes(cipherIv);
-    } catch (e) {
-      return DriveStateImportResult.rejected(
-        DriveStateOutcome.integrityFailed,
-        'the Cipher-IV tag is not base64: $e',
+    // The envelope, built from the chain the tags say produced this artifact —
+    // which step 1c has just established is the chain this drive's privacy
+    // calls for. `DriveStateEnvelope` has no constructor that could hold a
+    // cipher without its IV, so the two shapes below are the only two there
+    // are.
+    final DriveStateEnvelope envelope;
+    if (artifactIsEncrypted) {
+      final Uint8List iv;
+      try {
+        iv = utils.decodeBase64ToBytes(cipherIv!);
+      } catch (e) {
+        return DriveStateImportResult.rejected(
+          DriveStateOutcome.integrityFailed,
+          'the Cipher-IV tag is not base64: $e',
+        );
+      }
+
+      // The `Cipher` tag verbatim, so a cipher this build does not read is
+      // refused by the codec rather than assumed to be the one it does.
+      envelope = DriveStateEnvelope.encrypted(
+        body: body,
+        cipherIv: iv,
+        cipher: cipher,
       );
+    } else {
+      envelope = DriveStateEnvelope.inTheClear(body: body);
     }
 
     // 3. Signature first (§2.5). Nothing the payload claims is examined until
-    //    the drive's owner is known to have signed it.
+    //    the drive's owner is known to have signed it. For a public drive
+    //    that check carries the whole weight: there is no key whose absence
+    //    would have stopped a stranger's bytes here.
     final opened = await _codec.open(
-      envelope: DriveStateEnvelope(body: body, cipherIv: iv, cipher: cipher),
-      driveKey: driveKey,
+      envelope: envelope,
+      protection: protection,
       expectedOwnerAddress: expectedOwnerAddress,
     );
 
@@ -527,6 +603,7 @@ class DriveStateImporter {
     final identity = _checkIdentity(
       export: export,
       driveId: driveId,
+      protection: protection,
       expectedOwnerAddress: expectedOwnerAddress,
     );
     if (identity != null) return identity;
@@ -576,11 +653,12 @@ class DriveStateImporter {
     );
   }
 
-  /// The three ways a payload can be about something other than the drive it
+  /// The four ways a payload can be about something other than the drive it
   /// was fetched for. Returns null when it is about the right one.
   DriveStateImportResult? _checkIdentity({
     required DriveStateExport export,
     required String driveId,
+    required DriveStateProtection protection,
     required String expectedOwnerAddress,
   }) {
     if (export.drive.id != driveId) {
@@ -609,6 +687,29 @@ class DriveStateImporter {
           'the payload for $driveId carries rows belonging to $rowDriveId',
         );
       }
+    }
+
+    // The cipher/privacy cross-check again, one layer in: step 1c compared the
+    // drive's privacy against what the *tags* claimed, and this compares it
+    // against what the **signed payload** claims. They are different claims by
+    // different authors, and this is the one that would be written to disk —
+    // `_driveCompanion` copies the payload's `privacy` onto the local drive
+    // row, so a payload that said `public` for a private drive would relabel
+    // the user's own drive while its key material sat untouched beside it.
+    //
+    // Privacy is fixed when a drive is created and there is no way to change
+    // it, so the two can only disagree if the artifact is not about this
+    // drive, or the producer's own row is wrong. Neither is worth merging.
+    final expectedPrivacy = protection.isEncrypted
+        ? DrivePrivacyTag.private
+        : DrivePrivacyTag.public;
+    if (export.drive.privacy != expectedPrivacy) {
+      return DriveStateImportResult.rejected(
+        DriveStateOutcome.privacyMismatch,
+        'the signed payload says drive $driveId is '
+        '${export.drive.privacy}, and this client holds it as '
+        '$expectedPrivacy',
+      );
     }
 
     if (export.drive.ownerAddress != expectedOwnerAddress) {

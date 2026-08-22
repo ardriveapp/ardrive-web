@@ -129,15 +129,25 @@ void main() {
           expectRefusal(entity()..entityCount = null, 'Entity-Count');
         });
 
-        test('a null Cipher-IV', () {
-          expectRefusal(entity()..cipherIv = null, 'Cipher-IV');
+        /// `Cipher` and `Cipher-IV` are the one pair that may legitimately be
+        /// absent - that is what a public drive's artifact looks like - but
+        /// never one without the other. A `Cipher` with no `Cipher-IV` is
+        /// ciphertext nothing can address, and a `Cipher-IV` with no `Cipher`
+        /// reads as an unencrypted artifact to every consumer, which for a
+        /// private drive is the refusal at the far end of the cross-check.
+        test('a Cipher with no Cipher-IV', () {
+          expectRefusal(entity()..cipherIv = null, 'Cipher without Cipher-IV');
+        });
+
+        test('a Cipher-IV with no Cipher', () {
+          expectRefusal(entity()..cipher = null, 'Cipher-IV without Cipher');
         });
 
         test('names every missing tag at once, so one fix is enough', () {
           final incomplete = entity()
             ..id = null
             ..blockEnd = null
-            ..cipher = null;
+            ..entityCount = null;
 
           expect(
             () => incomplete.addEntityTagsToTransaction(Transaction()),
@@ -147,7 +157,7 @@ void main() {
               allOf(
                 contains('Drive-State-Id'),
                 contains('Block-End'),
-                contains('Cipher'),
+                contains('Entity-Count'),
               ),
             )),
           );
@@ -214,10 +224,63 @@ void main() {
       });
     });
 
+    group('a public drive\'s artifact', () {
+      DriveStateEntity publicEntity() => DriveStateEntity(
+            id: driveStateId,
+            driveId: driveId,
+            blockEnd: 1814228,
+            dataStart: 1102394,
+            dataEnd: 1814012,
+            entityCount: 41273,
+            data: body,
+          );
+
+      test('tags without a Cipher or a Cipher-IV, rather than refusing', () {
+        final tx = Transaction();
+        publicEntity().addEntityTagsToTransaction(tx);
+
+        final tags = tagsOf(tx);
+        expect(tags.containsKey(EntityTag.cipher), isFalse);
+        expect(tags.containsKey(EntityTag.cipherIv), isFalse);
+      });
+
+      test('writes every other tag exactly as a private artifact does', () {
+        final tx = Transaction();
+        publicEntity().addEntityTagsToTransaction(tx);
+
+        final tags = tagsOf(tx);
+        expect(tags[EntityTag.entityType], EntityTypeTag.driveState);
+        expect(tags[EntityTag.driveId], driveId);
+        expect(tags[EntityTag.driveStateId], driveStateId);
+        expect(tags[EntityTag.stateVersion], '1.0');
+        expect(tags[EntityTag.contentType], ContentType.octetStream);
+        expect(tags[EntityTag.blockStart], '0');
+        expect(tags[EntityTag.blockEnd], '1814228');
+        expect(tags[EntityTag.entityCount], '41273');
+      });
+
+      test('is built from an envelope with nothing to put in either tag', () {
+        final entity = DriveStateEntity.fromEnvelope(
+          envelope: DriveStateEnvelope.inTheClear(body: body),
+          id: driveStateId,
+          driveId: driveId,
+          coverage: const DriveStateCoverage(blockStart: 0, blockEnd: 1814228),
+          dataStart: 1102394,
+          dataEnd: 1814012,
+          entityCount: 41273,
+        );
+
+        expect(entity.data, equals(body));
+        expect(entity.cipher, isNull);
+        expect(entity.cipherIv, isNull);
+      });
+    });
+
     group('fromEnvelope', () {
       test('takes the body and both cipher tags from the envelope', () {
         final entity = DriveStateEntity.fromEnvelope(
-          envelope: DriveStateEnvelope(body: body, cipherIv: cipherIv),
+          envelope:
+              DriveStateEnvelope.encrypted(body: body, cipherIv: cipherIv),
           id: driveStateId,
           driveId: driveId,
           coverage: const DriveStateCoverage(blockStart: 0, blockEnd: 1814228),

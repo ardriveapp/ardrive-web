@@ -6,10 +6,9 @@ import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive_uploader/ardrive_uploader.dart'
-    show maxSizeSupportedByGCMEncryption;
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' show AesGcm, SecretKey;
@@ -49,6 +48,7 @@ void main() {
   late Wallet owner;
   late String ownerAddress;
   late SecretKey driveKey;
+  late DriveStateProtection privateDrive;
 
   late Database producerDb;
   late Database consumerDb;
@@ -59,6 +59,10 @@ void main() {
     owner = await Wallet.generate();
     ownerAddress = await owner.getAddress();
     driveKey = await aesGcm.newSecretKey();
+    privateDrive = DriveStateProtection.forDrive(
+      privacy: DrivePrivacyTag.private,
+      driveKey: driveKey,
+    ).protection!;
   });
 
   Future<({DriveStateArtifactCandidate candidate, Uint8List body})>
@@ -66,7 +70,7 @@ void main() {
     final export = await exportDriveState(producerDb.driveDao, driveId);
     final sealed = await codec.seal(
       plaintext: Uint8List.fromList(utf8.encode(jsonEncode(export.toJson()))),
-      driveKey: driveKey,
+      protection: privateDrive,
       wallet: owner,
     );
     expect(sealed.isSealed, isTrue, reason: sealed.toString());
@@ -87,7 +91,7 @@ void main() {
           EntityTag.blockEnd: '${export.coverage.blockEnd}',
           EntityTag.entityCount: '${export.entityCount}',
           EntityTag.cipher: Cipher.aes256,
-          EntityTag.cipherIv: envelope.cipherIvAsBase64,
+          EntityTag.cipherIv: envelope.cipherIvAsBase64!,
         },
         minedAtHeight: export.coverage.blockEnd,
       ),
@@ -100,7 +104,7 @@ void main() {
     return importer.import(
       candidate: artifact.candidate,
       body: artifact.body,
-      driveKey: driveKey,
+      protection: privateDrive,
       expectedOwnerAddress: ownerAddress,
     );
   }
@@ -486,8 +490,11 @@ void main() {
   /// FINDING 3 — the arithmetic behind D5.
   ///
   /// `DriveStateEnvelopeCodec.seal` refuses at
-  /// `maxSizeSupportedByGCMEncryption` (100 MiB), measured against the
-  /// **uncompressed JSON**. The proposal's 34.63 MiB figure is a VACUUMed
+  /// `DriveStateEnvelopeCodec.defaultMaxPlaintextBytes` (100 MiB), measured
+  /// against the **uncompressed JSON**. That bound used to be
+  /// `maxSizeSupportedByGCMEncryption` and is no longer justified by the
+  /// cipher — see D11 — but the number, and therefore every figure below, is
+  /// unchanged. The proposal's 34.63 MiB figure is a VACUUMed
   /// SQLite file, not JSON, and it was computed before `file_revisions`,
   /// `folder_revisions`, `drive_revisions` and `licenses` were added to the
   /// payload (decision D2, reversed).
@@ -555,6 +562,14 @@ void main() {
         importSource: null,
       );
 
+      // What D5 actually weighs. It is no longer `maxSizeSupportedByGCMEncryption`:
+      // the bound is on the producer's memory, not on the cipher, and the
+      // public path has no cipher at all. The number is unchanged, so every
+      // figure below and every figure §2.3 quotes still holds -
+      // `drive_state_envelope_test.dart` is where the two constants are held
+      // in the right relation to each other.
+      const payloadLimit = DriveStateEnvelopeCodec.defaultMaxPlaintextBytes;
+
       // `+ 1` for the comma that separates each row in the JSON array.
       final perFileEntry = jsonEncode(file.toJson()).length + 1;
       final perFileRevision = jsonEncode(revision.toJson()).length + 1;
@@ -568,11 +583,11 @@ void main() {
           'estimated payload for $fileCount files at $revisionsPerFile '
           'revisions each: $estimate bytes '
           '(${(estimate / (1024 * 1024)).toStringAsFixed(1)} MiB) against a '
-          '$maxSizeSupportedByGCMEncryption byte '
-          '(${maxSizeSupportedByGCMEncryption ~/ (1024 * 1024)} MiB) limit');
+          '$payloadLimit byte '
+          '(${payloadLimit ~/ (1024 * 1024)} MiB) limit');
 
       // The target drive fits, but not with the headroom the proposal implied.
-      expect(estimate, lessThan(maxSizeSupportedByGCMEncryption));
+      expect(estimate, lessThan(payloadLimit));
 
       // An earlier draft of §2.3 read: "At 34.63 MiB for ~41k entities, that
       // boundary is somewhere near 120k entities and will be reached." That
@@ -580,12 +595,12 @@ void main() {
       // counted entities rather than the entity *and* revision rows the
       // payload carries (D2). Measured against the wire format, the crossover
       // is here — and §2.3 now says so.
-      final crossover = maxSizeSupportedByGCMEncryption ~/
+      final crossover = payloadLimit ~/
           (perFileEntry + (perFileRevision * revisionsPerFile).round());
-      final headroom = maxSizeSupportedByGCMEncryption / estimate;
+      final headroom = payloadLimit / estimate;
 
       // ignore: avoid_print
-      print('the AES-GCM boundary is crossed at about $crossover files, '
+      print('the payload boundary is crossed at about $crossover files, '
           'leaving ${headroom.toStringAsFixed(2)}x headroom over the target '
           'drive');
 
@@ -632,6 +647,12 @@ void main() {
       expect(proposal, contains('~73,000 files'));
       expect(proposal, contains('~80,000 files'));
       expect(proposal, contains('between 70,000 and 80,000 files'));
+
+      // And it no longer justifies the bound by the cipher, which is the
+      // reasoning D11 removed: a public drive's artifact has no cipher and
+      // pays the same producer-memory cost.
+      expect(proposal, contains("the size bound is not the cipher's"));
+      expect(proposal, contains('producer\'s memory'));
     });
   });
 }

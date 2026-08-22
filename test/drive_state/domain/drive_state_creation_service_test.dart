@@ -4,6 +4,7 @@ import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -311,6 +312,170 @@ void main() {
         equals(export),
       );
     });
+
+    test('asked the codec for the encrypted chain, carrying the drive key', () {
+      expect(codec.lastProtection, isA<DriveStateEncrypted>());
+      expect(
+        (codec.lastProtection! as DriveStateEncrypted).driveKey,
+        same(driveKey),
+      );
+    });
+  });
+
+  /// A public drive, which used to be refused outright.
+  ///
+  /// The assertions that matter are the two differences and the long list of
+  /// things that are *not* different: the tags, the coverage, the entity
+  /// count, the payload and every remaining gate are the private drive's.
+  group('a public drive', () {
+    late PreparedDriveStateArtifact artifact;
+    late _RecordingCodec codec;
+
+    setUp(() async {
+      await (db.update(db.drives)..where((d) => d.id.equals(driveId))).write(
+        const DrivesCompanion(privacy: Value(DrivePrivacyTag.public)),
+      );
+
+      codec = _RecordingCodec();
+      final result = await serviceWith(
+        skipStatus: const DriveStateSyncSkipStatus.clean(),
+        codec: codec,
+      ).prepare(
+        // A public drive has no `encryptedKey`, so `DriveDao.getDriveKey`
+        // hands the caller null and this is what the service is given.
+        driveId: driveId,
+        driveKey: null,
+        wallet: wallet,
+      );
+
+      expect(result.isPrepared, isTrue, reason: result.reason);
+      artifact = result.artifact!;
+    });
+
+    test('prepares an artifact rather than refusing', () {
+      expect(artifact.entityCount, expectedEntityCount);
+      expect(artifact.driveId, driveId);
+      expect(artifact.sizeInBytes, greaterThan(0));
+    });
+
+    test('asked the codec for the unencrypted chain', () {
+      expect(codec.lastProtection, isA<DriveStateUnencrypted>());
+      expect(codec.lastProtection!.isEncrypted, isFalse);
+    });
+
+    test('carries no cipher tags at all, and neither half of them', () {
+      expect(artifact.isEncrypted, isFalse);
+      expect(artifact.entity.cipher, isNull);
+      expect(artifact.entity.cipherIv, isNull);
+
+      final tx = Transaction();
+      artifact.entity.addEntityTagsToTransaction(tx);
+      final tags = tagsOf(tx);
+
+      // Absent, not empty and not `none`: their absence is the discriminator,
+      // so a third state would be one nobody specified.
+      expect(tags.containsKey(EntityTag.cipher), isFalse);
+      expect(tags.containsKey(EntityTag.cipherIv), isFalse);
+    });
+
+    test('tags everything else exactly as a private drive does', () {
+      final tx = Transaction();
+      artifact.entity.addEntityTagsToTransaction(tx);
+      final tags = tagsOf(tx);
+
+      expect(tags[EntityTag.entityType], EntityTypeTag.driveState);
+      expect(tags[EntityTag.driveId], driveId);
+      expect(tags[EntityTag.blockStart], '0');
+      expect(tags[EntityTag.blockEnd], '$lastBlockHeight');
+      expect(tags[EntityTag.entityCount], '$expectedEntityCount');
+      expect(
+        tags[EntityTag.stateVersion],
+        DriveStateFormatVersion.current.toString(),
+      );
+      // Still 1.0: public support is folded into the initial format rather
+      // than added as a minor bump, because nothing has been published.
+      expect(tags[EntityTag.stateVersion], '1.0');
+    });
+
+    test('seals the same payload a private drive would', () async {
+      final export = await exportDriveState(driveDao, driveId);
+
+      expect(
+        DriveStateExport.fromJson(codec.lastPayloadJson!),
+        equals(export),
+      );
+      expect(codec.lastPayloadJson!['version'], '1.0');
+    });
+
+    test('is unsent, like every other prepared artifact', () {
+      expect(
+        () => artifact.entity.txId,
+        throwsA(
+          predicate<Object>(
+            (e) => e is Error && e.toString().contains('txId'),
+            'an uninitialised txId',
+          ),
+        ),
+      );
+    });
+
+    group('every other gate still applies', () {
+      Future<DriveStateCreationResult> preparePublic({
+        DriveStateSyncSkipStatus skipStatus =
+            const DriveStateSyncSkipStatus.clean(),
+      }) =>
+          serviceWith(skipStatus: skipStatus).prepare(
+            driveId: driveId,
+            driveKey: null,
+            wallet: wallet,
+          );
+
+      test('a sync that skipped entities still refuses', () async {
+        final result = await preparePublic(
+          skipStatus: const DriveStateSyncSkipStatus.skipped(
+            skippedEntityCount: 3,
+            reason: 'The last sync of this drive could not read 3 items.',
+          ),
+        );
+
+        expect(
+          result.refusal,
+          DriveStateCreationRefusal.syncSkippedEntities,
+        );
+      });
+
+      test('an unknown skip state still refuses', () async {
+        final result = await preparePublic(
+          skipStatus: const DriveStateSyncSkipStatus.unknown(
+            'This drive has not been synced by this session.',
+          ),
+        );
+
+        expect(result.refusal, DriveStateCreationRefusal.skipStateUnknown);
+      });
+
+      test('a wallet that does not own the drive still refuses', () async {
+        await (db.update(db.drives)..where((d) => d.id.equals(driveId))).write(
+          const DrivesCompanion(ownerAddress: Value('somebody-else')),
+        );
+
+        expect(
+          (await preparePublic()).refusal,
+          DriveStateCreationRefusal.notDriveOwner,
+        );
+      });
+
+      test('no sync watermark still refuses', () async {
+        await (db.update(db.drives)..where((d) => d.id.equals(driveId))).write(
+          const DrivesCompanion(lastBlockHeight: Value(0)),
+        );
+
+        expect(
+          (await preparePublic()).refusal,
+          DriveStateCreationRefusal.noWatermark,
+        );
+      });
+    });
   });
 
   group('what else it refuses', () {
@@ -327,14 +492,50 @@ void main() {
       expect(result.refusal, DriveStateCreationRefusal.driveNotFound);
     });
 
-    test('a public drive', () async {
+    test('a private drive whose key is not available', () async {
+      // The refusal that replaced the public-drive one, and the reason the
+      // two had to stop looking the same: both arrive here as a null key,
+      // and only one of them is a reason not to publish.
+      final result =
+          await serviceWith(skipStatus: const DriveStateSyncSkipStatus.clean())
+              .prepare(driveId: driveId, driveKey: null, wallet: wallet);
+
+      expect(
+        result.refusal,
+        DriveStateCreationRefusal.protectionUnavailable,
+      );
+      expect(result.artifact, isNull);
+      expect(result.reason, contains('private'));
+    });
+
+    test('a drive whose privacy column is neither public nor private',
+        () async {
+      await (db.update(db.drives)..where((d) => d.id.equals(driveId))).write(
+        const DrivesCompanion(privacy: Value('something-else')),
+      );
+
+      final result = await prepare();
+
+      expect(
+        result.refusal,
+        DriveStateCreationRefusal.protectionUnavailable,
+      );
+      // Refused rather than defaulted to the clear, which is the mistake the
+      // absence of a default branch exists to prevent.
+      expect(result.artifact, isNull);
+    });
+
+    test('a public drive it was handed a drive key for', () async {
       await (db.update(db.drives)..where((d) => d.id.equals(driveId))).write(
         const DrivesCompanion(privacy: Value(DrivePrivacyTag.public)),
       );
 
       final result = await prepare();
 
-      expect(result.refusal, DriveStateCreationRefusal.publicDriveUnsupported);
+      expect(
+        result.refusal,
+        DriveStateCreationRefusal.protectionUnavailable,
+      );
     });
 
     test('a drive this wallet does not own', () async {
@@ -415,19 +616,25 @@ class _RecordingCodec implements DriveStateEnvelopeCodec {
       ? null
       : jsonDecode(utf8.decode(lastPlaintext!)) as Map<String, dynamic>;
 
+  /// What the service resolved from the drive row, recorded so a test can
+  /// assert the codec was asked for the chain the drive's privacy calls for -
+  /// which is the only place that decision is taken.
+  DriveStateProtection? lastProtection;
+
   @override
   Future<DriveStateSealResult> seal({
     required Uint8List plaintext,
-    required SecretKey driveKey,
+    required DriveStateProtection protection,
     required Wallet wallet,
   }) async {
     sealCalls++;
     lastPlaintext = plaintext;
+    lastProtection = protection;
 
     return result ??
         await _real.seal(
           plaintext: plaintext,
-          driveKey: driveKey,
+          protection: protection,
           wallet: wallet,
         );
   }
@@ -435,7 +642,7 @@ class _RecordingCodec implements DriveStateEnvelopeCodec {
   @override
   Future<DriveStateOpenResult> open({
     required DriveStateEnvelope envelope,
-    required SecretKey driveKey,
+    required DriveStateProtection protection,
     required String expectedOwnerAddress,
   }) =>
       throw UnimplementedError('the creation path never opens an artifact');

@@ -8,6 +8,7 @@ import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/data/drive_state_sync_source.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -221,6 +222,14 @@ void main() {
   });
 
   /// The artifact as it reaches sync: a body, and the tags an indexer reported.
+
+  /// The private-drive protection, resolved the only way one can be.
+  DriveStateProtection protectionFor(SecretKey key) =>
+      DriveStateProtection.forDrive(
+        privacy: DrivePrivacyTag.private,
+        driveKey: key,
+      ).protection!;
+
   Future<void> publishArtifact({
     int blockEnd = artifactBlockEnd,
     SecretKey? sealedWith,
@@ -236,7 +245,7 @@ void main() {
 
     final sealed = await codec.seal(
       plaintext: Uint8List.fromList(payload),
-      driveKey: sealedWith ?? driveKey,
+      protection: protectionFor(sealedWith ?? driveKey),
       wallet: owner,
     );
     expect(sealed.isSealed, isTrue, reason: sealed.toString());
@@ -258,7 +267,7 @@ void main() {
                 EntityTag.blockEnd: '$blockEnd',
                 EntityTag.entityCount: '${export.entityCount}',
                 EntityTag.cipher: Cipher.aes256,
-                EntityTag.cipherIv: sealed.envelope!.cipherIvAsBase64,
+                EntityTag.cipherIv: sealed.envelope!.cipherIvAsBase64!,
               },
             ),
           ],

@@ -25,7 +25,6 @@ import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.da
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -617,7 +616,7 @@ class NewButton extends StatelessWidget {
   /// Whether "Publish Drive State" appears, and whether it is usable.
   ///
   /// The decision itself is [driveStatePublishOffer], which is pure and
-  /// exhaustively tested; this only reads the five conditions out of the
+  /// exhaustively tested; this only reads the four conditions out of the
   /// widget tree. Ownership is compared against the signed-in wallet because
   /// `DriveStateCreationService` refuses on `notDriveOwner`, and a menu entry
   /// that can only ever open a refusal is worse than no menu entry.
@@ -629,8 +628,6 @@ class NewButton extends StatelessWidget {
     return driveStatePublishOffer(
       publishingEnabled:
           context.read<ConfigService>().config.enableDriveStatePublishing,
-      isPrivateDrive:
-          driveDetailState.currentDrive.privacy != DrivePrivacyTag.public,
       isDriveOwner: driveDetailState.currentDrive.ownerAddress ==
           profile.user.walletAddress,
       hasWritePermissions: driveDetailState.hasWritePermissions,

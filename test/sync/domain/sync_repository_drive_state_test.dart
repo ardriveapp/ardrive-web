@@ -8,6 +8,7 @@ import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/data/drive_state_sync_source.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/config/app_config.dart';
@@ -121,6 +122,18 @@ void main() {
     driveKey = await AesGcm.with256bits().newSecretKey();
   });
 
+  /// The private-drive protection, resolved the only way one can be.
+  DriveStateProtection protectionFor(SecretKey key) =>
+      DriveStateProtection.forDrive(
+        privacy: DrivePrivacyTag.private,
+        driveKey: key,
+      ).protection!;
+
+  final publicDrive = DriveStateProtection.forDrive(
+    privacy: DrivePrivacyTag.public,
+    driveKey: null,
+  ).protection!;
+
   /// The artifact as it reaches sync: a body, and the tags an indexer reported.
   ///
   /// [blockEnd] moves the producer's own watermark before the export runs, so
@@ -134,6 +147,7 @@ void main() {
     int? tamperedTagBlockEnd,
     int? entityCount,
     SecretKey? sealedWith,
+    DriveStateProtection? protection,
   }) async {
     await producerDb.driveDao.writeToDrive(DrivesCompanion(
       id: const Value(driveId),
@@ -146,7 +160,7 @@ void main() {
 
     final sealed = await codec.seal(
       plaintext: Uint8List.fromList(payload),
-      driveKey: sealedWith ?? driveKey,
+      protection: protection ?? protectionFor(sealedWith ?? driveKey),
       wallet: owner,
     );
     expect(sealed.isSealed, isTrue, reason: sealed.toString());
@@ -166,8 +180,11 @@ void main() {
           EntityTag.blockStart: '0',
           EntityTag.blockEnd: '${tamperedTagBlockEnd ?? blockEnd}',
           EntityTag.entityCount: '${entityCount ?? export.entityCount}',
-          EntityTag.cipher: Cipher.aes256,
-          EntityTag.cipherIv: sealed.envelope!.cipherIvAsBase64,
+          // Written from what was sealed: a public drive's artifact carries
+          // neither tag, and that absence is the discriminator.
+          if (sealed.envelope!.isEncrypted) EntityTag.cipher: Cipher.aes256,
+          if (sealed.envelope!.isEncrypted)
+            EntityTag.cipherIv: sealed.envelope!.cipherIvAsBase64!,
         },
       ),
       body: sealed.envelope!.body,
@@ -180,12 +197,14 @@ void main() {
     int? tamperedTagBlockEnd,
     int? entityCount,
     SecretKey? sealedWith,
+    DriveStateProtection? protection,
   }) async {
     final artifact = await sealArtifact(
       blockEnd: blockEnd,
       tamperedTagBlockEnd: tamperedTagBlockEnd,
       entityCount: entityCount,
       sealedWith: sealedWith,
+      protection: protection,
     );
 
     discovery.answer = () => DriveStateDiscoveryResult(
@@ -596,24 +615,121 @@ void main() {
     });
   });
 
+  /// A public drive, which used to be skipped here entirely.
+  ///
+  /// The gate was `driveKey == null`, and a public drive and a private drive
+  /// whose key had gone missing arrive at it identically. Now the drive row's
+  /// own privacy decides, so the two are told apart: one reads an artifact,
+  /// the other does not.
   group('a public drive', () {
     setUp(() async {
       buildRepository(enableSyncFromDriveState: true);
       await db.driveDao.writeToDrive(const DrivesCompanion(
         id: Value(driveId),
         privacy: Value(DrivePrivacyTag.public),
+        encryptedKey: Value(null),
+        keyEncryptionIv: Value(null),
+        driveKeyGenerated: Value(false),
+      ));
+      await producerDb.driveDao.writeToDrive(const DrivesCompanion(
+        id: Value(driveId),
+        privacy: Value(DrivePrivacyTag.public),
       ));
     });
 
-    test('is not asked about, because v1 is private only', () async {
-      await publish();
+    Future<void> publishPublicly({int blockEnd = artifactBlockEnd}) =>
+        publish(blockEnd: blockEnd, protection: publicDrive);
+
+    test('is asked about, with no key needed to ask', () async {
+      await publishPublicly();
 
       final progress = await sync();
 
       expect(progress.last.failedDriveIds, isEmpty);
-      expect(discovery.calls, isEmpty);
-      expect(logged, isEmpty);
+      expect(discovery.calls, hasLength(1));
+      expectExactlyOneOutcome(DriveStateOutcome.used);
+    });
+
+    test('lands the drive\'s rows', () async {
+      await publishPublicly();
+      await sync();
+
+      expect(await fileRows(), hasLength(3));
+      expect(await folderRows(), hasLength(3));
+      expect((await driveRow()).lastBlockHeight, artifactBlockEnd);
+      expect((await driveRow()).privacy, DrivePrivacyTag.public);
+    });
+
+    test('starts GraphQL above what the artifact covered', () async {
+      await publishPublicly();
+      await sync();
+
+      expect(gqlStartedAt(), artifactBlockEnd);
+    });
+
+    test('rejects an encrypted artifact offered to it', () async {
+      // Sealed the private way and tagged accordingly, which is exactly what
+      // a producer that mistook this drive for a private one would publish.
+      await publish(protection: protectionFor(driveKey));
+
+      final progress = await sync();
+
+      expect(progress.last.failedDriveIds, isEmpty);
+      expectExactlyOneOutcome(DriveStateOutcome.privacyMismatch);
+      expect(await fileRows(), isEmpty);
       expect(gqlStartedAt(), startsFromWithoutArtifact);
+    });
+  });
+
+  /// The half of the old `driveKey == null` gate that still has to hold.
+  ///
+  /// A private drive with no key must not read an artifact - there is nothing
+  /// to open one with, and the plaintext chain is not an alternative. The way
+  /// in is a drive row that is private and carries no `encryptedKey`, which is
+  /// what `DriveDao.getDriveKey` hands back null for.
+  group('a private drive whose key cannot be found', () {
+    setUp(() async {
+      buildRepository(enableSyncFromDriveState: true);
+      await db.driveDao.writeToDrive(const DrivesCompanion(
+        id: Value(driveId),
+        privacy: Value(DrivePrivacyTag.private),
+        encryptedKey: Value(null),
+        keyEncryptionIv: Value(null),
+        driveKeyGenerated: Value(false),
+      ));
+    });
+
+    test('is never asked about, and the sync walks the range itself', () async {
+      await publish();
+
+      // A cipher key is supplied, so `getDriveKey` is the path taken - and it
+      // returns null, because there is no wrapped drive key to unwrap.
+      final progress = await syncRepository
+          .syncSingleDrive(driveId: driveId, cipherKey: driveKey)
+          .toList();
+
+      expect(progress.last.failedDriveIds, isEmpty);
+      expect(discovery.calls, isEmpty,
+          reason: 'a private drive with no key has nothing to open an '
+              'artifact with, so it must not even look for one');
+      expect(await fileRows(), isEmpty);
+      expect(gqlStartedAt(), startsFromWithoutArtifact);
+    });
+
+    test('produces no outcome, because no artifact was ever identified',
+        () async {
+      await publish();
+
+      await syncRepository
+          .syncSingleDrive(driveId: driveId, cipherKey: driveKey)
+          .toList();
+
+      // §7 gives an outcome to an artifact, and nothing here reached one.
+      // The reason is written to the app logger under the `[drive-state]`
+      // prefix, the same way the deep-sync exemption is; neither is visible
+      // through the reporter's sink, which is what `logged` collects.
+      expect(outcomeLines(), isEmpty);
+      expect(logged, isEmpty);
     });
   });
 }

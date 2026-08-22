@@ -4,6 +4,7 @@ import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/data/drive_state_sync_source.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:flutter_test/flutter_test.dart';
@@ -45,7 +46,10 @@ void main() {
   const driveId = 'drive-id';
   const ownerAddress = 'owner-address';
 
-  final driveKey = SecretKey(List.filled(32, 7));
+  final privateDrive = DriveStateProtection.forDrive(
+    privacy: DrivePrivacyTag.private,
+    driveKey: SecretKey(List.filled(32, 7)),
+  ).protection!;
   final body = Uint8List.fromList([1, 2, 3]);
 
   late MockArweaveService arweave;
@@ -54,7 +58,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_FakeCandidate());
     registerFallbackValue(Uint8List(0));
-    registerFallbackValue(SecretKey(const []));
+    registerFallbackValue(privateDrive);
   });
 
   DriveStateArtifactCandidate candidate(String txId, int blockEnd) =>
@@ -78,7 +82,7 @@ void main() {
     when(() => importer.import(
           candidate: any(named: 'candidate'),
           body: any(named: 'body'),
-          driveKey: any(named: 'driveKey'),
+          protection: any(named: 'protection'),
           expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
         )).thenAnswer(
       (invocation) async => DriveStateImportResult.imported(
@@ -106,7 +110,7 @@ void main() {
       ).read(
         driveId: driveId,
         ownerAddress: ownerAddress,
-        driveKey: driveKey,
+        protection: privateDrive,
         lastBlockHeight: 100,
       );
 

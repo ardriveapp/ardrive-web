@@ -11,6 +11,7 @@ import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart'
@@ -379,6 +380,10 @@ gzip                      ${gzipWatch.elapsedMilliseconds} ms
     final owner = await Wallet.generate();
     final ownerAddress = await owner.getAddress();
     final driveKey = await AesGcm.with256bits().newSecretKey();
+    final privateDrive = DriveStateProtection.forDrive(
+      privacy: DrivePrivacyTag.private,
+      driveKey: driveKey,
+    ).protection!;
 
     // Two databases on purpose: that is the whole point of an artifact.
     final producerDb = getTestDb();
@@ -433,7 +438,7 @@ gzip                      ${gzipWatch.elapsedMilliseconds} ms
     final sealWatch = Stopwatch()..start();
     final sealed = await codec.seal(
       plaintext: plaintext,
-      driveKey: driveKey,
+      protection: privateDrive,
       wallet: owner,
     );
     sealWatch.stop();
@@ -490,7 +495,7 @@ seal (gzip+sign+GCM)      ${sealWatch.elapsedMilliseconds} ms
         EntityTag.blockEnd: '${export.coverage.blockEnd}',
         EntityTag.entityCount: '${export.entityCount}',
         EntityTag.cipher: Cipher.aes256,
-        EntityTag.cipherIv: envelope.cipherIvAsBase64,
+        EntityTag.cipherIv: envelope.cipherIvAsBase64!,
       },
       minedAtHeight: export.coverage.blockEnd,
     );
@@ -501,7 +506,7 @@ seal (gzip+sign+GCM)      ${sealWatch.elapsedMilliseconds} ms
     final result = await importer.import(
       candidate: candidate,
       body: envelope.body,
-      driveKey: driveKey,
+      protection: privateDrive,
       expectedOwnerAddress: ownerAddress,
     );
     importWatch.stop();
@@ -571,7 +576,7 @@ import, end to end        ${importWatch.elapsedMilliseconds} ms
     final reimport = await importer.import(
       candidate: candidate,
       body: envelope.body,
-      driveKey: driveKey,
+      protection: privateDrive,
       expectedOwnerAddress: ownerAddress,
     );
     reimportWatch.stop();

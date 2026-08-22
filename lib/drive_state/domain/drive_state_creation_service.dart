@@ -4,9 +4,9 @@ import 'dart:typed_data';
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart';
 import 'package:ardrive/models/models.dart';
-import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
 import 'package:arweave/arweave.dart' show Wallet;
 import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:uuid/uuid.dart';
@@ -47,9 +47,20 @@ enum DriveStateCreationRefusal {
   /// No such drive in the local database.
   driveNotFound,
 
-  /// The drive is public. Out of scope for v1 — the artifact is sealed under
-  /// the drive key, and a public drive has none (`DECISIONS.md`, scope).
-  publicDriveUnsupported,
+  /// How this drive's artifact would be protected could not be established:
+  /// a private drive whose key is not available, a public drive a key was
+  /// somehow supplied for, or a `privacy` column holding neither value.
+  ///
+  /// One refusal for the three because they are one situation from the user's
+  /// side — this drive's state cannot be sealed right now — and because the
+  /// alternative is a menu of refusals for two states that should not occur.
+  /// Which of the three it was is in
+  /// [DriveStateProtectionResult.reason], which becomes this refusal's
+  /// sentence verbatim.
+  ///
+  /// Public drives are *not* refused. They publish an artifact that is signed
+  /// and not encrypted; see [DriveStateProtection].
+  protectionUnavailable,
 
   /// The signing wallet is not the drive's owner. The artifact would be sealed
   /// with a signature every importer rejects (`ownerMismatch`), so the money
@@ -61,8 +72,10 @@ enum DriveStateCreationRefusal {
   /// worth publishing.
   noWatermark,
 
-  /// The payload is at or above the AES-GCM boundary. D5: refuse rather than
-  /// split or fall back to an unauthenticated cipher.
+  /// The payload is at or above
+  /// [DriveStateEnvelopeCodec.defaultMaxPlaintextBytes]. D5: refuse rather
+  /// than split. The bound is on the producer's memory, so it applies to a
+  /// public drive's artifact as much as a private one's.
   payloadTooLarge,
 
   /// The codec could not seal the payload — the wallet declined to sign, or
@@ -91,7 +104,8 @@ class PreparedDriveStateArtifact {
   final int entityCount;
 
   /// The transaction body's size in bytes — the number an upload is billed on,
-  /// after compression and encryption.
+  /// after compression, and after encryption when there is any. A public
+  /// drive's body is the signed data item itself.
   final int sizeInBytes;
 
   const PreparedDriveStateArtifact({
@@ -106,6 +120,11 @@ class PreparedDriveStateArtifact {
   int get blockEnd => entity.blockEnd!;
   int get dataStart => entity.dataStart!;
   int get dataEnd => entity.dataEnd!;
+
+  /// Whether what was sealed is ciphertext. Read off the entity's own `Cipher`
+  /// tag rather than carried as a second field, so it can only ever say what
+  /// would actually be published.
+  bool get isEncrypted => entity.cipher != null;
 }
 
 /// A prepared artifact, or a refusal with the sentence explaining it.
@@ -141,6 +160,11 @@ class DriveStateCreationResult {
 }
 
 /// Builds a drive state artifact from the local database, and nothing else.
+///
+/// Public and private drives both. The privacy of the drive decides only
+/// whether the signed payload is encrypted afterwards, and that decision is
+/// taken here from the drive row — see [DriveStateProtection] for why it is a
+/// type and not an argument.
 class DriveStateCreationService {
   final DriveDao _driveDao;
   final DriveStateEnvelopeCodec _codec;
@@ -159,14 +183,22 @@ class DriveStateCreationService {
 
   static String _uuid() => const Uuid().v4();
 
-  /// Exports [driveId], seals it under [driveKey] with [wallet]'s signature,
-  /// and returns the entity that would be published.
+  /// Exports [driveId], seals it with [wallet]'s signature, and returns the
+  /// entity that would be published.
+  ///
+  /// [driveKey] is nullable and is *not* how the privacy of the result is
+  /// decided. This method reads the drive row and resolves the protection from
+  /// the row's own `privacy` column, so a caller cannot ask for an unencrypted
+  /// artifact — it hands over whatever key it managed to obtain and is told
+  /// what may be built. A private drive with no key is refused; a public drive
+  /// with no key is sealed in the clear, which is what a public drive's
+  /// artifact is.
   ///
   /// Nothing is sent. The returned entity has no transaction id, and this
   /// class has no way to give it one.
   Future<DriveStateCreationResult> prepare({
     required String driveId,
-    required SecretKey driveKey,
+    required SecretKey? driveKey,
     required Wallet wallet,
   }) async {
     // First, before anything is read and long before anything is sealed. A
@@ -191,12 +223,20 @@ class DriveStateCreationService {
       );
     }
 
-    if (drive.privacy != DrivePrivacyTag.private) {
-      return const DriveStateCreationResult.refused(
-        DriveStateCreationRefusal.publicDriveUnsupported,
-        'Drive state artifacts are only available for private drives.',
+    // Resolved from the drive's own row, not from whether the caller happened
+    // to have a key. This is the single decision that separates the two
+    // chains, and it is taken once, here, from the trustworthy value.
+    final resolved = DriveStateProtection.forDrive(
+      privacy: drive.privacy,
+      driveKey: driveKey,
+    );
+    if (resolved.isRefused) {
+      return DriveStateCreationResult.refused(
+        DriveStateCreationRefusal.protectionUnavailable,
+        resolved.reason,
       );
     }
+    final protection = resolved.protection!;
 
     if (await wallet.getAddress() != drive.ownerAddress) {
       return const DriveStateCreationResult.refused(
@@ -243,7 +283,7 @@ class DriveStateCreationService {
 
     final sealed = await _codec.seal(
       plaintext: plaintext,
-      driveKey: driveKey,
+      protection: protection,
       wallet: wallet,
     );
 
@@ -312,6 +352,14 @@ class DriveStateCreationService {
       case DriveStateEnvelopeFailure.plaintextTooLarge:
         return 'This drive is too large to publish as a single artifact. It '
             'will keep syncing from snapshots as it does today.';
+      case DriveStateEnvelopeFailure.plaintextForPrivateDrive:
+      case DriveStateEnvelopeFailure.ciphertextForPublicDrive:
+        // Unreachable from `seal`, which never produces an envelope that
+        // contradicts the protection it was handed - the protection is what
+        // chooses the chain. Named rather than left to the default so that a
+        // future seal-side use of either value stops here for a decision.
+        return 'The artifact could not be prepared for this drive\'s privacy. '
+            'Try again.';
       case DriveStateEnvelopeFailure.signingFailed:
         return 'Your wallet did not sign the artifact. Try again.';
       default:

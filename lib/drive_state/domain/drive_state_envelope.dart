@@ -2,12 +2,11 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:ardrive/core/crypto/crypto.dart' show ArDriveCrypto;
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart' show Cipher;
-import 'package:ardrive_uploader/ardrive_uploader.dart'
-    show maxSizeSupportedByGCMEncryption;
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
-import 'package:cryptography/cryptography.dart' show SecretKey, Sha256;
+import 'package:cryptography/cryptography.dart' show Sha256;
 import 'package:flutter/foundation.dart' show visibleForTesting;
 
 /// Why a drive state artifact could not be produced, or could not be opened.
@@ -18,11 +17,13 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 /// Enumerating them is what lets that log answer *why* a drive did not use its
 /// artifact, without a stack trace and without guessing.
 enum DriveStateEnvelopeFailure {
-  /// The plaintext is at or above [maxSizeSupportedByGCMEncryption].
+  /// The payload is at or above
+  /// [DriveStateEnvelopeCodec.defaultMaxPlaintextBytes].
   ///
-  /// D5: refuse, with a reason. Never fall through to AES-CTR, which is
-  /// unauthenticated (proposal 2.3), and never split — multi-part
-  /// authentication needs a manifest integrity design that does not exist yet.
+  /// D5: refuse, with a reason, rather than split. The bound is on the
+  /// **producer's memory**, not on the cipher — see that constant — so it
+  /// applies to a public drive's artifact exactly as it does to a private
+  /// one, even though nothing in the public path is encrypted at all.
   plaintextTooLarge,
 
   /// The owner's wallet did not produce a signed data item.
@@ -35,6 +36,27 @@ enum DriveStateEnvelopeFailure {
   /// those would mean trusting unauthenticated bytes, which is the whole thing
   /// this format refuses to do (proposal 2.3).
   unsupportedCipher,
+
+  /// The drive is **private** and the artifact declares no cipher.
+  ///
+  /// One direction of the cipher/privacy cross-check (§2.6). No client of this
+  /// format may publish a private drive in the clear — [DriveStateProtection]
+  /// makes that value unconstructable — so an artifact that did was written by
+  /// something else, or by a client with that rail broken. Either way it is
+  /// not a format this reader agreed to, and accepting it would normalise the
+  /// one publication that can never be taken back.
+  ///
+  /// Refused before the bytes are looked at, so a plaintext body for a private
+  /// drive is never parsed, never inflated and never merged.
+  plaintextForPrivateDrive,
+
+  /// The drive is **public** and the artifact declares a cipher.
+  ///
+  /// The other direction. A public drive has no key, so there is nothing to
+  /// decrypt this with and no honest way to read it. Naming the contradiction
+  /// is better than the `decryptionFailed` a reader would otherwise report for
+  /// a key it never had.
+  ciphertextForPublicDrive,
 
   /// The body did not decrypt under the drive key.
   ///
@@ -89,29 +111,65 @@ typedef DriveStateDataItemParser = Future<ProcessedDataItem> Function({
   required SignatureConfig signatureConfig,
 });
 
-/// A sealed artifact body, together with the two tag values needed to read it
-/// back off chain.
+/// A sealed artifact body, together with the tag values needed to read it back
+/// off chain.
+///
+/// **Cipher-presence is the discriminator.** A private drive's artifact
+/// carries `Cipher` and `Cipher-IV`; a public drive's carries neither, because
+/// there is no key and nothing was encrypted. The two named constructors are
+/// the only ways to build one, so an envelope can never hold a cipher without
+/// its IV, or an IV without its cipher — the shape a reader would have to
+/// guess at.
 class DriveStateEnvelope {
-  /// The AES-GCM ciphertext with its MAC appended — the transaction's data.
+  /// The transaction's data.
   ///
-  /// The concatenation (ciphertext then MAC, nonce carried separately in a
-  /// tag) is this codebase's long-standing convention; see
+  /// For a private drive: the AES-GCM ciphertext with its MAC appended. The
+  /// concatenation (ciphertext then MAC, nonce carried separately in a tag) is
+  /// this codebase's long-standing convention; see
   /// [ArDriveCrypto.secretBoxFromDataWithMacConcatenation].
+  ///
+  /// For a public drive: the signed ANS-104 data item itself, with no
+  /// encryption layer around it.
   final Uint8List body;
 
-  /// The 12 byte GCM nonce. Travels in the `Cipher-IV` tag, base64.
-  final Uint8List cipherIv;
+  /// The 12 byte GCM nonce, travelling in the `Cipher-IV` tag as base64.
+  /// `null` for a public drive's artifact, which has no cipher to nonce.
+  final Uint8List? cipherIv;
 
-  /// The `Cipher` tag. Always [Cipher.aes256gcm] for anything sealed here.
-  final String cipher;
+  /// The `Cipher` tag. [Cipher.aes256gcm] for anything this codec seals for a
+  /// private drive, and `null` for a public one.
+  ///
+  /// Nullable rather than defaulted, because its absence is load-bearing: a
+  /// reader cross-checks it against the privacy of the drive the artifact
+  /// claims to be for, in both directions.
+  final String? cipher;
 
-  const DriveStateEnvelope({
-    required this.body,
-    required this.cipherIv,
-    this.cipher = Cipher.aes256gcm,
-  });
+  const DriveStateEnvelope._(this.body, this.cipher, this.cipherIv);
 
-  String get cipherIvAsBase64 => utils.encodeBytesToBase64(cipherIv);
+  /// A private drive's artifact.
+  ///
+  /// [cipher] is named rather than assumed so the importer can hand over
+  /// whatever the `Cipher` tag actually said and have the codec refuse it;
+  /// a producer leaves it at [Cipher.aes256gcm].
+  const DriveStateEnvelope.encrypted({
+    required Uint8List body,
+    required Uint8List cipherIv,
+    String cipher = Cipher.aes256gcm,
+  }) : this._(body, cipher, cipherIv);
+
+  /// A public drive's artifact: signed, and not encrypted.
+  ///
+  /// There is no cipher parameter and no IV parameter, which is the point.
+  const DriveStateEnvelope.inTheClear({required Uint8List body})
+      : this._(body, null, null);
+
+  /// Whether this artifact carries a cipher at all. The discriminator a reader
+  /// checks against the drive's privacy.
+  bool get isEncrypted => cipher != null;
+
+  /// The `Cipher-IV` tag value, or `null` when there is no cipher to tag.
+  String? get cipherIvAsBase64 =>
+      cipherIv == null ? null : utils.encodeBytesToBase64(cipherIv!);
 }
 
 /// The outcome of sealing an artifact body: an envelope, or a typed refusal.
@@ -194,8 +252,29 @@ class DriveStateOpenResult {
 /// and opens one again.
 ///
 /// ```
-/// serialise  ->  gzip  ->  sign (ANS-104 data item)  ->  AES256-GCM
+/// private:  serialise  ->  gzip  ->  sign (ANS-104 data item)  ->  AES256-GCM
+/// public:   serialise  ->  gzip  ->  sign (ANS-104 data item)
 /// ```
+///
+/// ## The public path is the same chain minus one layer
+///
+/// A public drive has no drive key, so there is nothing to encrypt with and
+/// nothing worth hiding: its contents are already readable by anyone, and a
+/// snapshot of a public drive is already the same enumeration of every name,
+/// size and relationship, unencrypted, published today (§2.6). What a public
+/// drive still gets is the expensive half — the ~420 GraphQL queries and
+/// ~42,000 metadata fetches an artifact replaces (§1.2) — of which the
+/// per-entity decryption it skips is a small fraction.
+///
+/// Which path runs is decided by [DriveStateProtection] and nothing else. The
+/// plaintext variant cannot be constructed for a private drive, so this codec
+/// has no branch, flag or argument that could publish one in the clear.
+///
+/// **The signature matters more here, not less.** Without a key it is the only
+/// thing binding a public artifact to the drive's owner: anyone can post bytes
+/// tagged with a `Drive-Id`, and for a private drive the drive key is a second
+/// filter that a public drive does not have. Every check below the signature
+/// runs identically on both paths.
 ///
 /// ## Why a data item, and not a bare signature
 ///
@@ -256,13 +335,61 @@ class DriveStateEnvelopeCodec {
   /// anything else is a way to skip the signature check.
   final DriveStateDataItemParser _parseDataItem;
 
+  /// The most payload this format will seal, and the most [open] will inflate.
+  ///
+  /// 100 MiB — the same number the uploader's `maxSizeSupportedByGCMEncryption`
+  /// happens to hold, and deliberately no longer *that* constant.
+  ///
+  /// ## Why the bound is no longer the cipher's
+  ///
+  /// D5 originally justified this as an AES-GCM constraint: GCM should not
+  /// authenticate more than about this much in one piece, so a payload above
+  /// it had to be refused rather than split or handed to unauthenticated CTR.
+  /// Two things falsify that reading.
+  ///
+  /// First, it was already measured wrong. What GCM encrypts is the
+  /// *compressed, signed* item, not the payload this number weighs: at 41,767
+  /// files that is 9.55 MiB against a 52.16 MiB payload, 5.46x less than the
+  /// figure being checked (§2.3). The cipher was never near its limit.
+  ///
+  /// Second, there is now a path with no cipher in it at all. A public drive's
+  /// artifact is signed and not encrypted, so a bound inherited from GCM would
+  /// have nothing to inherit from and would have to be dropped — which is
+  /// plainly wrong, because the cost the bound guards is real and is the same
+  /// on both paths.
+  ///
+  /// ## What it does guard
+  ///
+  /// The **producer's memory**, which §2.3 measures: building a payload this
+  /// size takes a process from a 263 MiB baseline to a peak near 950 MiB — the
+  /// exported object graph, then `jsonEncode`, then UTF-8, then sealing — and
+  /// that peak is reached before any cipher is involved. On the web that is a
+  /// browser tab with a hard ceiling, and dart2js strings are UTF-16, so the
+  /// same payload is nearer twice the size there. Encryption adds one buffer
+  /// of the *compressed* size to it, which is noise.
+  ///
+  /// So the bound is the same number for both privacy modes, on purpose. Two
+  /// numbers would mean the read-side inflation limit differed by drive, which
+  /// is a window in which a payload can be written by one path and refused by
+  /// another. One number is checkable; two drift.
+  ///
+  /// The private path stays comfortably inside GCM's own limit as a
+  /// consequence rather than by construction, and
+  /// `drive_state_envelope_test.dart` asserts that this constant never grows
+  /// past `maxSizeSupportedByGCMEncryption` so the consequence keeps holding.
+  static const int defaultMaxPlaintextBytes = 100 * 1024 * 1024;
+
   /// The most plaintext [open] will produce before refusing.
   ///
-  /// [maxSizeSupportedByGCMEncryption] both ways: [seal] will not produce a
-  /// payload at or above it, so no artifact this codec wrote can legitimately
-  /// open to one. Sharing the constant is what keeps the two halves from
-  /// drifting into a window where a payload can be written and not read, or
-  /// read and not written.
+  /// [defaultMaxPlaintextBytes] both ways in production: [seal] will not
+  /// produce a payload at or above it, so no artifact this codec wrote can
+  /// legitimately open to one. Sharing the constant is what keeps the two
+  /// halves from drifting into a window where a payload can be written and not
+  /// read, or read and not written.
+  ///
+  /// Only this half is injectable, and only for tests — [seal] always weighs
+  /// against [defaultMaxPlaintextBytes] — so a test can build a payload that
+  /// is over the *reader's* limit without allocating 100 MiB to do it.
   final int maxPlaintextBytes;
 
   DriveStateEnvelopeCodec({
@@ -273,8 +400,7 @@ class DriveStateEnvelopeCodec {
     @visibleForTesting DriveStateDataItemParser? parseDataItem,
   })  : _crypto = crypto ?? ArDriveCrypto(),
         _parseDataItem = parseDataItem ?? processDataItem,
-        maxPlaintextBytes =
-            maxPlaintextBytes ?? maxSizeSupportedByGCMEncryption;
+        maxPlaintextBytes = maxPlaintextBytes ?? defaultMaxPlaintextBytes;
 
   /// The only ANS-104 signature scheme this codec writes, and the only one it
   /// can check: every other [SignatureConfig] in the package throws
@@ -298,23 +424,32 @@ class DriveStateEnvelopeCodec {
       8; // number of tag bytes
 
   /// Compresses [plaintext], signs it with [wallet] as an ANS-104 data item,
-  /// and encrypts that item under [driveKey].
+  /// and — for a private drive only — encrypts that item under the drive key
+  /// [protection] carries.
   ///
-  /// Refuses, rather than throws, when the payload is too large for AES-GCM or
-  /// the wallet will not sign.
+  /// Refuses, rather than throws, when the payload is too large or the wallet
+  /// will not sign.
+  ///
+  /// There is no way to ask for the unencrypted form. [protection] is resolved
+  /// from the drive's own `privacy` column by
+  /// [DriveStateProtection.forDrive], and only its `public` arm produces a
+  /// [DriveStateUnencrypted]; the switch below is exhaustive over a sealed
+  /// type, so a third form of protection is a compile error rather than a
+  /// silent fall-through to the clear.
   Future<DriveStateSealResult> seal({
     required Uint8List plaintext,
-    required SecretKey driveKey,
+    required DriveStateProtection protection,
     required Wallet wallet,
   }) async {
-    // D5. The boundary is the one the uploader uses to choose GCM over CTR
-    // (`fileLength < maxSizeSupportedByGCMEncryption`), so a payload sitting
-    // exactly on it is already CTR territory elsewhere and is refused here.
-    if (plaintext.lengthInBytes >= maxSizeSupportedByGCMEncryption) {
+    // D5, weighed against this format's own bound rather than the cipher's:
+    // what it guards is the producer's memory, which is spent identically
+    // whether or not the result is later encrypted. See
+    // [defaultMaxPlaintextBytes].
+    if (plaintext.lengthInBytes >= defaultMaxPlaintextBytes) {
       return DriveStateSealResult.refused(
         DriveStateEnvelopeFailure.plaintextTooLarge,
         '${plaintext.lengthInBytes} bytes is at or above the '
-        '$maxSizeSupportedByGCMEncryption byte AES-GCM boundary; '
+        '$defaultMaxPlaintextBytes byte payload boundary; '
         'a drive this large falls back to snapshots',
       );
     }
@@ -345,19 +480,35 @@ class DriveStateEnvelopeCodec {
       );
     }
 
-    final secretBox = await _crypto.encrypt(signedItem, driveKey);
+    switch (protection) {
+      case DriveStateEncrypted(driveKey: final driveKey):
+        final secretBox = await _crypto.encrypt(signedItem, driveKey);
 
-    return DriveStateSealResult.sealed(
-      DriveStateEnvelope(
-        // Ciphertext then MAC; the nonce goes in the Cipher-IV tag.
-        body: secretBox.concatenation(nonce: false),
-        cipherIv: Uint8List.fromList(secretBox.nonce),
-      ),
-    );
+        return DriveStateSealResult.sealed(
+          DriveStateEnvelope.encrypted(
+            // Ciphertext then MAC; the nonce goes in the Cipher-IV tag.
+            body: secretBox.concatenation(nonce: false),
+            cipherIv: Uint8List.fromList(secretBox.nonce),
+          ),
+        );
+
+      case DriveStateUnencrypted():
+        // The signed data item *is* the transaction body. No cipher, so no
+        // `Cipher` and no `Cipher-IV` tag — and their absence is what tells a
+        // reader which of the two chains produced this.
+        return DriveStateSealResult.sealed(
+          DriveStateEnvelope.inTheClear(body: signedItem),
+        );
+    }
   }
 
-  /// Decrypts [envelope] under [driveKey] and returns its payload only if the
+  /// Opens [envelope] under [protection] and returns its payload only if the
   /// data item inside verifies and was signed by [expectedOwnerAddress].
+  ///
+  /// [protection] comes from the drive row in the caller's own database, which
+  /// is trustworthy; the envelope's cipher tags come from an indexer, which is
+  /// not. The first thing this does is check one against the other, in both
+  /// directions.
   ///
   /// Never throws: every way this can go wrong is a
   /// [DriveStateEnvelopeFailure] the caller logs before falling back. That is a
@@ -368,13 +519,13 @@ class DriveStateEnvelopeCodec {
   /// throwable is a bug worth fixing, but it is never worth a drive.
   Future<DriveStateOpenResult> open({
     required DriveStateEnvelope envelope,
-    required SecretKey driveKey,
+    required DriveStateProtection protection,
     required String expectedOwnerAddress,
   }) async {
     try {
       return await _openOrThrow(
         envelope: envelope,
-        driveKey: driveKey,
+        protection: protection,
         expectedOwnerAddress: expectedOwnerAddress,
       );
     } catch (e) {
@@ -388,14 +539,46 @@ class DriveStateEnvelopeCodec {
 
   Future<DriveStateOpenResult> _openOrThrow({
     required DriveStateEnvelope envelope,
-    required SecretKey driveKey,
+    required DriveStateProtection protection,
     required String expectedOwnerAddress,
   }) async {
-    if (envelope.cipher != Cipher.aes256gcm) {
+    // The cipher/privacy cross-check, before anything else is looked at.
+    //
+    // The same shape as the `Block-Start`/`Block-End` check in
+    // `drive_state_import.dart`: a claim made by an untrusted source, checked
+    // against something trustworthy. Here the untrusted claim is whether the
+    // artifact carries a cipher, and the trustworthy fact is the privacy of
+    // the drive in this client's own database.
+    //
+    // Both directions are refusals, and neither is cosmetic. A plaintext
+    // artifact accepted for a private drive would be this reader agreeing to
+    // a format no correct producer can emit — the exposure it represents is
+    // already permanent by the time it is read, but treating it as ordinary
+    // is how a broken producer stays unnoticed. A ciphertext artifact for a
+    // public drive has no key that could ever open it, and saying so is more
+    // useful than the `decryptionFailed` that would otherwise be reported for
+    // a key this reader never had.
+    if (protection.isEncrypted && !envelope.isEncrypted) {
+      return const DriveStateOpenResult.failed(
+        DriveStateEnvelopeFailure.plaintextForPrivateDrive,
+        'The drive is private and this artifact declares no cipher; a private '
+        'drive is never published in the clear',
+      );
+    }
+
+    if (!protection.isEncrypted && envelope.isEncrypted) {
+      return DriveStateOpenResult.failed(
+        DriveStateEnvelopeFailure.ciphertextForPublicDrive,
+        'The drive is public and this artifact declares ${envelope.cipher}; '
+        'a public drive has no key to open it with',
+      );
+    }
+
+    if (envelope.isEncrypted && envelope.cipher != Cipher.aes256gcm) {
       return DriveStateOpenResult.failed(
         DriveStateEnvelopeFailure.unsupportedCipher,
-        'Drive state artifacts are AES256-GCM only, and this one declares '
-        '${envelope.cipher}',
+        'Encrypted drive state artifacts are AES256-GCM only, and this one '
+        'declares ${envelope.cipher}',
       );
     }
 
@@ -406,19 +589,14 @@ class DriveStateEnvelopeCodec {
       );
     }
 
-    final Uint8List binary;
-    try {
-      binary = await _crypto.decrypt(
-        envelope.body,
-        driveKey,
-        envelope.cipherIv,
-      );
-    } catch (e) {
+    final unwrapped = await _unwrap(envelope, protection);
+    if (unwrapped.failure != null) {
       return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.decryptionFailed,
-        'The body did not decrypt under the drive key: $e',
+        unwrapped.failure!,
+        unwrapped.reason!,
       );
     }
+    final binary = unwrapped.bytes!;
 
     if (binary.lengthInBytes < _minimumDataItemLength) {
       return DriveStateOpenResult.failed(
@@ -531,6 +709,54 @@ class DriveStateEnvelopeCodec {
     }
 
     return DriveStateOpenResult.opened(plaintext, signerAddress);
+  }
+
+  /// The signed data item inside [envelope]: decrypted for a private drive,
+  /// and the body itself for a public one.
+  ///
+  /// An exhaustive switch over the sealed [DriveStateProtection] rather than
+  /// an `if (encrypted) … else …`, deliberately. An `else` would make "do not
+  /// decrypt" the fall-through for anything the type grows later, and "do not
+  /// decrypt" is the branch that must never be reached by accident.
+  Future<
+      ({
+        Uint8List? bytes,
+        DriveStateEnvelopeFailure? failure,
+        String? reason,
+      })> _unwrap(
+    DriveStateEnvelope envelope,
+    DriveStateProtection protection,
+  ) async {
+    switch (protection) {
+      case DriveStateEncrypted(driveKey: final driveKey):
+        try {
+          return (
+            bytes: await _crypto.decrypt(
+              envelope.body,
+              driveKey,
+              // Non-null because the cross-check above established that an
+              // encrypted protection met an encrypted envelope, and an
+              // encrypted envelope cannot exist without its IV.
+              envelope.cipherIv!,
+            ),
+            failure: null,
+            reason: null,
+          );
+        } catch (e) {
+          return (
+            bytes: null,
+            failure: DriveStateEnvelopeFailure.decryptionFailed,
+            reason: 'The body did not decrypt under the drive key: $e',
+          );
+        }
+
+      case DriveStateUnencrypted():
+        // No authenticated envelope around these bytes at all, which is why
+        // the data item signature below is not merely one check among several
+        // here — it is the only one standing between an anonymous upload and
+        // this drive's rows.
+        return (bytes: envelope.body, failure: null, reason: null);
+    }
   }
 
   /// Gunzips [compressed], refusing at [maxPlaintextBytes] rather than

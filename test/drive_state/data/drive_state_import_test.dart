@@ -5,6 +5,7 @@ import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 
@@ -36,6 +37,20 @@ void main() {
   late String ownerAddress;
   late SecretKey driveKey;
 
+  /// The two protections, resolved the only way they can be: from a drive's
+  /// `privacy` column and the key that came with it.
+  late DriveStateProtection privateDrive;
+
+  /// The public drive's protection. Every test that reads one is about the
+  /// cross-check, or about a public drive's artifact travelling the same road.
+  late DriveStateProtection publicDrive;
+
+  DriveStateProtection protectionFor(SecretKey key) =>
+      DriveStateProtection.forDrive(
+        privacy: DrivePrivacyTag.private,
+        driveKey: key,
+      ).protection!;
+
   /// The producer: a drive with rows in it, which is what gets exported.
   late Database producerDb;
 
@@ -52,6 +67,11 @@ void main() {
     owner = await Wallet.generate();
     ownerAddress = await owner.getAddress();
     driveKey = await aesGcm.newSecretKey();
+    privateDrive = protectionFor(driveKey);
+    publicDrive = DriveStateProtection.forDrive(
+      privacy: DrivePrivacyTag.public,
+      driveKey: null,
+    ).protection!;
   });
 
   /// The artifact as it reaches the importer: the transaction's data, and the
@@ -69,6 +89,23 @@ void main() {
     String? stateVersion = '1.0',
     String? cipher,
     SecretKey? key,
+
+    /// How the body is sealed. Defaults to the private chain, which is what
+    /// almost every test here is about; the public-drive tests pass
+    /// [publicDrive] and get a body with no cipher around it.
+    DriveStateProtection? protection,
+
+    /// Whether the `Cipher` / `Cipher-IV` tags are written. `null` follows
+    /// what was actually sealed, which is the only combination a real
+    /// producer can publish. Setting it apart from the body is how a test
+    /// builds the artifact the cipher/privacy cross-check exists for.
+    bool? withCipherTags,
+    bool omitCipherTag = false,
+    bool omitCipherIvTag = false,
+
+    /// A `Cipher-IV` tag value of the test's choosing, for the cases where
+    /// what matters is that nothing ever reads it.
+    String? cipherIvTag,
     Wallet? signer,
 
     /// What the *payload* claims about its own coverage, which is the half of
@@ -91,7 +128,8 @@ void main() {
 
     final sealed = await codec.seal(
       plaintext: Uint8List.fromList(utf8.encode(jsonEncode(payload))),
-      driveKey: key ?? driveKey,
+      protection:
+          protection ?? (key == null ? privateDrive : protectionFor(key)),
       wallet: signer ?? owner,
     );
     expect(sealed.isSealed, isTrue, reason: sealed.toString());
@@ -118,8 +156,15 @@ void main() {
           EntityTag.blockEnd: '$blockEnd',
           EntityTag.entityCount:
               '${entityCount ?? rowsIn(driveSectionName) + rowsIn(folderEntriesSectionName) + rowsIn(fileEntriesSectionName)}',
-          EntityTag.cipher: cipher ?? Cipher.aes256,
-          EntityTag.cipherIv: envelope.cipherIvAsBase64,
+          if ((withCipherTags ?? envelope.isEncrypted) && !omitCipherTag)
+            EntityTag.cipher: cipher ?? Cipher.aes256,
+          if ((withCipherTags ?? envelope.isEncrypted) && !omitCipherIvTag)
+            EntityTag.cipherIv: cipherIvTag ??
+                envelope.cipherIvAsBase64 ??
+                // A syntactically valid base64 nonce for the cases that put a
+                // cipher tag on a body that has none. Nothing reads it: the
+                // cross-check refuses the artifact first.
+                'AAAAAAAAAAAAAAAA',
         },
         minedAtHeight: blockEnd,
       ),
@@ -151,22 +196,39 @@ void main() {
     String name = 'stale-local-name',
     int? lastBlockHeight,
     DateTime? lastUpdated,
-  }) =>
-      into.into(into.drives).insert(
-            DrivesCompanion.insert(
-              id: id,
-              rootFolderId: rootFolder,
-              ownerAddress: ownerAddress,
-              name: name,
-              privacy: DrivePrivacyTag.private,
-              encryptedKey: Value(Uint8List.fromList([1, 2, 3, 4])),
-              keyEncryptionIv: Value(Uint8List.fromList([5, 6, 7])),
-              driveKeyGenerated: const Value(true),
-              syncCursor: const Value('a-local-gateway-cursor'),
-              lastBlockHeight: Value(lastBlockHeight ?? 0),
-              lastUpdated: Value(lastUpdated ?? DateTime(2020)),
-            ),
-          );
+    String privacy = DrivePrivacyTag.private,
+  }) {
+    final isPrivate = privacy == DrivePrivacyTag.private;
+
+    return into.into(into.drives).insert(
+          DrivesCompanion.insert(
+            id: id,
+            rootFolderId: rootFolder,
+            ownerAddress: ownerAddress,
+            name: name,
+            privacy: privacy,
+            // A public drive has none of this, which is exactly why
+            // `DriveDao.getDriveKey` returns null for one.
+            encryptedKey: isPrivate
+                ? Value(Uint8List.fromList([1, 2, 3, 4]))
+                : const Value(null),
+            keyEncryptionIv: isPrivate
+                ? Value(Uint8List.fromList([5, 6, 7]))
+                : const Value(null),
+            driveKeyGenerated: Value(isPrivate),
+            syncCursor: const Value('a-local-gateway-cursor'),
+            lastBlockHeight: Value(lastBlockHeight ?? 0),
+            lastUpdated: Value(lastUpdated ?? DateTime(2020)),
+          ),
+        );
+  }
+
+  /// Makes the producer's drive public, so the payload it exports says so.
+  Future<void> publishAsPublicDrive() =>
+      producerDb.driveDao.writeToDrive(const DrivesCompanion(
+        id: Value(driveId),
+        privacy: Value(DrivePrivacyTag.public),
+      ));
 
   Future<Drive> driveRow(Database from, [String id = driveId]) =>
       (from.select(from.drives)..where((d) => d.id.equals(id))).getSingle();
@@ -230,7 +292,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -262,7 +324,7 @@ void main() {
       await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -281,7 +343,7 @@ void main() {
       await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -296,7 +358,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -334,7 +396,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -365,7 +427,7 @@ void main() {
       await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -397,7 +459,7 @@ void main() {
       await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -432,7 +494,7 @@ void main() {
       await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -450,7 +512,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -473,7 +535,7 @@ void main() {
       await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
       final afterFirst = await fileRevisionRows();
@@ -484,7 +546,7 @@ void main() {
       final second = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -529,7 +591,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -578,7 +640,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -598,7 +660,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -628,7 +690,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -668,7 +730,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -704,7 +766,7 @@ void main() {
       await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -742,7 +804,7 @@ void main() {
       await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -778,7 +840,7 @@ void main() {
       return importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
     }
@@ -1026,7 +1088,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1115,6 +1177,237 @@ void main() {
     });
   });
 
+  /// The cipher/privacy cross-check, in both directions, and the payload's own
+  /// `privacy` field checked against the same trustworthy value.
+  ///
+  /// The shape is the one `Block-Start`/`Block-End` already has: an untrusted
+  /// claim - here the transaction's cipher tags, chosen by whoever posted it -
+  /// checked against something the reader knows for itself. None of these
+  /// artifacts is damaged; each opens perfectly for the drive it was made for.
+  group('the cipher must match the privacy of the drive it is for', () {
+    test('a public drive imports an artifact with no cipher tags', () async {
+      await publishAsPublicDrive();
+      await attachDrive(db, privacy: DrivePrivacyTag.public);
+
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        protection: publicDrive,
+      );
+
+      // Neither tag on the transaction at all - the discriminator.
+      expect(artifact.candidate.tags.containsKey(EntityTag.cipher), isFalse);
+      expect(artifact.candidate.tags.containsKey(EntityTag.cipherIv), isFalse);
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: publicDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(await fileRows(db), isNotEmpty);
+      expect((await driveRow(db)).lastBlockHeight, 900);
+      expect((await driveRow(db)).privacy, DrivePrivacyTag.public);
+    });
+
+    test('a private drive refuses an artifact with no cipher tags', () async {
+      await attachDrive(db);
+
+      // Genuine bytes: the owner's own export, signed by the owner, and
+      // readable. What is wrong is that a private drive's artifact was
+      // produced without its cipher - the one thing this format must never
+      // accept, because accepting it normalises publishing a private drive's
+      // entire structure in the clear.
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        protection: publicDrive,
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.privacyMismatch);
+      expect(result.detail, contains('never published in the clear'));
+      expect(await fileRows(db), isEmpty);
+      expect(await folderRows(db), isEmpty);
+      expect((await driveRow(db)).lastBlockHeight, 0);
+    });
+
+    test('a public drive refuses an artifact that declares a cipher', () async {
+      await publishAsPublicDrive();
+      await attachDrive(db, privacy: DrivePrivacyTag.public);
+
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        protection: privateDrive,
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: publicDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.privacyMismatch);
+      // Not `decryptFailed`: nothing was attempted with a key this reader
+      // never had, and reporting one would send a reader after the wrong bug.
+      expect(result.outcome, isNot(DriveStateOutcome.decryptFailed));
+      expect(await fileRows(db), isEmpty);
+      expect((await driveRow(db)).lastBlockHeight, 0);
+    });
+
+    test('the tags are checked before the Cipher-IV is even decoded', () async {
+      // The importer's own half of the cross-check, and the case that shows it
+      // is not merely a faster copy of the codec's. A public drive is offered
+      // an artifact whose `Cipher` tag is present and whose `Cipher-IV` is not
+      // base64 at all. Read in the other order, the answer is "the Cipher-IV
+      // tag is not base64" - a sentence about a malformed tag, when what is
+      // actually wrong is that this artifact is for a drive of the other
+      // privacy and its IV was never going to matter.
+      await publishAsPublicDrive();
+      await attachDrive(db, privacy: DrivePrivacyTag.public);
+
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        protection: publicDrive,
+        withCipherTags: true,
+        cipherIvTag: 'not base64 at all !!!',
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: publicDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.privacyMismatch);
+      expect(result.detail, isNot(contains('base64')));
+      // And the detail is the importer's, not the codec's: it names the drive
+      // and the transaction, which is what a reader of a sync log needs and
+      // what the codec - which sees neither - cannot say.
+      expect(result.detail, contains(driveId));
+      expect(result.detail, contains(artifact.candidate.txId));
+    });
+
+    test('a private drive is told which drive and which transaction', () async {
+      await attachDrive(db);
+
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        protection: publicDrive,
+        // Tagged as encrypted while the body is not, so the importer's tag
+        // check sees a cipher the codec's check would never be handed. Only
+        // the tag-level check can catch this before the envelope is built.
+        withCipherTags: true,
+        cipherIvTag: 'also not base64 !!!',
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      // The tags say encrypted and the drive is private, so the tag-level
+      // check passes - and the codec then finds the body is not encrypted at
+      // all. Which is a privacy mismatch too, arrived at one layer in.
+      expect(result.outcome, isNot(DriveStateOutcome.used));
+      expect(await fileRows(db), isEmpty);
+    });
+
+    test('the tags are checked before the body is opened at all', () async {
+      await attachDrive(db);
+
+      // A body that is not a data item, is not signed, and is not even long
+      // enough to be either. If the cross-check ran later this would come
+      // back as an integrity or signature failure; that it does not is what
+      // says a plaintext body for a private drive is never parsed.
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        protection: publicDrive,
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: Uint8List.fromList([1, 2, 3]),
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.privacyMismatch);
+    });
+
+    test(
+        'a payload whose own privacy disagrees with the local drive is '
+        'refused', () async {
+      // The third check, one layer in: `_driveCompanion` copies the payload's
+      // `privacy` onto the local drive row, so a payload claiming `public`
+      // for a private drive would relabel the user's own drive while its key
+      // material sat untouched beside it.
+      //
+      // Sealed the private way, so the tag-level cross-check passes and this
+      // is the only thing that can catch it.
+      await attachDrive(db);
+      await publishAsPublicDrive();
+
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        protection: privateDrive,
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.privacyMismatch);
+      expect(result.detail, contains('public'));
+      expect(result.detail, contains('private'));
+      expect(await fileRows(db), isEmpty);
+      expect((await driveRow(db)).privacy, DrivePrivacyTag.private);
+    });
+
+    test('and in the other direction, for a public drive', () async {
+      await attachDrive(db, privacy: DrivePrivacyTag.public);
+
+      // The producer's drive is still private, so the payload says `private`
+      // while the consumer holds the drive as public.
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        protection: publicDrive,
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: publicDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.privacyMismatch);
+      expect(await fileRows(db), isEmpty);
+      expect((await driveRow(db)).privacy, DrivePrivacyTag.public);
+    });
+  });
+
   group('validation, before anything is written', () {
     /// Every rejection test asserts this, because a partial import is worse
     /// than none: the drive would carry rows from an artifact nobody trusted,
@@ -1140,7 +1433,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1160,7 +1453,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1179,7 +1472,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1198,7 +1491,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1242,7 +1535,7 @@ void main() {
           {EntityTag.blockEnd: '9999999'},
         ),
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1256,7 +1549,7 @@ void main() {
       final honest = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1280,7 +1573,7 @@ void main() {
       final result = await importer.import(
         candidate: retagged(artifact.candidate, {EntityTag.blockStart: '0'}),
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1310,7 +1603,7 @@ void main() {
           tags: tags,
         ),
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1332,7 +1625,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1356,7 +1649,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1374,7 +1667,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1396,7 +1689,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1420,7 +1713,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1440,7 +1733,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: await aesGcm.newSecretKey(),
+        protection: protectionFor(await aesGcm.newSecretKey()),
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1458,7 +1751,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: damaged,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1473,7 +1766,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: 'not-the-owner',
       );
 
@@ -1494,7 +1787,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1519,7 +1812,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1555,7 +1848,7 @@ void main() {
         final result = await importer.import(
           candidate: artifact.candidate,
           body: artifact.body,
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -1594,7 +1887,7 @@ void main() {
             tags: tags,
           ),
           body: notAnEnvelope,
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -1628,7 +1921,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1659,7 +1952,7 @@ void main() {
         final result = await importer.import(
           candidate: artifact.candidate,
           body: artifact.body,
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -1685,11 +1978,52 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
       expect(result.outcome, DriveStateOutcome.unknownVersion);
+    });
+
+    test('a Cipher tag with no Cipher-IV beside it', () async {
+      await attachDrive(db);
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        omitCipherIvTag: true,
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      // Not `privacyMismatch`: a half-written cipher tag pair is not a
+      // statement about privacy, it is an artifact nobody can address.
+      expect(result.outcome, DriveStateOutcome.integrityFailed);
+      expect(result.detail, contains('cipher tags'));
+      expect(await fileRows(db), isEmpty);
+    });
+
+    test('a Cipher-IV tag with no Cipher beside it', () async {
+      await attachDrive(db);
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        omitCipherTag: true,
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.integrityFailed);
+      expect(await fileRows(db), isEmpty);
     });
 
     test('tags an indexer reported wrong, or not at all', () async {
@@ -1706,7 +2040,7 @@ void main() {
           tags: tags,
         ),
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1728,7 +2062,7 @@ void main() {
           tags: tags,
         ),
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1746,7 +2080,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1766,7 +2100,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1784,7 +2118,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1804,7 +2138,7 @@ void main() {
         final result = await importer.import(
           candidate: artifact.candidate,
           body: artifact.body,
-          driveKey: driveKey,
+          protection: privateDrive,
           expectedOwnerAddress: ownerAddress,
         );
 
@@ -1824,7 +2158,7 @@ void main() {
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 
@@ -1846,7 +2180,7 @@ void main() {
           await DriveStateImporter(gone.driveDao, codec: codec).import(
         candidate: artifact.candidate,
         body: artifact.body,
-        driveKey: driveKey,
+        protection: privateDrive,
         expectedOwnerAddress: ownerAddress,
       );
 

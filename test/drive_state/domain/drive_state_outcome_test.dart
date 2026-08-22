@@ -41,6 +41,12 @@ void main() {
           'integrity-failed',
           'count-mismatch',
           'coverage-mismatch',
+          // The cipher/privacy cross-check (§2.6), in both directions. Its own
+          // code rather than a shade of `integrity-failed`, for the reason
+          // `coverage-mismatch` has one: a private drive being offered an
+          // artifact in the clear is not a damaged payload, it is a producer
+          // having published the thing this design most exists to prevent.
+          'privacy-mismatch',
           'fetch-failed',
           'range-already-covered',
         },

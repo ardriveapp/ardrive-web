@@ -86,24 +86,20 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
         return;
       }
 
+      // Null for a public drive, which has no `encryptedKey` to unwrap. That
+      // is no longer a refusal here, and it is deliberately not this cubit's
+      // decision either: the service reads the drive row and resolves what may
+      // be built from the row's own `privacy` column. A caller that decided
+      // for itself would be a second place the two could disagree.
       final driveKey = await _driveDao.getDriveKey(
         driveId,
         profile.user.cipherKey,
       );
       if (isClosed) return;
 
-      if (driveKey == null) {
-        emit(DriveStateCreationRefused(
-          refusal: DriveStateCreationRefusal.publicDriveUnsupported,
-          reason:
-              'Drive state artifacts are only available for private drives.',
-        ));
-        return;
-      }
-
       final result = await _service.prepare(
         driveId: driveId,
-        driveKey: driveKey.key,
+        driveKey: driveKey?.key,
         wallet: profile.user.wallet,
       );
       if (isClosed) return;

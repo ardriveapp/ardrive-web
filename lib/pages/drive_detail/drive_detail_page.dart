@@ -645,7 +645,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         // with the feature switched off and
                                         // led to a modal that refuses. It also
                                         // missed two conditions the other
-                                        // entry point checks.
+                                        // entry point checks. Privacy is no
+                                        // longer one of the conditions at all
+                                        // - a public drive publishes the same
+                                        // artifact without the encryption
+                                        // step.
                                         //
                                         // `DriveStatePublishOffer.disabled` is
                                         // treated as hidden here, and only
@@ -660,9 +664,6 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                   .read<ConfigService>()
                                                   .config
                                                   .enableDriveStatePublishing,
-                                              isPrivateDrive: driveDetailState
-                                                      .currentDrive.privacy !=
-                                                  DrivePrivacyTag.public,
                                               isDriveOwner: isDriveOwner,
                                               hasWritePermissions:
                                                   driveDetailState

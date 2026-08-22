@@ -103,10 +103,18 @@ class DriveStateEntity extends Entity {
   /// (proposal 3.2).
   int? entityCount;
 
-  /// `Cipher`. Always `AES256-GCM`; see [DriveStateEnvelopeCodec].
+  /// `Cipher`. `AES256-GCM` for a private drive, and **absent** for a public
+  /// one; see [DriveStateEnvelopeCodec].
+  ///
+  /// Its absence is the discriminator between the two chains, not an omission:
+  /// a public drive has no key, so its artifact is signed and not encrypted,
+  /// and a reader tells the two apart by whether this tag is on the
+  /// transaction at all. [cipher] and [cipherIv] are therefore always both
+  /// present or both absent — enforced by [_requireTags], and structurally
+  /// guaranteed when the entity is built through [fromEnvelope].
   String? cipher;
 
-  /// `Cipher-IV`, base64.
+  /// `Cipher-IV`, base64. Absent exactly when [cipher] is.
   String? cipherIv;
 
   /// The sealed body — [DriveStateEnvelope.body].
@@ -127,8 +135,13 @@ class DriveStateEntity extends Entity {
   }) : super(ArDriveCrypto());
 
   /// Builds the entity around a sealed [envelope] and the [coverage] its
-  /// payload declares, so that the body, the two cipher tags and the block
-  /// range can never disagree with each other.
+  /// payload declares, so that the body, the cipher tags and the block range
+  /// can never disagree with each other.
+  ///
+  /// The cipher tags are taken from the envelope rather than passed in, which
+  /// is what keeps a public drive's artifact from being tagged as encrypted or
+  /// a private drive's from being tagged as clear. The envelope knows which
+  /// chain produced it; a caller only knows what it meant to do.
   ///
   /// The coverage object rather than two integers, because an importer
   /// refuses any artifact whose `Block-Start`/`Block-End` tags do not match
@@ -207,14 +220,29 @@ class DriveStateEntity extends Entity {
       if (dataStart == null) 'Data-Start',
       if (dataEnd == null) 'Data-End',
       if (entityCount == null) 'Entity-Count',
-      if (cipher == null) 'Cipher',
-      if (cipherIv == null) 'Cipher-IV',
     ];
 
     if (missing.isNotEmpty) {
       throw StateError(
         'A drive state entity cannot be tagged without ${missing.join(', ')}; '
         'publishing it would spend money on an artifact no reader can use.',
+      );
+    }
+
+    // `Cipher` and `Cipher-IV` are not in the list above because both are
+    // legitimately absent: that is what a public drive's artifact looks like.
+    // What is never legitimate is one without the other. A `Cipher` with no
+    // `Cipher-IV` is ciphertext nothing can address; a `Cipher-IV` with no
+    // `Cipher` reads to every consumer as an unencrypted artifact, which for a
+    // private drive is the refusal at the far end of the cross-check. Both
+    // shapes are permanent once posted.
+    if ((cipher == null) != (cipherIv == null)) {
+      throw StateError(
+        'A drive state entity carries Cipher and Cipher-IV together or '
+        'neither, and this one has '
+        '${cipher == null ? 'Cipher-IV without Cipher' : 'Cipher without '
+            'Cipher-IV'}; publishing it would spend money on an artifact no '
+        'reader can use.',
       );
     }
   }
@@ -237,9 +265,17 @@ class DriveStateEntity extends Entity {
       ..addTag(EntityTag.blockEnd, '$blockEnd')
       ..addTag(EntityTag.dataStart, '$dataStart')
       ..addTag(EntityTag.dataEnd, '$dataEnd')
-      ..addTag(EntityTag.entityCount, '$entityCount')
-      ..addTag(EntityTag.cipher, cipher!)
-      ..addTag(EntityTag.cipherIv, cipherIv!);
+      ..addTag(EntityTag.entityCount, '$entityCount');
+
+    // Absent for a public drive, and their absence is the discriminator — not
+    // a tag written empty, not a tag written `none`. A reader distinguishes
+    // the two chains by whether these are on the transaction, so writing
+    // `Cipher: ''` would be a third state nobody specified.
+    if (cipher != null) {
+      tx
+        ..addTag(EntityTag.cipher, cipher!)
+        ..addTag(EntityTag.cipherIv, cipherIv!);
+    }
   }
 
   @override

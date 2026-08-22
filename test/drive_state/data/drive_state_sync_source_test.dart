@@ -4,6 +4,7 @@ import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/data/drive_state_sync_source.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:flutter_test/flutter_test.dart';
@@ -54,6 +55,17 @@ void main() {
   const txId = 'artifact-tx-id';
 
   final driveKey = SecretKey(List.filled(32, 7));
+
+  /// Resolved rather than fabricated: `DriveStateProtection` has no public
+  /// constructor, which is the whole point of it.
+  final privateDrive = DriveStateProtection.forDrive(
+    privacy: DrivePrivacyTag.private,
+    driveKey: driveKey,
+  ).protection!;
+  final publicDrive = DriveStateProtection.forDrive(
+    privacy: DrivePrivacyTag.public,
+    driveKey: null,
+  ).protection!;
   final body = Uint8List.fromList([1, 2, 3]);
 
   late MockArweaveService arweave;
@@ -66,7 +78,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_FakeCandidate());
     registerFallbackValue(Uint8List(0));
-    registerFallbackValue(SecretKey(const []));
+    registerFallbackValue(publicDrive);
   });
 
   setUp(() {
@@ -125,7 +137,7 @@ void main() {
       sourceFor(discovery, maxCandidateAttempts: maxCandidateAttempts).read(
         driveId: driveId,
         ownerAddress: ownerAddress,
-        driveKey: driveKey,
+        protection: privateDrive,
         lastBlockHeight: lastBlockHeight,
       );
 
@@ -154,7 +166,7 @@ void main() {
     when(() => importer.import(
           candidate: any(named: 'candidate'),
           body: any(named: 'body'),
-          driveKey: any(named: 'driveKey'),
+          protection: any(named: 'protection'),
           expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
         )).thenAnswer((_) async => result);
   }
@@ -171,6 +183,65 @@ void main() {
         parseDuration: const Duration(milliseconds: 4),
         mergeDuration: const Duration(milliseconds: 9),
       ));
+
+  /// The composer takes no view on privacy. It carries the protection its
+  /// caller resolved from the drive row down to the importer, which is the
+  /// layer that checks it against the artifact's tags — so what these assert
+  /// is that the value arrives intact rather than being re-derived here.
+  group('the protection is carried, not decided', () {
+    test('a public drive reaches the importer as a public drive', () async {
+      stubImport(importedThrough(900));
+
+      final result = await sourceFor(found(candidate(blockEnd: 900))).read(
+        driveId: driveId,
+        ownerAddress: ownerAddress,
+        protection: publicDrive,
+        lastBlockHeight: 100,
+      );
+
+      expect(result.artifactWasUsed, isTrue, reason: result.detail);
+
+      final captured = verify(() => importer.import(
+            candidate: any(named: 'candidate'),
+            body: any(named: 'body'),
+            protection: captureAny(named: 'protection'),
+            expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
+          )).captured;
+
+      expect(captured.single, same(publicDrive));
+    });
+
+    test('a private drive reaches the importer as a private drive', () async {
+      stubImport(importedThrough(900));
+
+      await read(found(candidate(blockEnd: 900)));
+
+      final captured = verify(() => importer.import(
+            candidate: any(named: 'candidate'),
+            body: any(named: 'body'),
+            protection: captureAny(named: 'protection'),
+            expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
+          )).captured;
+
+      expect(captured.single, same(privateDrive));
+    });
+
+    test('a privacy mismatch from the importer is one ordinary rejection',
+        () async {
+      stubImport(const DriveStateImportResult.rejected(
+        DriveStateOutcome.privacyMismatch,
+        'drive drive-id is private and artifact-tx-id carries no Cipher tag',
+      ));
+
+      final result = await read(found(candidate(blockEnd: 900)));
+
+      // A fallback like every other: no range covered, one verdict, and the
+      // sync below walks the whole thing itself.
+      expect(result.artifactWasUsed, isFalse);
+      expect(result.covered.rangeSegments, isEmpty);
+      expectExactlyOneOutcome(DriveStateOutcome.privacyMismatch);
+    });
+  });
 
   /// Measured on a 41,767 file drive: re-importing the same artifact costs a
   /// 9.55 MiB download, ~173,000 statements and about 8.5 seconds, and writes
@@ -189,7 +260,7 @@ void main() {
       final first = await source.read(
         driveId: driveId,
         ownerAddress: ownerAddress,
-        driveKey: driveKey,
+        protection: privateDrive,
         lastBlockHeight: 100,
       );
       expect(first.artifactWasUsed, isTrue, reason: first.detail);
@@ -203,7 +274,7 @@ void main() {
       final second = await source.read(
         driveId: driveId,
         ownerAddress: ownerAddress,
-        driveKey: driveKey,
+        protection: privateDrive,
         // What the drive's watermark is after the first import: equal to
         // Block-End, which is why the range guard does not catch this.
         lastBlockHeight: 900,
@@ -220,7 +291,7 @@ void main() {
       verifyNever(() => importer.import(
             candidate: any(named: 'candidate'),
             body: any(named: 'body'),
-            driveKey: any(named: 'driveKey'),
+            protection: any(named: 'protection'),
             expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
           ));
     });
@@ -241,7 +312,7 @@ void main() {
       await source.read(
         driveId: driveId,
         ownerAddress: ownerAddress,
-        driveKey: driveKey,
+        protection: privateDrive,
         lastBlockHeight: 100,
       );
 
@@ -251,7 +322,7 @@ void main() {
       final second = await source.read(
         driveId: driveId,
         ownerAddress: ownerAddress,
-        driveKey: driveKey,
+        protection: privateDrive,
         lastBlockHeight: 900,
       );
 
@@ -268,7 +339,7 @@ void main() {
       await source.read(
         driveId: driveId,
         ownerAddress: ownerAddress,
-        driveKey: driveKey,
+        protection: privateDrive,
         lastBlockHeight: 100,
       );
 
@@ -277,7 +348,7 @@ void main() {
       final second = await source.read(
         driveId: driveId,
         ownerAddress: ownerAddress,
-        driveKey: driveKey,
+        protection: privateDrive,
         lastBlockHeight: 100,
       );
 
@@ -445,7 +516,7 @@ void main() {
       verifyNever(() => importer.import(
             candidate: any(named: 'candidate'),
             body: any(named: 'body'),
-            driveKey: any(named: 'driveKey'),
+            protection: any(named: 'protection'),
             expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
           ));
     });
@@ -485,7 +556,7 @@ void main() {
       verifyNever(() => importer.import(
             candidate: any(named: 'candidate'),
             body: any(named: 'body'),
-            driveKey: any(named: 'driveKey'),
+            protection: any(named: 'protection'),
             expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
           ));
     });
@@ -518,7 +589,7 @@ void main() {
       when(() => importer.import(
             candidate: any(named: 'candidate'),
             body: any(named: 'body'),
-            driveKey: any(named: 'driveKey'),
+            protection: any(named: 'protection'),
             expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
           )).thenThrow(StateError('the database went away'));
 
@@ -595,7 +666,7 @@ void main() {
       when(() => importer.import(
             candidate: any(named: 'candidate'),
             body: any(named: 'body'),
-            driveKey: any(named: 'driveKey'),
+            protection: any(named: 'protection'),
             expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
           )).thenAnswer((invocation) async {
         final c = invocation.namedArguments[#candidate]

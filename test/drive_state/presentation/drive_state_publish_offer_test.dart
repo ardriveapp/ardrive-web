@@ -5,27 +5,30 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// Enumerated rather than sampled. This is the guard on the only path in the
 /// app that spends money on an artifact, so "the conditions I thought of" is
-/// not a standard it can be held to — all 32 combinations are asserted, and
+/// not a standard it can be held to — all 16 combinations are asserted, and
 /// each condition is additionally pinned on its own so that a regression names
 /// itself.
+///
+/// Sixteen and not thirty-two: privacy used to be a fifth condition and is no
+/// longer one. A public drive publishes the same artifact with the encryption
+/// step absent, so the gate has nothing to ask about it. The group below pins
+/// that the parameter is gone rather than merely defaulted true.
 void main() {
   DriveStatePublishOffer offerWith({
     bool publishingEnabled = true,
-    bool isPrivateDrive = true,
     bool isDriveOwner = true,
     bool hasWritePermissions = true,
     bool driveIsEmpty = false,
   }) =>
       driveStatePublishOffer(
         publishingEnabled: publishingEnabled,
-        isPrivateDrive: isPrivateDrive,
         isDriveOwner: isDriveOwner,
         hasWritePermissions: hasWritePermissions,
         driveIsEmpty: driveIsEmpty,
       );
 
   group('every condition met', () {
-    test('a private, non-empty, owned drive with the flag on is offered', () {
+    test('a non-empty, owned drive with the flag on is offered', () {
       expect(offerWith(), DriveStatePublishOffer.offered);
     });
   });
@@ -36,10 +39,6 @@ void main() {
         offerWith(publishingEnabled: false),
         DriveStatePublishOffer.hidden,
       );
-    });
-
-    test('the drive is public, which no user can change', () {
-      expect(offerWith(isPrivateDrive: false), DriveStatePublishOffer.hidden);
     });
 
     test('the signed-in wallet does not own the drive', () {
@@ -67,34 +66,56 @@ void main() {
     });
   });
 
-  test('all 32 combinations agree with the stated rule', () {
-    for (var mask = 0; mask < 32; mask++) {
-      final publishingEnabled = mask & 1 != 0;
-      final isPrivateDrive = mask & 2 != 0;
-      final isDriveOwner = mask & 4 != 0;
-      final hasWritePermissions = mask & 8 != 0;
-      final driveIsEmpty = mask & 16 != 0;
+  group('privacy is not a condition', () {
+    // The gate used to hide the entry for every public drive. It cannot any
+    // more, because there is nowhere left to say so: these tests are the
+    // record that the parameter was removed rather than left defaulting to
+    // `true`, which would read the same from the two call sites and behave
+    // the same only until one of them passed something else.
+    //
+    // A public drive reaching `offered` is asserted by every row above — none
+    // of them mentions privacy — and by the exhaustive sweep below, whose
+    // 16 rows are the *whole* input space of this function.
+    test('the gate has exactly four inputs, and none of them is privacy', () {
+      // Compiles only while `isPrivateDrive` is not a parameter: adding it
+      // back as required breaks this call, and adding it back as optional
+      // leaves the sweep below asserting an input space that is no longer
+      // whole. Both are the failure this pins.
+      expect(
+        driveStatePublishOffer(
+          publishingEnabled: true,
+          isDriveOwner: true,
+          hasWritePermissions: true,
+          driveIsEmpty: false,
+        ),
+        DriveStatePublishOffer.offered,
+      );
+    });
+  });
 
-      final expected = !publishingEnabled ||
-              !isPrivateDrive ||
-              !isDriveOwner ||
-              !hasWritePermissions
-          ? DriveStatePublishOffer.hidden
-          : driveIsEmpty
-              ? DriveStatePublishOffer.disabled
-              : DriveStatePublishOffer.offered;
+  test('all 16 combinations agree with the stated rule', () {
+    for (var mask = 0; mask < 16; mask++) {
+      final publishingEnabled = mask & 1 != 0;
+      final isDriveOwner = mask & 2 != 0;
+      final hasWritePermissions = mask & 4 != 0;
+      final driveIsEmpty = mask & 8 != 0;
+
+      final expected =
+          !publishingEnabled || !isDriveOwner || !hasWritePermissions
+              ? DriveStatePublishOffer.hidden
+              : driveIsEmpty
+                  ? DriveStatePublishOffer.disabled
+                  : DriveStatePublishOffer.offered;
 
       expect(
         driveStatePublishOffer(
           publishingEnabled: publishingEnabled,
-          isPrivateDrive: isPrivateDrive,
           isDriveOwner: isDriveOwner,
           hasWritePermissions: hasWritePermissions,
           driveIsEmpty: driveIsEmpty,
         ),
         expected,
         reason: 'publishingEnabled: $publishingEnabled, '
-            'isPrivateDrive: $isPrivateDrive, '
             'isDriveOwner: $isDriveOwner, '
             'hasWritePermissions: $hasWritePermissions, '
             'driveIsEmpty: $driveIsEmpty',
@@ -103,14 +124,13 @@ void main() {
   });
 
   test('nothing is ever offered while the feature flag is off', () {
-    for (var mask = 0; mask < 16; mask++) {
+    for (var mask = 0; mask < 8; mask++) {
       expect(
         driveStatePublishOffer(
           publishingEnabled: false,
-          isPrivateDrive: mask & 1 != 0,
-          isDriveOwner: mask & 2 != 0,
-          hasWritePermissions: mask & 4 != 0,
-          driveIsEmpty: mask & 8 != 0,
+          isDriveOwner: mask & 1 != 0,
+          hasWritePermissions: mask & 2 != 0,
+          driveIsEmpty: mask & 4 != 0,
         ),
         DriveStatePublishOffer.hidden,
       );

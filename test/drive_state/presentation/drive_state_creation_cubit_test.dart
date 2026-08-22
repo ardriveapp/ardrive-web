@@ -205,18 +205,23 @@ void main() {
     );
 
     blocTest<DriveStateCreationCubit, DriveStateCreationState>(
-      'refuses a public drive, which has no drive key to seal under',
+      'prepares a public drive, which has no drive key and needs none',
       build: cubitWith,
       setUp: () => insertDrive(privacy: DrivePrivacyTag.public),
       act: (cubit) => cubit.prepare(),
       expect: () => [
         isA<DriveStateCreationPreparing>(),
-        isA<DriveStateCreationRefused>().having(
-          (s) => s.refusal,
-          'refusal',
-          DriveStateCreationRefusal.publicDriveUnsupported,
+        // `getDriveKey` returns null for a drive with no `encryptedKey`, and
+        // the cubit no longer reads anything into that. Whether an artifact
+        // may be built is the service's answer, taken from the drive row.
+        isA<DriveStateCreationReady>().having(
+          (s) => s.artifact.isEncrypted,
+          'artifact.isEncrypted',
+          isFalse,
         ),
       ],
+      // Prepared is still not published: the confirm button is the only thing
+      // that reaches the uploader.
       verify: (_) => verifyNever(
           () => uploader.publish(any(), method: any(named: 'method'))),
     );

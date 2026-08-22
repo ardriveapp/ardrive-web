@@ -262,6 +262,34 @@ void main() {
       );
     });
 
+    test('exports a public drive the same way, carrying its privacy', () async {
+      // The export is not conditioned on privacy at all: the same rows, the
+      // same entity count, the same projection. What the payload does carry
+      // is the drive's own `privacy` value, which is the field a reader
+      // cross-checks against the drive it holds locally - and the field the
+      // merge writes onto that drive's row.
+      await (db.update(db.drives)..where((d) => d.id.equals(driveId))).write(
+        const DrivesCompanion(privacy: Value(DrivePrivacyTag.public)),
+      );
+
+      final export = await exportDriveState(db.driveDao, driveId);
+
+      expect(export.drive.privacy, DrivePrivacyTag.public);
+      expect(export.folders, hasLength(5));
+      expect(export.files, hasLength(6));
+      expect(export.entityCount, 12);
+      expect(export.fileRevisions, isNotEmpty);
+      expect(export.folderRevisions, isNotEmpty);
+
+      // And it survives the wire format, because that is what the reader
+      // checks.
+      final round = DriveStateExport.fromJson(
+        jsonDecode(jsonEncode(export.toJson())) as Map<String, dynamic>,
+      );
+      expect(round.drive.privacy, DrivePrivacyTag.public);
+      expect(round, equals(export));
+    });
+
     test('carries no key material even when the drive holds some', () async {
       // High entropy on purpose: short byte strings collide with ordinary
       // text, and a leak has to be caught in whatever encoding it takes.

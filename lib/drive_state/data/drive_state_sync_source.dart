@@ -4,10 +4,10 @@ import 'dart:typed_data';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
-import 'package:cryptography/cryptography.dart' show SecretKey;
 
 /// The drive state artifact as a *source* for a sync: discovery, fetch,
 /// import, and the one log line that says what happened.
@@ -114,7 +114,7 @@ class DriveStateSyncSource {
   Future<DriveStateSyncResult> read({
     required String driveId,
     required String ownerAddress,
-    required SecretKey driveKey,
+    required DriveStateProtection protection,
     required int lastBlockHeight,
   }) async {
     DriveStateSyncResult result;
@@ -123,7 +123,7 @@ class DriveStateSyncSource {
       result = await _read(
         driveId: driveId,
         ownerAddress: ownerAddress,
-        driveKey: driveKey,
+        protection: protection,
         lastBlockHeight: lastBlockHeight,
       );
     } catch (e) {
@@ -149,7 +149,7 @@ class DriveStateSyncSource {
   Future<DriveStateSyncResult> _read({
     required String driveId,
     required String ownerAddress,
-    required SecretKey driveKey,
+    required DriveStateProtection protection,
     required int lastBlockHeight,
   }) async {
     // An artifact mined below the height this sync starts from cannot carry a
@@ -207,7 +207,7 @@ class DriveStateSyncSource {
         driveId: driveId,
         candidate: candidate,
         ownerAddress: ownerAddress,
-        driveKey: driveKey,
+        protection: protection,
         lastBlockHeight: lastBlockHeight,
       );
 
@@ -248,7 +248,7 @@ class DriveStateSyncSource {
     required String driveId,
     required DriveStateArtifactCandidate candidate,
     required String ownerAddress,
-    required SecretKey driveKey,
+    required DriveStateProtection protection,
     required int lastBlockHeight,
   }) async {
     // An artifact this session already imported into this drive.
@@ -322,7 +322,7 @@ class DriveStateSyncSource {
     final imported = await _importer.import(
       candidate: candidate,
       body: body,
-      driveKey: driveKey,
+      protection: protection,
       expectedOwnerAddress: ownerAddress,
     );
 

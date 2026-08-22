@@ -268,9 +268,7 @@ Widget _confirmModal(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'This publishes a snapshot of this drive\'s current state to '
-            'Arweave, encrypted with your drive key. It is permanent and '
-            'cannot be removed.',
+            _whatThisDoes(state.artifact.isEncrypted),
             style: typography.paragraphNormal(color: colorTokens.textMid),
           ),
           const SizedBox(height: 16),
@@ -323,6 +321,26 @@ Widget _confirmModal(
     ],
   );
 }
+
+/// The opening sentence, which differs between the two privacies by one
+/// clause and nothing else.
+///
+/// A public drive's artifact is not encrypted, so the encryption clause is
+/// dropped rather than reworded. **Nothing takes its place.** A public drive is
+/// public because its owner chose that, and telling them at confirmation time
+/// that public things are readable is telling them what they decided; the
+/// "it is all in one blob now" refinement is a distinction a user cannot act
+/// on, and snapshots have published exactly the same enumeration for public
+/// drives for years without saying anything. Adding a line here would imply a
+/// difference that does not exist.
+///
+/// What the modal shows is therefore identical for both: the drive, the entity
+/// count, the size, the block range and the price.
+String _whatThisDoes(bool isEncrypted) => isEncrypted
+    ? 'This publishes a snapshot of this drive\'s current state to Arweave, '
+        'encrypted with your drive key. It is permanent and cannot be removed.'
+    : 'This publishes a snapshot of this drive\'s current state to Arweave. '
+        'It is permanent and cannot be removed.';
 
 /// Feeds the shared [PaymentMethodSelector] rather than restating its layout.
 ///

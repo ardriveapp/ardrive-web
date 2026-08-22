@@ -72,6 +72,41 @@ void main() {
       );
     });
 
+    /// The same kind of invariant, for the condition that was *removed*.
+    ///
+    /// Privacy is no longer one of the gate's inputs, and a unit test cannot
+    /// see the way that comes back: an optional `isPrivateDrive` parameter
+    /// defaulting to `true` compiles, passes every row of the matrix, and
+    /// changes nothing — until one call site starts passing the drive's actual
+    /// privacy, at which point public drives silently lose the menu entry
+    /// again with no test anywhere disagreeing.
+    ///
+    /// So the property is asserted where it lives: no caller of the gate names
+    /// privacy at all.
+    test('no call site passes a privacy argument to the gate', () {
+      const gate = 'driveStatePublishOffer';
+      final offenders = <String>[];
+
+      for (final file in Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))) {
+        final source = file.readAsStringSync();
+        if (!source.contains(gate)) continue;
+        if (!source.contains('isPrivateDrive')) continue;
+
+        offenders.add(file.path);
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason: 'a public drive publishes the same artifact with the '
+            'encryption step absent, so `$gate` takes no privacy argument; '
+            'these files pass one: ${offenders.join(', ')}',
+      );
+    });
+
     test(
         'the gate is actually consulted somewhere, so the check is not '
         'vacuous', () {
@@ -212,7 +247,6 @@ void main() {
       expect(
         driveStatePublishOffer(
           publishingEnabled: false,
-          isPrivateDrive: true,
           isDriveOwner: true,
           hasWritePermissions: true,
           driveIsEmpty: false,

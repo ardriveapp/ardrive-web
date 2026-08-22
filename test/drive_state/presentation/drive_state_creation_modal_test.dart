@@ -58,6 +58,7 @@ void main() {
     String driveName = 'My Drive',
     int entityCount = 12,
     int blockEnd = 1814228,
+    bool isEncrypted = true,
   }) =>
       PreparedDriveStateArtifact(
         entity: DriveStateEntity(
@@ -67,8 +68,8 @@ void main() {
           dataStart: 0,
           dataEnd: blockEnd,
           entityCount: entityCount,
-          cipher: 'AES256-GCM',
-          cipherIv: 'aXY=',
+          cipher: isEncrypted ? 'AES256-GCM' : null,
+          cipherIv: isEncrypted ? 'aXY=' : null,
         ),
         driveId: 'drive-id',
         driveName: driveName,
@@ -133,6 +134,49 @@ void main() {
     expect(find.textContaining('permanent'), findsOneWidget);
     expect(
         find.textContaining('Nothing has been uploaded yet'), findsOneWidget);
+  });
+
+  /// A public drive's confirmation is the private one minus one clause.
+  ///
+  /// The encryption clause is dropped because it would be false, and nothing
+  /// takes its place. A public drive is public because its owner chose that,
+  /// so a line at confirmation time telling them public things are readable
+  /// would be telling them what they decided — and snapshots have published
+  /// the same enumeration for public drives for years without saying anything,
+  /// so singling out the artifact would imply a difference that does not
+  /// exist. The user is confirming a spend, and what they need for that is the
+  /// drive, the count, the size, the range and the price.
+  testWidgets(
+      'a public drive is shown the same thing, minus the encryption '
+      'clause', (tester) async {
+    await tester.pumpWidget(
+      wrap(ready(withArtifact: artifact(isEncrypted: false))),
+    );
+    await tester.pumpAndSettle();
+
+    // Everything the private drive is shown.
+    expect(find.text('My Drive'), findsOneWidget);
+    expect(find.text('12'), findsOneWidget);
+    expect(find.text('6.66 MiB'), findsOneWidget);
+    expect(find.text('0 to 1814228'), findsOneWidget);
+    expect(find.textContaining('permanent'), findsOneWidget);
+    expect(
+        find.textContaining('Nothing has been uploaded yet'), findsOneWidget);
+    expect(find.text('Publish'), findsOneWidget);
+
+    // And not the one thing that would be untrue.
+    expect(find.textContaining('encrypted with your drive key'), findsNothing);
+  });
+
+  testWidgets('a private drive is told its artifact is encrypted',
+      (tester) async {
+    await tester.pumpWidget(wrap(ready()));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('encrypted with your drive key'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the confirmation shows what it costs, in the selected method',
