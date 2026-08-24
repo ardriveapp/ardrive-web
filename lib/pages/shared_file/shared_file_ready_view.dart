@@ -103,17 +103,6 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// to look like a mistake.
   static const double _panePictureSize = 200;
 
-  /// Open on arrival.
-  ///
-  /// The page exists to show someone a file, so making them ask to see it is
-  /// one click that should not exist. The pane is laid out either way on the
-  /// desktop card, so this fills a box that was already there rather than
-  /// moving anything; the toggle stays, so it can still be closed.
-  ///
-  /// A type that cannot be shown answers with its own sentence rather than
-  /// nothing, which is a better answer than making the recipient press Preview
-  /// to be told the same thing.
-  bool _isPreviewOpen = true;
 
   /// Whether a download is in flight.
   ///
@@ -155,23 +144,12 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         _buildDownload(context, revision, fillWidth: true),
         ..._buildUnlockedNote(context),
         // The preview reads the file through its drive, which only the
-        // resolved metadata knows about.
+        // resolved metadata knows about. There is no resting box on a phone -
+        // an empty 360px band above the fold would cost more than it says -
+        // so the preview simply appears once there is something to show.
         if (widget.state.detailsAreResolved) ...[
-          const SizedBox(height: 8),
-          _buildPreviewToggle(context),
-          // Kept mounted while hidden: unloading it turns "hide" into
-          // "download again".
-          Visibility(
-            visible: _isPreviewOpen,
-            maintainState: true,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 8),
-                _buildPreview(context, revision, isInline: true),
-              ],
-            ),
-          ),
+          const SizedBox(height: 16),
+          _buildPreview(context, revision, isInline: true),
         ],
         const SizedBox(height: 16),
         // No fixed height on a phone: the column already scrolls, and a panel
@@ -386,23 +364,25 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
 
   /// Where the file goes on a wide screen.
   ///
-  /// Its height is a constant, not a function of [_isPreviewOpen]: a pane that
-  /// only existed once the preview was open would make Preview a button that
-  /// resizes the page, and the download button would move out from under the
-  /// pointer that is about to press it.
+  /// The preview is the page, not something the page offers: this is a link
+  /// someone followed to look at a file, so the file is shown. There is no
+  /// control to put it away, because there was nothing for one to do - the
+  /// bytes are already fetched by the time it could be pressed, the widget
+  /// stays mounted either way, and anyone who did not want to see what a
+  /// stranger sent them has already seen it. A button that saves no bandwidth,
+  /// frees no memory and prevents nothing is a button that only makes the
+  /// recipient decide something.
   ///
-  /// What it must not be is empty. A 580x430 box holding one 40px glyph reads
-  /// as something that failed to load, so at rest the pane shows the file's own
-  /// thumbnail when the link carried one - real content, already fetched, and
-  /// the closest thing to the file itself that costs nothing - and otherwise a
-  /// deliberate placeholder that says what the pane is for - and the whole box
-  /// is the control that opens it, so there is nothing small to aim at and
-  /// nothing to move out from under the pointer.
+  /// The box still has a resting state, but for the situations the recipient
+  /// did not choose: the metadata has not resolved yet, the type cannot be
+  /// shown, the file is past `previewMaxFileSize` (100 MiB), or the fetch
+  /// failed. Those get the file's own thumbnail or its type icon above a
+  /// sentence, so the pane reads as an answer rather than as something that
+  /// failed to load - and Download, in the column beside it, is still the way
+  /// forward in every one of them.
   ///
-  /// Nothing here is fetched before it is asked for. Opening the preview
-  /// automatically would spend every desktop recipient's bandwidth on bytes
-  /// they may only have wanted to download - up to `previewMaxFileSize`, which
-  /// is 100 MiB - so the pane fills itself with what the page already has.
+  /// The height is a constant so that none of those transitions resize the
+  /// card under the pointer that is on its way to Download.
   Widget _buildPreviewPane(BuildContext context, FileRevision revision) {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
@@ -415,63 +395,54 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         border: Border.all(color: colors.themeBorderDefault),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          Expanded(
-            // Centred the way `DetailsPanel` centres the same widget.
-            child: Center(
-              // Both are built; only one is shown.
-              //
-              // Swapping them meant hiding the preview *unloaded* it: the
-              // subtree went, its cubit went with it, and reopening fetched the
-              // file again. On a connection the gateway is rate limiting, that
-              // second fetch is one that can simply fail - so hiding a file you
-              // had could lose it.
-              //
-              // `maintainState` keeps the preview mounted and its bytes in
-              // hand while it is out of sight. Nothing is cached anywhere new;
-              // the thing just never unloads.
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Visibility(
-                    visible: !_isPreviewOpen,
-                    maintainState: true,
-                    child: _buildPaneAtRest(context, revision),
-                  ),
-                  Visibility(
-                    visible: _isPreviewOpen,
-                    maintainState: true,
-                    child: _buildPreview(context, revision, isInline: false),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (widget.state.detailsAreResolved && _isPreviewOpen)
-            _buildPaneBar(context),
-        ],
+      // Centred the way `DetailsPanel` centres the same widget.
+      child: Center(
+        // The preview reads the file through its drive, which only the
+        // resolved metadata knows about.
+        child: widget.state.detailsAreResolved
+            ? _buildPreview(context, revision, isInline: false)
+            : _buildPaneAtRest(context, revision),
       ),
     );
   }
 
-  /// The pane before anything has been asked of it - and the way in.
+  /// The pane while the metadata is still resolving.
   ///
-  /// Pressing the box shows the file. It is already the size and shape of the
-  /// preview, carrying the file's own thumbnail where the preview will be, so
-  /// it reads as the thing it opens; a separate "Preview" button below it was
-  /// a second control for a box that already looked pressable.
-  ///
-  /// Closing keeps its own control, in the bar under the open preview: a
-  /// recipient who has decided they do not want to look at what a stranger sent
-  /// them should not have to find the picture to get rid of it.
+  /// A 580x430 box holding one 40px glyph reads as something that failed to
+  /// load, so this shows the file's own thumbnail when the link carried one -
+  /// real content, already fetched, and the closest thing to the file itself
+  /// that costs nothing - and otherwise its type icon, given enough weight to
+  /// read as a placeholder.
   Widget _buildPaneAtRest(BuildContext context, FileRevision revision) {
     final state = widget.state;
     final contentType = revision.dataContentType ?? state.payload?.contentType;
     final thumbnailTxId = _thumbnailTxId(state, revision);
 
-    // Decorative in both branches: the file's name and type are written out in
-    // words in the column beside this one.
+    return _buildPanePlaceholder(
+      context,
+      revision: revision,
+      contentType: contentType,
+      thumbnailTxId: thumbnailTxId,
+      message: appLocalizationsOf(context).sharedFileLoadingDetails,
+    );
+  }
+
+  /// A picture of the file over a sentence about it.
+  ///
+  /// Shared by every state that cannot show the file itself, so that "not yet",
+  /// "not this type" and "too big to preview" all look like the same
+  /// deliberate answer instead of three different kinds of empty.
+  Widget _buildPanePlaceholder(
+    BuildContext context, {
+    required FileRevision revision,
+    required String? contentType,
+    required String? thumbnailTxId,
+    required String message,
+  }) {
+    final state = widget.state;
+
+    // Decorative: the file's name and type are written out in words in the
+    // column beside this one.
     final icon = ExcludeSemantics(
       child: getIconForContentType(
         contentType ?? 'application/octet-stream',
@@ -480,47 +451,34 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       ),
     );
 
-    final canOpen = state.detailsAreResolved;
-
-    return Semantics(
-      button: canOpen,
-      label: canOpen ? appLocalizationsOf(context).preview : null,
-      child: InkWell(
-        onTap: canOpen
-            ? () => setState(() => _isPreviewOpen = true)
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (thumbnailTxId != null)
-                SharedFileThumbnail(
-                  txId: thumbnailTxId,
-                  size: _panePictureSize,
-                  // The picture is of the file, and here it is the picture the
-                  // recipient came to look at rather than a 44px decoration.
-                  fit: BoxFit.contain,
-                  semanticLabel: revision.name.isEmpty ? null : revision.name,
-                  isPrivate: state.fileKey != null,
-                  fileKey: state.fileKey,
-                  fallback: _buildIconTile(context, icon),
-                )
-              else
-                _buildIconTile(context, icon),
-              const SizedBox(height: 16),
-              Text(
-                canOpen
-                    ? appLocalizationsOf(context).sharedFilePreviewPaneHint
-                    : appLocalizationsOf(context).sharedFileLoadingDetails,
-                textAlign: TextAlign.center,
-                style: ArDriveTypography.body.captionRegular(
-                  color: SharedFileColors.subtle(context),
-                ),
-              ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (thumbnailTxId != null)
+            SharedFileThumbnail(
+              txId: thumbnailTxId,
+              size: _panePictureSize,
+              // The picture is of the file, and here it is the picture the
+              // recipient came to look at rather than a 44px decoration.
+              fit: BoxFit.contain,
+              semanticLabel: revision.name.isEmpty ? null : revision.name,
+              isPrivate: state.fileKey != null,
+              fileKey: state.fileKey,
+              fallback: _buildIconTile(context, icon),
+            )
+          else
+            _buildIconTile(context, icon),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: ArDriveTypography.body.captionRegular(
+              color: SharedFileColors.subtle(context),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -538,35 +496,6 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(child: icon),
-    );
-  }
-
-  /// The pane's own footer, present only while the preview is: the box itself
-  /// is what opens it, so the only thing left for a button is Hide.
-  Widget _buildPaneBar(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: colors.themeBorderDefault)),
-      ),
-      child: Center(child: _buildPreviewToggle(context)),
-    );
-  }
-
-  /// Hide, when there is something to hide; Preview, when the box that would
-  /// have been pressed is not the one on screen.
-  ///
-  /// On the desktop card the resting pane is itself the way in, so this only
-  /// ever says Hide there. The phone column has no resting pane - the preview
-  /// is simply absent when closed - so it keeps both directions.
-  Widget _buildPreviewToggle(BuildContext context) {
-    return ArDriveButton(
-      style: ArDriveButtonStyle.tertiary,
-      onPressed: () => setState(() => _isPreviewOpen = !_isPreviewOpen),
-      text: _isPreviewOpen
-          ? appLocalizationsOf(context).sharedFileHidePreview
-          : appLocalizationsOf(context).preview,
     );
   }
 
@@ -751,6 +680,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     if (previewState is FsEntryPreviewOversized) {
       return _buildPreviewMessage(
         context,
+        item,
         appLocalizationsOf(context)
             .filePreviewTooLarge(filesize(previewState.maxFileSize)),
       );
@@ -759,6 +689,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     if (previewState is FsEntryPreviewUnavailable) {
       return _buildPreviewMessage(
         context,
+        item,
         appLocalizationsOf(context).sharedFilePreviewUnsupported,
       );
     }
@@ -772,16 +703,43 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     );
   }
 
-  Widget _buildPreviewMessage(BuildContext context, String message) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Text(
-        message,
-        textAlign: TextAlign.center,
-        style: ArDriveTypography.body.captionRegular(
-          color: SharedFileColors.subtle(context),
+  /// Why the file is not on screen, said the same way the pane says
+  /// "not yet".
+  ///
+  /// On the desktop card this is the whole of a 580x430 box, and a lone
+  /// sentence floating in the middle of it reads as a failure rather than as
+  /// an answer - so it gets the same picture-over-a-sentence treatment as the
+  /// resting pane, and Download beside it stays the way forward.
+  ///
+  /// On a phone the column has no box to fill, so the sentence stands on its
+  /// own; `_previewFillsItsBox` already keeps these states out of the fixed
+  /// band for that reason.
+  Widget _buildPreviewMessage(
+    BuildContext context,
+    ArDriveDataTableItem item,
+    String message,
+  ) {
+    if (!widget.isWide) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: ArDriveTypography.body.captionRegular(
+            color: SharedFileColors.subtle(context),
+          ),
         ),
-      ),
+      );
+    }
+
+    final revision = widget.state.revision;
+
+    return _buildPanePlaceholder(
+      context,
+      revision: revision,
+      contentType: revision.dataContentType ?? widget.state.payload?.contentType,
+      thumbnailTxId: _thumbnailTxId(widget.state, revision),
+      message: message,
     );
   }
 

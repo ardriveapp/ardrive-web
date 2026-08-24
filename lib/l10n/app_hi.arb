@@ -1817,10 +1817,6 @@
   "@sharedFileGetLatest": {
     "description": "Button that fetches the newest version of a shared file"
   },
-  "sharedFileHidePreview": "प्रीव्यू छिपाएँ",
-  "@sharedFileHidePreview": {
-    "description": "Button that closes the preview on the shared file page"
-  },
   "sharedFileIsEncrypted": "यह फ़ाइल एन्क्रिप्ट की गई है।",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
@@ -1876,10 +1872,6 @@
   "sharedFilePasteAccessKey": "ऐक्सेस कुंजी चिपकाएँ",
   "@sharedFilePasteAccessKey": {
     "description": "Placeholder of the access key field on the shared file page"
-  },
-  "sharedFilePreviewPaneHint": "इस फ़ाइल को डाउनलोड किए बिना यहीं देखें।",
-  "@sharedFilePreviewPaneHint": {
-    "description": "Caption in the preview pane of the shared file page, on a desktop screen, saying what pressing Preview will do"
   },
   "sharedFilePreviewUnsupported": "इस फ़ाइल का प्रीव्यू यहाँ नहीं दिखाया जा सकता। इसे खोलने के लिए डाउनलोड करें।",
   "@sharedFilePreviewUnsupported": {

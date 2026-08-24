@@ -788,26 +788,21 @@ void main() {
       expect(find.text('Shared'), findsOneWidget);
     });
 
-    testWidgets('hiding the preview does not unload it', (tester) async {
-      // Hiding used to remove the subtree, which disposed the preview cubit -
-      // so reopening fetched the file again. On a rate-limited connection that
-      // second fetch is one that can fail, meaning hiding a file you already
-      // had could lose it.
+    testWidgets('the preview is the page, with nothing to put it away',
+        (tester) async {
+      // A link someone followed to look at a file shows the file. The toggle
+      // that used to sit under it saved nothing: the bytes are fetched before
+      // it could be pressed, the widget stayed mounted when it was, and
+      // anyone who did not want to see what a stranger sent them had already
+      // seen it by then.
       //
       // The provider is keyed on the bytes it previews, so its presence is
-      // exactly the question "is the preview still loaded".
-      const preview = ValueKey('data-tx-newest');
+      // exactly the question "is the preview loaded".
+      await pumpPage(tester, success(), surface: const Size(1440, 1000));
 
-      await pumpPage(tester, success());
-
-      expect(find.byKey(preview, skipOffstage: false), findsOneWidget);
-
-      await tester.tap(find.text('Hide preview'));
-      await tester.pumpAndSettle();
-
-      // Off screen, still mounted: nothing to fetch again on the way back.
-      expect(find.byKey(preview, skipOffstage: false), findsOneWidget);
-      expect(find.byKey(preview), findsNothing);
+      expect(find.byKey(const ValueKey('data-tx-newest')), findsOneWidget);
+      expect(find.text('Preview'), findsNothing);
+      expect(find.text('Hide preview'), findsNothing);
     });
 
     testWidgets('every row in the panel is the same height', (tester) async {
@@ -861,32 +856,34 @@ void main() {
       }
     });
 
-    testWidgets('the resting pane is itself the way into the preview',
+    testWidgets('the pane answers with a picture while it is still resolving',
         (tester) async {
-      // The box is already the size and shape of the preview, with the file's
-      // own thumbnail in it - so it is the thing to press. A separate button
-      // underneath was a second control for something that already looked
-      // pressable.
-      await pumpPage(tester, success(), surface: const Size(1440, 1000));
-
-      await tester.tap(find.text('Hide preview'));
-      await tester.pumpAndSettle();
-
-      // And the box is the ONLY way in - the bar below it is gone, rather
-      // than offering a second button for the same thing.
-      expect(find.byKey(sharedFilePreviewPaneKey), findsOneWidget);
-      expect(find.text('Preview'), findsNothing);
-
-      await tester.tap(
-        find.descendant(
-          of: find.byKey(sharedFilePreviewPaneKey),
-          matching: find.byType(InkWell),
-        ).first,
+      // The pane is 580x430 on a laptop, and a lone sentence in the middle of
+      // it reads as something that failed rather than as an answer. Every
+      // state that cannot show the file - not yet, not this type, too big -
+      // gets the file's own type icon over the sentence instead, so they all
+      // look like the same deliberate placeholder.
+      await pumpPage(
+        tester,
+        SharedFileLoadSuccess(
+          fileRevisions: [fileRevision()],
+          verification: LinkVerification.pending,
+          detailsAreResolved: false,
+        ),
+        surface: const Size(1440, 1000),
       );
-      await tester.pumpAndSettle();
 
-      // Back open, and offering the only direction that still needs a control.
-      expect(find.text('Hide preview'), findsOneWidget);
+      final pane = find.byKey(sharedFilePreviewPaneKey);
+      expect(pane, findsOneWidget);
+      expect(
+        find.descendant(of: pane, matching: find.text('Loading file details...')),
+        findsOneWidget,
+      );
+      // The picture above it, not a bare line of text in an empty box.
+      expect(
+        find.descendant(of: pane, matching: find.byType(ArDriveIcon)),
+        findsWidgets,
+      );
     });
 
     testWidgets('a pinned link names its version pinned, and still lets go',
