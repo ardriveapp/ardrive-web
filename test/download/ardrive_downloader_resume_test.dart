@@ -341,6 +341,37 @@ void main() {
         );
       }
 
+      test('a fresh download is a plain GET, never the client\'s download()',
+          () async {
+        // The arweave client's `download()` POSTs {gateway}/graphql before it
+        // fetches a byte - unconditionally, because it wants `dataSize` for a
+        // progress figure this app does not use. That POST is subject to CORS,
+        // which not every gateway allows from an arbitrary origin, and it
+        // throws before the byte stream exists - so a gateway that could have
+        // served the file is recorded as having failed, and a downloadable
+        // file ends up reported as an unknown error.
+        final body = countedBody(ciphertext);
+        final harness = buildSource(
+          (request) => http.StreamedResponse(body.stream, 206),
+        );
+
+        final response = await harness.source.open(txId: txId);
+
+        expect(response.startOffsetBytes, 0);
+
+        // One request, and it is a GET for the bytes.
+        final request = harness.clients.single.requests.single;
+        expect(request.method, 'GET');
+        expect(request.url, Uri.parse('https://arweave.net/$txId'));
+
+        // Nothing asked a gateway to describe the transaction first.
+        expect(
+          harness.clients.single.requests
+              .where((r) => r.url.path.contains('graphql')),
+          isEmpty,
+        );
+      });
+
       test('a 200 answer to a Range request is reported as byte 0, and its '
           'body is never read', () async {
         final body = countedBody(ciphertext);

@@ -1467,11 +1467,30 @@ class DownloadSourceResponse {
 
 /// The production [DownloadSource].
 ///
-/// A download from byte 0 goes through the existing hedged gateway fallback,
-/// unchanged. A resume is a direct `GET {gateway}/{txId}` with a `Range`
-/// header, because the arweave client's `download()` does not expose one; it
-/// walks the same gateway order and takes the first gateway that actually
-/// serves a range.
+/// Every download is a direct `GET {gateway}/{txId}`, resumed or not.
+///
+/// It used to start at the arweave client's `download()`, which turns out to
+/// POST `{gateway}/graphql` before it fetches a single byte - unconditionally,
+/// whether or not verification was asked for, because it wants `dataSize` for
+/// its progress figure. Three ways that breaks a download that would otherwise
+/// have worked:
+///
+/// * The POST is subject to CORS, and the gateways do not all allow it from an
+///   arbitrary origin. `perma.online` answers the preflight with no
+///   `Access-Control-Allow-Origin` at all.
+/// * `arweave.net` rate limits, and a 429 fails the preflight too.
+/// * Either way `_getTransactionData` throws, and it throws *before* the byte
+///   stream exists - so the gateway is recorded as having failed and the next
+///   one is tried, until there are none left and a perfectly downloadable file
+///   reports `unknownError`.
+///
+/// None of it was needed here: the size is already known from the file's own
+/// record, and `verifyDownload` is false for everything the app does.
+///
+/// `verifyDownload: true` still goes the old way. It is the arweave client's
+/// chunk check for L1 transactions, it is the client's to run, and the one
+/// caller that asks for it has already resolved the transaction over GraphQL
+/// to discover it needs it.
 class GatewayDownloadSource implements DownloadSource {
   GatewayDownloadSource(
     this._arweave, {
@@ -1490,7 +1509,7 @@ class GatewayDownloadSource implements DownloadSource {
     int startOffsetBytes = 0,
     bool verifyDownload = false,
   }) async {
-    if (startOffsetBytes == 0) {
+    if (startOffsetBytes == 0 && verifyDownload) {
       final response = await _arweave.gatewayFallback.downloadWithFallback(
         txId: txId,
         primaryClient: _arweave.client,
@@ -1511,8 +1530,13 @@ class GatewayDownloadSource implements DownloadSource {
   Future<DownloadSourceResponse> _openRange(String txId, int offset) async {
     Object? lastError;
     var sawIgnoredRange = false;
+    // Every gateway answering 404 is a different fact from every gateway
+    // failing, and the dialog says something different for each.
+    var tried = 0;
+    var notFound = 0;
 
     for (final origin in _gatewayOrigins()) {
+      tried++;
       final client = _clientFactory();
 
       try {
@@ -1523,6 +1547,7 @@ class GatewayDownloadSource implements DownloadSource {
             await client.send(request).timeout(_rangeRequestTimeout);
 
         if (response.statusCode != 200 && response.statusCode != 206) {
+          if (response.statusCode == 404) notFound++;
           lastError = 'HTTP ${response.statusCode} from $origin';
           await _discard(response);
           client.close();
@@ -1568,6 +1593,10 @@ class GatewayDownloadSource implements DownloadSource {
         startOffsetBytes: 0,
         statusCode: 200,
       );
+    }
+
+    if (tried > 0 && notFound == tried) {
+      throw DownloadFileNotFoundException(txId);
     }
 
     throw DownloadNetworkException(txId, lastError?.toString());
