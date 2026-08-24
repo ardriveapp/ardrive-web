@@ -621,6 +621,24 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       false,
     );
 
+    // The same saving the download makes, on the same two values: a private
+    // preview decrypts with the cipher the link named instead of asking the
+    // gateway to describe a transaction the link already described.
+    //
+    // Guarded on the transaction the way the download is: selecting another
+    // version leaves the link's cipher behind with the bytes it belonged to,
+    // and the lookup comes back for that one.
+    //
+    // Unlike the download this does not also require a bundled data item. That
+    // condition is there because skipping the lookup skips the `App-Name` tag
+    // that decides the arweave client's chunk check, which only applies to an
+    // L1 transaction. The preview reads nothing off that lookup but the two
+    // cipher tags, so there is no second thing to lose by not making it.
+    final payload = widget.state.payload;
+    final linkDescribesTarget = payload != null &&
+        payload.hasCipherDetails &&
+        payload.dataTxId == revision.dataTxId;
+
     return AnimatedSwitcher(
       // Short, and a fade rather than a slide: the pane is not moving, its
       // contents are being replaced. Long enough not to read as a flicker,
@@ -641,6 +659,8 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
           isSharedFile: true,
           driveId: revision.driveId,
           fileKey: widget.state.fileKey,
+          cipher: linkDescribesTarget ? payload.cipher : null,
+          cipherIv: linkDescribesTarget ? payload.cipherIv : null,
           maybeSelectedItem: item,
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),

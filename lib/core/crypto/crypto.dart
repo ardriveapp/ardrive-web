@@ -237,6 +237,27 @@ class ArDriveCrypto {
     return decryptedData;
   }
 
+  /// Decrypts data whose cipher and IV the caller already holds.
+  ///
+  /// [decryptDataFromTransaction] reads those two values off a transaction it
+  /// asks the gateway to describe. A share link carries them for the
+  /// transaction it names, so a caller holding one can decrypt without that
+  /// lookup - which is the only reason `c` and `iv` are in the link schema.
+  ///
+  /// Named for what it takes rather than after the top-level
+  /// `decryptTransactionData` it delegates to: an unqualified call to a
+  /// same-named function from inside this class would resolve to the method
+  /// and recurse.
+  ///
+  /// Throws a [TransactionDecryptionException] if decryption fails.
+  Future<Uint8List> decryptDataWithCipher(
+    String cipher,
+    String cipherIvString,
+    Uint8List data,
+    SecretKey key,
+  ) =>
+      decryptTransactionData(cipher, cipherIvString, data, key);
+
   /// Creates a transaction with the provided entity's JSON data encrypted along with the appropriate cipher tags.
   Future<Transaction> createEncryptedEntityTransaction(
           Entity entity, SecretKey key) =>
