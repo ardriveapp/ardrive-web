@@ -114,7 +114,7 @@ void main() {
       expect(find.text('DONE'), findsOneWidget);
     });
 
-    testWidgets('an unchecked file is told so without being alarmed',
+    testWidgets('an unchecked file says nothing about being unchecked',
         (tester) async {
       await pumpState(
         tester,
@@ -124,15 +124,19 @@ void main() {
         ),
       );
 
-      // Still a finished download, because it is one. A resumed download and a
-      // file signed with a wallet ArDrive cannot check both land here, and
-      // both are perfectly good files.
+      // A finished download, said plainly. Checking a file "against the
+      // original" means a data item signature, which means a GraphQL lookup
+      // the download path no longer makes - so this verdict is on every public
+      // download, and a disclaimer about a check nobody asked for turns a
+      // success into a qualified one.
       expect(find.text('Download finished!'), findsOneWidget);
-      expect(find.textContaining('couldn’t check this file'), findsOneWidget);
-      expect(find.textContaining('doesn’t mean anything is wrong'),
-          findsOneWidget);
+      expect(find.text('holiday.mp4'), findsOneWidget);
+      expect(find.textContaining('couldn’t check'), findsNothing);
+      expect(find.textContaining('check this file'), findsNothing);
 
-      // None of the language reserved for a file that really is wrong.
+      // Nor anything from either of the verdicts that do have something to
+      // say.
+      expect(find.textContaining('Verified'), findsNothing);
       expect(find.textContaining('doesn’t match'), findsNothing);
       expect(find.textContaining('Delete it'), findsNothing);
     });

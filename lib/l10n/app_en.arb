@@ -591,10 +591,6 @@
   "@downloadMustRestartDescription": {
     "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
   },
-  "downloadNotVerified": "ArDrive couldn’t check this file against the original. That’s normal for some files and doesn’t mean anything is wrong.",
-  "@downloadNotVerified": {
-    "description": "Advisory line on the download success dialog when no integrity verdict could be reached. Must never imply the file is damaged: this outcome is routine"
-  },
   "downloadReconnecting": "Reconnecting...",
   "@downloadReconnecting": {
     "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"

@@ -46,6 +46,11 @@ abstract class FileDownloadCubit extends Cubit<FileDownloadState> {
   /// arrives would trap the user in a download that has, in fact, finished.
   static const _verdictTimeout = Duration(seconds: 20);
 
+  /// How long a verdict may take before the user is told one is being waited
+  /// on. Short enough to appear promptly on the paths that are genuinely slow,
+  /// long enough that an already-settled verdict never shows the step at all.
+  static const _verdictAnnounceDelay = Duration(milliseconds: 250);
+
   /// Turns [downloader]'s mid-stream recoveries into something the user can
   /// see.
   ///
@@ -93,12 +98,40 @@ abstract class FileDownloadCubit extends Cubit<FileDownloadState> {
   }) async {
     if (isClosed || state is FileDownloadAborted) return;
 
-    emit(FileDownloadVerifying(fileName: fileName));
-
     DataItemIntegrityResult result;
 
+    final verdict = downloader.integrity;
+
+    // Announce the check only if it is actually going to take a moment.
+    //
+    // Every verdict this app can now reach is settled before the last byte is
+    // written: AES-GCM is MAC-checked during the download, and everything else
+    // has no check to run. Emitting "Checking this file" unconditionally meant
+    // a modal that appeared and replaced itself in the same breath - a flash
+    // of a step that never happened. The state is kept rather than deleted
+    // because it is correct the moment a caller asks for `verifyIntegrity`
+    // again, and then it is worth showing.
+    var answered = false;
+    // Swallowed here and read properly below: this is only asking "has it
+    // landed yet", and `integrity` is documented never to complete with an
+    // error anyway.
+    final settled = verdict.then<void>(
+      (_) => answered = true,
+      onError: (Object _) => answered = true,
+    );
+    await Future.any<void>([
+      settled,
+      Future<void>.delayed(_verdictAnnounceDelay),
+    ]);
+
+    if (isClosed || state is FileDownloadAborted) return;
+
+    if (!answered) {
+      emit(FileDownloadVerifying(fileName: fileName));
+    }
+
     try {
-      result = await downloader.integrity.timeout(
+      result = await verdict.timeout(
         _verdictTimeout,
         onTimeout: () => const DataItemIntegrityResult.notVerified(
           'The integrity check did not answer in time',

@@ -696,8 +696,7 @@ class _DownloadOutcome extends StatelessWidget {
 
   final String fileName;
 
-  /// `null` when no check was run at all, in which case nothing is said about
-  /// one.
+  /// What the integrity check made of the bytes, when one ran.
   final DataItemIntegrityVerdict? integrity;
 
   @override
@@ -717,9 +716,22 @@ class _DownloadOutcome extends StatelessWidget {
             style: ArDriveTypography.body.smallRegular(),
             textAlign: TextAlign.left,
           ),
-          if (verdict != null) ...[
+          // Only a verdict worth having is worth a line.
+          //
+          // "ArDrive couldn't check this file against the original" was on
+          // every public download, because checking against the original means
+          // a data item signature, and that means a GraphQL lookup this app no
+          // longer makes on the download path. Telling a user that a check
+          // they never asked for did not happen is not information; it is a
+          // disclaimer that makes a successful download read as a qualified
+          // one.
+          //
+          // A private AES-GCM file still says so, and means it: the MAC is
+          // computed locally over every byte before any of them are written,
+          // so that verdict costs nothing and is a real guarantee.
+          if (verdict == DataItemIntegrityVerdict.verified) ...[
             const SizedBox(height: 12),
-            _IntegrityNotice(verdict: verdict),
+            const _VerifiedNotice(),
           ],
         ],
       ),
@@ -727,57 +739,39 @@ class _DownloadOutcome extends StatelessWidget {
   }
 }
 
-/// One line about the integrity check, in the icon-plus-caption shape the rest
-/// of the app uses for advisory notices.
-class _IntegrityNotice extends StatelessWidget {
-  const _IntegrityNotice({required this.verdict});
-
-  final DataItemIntegrityVerdict verdict;
+/// One line confirming the bytes checked out, in the icon-plus-caption shape
+/// the rest of the app uses for advisory notices.
+///
+/// Only reachable for a verdict of [DataItemIntegrityVerdict.verified]. The
+/// other two do not come here: `failed` takes over the whole modal, because
+/// bytes that contradict what was signed are the headline rather than a
+/// footnote, and `notVerified` says nothing at all - see [_DownloadOutcome].
+class _VerifiedNotice extends StatelessWidget {
+  const _VerifiedNotice();
 
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
     final isLight = ArDriveTheme.of(context).themeData.name == 'light';
 
-    final Widget icon;
-    final Color color;
-    final String message;
-
-    switch (verdict) {
-      case DataItemIntegrityVerdict.verified:
-        // `themeSuccessDefault` is green.400 in both themes and reads at only
-        // ~2.2:1 on a light surface, so the light theme takes the muted green
-        // instead - the same substitution the recipient page documents in
-        // [SharedFileColors.success].
-        color = isLight ? colors.themeSuccessMuted : colors.themeSuccessDefault;
-        icon = ArDriveIcons.checkCirle(size: 16, color: color);
-        message = appLocalizationsOf(context).downloadVerified;
-        break;
-      case DataItemIntegrityVerdict.notVerified:
-        // Neutral, never a warning triangle: no verdict is not a problem, and
-        // an alarm icon would say otherwise louder than the sentence next to
-        // it says the opposite.
-        color = colors.themeFgMuted;
-        icon = ArDriveIcons.info(size: 16, color: color);
-        message = appLocalizationsOf(context).downloadNotVerified;
-        break;
-      case DataItemIntegrityVerdict.failed:
-        // Unreachable: a failed verdict takes over the modal.
-        color = colors.themeErrorDefault;
-        icon = ArDriveIcons.triangle(size: 16, color: color);
-        message = appLocalizationsOf(context).downloadVerificationFailed;
-        break;
-    }
+    // `themeSuccessDefault` is green.400 in both themes and reads at only
+    // ~2.2:1 on a light surface, so the light theme takes the muted green
+    // instead - the same substitution the recipient page documents in
+    // [SharedFileColors.success].
+    final color =
+        isLight ? colors.themeSuccessMuted : colors.themeSuccessDefault;
 
     return MergeSemantics(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ExcludeSemantics(child: icon),
+          ExcludeSemantics(
+            child: ArDriveIcons.checkCirle(size: 16, color: color),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              message,
+              appLocalizationsOf(context).downloadVerified,
               style: ArDriveTypography.body.captionRegular(color: color),
             ),
           ),
