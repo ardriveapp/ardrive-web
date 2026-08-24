@@ -402,13 +402,13 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     }
 
     // Already the target. Re-emitting would drop the license for no reason.
-    if (revision.dataTxId == current.revision.dataTxId) {
+    if (isSameRevision(revision, current.revision)) {
       return;
     }
 
     final history = current.activityRevisions;
     final isNewest =
-        history.isNotEmpty && revision.dataTxId == history.first.dataTxId;
+        history.isNotEmpty && isSameRevision(revision, history.first);
 
     emit(_withTarget(current, revision, showsLatestRevision: isNewest));
 

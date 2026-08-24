@@ -1,5 +1,27 @@
 part of 'shared_file_cubit.dart';
 
+/// Whether two revisions are the same revision.
+///
+/// `dataTxId` is not an identity. A rename or a move writes new metadata
+/// pointing at the *same* bytes - `getPerformedRevisionAction` returns
+/// `rename` on a name change alone - so a file that was renamed once has two
+/// revisions sharing one `dataTxId`. Keyed on that, both rows of the version
+/// list drew as selected and the second could not be chosen at all, because
+/// [SharedFileCubit.showRevision]'s already-selected guard matched it.
+///
+/// `metadataTxId` is the metadata transaction that was written, so it is
+/// unique per revision. The fallback is there because a link that carried no
+/// `mtx` seeds a revision whose `metadataTxId` is empty: while the page is
+/// still showing that seeded revision, comparing by metadata id would match
+/// nothing and leave the list with no selection at all.
+bool isSameRevision(FileRevision a, FileRevision b) {
+  if (a.metadataTxId.isNotEmpty && b.metadataTxId.isNotEmpty) {
+    return a.metadataTxId == b.metadataTxId;
+  }
+
+  return a.dataTxId == b.dataTxId;
+}
+
 /// How the claims a v2 link makes about a file compare with the file's own
 /// record on chain.
 ///

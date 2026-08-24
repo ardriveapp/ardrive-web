@@ -97,6 +97,10 @@ void main() {
   FileRevision fileRevision({
     String name = 'Q3 Report.pdf',
     String dataTxId = 'data-tx-newest',
+    // Distinct per revision by default, because the metadata transaction is
+    // what identifies one. Tests that need two revisions over the same bytes -
+    // a rename - set it explicitly.
+    String? metadataTxId,
     int size = 4821133,
     String? dataContentType = 'application/pdf',
     DateTime? lastModifiedDate,
@@ -110,7 +114,7 @@ void main() {
       size: size,
       lastModifiedDate: lastModifiedDate ?? DateTime.utc(2023, 11, 9),
       dataContentType: dataContentType,
-      metadataTxId: 'metadata-tx',
+      metadataTxId: metadataTxId ?? 'metadata-$dataTxId',
       dataTxId: dataTxId,
       dateCreated: dateCreated ?? DateTime.utc(2024, 3, 3),
       action: RevisionAction.create,
@@ -565,13 +569,13 @@ void main() {
       // is open by default now, so what keeps that true is the identifiers
       // sitting one step further in.
       expect(find.text('data-tx-newest'), findsNothing);
-      expect(find.text('metadata-tx'), findsNothing);
+      expect(find.text('metadata-data-tx-newest'), findsNothing);
 
       await tester.tap(find.text('Transaction details'));
       await tester.pumpAndSettle();
 
       expect(find.text('data-tx-newest'), findsOneWidget);
-      expect(find.text('metadata-tx'), findsOneWidget);
+      expect(find.text('metadata-data-tx-newest'), findsOneWidget);
     });
 
     testWidgets(
@@ -884,6 +888,44 @@ void main() {
         find.descendant(of: pane, matching: find.byType(ArDriveIcon)),
         findsWidgets,
       );
+    });
+
+    testWidgets('a renamed file does not select two rows at once',
+        (tester) async {
+      // A rename writes new metadata pointing at the same bytes, so two
+      // revisions share one `dataTxId`. Keyed on that, both rows drew as
+      // selected and the second could not be chosen: `showRevision`'s
+      // already-selected guard matched it and returned.
+      await pumpPage(tester, success(), surface: const Size(1440, 1000));
+
+      // The rename and the revision it renamed: same bytes, two records. The
+      // second row is the one the page is showing.
+      states.add(success(
+        activityRevisions: [
+          fileRevision(
+            name: 'Q3 Report (final).pdf',
+            metadataTxId: 'metadata-rename',
+          ),
+          fileRevision(name: 'Q3 Report.pdf'),
+        ],
+        activityStatus: SharedFileActivityStatus.loaded,
+      ));
+      await tester.pump();
+
+      await tester.tap(find.text('Version history'));
+      await tester.pumpAndSettle();
+
+      final rows = find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_SharedFileVersionRow');
+      expect(rows, findsNWidgets(2));
+
+      // Exactly one, not both.
+      final selected = <bool>[
+        for (var i = 0; i < 2; i++)
+          (tester.widget(rows.at(i)) as dynamic).isSelected as bool,
+      ];
+      expect(selected.where((s) => s).length, 1,
+          reason: 'two rows sharing a dataTxId must not both read as current');
     });
 
     testWidgets('a pinned link names its version pinned, and still lets go',

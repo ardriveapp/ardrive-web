@@ -1152,10 +1152,10 @@ class SharedFileVersionsContent extends StatelessWidget {
         for (final revision in revisions)
           _SharedFileVersionRow(
             revision: revision,
-            isSelected: revision.dataTxId == currentRevision.dataTxId,
-            isNewest: revision.dataTxId == revisions.first.dataTxId &&
+            isSelected: isSameRevision(revision, currentRevision),
+            isNewest: isSameRevision(revision, revisions.first) &&
                 revisions.length > 1,
-            isFromLink: revision.dataTxId == sharedRevision.dataTxId,
+            isFromLink: isSameRevision(revision, sharedRevision),
             isPinned: isPinned,
             isDisabled: isDisabled,
             onSelected: () => onSelected(revision),

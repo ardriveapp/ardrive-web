@@ -82,6 +82,10 @@ void main() {
     required DateTime createdAt,
     String name = 'file.txt',
     String dataTx = dataTxId,
+    // Defaults to the id the v2 link payload names, so a single-revision
+    // fixture verifies against it. A fixture with more than one revision must
+    // give the others their own: two revisions never share a metadata
+    // transaction on chain, and that transaction is what identifies one.
     String metadataTx = metadataTxId,
     int size = 100,
     String owner = ownerAddress,
@@ -1172,6 +1176,8 @@ void main() {
             createdAt: DateTime(2024, 1, 2),
             name: 'newer.txt',
             dataTx: 'data-tx-newer',
+            // Its own record, as a second revision always has.
+            metadataTx: 'metadata-tx-newer',
           ),
         ],
       );
@@ -1209,6 +1215,8 @@ void main() {
             createdAt: DateTime(2024, 1, 2),
             name: 'newer.txt',
             dataTx: 'data-tx-newer',
+            // Its own record, as a second revision always has.
+            metadataTx: 'metadata-tx-newer',
           ),
         ],
       );
