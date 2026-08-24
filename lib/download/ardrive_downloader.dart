@@ -65,6 +65,7 @@ abstract class ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
     bool verifyDownload,
+    bool verifyIntegrity,
   });
   Future<Uint8List> downloadToMemory({
     required String txId,
@@ -92,7 +93,11 @@ abstract class ArDriveDownloader {
   /// - AES-GCM files resolve to [DataItemIntegrityVerdict.verified] the moment
   ///   the MAC checks out, which is before a byte is written.
   /// - AES-CTR and public files resolve when the last byte has streamed
-  ///   through [StreamedDataItemVerifier].
+  ///   through [StreamedDataItemVerifier] - but only when the caller asked for
+  ///   `verifyIntegrity`, which nothing does. Without it the verdict is
+  ///   [DataItemIntegrityVerdict.notVerified], which is the honest answer for
+  ///   a check that was not run and is why the dialog treats `notVerified` as
+  ///   unremarkable and `failed` as the only thing worth interrupting for.
   /// - A resumed download resolves to [DataItemIntegrityVerdict.notVerified]:
   ///   the hash of the bytes before the interruption is gone.
   Future<DataItemIntegrityResult> get integrity;
@@ -256,6 +261,10 @@ class _ArDriveDownloader implements ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
     bool verifyDownload = false,
+    // Off by default, and nothing in the app turns it on. See the long note
+    // at the `verifierFuture` in [_getFileStream] for why a download must not
+    // depend on a GraphQL round trip.
+    bool verifyIntegrity = false,
   }) async {
     _resetIntegrity();
 
@@ -307,6 +316,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
           cipher: cipher,
           cipherIvString: cipherIvString,
           verifyDownload: verifyDownload,
+          verifyIntegrity: verifyIntegrity,
         );
 
         saveStream = prepared.stream;
@@ -765,7 +775,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
     bool verifyDownload = false,
-    bool verifyIntegrity = true,
+    bool verifyIntegrity = false,
   }) async {
     logger.d('The file is not a manifest. Downloading it from Arweave...');
     logger.d('verifying download: $verifyDownload');
@@ -815,8 +825,33 @@ class _ArDriveDownloader implements ArDriveDownloader {
       keyData = Uint8List.fromList(await fileKey.extractBytes());
     }
 
-    // Started here, not inside the stream, so the GraphQL round trip overlaps
-    // the download instead of delaying its first byte.
+    // Off by default: a download must not depend on a GraphQL round trip.
+    //
+    // This check was added in #2175 and turned out to cost more than it
+    // bought. Three things, each independently disqualifying:
+    //
+    // * It is not free, and not concurrent either. Starting the future here
+    //   was meant to overlap it with the transfer, but the stream awaits it
+    //   before yielding a single byte (`verifier ??= await verifierFuture`),
+    //   so a slow lookup delays the first byte by up to
+    //   [_integrityLookupTimeout].
+    // * It reports failures that are not failures. Gateways return `anchor`
+    //   and `recipient` as empty strings - checked live against goldsky,
+    //   permagate.io, turbo-gateway.com and vilenarios.com - so any data item
+    //   that actually carries one deep-hashes differently here than it did
+    //   when it was signed, and a healthy file is reported as `failed`. That
+    //   verdict is not a footnote: it replaces the success dialog with
+    //   "the file may be corrupted".
+    // * A recipient on a connection that `arweave.net` rate limits gets the
+    //   10s timeout on every download, because that host is what
+    //   [GraphQLRetry] falls back to.
+    //
+    // What is kept is the check that costs nothing: AES-GCM files are still
+    // buffered and MAC-verified (§3.4.1), which is a real integrity guarantee
+    // computed locally over the bytes in hand. Only the signature check, the
+    // one that needs the network to say anything at all, is gone.
+    //
+    // Callers can still ask for it explicitly. Nothing does today.
     final verifierFuture = verifyIntegrity
         ? _verifierFactory(txId)
         : Future.value(StreamedDataItemVerifier.unavailable(

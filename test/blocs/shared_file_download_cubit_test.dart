@@ -96,6 +96,10 @@ class _RecordingDownloader implements ArDriveDownloader {
     ));
   }
 
+  /// What the cubit asked for, so a download that quietly starts depending on
+  /// GraphQL again is visible from the test that cares.
+  bool? lastVerifyIntegrity;
+
   @override
   Future<Stream<double>> downloadFile({
     required String txId,
@@ -109,8 +113,10 @@ class _RecordingDownloader implements ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
     bool verifyDownload = false,
+    bool verifyIntegrity = false,
   }) async {
     downloadFileCalls++;
+    lastVerifyIntegrity = verifyIntegrity;
 
     return _logged();
   }
