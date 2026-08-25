@@ -591,10 +591,6 @@
   "@downloadMustRestartDescription": {
     "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
   },
-  "downloadNotVerified": "ArDrive couldn’t check this file against the original. That’s normal for some files and doesn’t mean anything is wrong.",
-  "@downloadNotVerified": {
-    "description": "Advisory line on the download success dialog when no integrity verdict could be reached. Must never imply the file is damaged: this outcome is routine"
-  },
   "downloadReconnecting": "Reconnecting...",
   "@downloadReconnecting": {
     "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
@@ -616,10 +612,6 @@
         "example": "holiday.mp4"
       }
     }
-  },
-  "downloadVerified": "This file matches what was originally uploaded.",
-  "@downloadVerified": {
-    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
   },
   "downloadVerifying": "Checking this file...",
   "@downloadVerifying": {
@@ -2146,6 +2138,10 @@
   "@sharedFileAccessKeyStaysOnThisDevice": {
     "description": "Reassurance shown under the access key field on the shared file page"
   },
+  "sharedFileTransactionDetails": "Transaction details",
+  "@sharedFileTransactionDetails": {
+    "description": "Nested disclosure inside the file details tab, holding the identifiers a recipient never needs to see"
+  },
   "sharedFileDetailsDrawerTitle": "File details",
   "@sharedFileDetailsDrawerTitle": {
     "description": "Title of the collapsed drawer holding the technical details of a shared file"
@@ -2181,10 +2177,6 @@
   "sharedFileGetLatest": "Get latest",
   "@sharedFileGetLatest": {
     "description": "Button that fetches the newest version of a shared file"
-  },
-  "sharedFileHidePreview": "Hide preview",
-  "@sharedFileHidePreview": {
-    "description": "Button that closes the preview on the shared file page"
   },
   "sharedFileIsEncrypted": "This file is encrypted.",
   "@sharedFileIsEncrypted": {
@@ -2242,14 +2234,6 @@
   "@sharedFilePasteAccessKey": {
     "description": "Placeholder of the access key field on the shared file page"
   },
-  "sharedFilePermanentFileSharing": "Permanent file sharing",
-  "@sharedFilePermanentFileSharing": {
-    "description": "Tagline shown under the ArDrive logo on the shared file page"
-  },
-  "sharedFilePreviewPaneHint": "Preview this file here without downloading it.",
-  "@sharedFilePreviewPaneHint": {
-    "description": "Caption in the preview pane of the shared file page, on a desktop screen, saying what pressing Preview will do"
-  },
   "sharedFilePreviewUnsupported": "This file can’t be previewed here. Download it to open it.",
   "@sharedFilePreviewUnsupported": {
     "description": "Shown on the shared file page when the file cannot be previewed in the browser"
@@ -2297,10 +2281,6 @@
         "example": "3"
       }
     }
-  },
-  "sharedFileStoredPermanently": "This file is stored permanently and can be downloaded any time.",
-  "@sharedFileStoredPermanently": {
-    "description": "Reassurance shown at the bottom of the shared file page"
   },
   "sharedFileUnlockedWithAccessKey": "Unlocked with your access key. This file stays encrypted for everyone else.",
   "@sharedFileUnlockedWithAccessKey": {
@@ -2361,6 +2341,26 @@
   "shareDriveSendKeySeparately": "Send this key separately from the link.",
   "@shareDriveSendKeySeparately": {
     "description": "Helper text under the drive key field explaining the two-artifact handover"
+  },
+  "sharedFileChooseVersion": "Choose which version to download.",
+  "@sharedFileChooseVersion": {
+    "description": "Helper line above the recipient's list of file versions"
+  },
+  "sharedFileVersionLatest": "Latest",
+  "@sharedFileVersionLatest": {
+    "description": "Chip marking the newest version in the recipient's version list"
+  },
+  "sharedFileVersionPinned": "Pinned",
+  "@sharedFileVersionPinned": {
+    "description": "Chip marking the version a pinned share link deliberately points at, as opposed to merely the version the link carried"
+  },
+  "sharedFileVersionsLooking": "Looking for other versions\u2026",
+  "@sharedFileVersionsLooking": {
+    "description": "Shown while the rest of a file's version history is being fetched"
+  },
+  "sharedFileVersionsUnavailableShort": "Couldn\u2019t check for other versions.",
+  "@sharedFileVersionsUnavailableShort": {
+    "description": "Shown when the version history could not be read; the version the recipient was sent is still listed and downloadable"
   },
   "attachDriveLookingUp": "Looking up drive…",
   "@attachDriveLookingUp": {

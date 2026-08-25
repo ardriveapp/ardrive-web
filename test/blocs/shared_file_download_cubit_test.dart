@@ -96,6 +96,10 @@ class _RecordingDownloader implements ArDriveDownloader {
     ));
   }
 
+  /// What the cubit asked for, so a download that quietly starts depending on
+  /// GraphQL again is visible from the test that cares.
+  bool? lastVerifyIntegrity;
+
   @override
   Future<Stream<double>> downloadFile({
     required String txId,
@@ -109,8 +113,10 @@ class _RecordingDownloader implements ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
     bool verifyDownload = false,
+    bool verifyIntegrity = false,
   }) async {
     downloadFileCalls++;
+    lastVerifyIntegrity = verifyIntegrity;
 
     return _logged();
   }
@@ -211,7 +217,9 @@ void main() {
       emitsInOrder(<Matcher>[
         isA<FileDownloadInProgress>(),
         isA<FileDownloadWithProgress>(),
-        isA<FileDownloadVerifying>(),
+        // No `FileDownloadVerifying`: this verdict is already settled, and a
+        // step that announces itself and replaces itself in the same breath is
+        // a flash of something that never happened.
         isA<FileDownloadFinishedWithSuccess>(),
       ]),
     );
@@ -247,7 +255,6 @@ void main() {
         emitsInOrder(<Matcher>[
           isA<FileDownloadInProgress>(),
           isA<FileDownloadWithProgress>(),
-          isA<FileDownloadVerifying>(),
           isA<FileDownloadFinishedWithSuccess>()
               .having(
                 (s) => s.integrity,
@@ -339,6 +346,9 @@ void main() {
       final seen = <FileDownloadState>[];
       final subscription = cubit.stream.listen(seen.add);
 
+      // Past the announce delay: a verdict that really is being waited on is
+      // still worth telling the user about, which is why the state was kept.
+      await Future<void>.delayed(const Duration(milliseconds: 300));
       await pumpEventQueue();
 
       expect(seen.last, isA<FileDownloadVerifying>());

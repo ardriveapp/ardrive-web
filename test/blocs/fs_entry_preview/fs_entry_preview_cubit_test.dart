@@ -205,6 +205,8 @@ void main() {
     SecretKey? fileKey,
     DataGatewayFallback? gatewayFallback,
     PreviewObjectUrls? objectUrls,
+    String? cipher,
+    String? cipherIv,
   }) {
     if (gatewayFallback != null) {
       when(() => mockArweaveService.gatewayFallback)
@@ -222,6 +224,8 @@ void main() {
       fileKey: fileKey,
       isSharedFile: true,
       objectUrls: objectUrls,
+      cipher: cipher,
+      cipherIv: cipherIv,
     );
   }
 
@@ -626,6 +630,83 @@ void main() {
   // decrypted here. What these tests hold down is where the bytes come from,
   // that they never come at all when they must not, and that a public file
   // still has the old open-in-a-new-tab escape hatch when they do not arrive.
+  group('FsEntryPreviewCubit link-supplied cipher', () {
+    late FakePreviewObjectUrls objectUrls;
+
+    setUp(() => objectUrls = FakePreviewObjectUrls());
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'decrypts with the cipher it was given, without describing the '
+      'transaction',
+      build: () {
+        stubPrivateFetchAndDecrypt();
+        when(() => mockCrypto.decryptDataWithCipher(any(), any(), any(), any()))
+            .thenAnswer((_) async => Uint8List.fromList([5, 6, 7, 8]));
+
+        return buildSharedFileCubit(
+          item: createVideoItem(size: underLimitFileSize),
+          fileKey: SecretKey([1, 2, 3]),
+          objectUrls: objectUrls,
+          cipher: 'AES256-GCM',
+          cipherIv: 'aXY=',
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      expect: () => [
+        const FsEntryPreviewLoading(),
+        const FsEntryPreviewVideo(
+          previewUrl: 'blob:fake/0-video/mp4',
+          filename: 'clip.mp4',
+        ),
+      ],
+      verify: (cubit) {
+        // The whole point: a share link that carried `c` and `iv` costs the
+        // recipient no GraphQL to preview what it named.
+        verifyNever(() => mockArweaveService.getTransactionDetails(any()));
+        verifyNever(
+          () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
+        );
+        verify(
+          () => mockCrypto.decryptDataWithCipher(
+              'AES256-GCM', 'aXY=', any(), any()),
+        ).called(1);
+
+        // Still the decrypted bytes that reach the player.
+        expect(objectUrls.createdBytes.single,
+            Uint8List.fromList([5, 6, 7, 8]));
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'falls back to the lookup when it was given no cipher',
+      build: () {
+        stubPrivateFetchAndDecrypt();
+
+        return buildSharedFileCubit(
+          item: createVideoItem(size: underLimitFileSize),
+          fileKey: SecretKey([1, 2, 3]),
+          objectUrls: objectUrls,
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      expect: () => [
+        const FsEntryPreviewLoading(),
+        const FsEntryPreviewVideo(
+          previewUrl: 'blob:fake/0-video/mp4',
+          filename: 'clip.mp4',
+        ),
+      ],
+      verify: (cubit) {
+        // A v1 link, or a version the link never described, still resolves the
+        // tags the only other way there is.
+        verify(() => mockArweaveService.getTransactionDetails(any())).called(1);
+        verify(
+          () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
+        ).called(1);
+      },
+    );
+  });
+
   group('FsEntryPreviewCubit PDF (F9)', () {
     late FakePreviewObjectUrls objectUrls;
     late WaterfallGatewayFallback waterfallGatewayFallback;

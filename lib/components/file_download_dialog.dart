@@ -420,15 +420,23 @@ class FileDownloadDialog extends StatelessWidget {
       );
     }
 
+    // Nothing is said about a check that passed.
+    //
+    // "Verified" claimed more than it did. It never meant the bytes were
+    // checked against what the uploader signed - that is the data item
+    // signature, and it is not fetched here. It meant the AES-GCM MAC checked
+    // out, which is a real cryptographic check but not one the user can ever
+    // learn anything from: a MAC that fails throws out of the download, so the
+    // dialog below is only ever reached when it passed. A label on 100% of
+    // successes carries no information.
+    //
+    // It was also asymmetric. Only private GCM files could earn it, so a badge
+    // on those and silence on everything else implied public downloads were
+    // the lesser thing, which is the opposite of true and not a claim worth
+    // making by accident.
     return _modalWrapper(
       title: appLocalizationsOf(context).downloadFinished,
-      // The file name would normally be the modal's `description`, but
-      // [ArDriveStandardModalNew] renders `description` only when there is no
-      // `content`, so the advisory has to bring the name with it.
-      child: _DownloadOutcome(
-        fileName: state.fileName,
-        integrity: state.integrity,
-      ),
+      description: state.fileName,
       actions: [
         ModalAction(
           action: () {
@@ -688,101 +696,3 @@ class FileDownloadDialog extends StatelessWidget {
 /// [DataItemIntegrityVerdict.failed] never reaches here; it takes over the
 /// whole modal instead. See
 /// [FileDownloadDialog.downloadFinishedWithSuccessDialog].
-class _DownloadOutcome extends StatelessWidget {
-  const _DownloadOutcome({
-    required this.fileName,
-    required this.integrity,
-  });
-
-  final String fileName;
-
-  /// `null` when no check was run at all, in which case nothing is said about
-  /// one.
-  final DataItemIntegrityVerdict? integrity;
-
-  @override
-  Widget build(BuildContext context) {
-    final verdict = integrity;
-
-    return SizedBox(
-      width: kMediumDialogWidth,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            fileName,
-            // The style [ArDriveStandardModalNew] gives its own `description`,
-            // which is where this line sits on every other download dialog.
-            style: ArDriveTypography.body.smallRegular(),
-            textAlign: TextAlign.left,
-          ),
-          if (verdict != null) ...[
-            const SizedBox(height: 12),
-            _IntegrityNotice(verdict: verdict),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// One line about the integrity check, in the icon-plus-caption shape the rest
-/// of the app uses for advisory notices.
-class _IntegrityNotice extends StatelessWidget {
-  const _IntegrityNotice({required this.verdict});
-
-  final DataItemIntegrityVerdict verdict;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final isLight = ArDriveTheme.of(context).themeData.name == 'light';
-
-    final Widget icon;
-    final Color color;
-    final String message;
-
-    switch (verdict) {
-      case DataItemIntegrityVerdict.verified:
-        // `themeSuccessDefault` is green.400 in both themes and reads at only
-        // ~2.2:1 on a light surface, so the light theme takes the muted green
-        // instead - the same substitution the recipient page documents in
-        // [SharedFileColors.success].
-        color = isLight ? colors.themeSuccessMuted : colors.themeSuccessDefault;
-        icon = ArDriveIcons.checkCirle(size: 16, color: color);
-        message = appLocalizationsOf(context).downloadVerified;
-        break;
-      case DataItemIntegrityVerdict.notVerified:
-        // Neutral, never a warning triangle: no verdict is not a problem, and
-        // an alarm icon would say otherwise louder than the sentence next to
-        // it says the opposite.
-        color = colors.themeFgMuted;
-        icon = ArDriveIcons.info(size: 16, color: color);
-        message = appLocalizationsOf(context).downloadNotVerified;
-        break;
-      case DataItemIntegrityVerdict.failed:
-        // Unreachable: a failed verdict takes over the modal.
-        color = colors.themeErrorDefault;
-        icon = ArDriveIcons.triangle(size: 16, color: color);
-        message = appLocalizationsOf(context).downloadVerificationFailed;
-        break;
-    }
-
-    return MergeSemantics(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ExcludeSemantics(child: icon),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: ArDriveTypography.body.captionRegular(color: color),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

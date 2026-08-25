@@ -130,14 +130,6 @@ class SharedFileFrame extends StatelessWidget {
             fit: BoxFit.contain,
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          appLocalizationsOf(context).sharedFilePermanentFileSharing,
-          textAlign: TextAlign.center,
-          style: ArDriveTypography.body.captionRegular(
-            color: SharedFileColors.subtle(context),
-          ),
-        ),
       ],
     );
   }

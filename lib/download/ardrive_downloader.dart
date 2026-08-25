@@ -65,6 +65,7 @@ abstract class ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
     bool verifyDownload,
+    bool verifyIntegrity,
   });
   Future<Uint8List> downloadToMemory({
     required String txId,
@@ -92,7 +93,11 @@ abstract class ArDriveDownloader {
   /// - AES-GCM files resolve to [DataItemIntegrityVerdict.verified] the moment
   ///   the MAC checks out, which is before a byte is written.
   /// - AES-CTR and public files resolve when the last byte has streamed
-  ///   through [StreamedDataItemVerifier].
+  ///   through [StreamedDataItemVerifier] - but only when the caller asked for
+  ///   `verifyIntegrity`, which nothing does. Without it the verdict is
+  ///   [DataItemIntegrityVerdict.notVerified], which is the honest answer for
+  ///   a check that was not run and is why the dialog treats `notVerified` as
+  ///   unremarkable and `failed` as the only thing worth interrupting for.
   /// - A resumed download resolves to [DataItemIntegrityVerdict.notVerified]:
   ///   the hash of the bytes before the interruption is gone.
   Future<DataItemIntegrityResult> get integrity;
@@ -256,6 +261,10 @@ class _ArDriveDownloader implements ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
     bool verifyDownload = false,
+    // Off by default, and nothing in the app turns it on. See the long note
+    // at the `verifierFuture` in [_getFileStream] for why a download must not
+    // depend on a GraphQL round trip.
+    bool verifyIntegrity = false,
   }) async {
     _resetIntegrity();
 
@@ -307,6 +316,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
           cipher: cipher,
           cipherIvString: cipherIvString,
           verifyDownload: verifyDownload,
+          verifyIntegrity: verifyIntegrity,
         );
 
         saveStream = prepared.stream;
@@ -765,7 +775,7 @@ class _ArDriveDownloader implements ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
     bool verifyDownload = false,
-    bool verifyIntegrity = true,
+    bool verifyIntegrity = false,
   }) async {
     logger.d('The file is not a manifest. Downloading it from Arweave...');
     logger.d('verifying download: $verifyDownload');
@@ -815,8 +825,33 @@ class _ArDriveDownloader implements ArDriveDownloader {
       keyData = Uint8List.fromList(await fileKey.extractBytes());
     }
 
-    // Started here, not inside the stream, so the GraphQL round trip overlaps
-    // the download instead of delaying its first byte.
+    // Off by default: a download must not depend on a GraphQL round trip.
+    //
+    // This check was added in #2175 and turned out to cost more than it
+    // bought. Three things, each independently disqualifying:
+    //
+    // * It is not free, and not concurrent either. Starting the future here
+    //   was meant to overlap it with the transfer, but the stream awaits it
+    //   before yielding a single byte (`verifier ??= await verifierFuture`),
+    //   so a slow lookup delays the first byte by up to
+    //   [_integrityLookupTimeout].
+    // * It reports failures that are not failures. Gateways return `anchor`
+    //   and `recipient` as empty strings - checked live against goldsky,
+    //   permagate.io, turbo-gateway.com and vilenarios.com - so any data item
+    //   that actually carries one deep-hashes differently here than it did
+    //   when it was signed, and a healthy file is reported as `failed`. That
+    //   verdict is not a footnote: it replaces the success dialog with
+    //   "the file may be corrupted".
+    // * A recipient on a connection that `arweave.net` rate limits gets the
+    //   10s timeout on every download, because that host is what
+    //   [GraphQLRetry] falls back to.
+    //
+    // What is kept is the check that costs nothing: AES-GCM files are still
+    // buffered and MAC-verified (§3.4.1), which is a real integrity guarantee
+    // computed locally over the bytes in hand. Only the signature check, the
+    // one that needs the network to say anything at all, is gone.
+    //
+    // Callers can still ask for it explicitly. Nothing does today.
     final verifierFuture = verifyIntegrity
         ? _verifierFactory(txId)
         : Future.value(StreamedDataItemVerifier.unavailable(
@@ -1432,11 +1467,30 @@ class DownloadSourceResponse {
 
 /// The production [DownloadSource].
 ///
-/// A download from byte 0 goes through the existing hedged gateway fallback,
-/// unchanged. A resume is a direct `GET {gateway}/{txId}` with a `Range`
-/// header, because the arweave client's `download()` does not expose one; it
-/// walks the same gateway order and takes the first gateway that actually
-/// serves a range.
+/// Every download is a direct `GET {gateway}/{txId}`, resumed or not.
+///
+/// It used to start at the arweave client's `download()`, which turns out to
+/// POST `{gateway}/graphql` before it fetches a single byte - unconditionally,
+/// whether or not verification was asked for, because it wants `dataSize` for
+/// its progress figure. Three ways that breaks a download that would otherwise
+/// have worked:
+///
+/// * The POST is subject to CORS, and the gateways do not all allow it from an
+///   arbitrary origin. `perma.online` answers the preflight with no
+///   `Access-Control-Allow-Origin` at all.
+/// * `arweave.net` rate limits, and a 429 fails the preflight too.
+/// * Either way `_getTransactionData` throws, and it throws *before* the byte
+///   stream exists - so the gateway is recorded as having failed and the next
+///   one is tried, until there are none left and a perfectly downloadable file
+///   reports `unknownError`.
+///
+/// None of it was needed here: the size is already known from the file's own
+/// record, and `verifyDownload` is false for everything the app does.
+///
+/// `verifyDownload: true` still goes the old way. It is the arweave client's
+/// chunk check for L1 transactions, it is the client's to run, and the one
+/// caller that asks for it has already resolved the transaction over GraphQL
+/// to discover it needs it.
 class GatewayDownloadSource implements DownloadSource {
   GatewayDownloadSource(
     this._arweave, {
@@ -1455,7 +1509,7 @@ class GatewayDownloadSource implements DownloadSource {
     int startOffsetBytes = 0,
     bool verifyDownload = false,
   }) async {
-    if (startOffsetBytes == 0) {
+    if (startOffsetBytes == 0 && verifyDownload) {
       final response = await _arweave.gatewayFallback.downloadWithFallback(
         txId: txId,
         primaryClient: _arweave.client,
@@ -1476,8 +1530,13 @@ class GatewayDownloadSource implements DownloadSource {
   Future<DownloadSourceResponse> _openRange(String txId, int offset) async {
     Object? lastError;
     var sawIgnoredRange = false;
+    // Every gateway answering 404 is a different fact from every gateway
+    // failing, and the dialog says something different for each.
+    var tried = 0;
+    var notFound = 0;
 
     for (final origin in _gatewayOrigins()) {
+      tried++;
       final client = _clientFactory();
 
       try {
@@ -1488,6 +1547,7 @@ class GatewayDownloadSource implements DownloadSource {
             await client.send(request).timeout(_rangeRequestTimeout);
 
         if (response.statusCode != 200 && response.statusCode != 206) {
+          if (response.statusCode == 404) notFound++;
           lastError = 'HTTP ${response.statusCode} from $origin';
           await _discard(response);
           client.close();
@@ -1533,6 +1593,10 @@ class GatewayDownloadSource implements DownloadSource {
         startOffsetBytes: 0,
         statusCode: 200,
       );
+    }
+
+    if (tried > 0 && notFound == tried) {
+      throw DownloadFileNotFoundException(txId);
     }
 
     throw DownloadNetworkException(txId, lastError?.toString());

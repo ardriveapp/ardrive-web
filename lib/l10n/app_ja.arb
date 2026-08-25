@@ -540,10 +540,6 @@
   "@downloadMustRestartDescription": {
     "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
   },
-  "downloadNotVerified": "ArDrive はこのファイルを元のファイルと照合できませんでした。一部のファイルでは通常のことで、問題があるという意味ではありません。",
-  "@downloadNotVerified": {
-    "description": "Advisory line on the download success dialog when no integrity verdict could be reached. Must never imply the file is damaged: this outcome is routine"
-  },
   "downloadReconnecting": "再接続しています...",
   "@downloadReconnecting": {
     "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
@@ -565,10 +561,6 @@
         "example": "holiday.mp4"
       }
     }
-  },
-  "downloadVerified": "このファイルはアップロードされた元のファイルと一致しています。",
-  "@downloadVerified": {
-    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
   },
   "downloadVerifying": "このファイルを確認しています...",
   "@downloadVerifying": {
@@ -1817,10 +1809,6 @@
   "@sharedFileGetLatest": {
     "description": "Button that fetches the newest version of a shared file"
   },
-  "sharedFileHidePreview": "プレビューを閉じる",
-  "@sharedFileHidePreview": {
-    "description": "Button that closes the preview on the shared file page"
-  },
   "sharedFileIsEncrypted": "このファイルは暗号化されています。",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
@@ -1876,14 +1864,6 @@
   "sharedFilePasteAccessKey": "アクセスキーを貼り付け",
   "@sharedFilePasteAccessKey": {
     "description": "Placeholder of the access key field on the shared file page"
-  },
-  "sharedFilePermanentFileSharing": "永続的なファイル共有",
-  "@sharedFilePermanentFileSharing": {
-    "description": "Tagline shown under the ArDrive logo on the shared file page"
-  },
-  "sharedFilePreviewPaneHint": "ダウンロードせずに、このファイルをここでプレビューできます。",
-  "@sharedFilePreviewPaneHint": {
-    "description": "Caption in the preview pane of the shared file page, on a desktop screen, saying what pressing Preview will do"
   },
   "sharedFilePreviewUnsupported": "このファイルはここではプレビューできません。開くにはダウンロードしてください。",
   "@sharedFilePreviewUnsupported": {
