@@ -7,6 +7,7 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/arweave.dart' as arweave_pkg;
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 
 /// Provides data gateway fallback resilience.
@@ -35,7 +36,36 @@ class DataGatewayFallback {
 
   static const _maxGarFallbacks = 2;
   static const _garListTimeout = Duration(seconds: 5);
-  static const _requestTimeout = Duration(seconds: 5);
+  /// How long one gateway read waits before being abandoned.
+  ///
+  /// Ten seconds, not five. Sync reads run through [ArweaveService.runPooled],
+  /// a worker pool with a shared cursor, so a read that hangs occupies one of
+  /// its `maxConcurrentDataFetches` slots while the other workers keep pulling
+  /// new items. A longer wait therefore costs throughput on one slot rather
+  /// than stalling the sync, which is what makes it affordable to be patient
+  /// enough for a gateway that is a beat behind rather than broken.
+  static const _requestTimeout = Duration(seconds: 10);
+
+  /// Per-read budget for a body measured in tens of megabytes.
+  ///
+  /// [_requestTimeout] is sized for the metadata reads that dominate sync -
+  /// a few hundred bytes each, hundreds of them. A snapshot is the same call
+  /// with four orders of magnitude more body: this drive's newest is 43.9 MiB,
+  /// and a warm gateway serves it in ~8s at ~5.7 MB/s. Under the metadata
+  /// budget it could never finish, on any connection slower than ~9 MB/s, no
+  /// matter how many times it was retried.
+  ///
+  /// Sixty seconds covers that body down to about 0.75 MB/s. Being generous is
+  /// cheap here in a way it is not for metadata: this is one request per
+  /// snapshot rather than one per entity, its availability has already been
+  /// established by a HEAD before the download starts
+  /// (`SnapshotValidationService`), and the alternative to waiting is
+  /// re-walking the snapshot's whole block range over GraphQL, which costs
+  /// minutes.
+  static const largeBodyRequestTimeout = Duration(seconds: 60);
+
+  /// Total budget for a large-body read, covering both attempts.
+  static const largeBodyTotalTimeout = Duration(seconds: 130);
   static const _totalFetchTimeout = Duration(seconds: 25);
   static const _hedgeDelay = Duration(milliseconds: 1500);
   static const _downloadTimeout = Duration(seconds: 15);
@@ -43,23 +73,57 @@ class DataGatewayFallback {
   /// Attempts made against the configured gateway by [fetchDataForSync].
   static const syncMaxAttempts = 2;
 
+  /// Attempts against the configured gateway inside the [fetchData] waterfall,
+  /// spent only when it answers 404.
+  static const _primaryAttemptsOn404 = 2;
+
+  /// Delay before that retry.
+  static const _primaryRetryDelay = Duration(milliseconds: 300);
+
   /// Delay before the single same-gateway retry in [fetchDataForSync].
   static const _syncRetryDelay = Duration(milliseconds: 300);
 
-  /// Upper bound for one sync read. By construction the attempts already sum
-  /// to ~10.3s; this only guards against an attempt that outlives its own
-  /// timeout.
-  static const _syncTotalFetchTimeout = Duration(seconds: 15);
+  /// Upper bound for one sync read.
+  ///
+  /// This has to clear what the attempts themselves can spend, or it silently
+  /// becomes the real limit: [syncMaxAttempts] attempts at [_requestTimeout]
+  /// plus one [_syncRetryDelay] is 20.3s, so a 15s cap - correct when an
+  /// attempt was 5s - would cut the second attempt off at 4.7s and make the
+  /// retry weaker than the try it was retrying.
+  ///
+  /// It is a backstop against an attempt that outlives its own timeout, not a
+  /// budget in its own right, so it sits just above that sum.
+  static const _syncTotalFetchTimeout = Duration(seconds: 22);
+
+  /// The sync read budgets, together, so a test can assert the relationship
+  /// between them rather than restate their values - restating them is what
+  /// drifted when [_requestTimeout] changed and the cap did not.
+  @visibleForTesting
+  static const syncBudgets = (
+    request: _requestTimeout,
+    retryDelay: _syncRetryDelay,
+    total: _syncTotalFetchTimeout,
+  );
 
   /// Cached gateway list — shared with other services (e.g.
   /// SnapshotValidationService) to avoid duplicate Solana RPC calls.
   List<Gateway>? cachedGateways;
 
+  /// Injectable so a test can prove that [fetchDataForSync]'s `largeBody`
+  /// routes to a different budget without spending either of them.
+  final Duration _syncRequestTimeout;
+  final Duration _syncLargeBodyRequestTimeout;
+
   DataGatewayFallback({
     required ArioSDK arioSDK,
     Client Function()? clientFactory,
+    @visibleForTesting Duration? syncRequestTimeout,
+    @visibleForTesting Duration? syncLargeBodyRequestTimeout,
   })  : _arioSDK = arioSDK,
-        _clientFactory = clientFactory ?? Client.new;
+        _clientFactory = clientFactory ?? Client.new,
+        _syncRequestTimeout = syncRequestTimeout ?? _requestTimeout,
+        _syncLargeBodyRequestTimeout =
+            syncLargeBodyRequestTimeout ?? largeBodyRequestTimeout;
 
   /// Fetch transaction data with serial gateway fallback.
   ///
@@ -82,40 +146,86 @@ class DataGatewayFallback {
   /// consults the GAR, so no Solana RPC is issued on the sync path.
   ///
   /// Sync issues hundreds of these per run, where per-item attempt count
-  /// dominates: the [fetchData] waterfall costs up to 4 serial attempts at 5s
-  /// each, so a slow or flaky primary turns into minutes of serial timeouts.
-  /// Worst case here is [syncMaxAttempts] attempts / ~10.3s.
+  /// dominates: the [fetchData] waterfall costs up to 4 serial attempts, so a
+  /// slow or flaky primary turns into minutes of serial timeouts. Worst case
+  /// here is [syncMaxAttempts] attempts against one host.
   ///
-  /// A 404 is not retried — the same host will not change its mind.
+  /// A 404 is retried like any other failure: a gateway that has not
+  /// finished indexing a transaction answers 404 for it and 200 a moment
+  /// later. [TransactionNotFound] is reported only when *every* attempt
+  /// returned 404 — a 500 followed by a 404 is an unwell gateway, not an
+  /// absent transaction.
   ///
   /// Callers must treat a failure as "skip this item", and must record the tx
   /// id so it is not lost. See the note on `ArweaveService._getEntityData` and
   /// `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
   ///
   /// If every attempt 404s, throws [TransactionNotFound].
-  Future<Response> fetchDataForSync(String txId, Arweave primaryClient) async {
-    return _syncFetch(txId, primaryClient)
-        .timeout(_syncTotalFetchTimeout, onTimeout: () {
+  ///
+  /// [largeBody] switches to [largeBodyRequestTimeout], for reads whose body
+  /// is measured in megabytes rather than bytes - snapshots. The default
+  /// budget is sized for metadata and cannot finish one.
+  Future<Response> fetchDataForSync(
+    String txId,
+    Arweave primaryClient, {
+    bool largeBody = false,
+  }) async {
+    return _syncFetch(txId, primaryClient, largeBody: largeBody).timeout(
+        largeBody ? largeBodyTotalTimeout : _syncTotalFetchTimeout,
+        onTimeout: () {
       logger.w('Total sync fetch timeout exceeded for tx $txId');
       throw Exception('Total sync fetch timeout exceeded for tx $txId');
     });
   }
 
-  Future<Response> _syncFetch(String txId, Arweave primaryClient) async {
+  Future<Response> _syncFetch(
+    String txId,
+    Arweave primaryClient, {
+    bool largeBody = false,
+  }) async {
     final gatewayName = primaryClient.api.gatewayUrl.host;
+
+    var allAttempts404 = true;
 
     for (var attempt = 1; attempt <= syncMaxAttempts; attempt++) {
       try {
-        return await _tryGateway(primaryClient, txId);
+        return await _tryGateway(
+          primaryClient,
+          txId,
+          requestTimeout: largeBody
+              ? _syncLargeBodyRequestTimeout
+              : _syncRequestTimeout,
+        );
       } on _ErrorFromStatus catch (e) {
-        if (e.statusCode == 404) {
-          // Retrying the same host cannot turn a 404 into a 200.
-          logger.w('Gateway $gatewayName returned 404 for sync tx $txId');
+        // A 404 is NOT treated as final here, and the reasoning that said it
+        // was is wrong for this case. A gateway that has not finished indexing
+        // a transaction answers 404 for it, and answers 200 a moment later -
+        // observed in the wild on a drive signature that 404ed once and
+        // resolved on the retry. Spending the second attempt is cheap; losing
+        // a drive because its gateway was a beat behind is not.
+        //
+        // The last attempt still reports it as not found, so a genuinely
+        // absent transaction keeps its typed error.
+        if (e.statusCode != 404) {
+          allAttempts404 = false;
+        }
+
+        // `TransactionNotFound` is a claim that the transaction is absent, so
+        // only every attempt agreeing earns it. A 500 followed by a 404 says
+        // the gateway was unwell, not that the data is gone, and reporting it
+        // as not-found would state more than we know.
+        if (e.statusCode == 404 &&
+            attempt == syncMaxAttempts &&
+            allAttempts404) {
+          logger.w('Gateway $gatewayName returned 404 for sync tx $txId '
+              'on every attempt');
           throw TransactionNotFound(txId);
         }
         logger.w('Gateway $gatewayName failed for sync tx $txId '
             '(attempt $attempt/$syncMaxAttempts): $e');
       } catch (e) {
+        // A timeout or a socket error is not a 404 either.
+        allAttempts404 = false;
         logger.w('Gateway $gatewayName failed for sync tx $txId '
             '(attempt $attempt/$syncMaxAttempts): $e');
       }
@@ -137,18 +247,47 @@ class DataGatewayFallback {
 
     for (final client in clients) {
       final gatewayName = client.api.gatewayUrl.host;
-      try {
-        final response = await _tryGateway(client, txId);
-        if (client != primaryClient) {
-          logger.i('Fallback gateway $gatewayName succeeded for tx $txId');
+      final isPrimary = client == primaryClient;
+
+      // The configured gateway gets one extra attempt, and only on a 404.
+      // [_syncFetch] already spends one for the same reason - a gateway that
+      // has not finished indexing a transaction answers 404 for it and 200 a
+      // moment later - and the reasoning holds at least as well here, because
+      // walking away from the primary is worst for exactly the data most
+      // likely to be a beat behind. Something just uploaded through Turbo can
+      // be on the configured gateway and not yet anywhere else, so falling
+      // through on its first 404 reaches gateways that are further behind it,
+      // not ahead of it.
+      //
+      // Deliberately not extended to timeouts or socket errors: those have
+      // already spent their [_requestTimeout] and say the gateway is unwell
+      // rather than a beat behind, so the next gateway is the better bet and
+      // the total budget stays intact.
+      final attempts = isPrimary ? _primaryAttemptsOn404 : 1;
+
+      for (var attempt = 1; attempt <= attempts; attempt++) {
+        var retryable = false;
+
+        try {
+          final response = await _tryGateway(client, txId);
+          if (!isPrimary) {
+            logger.i('Fallback gateway $gatewayName succeeded for tx $txId');
+          }
+          return response;
+        } on _ErrorFromStatus catch (e) {
+          if (e.statusCode != 404) all404 = false;
+          retryable = e.statusCode == 404;
+          logger.w('Gateway $gatewayName failed for tx $txId: $e');
+        } catch (e) {
+          all404 = false;
+          logger.w('Gateway $gatewayName failed for tx $txId: $e');
         }
-        return response;
-      } on _ErrorFromStatus catch (e) {
-        if (e.statusCode != 404) all404 = false;
-        logger.w('Gateway $gatewayName failed for tx $txId: $e');
-      } catch (e) {
-        all404 = false;
-        logger.w('Gateway $gatewayName failed for tx $txId: $e');
+
+        if (!retryable) break;
+
+        if (attempt < attempts) {
+          await Future.delayed(_primaryRetryDelay);
+        }
       }
     }
 
@@ -450,10 +589,14 @@ class DataGatewayFallback {
     return clients;
   }
 
-  Future<Response> _tryGateway(Arweave client, String txId) async {
+  Future<Response> _tryGateway(
+    Arweave client,
+    String txId, {
+    Duration? requestTimeout,
+  }) async {
     final response = await client.api
         .getSandboxedTx(txId)
-        .timeout(_requestTimeout);
+        .timeout(requestTimeout ?? _requestTimeout);
 
     if (response.statusCode >= 200 && response.statusCode <= 208) {
       return response;

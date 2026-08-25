@@ -82,6 +82,10 @@ void main() {
     required DateTime createdAt,
     String name = 'file.txt',
     String dataTx = dataTxId,
+    // Defaults to the id the v2 link payload names, so a single-revision
+    // fixture verifies against it. A fixture with more than one revision must
+    // give the others their own: two revisions never share a metadata
+    // transaction on chain, and that transaction is what identifies one.
     String metadataTx = metadataTxId,
     int size = 100,
     String owner = ownerAddress,
@@ -155,6 +159,7 @@ void main() {
     bool linkKeyIsDamaged = false,
     SharedFileLinkPayload? payload,
     ArDriveCrypto? crypto,
+    Duration readTimeout = SharedFileCubit.defaultReadTimeout,
   }) =>
       SharedFileCubit(
         fileId: id,
@@ -166,6 +171,7 @@ void main() {
         crypto: crypto,
         // The propagation retries are the behavior under test, not the wait.
         propagationRetryDelay: Duration.zero,
+        readTimeout: readTimeout,
       );
 
   setUpAll(() {
@@ -188,6 +194,41 @@ void main() {
 
         return createCubit();
       },
+      expect: () => [isA<SharedFileLoadFailure>()],
+    );
+
+    blocTest<SharedFileCubit, SharedFileState>(
+      'gives up on a read that hangs rather than waiting forever',
+      build: () {
+        // Not a failure - silence. `GraphQLRetry` retries a call that throws,
+        // but sets no timeout, so a connection that never answers was never
+        // retried and never abandoned either: the page sat on its skeleton
+        // for as long as the tab stayed open. A completer that is never
+        // completed is exactly that gateway.
+        when(() => arweave.getFilePrivacyForId(any()))
+            .thenAnswer((_) => Completer<String?>().future);
+
+        return createCubit(
+          readTimeout: const Duration(milliseconds: 50),
+        );
+      },
+      wait: const Duration(milliseconds: 200),
+      expect: () => [isA<SharedFileLoadFailure>()],
+    );
+
+    blocTest<SharedFileCubit, SharedFileState>(
+      'gives up on a hanging revision read too',
+      build: () {
+        when(() => arweave.getFilePrivacyForId(any()))
+            .thenAnswer((_) async => DrivePrivacyTag.public);
+        when(() => arweave.getAllFileEntitiesWithId(any(), any()))
+            .thenAnswer((_) => Completer<List<FileEntity>>().future);
+
+        return createCubit(
+          readTimeout: const Duration(milliseconds: 50),
+        );
+      },
+      wait: const Duration(milliseconds: 200),
       expect: () => [isA<SharedFileLoadFailure>()],
     );
 
@@ -1050,6 +1091,171 @@ void main() {
       await cubit.loadActivity();
 
       expect(historyFetches, 1);
+    });
+  });
+
+  group('SharedFileCubit version list', () {
+    test('the version already in hand renders before the history arrives',
+        () async {
+      // The link carries the version it points at, so opening the list must
+      // not be a wait. The row is there from the first frame; the rest of the
+      // history fills in around it.
+      when(() => arweave.getFilePrivacyForId(any()))
+          .thenAnswer((_) async => DrivePrivacyTag.public);
+      when(() => arweave.getLatestFileEntityWithId(any(), any())).thenAnswer(
+        (_) async => fileEntity(createdAt: DateTime(2024, 1, 1)),
+      );
+
+      final history = Completer<List<FileEntity>>();
+
+      when(() => arweave.getAllFileEntitiesWithId(any(), any()))
+          .thenAnswer((_) => history.future);
+
+      final cubit = createCubit(payload: v2Payload());
+
+      await cubit.backgroundWork;
+
+      unawaited(cubit.loadActivity());
+      await Future<void>.delayed(Duration.zero);
+
+      final opening = cubit.state as SharedFileLoadSuccess;
+
+      expect(opening.activityStatus, SharedFileActivityStatus.loading);
+      expect(opening.activityRevisions, hasLength(1));
+      expect(
+        opening.activityRevisions.single.dataTxId,
+        opening.sharedRevision.dataTxId,
+      );
+
+      history.complete([
+        fileEntity(createdAt: DateTime(2024, 1, 1), name: 'first.txt'),
+        fileEntity(createdAt: DateTime(2024, 1, 2), name: 'file.txt'),
+      ]);
+      await Future<void>.delayed(Duration.zero);
+
+      final loaded = cubit.state as SharedFileLoadSuccess;
+
+      expect(loaded.activityStatus, SharedFileActivityStatus.loaded);
+      expect(loaded.activityRevisions, hasLength(2));
+    });
+
+    test('a failed lookup keeps the version the recipient was sent', () async {
+      // The state a rate limited connection lands in. It costs the list, never
+      // the file: the row stays, so the page still names what it is offering.
+      when(() => arweave.getFilePrivacyForId(any()))
+          .thenAnswer((_) async => DrivePrivacyTag.public);
+      when(() => arweave.getLatestFileEntityWithId(any(), any())).thenAnswer(
+        (_) async => fileEntity(createdAt: DateTime(2024, 1, 1)),
+      );
+      when(() => arweave.getAllFileEntitiesWithId(any(), any()))
+          .thenAnswer((_) async => throw Exception('gateway is unreachable'));
+
+      final cubit = createCubit(payload: v2Payload());
+
+      await cubit.backgroundWork;
+      await cubit.loadActivity();
+
+      final failed = cubit.state as SharedFileLoadSuccess;
+
+      expect(failed.activityStatus, SharedFileActivityStatus.failed);
+      expect(failed.activityRevisions, hasLength(1));
+      // And the file itself is untouched by any of it.
+      expect(failed.revision.dataTxId, isNotEmpty);
+    });
+
+    test('selecting a version moves the download target to it', () async {
+      when(() => arweave.getFilePrivacyForId(any()))
+          .thenAnswer((_) async => DrivePrivacyTag.public);
+      when(() => arweave.getLatestFileEntityWithId(any(), any())).thenAnswer(
+        (_) async => fileEntity(createdAt: DateTime(2024, 1, 1)),
+      );
+      when(() => arweave.getAllFileEntitiesWithId(any(), any())).thenAnswer(
+        (_) async => [
+          fileEntity(createdAt: DateTime(2024, 1, 1), name: 'first.txt'),
+          fileEntity(
+            createdAt: DateTime(2024, 1, 2),
+            name: 'newer.txt',
+            dataTx: 'data-tx-newer',
+            // Its own record, as a second revision always has.
+            metadataTx: 'metadata-tx-newer',
+          ),
+        ],
+      );
+
+      final cubit = createCubit(payload: v2Payload());
+
+      await cubit.backgroundWork;
+      await cubit.loadActivity();
+
+      final loaded = cubit.state as SharedFileLoadSuccess;
+      final newest = loaded.activityRevisions.first;
+
+      await cubit.showRevision(newest);
+
+      final selected = cubit.state as SharedFileLoadSuccess;
+
+      expect(selected.revision.dataTxId, newest.dataTxId);
+      // On the newest revision there is nothing newer left to offer.
+      expect(selected.showsLatestRevision, isTrue);
+      expect(selected.newerVersionAvailable, isFalse);
+      // The link's own revision is remembered, so the way back stays open.
+      expect(selected.linkRevision, isNotNull);
+    });
+
+    test('selecting an older version says a newer one exists', () async {
+      when(() => arweave.getFilePrivacyForId(any()))
+          .thenAnswer((_) async => DrivePrivacyTag.public);
+      when(() => arweave.getLatestFileEntityWithId(any(), any())).thenAnswer(
+        (_) async => fileEntity(createdAt: DateTime(2024, 1, 1)),
+      );
+      when(() => arweave.getAllFileEntitiesWithId(any(), any())).thenAnswer(
+        (_) async => [
+          fileEntity(createdAt: DateTime(2024, 1, 1), name: 'first.txt'),
+          fileEntity(
+            createdAt: DateTime(2024, 1, 2),
+            name: 'newer.txt',
+            dataTx: 'data-tx-newer',
+            // Its own record, as a second revision always has.
+            metadataTx: 'metadata-tx-newer',
+          ),
+        ],
+      );
+
+      final cubit = createCubit(payload: v2Payload());
+
+      await cubit.backgroundWork;
+      await cubit.loadActivity();
+
+      final loaded = cubit.state as SharedFileLoadSuccess;
+      final newest = loaded.activityRevisions.first;
+      final oldest = loaded.activityRevisions.last;
+
+      // Move to the newest first, so that coming back down is a real move.
+      await cubit.showRevision(newest);
+      await cubit.showRevision(oldest);
+
+      final selected = cubit.state as SharedFileLoadSuccess;
+
+      expect(selected.revision.dataTxId, oldest.dataTxId);
+      expect(selected.newerVersionAvailable, isTrue);
+    });
+
+    test('selecting the version already shown changes nothing', () async {
+      when(() => arweave.getFilePrivacyForId(any()))
+          .thenAnswer((_) async => DrivePrivacyTag.public);
+      when(() => arweave.getLatestFileEntityWithId(any(), any())).thenAnswer(
+        (_) async => fileEntity(createdAt: DateTime(2024, 1, 1)),
+      );
+
+      final cubit = createCubit(payload: v2Payload());
+
+      await cubit.backgroundWork;
+
+      final before = cubit.state as SharedFileLoadSuccess;
+
+      await cubit.showRevision(before.revision);
+
+      expect(cubit.state, same(before));
     });
   });
 

@@ -127,44 +127,41 @@ class CreateSnapshotDialog extends StatelessWidget {
 Widget _explanationDialog(BuildContext context, Drive drive) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
   final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).newSnapshot,
-    content: SizedBox(
-      width: kMediumDialogWidth,
-      child: Row(
-        children: [
-          Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    children: splitTranslationsWithMultipleStyles(
-                      originalText: appLocalizationsOf(context)
-                          .createSnapshotExplanation(drive.name),
-                      defaultMapper: (t) => TextSpan(
-                        text: t,
-                        style: typography.paragraphNormal(),
-                      ),
-                      parts: {
-                        drive.name: (t) => TextSpan(
-                              text: t,
-                              style: typography.paragraphNormal().copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                      },
-                    ),
-                  ),
-                  style: typography.paragraphNormal(),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            children: splitTranslationsWithMultipleStyles(
+              originalText: appLocalizationsOf(context)
+                  .createSnapshotExplanation(drive.name),
+              defaultMapper: (t) => TextSpan(
+                text: t,
+                style: typography.paragraphNormal(
+                  color: colorTokens.textMid,
                 ),
-              ],
+              ),
+              parts: {
+                drive.name: (t) => TextSpan(
+                      text: t,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textHigh,
+                      ),
+                    ),
+              },
             ),
           ),
-        ],
-      ),
+          style: typography.paragraphNormal(
+            color: colorTokens.textMid,
+          ),
+        ),
+      ],
     ),
     actions: [
       ModalAction(
@@ -259,30 +256,24 @@ String _loadingDialogDescription(
 
 Widget _successDialog(BuildContext context, String driveName) {
   final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).snapshotSuceeded,
-    content: SizedBox(
-      width: kMediumDialogWidth,
-      child: Row(
-        children: [
-          Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    text: appLocalizationsOf(context)
-                        .snapshotCreationSucceeded(driveName),
-                  ),
-                  style: typography.paragraphNormal(),
-                ),
-              ],
-            ),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: appLocalizationsOf(context)
+                .snapshotCreationSucceeded(driveName),
           ),
-        ],
-      ),
+          style: typography.paragraphNormal(
+            color: colorTokens.textMid,
+          ),
+        ),
+      ],
     ),
     actions: [
       ModalAction(
@@ -301,29 +292,23 @@ Widget _failureDialog(
 ) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
   final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).snapshotFailed,
-    content: SizedBox(
-      width: kMediumDialogWidth,
-      child: Row(
-        children: [
-          Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    text: appLocalizationsOf(context).snapshotCreationFailed,
-                  ),
-                  style: typography.paragraphNormal(),
-                ),
-              ],
-            ),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: appLocalizationsOf(context).snapshotCreationFailed,
           ),
-        ],
-      ),
+          style: typography.paragraphNormal(
+            color: colorTokens.textMid,
+          ),
+        ),
+      ],
     ),
     actions: [
       ModalAction(
@@ -347,33 +332,26 @@ Widget _insufficientBalanceDialog(
   CreateSnapshotInsufficientBalance state,
 ) {
   final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).insufficientARForUpload,
-    content: SizedBox(
-      width: kMediumDialogWidth,
-      child: Row(
-        children: [
-          Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    text: appLocalizationsOf(context)
-                        .insufficientBalanceForSnapshot(
-                      state.walletBalance,
-                      state.arCost,
-                    ),
-                  ),
-                  style: typography.paragraphNormal(),
-                ),
-              ],
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: appLocalizationsOf(context).insufficientBalanceForSnapshot(
+              state.walletBalance,
+              state.arCost,
             ),
           ),
-        ],
-      ),
+          style: typography.paragraphNormal(
+            color: colorTokens.textMid,
+          ),
+        ),
+      ],
     ),
     actions: [
       ModalAction(
@@ -393,6 +371,7 @@ Widget _confirmDialog(
   CreateSnapshotState state,
 ) {
   final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).newSnapshot,
@@ -413,19 +392,24 @@ Widget _confirmDialog(
                               .snapshotOfDrive(drive.name),
                           defaultMapper: (t) => TextSpan(
                             text: t,
-                            style: typography.paragraphNormal(),
+                            style: typography.paragraphNormal(
+                              color: colorTokens.textMid,
+                            ),
                           ),
                           parts: {
                             drive.name: (t) => TextSpan(
                                   text: t,
-                                  style: typography.paragraphNormal().copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: typography.paragraphNormal(
+                                    fontWeight: ArFontWeight.semiBold,
+                                    color: colorTokens.textHigh,
+                                  ),
                                 ),
                           },
                         ),
                       ),
-                      style: typography.paragraphNormal(),
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textMid,
+                      ),
                     ),
                     Text.rich(
                       TextSpan(
@@ -436,7 +420,9 @@ Widget _confirmDialog(
                             ),
                           ),
                         ],
-                        style: typography.paragraphNormal(),
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textMid,
+                        ),
                       ),
                     ),
                     const Divider(),

@@ -89,6 +89,10 @@ void main() {
   Future<List<Object>> downloadPrivate(
     ArDriveDownloader downloader, {
     bool verifyDownload = false,
+    // The signature check is off unless a caller asks: it is the one thing in
+    // a download that needs the network to say anything, and a download must
+    // not depend on that.
+    bool verifyIntegrity = false,
   }) async {
     final progress = await downloader.downloadFile(
       txId: txId,
@@ -101,6 +105,7 @@ void main() {
       cipher: Cipher.aes256ctr,
       cipherIvString: cipherIvString,
       verifyDownload: verifyDownload,
+      verifyIntegrity: verifyIntegrity,
     );
 
     return drainProgress(progress);
@@ -336,6 +341,37 @@ void main() {
         );
       }
 
+      test('a fresh download is a plain GET, never the client\'s download()',
+          () async {
+        // The arweave client's `download()` POSTs {gateway}/graphql before it
+        // fetches a byte - unconditionally, because it wants `dataSize` for a
+        // progress figure this app does not use. That POST is subject to CORS,
+        // which not every gateway allows from an arbitrary origin, and it
+        // throws before the byte stream exists - so a gateway that could have
+        // served the file is recorded as having failed, and a downloadable
+        // file ends up reported as an unknown error.
+        final body = countedBody(ciphertext);
+        final harness = buildSource(
+          (request) => http.StreamedResponse(body.stream, 206),
+        );
+
+        final response = await harness.source.open(txId: txId);
+
+        expect(response.startOffsetBytes, 0);
+
+        // One request, and it is a GET for the bytes.
+        final request = harness.clients.single.requests.single;
+        expect(request.method, 'GET');
+        expect(request.url, Uri.parse('https://arweave.net/$txId'));
+
+        // Nothing asked a gateway to describe the transaction first.
+        expect(
+          harness.clients.single.requests
+              .where((r) => r.url.path.contains('graphql')),
+          isEmpty,
+        );
+      });
+
       test('a 200 answer to a Range request is reported as byte 0, and its '
           'body is never read', () async {
         final body = countedBody(ciphertext);
@@ -504,6 +540,38 @@ void main() {
     });
   });
 
+  group('a download does not depend on GraphQL', () {
+    test('the signature check is off unless it is asked for', () async {
+      // The check was added in #2175 and reported healthy files as corrupt:
+      // gateways return `anchor` and `recipient` as empty strings, so any data
+      // item carrying one deep-hashes differently here than it did when it was
+      // signed. That verdict is not a footnote - it replaces the success
+      // dialog with "the file may be corrupted" - and reaching it costs a
+      // GraphQL round trip the stream waits on before its first byte.
+      var asked = false;
+
+      final harness = build(
+        FakeDownloadSource(ciphertext),
+        verifierFactory: (id) async {
+          asked = true;
+          return realShapedVerifier(id);
+        },
+      );
+
+      expect(await downloadPrivate(harness.downloader), isEmpty);
+
+      expect(asked, isFalse,
+          reason: 'nothing may reach for the network to finish a download');
+
+      // The download still succeeds - `downloadPrivate` returning no errors is
+      // that - and the verdict says plainly that no check ran rather than
+      // implying one failed.
+      final verdict = await harness.downloader.integrity;
+      expect(verdict.verdict, DataItemIntegrityVerdict.notVerified);
+      expect(verdict.reason ?? '', contains('not requested'));
+    });
+  });
+
   group('integrity verdicts', () {
     test('an uninterrupted download hashes every ciphertext byte', () async {
       final harness = build(
@@ -511,7 +579,7 @@ void main() {
         verifierFactory: (id) async => realShapedVerifier(id),
       );
 
-      expect(await downloadPrivate(harness.downloader), isEmpty);
+      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true), isEmpty);
 
       final verdict = await harness.downloader.integrity;
 
@@ -529,7 +597,7 @@ void main() {
         verifierFactory: (id) async => verifier,
       );
 
-      expect(await downloadPrivate(harness.downloader), isEmpty);
+      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true), isEmpty);
 
       // The signature covers the bytes as they were posted. Tapping after
       // decryption instead would hash the plaintext - the same *length*, so
@@ -553,7 +621,7 @@ void main() {
         verifierFactory: (id) async => realShapedVerifier(id),
       );
 
-      expect(await downloadPrivate(harness.downloader), isEmpty);
+      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true), isEmpty);
 
       final verdict = await harness.downloader.integrity;
 
@@ -573,7 +641,7 @@ void main() {
         verifierFactory: (id) async => GatedVerifier(gate),
       );
 
-      expect(await downloadPrivate(harness.downloader), isEmpty);
+      expect(await downloadPrivate(harness.downloader, verifyIntegrity: true), isEmpty);
       expect(harness.io.savedBytes, expectedPlaintext);
 
       // Bound *after* the download, deliberately: `downloadFile` resets the
@@ -609,7 +677,7 @@ void main() {
       // reading the verdict without a download in flight reads the value the
       // downloader was *constructed* with - it is already complete, already
       // `notVerified`, and no code under test ever put it there.
-      final errors = downloadPrivate(harness.downloader);
+      final errors = downloadPrivate(harness.downloader, verifyIntegrity: true);
       await source.delivering.future;
 
       await harness.downloader.abortDownload();

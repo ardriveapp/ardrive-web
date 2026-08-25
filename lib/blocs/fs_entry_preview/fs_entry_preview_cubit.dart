@@ -32,6 +32,18 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final ProfileCubit _profileCubit;
   final ArDriveCrypto _crypto;
 
+  /// What the data transaction is encrypted with, when the caller already
+  /// knows.
+  ///
+  /// A share link carries the cipher and IV of the transaction it names, so a
+  /// recipient previewing a private file has them before the page loads. Given
+  /// them, the preview decrypts without asking the gateway to describe a
+  /// transaction it was already told about. They travel together or not at
+  /// all, and only for the transaction they describe - see
+  /// [_decodePrivateData].
+  final String? _cipher;
+  final String? _cipherIv;
+
   final SecretKey? _fileKey;
 
   /// Makes a playable URL out of decrypted bytes. See [PreviewObjectUrls] for
@@ -64,12 +76,16 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     SecretKey? fileKey,
     bool isSharedFile = false,
     PreviewObjectUrls? objectUrls,
+    String? cipher,
+    String? cipherIv,
   })  : _driveDao = driveDao,
         _configService = configService,
         _profileCubit = profileCubit,
         _arweave = arweave,
         _crypto = crypto,
         _fileKey = fileKey,
+        _cipher = cipher,
+        _cipherIv = cipherIv,
         _objectUrls = objectUrls ?? PreviewObjectUrls(),
         super(FsEntryPreviewInitial()) {
     if (isSharedFile) {
@@ -1059,20 +1075,36 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     SecretKey fileKey,
     String dataTxId,
   ) async {
-    final dataTx = await _getDataTx(dataTxId);
-
-    if (dataTx == null) {
-      return null;
-    }
+    final cipher = _cipher;
+    final cipherIv = _cipherIv;
 
     try {
-      final decodedBytes = await _crypto.decryptDataFromTransaction(
+      // The caller already knew what this is encrypted with, so the lookup
+      // that would have asked is skipped. This is the same saving the download
+      // path makes with the same two values from the same share link: before
+      // it, previewing a private shared file spent a GraphQL round trip
+      // re-reading tags the link had already delivered - on a rate-limited
+      // connection, a call that can fail and cost the preview entirely.
+      if (cipher != null && cipherIv != null) {
+        return await _crypto.decryptDataWithCipher(
+          cipher,
+          cipherIv,
+          dataBytes,
+          fileKey,
+        );
+      }
+
+      final dataTx = await _getDataTx(dataTxId);
+
+      if (dataTx == null) {
+        return null;
+      }
+
+      return await _crypto.decryptDataFromTransaction(
         dataTx,
         dataBytes,
         fileKey,
       );
-
-      return decodedBytes;
     } catch (e) {
       return null;
     }

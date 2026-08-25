@@ -1,4 +1,6 @@
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:test/test.dart';
 
 import '../../test_utils/utils.dart';
@@ -170,6 +172,144 @@ void main() {
         final file = filesInFolderTree[i];
         expect(file.id, equals(expectedTreeResults[i][0]));
       }
+    });
+  });
+
+  /// A drive row whose `rootFolderId` has no folder row cannot be opened:
+  /// `watchFolderContents` filters the absent folder out and its stream then
+  /// never emits, so the explorer sits on a spinner nothing retries. Every path
+  /// that writes a drive must therefore also leave a root folder behind.
+  group('DriveDao root folder guarantee', () {
+    const otherDriveId = 'placeholder-drive-id';
+    const otherRootFolderId = 'placeholder-root-folder-id';
+    const driveName = 'Placeholder Drive';
+    const ownerAddress = 'owner-address';
+
+    DriveEntity driveEntity({String name = driveName}) => DriveEntity(
+          id: otherDriveId,
+          name: name,
+          rootFolderId: otherRootFolderId,
+          privacy: DrivePrivacyTag.public,
+          authMode: DriveAuthModeTag.none,
+        )..ownerAddress = ownerAddress;
+
+    setUp(() async {
+      db = getTestDb();
+      driveDao = db.driveDao;
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    test('updateUserDrives() writes a root folder the drive can be opened from',
+        () async {
+      await driveDao.updateUserDrives({driveEntity(): null}, null);
+
+      final rootFolder = await driveDao
+          .folderById(folderId: otherRootFolderId)
+          .getSingleOrNull();
+
+      expect(rootFolder, isNotNull);
+      expect(rootFolder!.driveId, equals(otherDriveId));
+
+      // The point of the row: the drive mounts instead of hanging.
+      await expectLater(
+        driveDao.watchFolderContents(otherDriveId).map((f) => f.folder.id),
+        emits(otherRootFolderId),
+      );
+    });
+
+    test('updateUserDrives() does not overwrite an already synced root folder',
+        () async {
+      await driveDao.updateUserDrives({driveEntity(): null}, null);
+
+      // The real metadata lands, renaming the root folder.
+      await driveDao.updateFolderEntries([
+        FolderEntriesCompanion.insert(
+          id: otherRootFolderId,
+          driveId: otherDriveId,
+          name: 'Real Root Name',
+          path: '',
+        ),
+      ]);
+
+      // A later sync re-runs the same insert.
+      await driveDao.updateUserDrives({driveEntity(): null}, null);
+
+      final rootFolder =
+          await driveDao.folderById(folderId: otherRootFolderId).getSingle();
+
+      expect(rootFolder.name, equals('Real Root Name'));
+    });
+
+    test('root folder placeholder is not marked as a ghost', () async {
+      await driveDao.updateUserDrives({driveEntity(): null}, null);
+
+      final rootFolder =
+          await driveDao.folderById(folderId: otherRootFolderId).getSingle();
+
+      // `FolderRevisionsCompanion.toEntryCompanion` omits `isGhost`, and the
+      // upsert that lands real metadata leaves absent columns alone - so a
+      // placeholder marked as a ghost would stay one forever.
+      expect(rootFolder.isGhost, isFalse);
+      expect(rootFolder.parentFolderId, isNull);
+    });
+
+    /// What tells "genuinely empty" apart from "never synced". A drive created
+    /// in-app writes a root folder revision at creation time, and sync writes
+    /// one when the real metadata lands; a drive merely discovered by
+    /// `updateUserDrives` has only the placeholder until then. Claiming a drive
+    /// is empty on weaker evidence reads to the user as data loss.
+    test('a discovered drive has no root folder revision until one syncs',
+        () async {
+      await driveDao.updateUserDrives({driveEntity(): null}, null);
+
+      final beforeSync = await driveDao
+          .latestFolderRevisionByFolderId(
+            driveId: otherDriveId,
+            folderId: otherRootFolderId,
+          )
+          .getSingleOrNull();
+
+      expect(beforeSync, isNull,
+          reason: 'the placeholder must not read as synced metadata');
+
+      // lastBlockHeight cannot stand in for this: it defaults to 0, so it
+      // cannot tell a freshly created empty drive from an unsynced one.
+      final drive =
+          await driveDao.driveById(driveId: otherDriveId).getSingle();
+      expect(drive.lastBlockHeight, equals(0));
+
+      await driveDao.insertFolderRevision(
+        FolderRevisionsCompanion.insert(
+          folderId: otherRootFolderId,
+          driveId: otherDriveId,
+          name: 'Real Root Name',
+          metadataTxId: 'metadata-tx-id',
+          action: RevisionAction.create,
+        ),
+      );
+
+      final afterSync = await driveDao
+          .latestFolderRevisionByFolderId(
+            driveId: otherDriveId,
+            folderId: otherRootFolderId,
+          )
+          .getSingleOrNull();
+
+      expect(afterSync, isNotNull);
+    });
+
+    test('writeDriveEntity() writes a root folder too', () async {
+      await driveDao.writeDriveEntity(name: driveName, entity: driveEntity());
+
+      final rootFolder = await driveDao
+          .folderById(folderId: otherRootFolderId)
+          .getSingleOrNull();
+
+      expect(rootFolder, isNotNull);
+      expect(rootFolder!.name, equals(driveName));
     });
   });
 }

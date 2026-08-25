@@ -1170,6 +1170,9 @@ class DetailsPanelToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final drive = driveDetailLoadSuccess.currentDrive;
+    // A local so that type promotion works on it: a widget field cannot be
+    // promoted, and the share icon has to ask a folder whether it is a ghost.
+    final item = this.item;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -1190,7 +1193,12 @@ class DetailsPanelToolbar extends StatelessWidget {
           const SizedBox(
             width: 16,
           ),
-          if (item is FileDataTableItem || item is DriveDataItem)
+          if (item is FileDataTableItem ||
+              item is DriveDataItem ||
+              // Not a ghost folder: its metadata was never found, so a link
+              // naming it points the recipient at nothing. The two dropdown
+              // menus gate this the same way.
+              (item is FolderDataTableItem && !item.isGhostFolder))
             _buildActionIcon(
               tooltip: _getShareTooltip(item, context),
               icon: ArDriveIcons.share(size: defaultIconSize),
@@ -1200,6 +1208,16 @@ class DetailsPanelToolbar extends StatelessWidget {
                     context: context,
                     driveId: item.driveId,
                     fileId: item.id,
+                  );
+                } else if (item is FolderDataTableItem) {
+                  // A folder link is a drive link that names a folder, and it
+                  // carries the drive key for the same reason - a folder in a
+                  // private drive cannot be read without it.
+                  promptToShareDrive(
+                    context: context,
+                    drive: drive,
+                    folderId: item.id,
+                    folderName: item.name,
                   );
                 } else if (item is DriveDataItem) {
                   promptToShareDrive(
@@ -1216,15 +1234,15 @@ class DetailsPanelToolbar extends StatelessWidget {
                 if (item is FileDataTableItem) {
                   promptToDownloadProfileFile(
                     context: context,
-                    file: item as FileDataTableItem,
+                    file: item,
                   );
                 } else if (item is FolderDataTableItem) {
                   promptToDownloadMultipleFiles(context,
-                      selectedItems: [item as FolderDataTableItem],
+                      selectedItems: [item],
                       zipName: item.name);
                 } else if (item is DriveDataItem) {
                   promptToDownloadMultipleFiles(context,
-                      selectedItems: [item as DriveDataItem],
+                      selectedItems: [item],
                       zipName: item.name);
                 }
               }),
@@ -1234,7 +1252,7 @@ class DetailsPanelToolbar extends StatelessWidget {
               icon: ArDriveIcons.newWindow(size: defaultIconSize),
               onTap: () {
                 final bloc = context.read<DriveDetailCubit>();
-                bloc.launchPreview((item as FileDataTableItem).dataTxId);
+                bloc.launchPreview(item.dataTxId);
               },
             ),
           if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
@@ -1303,6 +1321,8 @@ class DetailsPanelToolbar extends StatelessWidget {
   String _getShareTooltip(ArDriveDataTableItem item, BuildContext context) {
     if (item is FileDataTableItem) {
       return appLocalizationsOf(context).shareFile;
+    } else if (item is FolderDataTableItem) {
+      return appLocalizationsOf(context).shareFolder;
     } else if (item is DriveDataItem) {
       return appLocalizationsOf(context).shareDrive;
     } else {

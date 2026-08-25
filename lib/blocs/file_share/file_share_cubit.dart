@@ -184,6 +184,10 @@ class FileShareCubit extends Cubit<FileShareState> {
     _emitLoadSuccess();
   }
 
+  /// How long the one network read on this side may take before the link is
+  /// presented as final without `c`/`iv`.
+  static const _cipherDetailsTimeout = Duration(seconds: 10);
+
   /// Fetches `c`/`iv` - the only two link fields that are not in the local
   /// database - and folds them into the link when they arrive.
   ///
@@ -192,7 +196,15 @@ class FileShareCubit extends Cubit<FileShareState> {
   /// link built before this schema does today (§1.2).
   Future<void> _loadCipherDetails(String dataTxId) async {
     try {
-      final dataTx = await _arweave.getTransactionDetails(dataTxId);
+      // Bounded. `GraphQLRetry` retries a call that throws but sets no
+      // timeout, so a gateway that simply hangs would leave the dialog saying
+      // "finishing your link" for as long as it stayed open - telling the
+      // sharer to wait for something that is already done. The link is
+      // complete and copyable without `c`/`iv`; those two fields only save the
+      // recipient one lookup.
+      final dataTx = await _arweave
+          .getTransactionDetails(dataTxId)
+          .timeout(_cipherDetailsTimeout);
 
       if (isClosed) {
         return;

@@ -155,7 +155,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                           const LinearProgressIndicator(),
                           const SizedBox(height: 4),
                           Text(
-                            'Looking up drive...',
+                            appLocalizationsOf(context).attachDriveLookingUp,
                             style: ArDriveTypographyNew.of(context)
                                 .paragraphSmall(
                               color: ArDriveTheme.of(context)
@@ -169,6 +169,21 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                     );
                   },
                 ),
+                if (state is DriveAttachPrivate) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      appLocalizationsOf(context).attachDrivePrivateFound,
+                      style: ArDriveTypographyNew.of(context).paragraphSmall(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colorTokens
+                            .textLow,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 if (state is DriveAttachPrivate)
                   ArDriveTextFieldNew(

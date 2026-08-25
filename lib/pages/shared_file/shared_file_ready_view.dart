@@ -17,6 +17,7 @@ import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_revision_base.dart';
+import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -57,20 +58,22 @@ class SharedFileReadyView extends StatefulWidget {
   State<SharedFileReadyView> createState() => _SharedFileReadyViewState();
 }
 
+/// The height every row in the info panel sits on, in both tabs.
+///
+/// 44 is the smallest a touch target may be, which is what the copy controls
+/// and the version rows were already using; holding the detail rows to it as
+/// well is what makes the two lists read as one instead of alternating between
+/// two rhythms.
+const double _rowHeight = 44;
+
 /// The preview pane, which a widget test measures to prove that opening the
 /// preview cannot move anything.
 @visibleForTesting
 const Key sharedFilePreviewPaneKey = Key('sharedFilePreviewPane');
 
 class _SharedFileReadyViewState extends State<SharedFileReadyView> {
-  /// The left hand column on a wide screen: the same 368 the phone gets, so the
-  /// card reads identically at both ends.
-  ///
-  /// With `SharedFileFrame.maxWideContentWidth` (1040) and the wide card's 24px
-  /// padding that leaves 1040 - 48 - 368 - 24 = 600 for the preview, and at the
-  /// narrowest desktop screen the fork fires on (951) it still leaves ~479.
-  static const double _actionsColumnWidth = 368;
-
+  /// The gap between the two regions, and between the identity and Download
+  /// in the header above them.
   static const double _paneGutter = 24;
 
   /// Reserved whether or not the preview is open, which is the whole point of
@@ -83,6 +86,16 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// sentence gets the height of the sentence; see [_previewFillsItsBox].
   static const double _inlinePreviewHeight = 360;
 
+  /// The info panel's height, fixed so that swapping tabs never resizes it.
+  ///
+  /// Wide matches the preview pane beside it, so the two regions line up.
+  /// Narrow is shorter than the tallest tab on purpose: a phone column is
+  /// already scrolling, and a panel tall enough for every version of every file
+  /// would push the preview off the top of the screen.
+  static const double _infoPanelHeightWide = _previewPaneHeight;
+
+
+
   /// The largest the file's own thumbnail is drawn in the preview pane.
   ///
   /// ArDrive generates thumbnails at a 100px minimum edge, so this is roughly
@@ -90,7 +103,6 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// to look like a mistake.
   static const double _panePictureSize = 200;
 
-  bool _isPreviewOpen = false;
 
   /// Whether a download is in flight.
   ///
@@ -127,9 +139,24 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ..._buildNotice(context, isWide: false),
-        ..._buildActions(context, revision, previewIsInline: true),
-        const SizedBox(height: 12),
-        _buildFooter(context),
+        _buildIdentity(context, revision, showThumbnail: true),
+        const SizedBox(height: 20),
+        _buildDownload(context, revision, fillWidth: true),
+        ..._buildUnlockedNote(context),
+        // The preview reads the file through its drive, which only the
+        // resolved metadata knows about. There is no resting box on a phone -
+        // an empty 360px band above the fold would cost more than it says -
+        // so the preview simply appears once there is something to show.
+        if (widget.state.detailsAreResolved) ...[
+          const SizedBox(height: 16),
+          _buildPreview(context, revision, isInline: true),
+        ],
+        const SizedBox(height: 16),
+        // No fixed height on a phone: the column already scrolls, and a panel
+        // that scrolled inside it would put a second scrollbar under the
+        // thumb - and would hide the transaction details behind it rather than
+        // letting the card grow to hold them.
+        _buildInfoPanel(context, revision),
       ],
     );
   }
@@ -151,34 +178,42 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ..._buildNotice(context, isWide: true),
+        // What the file is and the one thing to do with it, across the top.
+        //
+        // Both used to head a narrow left-hand column, which put the primary
+        // action in a third of the card's width and left the identity wrapping
+        // against a preview pane twice its size. Up here they get the whole
+        // width, and the two regions below divide what is left.
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              // The thumbnail belongs in the pane on this layout, at a size
+              // worth looking at. Showing it twice would be one fetch and one
+              // picture too many.
+              child: _buildIdentity(context, revision, showThumbnail: false),
+            ),
+            const SizedBox(width: _paneGutter),
+            _buildDownload(context, revision, fillWidth: false),
+          ],
+        ),
+        ..._buildUnlockedNote(context),
+        const SizedBox(height: 20),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Loose rather than fixed: at the narrowest desktop width the
-            // column takes what it is given instead of overflowing the row.
-            Flexible(
+            Expanded(flex: 3, child: _buildPreviewPane(context, revision)),
+            const SizedBox(width: _paneGutter),
+            Expanded(
               flex: 2,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: _actionsColumnWidth,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: _buildActions(
-                    context,
-                    revision,
-                    previewIsInline: false,
-                  ),
-                ),
+              child: _buildInfoPanel(
+                context,
+                revision,
+                height: _infoPanelHeightWide,
               ),
             ),
-            const SizedBox(width: _paneGutter),
-            Expanded(flex: 3, child: _buildPreviewPane(context, revision)),
           ],
         ),
-        const SizedBox(height: 16),
-        _buildFooter(context),
       ],
     );
   }
@@ -226,120 +261,128 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// [previewIsInline] is the only difference between the two layouts: the
   /// phone opens the preview underneath the button, the desktop card opens it
   /// in the pane beside this column.
-  List<Widget> _buildActions(
+  Widget _buildIdentity(
     BuildContext context,
     FileRevision revision, {
-    required bool previewIsInline,
+    required bool showThumbnail,
   }) {
     final state = widget.state;
     final payload = state.payload;
 
-    final name = revision.name.isEmpty ? null : revision.name;
-    final size = state.detailsAreResolved || revision.size > 0
-        ? revision.size
-        : null;
+    return SharedFileIdentity(
+      name: revision.name.isEmpty ? null : revision.name,
+      size: state.detailsAreResolved || revision.size > 0
+          ? revision.size
+          : null,
+      contentType: revision.dataContentType ?? payload?.contentType,
+      thumbnailTxId:
+          showThumbnail ? _thumbnailTxId(state, revision) : null,
+      // A private file's thumbnail is encrypted under the file key, so the
+      // recipient's own access key is what renders it.
+      fileKey: state.fileKey,
+      ownerAddress: state.ownerAddress ?? payload?.ownerAddress,
+      verification: state.verification,
+      isPrivate: state.fileKey != null,
+      isLoading: !state.detailsAreResolved,
+    );
+  }
 
+  Widget _buildDownload(
+    BuildContext context,
+    FileRevision revision, {
+    required bool fillWidth,
+  }) {
     // The download names the file it saves, so it waits for a name. On the
     // fast path with `n` embedded this is true immediately; with `hid=1` it
     // becomes true a moment later, when the metadata resolves.
-    final canDownload = name != null && revision.dataTxId.isNotEmpty;
+    final canDownload =
+        revision.name.isNotEmpty && revision.dataTxId.isNotEmpty;
+
+    return ArDriveButton(
+      // Keyed by the bytes it fetches: the key changes only when the
+      // recipient has changed the target themselves, never because a newer
+      // revision turned up.
+      key: ValueKey('sharedFileDownload_${revision.dataTxId}'),
+      maxWidth: fillWidth ? double.infinity : null,
+      isDisabled: !canDownload,
+      icon: ArDriveIcons.download(size: 20, color: Colors.white),
+      onPressed: () => _download(context, revision),
+      text: appLocalizationsOf(context).download,
+    );
+  }
+
+  List<Widget> _buildUnlockedNote(BuildContext context) {
+    if (widget.state.fileKey == null) {
+      return const [];
+    }
 
     return [
-      SharedFileIdentity(
-        name: name,
-        size: size,
-        contentType: revision.dataContentType ?? payload?.contentType,
-        // On the desktop card the picture belongs in the pane, at a size worth
-        // looking at. Showing it twice, 400px apart, would be one thumbnail
-        // fetch too many and one picture too many.
-        thumbnailTxId: previewIsInline ? _thumbnailTxId(state, revision) : null,
-        // A private file's thumbnail is encrypted under the file key, so the
-        // recipient's own access key is what renders it.
-        fileKey: state.fileKey,
-        ownerAddress: state.ownerAddress ?? payload?.ownerAddress,
-        verification: state.verification,
-        isPrivate: state.fileKey != null,
-        isLoading: !state.detailsAreResolved,
-      ),
-      const SizedBox(height: 20),
-      ArDriveButton(
-        // Keyed by the bytes it fetches: the key changes only when the
-        // recipient has changed the target themselves, never because a newer
-        // revision turned up.
-        key: ValueKey('sharedFileDownload_${revision.dataTxId}'),
-        maxWidth: double.infinity,
-        isDisabled: !canDownload,
-        icon: ArDriveIcons.download(size: 20, color: Colors.white),
-        onPressed: () => _download(context, revision),
-        text: appLocalizationsOf(context).download,
-      ),
-      // The preview reads the file through its drive, which only the
-      // resolved metadata knows about. On the desktop card the toggle lives in
-      // the pane it acts on, so this column carries it only on a phone.
-      if (previewIsInline && state.detailsAreResolved) ...[
-        const SizedBox(height: 8),
-        _buildPreviewToggle(context),
-        if (_isPreviewOpen) ...[
-          const SizedBox(height: 8),
-          _buildPreview(context, revision, isInline: true),
-        ],
-      ],
-      if (state.fileKey != null) ...[
-        const SizedBox(height: 16),
-        Text(
-          appLocalizationsOf(context).sharedFileUnlockedWithAccessKey,
-          style: ArDriveTypography.body.captionRegular(
-            color: SharedFileColors.subtle(context),
-          ),
-        ),
-      ],
       const SizedBox(height: 16),
-      SharedFileDetailsDrawer(
-        revision: revision,
-        ownerAddress: state.ownerAddress ?? payload?.ownerAddress,
-        licenseName: state.latestLicense?.meta.nameWithShortName,
-      ),
-      SharedFileVersionsDrawer(
-        revisions: state.activityRevisions,
-        status: state.activityStatus,
-        // The revision the link named, which stays marked as the shared one
-        // even while the newest is being shown.
-        sharedRevision: state.sharedRevision,
-        onOpened: () => context.read<SharedFileCubit>().loadActivity(),
+      Text(
+        appLocalizationsOf(context).sharedFileUnlockedWithAccessKey,
+        style: ArDriveTypography.body.captionRegular(
+          color: SharedFileColors.subtle(context),
+        ),
       ),
     ];
   }
 
-  Widget _buildFooter(BuildContext context) {
-    return Text(
-      appLocalizationsOf(context).sharedFileStoredPermanently,
-      textAlign: TextAlign.center,
-      style: ArDriveTypography.body.captionRegular(
-        color: SharedFileColors.subtle(context),
+  Widget _buildInfoPanel(
+    BuildContext context,
+    FileRevision revision, {
+    double? height,
+  }) {
+    final state = widget.state;
+    final payload = state.payload;
+
+    return SharedFileInfoPanel(
+      height: height,
+      onVersionsOpened: () => context.read<SharedFileCubit>().loadActivity(),
+      details: SharedFileDetailsContent(
+        revision: revision,
+        ownerAddress: state.ownerAddress ?? payload?.ownerAddress,
+        licenseName: state.latestLicense?.meta.nameWithShortName,
+        detailsAreResolved: state.detailsAreResolved,
+      ),
+      versions: SharedFileVersionsContent(
+        revisions: state.activityRevisions,
+        status: state.activityStatus,
+        currentRevision: revision,
+        sharedRevision: state.sharedRevision,
+        isPinned: state.isPinned,
+        // Nothing may move the target while bytes are on their way, and
+        // nothing may start a second change while one is running - the same
+        // guard the freshness banner's actions use.
+        isDisabled: _isDownloading || _isChangingRevision,
+        onOpened: () => context.read<SharedFileCubit>().loadActivity(),
+        onSelected: (picked) => _changeRevision(
+          () => context.read<SharedFileCubit>().showRevision(picked),
+        ),
       ),
     );
   }
 
   /// Where the file goes on a wide screen.
   ///
-  /// Its height is a constant, not a function of [_isPreviewOpen]: a pane that
-  /// only existed once the preview was open would make Preview a button that
-  /// resizes the page, and the download button would move out from under the
-  /// pointer that is about to press it.
+  /// The preview is the page, not something the page offers: this is a link
+  /// someone followed to look at a file, so the file is shown. There is no
+  /// control to put it away, because there was nothing for one to do - the
+  /// bytes are already fetched by the time it could be pressed, the widget
+  /// stays mounted either way, and anyone who did not want to see what a
+  /// stranger sent them has already seen it. A button that saves no bandwidth,
+  /// frees no memory and prevents nothing is a button that only makes the
+  /// recipient decide something.
   ///
-  /// What it must not be is empty. A 580x430 box holding one 40px glyph reads
-  /// as something that failed to load, so at rest the pane shows the file's own
-  /// thumbnail when the link carried one - real content, already fetched, and
-  /// the closest thing to the file itself that costs nothing - and otherwise a
-  /// deliberate placeholder that says what the pane is for. The bar along the
-  /// bottom is the only thing that opens and closes the preview, and it sits in
-  /// the same place in both states so that pressing it never moves it out from
-  /// under the pointer or drops the keyboard's focus.
+  /// The box still has a resting state, but for the situations the recipient
+  /// did not choose: the metadata has not resolved yet, the type cannot be
+  /// shown, the file is past `previewMaxFileSize` (100 MiB), or the fetch
+  /// failed. Those get the file's own thumbnail or its type icon above a
+  /// sentence, so the pane reads as an answer rather than as something that
+  /// failed to load - and Download, in the column beside it, is still the way
+  /// forward in every one of them.
   ///
-  /// Nothing here is fetched before it is asked for. Opening the preview
-  /// automatically would spend every desktop recipient's bandwidth on bytes
-  /// they may only have wanted to download - up to `previewMaxFileSize`, which
-  /// is 100 MiB - so the pane fills itself with what the page already has.
+  /// The height is a constant so that none of those transitions resize the
+  /// card under the pointer that is on its way to Download.
   Widget _buildPreviewPane(BuildContext context, FileRevision revision) {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
@@ -352,30 +395,54 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         border: Border.all(color: colors.themeBorderDefault),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          Expanded(
-            // Centred the way `DetailsPanel` centres the same widget.
-            child: Center(
-              child: _isPreviewOpen
-                  ? _buildPreview(context, revision, isInline: false)
-                  : _buildPaneAtRest(context, revision),
-            ),
-          ),
-          if (widget.state.detailsAreResolved) _buildPaneBar(context),
-        ],
+      // Centred the way `DetailsPanel` centres the same widget.
+      child: Center(
+        // The preview reads the file through its drive, which only the
+        // resolved metadata knows about.
+        child: widget.state.detailsAreResolved
+            ? _buildPreview(context, revision, isInline: false)
+            : _buildPaneAtRest(context, revision),
       ),
     );
   }
 
-  /// The pane before anything has been asked of it.
+  /// The pane while the metadata is still resolving.
+  ///
+  /// A 580x430 box holding one 40px glyph reads as something that failed to
+  /// load, so this shows the file's own thumbnail when the link carried one -
+  /// real content, already fetched, and the closest thing to the file itself
+  /// that costs nothing - and otherwise its type icon, given enough weight to
+  /// read as a placeholder.
   Widget _buildPaneAtRest(BuildContext context, FileRevision revision) {
     final state = widget.state;
     final contentType = revision.dataContentType ?? state.payload?.contentType;
     final thumbnailTxId = _thumbnailTxId(state, revision);
 
-    // Decorative in both branches: the file's name and type are written out in
-    // words in the column beside this one.
+    return _buildPanePlaceholder(
+      context,
+      revision: revision,
+      contentType: contentType,
+      thumbnailTxId: thumbnailTxId,
+      message: appLocalizationsOf(context).sharedFileLoadingDetails,
+    );
+  }
+
+  /// A picture of the file over a sentence about it.
+  ///
+  /// Shared by every state that cannot show the file itself, so that "not yet",
+  /// "not this type" and "too big to preview" all look like the same
+  /// deliberate answer instead of three different kinds of empty.
+  Widget _buildPanePlaceholder(
+    BuildContext context, {
+    required FileRevision revision,
+    required String? contentType,
+    required String? thumbnailTxId,
+    required String message,
+  }) {
+    final state = widget.state;
+
+    // Decorative: the file's name and type are written out in words in the
+    // column beside this one.
     final icon = ExcludeSemantics(
       child: getIconForContentType(
         contentType ?? 'application/octet-stream',
@@ -405,9 +472,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
             _buildIconTile(context, icon),
           const SizedBox(height: 16),
           Text(
-            state.detailsAreResolved
-                ? appLocalizationsOf(context).sharedFilePreviewPaneHint
-                : appLocalizationsOf(context).sharedFileLoadingDetails,
+            message,
             textAlign: TextAlign.center,
             style: ArDriveTypography.body.captionRegular(
               color: SharedFileColors.subtle(context),
@@ -431,28 +496,6 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(child: icon),
-    );
-  }
-
-  /// The pane's own footer: one control, in one place, in both states.
-  Widget _buildPaneBar(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: colors.themeBorderDefault)),
-      ),
-      child: Center(child: _buildPreviewToggle(context)),
-    );
-  }
-
-  Widget _buildPreviewToggle(BuildContext context) {
-    return ArDriveButton(
-      style: ArDriveButtonStyle.tertiary,
-      onPressed: () => setState(() => _isPreviewOpen = !_isPreviewOpen),
-      text: _isPreviewOpen
-          ? appLocalizationsOf(context).sharedFileHidePreview
-          : appLocalizationsOf(context).preview,
     );
   }
 
@@ -499,11 +542,32 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   Future<void> _download(BuildContext context, FileRevision revision) async {
     setState(() => _isDownloading = true);
 
+    final payload = widget.state.payload;
+
+    // The link's own cipher, handed to the download so it does not re-fetch
+    // tags the link already delivered - the reason `c` and `iv` are in the
+    // schema at all.
+    //
+    // Only for a data item the link says is bundled. `verifyDownload` turns on
+    // the arweave client's chunk check for L1 transactions and is decided by a
+    // tag on that same lookup, so skipping the lookup for something that might
+    // be L1 would drop a check without saying so. A bundled item is not an L1
+    // transaction, so for those there is nothing to drop.
+    //
+    // It must also be *this* revision's cipher: the recipient may have moved
+    // the page to a newer one, whose bytes the link never described.
+    final linkDescribesTarget = payload != null &&
+        payload.hasCipherDetails &&
+        payload.bundledInTxId != null &&
+        payload.dataTxId == revision.dataTxId;
+
     try {
       await promptToDownloadSharedFile(
         revision: ARFSFactory().getARFSFileFromFileRevision(revision),
         context: context,
         fileKey: widget.state.fileKey,
+        cipher: linkDescribesTarget ? payload.cipher : null,
+        cipherIv: linkDescribesTarget ? payload.cipherIv : null,
       );
     } finally {
       if (mounted) {
@@ -557,34 +621,69 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       false,
     );
 
-    return BlocProvider<FsEntryPreviewCubit>(
-      create: (context) => FsEntryPreviewCubit(
-        crypto: ArDriveCrypto(),
-        isSharedFile: true,
-        driveId: revision.driveId,
-        fileKey: widget.state.fileKey,
-        maybeSelectedItem: item,
-        driveDao: context.read<DriveDao>(),
-        profileCubit: context.read<ProfileCubit>(),
-        arweave: context.read<ArweaveService>(),
-        configService: context.read<ConfigService>(),
-      ),
-      child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
-        builder: (context, previewState) {
-          final preview = _buildPreviewBody(context, previewState, item);
+    // The same saving the download makes, on the same two values: a private
+    // preview decrypts with the cipher the link named instead of asking the
+    // gateway to describe a transaction the link already described.
+    //
+    // Guarded on the transaction the way the download is: selecting another
+    // version leaves the link's cipher behind with the bytes it belonged to,
+    // and the lookup comes back for that one.
+    //
+    // Unlike the download this does not also require a bundled data item. That
+    // condition is there because skipping the lookup skips the `App-Name` tag
+    // that decides the arweave client's chunk check, which only applies to an
+    // L1 transaction. The preview reads nothing off that lookup but the two
+    // cipher tags, so there is no second thing to lose by not making it.
+    final payload = widget.state.payload;
+    final linkDescribesTarget = payload != null &&
+        payload.hasCipherDetails &&
+        payload.dataTxId == revision.dataTxId;
 
-          if (!isInline) {
-            return preview;
-          }
+    return AnimatedSwitcher(
+      // Short, and a fade rather than a slide: the pane is not moving, its
+      // contents are being replaced. Long enough not to read as a flicker,
+      // short enough that picking a version still feels immediate.
+      duration: const Duration(milliseconds: 180),
+      child: BlocProvider<FsEntryPreviewCubit>(
+        // Keyed on the bytes being previewed.
+        //
+        // Without this the provider builds its cubit once and keeps it, so
+        // moving the target left the preview showing the revision the page
+        // opened on while Download fetched a different one - two answers to
+        // "what am I looking at", and the quieter one was wrong. That was
+        // already reachable through "Get latest" before the version list
+        // existed; the list only made it easy to hit.
+        key: ValueKey(revision.dataTxId),
+        create: (context) => FsEntryPreviewCubit(
+          crypto: ArDriveCrypto(),
+          isSharedFile: true,
+          driveId: revision.driveId,
+          fileKey: widget.state.fileKey,
+          cipher: linkDescribesTarget ? payload.cipher : null,
+          cipherIv: linkDescribesTarget ? payload.cipherIv : null,
+          maybeSelectedItem: item,
+          driveDao: context.read<DriveDao>(),
+          profileCubit: context.read<ProfileCubit>(),
+          arweave: context.read<ArweaveService>(),
+          configService: context.read<ConfigService>(),
+        ),
+        child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
+          builder: (context, previewState) {
+            final preview = _buildPreviewBody(context, previewState, item);
 
-          // On a phone the preview is part of a scrolling column, so a state
-          // whose content is one sentence gets the height of one sentence. A
-          // fixed 360 band around it left dead space above and below it and
-          // pushed the drawers under it off the screen.
-          return _previewFillsItsBox(previewState)
-              ? SizedBox(height: _inlinePreviewHeight, child: preview)
-              : preview;
-        },
+            if (!isInline) {
+              return preview;
+            }
+
+            // On a phone the preview is part of a scrolling column, so a state
+            // whose content is one sentence gets the height of one sentence. A
+            // fixed 360 band around it left dead space above and below it and
+            // pushed the drawers under it off the screen.
+            return _previewFillsItsBox(previewState)
+                ? SizedBox(height: _inlinePreviewHeight, child: preview)
+                : preview;
+          },
+        ),
       ),
     );
   }
@@ -601,6 +700,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     if (previewState is FsEntryPreviewOversized) {
       return _buildPreviewMessage(
         context,
+        item,
         appLocalizationsOf(context)
             .filePreviewTooLarge(filesize(previewState.maxFileSize)),
       );
@@ -609,6 +709,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     if (previewState is FsEntryPreviewUnavailable) {
       return _buildPreviewMessage(
         context,
+        item,
         appLocalizationsOf(context).sharedFilePreviewUnsupported,
       );
     }
@@ -622,16 +723,43 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     );
   }
 
-  Widget _buildPreviewMessage(BuildContext context, String message) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Text(
-        message,
-        textAlign: TextAlign.center,
-        style: ArDriveTypography.body.captionRegular(
-          color: SharedFileColors.subtle(context),
+  /// Why the file is not on screen, said the same way the pane says
+  /// "not yet".
+  ///
+  /// On the desktop card this is the whole of a 580x430 box, and a lone
+  /// sentence floating in the middle of it reads as a failure rather than as
+  /// an answer - so it gets the same picture-over-a-sentence treatment as the
+  /// resting pane, and Download beside it stays the way forward.
+  ///
+  /// On a phone the column has no box to fill, so the sentence stands on its
+  /// own; `_previewFillsItsBox` already keeps these states out of the fixed
+  /// band for that reason.
+  Widget _buildPreviewMessage(
+    BuildContext context,
+    ArDriveDataTableItem item,
+    String message,
+  ) {
+    if (!widget.isWide) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: ArDriveTypography.body.captionRegular(
+            color: SharedFileColors.subtle(context),
+          ),
         ),
-      ),
+      );
+    }
+
+    final revision = widget.state.revision;
+
+    return _buildPanePlaceholder(
+      context,
+      revision: revision,
+      contentType: revision.dataContentType ?? widget.state.payload?.contentType,
+      thumbnailTxId: _thumbnailTxId(widget.state, revision),
+      message: message,
     );
   }
 
@@ -830,42 +958,78 @@ class _SharedFileNoticeCard extends StatelessWidget {
       );
 }
 
-/// Where the protocol lives: collapsed by default, one tap away, and the only
-/// place on this page that says "transaction".
-class SharedFileDetailsDrawer extends StatelessWidget {
-  const SharedFileDetailsDrawer({
+/// What the file is, for someone who was sent it by a stranger.
+///
+/// Leads with what a person can use - type, dates, who shared it, licence -
+/// and keeps the identifiers behind their own disclosure, because this page's
+/// standing rule is that a recipient should be able to get their file without
+/// ever learning what a transaction id is.
+///
+/// Rendered as the first tab of [SharedFileInfoPanel] rather than as its own
+/// disclosure: two stacked accordions each resized the card when opened, so
+/// reading a date moved the download button.
+class SharedFileDetailsContent extends StatelessWidget {
+  const SharedFileDetailsContent({
     super.key,
     required this.revision,
     this.ownerAddress,
     this.licenseName,
+    this.detailsAreResolved = true,
   });
 
   final FileRevision revision;
   final String? ownerAddress;
   final String? licenseName;
 
+  /// Whether [revision] holds the file's own record rather than what the link
+  /// claimed.
+  ///
+  /// A v2 link carries no timestamps, so until the metadata resolves the dates
+  /// on [revision] are the epoch placeholder. Showing those would put
+  /// "1970-01-01" in front of a recipient as though it were the upload date,
+  /// which is worse than showing nothing.
+  final bool detailsAreResolved;
+
   @override
   Widget build(BuildContext context) {
     final ownerAddress = this.ownerAddress;
     final licenseName = this.licenseName;
 
-    return _SharedFileDrawer(
-      title: appLocalizationsOf(context).sharedFileDetailsDrawerTitle,
+    final contentType = revision.dataContentType;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SharedFileDetailRow(
-          label: appLocalizationsOf(context).fileID,
-          value: revision.fileId,
-        ),
-        if (revision.dataTxId.isNotEmpty)
+        // Type and dates lead, ahead of the identifiers. A recipient who was
+        // sent a link by a stranger has almost no way to judge what they are
+        // looking at, and *when it was uploaded* is the most useful signal
+        // they have - it was previously nowhere on this page, and the only
+        // date anywhere sat inside the version history, which is collapsed and
+        // not fetched until it is opened.
+        if (contentType != null && contentType.isNotEmpty)
           _SharedFileDetailRow(
-            label: appLocalizationsOf(context).sharedFileDetailsTransaction,
-            value: revision.dataTxId,
+            label: appLocalizationsOf(context).fileType,
+            value: contentType,
+            canCopy: false,
           ),
-        if (revision.metadataTxId.isNotEmpty)
+        if (detailsAreResolved) ...[
+          // Read like dates, not like timestamps. The exact instant is a
+          // hover away, which is the pairing the version rows and the drive
+          // explorer both use.
           _SharedFileDetailRow(
-            label: appLocalizationsOf(context).sharedFileDetailsMetadata,
-            value: revision.metadataTxId,
+            label: appLocalizationsOf(context).dateCreated,
+            value: yMMdDateFormatter.format(revision.dateCreated),
+            tooltip: formatDateToUtcString(revision.dateCreated),
+            canCopy: false,
           ),
+          _SharedFileDetailRow(
+            label: appLocalizationsOf(context).lastUpdated,
+            value: yMMdDateFormatter.format(revision.lastModifiedDate),
+            tooltip: formatDateToUtcString(revision.lastModifiedDate),
+            canCopy: false,
+          ),
+        ],
         if (ownerAddress != null && ownerAddress.isNotEmpty)
           _SharedFileDetailRow(
             label: appLocalizationsOf(context).sharedFileDetailsOwner,
@@ -877,114 +1041,490 @@ class SharedFileDetailsDrawer extends StatelessWidget {
             value: licenseName,
             canCopy: false,
           ),
+        // The identifiers, one step further in.
+        //
+        // This file's own rule is that a recipient should be able to get their
+        // file without ever learning what a transaction id is - and until the
+        // details became a tab, a closed drawer was what kept that true. A tab
+        // that opens by default cannot, so the ids move behind their own
+        // disclosure and the tab leads with what a person can actually use.
+        _SharedFileDrawer(
+          title: appLocalizationsOf(context).sharedFileTransactionDetails,
+          children: [
+            _SharedFileDetailRow(
+              label: appLocalizationsOf(context).fileID,
+              value: revision.fileId,
+            ),
+            if (revision.dataTxId.isNotEmpty)
+              _SharedFileDetailRow(
+                label: appLocalizationsOf(context).sharedFileDetailsTransaction,
+                value: revision.dataTxId,
+              ),
+            if (revision.metadataTxId.isNotEmpty)
+              _SharedFileDetailRow(
+                label: appLocalizationsOf(context).sharedFileDetailsMetadata,
+                value: revision.metadataTxId,
+              ),
+          ],
+        ),
       ],
     );
   }
 }
 
-/// The file's revisions, newest first.
-///
-/// Replaces the share page's old Activity tab: same information, none of the
-/// tab chrome, and - because a revision history costs one metadata fetch per
-/// revision - not fetched at all until the recipient opens it.
+/// The file's revisions, newest first, as something the recipient can act on.
 ///
 /// The history is [SharedFileLoadSuccess.activityRevisions], never
 /// `fileRevisions`: the latter is the download target and holds exactly one
 /// revision on every v2 link, so reading the history from it would show a
 /// one-line history of the file's own current version.
-class SharedFileVersionsDrawer extends StatelessWidget {
-  const SharedFileVersionsDrawer({
+///
+/// ## Why this never makes the recipient wait
+///
+/// The version the link named is already in hand before the list is opened -
+/// it is what the page is showing - so the resolver seeds the list with it and
+/// this renders that row from the first frame. Everything else fills in around
+/// it. Nothing here gates Download, the preview, or anything above the card,
+/// and a lookup that fails costs the list and nothing else: the row the
+/// recipient was sent stays, and stays selected.
+///
+/// The second tab of [SharedFileInfoPanel], and fetched only when that tab is
+/// chosen - a revision history costs one metadata fetch per revision.
+class SharedFileVersionsContent extends StatelessWidget {
+  const SharedFileVersionsContent({
     super.key,
     required this.revisions,
     required this.status,
     required this.sharedRevision,
+    required this.currentRevision,
     required this.onOpened,
+    required this.onSelected,
+    this.isDisabled = false,
+    this.isPinned = false,
   });
 
-  /// Newest first. Empty until [onOpened] has been answered.
+  /// Newest first. Seeded with the shared revision the moment the list opens.
   final List<FileRevision> revisions;
 
   final SharedFileActivityStatus status;
 
-  /// The revision the link named - the one that gets marked as shared.
+  /// The revision the link named - the one that wears the "shared" chip.
   final FileRevision sharedRevision;
 
-  /// Called every time the drawer is opened; the resolver answers the first
-  /// one, ignores the rest, and tries again after a failure.
+  /// The revision the page is currently showing and would download.
+  final FileRevision currentRevision;
+
+  /// Asks the resolver for the history. Answered once, ignored while it is
+  /// loading or loaded, and tried again after a failure - so it doubles as the
+  /// retry.
   final VoidCallback onOpened;
+
+  /// Called with the revision the recipient picked.
+  final ValueChanged<FileRevision> onSelected;
+
+  /// True while a download or another selection is in flight - nothing may
+  /// move the target while bytes are on their way.
+  final bool isDisabled;
+
+  /// Whether the link deliberately names one revision.
+  final bool isPinned;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLoading = status == SharedFileActivityStatus.notLoaded ||
+        status == SharedFileActivityStatus.loading;
+    final hasFailed = status == SharedFileActivityStatus.failed;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (revisions.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              appLocalizationsOf(context).sharedFileChooseVersion,
+              style: ArDriveTypography.body.captionRegular(
+                color: SharedFileColors.subtle(context),
+              ),
+            ),
+          ),
+        for (final revision in revisions)
+          _SharedFileVersionRow(
+            revision: revision,
+            isSelected: isSameRevision(revision, currentRevision),
+            isNewest: isSameRevision(revision, revisions.first) &&
+                revisions.length > 1,
+            isFromLink: isSameRevision(revision, sharedRevision),
+            isPinned: isPinned,
+            isDisabled: isDisabled,
+            onSelected: () => onSelected(revision),
+          ),
+        if (isLoading)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: Text(
+              appLocalizationsOf(context).sharedFileVersionsLooking,
+              style: ArDriveTypography.body.captionRegular(
+                color: SharedFileColors.subtle(context),
+              ),
+            ),
+          ),
+        if (hasFailed)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    appLocalizationsOf(context)
+                        .sharedFileVersionsUnavailableShort,
+                    style: ArDriveTypography.body.captionRegular(
+                      color: SharedFileColors.subtle(context),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // The drawer's own retry: `loadActivity` runs again after a
+                // failure, so pressing this is all it takes.
+                ArDriveTextButton(
+                  text: appLocalizationsOf(context).sharedFileRetry,
+                  onPressed: onOpened,
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// One version, and the control that selects it.
+///
+/// A row rather than a line of text: choosing a version is what this list is
+/// for. Laid out so the same row works under a thumb - the whole row is the
+/// target, and it is never shorter than 44px.
+class _SharedFileVersionRow extends StatelessWidget {
+  const _SharedFileVersionRow({
+    required this.revision,
+    required this.isSelected,
+    required this.isNewest,
+    required this.isFromLink,
+    required this.isPinned,
+    required this.isDisabled,
+    required this.onSelected,
+  });
+
+  final FileRevision revision;
+  final bool isSelected;
+  final bool isNewest;
+  final bool isFromLink;
+  final bool isPinned;
+  final bool isDisabled;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final subtle = SharedFileColors.subtle(context);
+
+    final hasDate = !SharedFileCubit.isUnknownDate(revision.dateCreated);
+
+    // "Pinned" says the sharer chose this version; "This link" says only that
+    // the link carried it. On a pinned link the first is the fact worth
+    // knowing, and it is what makes the way back obvious after selecting
+    // something else.
+    final label = isFromLink
+        ? (isPinned
+            ? appLocalizationsOf(context).sharedFileVersionPinned
+            : appLocalizationsOf(context).sharedFileSharedVersion)
+        : (isNewest
+            ? appLocalizationsOf(context).sharedFileVersionLatest
+            : null);
+
+    return Semantics(
+      selected: isSelected,
+      inMutuallyExclusiveGroup: true,
+      child: InkWell(
+        onTap: isDisabled || isSelected ? null : onSelected,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: _rowHeight),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? colors.themeBgSubtle : null,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            children: [
+              _VersionRadio(isSelected: isSelected),
+              const SizedBox(width: 11),
+              // A row's label is what identifies that version, which is
+              // normally its date. The row seeded from the link has no date to
+              // give - a link carries no timestamps - so it is named by what it
+              // is instead, and its chip is not repeated after the label.
+              //
+              // Rendering the placeholder would put "Jan 1, 1970" in front of
+              // the recipient and then silently correct it when the history
+              // arrived, which is exactly what it looked like.
+              if (hasDate)
+                Expanded(
+                  child: ArDriveTooltip(
+                    // The row shows the short date so that it still fits beside
+                    // a size and a chip on a phone; the exact timestamp is one
+                    // hover away, the same pairing the drive explorer uses.
+                    message: formatDateToUtcString(revision.dateCreated),
+                    child: Text(
+                      yMMdDateFormatter.format(revision.dateCreated),
+                      overflow: TextOverflow.ellipsis,
+                      style: isSelected
+                          ? ArDriveTypography.body
+                              .captionBold(color: colors.themeFgDefault)
+                          : ArDriveTypography.body
+                              .captionRegular(color: colors.themeFgDefault),
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: Text(
+                    label ?? '',
+                    overflow: TextOverflow.ellipsis,
+                    style: ArDriveTypography.body
+                        .captionBold(color: colors.themeFgDefault),
+                  ),
+                ),
+              const SizedBox(width: 8),
+              Text(
+                filesize(revision.size),
+                style: ArDriveTypography.body.captionRegular(color: subtle),
+              ),
+              // At most one chip. A row that is both the newest and the one the
+              // link named would otherwise carry two labels saying much the
+              // same thing, and on a phone that is what pushes it over.
+              if (hasDate && label != null) ...[
+                const SizedBox(width: 8),
+                _VersionChip(label),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The selected mark. Drawn rather than themed so that it reads as a choice
+/// even where the platform's own radio does not fit this card's density.
+class _VersionRadio extends StatelessWidget {
+  const _VersionRadio({required this.isSelected});
+
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ArDriveTheme.of(context).themeData;
+    final colors = theme.colors;
+    final colorTokens = theme.colorTokens;
+
+    return ExcludeSemantics(
+      child: Container(
+        width: 16,
+        height: 16,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isSelected ? colors.themeFgDefault : null,
+          border: Border.all(
+            color:
+                isSelected ? colors.themeFgDefault : colorTokens.strokeMid,
+            width: isSelected ? 4.5 : 1.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VersionChip extends StatelessWidget {
+  const _VersionChip(this.label);
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
-    // A history that is still coming spins; one that failed says so; one that
-    // arrived empty says the same rather than spinning for ever.
-    final isLoading = status == SharedFileActivityStatus.notLoaded ||
-        status == SharedFileActivityStatus.loading;
-    final isUnavailable =
-        status == SharedFileActivityStatus.failed || revisions.isEmpty;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: colors.themeBgSubtle,
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        label,
+        style: ArDriveTypography.body.captionBold(
+          color: SharedFileColors.subtle(context),
+        ),
+      ),
+    );
+  }
+}
 
-    return _SharedFileDrawer(
-      title: appLocalizationsOf(context).sharedFileVersionHistoryTitle,
-      onExpansionChanged: (isExpanded) {
-        if (isExpanded) {
-          onOpened();
-        }
-      },
-      children: [
-        if (isLoading)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 8),
-            child: SizedBox(
-              height: 16,
-              width: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          )
-        else if (isUnavailable)
+/// Everything *about* the file, in a panel that does not change size.
+///
+/// The card used to carry two accordions and a preview toggle, so opening any
+/// of them pushed everything below it down: reading a date moved the download
+/// button. Details and Versions are tabs here instead. They swap in place, the
+/// panel keeps its height, and nothing outside it moves.
+///
+/// The height is fixed rather than fitted for exactly that reason - a panel
+/// sized to its tallest tab would still jump between them. Content longer than
+/// the panel scrolls inside it.
+class SharedFileInfoPanel extends StatefulWidget {
+  const SharedFileInfoPanel({
+    super.key,
+    required this.details,
+    required this.versions,
+    required this.onVersionsOpened,
+    this.height,
+  });
+
+  final Widget details;
+  final Widget versions;
+
+  /// Asks the resolver for the history, the first time the Versions tab is
+  /// chosen. The history costs one metadata fetch per revision, so it stays
+  /// unasked-for until somebody looks.
+  final VoidCallback onVersionsOpened;
+
+  /// A fixed height, or `null` to size to the content.
+  ///
+  /// Fixed on the desktop card, where it lines the panel up with the preview
+  /// pane beside it and where a tab swap would otherwise resize half the card.
+  /// Null on a phone, where the column already scrolls and a panel scrolling
+  /// inside it would be a scroll within a scroll.
+  final double? height;
+
+  @override
+  State<SharedFileInfoPanel> createState() => _SharedFileInfoPanelState();
+}
+
+class _SharedFileInfoPanelState extends State<SharedFileInfoPanel> {
+  int _tab = 0;
+
+  void _select(int tab) {
+    if (tab == _tab) {
+      return;
+    }
+
+    setState(() => _tab = tab);
+
+    if (tab == 1) {
+      widget.onVersionsOpened();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+
+    final isFixed = widget.height != null;
+
+    return Container(
+      height: widget.height,
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.themeBorderDefault),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: isFixed ? MainAxisSize.max : MainAxisSize.min,
+        children: [
           Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              appLocalizationsOf(context).sharedFileVersionHistoryUnavailable,
-              style: ArDriveTypography.body.captionRegular(
-                color: SharedFileColors.subtle(context),
-              ),
+            padding: const EdgeInsets.all(6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _SharedFileTab(
+                    label: appLocalizationsOf(context)
+                        .sharedFileDetailsDrawerTitle,
+                    isSelected: _tab == 0,
+                    onSelected: () => _select(0),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: _SharedFileTab(
+                    label: appLocalizationsOf(context)
+                        .sharedFileVersionHistoryTitle,
+                    isSelected: _tab == 1,
+                    onSelected: () => _select(1),
+                  ),
+                ),
+              ],
             ),
-          )
-        else
-          for (final revision in revisions)
+          ),
+          if (isFixed)
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(14, 2, 14, 14),
+                child: _tab == 0 ? widget.details : widget.versions,
+              ),
+            )
+          else
             Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      formatDateToUtcString(revision.dateCreated),
-                      style: ArDriveTypography.body.captionRegular(
-                        color: colors.themeFgDefault,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    filesize(revision.size),
-                    style: ArDriveTypography.body.captionRegular(
-                      color: SharedFileColors.subtle(context),
-                    ),
-                  ),
-                  if (revision.dataTxId == sharedRevision.dataTxId) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      appLocalizationsOf(context).sharedFileSharedVersion,
-                      style: ArDriveTypography.body.captionBold(
-                        color: SharedFileColors.subtle(context),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              padding: const EdgeInsets.fromLTRB(14, 2, 14, 14),
+              child: _tab == 0 ? widget.details : widget.versions,
             ),
-      ],
+        ],
+      ),
+    );
+  }
+}
+
+/// One of the panel's two tabs.
+class _SharedFileTab extends StatelessWidget {
+  const _SharedFileTab({
+    required this.label,
+    required this.isSelected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+
+    return Semantics(
+      selected: isSelected,
+      button: true,
+      child: InkWell(
+        onTap: isSelected ? null : onSelected,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          // The same floor the rows use, so a tab is never a smaller target
+          // than the list it opens.
+          constraints: const BoxConstraints(minHeight: _rowHeight),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? colors.themeBgSubtle : null,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            label,
+            style: isSelected
+                ? ArDriveTypography.body.captionBold(
+                    color: colors.themeFgDefault,
+                  )
+                : ArDriveTypography.body.captionRegular(
+                    color: SharedFileColors.subtle(context),
+                  ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -999,13 +1539,10 @@ class _SharedFileDrawer extends StatefulWidget {
   const _SharedFileDrawer({
     required this.title,
     required this.children,
-    this.onExpansionChanged,
   });
 
   final String title;
   final List<Widget> children;
-  final ValueChanged<bool>? onExpansionChanged;
-
   @override
   State<_SharedFileDrawer> createState() => _SharedFileDrawerState();
 }
@@ -1015,33 +1552,53 @@ class _SharedFileDrawerState extends State<_SharedFileDrawer> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      // The material divider lines fight the card's own border.
-      data: Theme.of(context).copyWith(
-        dividerColor: Colors.transparent,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-      ),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: EdgeInsets.zero,
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        onExpansionChanged: (isExpanded) {
-          setState(() => _isExpanded = isExpanded);
-          widget.onExpansionChanged?.call(isExpanded);
-        },
-        title: Semantics(
+    // Built from the same row primitive as everything else in this panel
+    // rather than from `ExpansionTile`.
+    //
+    // The tile is a `ListTile`, whose one-line minimum is its own - it
+    // measured 58 against the 44 of the rows either side of it, so the list
+    // visibly changed rhythm at the header and changed back after it. None of
+    // the knobs `ExpansionTile` exposes here reach 44: `visualDensity` moves in
+    // steps of four, which overshoots to 42.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
           header: true,
+          button: true,
           expanded: _isExpanded,
-          child: Text(
-            widget.title,
-            style: ArDriveTypography.body.captionBold(
-              color: SharedFileColors.subtle(context),
+          child: InkWell(
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: _rowHeight),
+              alignment: Alignment.centerLeft,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: ArDriveTypography.body.captionBold(
+                        color: SharedFileColors.subtle(context),
+                      ),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _isExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 150),
+                    child: ArDriveIcons.chevronDown(
+                      size: 16,
+                      color: SharedFileColors.subtle(context),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
-        children: widget.children,
-      ),
+        if (_isExpanded) ...widget.children,
+      ],
     );
   }
 }
@@ -1051,18 +1608,30 @@ class _SharedFileDetailRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.canCopy = true,
+    this.tooltip,
   });
 
   final String label;
   final String value;
   final bool canCopy;
 
+  /// The long form of [value], when the row shows a short one.
+  final String? tooltip;
+
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+    return Container(
+      // Every row is the same height whether or not it can be copied.
+      //
+      // Only some values are copyable, and the copy control is 44px because
+      // that is the smallest a touch target may be - so rows with one stood a
+      // head taller than rows without, and a list of six alternated between two
+      // rhythms. The floor is the same 44 the version rows use, so the two
+      // lists in this panel now read as one.
+      constraints: const BoxConstraints(minHeight: _rowHeight),
+      alignment: Alignment.centerLeft,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -1076,13 +1645,24 @@ class _SharedFileDetailRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(
-              value,
-              overflow: TextOverflow.ellipsis,
-              style: ArDriveTypography.body.captionRegular(
-                color: colors.themeFgDefault,
-              ),
-            ),
+            child: tooltip == null
+                ? Text(
+                    value,
+                    overflow: TextOverflow.ellipsis,
+                    style: ArDriveTypography.body.captionRegular(
+                      color: colors.themeFgDefault,
+                    ),
+                  )
+                : ArDriveTooltip(
+                    message: tooltip!,
+                    child: Text(
+                      value,
+                      overflow: TextOverflow.ellipsis,
+                      style: ArDriveTypography.body.captionRegular(
+                        color: colors.themeFgDefault,
+                      ),
+                    ),
+                  ),
           ),
           if (canCopy) ...[
             const SizedBox(width: 8),

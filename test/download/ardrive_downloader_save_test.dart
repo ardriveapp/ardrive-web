@@ -53,7 +53,11 @@ void main() {
         resumeBackoffStep: resumeBackoffStep,
       );
 
-  Future<Stream<double>> downloadPrivateCtr(ArDriveDownloader downloader) =>
+  Future<Stream<double>> downloadPrivateCtr(
+    ArDriveDownloader downloader, {
+    // The signature check is off unless a caller asks for it.
+    bool verifyIntegrity = false,
+  }) =>
       downloader.downloadFile(
         txId: txId,
         fileSize: fileSize,
@@ -64,6 +68,7 @@ void main() {
         fileKey: ctrKey,
         cipher: Cipher.aes256ctr,
         cipherIvString: cipherIvString,
+        verifyIntegrity: verifyIntegrity,
       );
 
   group('a saver that waits for the downloader to settle finalize', () {
@@ -316,7 +321,7 @@ void main() {
         verifierFactory: (id) async => verifier,
       );
 
-      await drainProgress(await downloadPrivateCtr(downloader))
+      await drainProgress(await downloadPrivateCtr(downloader, verifyIntegrity: true))
           .timeout(const Duration(seconds: 10));
       await downloader.integrity.timeout(const Duration(seconds: 10));
 

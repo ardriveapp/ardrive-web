@@ -90,8 +90,18 @@ abstract class SnapshotItem implements SegmentedGQLData {
     required ArweaveService arweave,
     @visibleForTesting String? fakeSource,
   }) async* {
+    // Blocks already synced, which a snapshot need not cover again.
+    //
+    // Guarded on `> 0` rather than just non-null. A never-synced drive arrives
+    // here with 0, and `Range(0, 0)` is not "nothing is obscured" - `Range` is
+    // inclusive at both ends, so it obscures block 0. The snapshot's range
+    // then starts at 1, the difference against the total range leaves a
+    // one-block hole, and sync spends a whole GraphQL query asking about the
+    // genesis block, which cannot hold an ArFS transaction. No data was ever
+    // at risk; it is a round trip per drive per first sync, for nothing.
     HeightRange obscuredByAccumulator = HeightRange(rangeSegments: [
-      if (lastBlockHeight != null) Range(start: 0, end: lastBlockHeight),
+      if (lastBlockHeight != null && lastBlockHeight > 0)
+        Range(start: 0, end: lastBlockHeight),
     ]);
 
     await for (SnapshotEntityTransaction item in itemsStream) {
@@ -224,7 +234,10 @@ class SnapshotItemOnChain implements SnapshotItem {
     if (_prefetchFuture != null) {
       return _cachedSource = await _prefetchFuture!;
     }
-    final dataBytes = await _arweave.getEntityDataFromNetwork(txId: txId);
+    final dataBytes = await _arweave.getEntityDataFromNetwork(
+      txId: txId,
+      largeBody: true,
+    );
     final dataBytesAsString = String.fromCharCodes(dataBytes);
     return _cachedSource = dataBytesAsString;
   }
@@ -235,7 +248,7 @@ class SnapshotItemOnChain implements SnapshotItem {
     if (_cachedSource != null || _prefetchFuture != null) return;
     logger.d('Prefetching snapshot $txId');
     _prefetchFuture = _arweave
-        .getEntityDataFromNetwork(txId: txId)
+        .getEntityDataFromNetwork(txId: txId, largeBody: true)
         .then((bytes) => String.fromCharCodes(bytes));
   }
 
@@ -286,15 +299,24 @@ class SnapshotItemOnChain implements SnapshotItem {
 
       final isInRange = range.isInRange(node.block?.height ?? -1);
       if (isInRange) {
-        yield DriveEntityHistoryTransactionModel(transactionCommonMixin: node);
-        yielded++;
-
+        // Cached before the yield, not after.
+        //
+        // `yield` suspends this generator until the consumer asks for the
+        // next item, so anything after it runs *later* than the consumer's
+        // handling of the item just emitted. A consumer that reads an
+        // entity's metadata as soon as it receives the transaction would
+        // therefore find nothing cached and fetch it from the gateway
+        // instead - the one thing the snapshot exists to avoid. Writing
+        // first makes the metadata available the moment the transaction is.
         final String? data = item['jsonMetadata'];
         if (data != null) {
           final TxID txId = node.id;
           final Uint8List dataAsBytes = Uint8List.fromList(utf8.encode(data));
           await _setDataForTxId(driveId, txId, dataAsBytes);
         }
+
+        yield DriveEntityHistoryTransactionModel(transactionCommonMixin: node);
+        yielded++;
       } else {
         skipped++;
       }

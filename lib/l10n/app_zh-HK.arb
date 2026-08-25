@@ -540,10 +540,6 @@
   "@downloadMustRestartDescription": {
     "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
   },
-  "downloadNotVerified": "ArDrive 無法將此檔案與原本的檔案核對。某些檔案出現這種情況是正常的，並不代表有任何問題。",
-  "@downloadNotVerified": {
-    "description": "Advisory line on the download success dialog when no integrity verdict could be reached. Must never imply the file is damaged: this outcome is routine"
-  },
   "downloadReconnecting": "正在重新連線...",
   "@downloadReconnecting": {
     "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
@@ -565,10 +561,6 @@
         "example": "holiday.mp4"
       }
     }
-  },
-  "downloadVerified": "此檔案與最初上載的檔案相符。",
-  "@downloadVerified": {
-    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
   },
   "downloadVerifying": "正在檢查此檔案...",
   "@downloadVerifying": {
@@ -1817,10 +1809,6 @@
   "@sharedFileGetLatest": {
     "description": "Button that fetches the newest version of a shared file"
   },
-  "sharedFileHidePreview": "隱藏預覽",
-  "@sharedFileHidePreview": {
-    "description": "Button that closes the preview on the shared file page"
-  },
   "sharedFileIsEncrypted": "This file is encrypted.",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
@@ -1877,14 +1865,6 @@
   "@sharedFilePasteAccessKey": {
     "description": "Placeholder of the access key field on the shared file page"
   },
-  "sharedFilePermanentFileSharing": "永久檔案分享",
-  "@sharedFilePermanentFileSharing": {
-    "description": "Tagline shown under the ArDrive logo on the shared file page"
-  },
-  "sharedFilePreviewPaneHint": "無需下載，即可在這裡預覽此檔案。",
-  "@sharedFilePreviewPaneHint": {
-    "description": "Caption in the preview pane of the shared file page, on a desktop screen, saying what pressing Preview will do"
-  },
   "sharedFilePreviewUnsupported": "此檔案無法在這裡預覽。請下載後開啟。",
   "@sharedFilePreviewUnsupported": {
     "description": "Shown on the shared file page when the file cannot be previewed in the browser"
@@ -1933,10 +1913,6 @@
       }
     }
   },
-  "sharedFileStoredPermanently": "此檔案已永久儲存，隨時都可以下載。",
-  "@sharedFileStoredPermanently": {
-    "description": "Reassurance shown at the bottom of the shared file page"
-  },
   "sharedFileUnlockedWithAccessKey": "已使用你的存取密鑰解鎖。對其他所有人而言，此檔案仍然是加密的。",
   "@sharedFileUnlockedWithAccessKey": {
     "description": "Shown after a private shared file has been unlocked with an access key"
@@ -1948,10 +1924,6 @@
   "sharedFileVersionHistoryTitle": "版本記錄",
   "@sharedFileVersionHistoryTitle": {
     "description": "Title of the collapsed drawer holding the version history of a shared file"
-  },
-  "sharedFileVersionHistoryUnavailable": "目前無法載入版本記錄。",
-  "@sharedFileVersionHistoryUnavailable": {
-    "description": "Shown in the version history drawer when the revisions could not be loaded"
   },
   "sharedFileViewLatest": "查看最新版本",
   "@sharedFileViewLatest": {

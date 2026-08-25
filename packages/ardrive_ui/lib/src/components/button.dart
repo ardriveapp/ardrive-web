@@ -74,13 +74,21 @@ class _ArDriveButtonState extends State<ArDriveButton> {
                 widget.customContent ??
                     Text(
                       widget.text,
-                      style: widget.fontStyle ??
-                          ArDriveTypography.headline.headline5Bold(
+                      // Merged onto the default rather than replacing it, so
+                      // a caller that only wants a different size or weight
+                      // does not silently lose the colour. A `TextStyle` with
+                      // a null colour inherits the button's `foregroundColor`,
+                      // which for the secondary style is the surface colour -
+                      // giving text the colour of the panel behind it. Merge
+                      // keeps whatever the caller did set and fills the rest.
+                      style: ArDriveTypography.headline
+                          .headline5Bold(
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colors
                                 .themeFgOnAccent,
-                          ),
+                          )
+                          .merge(widget.fontStyle),
                     ),
                 if (widget.icon != null &&
                     widget.iconAlignment == IconButtonAlignment.right) ...[
@@ -117,13 +125,14 @@ class _ArDriveButtonState extends State<ArDriveButton> {
                 ],
                 Text(
                   widget.text,
-                  style: widget.fontStyle ??
-                      ArDriveTypography.headline.headline5Bold(
+                  style: ArDriveTypography.headline
+                      .headline5Bold(
                         color: ArDriveTheme.of(context)
                             .themeData
                             .colors
                             .themeFgDefault,
-                      ),
+                      )
+                      .merge(widget.fontStyle),
                 ),
                 if (widget.icon != null &&
                     widget.iconAlignment == IconButtonAlignment.right) ...[
@@ -368,15 +377,15 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
 
     final text = Text(widget.text,
         textAlign: TextAlign.center,
-        style: widget.fontStyle ??
-            typography
-                .paragraphLarge(
-                  color: foregroundColor,
-                  fontWeight: ArFontWeight.semiBold,
-                )
-                .copyWith(
-                  overflow: TextOverflow.ellipsis,
-                ));
+        style: typography
+            .paragraphLarge(
+              color: foregroundColor,
+              fontWeight: ArFontWeight.semiBold,
+            )
+            .copyWith(
+              overflow: TextOverflow.ellipsis,
+            )
+            .merge(widget.fontStyle));
 
     final buttonH = widget.maxHeight ?? buttonDefaultHeight;
 

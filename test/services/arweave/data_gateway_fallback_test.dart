@@ -77,7 +77,25 @@ void main() {
       expect(DataGatewayFallback.syncMaxAttempts, 2);
     });
 
-    test('does not retry a 404 — the same host will not change its mind',
+    test('retries a 404, because a gateway mid-index answers one', () async {
+      // Observed in the wild: a drive signature 404ed once and resolved on the
+      // retry. The gateway had the transaction, it just had not indexed it
+      // yet. Treating the first 404 as final cost a whole drive.
+      var calls = 0;
+      when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+        calls++;
+        return calls == 1
+            ? Response('not found', 404)
+            : Response('metadata', 200);
+      });
+
+      final response = await fallback.fetchDataForSync(txId, primaryClient);
+
+      expect(response.statusCode, 200);
+      expect(calls, 2);
+    });
+
+    test('reports a transaction absent from every attempt as not found',
         () async {
       when(() => primaryApi.getSandboxedTx(txId))
           .thenAnswer((_) async => Response('not found', 404));
@@ -87,7 +105,44 @@ void main() {
         throwsA(isA<TransactionNotFound>()),
       );
 
-      verify(() => primaryApi.getSandboxedTx(txId)).called(1);
+      // Bounded: a genuinely missing transaction still costs only the two
+      // attempts every other sync read gets.
+      verify(() => primaryApi.getSandboxedTx(txId)).called(2);
+    });
+
+    test('a 500 then a 404 is not reported as not found', () async {
+      // Only every attempt agreeing earns `TransactionNotFound`. A gateway
+      // that errored once and 404ed once has not told us the data is absent.
+      var calls = 0;
+      when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+        calls++;
+        return calls == 1
+            ? Response('boom', 500)
+            : Response('not found', 404);
+      });
+
+      await expectLater(
+        fallback.fetchDataForSync(txId, primaryClient),
+        throwsA(allOf(isA<Exception>(), isNot(isA<TransactionNotFound>()))),
+      );
+
+      expect(calls, 2);
+    });
+
+    test('a thrown error then a 404 is not reported as not found', () async {
+      var calls = 0;
+      when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+        calls++;
+        if (calls == 1) throw Exception('socket closed');
+        return Response('not found', 404);
+      });
+
+      await expectLater(
+        fallback.fetchDataForSync(txId, primaryClient),
+        throwsA(allOf(isA<Exception>(), isNot(isA<TransactionNotFound>()))),
+      );
+
+      expect(calls, 2);
     });
 
     test('never consults the GAR, so no Solana RPC is issued on the sync path',
@@ -116,6 +171,76 @@ void main() {
       // Only the configured gateway's api was ever asked for a transaction.
       verify(() => primaryApi.getSandboxedTx(txId)).called(2);
       verifyNever(() => arioSDK.getGateways());
+    });
+
+    /// The default budget is sized for the metadata reads that dominate sync,
+    /// a few hundred bytes each. A snapshot is the same call with a body four
+    /// orders of magnitude larger - this user's newest is 43.9 MiB, which a
+    /// warm gateway serves in ~8s - so under the metadata budget it could
+    /// never finish on any connection slower than ~9 MB/s, however many times
+    /// it was retried.
+    /// The outer cap must clear what the attempts can actually spend, or it
+    /// quietly becomes the real limit and the second attempt gets less time
+    /// than the first - a retry weaker than the try it is retrying.
+    test('the total budget outlasts every attempt it allows', () {
+      const budgets = DataGatewayFallback.syncBudgets;
+      const attempts = DataGatewayFallback.syncMaxAttempts;
+
+      expect(
+        budgets.total,
+        greaterThan(
+          budgets.request * attempts + budgets.retryDelay * (attempts - 1),
+        ),
+        reason: 'the cap must not truncate the last attempt',
+      );
+    });
+
+    group('large bodies', () {
+      /// Scaled down so the test does not spend the real budgets, which are
+      /// measured in tens of seconds. What is asserted is that `largeBody`
+      /// routes to the larger of the two, and that the default cannot carry a
+      /// body that outlives it.
+      late DataGatewayFallback scaled;
+
+      setUp(() {
+        scaled = DataGatewayFallback(
+          arioSDK: arioSDK,
+          syncRequestTimeout: const Duration(milliseconds: 100),
+          syncLargeBodyRequestTimeout: const Duration(seconds: 5),
+        );
+      });
+
+      test('a snapshot-sized read outlives the metadata budget', () async {
+        when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 400));
+          return Response('a snapshot body', 200);
+        });
+
+        final response = await scaled.fetchDataForSync(
+          txId,
+          primaryClient,
+          largeBody: true,
+        );
+
+        expect(response.statusCode, 200);
+        expect(response.body, 'a snapshot body');
+        verify(() => primaryApi.getSandboxedTx(txId)).called(1);
+      });
+
+      test('the same read fails on the default budget', () async {
+        when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 400));
+          return Response('a snapshot body', 200);
+        });
+
+        // Times out, retries, times out again - which is what a 44 MiB
+        // snapshot did against a budget meant for metadata.
+        await expectLater(
+          scaled.fetchDataForSync(txId, primaryClient),
+          throwsA(isA<Exception>()),
+        );
+        verify(() => primaryApi.getSandboxedTx(txId)).called(2);
+      });
     });
   });
 
@@ -154,6 +279,63 @@ void main() {
 
       await fallback.fetchData(txId, primaryClient);
       verify(() => arioSDK.getGateways()).called(1);
+    });
+
+    /// A gateway mid-index answers 404 and then 200 a moment later, which
+    /// `fetchDataForSync` already accounts for. Walking away from the
+    /// configured gateway on its first 404 is worst for exactly the data most
+    /// likely to be behind: something just uploaded through Turbo can be on
+    /// the configured gateway and nowhere else yet.
+    test('retries the configured gateway once on a 404, then succeeds',
+        () async {
+      var attempts = 0;
+      when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
+        attempts++;
+        return attempts == 1
+            ? Response('not found', 404)
+            : Response('metadata', 200);
+      });
+
+      final response = await fallback.fetchData(txId, primaryClient);
+
+      expect(response.statusCode, 200);
+      expect(response.body, 'metadata');
+      verify(() => primaryApi.getSandboxedTx(txId)).called(2);
+    });
+
+    /// The extra attempt is for a gateway that is a beat behind, not one that
+    /// is unwell. A refusal or an error has already cost its timeout and says
+    /// the next gateway is the better bet.
+    test('does not retry the configured gateway on a non-404 failure',
+        () async {
+      // arweave.net as the primary so it is the only client in the list, which
+      // keeps the assertion about retries free of any real network call.
+      when(() => primaryApi.gatewayUrl)
+          .thenReturn(Uri.parse('https://arweave.net'));
+      when(() => primaryApi.getSandboxedTx(txId))
+          .thenAnswer((_) async => Response('server error', 500));
+
+      await expectLater(
+        fallback.fetchData(txId, primaryClient),
+        throwsA(isA<Object>()),
+      );
+
+      verify(() => primaryApi.getSandboxedTx(txId)).called(1);
+    });
+
+    test('a persistent 404 on the configured gateway is still not found',
+        () async {
+      when(() => primaryApi.gatewayUrl)
+          .thenReturn(Uri.parse('https://arweave.net'));
+      when(() => primaryApi.getSandboxedTx(txId))
+          .thenAnswer((_) async => Response('not found', 404));
+
+      await expectLater(
+        fallback.fetchData(txId, primaryClient),
+        throwsA(isA<TransactionNotFound>()),
+      );
+
+      verify(() => primaryApi.getSandboxedTx(txId)).called(2);
     });
 
     test('a drive signature read on the sync path never reaches the GAR',

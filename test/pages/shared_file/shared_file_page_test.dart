@@ -4,6 +4,8 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/shared_file/shared_file_key_session.dart';
 import 'package:ardrive/pages/shared_file/shared_file_page.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/pages/shared_file/shared_file_ready_view.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/session_key_value_store.dart';
@@ -16,6 +18,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../test_utils/mocks.dart';
 
 class MockSharedFileCubit extends MockCubit<SharedFileState>
     implements SharedFileCubit {}
@@ -49,6 +53,24 @@ class GatedKeySession extends SharedFileKeySession {
 /// The assertions here are about what a *recipient* can see and do: the file
 /// they are being given, one obvious download, a key gate that never lies to
 /// them, and no transaction id in their face.
+/// Only ever handed to `any()`, never read.
+final fileRevisionFallback = FileRevision(
+  fileId: 'fallback',
+  driveId: 'fallback',
+  name: 'fallback',
+  parentFolderId: 'fallback',
+  size: 0,
+  lastModifiedDate: DateTime.utc(2024),
+  metadataTxId: 'fallback',
+  dataTxId: 'fallback',
+  dateCreated: DateTime.utc(2024),
+  action: RevisionAction.create,
+  isHidden: false,
+);
+
+/// The row height `shared_file_ready_view.dart` lays its lists out on.
+const double _rowHeight = 44;
+
 void main() {
   const fileId = 'file-id';
 
@@ -57,13 +79,32 @@ void main() {
   const wellFormedKey = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopQ';
 
   late MockSharedFileCubit cubit;
+  late MockDriveDao driveDao;
+  late MockArweaveService arweave;
+  late MockConfigService configService;
+  late MockProfileCubit profileCubit;
   late StreamController<SharedFileState> states;
+
+  /// The value rendered beside [label] in the details drawer, scoped to that
+  /// label's own row.
+  Finder detailRowValue(String label, String value) => find.descendant(
+        of: find
+            .ancestor(of: find.text(label), matching: find.byType(Row))
+            .first,
+        matching: find.text(value),
+      );
 
   FileRevision fileRevision({
     String name = 'Q3 Report.pdf',
     String dataTxId = 'data-tx-newest',
+    // Distinct per revision by default, because the metadata transaction is
+    // what identifies one. Tests that need two revisions over the same bytes -
+    // a rename - set it explicitly.
+    String? metadataTxId,
     int size = 4821133,
     String? dataContentType = 'application/pdf',
+    DateTime? lastModifiedDate,
+    DateTime? dateCreated,
   }) {
     return FileRevision(
       fileId: fileId,
@@ -71,11 +112,11 @@ void main() {
       name: name,
       parentFolderId: 'parent-folder-id',
       size: size,
-      lastModifiedDate: DateTime.utc(2024, 3, 3),
+      lastModifiedDate: lastModifiedDate ?? DateTime.utc(2023, 11, 9),
       dataContentType: dataContentType,
-      metadataTxId: 'metadata-tx',
+      metadataTxId: metadataTxId ?? 'metadata-$dataTxId',
       dataTxId: dataTxId,
-      dateCreated: DateTime.utc(2024, 3, 3),
+      dateCreated: dateCreated ?? DateTime.utc(2024, 3, 3),
       action: RevisionAction.create,
       isHidden: false,
     );
@@ -137,18 +178,39 @@ void main() {
         mayStillBePropagating: mayStillBePropagating,
       );
 
+  /// The page's own dependencies, plus the four the preview reaches for.
+  ///
+  /// [FsEntryPreviewCubit] resolves `DriveDao`, `ProfileCubit`,
+  /// `ArweaveService` and `ConfigService` out of the tree when it is built.
+  /// Nothing here opened a preview while it was opt-in, so the harness never
+  /// carried them; now that the preview opens on arrival, every test builds one
+  /// and they are all required.
+  ///
+  /// They are inert: the preview is not what these tests are about, and a
+  /// preview that reaches the network from a widget test would be worse than
+  /// one that does nothing.
   Widget wrap(Widget child) {
-    return ArDriveTheme(
-      themeData: lightTheme(),
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: const [Locale('en', '')],
-        home: child,
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<DriveDao>.value(value: driveDao),
+        RepositoryProvider<ArweaveService>.value(value: arweave),
+        RepositoryProvider<ConfigService>.value(value: configService),
+      ],
+      child: BlocProvider<ProfileCubit>.value(
+        value: profileCubit,
+        child: ArDriveTheme(
+          themeData: lightTheme(),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', '')],
+            home: child,
+          ),
+        ),
       ),
     );
   }
@@ -179,8 +241,29 @@ void main() {
     await tester.pump();
   }
 
+  setUpAll(() => registerFallbackValue(fileRevisionFallback));
+
   setUp(() {
     cubit = MockSharedFileCubit();
+    driveDao = MockDriveDao();
+    arweave = MockArweaveService();
+    configService = MockConfigService();
+    profileCubit = MockProfileCubit();
+
+    when(() => profileCubit.state).thenReturn(ProfilePromptAdd());
+    // The preview reads the config the moment it is built, and reaches the
+    // gateway url out of it. A real AppConfig is simpler than stubbing the
+    // fields one refusal at a time.
+    when(() => configService.config).thenReturn(
+      AppConfig(
+        allowedDataItemSizeForTurbo: 1,
+        stripePublishableKey: 'stripePublishableKey',
+        arweaveGatewayForDataRequest: const SelectedGateway(
+          label: 'Gateway',
+          url: 'https://example.com',
+        ),
+      ),
+    );
     states = StreamController<SharedFileState>.broadcast();
 
     when(() => cubit.fileId).thenReturn(fileId);
@@ -189,6 +272,7 @@ void main() {
     when(() => cubit.loadActivity()).thenAnswer((_) async {});
     when(() => cubit.showLatestRevision()).thenAnswer((_) async {});
     when(() => cubit.showSharedRevision()).thenAnswer((_) async {});
+    when(() => cubit.showRevision(any())).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -472,22 +556,53 @@ void main() {
         (tester) async {
       await pumpPage(tester, success());
 
-      expect(find.text('Q3 Report.pdf'), findsOneWidget);
+      // The preview opens on arrival and names the file too, so the name is
+      // legitimately on screen more than once.
+      expect(find.text('Q3 Report.pdf'), findsWidgets);
       expect(find.text('Download'), findsOneWidget);
       expect(
         find.byKey(const ValueKey('sharedFileDownload_data-tx-newest')),
         findsOneWidget,
       );
 
-      // Nothing technical before the recipient asks for it.
+      // Nothing technical before the recipient asks for it. The details tab
+      // is open by default now, so what keeps that true is the identifiers
+      // sitting one step further in.
       expect(find.text('data-tx-newest'), findsNothing);
-      expect(find.text('metadata-tx'), findsNothing);
+      expect(find.text('metadata-data-tx-newest'), findsNothing);
 
-      await tester.tap(find.byType(ExpansionTile).first);
+      await tester.tap(find.text('Transaction details'));
       await tester.pumpAndSettle();
 
       expect(find.text('data-tx-newest'), findsOneWidget);
-      expect(find.text('metadata-tx'), findsOneWidget);
+      expect(find.text('metadata-data-tx-newest'), findsOneWidget);
+    });
+
+    testWidgets(
+        'the details drawer states the type and when the file was uploaded',
+        (tester) async {
+      // A recipient sent a link by a stranger has almost nothing to judge the
+      // file by, and the upload date is the strongest signal available. It
+      // used to appear nowhere on this page: the drawer listed only ids, and
+      // the sole date on the page sat inside the version history, which is
+      // collapsed and not fetched until opened.
+      await pumpPage(tester, success());
+
+      // Each value is scoped to the row its label is in, so two rows cannot
+      // satisfy each other's assertion - a swap between created and modified
+      // would otherwise still pass. The expected strings are literal rather
+      // than run through `formatDateToUtcString`, which would let a formatter
+      // change rewrite the production output and the expectation together.
+      expect(detailRowValue('File type', 'application/pdf'), findsOneWidget);
+      expect(
+        // Friendly, with the exact instant in the tooltip.
+        detailRowValue('Date created', 'Mar 3, 2024'),
+        findsOneWidget,
+      );
+      expect(
+        detailRowValue('Last updated', 'Nov 9, 2023'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('asks for the version history only when it is opened',
@@ -496,13 +611,14 @@ void main() {
 
       verifyNever(() => cubit.loadActivity());
 
-      // Deliberately not `pumpAndSettle`: an unanswered history shows a
-      // spinner, and a spinner never settles.
-      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.tap(find.text('Version history'));
       await tester.pump();
 
       verify(() => cubit.loadActivity()).called(1);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // No spinner: the version the link named is already in hand, so the list
+      // says what it is still looking for rather than showing nothing.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.textContaining('Looking for other versions'), findsOneWidget);
 
       // The history lives on its own list. It is empty on a v2 link until the
       // resolver answers, and `fileRevisions` - the download target - is never
@@ -516,7 +632,7 @@ void main() {
       ));
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.textContaining('Looking for other versions'), findsNothing);
       expect(find.text(filesize(12)), findsOneWidget);
     });
 
@@ -524,7 +640,7 @@ void main() {
         'spins for ever', (tester) async {
       await pumpPage(tester, success());
 
-      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.tap(find.text('Version history'));
       await tester.pump();
 
       states.add(success(activityStatus: SharedFileActivityStatus.failed));
@@ -539,7 +655,7 @@ void main() {
         (tester) async {
       await pumpPage(tester, success());
 
-      await tester.tap(find.byType(ExpansionTile).last);
+      await tester.tap(find.text('Version history'));
       await tester.pump();
 
       states.add(success(activityStatus: SharedFileActivityStatus.loaded));
@@ -567,6 +683,280 @@ void main() {
       expect(download.isDisabled, isTrue);
       // Nor a preview it cannot fetch.
       expect(find.text('Preview'), findsNothing);
+    });
+
+    testWidgets('shows no dates until the file\'s own record has them',
+        (tester) async {
+      // A v2 link carries no timestamps, so the revision it paints from holds
+      // the epoch placeholder until the metadata resolves. Rendering that puts
+      // "1970-01-01" in front of a recipient as though it were the upload
+      // date - worse than showing nothing, and worse than the placeholder was
+      // ever meant to be.
+      await pumpPage(
+        tester,
+        SharedFileLoadSuccess(
+          fileRevisions: [
+            fileRevision(
+              lastModifiedDate: DateTime.fromMillisecondsSinceEpoch(0),
+              dateCreated: DateTime.fromMillisecondsSinceEpoch(0),
+            ),
+          ],
+          verification: LinkVerification.pending,
+          detailsAreResolved: false,
+        ),
+      );
+
+      expect(find.text('Date created'), findsNothing);
+      expect(find.text('Last updated'), findsNothing);
+      expect(find.textContaining('1970'), findsNothing);
+
+      // The type still shows: the link really did carry it.
+      expect(find.text('File type'), findsOneWidget);
+    });
+
+    testWidgets('a failed history keeps the version the recipient was sent',
+        (tester) async {
+      // The state a rate limited connection lands in. It costs the list, never
+      // the file - so the row stays, and it stays selected.
+      await pumpPage(
+        tester,
+        success(
+          activityRevisions: [fileRevision()],
+          activityStatus: SharedFileActivityStatus.failed,
+        ),
+      );
+
+      await tester.tap(find.text('Version history'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Couldn\u2019t check for other versions'),
+        findsOneWidget,
+      );
+      expect(find.text('Retry'), findsOneWidget);
+      // The version itself is still listed, and Download is untouched.
+      expect(find.text('Download'), findsOneWidget);
+    });
+
+    testWidgets('choosing a version asks the resolver for it', (tester) async {
+      await pumpPage(
+        tester,
+        success(
+          activityRevisions: [
+            fileRevision(dataTxId: 'data-tx-newer'),
+            fileRevision(),
+          ],
+          activityStatus: SharedFileActivityStatus.loaded,
+        ),
+      );
+
+      await tester.tap(find.text('Version history'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Latest'), findsOneWidget);
+      expect(find.text('Shared'), findsOneWidget);
+
+      await tester.tap(find.text('Latest'));
+      await tester.pumpAndSettle();
+
+      verify(() => cubit.showRevision(any())).called(1);
+    });
+
+    testWidgets('a version with no date is never dated 1970', (tester) async {
+      // The list seeds itself with the version the link named so that opening
+      // it costs nothing - but a link carries no timestamps, so that row has
+      // the epoch placeholder. Rendered, it read as 1 Jan 1970 and then
+      // silently corrected itself when the history arrived.
+      await pumpPage(
+        tester,
+        success(
+          revision: fileRevision(
+            dateCreated: SharedFileCubit.unknownDate,
+            lastModifiedDate: SharedFileCubit.unknownDate,
+          ),
+          activityRevisions: [
+            fileRevision(
+              dateCreated: SharedFileCubit.unknownDate,
+              lastModifiedDate: SharedFileCubit.unknownDate,
+            ),
+          ],
+          activityStatus: SharedFileActivityStatus.loading,
+        ),
+      );
+
+      await tester.tap(find.text('Version history'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('1970'), findsNothing);
+      // Named by what it is instead, so the row still says something true.
+      expect(find.text('Shared'), findsOneWidget);
+    });
+
+    testWidgets('the preview is the page, with nothing to put it away',
+        (tester) async {
+      // A link someone followed to look at a file shows the file. The toggle
+      // that used to sit under it saved nothing: the bytes are fetched before
+      // it could be pressed, the widget stayed mounted when it was, and
+      // anyone who did not want to see what a stranger sent them had already
+      // seen it by then.
+      //
+      // The provider is keyed on the bytes it previews, so its presence is
+      // exactly the question "is the preview loaded".
+      await pumpPage(tester, success(), surface: const Size(1440, 1000));
+
+      expect(find.byKey(const ValueKey('data-tx-newest')), findsOneWidget);
+      expect(find.text('Preview'), findsNothing);
+      expect(find.text('Hide preview'), findsNothing);
+    });
+
+    testWidgets('every row in the panel is the same height', (tester) async {
+      // The two lists sit in the same panel and the reader switches between
+      // them, so a row that is a few pixels taller than its neighbours reads
+      // as sloppiness rather than as structure. The copy control sets the
+      // floor at 44 - the smallest a touch target may be - and everything
+      // else meets it: rows with no copy button, the disclosure header that
+      // used to come from a ListTile at 58, and the version rows on the
+      // other tab.
+      await pumpPage(tester, success(), surface: const Size(1440, 1000));
+
+      final rows = find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_SharedFileDetailRow');
+      expect(rows, findsWidgets);
+      for (var i = 0; i < rows.evaluate().length; i++) {
+        expect(tester.getSize(rows.at(i)).height, _rowHeight,
+            reason: 'detail row $i');
+      }
+
+      expect(
+        tester
+            .getSize(find
+                .ancestor(
+                  of: find.text('Transaction details'),
+                  matching: find.byType(InkWell),
+                )
+                .first)
+            .height,
+        _rowHeight,
+        reason: 'the disclosure header',
+      );
+
+      states.add(success(
+        activityRevisions: [
+          fileRevision(),
+          fileRevision(dataTxId: 'data-tx-first', size: 12),
+        ],
+        activityStatus: SharedFileActivityStatus.loaded,
+      ));
+      await tester.pump();
+      await tester.tap(find.text('Version history'));
+      await tester.pumpAndSettle();
+
+      final versions = find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_SharedFileVersionRow');
+      expect(versions, findsNWidgets(2));
+      for (var i = 0; i < versions.evaluate().length; i++) {
+        expect(tester.getSize(versions.at(i)).height, _rowHeight,
+            reason: 'version row $i');
+      }
+    });
+
+    testWidgets('the pane answers with a picture while it is still resolving',
+        (tester) async {
+      // The pane is 580x430 on a laptop, and a lone sentence in the middle of
+      // it reads as something that failed rather than as an answer. Every
+      // state that cannot show the file - not yet, not this type, too big -
+      // gets the file's own type icon over the sentence instead, so they all
+      // look like the same deliberate placeholder.
+      await pumpPage(
+        tester,
+        SharedFileLoadSuccess(
+          fileRevisions: [fileRevision()],
+          verification: LinkVerification.pending,
+          detailsAreResolved: false,
+        ),
+        surface: const Size(1440, 1000),
+      );
+
+      final pane = find.byKey(sharedFilePreviewPaneKey);
+      expect(pane, findsOneWidget);
+      expect(
+        find.descendant(of: pane, matching: find.text('Loading file details...')),
+        findsOneWidget,
+      );
+      // The picture above it, not a bare line of text in an empty box.
+      expect(
+        find.descendant(of: pane, matching: find.byType(ArDriveIcon)),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('a renamed file does not select two rows at once',
+        (tester) async {
+      // A rename writes new metadata pointing at the same bytes, so two
+      // revisions share one `dataTxId`. Keyed on that, both rows drew as
+      // selected and the second could not be chosen: `showRevision`'s
+      // already-selected guard matched it and returned.
+      await pumpPage(tester, success(), surface: const Size(1440, 1000));
+
+      // The rename and the revision it renamed: same bytes, two records. The
+      // second row is the one the page is showing.
+      states.add(success(
+        activityRevisions: [
+          fileRevision(
+            name: 'Q3 Report (final).pdf',
+            metadataTxId: 'metadata-rename',
+          ),
+          fileRevision(name: 'Q3 Report.pdf'),
+        ],
+        activityStatus: SharedFileActivityStatus.loaded,
+      ));
+      await tester.pump();
+
+      await tester.tap(find.text('Version history'));
+      await tester.pumpAndSettle();
+
+      final rows = find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_SharedFileVersionRow');
+      expect(rows, findsNWidgets(2));
+
+      // Exactly one, not both.
+      final selected = <bool>[
+        for (var i = 0; i < 2; i++)
+          (tester.widget(rows.at(i)) as dynamic).isSelected as bool,
+      ];
+      expect(selected.where((s) => s).length, 1,
+          reason: 'two rows sharing a dataTxId must not both read as current');
+    });
+
+    testWidgets('a pinned link names its version pinned, and still lets go',
+        (tester) async {
+      // Pinning is the sharer saying which version they mean, not a limit on
+      // the recipient - who can reach every other version on chain anyway, and
+      // whom the freshness banner already offers "View latest". So the chip
+      // changes and nothing else does.
+      await pumpPage(
+        tester,
+        success(
+          isPinned: true,
+          activityRevisions: [
+            fileRevision(dataTxId: 'data-tx-newer'),
+            fileRevision(),
+          ],
+          activityStatus: SharedFileActivityStatus.loaded,
+        ),
+      );
+
+      await tester.tap(find.text('Version history'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pinned'), findsOneWidget);
+      expect(find.text('Shared'), findsNothing);
+
+      // And the newer one is still selectable.
+      await tester.tap(find.text('Latest'));
+      await tester.pumpAndSettle();
+
+      verify(() => cubit.showRevision(any())).called(1);
     });
 
     testWidgets('shows the verification badge the link earned', (tester) async {
@@ -787,12 +1177,12 @@ void main() {
       expect(download.bottom, lessThanOrEqualTo(laptop.height));
       expect(download.height, greaterThanOrEqualTo(44));
 
-      // Download stays a button, not a 1000px banner, and it stays on the
-      // reading side of the card - to the left of the preview, and above it,
-      // so it is the first thing found by eye, pointer and Tab key alike.
+      // Download stays a button, not a 1000px banner, and it stays ahead of
+      // the file itself - in the header across the top rather than beside the
+      // preview, so it is the first thing found by eye, pointer and Tab key
+      // alike whatever the two regions below are doing.
       expect(download.width, lessThanOrEqualTo(368));
-      expect(download.right, lessThanOrEqualTo(pane.left));
-      expect(download.top, lessThan(pane.bottom));
+      expect(download.bottom, lessThanOrEqualTo(pane.top));
       expect(tester.takeException(), isNull);
     });
 
@@ -814,8 +1204,8 @@ void main() {
       // An open drawer can push the card past the bottom of a phone, so each
       // header is scrolled to before it is pressed.
       for (final drawer in [
-        find.byType(ExpansionTile).first,
-        find.byType(ExpansionTile).last,
+        find.text('Version history'),
+        find.text('File details'),
       ]) {
         await tester.ensureVisible(drawer);
         await tester.pumpAndSettle();

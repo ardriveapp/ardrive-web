@@ -152,6 +152,12 @@ class ArweaveService {
   /// Cache for drive signatures (immutable on-chain, never change).
   final Map<String, DriveSignatureEntity?> _cachedDriveSignatures = {};
 
+  /// Entity metadata reads served from a drive's snapshot, and those that had
+  /// to go to the gateway instead. Keyed by drive id, reported by sync when a
+  /// drive finishes. See [_getEntityData].
+  final Map<String, int> snapshotMetadataHits = {};
+  final Map<String, int> snapshotMetadataMisses = {};
+
   /// Clears the cached result of [getUniqueUserDriveEntityTxs] and entity data.
   /// Call after creating/updating a drive or after a full sync completes.
   void clearUserDriveTxsCache() {
@@ -288,12 +294,22 @@ class ArweaveService {
   /// Caller should filter results by Drive-Id tag and pass each drive's
   /// subset to [SnapshotItem.instantiateAll] with that drive's own
   /// lastBlockHeight to preserve per-drive state isolation.
+  /// [onQueryFailure] fires if the query gave up part-way.
+  ///
+  /// The stream ends the same way either way - a failure is logged and the
+  /// iteration stops - so a caller cannot otherwise tell "this drive has no
+  /// snapshots" from "we stopped asking". The batched prefetch needs that
+  /// distinction: without it, every snapshot-less drive looks unanswered and
+  /// gets asked again individually.
   Stream<SnapshotEntityTransaction> getAllSnapshotsForDrives(
     List<String> driveIds,
     int? minBlockHeight, {
     required String ownerAddress,
+    void Function()? onQueryFailure,
   }) async* {
     String cursor = '';
+    var yielded = 0;
+    var page = 0;
 
     while (true) {
       try {
@@ -308,6 +324,17 @@ class ArweaveService {
           ),
         );
         final edges = snapshotEntityHistoryQuery.data!.transactions.edges;
+        page++;
+        yielded += edges.length;
+
+        // What the index actually returned, before anything downstream
+        // filters it. This is the number that separates "the gateway did not
+        // tell us about the snapshot" from "we knew about it and could not
+        // use it" - the two have completely different fixes, and without this
+        // they look identical from the outside.
+        logger.i('[snapshot] gql page $page for $driveIds (min block '
+            '$minBlockHeight): ${edges.length} found');
+
         for (final edge in edges) {
           yield edge.node;
         }
@@ -324,11 +351,23 @@ class ArweaveService {
           break;
         }
       } catch (e) {
-        logger.e('Error fetching snapshots for drives $driveIds', e);
-        logger.i('These drives will fall back to GQL');
+        // Note what was already yielded: the caller keeps those, so a failure
+        // here can leave a drive with *some* of its snapshots - typically the
+        // newest, since the query is HEIGHT_DESC - rather than none. That
+        // reads downstream as a smaller snapshot than expected rather than an
+        // error, so the count matters as much as the exception.
+        logger.e(
+          '[snapshot] gql failed for $driveIds after $yielded found '
+          'across $page page(s); those already found are still used, the '
+          'rest of the range falls back to GraphQL',
+          e,
+        );
+        onQueryFailure?.call();
         break;
       }
     }
+
+    logger.i('[snapshot] gql returned $yielded total for $driveIds');
   }
 
   /// Probes which drives have any new transactions since [minBlockHeight].
@@ -773,8 +812,17 @@ class ArweaveService {
     );
 
     if (cachedData != null) {
+      snapshotMetadataHits.update(driveId, (v) => v + 1, ifAbsent: () => 1);
       return cachedData;
     }
+
+    // Every miss is a network round trip for a few hundred bytes, and sync
+    // makes one of these per entity. Whether a drive's entities come from its
+    // snapshot or from the gateway is the difference between one download and
+    // tens of thousands of requests, and until now nothing said which was
+    // happening. Counted rather than logged per entity: at 40k entities a log
+    // line each would be the slowest part of the sync.
+    snapshotMetadataMisses.update(driveId, (v) => v + 1, ifAbsent: () => 1);
 
     return getEntityDataFromNetwork(txId: txId).then<Uint8List?>((d) => d)
         .catchError((e) {
@@ -815,8 +863,19 @@ class ArweaveService {
   /// Uses [DataGatewayFallback.fetchDataForSync] — configured gateway only,
   /// one retry, one last-resort hop, no GAR and therefore no Solana RPC.
   /// Download/preview/thumbnail/share paths keep the full waterfall.
-  Future<Uint8List> getEntityDataFromNetwork({required String txId}) async {
-    final Response data = await _gatewayFallback.fetchDataForSync(txId, client);
+  /// [largeBody] gives the read the budget a snapshot needs. The default is
+  /// sized for metadata - a few hundred bytes - and a snapshot body is tens of
+  /// megabytes, which cannot finish inside it at any realistic connection
+  /// speed. See [DataGatewayFallback.largeBodyRequestTimeout].
+  Future<Uint8List> getEntityDataFromNetwork({
+    required String txId,
+    bool largeBody = false,
+  }) async {
+    final Response data = await _gatewayFallback.fetchDataForSync(
+      txId,
+      client,
+      largeBody: largeBody,
+    );
     return data.bodyBytes;
   }
 
@@ -1005,12 +1064,24 @@ class ArweaveService {
 
       final drivesById = <String?, DriveEntity>{};
       final drivesWithKey = <DriveEntity, DriveKey?>{};
+
+      /// Drives whose newest transaction was reached but could not be used.
+      ///
+      /// `getUniqueUserDriveEntityTxs` dedupes **per page**, so the same
+      /// Drive-Id can appear on more than one page and the list is newest
+      /// first. Skipping the newest without recording it would let an older
+      /// revision take its place and write stale metadata - worse than the
+      /// drive simply being late.
+      final handledDriveIds = <String?>{};
       for (var i = 0; i < driveTxs.length; i++) {
         if (driveResponses[i] == null) continue;
         final driveTx = driveTxs[i];
 
         // Ignore drive entity transactions which we already have newer entities for.
-        if (drivesById.containsKey(driveTx.getTag(EntityTag.driveId))) {
+        final txDriveId = driveTx.getTag(EntityTag.driveId);
+
+        if (drivesById.containsKey(txDriveId) ||
+            handledDriveIds.contains(txDriveId)) {
           continue;
         }
 
@@ -1025,10 +1096,29 @@ class ArweaveService {
             final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
             final signatureType = DriveSignatureType.fromString(sigTypeTag);
 
-            final driveSignature = signatureType == DriveSignatureType.v1
-                ? await getDriveSignatureForDriveOnSync(
-                    wallet, driveTx.getTag(EntityTag.driveId)!)
-                : null;
+            // Contained deliberately. This was the one unguarded await in the
+            // loop, and a gateway hiccup on a single drive's signature threw
+            // all the way out of drive discovery and killed the entire sync -
+            // before any drive had synced at all. Every other failure here
+            // drops one drive and carries on; this one now does too, and the
+            // drive is picked up on the next pass.
+            DriveSignatureEntity? driveSignature;
+
+            if (signatureType == DriveSignatureType.v1) {
+              try {
+                driveSignature = await getDriveSignatureForDriveOnSync(
+                    wallet, driveTx.getTag(EntityTag.driveId)!);
+              } catch (e) {
+                logger.w(
+                  'Could not read the drive signature for $txDriveId; '
+                  'skipping this drive for this pass: $e',
+                );
+                // Claim the id so an older transaction for the same drive on
+                // a later page cannot quietly stand in for the newest one.
+                handledDriveIds.add(txDriveId);
+                continue;
+              }
+            }
 
             driveKey = await _crypto.deriveDriveKey(
                 wallet,
@@ -1081,11 +1171,25 @@ class ArweaveService {
   /// by that owner.
   ///
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
+  /// Reads the drive entity for [driveId].
+  ///
+  /// [configuredGatewayOnly] picks which read policy the data fetch uses.
+  /// Leave it false for a single read a user is waiting on and can retry -
+  /// attaching a drive by id - where breadth wins and the full waterfall is
+  /// worth its cost.
+  ///
+  /// Pass it for reads on the login and drive-discovery path. Those look like
+  /// user-initiated reads and behave like sync: they run at startup, several
+  /// at a time, with the user watching a spinner. The waterfall is the wrong
+  /// trade there - it walks up to four gateways serially and asks
+  /// `ArioSDK.getGateways()` for the list, which costs a Solana RPC on the
+  /// startup path. See [DataGatewayFallback.fetchDataForSync].
   Future<DriveEntity?> getLatestDriveEntityWithId(
     String driveId, {
     String? driveOwner,
     SecretKey? driveKey,
     int maxRetries = defaultMaxRetries,
+    bool configuredGatewayOnly = false,
   }) async {
     driveOwner ??= await getOwnerForDriveEntityWithId(driveId);
 
@@ -1134,7 +1238,10 @@ class ArweaveService {
       // Use cached bytes if available (e.g., from getUniqueUserDriveEntities)
       final cachedBytes = _cachedEntityDataBytes[fileTx.id];
       final entityBytes = cachedBytes ??
-          (await _gatewayFallback.fetchData(fileTx.id, client)).bodyBytes;
+          (await (configuredGatewayOnly
+                  ? _gatewayFallback.fetchDataForSync(fileTx.id, client)
+                  : _gatewayFallback.fetchData(fileTx.id, client)))
+              .bodyBytes;
 
       try {
         return await DriveEntity.fromTransaction(

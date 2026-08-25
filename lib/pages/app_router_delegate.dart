@@ -44,6 +44,62 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? driveName;
   String? driveFolderId;
 
+  /// The drive a folder link named, held until that drive is the selected one.
+  ///
+  /// A folder link opened by someone who does not have the drive yet goes
+  /// through the attach flow, which ends by clearing [driveId] so the prompt
+  /// cannot re-fire. The drive is then selected fresh, [driveFolderId] reads as
+  /// belonging to a different drive, and the folder the link named is dropped -
+  /// so every recipient who was not already in the drive landed at its root,
+  /// which made a folder link a drive link with extra characters.
+  ///
+  /// One shot: cleared as soon as that drive is selected, so ordinary
+  /// navigation away from the drive still discards the folder as it always has.
+  String? _pendingFolderDriveId;
+
+  /// The folder that link named, held with the drive it belongs to.
+  ///
+  /// Kept alongside [_pendingFolderDriveId] rather than read off
+  /// [driveFolderId] when the drive arrives: between the link opening and that
+  /// drive being selected the recipient may have been somewhere else entirely,
+  /// and [driveFolderId] would by then hold a folder from whatever drive they
+  /// were last in. Restoring *this* is the difference between opening the
+  /// folder the link named and opening another drive's folder under this
+  /// drive's name.
+  String? _pendingFolderId;
+
+  /// Reconciles the folder in view with the drive that has just been selected.
+  ///
+  /// Selecting a different drive discards the folder, which is what ordinary
+  /// navigation wants - a folder from the drive you just left is stale. The one
+  /// exception is the drive a folder link named: it becomes selected *because*
+  /// of that link, so its folder is the whole point rather than a leftover.
+  ///
+  /// Extracted from the listener that calls it so it can be tested without
+  /// standing up the whole app shell.
+  @visibleForTesting
+  void onDriveSelected(String? selectedDriveId) {
+    final selectedDriveChanged = driveId != selectedDriveId;
+
+    final isTheLinkedDrive = _pendingFolderDriveId != null &&
+        _pendingFolderDriveId == selectedDriveId;
+
+    if (isTheLinkedDrive) {
+      // The folder the link named, not the one in view - see [_pendingFolderId].
+      driveFolderId = _pendingFolderId;
+
+      // One shot. Released as soon as it is honored, so navigating away from
+      // the drive and back lands at its root rather than jumping to the old
+      // folder.
+      _pendingFolderDriveId = null;
+      _pendingFolderId = null;
+    } else if (selectedDriveChanged) {
+      driveFolderId = null;
+    }
+
+    driveId = selectedDriveId;
+  }
+
   DriveKey? sharedDriveKey;
   String? sharedRawDriveKey;
 
@@ -196,13 +252,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 shell = BlocListener<DrivesCubit, DrivesState>(
                   listener: (context, state) {
                     if (state is DrivesLoadSuccess) {
-                      final selectedDriveChanged =
-                          driveId != state.selectedDriveId;
-                      if (selectedDriveChanged) {
-                        driveFolderId = null;
-                      }
-
-                      driveId = state.selectedDriveId;
+                      onDriveSelected(state.selectedDriveId);
                       notifyListeners();
                     }
                   },
@@ -386,6 +436,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = configuration.driveId;
     driveName = configuration.driveName;
     driveFolderId = configuration.driveFolderId;
+    _pendingFolderDriveId =
+        configuration.driveFolderId == null ? null : configuration.driveId;
+    _pendingFolderId = configuration.driveFolderId;
     sharedDriveKey = configuration.sharedDriveKey;
     sharedRawDriveKey = configuration.sharedRawDriveKey;
     sharedFileId = configuration.sharedFileId;
@@ -404,6 +457,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = null;
     driveName = null;
     driveFolderId = null;
+    _pendingFolderDriveId = null;
+    _pendingFolderId = null;
     sharedDriveKey = null;
     sharedRawDriveKey = null;
     sharedFileId = null;

@@ -10,8 +10,10 @@ import 'package:cryptography/cryptography.dart';
 // lib/download/limits.dart.
 // ignore: depend_on_referenced_packages
 import 'package:fake_async/fake_async.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/mocks.dart';
 
@@ -94,6 +96,10 @@ class _RecordingDownloader implements ArDriveDownloader {
     ));
   }
 
+  /// What the cubit asked for, so a download that quietly starts depending on
+  /// GraphQL again is visible from the test that cares.
+  bool? lastVerifyIntegrity;
+
   @override
   Future<Stream<double>> downloadFile({
     required String txId,
@@ -107,8 +113,10 @@ class _RecordingDownloader implements ArDriveDownloader {
     String? cipher,
     String? cipherIvString,
     bool verifyDownload = false,
+    bool verifyIntegrity = false,
   }) async {
     downloadFileCalls++;
+    lastVerifyIntegrity = verifyIntegrity;
 
     return _logged();
   }
@@ -152,15 +160,48 @@ class _RecordingDownloader implements ArDriveDownloader {
 
 /// The recipient's download.
 void main() {
-  SharedFileDownloadCubit cubitFor(_RecordingDownloader downloader) {
+  SharedFileDownloadCubit cubitFor(
+    _RecordingDownloader downloader, {
+    ArweaveService? arweave,
+    SecretKey? fileKey,
+    String? cipher,
+    String? cipherIv,
+    DownloadPolicy policy = const _UnavailablePolicy(),
+  }) {
     return SharedFileDownloadCubit(
       revision: _Revision(),
-      arweave: MockArweaveService(),
+      arweave: arweave ?? MockArweaveService(),
       crypto: MockArDriveCrypto(),
       arDriveDownloader: downloader,
-      downloadPolicy: const _UnavailablePolicy(),
+      fileKey: fileKey,
+      cipher: cipher,
+      cipherIv: cipherIv,
+      downloadPolicy: policy,
     );
   }
+
+  test(
+      'a private download uses the cipher the link named, without asking for '
+      'it again', () async {
+    // `c` and `iv` are in the link schema precisely so this lookup does not
+    // have to happen. Before this the download re-fetched tags the link had
+    // already delivered - wasted on a good connection, and on a rate limited
+    // one a call that can fail outright.
+    final arweave = MockArweaveService();
+    final downloader = _RecordingDownloader();
+
+    final cubit = cubitFor(
+      downloader,
+      arweave: arweave,
+      fileKey: SecretKey(List.filled(32, 1)),
+      cipher: 'AES256-GCM',
+      cipherIv: 'an-iv',
+    );
+
+    await cubit.stream.firstWhere((s) => s is! FileDownloadStarting);
+
+    verifyNever(() => arweave.getTransactionDetails(any()));
+  });
 
   test('a size check that throws costs the check, not the download', () async {
     final downloader = _RecordingDownloader();
@@ -176,7 +217,9 @@ void main() {
       emitsInOrder(<Matcher>[
         isA<FileDownloadInProgress>(),
         isA<FileDownloadWithProgress>(),
-        isA<FileDownloadVerifying>(),
+        // No `FileDownloadVerifying`: this verdict is already settled, and a
+        // step that announces itself and replaces itself in the same breath is
+        // a flash of something that never happened.
         isA<FileDownloadFinishedWithSuccess>(),
       ]),
     );
@@ -212,7 +255,6 @@ void main() {
         emitsInOrder(<Matcher>[
           isA<FileDownloadInProgress>(),
           isA<FileDownloadWithProgress>(),
-          isA<FileDownloadVerifying>(),
           isA<FileDownloadFinishedWithSuccess>()
               .having(
                 (s) => s.integrity,
@@ -304,6 +346,9 @@ void main() {
       final seen = <FileDownloadState>[];
       final subscription = cubit.stream.listen(seen.add);
 
+      // Past the announce delay: a verdict that really is being waited on is
+      // still worth telling the user about, which is why the state was kept.
+      await Future<void>.delayed(const Duration(milliseconds: 300));
       await pumpEventQueue();
 
       expect(seen.last, isA<FileDownloadVerifying>());
