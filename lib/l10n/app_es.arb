@@ -1913,10 +1913,6 @@
       }
     }
   },
-  "sharedFileStoredPermanently": "Este archivo se almacena de forma permanente y se puede descargar en cualquier momento.",
-  "@sharedFileStoredPermanently": {
-    "description": "Reassurance shown at the bottom of the shared file page"
-  },
   "sharedFileUnlockedWithAccessKey": "Desbloqueado con tu clave de acceso. Para todos los demás, este archivo sigue cifrado.",
   "@sharedFileUnlockedWithAccessKey": {
     "description": "Shown after a private shared file has been unlocked with an access key"
@@ -1928,10 +1924,6 @@
   "sharedFileVersionHistoryTitle": "Historial de versiones",
   "@sharedFileVersionHistoryTitle": {
     "description": "Title of the collapsed drawer holding the version history of a shared file"
-  },
-  "sharedFileVersionHistoryUnavailable": "Ahora mismo no hemos podido cargar el historial de versiones.",
-  "@sharedFileVersionHistoryUnavailable": {
-    "description": "Shown in the version history drawer when the revisions could not be loaded"
   },
   "sharedFileViewLatest": "Ver la última",
   "@sharedFileViewLatest": {

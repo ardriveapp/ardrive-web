@@ -1913,10 +1913,6 @@
       }
     }
   },
-  "sharedFileStoredPermanently": "此檔案已永久儲存，隨時都可以下載。",
-  "@sharedFileStoredPermanently": {
-    "description": "Reassurance shown at the bottom of the shared file page"
-  },
   "sharedFileUnlockedWithAccessKey": "已使用你的存取密鑰解鎖。對其他所有人而言，此檔案仍然是加密的。",
   "@sharedFileUnlockedWithAccessKey": {
     "description": "Shown after a private shared file has been unlocked with an access key"
@@ -1928,10 +1924,6 @@
   "sharedFileVersionHistoryTitle": "版本記錄",
   "@sharedFileVersionHistoryTitle": {
     "description": "Title of the collapsed drawer holding the version history of a shared file"
-  },
-  "sharedFileVersionHistoryUnavailable": "目前無法載入版本記錄。",
-  "@sharedFileVersionHistoryUnavailable": {
-    "description": "Shown in the version history drawer when the revisions could not be loaded"
   },
   "sharedFileViewLatest": "查看最新版本",
   "@sharedFileViewLatest": {
