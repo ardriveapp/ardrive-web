@@ -678,6 +678,40 @@ void main() {
     );
 
     blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'a private image decrypts from the link cipher too',
+      build: () {
+        // Images take their own branch on the share page
+        // (`_previewImageSharePage`) and hand their bytes to a notifier rather
+        // than to a state, so "video works" does not establish that images do.
+        stubPrivateFetchAndDecrypt();
+        when(() => mockCrypto.decryptDataWithCipher(any(), any(), any(), any()))
+            .thenAnswer((_) async => Uint8List.fromList([5, 6, 7, 8]));
+
+        return buildSharedFileCubit(
+          item: createImageItem(size: underLimitFileSize),
+          fileKey: SecretKey([1, 2, 3]),
+          cipher: 'AES256-GCM',
+          cipherIv: 'aXY=',
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        verifyNever(() => mockArweaveService.getTransactionDetails(any()));
+        verify(
+          () => mockCrypto.decryptDataWithCipher(
+              'AES256-GCM', 'aXY=', any(), any()),
+        ).called(1);
+
+        // The picture the viewer renders is the decrypted one, not the
+        // ciphertext that was fetched.
+        final notified = FsEntryPreviewCubit.imagePreviewNotifier.value;
+        expect(notified, isNotNull);
+        expect(notified!.dataBytes, Uint8List.fromList([5, 6, 7, 8]));
+        expect(notified.isPreviewable, isTrue);
+      },
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
       'falls back to the lookup when it was given no cipher',
       build: () {
         stubPrivateFetchAndDecrypt();

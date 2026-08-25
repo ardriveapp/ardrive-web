@@ -1516,17 +1516,39 @@ class ArweaveService {
           ),
         ),
       );
+      final allEdges = allFileEntitiesQuery.data!.transactions.edges;
+
+      if (allEdges.isEmpty) {
+        break;
+      }
+
       final List<
               AllFileEntitiesWithId$Query$TransactionConnection$TransactionEdge>
-          queryEdges = allFileEntitiesQuery.data!.transactions.edges
+          queryEdges = allEdges
               .where(
                 (element) => doesTagsContainValidArFSVersion(
                   element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
                 ),
               )
               .toList();
+
+      // A page with nothing usable on it is not the end of the history.
+      //
+      // This used to `break`, which is the difference between this walk and
+      // [getLatestFileEntityWithId] - and the reason a file could report "no
+      // other versions" while the newest-first query found it immediately.
+      // This one sorts HEIGHT_ASC, so the first page it sees is the file's
+      // *oldest* transactions, which are the ones most likely to predate the
+      // ArFS version tag this filter requires. Stopping there discarded every
+      // later page, and the caller reads an empty result as a failure.
       if (queryEdges.isEmpty) {
-        break;
+        cursor = allEdges.last.cursor;
+
+        if (!allFileEntitiesQuery.data!.transactions.pageInfo.hasNextPage) {
+          break;
+        }
+
+        continue;
       }
       for (var edge in queryEdges) {
         final fileTx = edge.node;
