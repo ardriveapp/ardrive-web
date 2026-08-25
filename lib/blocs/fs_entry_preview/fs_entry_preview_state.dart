@@ -9,6 +9,25 @@ abstract class FsEntryPreviewState extends Equatable {
 
 class FsEntryPreviewUnavailable extends FsEntryPreviewState {}
 
+/// The file is too large to buffer into memory for an in-app preview, so its
+/// bytes are never fetched.
+///
+/// Extends [FsEntryPreviewUnavailable] on purpose: every existing
+/// `is FsEntryPreviewUnavailable` consumer keeps behaving as it does today
+/// until the preview widget renders a dedicated oversized message.
+class FsEntryPreviewOversized extends FsEntryPreviewUnavailable {
+  final int fileSize;
+  final int maxFileSize;
+
+  FsEntryPreviewOversized({
+    required this.fileSize,
+    required this.maxFileSize,
+  });
+
+  @override
+  List<Object> get props => [fileSize, maxFileSize];
+}
+
 class FsEntryPreviewInitial extends FsEntryPreviewState {}
 
 class FsEntryPreviewSuccess extends FsEntryPreviewState {
@@ -31,11 +50,46 @@ class FsEntryPreviewImage extends FsEntryPreviewSuccess {
   List<Object> get props => [previewUrl];
 }
 
+/// A PDF, as plaintext bytes this app rasterises itself.
+///
+/// [pdfBytes] is the *plaintext* of the file - fetched through the gateway
+/// waterfall for a public file, fetched and decrypted in memory for a private
+/// one - and is turned into page images by a rasteriser and painted as ordinary
+/// Flutter widgets. It is never handed to an `<iframe>`, `<embed>`, `<object>`
+/// or a blob URL: a PDF can carry JavaScript, and
+/// `docs/FILE_SHARING_REDESIGN_PLAN.md` §4.3 forbids bytes from an untrusted
+/// transaction becoming script-capable content on this origin - load-bearing,
+/// because a recipient's access key can be sitting in this origin's
+/// `sessionStorage`. Rasterising keeps the posture of the image preview: decode
+/// the bytes, paint the result, run nothing.
+///
+/// `null` when the bytes could not be had, which is not fatal for a public file
+/// - see [canOpenOnGateway].
+///
+/// [previewUrl] only means anything when [canOpenOnGateway] is set: a *public*
+/// file's bytes have a URL of their own, so a viewer that cannot render them
+/// can still offer to open them in a new tab, on the gateway's origin. A
+/// private file has no such URL - every gateway holds only its ciphertext - and
+/// gets no such offer.
 class FsEntryPreviewPdf extends FsEntryPreviewSuccess {
-  const FsEntryPreviewPdf({required super.previewUrl});
+  final String filename;
+  final Uint8List? pdfBytes;
+  final bool canOpenOnGateway;
+
+  const FsEntryPreviewPdf({
+    required super.previewUrl,
+    required this.filename,
+    this.pdfBytes,
+    this.canOpenOnGateway = false,
+  });
 
   @override
-  List<Object> get props => [previewUrl];
+  List<Object> get props => [
+        previewUrl,
+        filename,
+        canOpenOnGateway,
+        pdfBytes ?? const <int>[],
+      ];
 }
 
 class FsEntryPreviewAudio extends FsEntryPreviewSuccess {
@@ -57,15 +111,6 @@ class FsEntryPreviewVideo extends FsEntryPreviewSuccess {
 
   @override
   List<Object> get props => [previewUrl, filename];
-}
-
-class FsEntryPreviewMemory extends FsEntryPreviewSuccess {
-  const FsEntryPreviewMemory({
-    required Uint8List memoryBytes,
-  }) : super(previewUrl: '');
-
-  @override
-  List<Object> get props => [previewUrl];
 }
 
 class FsEntryPreviewText extends FsEntryPreviewSuccess {

@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:equatable/equatable.dart';
 
 class UploadPaymentMethodInfo extends Equatable {
@@ -13,7 +14,9 @@ class UploadPaymentMethodInfo extends Equatable {
   final bool sufficientArBalance;
   final String turboCredits;
   final bool sufficentCreditsBalance;
-  final bool isFreeThanksToTurbo;
+
+  /// Whether this upload is free, and if not, why not.
+  final FreeUploadStatus freeStatus;
   final UploadPlan? uploadPlanForAR;
   final UploadPlan? uploadPlanForTurbo;
   final int totalSize;
@@ -29,12 +32,20 @@ class UploadPaymentMethodInfo extends Equatable {
     required this.sufficientArBalance,
     required this.turboCredits,
     required this.sufficentCreditsBalance,
-    required this.isFreeThanksToTurbo,
+    required this.freeStatus,
     this.uploadPlanForAR,
     this.uploadPlanForTurbo,
     required this.totalSize,
     this.paidBy,
   });
+
+  bool get isFreeThanksToTurbo => freeStatus == FreeUploadStatus.free;
+
+  /// Would have been free on size, but the wallet's allowance is known to be
+  /// used up. False when the allowance could not be determined, so an
+  /// unreachable endpoint never tells the user they ran out.
+  bool get isFreeAllowanceExhausted =>
+      freeStatus == FreeUploadStatus.allowanceUsedUp;
 
   // copy with
   UploadPaymentMethodInfo copyWith({
@@ -47,7 +58,7 @@ class UploadPaymentMethodInfo extends Equatable {
     bool? sufficientArBalance,
     String? turboCredits,
     bool? sufficentCreditsBalance,
-    bool? isFreeThanksToTurbo,
+    FreeUploadStatus? freeStatus,
     UploadPlan? uploadPlanForAR,
     UploadPlan? uploadPlanForTurbo,
     int? totalSize,
@@ -68,7 +79,7 @@ class UploadPaymentMethodInfo extends Equatable {
       turboCredits: turboCredits ?? this.turboCredits,
       sufficentCreditsBalance:
           sufficentCreditsBalance ?? this.sufficentCreditsBalance,
-      isFreeThanksToTurbo: isFreeThanksToTurbo ?? this.isFreeThanksToTurbo,
+      freeStatus: freeStatus ?? this.freeStatus,
       paidBy: paidBy ?? this.paidBy,
     );
   }
@@ -84,7 +95,7 @@ class UploadPaymentMethodInfo extends Equatable {
         sufficientArBalance,
         turboCredits,
         sufficentCreditsBalance,
-        isFreeThanksToTurbo,
+        freeStatus,
         paidBy,
       ];
 }

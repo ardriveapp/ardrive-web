@@ -70,7 +70,9 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
   final bool isButtonToUploadEnabled;
   final bool sufficientBalanceToPayWithAr;
   final bool sufficientBalanceToPayWithTurbo;
-  final bool isFreeThanksToTurbo;
+
+  /// Whether this snapshot upload is free, and if not, why not.
+  final FreeUploadStatus freeStatus;
 
   ConfirmingSnapshotCreation({
     required this.snapshotSize,
@@ -84,8 +86,14 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
     required this.isButtonToUploadEnabled,
     required this.sufficientBalanceToPayWithAr,
     required this.sufficientBalanceToPayWithTurbo,
-    required this.isFreeThanksToTurbo,
+    required this.freeStatus,
   });
+
+  bool get isFreeThanksToTurbo => freeStatus == FreeUploadStatus.free;
+
+  /// Small enough to be free, but the allowance is known to be used up.
+  bool get isFreeAllowanceExhausted =>
+      freeStatus == FreeUploadStatus.allowanceUsedUp;
 
   @override
   List<Object> get props => [
@@ -100,7 +108,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
         isButtonToUploadEnabled,
         sufficientBalanceToPayWithAr,
         sufficientBalanceToPayWithTurbo,
-        isFreeThanksToTurbo,
+        freeStatus,
       ];
 
   ConfirmingSnapshotCreation copyWith({
@@ -117,7 +125,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
     bool? isButtonToUploadEnabled,
     bool? sufficientBalanceToPayWithAr,
     bool? sufficientBalanceToPayWithTurbo,
-    bool? isFreeThanksToTurbo,
+    FreeUploadStatus? freeStatus,
   }) {
     return ConfirmingSnapshotCreation(
       snapshotSize: snapshotSize ?? this.snapshotSize,
@@ -135,7 +143,7 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
           sufficientBalanceToPayWithAr ?? this.sufficientBalanceToPayWithAr,
       sufficientBalanceToPayWithTurbo: sufficientBalanceToPayWithTurbo ??
           this.sufficientBalanceToPayWithTurbo,
-      isFreeThanksToTurbo: isFreeThanksToTurbo ?? this.isFreeThanksToTurbo,
+      freeStatus: freeStatus ?? this.freeStatus,
     );
   }
 }
@@ -143,8 +151,11 @@ class ConfirmingSnapshotCreation extends CreateSnapshotState {
 class UploadingSnapshot extends CreateSnapshotState {}
 
 class SnapshotUploadFailure extends CreateSnapshotState {
+  final bool isPaymentError;
+  SnapshotUploadFailure({this.isPaymentError = false});
+
   @override
-  List<Object> get props => [];
+  List<Object> get props => [isPaymentError];
 }
 
 class SnapshotUploadSuccess extends CreateSnapshotState {}

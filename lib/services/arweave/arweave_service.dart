@@ -152,6 +152,12 @@ class ArweaveService {
   /// Cache for drive signatures (immutable on-chain, never change).
   final Map<String, DriveSignatureEntity?> _cachedDriveSignatures = {};
 
+  /// Entity metadata reads served from a drive's snapshot, and those that had
+  /// to go to the gateway instead. Keyed by drive id, reported by sync when a
+  /// drive finishes. See [_getEntityData].
+  final Map<String, int> snapshotMetadataHits = {};
+  final Map<String, int> snapshotMetadataMisses = {};
+
   /// Clears the cached result of [getUniqueUserDriveEntityTxs] and entity data.
   /// Call after creating/updating a drive or after a full sync completes.
   void clearUserDriveTxsCache() {
@@ -232,7 +238,34 @@ class ArweaveService {
         );
   }
 
-  Future<TransactionCommonMixin?> getTransactionDetails(String txId) async {
+  /// The tags, owner address, block and bundle of a transaction.
+  ///
+  /// Callers that also need the fields the integrity verifier reads should call
+  /// [getTransactionDetailsWithSignature] instead - it is the same single
+  /// request, not an extra one.
+  Future<TransactionCommonMixin?> getTransactionDetails(String txId) =>
+      getTransactionDetailsWithSignature(txId);
+
+  /// The same single `TransactionDetails` request as [getTransactionDetails],
+  /// typed as the concrete query result so callers can also read what it takes
+  /// to recompute a data item's deep hash signature: `signature`,
+  /// `ownerKey.key` (the owner's full public key), `anchor` and `recipient`
+  /// (the data item's target), next to the `tags` and `bundledIn` of
+  /// `TransactionCommon`.
+  ///
+  /// `bundledIn != null` marks an L2 data item, the only case where those four
+  /// fields describe an ANS-104 deep hash. For an L1 transaction they describe
+  /// the L1 transaction itself, whose integrity comes from its `data_root`
+  /// instead.
+  ///
+  /// The schema declares all four non-null, so a gateway that does not index
+  /// one returns an empty string rather than null - indistinguishable from a
+  /// data item that genuinely carries no anchor or target (arweave.net returns
+  /// an empty `anchor` for L1 transactions that ar-io.dev returns in full). A
+  /// check that does not pass therefore means "could not verify", never
+  /// "tampered".
+  Future<TransactionDetails$Query$Transaction?>
+      getTransactionDetailsWithSignature(String txId) async {
     final query = await graphQLRetry.execute(TransactionDetailsQuery(
         variables: TransactionDetailsArguments(txId: txId)));
     return query.data?.transaction;
@@ -261,12 +294,22 @@ class ArweaveService {
   /// Caller should filter results by Drive-Id tag and pass each drive's
   /// subset to [SnapshotItem.instantiateAll] with that drive's own
   /// lastBlockHeight to preserve per-drive state isolation.
+  /// [onQueryFailure] fires if the query gave up part-way.
+  ///
+  /// The stream ends the same way either way - a failure is logged and the
+  /// iteration stops - so a caller cannot otherwise tell "this drive has no
+  /// snapshots" from "we stopped asking". The batched prefetch needs that
+  /// distinction: without it, every snapshot-less drive looks unanswered and
+  /// gets asked again individually.
   Stream<SnapshotEntityTransaction> getAllSnapshotsForDrives(
     List<String> driveIds,
     int? minBlockHeight, {
     required String ownerAddress,
+    void Function()? onQueryFailure,
   }) async* {
     String cursor = '';
+    var yielded = 0;
+    var page = 0;
 
     while (true) {
       try {
@@ -281,6 +324,17 @@ class ArweaveService {
           ),
         );
         final edges = snapshotEntityHistoryQuery.data!.transactions.edges;
+        page++;
+        yielded += edges.length;
+
+        // What the index actually returned, before anything downstream
+        // filters it. This is the number that separates "the gateway did not
+        // tell us about the snapshot" from "we knew about it and could not
+        // use it" - the two have completely different fixes, and without this
+        // they look identical from the outside.
+        logger.i('[snapshot] gql page $page for $driveIds (min block '
+            '$minBlockHeight): ${edges.length} found');
+
         for (final edge in edges) {
           yield edge.node;
         }
@@ -297,11 +351,23 @@ class ArweaveService {
           break;
         }
       } catch (e) {
-        logger.e('Error fetching snapshots for drives $driveIds', e);
-        logger.i('These drives will fall back to GQL');
+        // Note what was already yielded: the caller keeps those, so a failure
+        // here can leave a drive with *some* of its snapshots - typically the
+        // newest, since the query is HEIGHT_DESC - rather than none. That
+        // reads downstream as a smaller snapshot than expected rather than an
+        // error, so the count matters as much as the exception.
+        logger.e(
+          '[snapshot] gql failed for $driveIds after $yielded found '
+          'across $page page(s); those already found are still used, the '
+          'rest of the range falls back to GraphQL',
+          e,
+        );
+        onQueryFailure?.call();
         break;
       }
     }
+
+    logger.i('[snapshot] gql returned $yielded total for $driveIds');
   }
 
   /// Probes which drives have any new transactions since [minBlockHeight].
@@ -493,6 +559,43 @@ class ArweaveService {
     }
   }
 
+  /// Runs [task] for every index in `0..itemCount-1`, keeping at most
+  /// [concurrency] in flight and starting the next index as soon as any one
+  /// completes.
+  ///
+  /// This is a sliding window, not a chunked `Future.wait`. A chunked barrier
+  /// idles every other slot until the slowest member of the chunk returns, so
+  /// one slow or failing item costs the whole chunk its duration.
+  ///
+  /// [task] owns its error handling — a task that throws aborts the run.
+  @visibleForTesting
+  static Future<void> runPooled({
+    required int concurrency,
+    required int itemCount,
+    required Future<void> Function(int index) task,
+  }) async {
+    if (itemCount <= 0) return;
+
+    final workerCount = concurrency < 1
+        ? 1
+        : (concurrency < itemCount ? concurrency : itemCount);
+
+    // Shared cursor. Claiming an index is synchronous, so two workers can
+    // never take the same one.
+    var nextIndex = 0;
+
+    Future<void> worker() async {
+      while (true) {
+        final i = nextIndex;
+        if (i >= itemCount) return;
+        nextIndex++;
+        await task(i);
+      }
+    }
+
+    await Future.wait(List.generate(workerCount, (_) => worker()));
+  }
+
   /// Get the metadata of transactions
   ///
   /// mounts the `blockHistory`
@@ -507,43 +610,60 @@ class ArweaveService {
     int? currentBlockHeight,
   }) async {
     // Limit concurrent data fetches to avoid overwhelming the gateway.
-    // Uses chunked Future.wait — processes maxConcurrent at a time.
+    //
+    // Sliding window, not chunked Future.wait: workers pull the next index as
+    // soon as they finish, so exactly maxConcurrent fetches stay in flight.
+    // A chunked barrier would idle every other slot until the slowest member
+    // of the chunk returned — and with the 2-attempt sync retry, one dead
+    // transaction stalls its whole chunk for ~10s.
     final maxConcurrent =
         _configService.config.maxConcurrentDataFetches.clamp(1, 100);
     final entityDatas = List<Uint8List>.filled(entityTxs.length, Uint8List(0));
 
-    for (var start = 0; start < entityTxs.length; start += maxConcurrent) {
-      final end = (start + maxConcurrent < entityTxs.length)
-          ? start + maxConcurrent
-          : entityTxs.length;
+    /// Metadata reads that failed outright. These entities are skipped for
+    /// this sync — see the note on [_getEntityData] for why that can be a
+    /// permanent drop, and `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md` for the
+    /// planned fix. Surfaced so callers can report them instead of losing them.
+    final skippedTxIds = <String>[];
 
-      await Future.wait(
-        List.generate(end - start, (j) {
-          final i = start + j;
-          final entity = entityTxs[i].transactionCommonMixin;
-          final tags = HashMap.fromIterable(
-            entity.tags,
-            key: (tag) => tag.name,
-            value: (tag) => tag.value,
-          );
+    await runPooled(
+      concurrency: maxConcurrent,
+      itemCount: entityTxs.length,
+      task: (i) async {
+        final entity = entityTxs[i].transactionCommonMixin;
+        final tags = HashMap.fromIterable(
+          entity.tags,
+          key: (tag) => tag.name,
+          value: (tag) => tag.value,
+        );
 
-          if (driveKey != null && tags[EntityTag.cipherIv] == null) {
-            return Future.value();
-          }
-          if (tags[EntityTag.entityType] == EntityTypeTag.snapshot) {
-            return Future.value();
-          }
+        // Entities we never fetch. Leave entityDatas[i] at its empty default
+        // and release the slot immediately.
+        if (driveKey != null && tags[EntityTag.cipherIv] == null) {
+          return;
+        }
+        if (tags[EntityTag.entityType] == EntityTypeTag.snapshot) {
+          return;
+        }
 
-          return _getEntityData(
-            entityId: entity.id,
-            driveId: driveId,
-            isPrivate: driveKey != null,
-          ).then((data) {
-            entityDatas[i] = data;
-          });
-        }),
-      );
-    }
+        // _getEntityData never throws — a failed read skips only this entity
+        // and must never abort the run.
+        final data = await _getEntityData(
+          entityId: entity.id,
+          driveId: driveId,
+          isPrivate: driveKey != null,
+        );
+
+        if (data == null) {
+          skippedTxIds.add(entity.id);
+          return;
+        }
+
+        // Positional write — callers rely on entityDatas aligning with
+        // entityTxs, so results are never appended.
+        entityDatas[i] = data;
+      },
+    );
 
     final metadataCache = await MetadataCache.fromCacheStore(
       await newSharedPreferencesCacheStore(),
@@ -636,9 +756,17 @@ class ArweaveService {
       block.entities.removeWhere((e) => e!.ownerAddress != ownerAddress);
     }
 
+    if (skippedTxIds.isNotEmpty) {
+      logger.w(
+        'Skipped ${skippedTxIds.length} entities in drive $driveId: their '
+        'metadata could not be read. They will not appear in this sync.',
+      );
+    }
+
     return DriveEntityHistory(
       blockHistory.isNotEmpty ? blockHistory.last.blockHeight : lastBlockHeight,
       blockHistory,
+      skippedTxIds: skippedTxIds,
     );
   }
 
@@ -657,7 +785,20 @@ class ArweaveService {
     return privateDriveTxs.isNotEmpty;
   }
 
-  Future<Uint8List> _getEntityData({
+  /// Returns the entity's metadata bytes, or `null` if they could not be read.
+  ///
+  /// KNOWN ISSUE — a `null` here is a silent, potentially permanent drop, and
+  /// it predates the single-gateway sync change. The caller substitutes empty
+  /// bytes, the entity fails to parse (swallowed at the `on
+  /// EntityTransactionParseException` in
+  /// [createDriveEntityHistoryFromTransactions]) and never reaches
+  /// `blockHistory` — while the drive's watermark advances regardless. Only a
+  /// user-initiated deep sync reliably recovers it.
+  ///
+  /// Full evidence and the planned fix (persist skipped items and retry them
+  /// across syncs) are in `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`. Until
+  /// then the tx ids are at least reported on `SyncProgress` rather than lost.
+  Future<Uint8List?> _getEntityData({
     required String entityId,
     required String driveId,
     required bool isPrivate,
@@ -671,12 +812,22 @@ class ArweaveService {
     );
 
     if (cachedData != null) {
+      snapshotMetadataHits.update(driveId, (v) => v + 1, ifAbsent: () => 1);
       return cachedData;
     }
 
-    return getEntityDataFromNetwork(txId: txId).catchError((e) {
-      logger.e('Failed to get entity data from network', e);
-      return Uint8List(0);
+    // Every miss is a network round trip for a few hundred bytes, and sync
+    // makes one of these per entity. Whether a drive's entities come from its
+    // snapshot or from the gateway is the difference between one download and
+    // tens of thousands of requests, and until now nothing said which was
+    // happening. Counted rather than logged per entity: at 40k entities a log
+    // line each would be the slowest part of the sync.
+    snapshotMetadataMisses.update(driveId, (v) => v + 1, ifAbsent: () => 1);
+
+    return getEntityDataFromNetwork(txId: txId).then<Uint8List?>((d) => d)
+        .catchError((e) {
+      logger.e('Failed to get entity data from network for tx $txId', e);
+      return null;
     });
   }
 
@@ -707,8 +858,24 @@ class ArweaveService {
     return null;
   }
 
-  Future<Uint8List> getEntityDataFromNetwork({required String txId}) async {
-    final Response data = await _gatewayFallback.fetchData(txId, client);
+  /// Reads entity metadata for the **sync** path.
+  ///
+  /// Uses [DataGatewayFallback.fetchDataForSync] — configured gateway only,
+  /// one retry, one last-resort hop, no GAR and therefore no Solana RPC.
+  /// Download/preview/thumbnail/share paths keep the full waterfall.
+  /// [largeBody] gives the read the budget a snapshot needs. The default is
+  /// sized for metadata - a few hundred bytes - and a snapshot body is tens of
+  /// megabytes, which cannot finish inside it at any realistic connection
+  /// speed. See [DataGatewayFallback.largeBodyRequestTimeout].
+  Future<Uint8List> getEntityDataFromNetwork({
+    required String txId,
+    bool largeBody = false,
+  }) async {
+    final Response data = await _gatewayFallback.fetchDataForSync(
+      txId,
+      client,
+      largeBody: largeBody,
+    );
     return data.bodyBytes;
   }
 
@@ -798,10 +965,34 @@ class ArweaveService {
     return firstTx;
   }
 
+  /// The drive signature, read through the multi-gateway waterfall.
+  ///
+  /// This is the login path (`ArDriveAuth`), where one unreachable gateway
+  /// must not cost someone their session. Sync reads the same signature
+  /// through [getDriveSignatureForDriveOnSync] instead.
   Future<DriveSignatureEntity?> getDriveSignatureForDrive(
     Wallet wallet,
     String driveId,
-  ) async {
+  ) =>
+      _getDriveSignature(wallet, driveId, forSync: false);
+
+  /// The drive signature as **sync** reads it: the configured gateway only.
+  ///
+  /// Drive discovery needs this for every private drive whose key is not
+  /// already in memory. Routing it through the waterfall would have put the
+  /// fan-out back into the sync path by the side door, one drive at a time.
+  @visibleForTesting
+  Future<DriveSignatureEntity?> getDriveSignatureForDriveOnSync(
+    Wallet wallet,
+    String driveId,
+  ) =>
+      _getDriveSignature(wallet, driveId, forSync: true);
+
+  Future<DriveSignatureEntity?> _getDriveSignature(
+    Wallet wallet,
+    String driveId, {
+    required bool forSync,
+  }) async {
     // Drive signatures are immutable on-chain — cache permanently once fetched
     if (_cachedDriveSignatures.containsKey(driveId)) {
       return _cachedDriveSignatures[driveId];
@@ -810,7 +1001,9 @@ class ArweaveService {
     final driveSignatureTx = await getDriveSignatureTxForDrive(wallet, driveId);
 
     final driveSignatureData = driveSignatureTx != null
-        ? await _gatewayFallback.fetchData(driveSignatureTx.id, client)
+        ? await (forSync
+            ? _gatewayFallback.fetchDataForSync(driveSignatureTx.id, client)
+            : _gatewayFallback.fetchData(driveSignatureTx.id, client))
         : null;
 
     final driveSignature =
@@ -831,11 +1024,34 @@ class ArweaveService {
       final userAddress = await wallet.getAddress();
       final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
 
-      final driveResponses = await Future.wait(
-        driveTxs.map((e) => _gatewayFallback
-            .fetchData(e.id, client)
-            .then<Response?>((r) => r)
-            .catchError((_) => null)),
+      // Sync's drive-discovery phase, and its only caller is
+      // `_SyncRepository.updateUserDrives`. It reads the configured gateway
+      // only, like every other sync read: this fires once per drive
+      // transaction, so leaving it on the waterfall meant a user with a dozen
+      // drives opened a dozen fan-outs to GAR gateways on every sync - which
+      // is exactly the cost this change exists to remove.
+      //
+      // A drive whose metadata cannot be read is dropped from this pass, as
+      // before; the full sync below re-reads it.
+      // Bounded, not an unbounded `Future.wait` over every drive transaction.
+      // Now that this reads one gateway instead of fanning out across
+      // several, an unbounded burst is all aimed at that single host - and a
+      // user with many drives would open every connection at once. Same limit
+      // the metadata reads use.
+      final driveResponses = List<Response?>.filled(driveTxs.length, null);
+
+      await runPooled(
+        concurrency:
+            _configService.config.maxConcurrentDataFetches.clamp(1, 100),
+        itemCount: driveTxs.length,
+        task: (i) async {
+          try {
+            driveResponses[i] =
+                await _gatewayFallback.fetchDataForSync(driveTxs[i].id, client);
+          } catch (_) {
+            // A drive we cannot read is dropped from this pass, as before.
+          }
+        },
       );
 
       // Cache raw bytes for reuse by getLatestDriveEntityWithId (e.g., during
@@ -848,12 +1064,24 @@ class ArweaveService {
 
       final drivesById = <String?, DriveEntity>{};
       final drivesWithKey = <DriveEntity, DriveKey?>{};
+
+      /// Drives whose newest transaction was reached but could not be used.
+      ///
+      /// `getUniqueUserDriveEntityTxs` dedupes **per page**, so the same
+      /// Drive-Id can appear on more than one page and the list is newest
+      /// first. Skipping the newest without recording it would let an older
+      /// revision take its place and write stale metadata - worse than the
+      /// drive simply being late.
+      final handledDriveIds = <String?>{};
       for (var i = 0; i < driveTxs.length; i++) {
         if (driveResponses[i] == null) continue;
         final driveTx = driveTxs[i];
 
         // Ignore drive entity transactions which we already have newer entities for.
-        if (drivesById.containsKey(driveTx.getTag(EntityTag.driveId))) {
+        final txDriveId = driveTx.getTag(EntityTag.driveId);
+
+        if (drivesById.containsKey(txDriveId) ||
+            handledDriveIds.contains(txDriveId)) {
           continue;
         }
 
@@ -868,10 +1096,29 @@ class ArweaveService {
             final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
             final signatureType = DriveSignatureType.fromString(sigTypeTag);
 
-            final driveSignature = signatureType == DriveSignatureType.v1
-                ? await getDriveSignatureForDrive(
-                    wallet, driveTx.getTag(EntityTag.driveId)!)
-                : null;
+            // Contained deliberately. This was the one unguarded await in the
+            // loop, and a gateway hiccup on a single drive's signature threw
+            // all the way out of drive discovery and killed the entire sync -
+            // before any drive had synced at all. Every other failure here
+            // drops one drive and carries on; this one now does too, and the
+            // drive is picked up on the next pass.
+            DriveSignatureEntity? driveSignature;
+
+            if (signatureType == DriveSignatureType.v1) {
+              try {
+                driveSignature = await getDriveSignatureForDriveOnSync(
+                    wallet, driveTx.getTag(EntityTag.driveId)!);
+              } catch (e) {
+                logger.w(
+                  'Could not read the drive signature for $txDriveId; '
+                  'skipping this drive for this pass: $e',
+                );
+                // Claim the id so an older transaction for the same drive on
+                // a later page cannot quietly stand in for the newest one.
+                handledDriveIds.add(txDriveId);
+                continue;
+              }
+            }
 
             driveKey = await _crypto.deriveDriveKey(
                 wallet,
@@ -924,11 +1171,25 @@ class ArweaveService {
   /// by that owner.
   ///
   /// Returns `null` if no valid drive is found or the provided `driveKey` is incorrect.
+  /// Reads the drive entity for [driveId].
+  ///
+  /// [configuredGatewayOnly] picks which read policy the data fetch uses.
+  /// Leave it false for a single read a user is waiting on and can retry -
+  /// attaching a drive by id - where breadth wins and the full waterfall is
+  /// worth its cost.
+  ///
+  /// Pass it for reads on the login and drive-discovery path. Those look like
+  /// user-initiated reads and behave like sync: they run at startup, several
+  /// at a time, with the user watching a spinner. The waterfall is the wrong
+  /// trade there - it walks up to four gateways serially and asks
+  /// `ArioSDK.getGateways()` for the list, which costs a Solana RPC on the
+  /// startup path. See [DataGatewayFallback.fetchDataForSync].
   Future<DriveEntity?> getLatestDriveEntityWithId(
     String driveId, {
     String? driveOwner,
     SecretKey? driveKey,
     int maxRetries = defaultMaxRetries,
+    bool configuredGatewayOnly = false,
   }) async {
     driveOwner ??= await getOwnerForDriveEntityWithId(driveId);
 
@@ -977,7 +1238,10 @@ class ArweaveService {
       // Use cached bytes if available (e.g., from getUniqueUserDriveEntities)
       final cachedBytes = _cachedEntityDataBytes[fileTx.id];
       final entityBytes = cachedBytes ??
-          (await _gatewayFallback.fetchData(fileTx.id, client)).bodyBytes;
+          (await (configuredGatewayOnly
+                  ? _gatewayFallback.fetchDataForSync(fileTx.id, client)
+                  : _gatewayFallback.fetchData(fileTx.id, client)))
+              .bodyBytes;
 
       try {
         return await DriveEntity.fromTransaction(
@@ -1420,15 +1684,20 @@ class ArweaveService {
       }
 
       final chunkStarts = [for (var i = 0; i < ids.length; i += chunkSize) i];
-      // Process the chunks in bounded-concurrency batches.
-      for (var b = 0; b < chunkStarts.length; b += maxConcurrent) {
-        final batch = chunkStarts.skip(b).take(maxConcurrent);
-        try {
-          await Future.wait(batch.map(queryChunk));
-        } catch (e) {
-          logger.e('Error getting transactions confirmations on exception', e);
-          rethrow;
-        }
+
+      // A pool, not a chunked `Future.wait`. Batching these meant each batch
+      // waited for its slowest query before the next started, so one slow
+      // chunk left the other workers idle - the same barrier that cost the
+      // metadata reads above, on the confirmation queries this time.
+      try {
+        await runPooled(
+          concurrency: maxConcurrent,
+          itemCount: chunkStarts.length,
+          task: (i) => queryChunk(chunkStarts[i]),
+        );
+      } catch (e) {
+        logger.e('Error getting transactions confirmations on exception', e);
+        rethrow;
       }
     }
 
@@ -1780,7 +2049,16 @@ class DriveEntityHistory {
   /// A list of block entities, ordered by ascending block height.
   final List<BlockEntities> blockHistory;
 
-  DriveEntityHistory(this.lastBlockHeight, this.blockHistory);
+  /// Transactions whose metadata could not be read, and which were therefore
+  /// left out of [blockHistory]. Surfaced so the sync layer can count and
+  /// report them rather than dropping them silently.
+  final List<String> skippedTxIds;
+
+  DriveEntityHistory(
+    this.lastBlockHeight,
+    this.blockHistory, {
+    this.skippedTxIds = const [],
+  });
 }
 
 /// The entities present in a particular block.

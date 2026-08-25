@@ -128,7 +128,7 @@ class FolderCreateCubit extends Cubit<FolderCreateState> {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    emit(FolderCreateFailure());
+    emit(FolderCreateFailure(isPaymentError: isTurboPaymentError(error)));
     super.onError(error, stackTrace);
 
     logger.e('Failed to create folder', error, stackTrace);

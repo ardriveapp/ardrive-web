@@ -118,6 +118,39 @@ void main() {
     expect(find.text('Text'), findsOneWidget);
   });
 
+  /// A caller that only wants a different size or weight must not lose the
+  /// button's colour. `TextStyle.color` left null falls through to the
+  /// button's `foregroundColor`, which for the secondary style is the surface
+  /// colour - text the same colour as the panel behind it, which in dark mode
+  /// reads as absent. 48 call sites across the app pass a style this way.
+  testWidgets('a partial fontStyle keeps the secondary button text colour',
+      (tester) async {
+    late Color expectedColor;
+
+    await tester.pumpWidget(ArDriveApp(
+      builder: (context) => MaterialApp(
+        home: Builder(builder: (context) {
+          expectedColor =
+              ArDriveTheme.of(context).themeData.colors.themeFgDefault;
+          return ArDriveButton(
+            style: ArDriveButtonStyle.secondary,
+            text: 'Text',
+            // Size and weight only - no colour, as the snapshots tab does.
+            fontStyle: const TextStyle(fontSize: 12),
+            onPressed: () {},
+          );
+        }),
+      ),
+    ));
+
+    final text = tester.widget<Text>(find.text('Text'));
+
+    expect(text.style?.fontSize, 12,
+        reason: "the caller's own values still win");
+    expect(text.style?.color, expectedColor,
+        reason: 'the colour it did not set must fall back, not vanish');
+  });
+
   testWidgets('Test if the text is used correctly on Tertiary', (tester) async {
     final button = ArDriveButton(
       style: ArDriveButtonStyle.tertiary,

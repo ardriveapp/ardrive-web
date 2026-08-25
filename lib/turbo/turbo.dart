@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/turbo/models/payment_user_information.dart';
+import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
@@ -314,6 +315,24 @@ class TurboBalanceRetriever {
         return TurboBalanceInterface(balance: BigInt.zero, paidBy: []);
       }
       rethrow;
+    }
+  }
+
+  /// The wallet's remaining free-upload allowance, or
+  /// [TurboFreeAllowance.unknown] if it could not be determined.
+  ///
+  /// Never throws: this value only decides what we promise the user, so a
+  /// failure here must degrade to the pre-endpoint behaviour rather than
+  /// break upload preparation. A wallet unknown to the payment service is
+  /// also "unknown" — a brand new wallet has its full allowance, so it must
+  /// not be reported as used up.
+  Future<TurboFreeAllowance> getFreeAllowance(Wallet wallet) async {
+    try {
+      return await paymentService.getFreeAllowance(wallet: wallet);
+    } catch (e, stackTrace) {
+      logger.w('Could not get the turbo free allowance: $e');
+      logger.d('$stackTrace');
+      return const TurboFreeAllowance.unknown();
     }
   }
 }

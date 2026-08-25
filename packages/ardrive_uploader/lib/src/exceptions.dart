@@ -152,3 +152,16 @@ class TurboUploadTimeoutException implements ArDriveUploaderExceptions {
   @override
   Object? error;
 }
+
+/// The upload was rate-limited (HTTP 429). Must never be blindly retried.
+class TurboRateLimitException implements ArDriveUploaderExceptions {
+  TurboRateLimitException({
+    this.message = 'Rate limited by the upload service',
+    this.error,
+  });
+
+  @override
+  final String message;
+  @override
+  Object? error;
+}

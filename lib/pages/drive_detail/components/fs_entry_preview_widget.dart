@@ -30,8 +30,22 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
     final stateType = widget.state.runtimeType;
     switch (stateType) {
       case const (FsEntryPreviewUnavailable):
-        return const Center(
-          child: Text('Preview unavailable'),
+        return Center(
+          child: Text(appLocalizationsOf(context).previewUnavailable),
+        );
+
+      case const (FsEntryPreviewOversized):
+        final oversizedState = widget.state as FsEntryPreviewOversized;
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Center(
+            child: Text(
+              appLocalizationsOf(context).filePreviewTooLarge(
+                filesize(oversizedState.maxFileSize),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
         );
 
       case const (FsEntryPreviewLoading):
@@ -78,12 +92,26 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
           isFullScreen: false,
         );
 
-      default:
+      case const (FsEntryPreviewVideo):
         return VideoPlayerWidget(
           filename: (widget.state as FsEntryPreviewVideo).filename,
           videoUrl: (widget.state as FsEntryPreviewVideo).previewUrl,
           isSharePage: widget.isSharePage,
         );
+
+      case const (FsEntryPreviewPdf):
+        final pdfState = widget.state as FsEntryPreviewPdf;
+        return PdfPreviewWidget(
+          filename: pdfState.filename,
+          previewUrl: pdfState.previewUrl,
+          pdfBytes: pdfState.pdfBytes,
+          canOpenOnGateway: pdfState.canOpenOnGateway,
+        );
+
+      default:
+        // Any state without a dedicated branch renders nothing rather than
+        // being blind-cast into a preview widget.
+        return const SizedBox.shrink();
     }
   }
 }
@@ -1475,9 +1503,24 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     final navigationHandlersSet = widget.onPreviousImageNavigate != null &&
         widget.onNextImageNavigate != null;
 
+    // Inline on the share page, the name and type are already on the page -
+    // the name beside the thumbnail at the top of the card, the type in File
+    // details - so repeating them here spent a 96px minimum, a fifth of the
+    // pane, saying what the recipient had already read. Expand is the only
+    // thing in this bar the page cannot say for itself.
+    //
+    // Full screen is the exception and keeps them: the card is gone, so the
+    // name is no longer anywhere else.
+    final isSharePageInline = widget.isSharePage && !widget.isFullScreen;
+
     late Widget actionBar;
 
-    if (isFileExplorer && navigationHandlersSet) {
+    if (isSharePageInline) {
+      actionBar = Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [_buildFullScreenButton(compact: true)],
+      );
+    } else if (isFileExplorer && navigationHandlersSet) {
       actionBar = Column(children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1671,14 +1714,19 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     );
   }
 
-  Widget _buildFullScreenButton() {
+  Widget _buildFullScreenButton({bool compact = false}) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.only(
-          left: 24,
-          top: 24,
-          bottom: 24,
-        ),
+        // The button keeps its 48px tap target either way; only the space
+        // around it goes, since there is no longer a block of text to sit
+        // level with.
+        padding: compact
+            ? const EdgeInsets.all(4)
+            : const EdgeInsets.only(
+                left: 24,
+                top: 24,
+                bottom: 24,
+              ),
         child: IconButton(
           tooltip: widget.isFullScreen
               ? appLocalizationsOf(context).collapse

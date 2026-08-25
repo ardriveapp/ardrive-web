@@ -169,6 +169,11 @@
     "description": "The app is bundling together and signing the transactions"
   },
   "buyCredits": "购买积分",
+  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "freeAllowanceUsedUpTitle": "Free allowance used up",
+  "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
+  "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
+  "freeAllowanceExceededUploadNote": "This upload exceeds your free allowance and will need Credits or AR.",
   "@buyCredits": {},
   "camera": "摄像头",
   "@camera": {
@@ -252,6 +257,10 @@
   "@cookieConsentBodyPart1": {},
   "cookieConsentBodyPart2": "如果点击“接受”则代表你同意使用 cookies。",
   "@cookieConsentBodyPart2": {},
+  "copyAccessKey": "复制密钥",
+  "@copyAccessKey": {
+    "description": "Label of the button that copies the access key on the share file dialog"
+  },
   "copyBundleTxID": "复制打包交易ID",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
@@ -491,9 +500,21 @@
   "@download": {
     "description": "Action of downloading a file"
   },
+  "downloadCancelled": "下载已取消",
+  "@downloadCancelled": {
+    "description": "Title of the dialog shown when a download is cancelled"
+  },
+  "downloadCancelledDescription": "下载已被取消",
+  "@downloadCancelledDescription": {
+    "description": "Description of the dialog shown when a download is cancelled"
+  },
   "downloadFinished": "下载完成！",
   "@downloadFinished": {
     "description": "Download finished"
+  },
+  "downloading": "下载中",
+  "@downloading": {
+    "description": "Status label shown while a file is being downloaded"
   },
   "downloadingCSV": "下载CSV中...",
   "@downloadingCSV": {
@@ -502,6 +523,52 @@
   "downloadingFile": "下载文件中...",
   "@downloadingFile": {
     "description": "File is being downloaded"
+  },
+  "downloadIntegrityFailed": "无法验证此文件",
+  "@downloadIntegrityFailed": {
+    "description": "Title of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check"
+  },
+  "downloadIntegrityFailedDescription": "收到的文件与上传的文件不一致，因此未保存任何内容。重试也无济于事，请让分享该文件的人重新发送一次。",
+  "@downloadIntegrityFailedDescription": {
+    "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
+  },
+  "downloadMustRestart": "下载已中断",
+  "@downloadMustRestart": {
+    "description": "Title of the download failure dialog shown when the connection dropped and the download cannot be picked up where it left off"
+  },
+  "downloadMustRestartDescription": "连接已断开，此文件无法从中断处继续。重新开始将从头再次下载。",
+  "@downloadMustRestartDescription": {
+    "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
+  },
+  "downloadReconnecting": "正在重新连接...",
+  "@downloadReconnecting": {
+    "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
+  },
+  "downloadStartOver": "重新开始",
+  "@downloadStartOver": {
+    "description": "Action on the download failure dialog that restarts a download from the beginning. Deliberately not Try Again, which would imply the download continues from where it stopped"
+  },
+  "downloadVerificationFailed": "此文件与原始文件不一致",
+  "@downloadVerificationFailed": {
+    "description": "Title of the download dialog shown when the saved file contradicts what was originally uploaded"
+  },
+  "downloadVerificationFailedDescription": "{fileName} 已保存，但与最初上传的文件不一致，它在传输途中被改动了。请不要打开它。请将其删除，并请分享者重新发送一次。",
+  "@downloadVerificationFailedDescription": {
+    "description": "Description of the download dialog shown when the saved file contradicts what was originally uploaded. Unlike the not-verified advisory, this is a real problem and says what to do about it",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "holiday.mp4"
+      }
+    }
+  },
+  "downloadVerifying": "正在检查此文件...",
+  "@downloadVerifying": {
+    "description": "Title of the download dialog shown after the file is saved, while the integrity check is still running"
+  },
+  "downloadVerifyingDescription": "您的文件已保存。ArDrive 正在检查它是否与最初上传的文件一致。",
+  "@downloadVerifyingDescription": {
+    "description": "Description of the download dialog shown while the integrity check runs. Says the file is already saved, because the check never holds up saving"
   },
   "downloadWalletKeyfile": "下载钱包密钥文件",
   "@downloadWalletKeyfile": {},
@@ -735,14 +802,6 @@
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
   },
-  "feedbackContent": "你希望为本应用的使用体验留下评价吗?",
-  "@feedbackContent": {
-    "description": "Asks for feedback"
-  },
-  "feedbackTitle": "感谢使用ArDrive!",
-  "@feedbackTitle": {
-    "description": "We thank the user"
-  },
   "fetchingNewQuote": "正在获取新报价……",
   "@fetchingNewQuote": {},
   "fileCount": "{fileCount, plural, zero{无文件} other{{fileCount}个文件}}",
@@ -776,6 +835,30 @@
   "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
   },
+  "downloadNetworkError": "网络错误",
+  "@downloadNetworkError": {
+    "description": "Title for network error during download"
+  },
+  "downloadNetworkErrorDescription": "无法连接到下载服务器。请检查您的网络连接后重试。",
+  "@downloadNetworkErrorDescription": {
+    "description": "Description for network error during download"
+  },
+  "downloadFileNotFound": "未找到文件",
+  "@downloadFileNotFound": {
+    "description": "Title when downloaded file is not found on any gateway"
+  },
+  "downloadFileNotFoundDescription": "在网络上未找到此文件。它可能是最近上传的，仍在处理中。",
+  "@downloadFileNotFoundDescription": {
+    "description": "Description when downloaded file is not found"
+  },
+  "downloadRateLimited": "请求过于频繁",
+  "@downloadRateLimited": {
+    "description": "Title when download is rate limited"
+  },
+  "downloadRateLimitedDescription": "下载服务器繁忙。请稍候片刻后重试。",
+  "@downloadRateLimitedDescription": {
+    "description": "Description when download is rate limited"
+  },
   "fileHadANewRevision": "本文件的新版被上传.",
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
@@ -791,6 +874,16 @@
   "fileName": "文件名称",
   "@fileName": {
     "description": "The name of certain file"
+  },
+  "filePreviewTooLarge": "此文件太大，无法预览（上限 {maxSize}）。请下载后查看。",
+  "@filePreviewTooLarge": {
+    "description": "Shown instead of a preview when the file is larger than the in-memory preview limit",
+    "placeholders": {
+      "maxSize": {
+        "type": "String",
+        "example": "100 MiB"
+      }
+    }
   },
   "fileSize": "文件大小",
   "@fileSize": {
@@ -993,10 +1086,6 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "gotIt": "明白!",
-  "@gotIt": {
-    "description": "Example similar phrases: I've got it, I understood, OK"
-  },
   "goToDeviceSettings": "前往“设置”",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
@@ -1152,10 +1241,6 @@
   },
   "leaveAnEmailToReceiveAReceipt": "如果要接收收据，请提供电子邮件。",
   "@leaveAnEmailToReceiveAReceipt": {},
-  "leaveFeedback": "留下评价",
-  "@leaveFeedback": {
-    "description": "The action of leaving feedback"
-  },
   "letsGetStartedEmphasized": "开始创建",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
@@ -1334,10 +1419,6 @@
   "@noSubscriptions": {
     "description": "Payment philosophy"
   },
-  "noThanks": "不用了谢谢!不再显示该提示",
-  "@noThanks": {
-    "description": "Don't leave feedback, and don't ask again for it"
-  },
   "notLoggedIn": "你没有登录",
   "@notLoggedIn": {
     "description": "User has not logged in"
@@ -1462,6 +1543,32 @@
   "@preview": {
     "description": "Action of previewing a file"
   },
+  "previewPdfOpen": "打开PDF",
+  "@previewPdfOpen": {
+    "description": "Button on the PDF preview card that opens the file in a new browser tab"
+  },
+  "previewPdfOpensInNewTab": "将在新标签页中打开，由你浏览器自带的PDF阅读器显示。",
+  "@previewPdfOpensInNewTab": {
+    "description": "Helper text on the PDF preview card, setting the expectation that the file opens in a new browser tab and is rendered there by the browser's own built-in PDF viewer rather than by ArDrive"
+  },
+  "previewPdfPageIndicator": "第 {page} 页，共 {pageCount} 页",
+  "@previewPdfPageIndicator": {
+    "description": "Page counter under the inline PDF viewer, e.g. 'Page 3 of 12'",
+    "placeholders": {
+      "page": {
+        "type": "int",
+        "example": "3"
+      },
+      "pageCount": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "previewUnavailable": "预览不可用",
+  "@previewUnavailable": {
+    "description": "Shown when a file cannot be previewed in the app"
+  },
   "previous": "前一页",
   "@previous": {
     "description": "Action of going to the previous page"
@@ -1511,6 +1618,54 @@
         "example": "10:00"
       }
     }
+  },
+  "rawTransactionDownloadFailed": "无法保存此文件。",
+  "@rawTransactionDownloadFailed": {
+    "description": "Error shown on the transaction viewer when a transaction's bytes could not be saved to the device"
+  },
+  "rawTransactionGenericTitle": "Arweave 交易",
+  "@rawTransactionGenericTitle": {
+    "description": "Fallback title on the transaction viewer when the transaction carries no file name"
+  },
+  "rawTransactionHideSandboxedFrame": "隐藏",
+  "@rawTransactionHideSandboxedFrame": {
+    "description": "Button that closes the isolated inline frame on the transaction viewer"
+  },
+  "rawTransactionLinkDamaged": "这不是 Arweave 交易 ID。请检查链接后重试。",
+  "@rawTransactionLinkDamaged": {
+    "description": "Shown when the address in a transaction viewer link is not a valid Arweave transaction ID"
+  },
+  "rawTransactionNotFoundOnNetwork": "我们目前在网络上找不到此交易。它可能仍在同步中，请稍后重试。",
+  "@rawTransactionNotFoundOnNetwork": {
+    "description": "Shown on the transaction viewer when the transaction could not be found on the network yet"
+  },
+  "rawTransactionOpenOnGateway": "在网关上打开",
+  "@rawTransactionOpenOnGateway": {
+    "description": "Button that opens a transaction's contents on the gateway, in a new browser tab"
+  },
+  "rawTransactionOpenSandboxed": "在沙盒中打开",
+  "@rawTransactionOpenSandboxed": {
+    "description": "Button that opens contents which could execute code on the gateway's own isolated address, in a new browser tab"
+  },
+  "rawTransactionSandboxedNotice": "此文件可能会在浏览器中运行代码，因此 ArDrive 不会在这里显示它。请改为在网关自己的隔离地址上打开，在那里它无法访问你的 ArDrive 会话。",
+  "@rawTransactionSandboxedNotice": {
+    "description": "Explains why ArDrive declines to render contents that could execute code, and what the isolated alternative keeps them away from"
+  },
+  "rawTransactionShowSandboxedFrame": "在此处以沙盒方式显示",
+  "@rawTransactionShowSandboxedFrame": {
+    "description": "Button that reveals contents which could execute code inline, inside an isolated frame"
+  },
+  "rawTransactionSourceHeading": "源代码",
+  "@rawTransactionSourceHeading": {
+    "description": "Heading above the unexecuted source text of contents ArDrive declined to render"
+  },
+  "rawTransactionTypeMismatch": "此交易的内容与其声明的类型不一致。",
+  "@rawTransactionTypeMismatch": {
+    "description": "Caution shown when a transaction's bytes do not match the content type it declares"
+  },
+  "rawTransactionUnknownType": "ArDrive 无法判断这是哪种文件，因此只能下载。",
+  "@rawTransactionUnknownType": {
+    "description": "Shown on the transaction viewer when the contents cannot be identified, leaving download as the only action"
   },
   "recreateFolderEmphasized": "重新创建文件夹",
   "@recreateFolderEmphasized": {
@@ -1606,9 +1761,177 @@
   "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
+  "sharedFileAccessKeyMalformed": "这看起来不像访问密钥。访问密钥应为 43 个字符。",
+  "@sharedFileAccessKeyMalformed": {
+    "description": "Inline error shown on the shared file page when the pasted access key has the wrong shape, before anything is sent to the network"
+  },
+  "sharedFileAccessKeySentSeparately": "共享此文件的人已通过其他渠道单独把密钥发给你，粘贴在下方即可打开文件。",
+  "@sharedFileAccessKeySentSeparately": {
+    "description": "Text on the shared file page telling the recipient that the sender sent the access key through a different channel"
+  },
+  "sharedFileAccessKeyStaysOnThisDevice": "访问密钥仅保留在此设备上，绝不会发送给 ArDrive。",
+  "@sharedFileAccessKeyStaysOnThisDevice": {
+    "description": "Reassurance shown under the access key field on the shared file page"
+  },
+  "sharedFileDetailsDrawerTitle": "文件详情",
+  "@sharedFileDetailsDrawerTitle": {
+    "description": "Title of the collapsed drawer holding the technical details of a shared file"
+  },
+  "sharedFileDetailsHiddenBySender": "发送者选择在文件解锁前隐藏其详细信息。",
+  "@sharedFileDetailsHiddenBySender": {
+    "description": "Shown on the locked shared file page when the sender chose to keep the file's name, size and type out of the link"
+  },
+  "sharedFileDetailsLicense": "许可证",
+  "@sharedFileDetailsLicense": {
+    "description": "Label of the license row in the shared file details drawer"
+  },
+  "sharedFileDetailsMetadata": "元数据",
+  "@sharedFileDetailsMetadata": {
+    "description": "Label of the metadata transaction row in the shared file details drawer"
+  },
+  "sharedFileDetailsOwner": "共享者",
+  "@sharedFileDetailsOwner": {
+    "description": "Label of the owner address row in the shared file details drawer"
+  },
+  "sharedFileDetailsTransaction": "交易",
+  "@sharedFileDetailsTransaction": {
+    "description": "Label of the data transaction row in the shared file details drawer"
+  },
+  "sharedFileEncryptedFileTitle": "加密文件",
+  "@sharedFileEncryptedFileTitle": {
+    "description": "Fallback title on the shared file page when a private file's name is not known yet"
+  },
+  "sharedFileGenericTitle": "共享文件",
+  "@sharedFileGenericTitle": {
+    "description": "Fallback title on the shared file page when a public file's name is not known yet"
+  },
+  "sharedFileGetLatest": "获取最新版本",
+  "@sharedFileGetLatest": {
+    "description": "Button that fetches the newest version of a shared file"
+  },
   "sharedFileIsEncrypted": "此文件已加密.",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
+  },
+  "sharedFileKeyIncorrect": "该密钥无效。请检查是否有遗漏的字符后重试。",
+  "@sharedFileKeyIncorrect": {
+    "description": "Inline error shown under the file key field on the shared file page when the provided key cannot unlock the file"
+  },
+  "sharedFileLinkChecking": "正在核对",
+  "@sharedFileLinkChecking": {
+    "description": "Badge shown while the link's claims about the file are still being checked"
+  },
+  "sharedFileLinkDetailsMismatch": "文件详情与链接不一致",
+  "@sharedFileLinkDetailsMismatch": {
+    "description": "Warning shown when the details carried by the link do not match the file's own record"
+  },
+  "sharedFileLinkIncomplete": "此链接看起来不完整。请让发送者重新发送。",
+  "@sharedFileLinkIncomplete": {
+    "description": "Shown when the shared link itself is missing the information needed to open a file, so only the sender can fix it"
+  },
+  "sharedFileLinkKeyDamaged": "此链接的密钥似乎已损坏。请让发送者重新发送链接，或在下方粘贴密钥。",
+  "@sharedFileLinkKeyDamaged": {
+    "description": "Inline error under the file key field when the key in the link could not be decoded"
+  },
+  "sharedFileLinkNotChecked": "未核对",
+  "@sharedFileLinkNotChecked": {
+    "description": "Neutral badge shown when the link carried nothing that could be checked against the file"
+  },
+  "sharedFileLinkVerified": "已验证",
+  "@sharedFileLinkVerified": {
+    "description": "Badge shown when the details carried by the link match the file's own record"
+  },
+  "sharedFileLoadFailure": "无法加载此文件。请检查您的网络连接后重试。",
+  "@sharedFileLoadFailure": {
+    "description": "Error shown on the shared file page when the file details could not be loaded because of a network or gateway failure"
+  },
+  "sharedFileLoadingDetails": "正在加载文件详情...",
+  "@sharedFileLoadingDetails": {
+    "description": "Shown on the shared file page while the file's details are being resolved"
+  },
+  "sharedFileNetworkTrouble": "我们暂时无法连接到网络。请检查你的网络连接后重试。",
+  "@sharedFileNetworkTrouble": {
+    "description": "Shown on the shared file page when the network cannot be reached"
+  },
+  "sharedFileNewerVersionAvailable": "此文件有更新的版本。",
+  "@sharedFileNewerVersionAvailable": {
+    "description": "Banner shown when the shared file has a version newer than the one the link points at"
+  },
+  "sharedFileNotFoundOnNetwork": "我们目前在网络上找不到此文件。它可能仍在同步中，请稍后重试。",
+  "@sharedFileNotFoundOnNetwork": {
+    "description": "Shown on the shared file page when the file could not be found after the automatic retries"
+  },
+  "sharedFilePasteAccessKey": "粘贴访问密钥",
+  "@sharedFilePasteAccessKey": {
+    "description": "Placeholder of the access key field on the shared file page"
+  },
+  "sharedFilePreviewUnsupported": "此文件无法在这里预览。请下载后打开。",
+  "@sharedFilePreviewUnsupported": {
+    "description": "Shown on the shared file page when the file cannot be previewed in the browser"
+  },
+  "sharedFileProtectedWithAccessKey": "此文件受访问密钥保护。",
+  "@sharedFileProtectedWithAccessKey": {
+    "description": "Heading of the locked shared file page, telling the recipient that an access key is needed to open the file"
+  },
+  "sharedFileRememberKeyForThisTab": "在此标签页中记住此密钥",
+  "@sharedFileRememberKeyForThisTab": {
+    "description": "Label of the checkbox that keeps the access key for the current browser tab"
+  },
+  "sharedFileRetry": "重试",
+  "@sharedFileRetry": {
+    "description": "Button that tries loading the shared file again"
+  },
+  "sharedFileRetryingNow": "正在重试...",
+  "@sharedFileRetryingNow": {
+    "description": "Shown when the automatic retry for a shared file is running"
+  },
+  "sharedFileSharedBy": "由 {address} 共享",
+  "@sharedFileSharedBy": {
+    "description": "Shows the shortened wallet address the shared file was shared by",
+    "placeholders": {
+      "address": {
+        "type": "String",
+        "example": "Zvp8dE...gF0e"
+      }
+    }
+  },
+  "sharedFileSharedVersion": "已共享",
+  "@sharedFileSharedVersion": {
+    "description": "Marks, in the version history, the version the shared link points at"
+  },
+  "sharedFileShowingLatestVersion": "你正在查看最新版本。发送给你的链接指向的是更早的版本。",
+  "@sharedFileShowingLatestVersion": {
+    "description": "Notice shown to the recipient of a pinned link once they have asked for the latest version, telling them the page no longer shows the version the sender linked to"
+  },
+  "sharedFileStillPropagating": "此文件刚刚上传，可能仍在网络中传播。将在 {seconds} 秒后重试...",
+  "@sharedFileStillPropagating": {
+    "description": "Shown while a just-uploaded shared file has not spread across the network yet, counting down the seconds to the next automatic retry",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "sharedFileUnlockedWithAccessKey": "已使用你的访问密钥解锁。对其他所有人来说，此文件仍处于加密状态。",
+  "@sharedFileUnlockedWithAccessKey": {
+    "description": "Shown after a private shared file has been unlocked with an access key"
+  },
+  "sharedFileUnlockFile": "解锁文件",
+  "@sharedFileUnlockFile": {
+    "description": "Button that submits the access key on the shared file page"
+  },
+  "sharedFileVersionHistoryTitle": "版本历史",
+  "@sharedFileVersionHistoryTitle": {
+    "description": "Title of the collapsed drawer holding the version history of a shared file"
+  },
+  "sharedFileViewLatest": "查看最新版本",
+  "@sharedFileViewLatest": {
+    "description": "Button that opens the newest version of a shared file when the link is pinned to an older one"
+  },
+  "sharedFileViewSharedVersion": "查看共享的版本",
+  "@sharedFileViewSharedVersion": {
+    "description": "Button that takes the recipient back to the version the sender actually shared, after they have viewed the latest one"
   },
   "shareDrive": "分享网盘",
   "@shareDrive": {
@@ -1625,6 +1948,46 @@
   "shareFile": "分享文件",
   "@shareFile": {
     "description": "The action of sharing a file link"
+  },
+  "shareFileAccessKeyLabel": "访问密钥",
+  "@shareFileAccessKeyLabel": {
+    "description": "Label of the read-only field holding the access key on the share file dialog"
+  },
+  "shareFileFinishingLink": "仍在添加此文件的加密信息。链接已经可以使用。",
+  "@shareFileFinishingLink": {
+    "description": "Helper text on the share file dialog while the file's encryption details are still being fetched, reassuring the sharer that the link already works"
+  },
+  "shareFileHideDetails": "隐藏文件详情",
+  "@shareFileHideDetails": {
+    "description": "Label of the toggle that keeps the file's name, size and type out of the share link"
+  },
+  "shareFileHideDetailsDescription": "隐藏后，收件人在解锁之前看不到关于该文件的任何信息，包括名称、大小和类型。",
+  "@shareFileHideDetailsDescription": {
+    "description": "Helper text explaining what the recipient sees when the file's details are hidden from the share link"
+  },
+  "shareFileIncludeKeyInLink": "将密钥包含在链接中：任何拿到链接的人都能打开该文件",
+  "@shareFileIncludeKeyInLink": {
+    "description": "Label of the checkbox that embeds the access key in the share link, which makes the link alone enough to open the file"
+  },
+  "shareFileKeyInLinkWarning": "现在这个链接本身就能打开文件。请像对待文件本身一样对待它。",
+  "@shareFileKeyInLinkWarning": {
+    "description": "Warning shown once the access key has been embedded in the share link"
+  },
+  "shareFileLinkLabel": "链接",
+  "@shareFileLinkLabel": {
+    "description": "Label of the read-only field holding the share link on the share file dialog"
+  },
+  "shareFilePinToThisVersion": "仅链接到此版本",
+  "@shareFilePinToThisVersion": {
+    "description": "Label of the toggle that pins the share link to the version of the file being shared"
+  },
+  "shareFilePinToThisVersionDescription": "即使你之后上传了新版本，收件人拿到的始终是这个版本。",
+  "@shareFilePinToThisVersionDescription": {
+    "description": "Helper text explaining that a pinned share link keeps pointing at the version being shared"
+  },
+  "shareFileSendKeySeparately": "请通过与链接不同的渠道发送密钥。链接和密钥出现在同一条消息里，就等于没有任何保护。",
+  "@shareFileSendKeySeparately": {
+    "description": "Helper text telling the sharer to send the access key through a different channel than the share link"
   },
   "shareFileWithOthers": "与他人分享文件",
   "@shareFileWithOthers": {
@@ -2053,6 +2416,10 @@
       }
     }
   },
+  "weWontRemindYou": "好的!我们不会再显示该提示.",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them again"
+  },
   "welcome": "欢迎",
   "@welcome": {
     "description": "welcome"
@@ -2094,14 +2461,6 @@
   "weReSorryEmphasized": "对不起!",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
-  },
-  "weWontRemindYou": "好的!我们不会再显示该提示.",
-  "@weWontRemindYou": {
-    "description": "We let the user know that we won't remind them to leave feedback again"
-  },
-  "weWontRemindYouDescription": "如果你改变了主意, 想在之后留下反馈, 可以使用菜单中的链接.",
-  "@weWontRemindYouDescription": {
-    "description": "We let the user know where to find the 'Leave Feedback' button"
   },
   "whatIsAKeyFile": "什么是密钥文件，它是如何工作的？",
   "@whatIsAKeyFile": {},

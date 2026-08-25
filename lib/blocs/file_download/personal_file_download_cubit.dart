@@ -26,6 +26,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
   final io.ArDriveMobileDownloader _downloader;
   final ArDriveDownloader _arDriveDownloader;
   final ARFSRepository _arfsRepository;
+  final DownloadPolicy _downloadPolicy;
 
   ProfileFileDownloadCubit({
     required ARFSFileEntity file,
@@ -35,22 +36,32 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
     required ArDriveDownloader arDriveDownloader,
     required ARFSRepository arfsRepository,
     required ArDriveCrypto crypto,
-  })  : _driveDao = driveDao,
+    DownloadPolicy downloadPolicy = const DownloadPolicy(),
+  })  : _downloadPolicy = downloadPolicy,
+        _driveDao = driveDao,
         _arweave = arweave,
         _arDriveDownloader = arDriveDownloader,
         _file = file,
         _downloader = downloader,
         _arfsRepository = arfsRepository,
-        super(FileDownloadStarting());
+        super(FileDownloadStarting()) {
+    watchForReconnects(_arDriveDownloader);
+  }
 
   Future<void> verifyUploadLimitationsAndDownload(SecretKey? cipherKey) async {
     try {
-      if (await AppPlatform.isSafari()) {
-        if (_file.size > publicDownloadSafariSizeLimit) {
-          emit(const FileDownloadFailure(
-              FileDownloadFailureReason.browserDoesNotSupportLargeDownloads));
-          return;
-        }
+      final drive = await _arfsRepository.getDriveById(_file.driveId);
+
+      // One decision, one place (F22): the Safari ceiling and the mobile
+      // private-file ceiling are both [DownloadPolicy]'s to state.
+      final limit = await _downloadPolicy.singleFileLimit(
+        isPublic: drive.drivePrivacy == DrivePrivacy.public,
+      );
+
+      final failure = singleFileLimitFailure(limit, _file.size);
+      if (failure != null) {
+        emit(FileDownloadFailure(failure));
+        return;
       }
     } catch (e) {
       logger.d(
@@ -121,6 +132,10 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
               _downloadProgress.sink.add(FileDownloadProgress(progress / 100));
             }
 
+            // No verdict, deliberately: [io.ArDriveMobileDownloader] hands the
+            // transfer to the platform and never sees the bytes, so there is
+            // nothing to check them against. Reporting "could not be checked"
+            // would name the absence of something that was never attempted.
             emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
             break;
           }
@@ -231,7 +246,11 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
         }
       },
       onDone: () {
-        emit(FileDownloadFinishedWithSuccess(fileName: _file.name));
+        // The bytes are on disk; only now is it safe to wait on the verdict.
+        unawaited(emitFinishedWithIntegrity(
+          downloader: _arDriveDownloader,
+          fileName: _file.name,
+        ));
       },
       cancelOnError: true,
     );
@@ -259,7 +278,7 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
 
   @override
   void onError(Object error, StackTrace stackTrace) {
-    final reason = _classifyError(error);
+    final reason = classifyDownloadError(error);
     emit(FileDownloadFailure(reason));
 
     super.onError(error, stackTrace);
@@ -270,19 +289,5 @@ class ProfileFileDownloadCubit extends FileDownloadCubit {
       error,
       stackTrace,
     );
-  }
-
-  static FileDownloadFailureReason _classifyError(Object error) {
-    if (error is DownloadFileNotFoundException) {
-      return FileDownloadFailureReason.fileNotFound;
-    }
-    if (error is DownloadRateLimitException) {
-      return FileDownloadFailureReason.rateLimited;
-    }
-    if (error is DownloadNetworkException ||
-        error is DownloadStalledException) {
-      return FileDownloadFailureReason.networkConnectionError;
-    }
-    return FileDownloadFailureReason.unknownError;
   }
 }

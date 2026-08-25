@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_event.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_state.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
@@ -128,9 +129,15 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
       return;
     } catch (e) {
       logger.e('Error during bulk import', e);
+      final paymentError = _isBulkImportPaymentError(e);
       emit(BulkImportError(
-        'An unexpected error occurred during the import process. Please try again.',
+        paymentError
+            ? 'Your free upload allowance has been used up. Add Credits to '
+                'continue importing.'
+            : 'An unexpected error occurred during the import process. '
+                'Please try again.',
         e,
+        paymentError,
       ));
     }
   }
@@ -182,6 +189,8 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
   }) async {
     var processedFiles = 0;
     final failedPaths = <String>[];
+    Object? lastImportError;
+    BulkImportResult? importResult;
 
     try {
       emit(BulkImportInProgress(
@@ -201,7 +210,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         return;
       }
 
-      await _bulkImportFiles(
+      importResult = await _bulkImportFiles(
         driveId: driveId,
         parentFolderId: parentFolderId,
         files: files,
@@ -244,6 +253,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     } catch (e) {
       failedPaths.add(files.first.path);
       logger.e('Failed to import file: ${files.first.path}', e);
+      lastImportError = e;
     }
 
     final totalFiles = files.length;
@@ -251,8 +261,18 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     final failedFiles = failedPaths;
 
     if (successfulFiles == 0) {
-      emit(const BulkImportError(
-        'Failed to import any files. Please check the manifest and try again.',
+      final paymentError = _isBulkImportPaymentError(lastImportError) ||
+          (importResult?.failures.any(
+                  (f) => _isBulkImportPaymentError(f.originalError)) ??
+              false);
+      emit(BulkImportError(
+        paymentError
+            ? 'Your free upload allowance has been used up. Add Credits to '
+                'continue importing.'
+            : 'Failed to import any files. Please check the manifest and '
+                'try again.',
+        lastImportError,
+        paymentError,
       ));
     } else {
       emit(BulkImportSuccess(
@@ -287,5 +307,18 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
     _pendingFiles = null;
     _bulkImportFiles.reset();
     emit(const BulkImportInitial());
+  }
+}
+
+/// Detects a Turbo payment rejection inside bulk-import failures. Metadata
+/// upload use-cases wrap the original exception in
+/// FileMetadataUploadException/FolderMetadataUploadException.
+bool _isBulkImportPaymentError(Object? error) {
+  if (isTurboPaymentError(error)) return true;
+  try {
+    final dynamic e = error;
+    return isTurboPaymentError(e.originalError);
+  } catch (_) {
+    return false;
   }
 }

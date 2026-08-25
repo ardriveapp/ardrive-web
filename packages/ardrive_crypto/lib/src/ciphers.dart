@@ -20,9 +20,21 @@ AesGcm cipherBufferImpl(String cipherName) {
 FutureOr<DecryptStream> cipherStreamDecryptImpl(
   String cipherName, {
   required Uint8List keyData,
+  bool gcmTooLargeToBuffer = false,
 }) async {
   final Map<String, FutureOr<DecryptStream> Function(Uint8List)> ctrs = {
-    Cipher.aes256gcm: AesGcmStream.fromKeyData,
+    // NOTE: streaming AES-GCM does *not* verify the MAC — it trims the tag and
+    // decrypts with AES-CTR underneath. Anything decrypted through it must be
+    // authenticated another way. Prefer buffering + decryptTransactionData().
+    //
+    // [gcmTooLargeToBuffer] is the single exception, and it is the caller's
+    // assertion that buffering is impossible — see
+    // [AesGcmStream.unauthenticatedTooLargeToBuffer]. Every other GCM caller
+    // goes through [AesGcmStream.unauthenticated], which stays subject to the
+    // kill switch.
+    Cipher.aes256gcm: gcmTooLargeToBuffer
+        ? AesGcmStream.unauthenticatedTooLargeToBuffer
+        : AesGcmStream.unauthenticated,
     Cipher.aes256ctr: AesCtrStream.fromKeyData,
   };
   final ctr = ctrs[cipherName];

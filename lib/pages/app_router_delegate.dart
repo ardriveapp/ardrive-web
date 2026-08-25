@@ -4,10 +4,8 @@ import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
-import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/components/components.dart';
-import 'package:ardrive/components/feedback_survey.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
@@ -18,6 +16,7 @@ import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/pages.dart';
+import 'package:ardrive/pages/raw_transaction_view/raw_transaction_view_page.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -28,6 +27,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -44,18 +44,84 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? driveName;
   String? driveFolderId;
 
+  /// The drive a folder link named, held until that drive is the selected one.
+  ///
+  /// A folder link opened by someone who does not have the drive yet goes
+  /// through the attach flow, which ends by clearing [driveId] so the prompt
+  /// cannot re-fire. The drive is then selected fresh, [driveFolderId] reads as
+  /// belonging to a different drive, and the folder the link named is dropped -
+  /// so every recipient who was not already in the drive landed at its root,
+  /// which made a folder link a drive link with extra characters.
+  ///
+  /// One shot: cleared as soon as that drive is selected, so ordinary
+  /// navigation away from the drive still discards the folder as it always has.
+  String? _pendingFolderDriveId;
+
+  /// The folder that link named, held with the drive it belongs to.
+  ///
+  /// Kept alongside [_pendingFolderDriveId] rather than read off
+  /// [driveFolderId] when the drive arrives: between the link opening and that
+  /// drive being selected the recipient may have been somewhere else entirely,
+  /// and [driveFolderId] would by then hold a folder from whatever drive they
+  /// were last in. Restoring *this* is the difference between opening the
+  /// folder the link named and opening another drive's folder under this
+  /// drive's name.
+  String? _pendingFolderId;
+
+  /// Reconciles the folder in view with the drive that has just been selected.
+  ///
+  /// Selecting a different drive discards the folder, which is what ordinary
+  /// navigation wants - a folder from the drive you just left is stale. The one
+  /// exception is the drive a folder link named: it becomes selected *because*
+  /// of that link, so its folder is the whole point rather than a leftover.
+  ///
+  /// Extracted from the listener that calls it so it can be tested without
+  /// standing up the whole app shell.
+  @visibleForTesting
+  void onDriveSelected(String? selectedDriveId) {
+    final selectedDriveChanged = driveId != selectedDriveId;
+
+    final isTheLinkedDrive = _pendingFolderDriveId != null &&
+        _pendingFolderDriveId == selectedDriveId;
+
+    if (isTheLinkedDrive) {
+      // The folder the link named, not the one in view - see [_pendingFolderId].
+      driveFolderId = _pendingFolderId;
+
+      // One shot. Released as soon as it is honored, so navigating away from
+      // the drive and back lands at its root rather than jumping to the old
+      // folder.
+      _pendingFolderDriveId = null;
+      _pendingFolderId = null;
+    } else if (selectedDriveChanged) {
+      driveFolderId = null;
+    }
+
+    driveId = selectedDriveId;
+  }
+
   DriveKey? sharedDriveKey;
   String? sharedRawDriveKey;
 
   String? sharedFileId;
   SecretKey? sharedFileKey;
   String? sharedRawFileKey;
+  bool sharedFileKeyIsDamaged = false;
+
+  /// The v2 payload the shared file link embedded, or `null` for a v1 link.
+  SharedFileLinkPayload? sharedFileLinkPayload;
+
+  /// The transaction `/view/{txId}` was asked for, and its optional hints.
+  String? rawTransactionId;
+  String? rawTransactionName;
+  String? rawTransactionContentType;
 
   bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
       profileState is ProfileUnavailable && tryingToViewDrive;
   bool get tryingToViewDrive => driveId != null;
   bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
   bool get isViewingSharedFile => sharedFileId != null;
+  bool get isViewingRawTransaction => rawTransactionId != null;
 
   @override
   AppRoutePath get currentConfiguration => AppRoutePath(
@@ -69,6 +135,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         sharedFileId: sharedFileId,
         sharedFileKey: sharedFileKey,
         sharedRawFileKey: sharedRawFileKey,
+        sharedFileKeyIsDamaged: sharedFileKeyIsDamaged,
+        sharedFileLinkPayload: sharedFileLinkPayload,
+        rawTransactionId: rawTransactionId,
+        rawTransactionName: rawTransactionName,
+        rawTransactionContentType: rawTransactionContentType,
       );
 
   @override
@@ -110,8 +181,13 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               // and not anonymously viewing a drive, redirect them to sign in.
               //
               // Additionally, redirect the user to sign in if they are logging out.
-              final showingAnonymousRoute =
-                  anonymouslyShowDriveDetail || isViewingSharedFile;
+              //
+              // `/view/{txId}` is anonymous for the same reason a shared file
+              // link is: a recipient who was sent a link has no account and
+              // needs none.
+              final showingAnonymousRoute = anonymouslyShowDriveDetail ||
+                  isViewingSharedFile ||
+                  isViewingRawTransaction;
 
               if (!signingIn &&
                   !gettingStarted &&
@@ -146,10 +222,24 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   create: (_) => SharedFileCubit(
                     fileId: sharedFileId!,
                     fileKey: sharedFileKey,
+                    linkKeyIsDamaged: sharedFileKeyIsDamaged,
+                    // `null` for a v1 link; the cubit then resolves the file
+                    // over GraphQL exactly as it always has.
+                    linkPayload: sharedFileLinkPayload,
                     arweave: context.read<ArweaveService>(),
                     licenseService: context.read<LicenseService>(),
                   ),
-                  child: SharedFilePage(),
+                  child: const SharedFilePage(),
+                );
+              } else if (isViewingRawTransaction) {
+                // Keyed on the id for the same reason the shared file branch
+                // above is: moving between two `/view` links must rebuild the
+                // page rather than reuse its state.
+                shell = RawTransactionViewPage(
+                  key: ValueKey(rawTransactionId),
+                  txId: rawTransactionId!,
+                  name: rawTransactionName,
+                  contentType: rawTransactionContentType,
                 );
               } else if (signingIn) {
                 shell = const LoginPage();
@@ -162,13 +252,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 shell = BlocListener<DrivesCubit, DrivesState>(
                   listener: (context, state) {
                     if (state is DrivesLoadSuccess) {
-                      final selectedDriveChanged =
-                          driveId != state.selectedDriveId;
-                      if (selectedDriveChanged) {
-                        driveFolderId = null;
-                      }
-
-                      driveId = state.selectedDriveId;
+                      onDriveSelected(state.selectedDriveId);
                       notifyListeners();
                     }
                   },
@@ -230,27 +314,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                               });
                             }
                           },
-                        ),
-                        BlocListener<FeedbackSurveyCubit, FeedbackSurveyState>(
-                          listener: (context, state) {
-                            if (state is FeedbackSurveyRemindMe &&
-                                state.isOpen) {
-                              openFeedbackSurveyModal(context);
-                            } else if (state is FeedbackSurveyRemindMe &&
-                                !state.isOpen) {
-                              Navigator.pop(context);
-                            } else if (state is FeedbackSurveyDontRemindMe &&
-                                !state.isOpen) {
-                              Navigator.pop(context);
-                            }
-                          },
-                        ),
-                        BlocListener<ProfileCubit, ProfileState>(
-                          listener: ((context, state) {
-                            if (state is ProfileLoggingOut) {
-                              context.read<FeedbackSurveyCubit>().reset();
-                            }
-                          }),
                         ),
                       ],
                       child: AppShell(
@@ -322,6 +385,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         ardriveAuth: context.read<ArDriveAuth>(),
                         crypto: ArDriveCrypto(),
                         turboUploadService: context.read<TurboUploadService>(),
+                        arweave: context.read<ArweaveService>(),
                       ),
                     ),
                   ],
@@ -372,11 +436,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = configuration.driveId;
     driveName = configuration.driveName;
     driveFolderId = configuration.driveFolderId;
+    _pendingFolderDriveId =
+        configuration.driveFolderId == null ? null : configuration.driveId;
+    _pendingFolderId = configuration.driveFolderId;
     sharedDriveKey = configuration.sharedDriveKey;
     sharedRawDriveKey = configuration.sharedRawDriveKey;
     sharedFileId = configuration.sharedFileId;
     sharedFileKey = configuration.sharedFileKey;
     sharedRawFileKey = configuration.sharedRawFileKey;
+    sharedFileKeyIsDamaged = configuration.sharedFileKeyIsDamaged;
+    sharedFileLinkPayload = configuration.sharedFileLinkPayload;
+    rawTransactionId = configuration.rawTransactionId;
+    rawTransactionName = configuration.rawTransactionName;
+    rawTransactionContentType = configuration.rawTransactionContentType;
   }
 
   void clearState() {
@@ -385,11 +457,18 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveId = null;
     driveName = null;
     driveFolderId = null;
+    _pendingFolderDriveId = null;
+    _pendingFolderId = null;
     sharedDriveKey = null;
     sharedRawDriveKey = null;
     sharedFileId = null;
     sharedFileKey = null;
     sharedRawFileKey = null;
+    sharedFileKeyIsDamaged = false;
+    sharedFileLinkPayload = null;
+    rawTransactionId = null;
+    rawTransactionName = null;
+    rawTransactionContentType = null;
   }
 }
 

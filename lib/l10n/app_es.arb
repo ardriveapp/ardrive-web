@@ -169,6 +169,11 @@
     "description": "The app is bundling together and signing the transactions"
   },
   "buyCredits": "Comprar créditos",
+  "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
+  "freeAllowanceUsedUpTitle": "Free allowance used up",
+  "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
+  "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
+  "freeAllowanceExceededUploadNote": "This upload exceeds your free allowance and will need Credits or AR.",
   "@buyCredits": {},
   "camera": "Cámara",
   "@camera": {
@@ -252,6 +257,10 @@
   "@cookieConsentBodyPart1": {},
   "cookieConsentBodyPart2": "Al hacer clic en «Aceptar», consientes el uso de las «cookies».",
   "@cookieConsentBodyPart2": {},
+  "copyAccessKey": "Copiar la clave",
+  "@copyAccessKey": {
+    "description": "Label of the button that copies the access key on the share file dialog"
+  },
   "copyBundleTxID": "Copiar la ID de la transacción del empaquetado",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
@@ -491,9 +500,21 @@
   "@download": {
     "description": "Action of downloading a file"
   },
+  "downloadCancelled": "Descarga cancelada",
+  "@downloadCancelled": {
+    "description": "Title of the dialog shown when a download is cancelled"
+  },
+  "downloadCancelledDescription": "La descarga fue cancelada",
+  "@downloadCancelledDescription": {
+    "description": "Description of the dialog shown when a download is cancelled"
+  },
   "downloadFinished": "¡Descarga terminada!",
   "@downloadFinished": {
     "description": "Download finished"
+  },
+  "downloading": "Descargando",
+  "@downloading": {
+    "description": "Status label shown while a file is being downloaded"
   },
   "downloadingCSV": "Descargando CSV...",
   "@downloadingCSV": {
@@ -502,6 +523,52 @@
   "downloadingFile": "Descargando archivo...",
   "@downloadingFile": {
     "description": "File is being downloaded"
+  },
+  "downloadIntegrityFailed": "No se ha podido verificar este archivo",
+  "@downloadIntegrityFailed": {
+    "description": "Title of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check"
+  },
+  "downloadIntegrityFailedDescription": "El archivo que ha llegado no coincide con el que se subió, así que no se ha guardado nada. Volver a intentarlo no servirá de nada: pide a quien lo compartió que te lo envíe de nuevo.",
+  "@downloadIntegrityFailedDescription": {
+    "description": "Description of the download failure dialog shown when the downloaded bytes failed their cryptographic authentication check. Says that nothing was written and that retrying cannot help"
+  },
+  "downloadMustRestart": "La descarga se ha detenido",
+  "@downloadMustRestart": {
+    "description": "Title of the download failure dialog shown when the connection dropped and the download cannot be picked up where it left off"
+  },
+  "downloadMustRestartDescription": "Se ha perdido la conexión y este archivo no puede continuar desde donde se quedó. Si empiezas de nuevo, se descargará otra vez desde el principio.",
+  "@downloadMustRestartDescription": {
+    "description": "Description of the download failure dialog shown when the download cannot be resumed. Says plainly that retrying restarts from the beginning rather than continuing"
+  },
+  "downloadReconnecting": "Reconectando...",
+  "@downloadReconnecting": {
+    "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
+  },
+  "downloadStartOver": "Empezar de nuevo",
+  "@downloadStartOver": {
+    "description": "Action on the download failure dialog that restarts a download from the beginning. Deliberately not Try Again, which would imply the download continues from where it stopped"
+  },
+  "downloadVerificationFailed": "Este archivo no coincide con el original",
+  "@downloadVerificationFailed": {
+    "description": "Title of the download dialog shown when the saved file contradicts what was originally uploaded"
+  },
+  "downloadVerificationFailedDescription": "{fileName} se ha guardado, pero no coincide con lo que se subió originalmente: algo lo ha modificado por el camino. No lo abras. Elimínalo y pide a quien lo compartió que te lo envíe de nuevo.",
+  "@downloadVerificationFailedDescription": {
+    "description": "Description of the download dialog shown when the saved file contradicts what was originally uploaded. Unlike the not-verified advisory, this is a real problem and says what to do about it",
+    "placeholders": {
+      "fileName": {
+        "type": "String",
+        "example": "holiday.mp4"
+      }
+    }
+  },
+  "downloadVerifying": "Comprobando este archivo...",
+  "@downloadVerifying": {
+    "description": "Title of the download dialog shown after the file is saved, while the integrity check is still running"
+  },
+  "downloadVerifyingDescription": "Tu archivo se ha guardado. ArDrive está comprobando que coincide con lo que se subió originalmente.",
+  "@downloadVerifyingDescription": {
+    "description": "Description of the download dialog shown while the integrity check runs. Says the file is already saved, because the check never holds up saving"
   },
   "downloadWalletKeyfile": "Descargar archivo de claves del monedero",
   "@downloadWalletKeyfile": {},
@@ -735,14 +802,6 @@
   "@failedToSyncDrive": {
     "description": "The app wasn't able to sync the drive"
   },
-  "feedbackContent": "¿Te interesaría dejar comentarios sobre tu experiencia en la aplicación?",
-  "@feedbackContent": {
-    "description": "Asks for feedback"
-  },
-  "feedbackTitle": "¡Gracias por usar ArDrive!",
-  "@feedbackTitle": {
-    "description": "We thank the user"
-  },
   "fetchingNewQuote": "Obteniendo nuevo presupuesto...",
   "@fetchingNewQuote": {},
   "fileCount": "{fileCount, plural, zero{ningún archivo} one{1 archivo} other{{fileCount} archivos}}",
@@ -776,6 +835,30 @@
   "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
   },
+  "downloadNetworkError": "Error de red",
+  "@downloadNetworkError": {
+    "description": "Title for network error during download"
+  },
+  "downloadNetworkErrorDescription": "No se pudo conectar con el servidor de descargas. Comprueba tu conexión e inténtalo de nuevo.",
+  "@downloadNetworkErrorDescription": {
+    "description": "Description for network error during download"
+  },
+  "downloadFileNotFound": "Archivo no encontrado",
+  "@downloadFileNotFound": {
+    "description": "Title when downloaded file is not found on any gateway"
+  },
+  "downloadFileNotFoundDescription": "No se ha podido encontrar este archivo en la red. Puede que se haya subido hace poco y todavía se esté procesando.",
+  "@downloadFileNotFoundDescription": {
+    "description": "Description when downloaded file is not found"
+  },
+  "downloadRateLimited": "Demasiadas solicitudes",
+  "@downloadRateLimited": {
+    "description": "Title when download is rate limited"
+  },
+  "downloadRateLimitedDescription": "El servidor de descargas está ocupado. Espera un momento e inténtalo de nuevo.",
+  "@downloadRateLimitedDescription": {
+    "description": "Description when download is rate limited"
+  },
   "fileHadANewRevision": "Una nueva revisión del archivo fue cargada.",
   "@fileHadANewRevision": {
     "description": "File activity (journal): new revision"
@@ -791,6 +874,16 @@
   "fileName": "Nombre del archivo",
   "@fileName": {
     "description": "The name of certain file"
+  },
+  "filePreviewTooLarge": "Este archivo es demasiado grande para previsualizarlo (límite de {maxSize}). Descárgalo para verlo.",
+  "@filePreviewTooLarge": {
+    "description": "Shown instead of a preview when the file is larger than the in-memory preview limit",
+    "placeholders": {
+      "maxSize": {
+        "type": "String",
+        "example": "100 MiB"
+      }
+    }
   },
   "fileSize": "Tamaño del archivo",
   "@fileSize": {
@@ -993,10 +1086,6 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "gotIt": "¡Entendido!",
-  "@gotIt": {
-    "description": "Example similar phrases: I've got it, I understood, OK"
-  },
   "goToDeviceSettings": "Ir a Ajustes",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
@@ -1152,10 +1241,6 @@
   },
   "leaveAnEmailToReceiveAReceipt": "Para recibir un recibo, indica una dirección de correo electrónico.",
   "@leaveAnEmailToReceiveAReceipt": {},
-  "leaveFeedback": "Dejar comentarios",
-  "@leaveFeedback": {
-    "description": "The action of leaving feedback"
-  },
   "letsGetStartedEmphasized": "COMENCEMOS",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
@@ -1334,10 +1419,6 @@
   "@noSubscriptions": {
     "description": "Payment philosophy"
   },
-  "noThanks": "¡No, gracias! No me lo recuerdes otra vez",
-  "@noThanks": {
-    "description": "Don't leave feedback, and don't ask again for it"
-  },
   "notLoggedIn": "No has ingresado",
   "@notLoggedIn": {
     "description": "User has not logged in"
@@ -1462,6 +1543,32 @@
   "@preview": {
     "description": "Action of previewing a file"
   },
+  "previewPdfOpen": "Abrir el PDF",
+  "@previewPdfOpen": {
+    "description": "Button on the PDF preview card that opens the file in a new browser tab"
+  },
+  "previewPdfOpensInNewTab": "Se abre en una pestaña nueva, donde lo muestra el visor de PDF propio de tu navegador.",
+  "@previewPdfOpensInNewTab": {
+    "description": "Helper text on the PDF preview card, setting the expectation that the file opens in a new browser tab and is rendered there by the browser's own built-in PDF viewer rather than by ArDrive"
+  },
+  "previewPdfPageIndicator": "Página {page} de {pageCount}",
+  "@previewPdfPageIndicator": {
+    "description": "Page counter under the inline PDF viewer, e.g. 'Page 3 of 12'",
+    "placeholders": {
+      "page": {
+        "type": "int",
+        "example": "3"
+      },
+      "pageCount": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "previewUnavailable": "Vista previa no disponible",
+  "@previewUnavailable": {
+    "description": "Shown when a file cannot be previewed in the app"
+  },
   "previous": "Anterior",
   "@previous": {
     "description": "Action of going to the previous page"
@@ -1511,6 +1618,54 @@
         "example": "10:00"
       }
     }
+  },
+  "rawTransactionDownloadFailed": "No se ha podido guardar este archivo.",
+  "@rawTransactionDownloadFailed": {
+    "description": "Error shown on the transaction viewer when a transaction's bytes could not be saved to the device"
+  },
+  "rawTransactionGenericTitle": "Transacción de Arweave",
+  "@rawTransactionGenericTitle": {
+    "description": "Fallback title on the transaction viewer when the transaction carries no file name"
+  },
+  "rawTransactionHideSandboxedFrame": "Ocultar",
+  "@rawTransactionHideSandboxedFrame": {
+    "description": "Button that closes the isolated inline frame on the transaction viewer"
+  },
+  "rawTransactionLinkDamaged": "Eso no es un ID de transacción de Arweave. Comprueba el enlace e inténtalo de nuevo.",
+  "@rawTransactionLinkDamaged": {
+    "description": "Shown when the address in a transaction viewer link is not a valid Arweave transaction ID"
+  },
+  "rawTransactionNotFoundOnNetwork": "Ahora mismo no encontramos esta transacción en la red. Puede que aún se esté asentando: inténtalo de nuevo en un momento.",
+  "@rawTransactionNotFoundOnNetwork": {
+    "description": "Shown on the transaction viewer when the transaction could not be found on the network yet"
+  },
+  "rawTransactionOpenOnGateway": "Abrir en el gateway",
+  "@rawTransactionOpenOnGateway": {
+    "description": "Button that opens a transaction's contents on the gateway, in a new browser tab"
+  },
+  "rawTransactionOpenSandboxed": "Abrir aislado",
+  "@rawTransactionOpenSandboxed": {
+    "description": "Button that opens contents which could execute code on the gateway's own isolated address, in a new browser tab"
+  },
+  "rawTransactionSandboxedNotice": "Este archivo podría ejecutar código en un navegador, así que ArDrive no lo muestra aquí. Ábrelo en la dirección aislada del propio gateway, donde no puede acceder a tu sesión de ArDrive.",
+  "@rawTransactionSandboxedNotice": {
+    "description": "Explains why ArDrive declines to render contents that could execute code, and what the isolated alternative keeps them away from"
+  },
+  "rawTransactionShowSandboxedFrame": "Mostrarlo aquí, aislado",
+  "@rawTransactionShowSandboxedFrame": {
+    "description": "Button that reveals contents which could execute code inline, inside an isolated frame"
+  },
+  "rawTransactionSourceHeading": "Código fuente",
+  "@rawTransactionSourceHeading": {
+    "description": "Heading above the unexecuted source text of contents ArDrive declined to render"
+  },
+  "rawTransactionTypeMismatch": "El contenido de esta transacción no coincide con el tipo que declara.",
+  "@rawTransactionTypeMismatch": {
+    "description": "Caution shown when a transaction's bytes do not match the content type it declares"
+  },
+  "rawTransactionUnknownType": "ArDrive no puede determinar qué tipo de archivo es, así que solo se puede descargar.",
+  "@rawTransactionUnknownType": {
+    "description": "Shown on the transaction viewer when the contents cannot be identified, leaving download as the only action"
   },
   "recreateFolderEmphasized": "RECREAR CARPETA",
   "@recreateFolderEmphasized": {
@@ -1606,9 +1761,177 @@
   "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
+  "sharedFileAccessKeyMalformed": "Esto no parece una clave de acceso. Debe tener 43 caracteres.",
+  "@sharedFileAccessKeyMalformed": {
+    "description": "Inline error shown on the shared file page when the pasted access key has the wrong shape, before anything is sent to the network"
+  },
+  "sharedFileAccessKeySentSeparately": "Quien lo compartió te envió la clave por separado: pégala abajo para abrir el archivo.",
+  "@sharedFileAccessKeySentSeparately": {
+    "description": "Text on the shared file page telling the recipient that the sender sent the access key through a different channel"
+  },
+  "sharedFileAccessKeyStaysOnThisDevice": "La clave de acceso se queda en este dispositivo y nunca se envía a ArDrive.",
+  "@sharedFileAccessKeyStaysOnThisDevice": {
+    "description": "Reassurance shown under the access key field on the shared file page"
+  },
+  "sharedFileDetailsDrawerTitle": "Detalles del archivo",
+  "@sharedFileDetailsDrawerTitle": {
+    "description": "Title of the collapsed drawer holding the technical details of a shared file"
+  },
+  "sharedFileDetailsHiddenBySender": "El remitente ha decidido ocultar los detalles de este archivo hasta que se desbloquee.",
+  "@sharedFileDetailsHiddenBySender": {
+    "description": "Shown on the locked shared file page when the sender chose to keep the file's name, size and type out of the link"
+  },
+  "sharedFileDetailsLicense": "Licencia",
+  "@sharedFileDetailsLicense": {
+    "description": "Label of the license row in the shared file details drawer"
+  },
+  "sharedFileDetailsMetadata": "Metadatos",
+  "@sharedFileDetailsMetadata": {
+    "description": "Label of the metadata transaction row in the shared file details drawer"
+  },
+  "sharedFileDetailsOwner": "Compartido por",
+  "@sharedFileDetailsOwner": {
+    "description": "Label of the owner address row in the shared file details drawer"
+  },
+  "sharedFileDetailsTransaction": "Transacción",
+  "@sharedFileDetailsTransaction": {
+    "description": "Label of the data transaction row in the shared file details drawer"
+  },
+  "sharedFileEncryptedFileTitle": "Archivo cifrado",
+  "@sharedFileEncryptedFileTitle": {
+    "description": "Fallback title on the shared file page when a private file's name is not known yet"
+  },
+  "sharedFileGenericTitle": "Archivo compartido",
+  "@sharedFileGenericTitle": {
+    "description": "Fallback title on the shared file page when a public file's name is not known yet"
+  },
+  "sharedFileGetLatest": "Obtener la última",
+  "@sharedFileGetLatest": {
+    "description": "Button that fetches the newest version of a shared file"
+  },
   "sharedFileIsEncrypted": "El archivo está cifrado.",
   "@sharedFileIsEncrypted": {
     "description": "Description that says the file is encrypted on shared file page"
+  },
+  "sharedFileKeyIncorrect": "Esa clave no ha funcionado. Comprueba si falta algún carácter e inténtalo de nuevo.",
+  "@sharedFileKeyIncorrect": {
+    "description": "Inline error shown under the file key field on the shared file page when the provided key cannot unlock the file"
+  },
+  "sharedFileLinkChecking": "Comprobando",
+  "@sharedFileLinkChecking": {
+    "description": "Badge shown while the link's claims about the file are still being checked"
+  },
+  "sharedFileLinkDetailsMismatch": "Los detalles del archivo no coinciden con el enlace",
+  "@sharedFileLinkDetailsMismatch": {
+    "description": "Warning shown when the details carried by the link do not match the file's own record"
+  },
+  "sharedFileLinkIncomplete": "Este enlace parece incompleto. Pide al remitente que te lo envíe de nuevo.",
+  "@sharedFileLinkIncomplete": {
+    "description": "Shown when the shared link itself is missing the information needed to open a file, so only the sender can fix it"
+  },
+  "sharedFileLinkKeyDamaged": "La clave de este enlace parece dañada. Pide al remitente que te envíe el enlace de nuevo o pega la clave abajo.",
+  "@sharedFileLinkKeyDamaged": {
+    "description": "Inline error under the file key field when the key in the link could not be decoded"
+  },
+  "sharedFileLinkNotChecked": "Sin comprobar",
+  "@sharedFileLinkNotChecked": {
+    "description": "Neutral badge shown when the link carried nothing that could be checked against the file"
+  },
+  "sharedFileLinkVerified": "Verificado",
+  "@sharedFileLinkVerified": {
+    "description": "Badge shown when the details carried by the link match the file's own record"
+  },
+  "sharedFileLoadFailure": "No hemos podido cargar este archivo. Comprueba tu conexión e inténtalo de nuevo.",
+  "@sharedFileLoadFailure": {
+    "description": "Error shown on the shared file page when the file details could not be loaded because of a network or gateway failure"
+  },
+  "sharedFileLoadingDetails": "Cargando los detalles del archivo...",
+  "@sharedFileLoadingDetails": {
+    "description": "Shown on the shared file page while the file's details are being resolved"
+  },
+  "sharedFileNetworkTrouble": "Estamos teniendo problemas para conectar con la red. Comprueba tu conexión e inténtalo de nuevo.",
+  "@sharedFileNetworkTrouble": {
+    "description": "Shown on the shared file page when the network cannot be reached"
+  },
+  "sharedFileNewerVersionAvailable": "Hay una versión más reciente de este archivo.",
+  "@sharedFileNewerVersionAvailable": {
+    "description": "Banner shown when the shared file has a version newer than the one the link points at"
+  },
+  "sharedFileNotFoundOnNetwork": "Ahora mismo no encontramos este archivo en la red. Puede que aún se esté asentando: inténtalo de nuevo en un momento.",
+  "@sharedFileNotFoundOnNetwork": {
+    "description": "Shown on the shared file page when the file could not be found after the automatic retries"
+  },
+  "sharedFilePasteAccessKey": "Pega la clave de acceso",
+  "@sharedFilePasteAccessKey": {
+    "description": "Placeholder of the access key field on the shared file page"
+  },
+  "sharedFilePreviewUnsupported": "Este archivo no se puede previsualizar aquí. Descárgalo para abrirlo.",
+  "@sharedFilePreviewUnsupported": {
+    "description": "Shown on the shared file page when the file cannot be previewed in the browser"
+  },
+  "sharedFileProtectedWithAccessKey": "Este archivo está protegido con una clave de acceso.",
+  "@sharedFileProtectedWithAccessKey": {
+    "description": "Heading of the locked shared file page, telling the recipient that an access key is needed to open the file"
+  },
+  "sharedFileRememberKeyForThisTab": "Recordar esta clave en esta pestaña",
+  "@sharedFileRememberKeyForThisTab": {
+    "description": "Label of the checkbox that keeps the access key for the current browser tab"
+  },
+  "sharedFileRetry": "Reintentar",
+  "@sharedFileRetry": {
+    "description": "Button that tries loading the shared file again"
+  },
+  "sharedFileRetryingNow": "Reintentando ahora...",
+  "@sharedFileRetryingNow": {
+    "description": "Shown when the automatic retry for a shared file is running"
+  },
+  "sharedFileSharedBy": "Compartido por {address}",
+  "@sharedFileSharedBy": {
+    "description": "Shows the shortened wallet address the shared file was shared by",
+    "placeholders": {
+      "address": {
+        "type": "String",
+        "example": "Zvp8dE...gF0e"
+      }
+    }
+  },
+  "sharedFileSharedVersion": "Compartida",
+  "@sharedFileSharedVersion": {
+    "description": "Marks, in the version history, the version the shared link points at"
+  },
+  "sharedFileShowingLatestVersion": "Estás viendo la última versión. El enlace que te enviaron apunta a una versión anterior.",
+  "@sharedFileShowingLatestVersion": {
+    "description": "Notice shown to the recipient of a pinned link once they have asked for the latest version, telling them the page no longer shows the version the sender linked to"
+  },
+  "sharedFileStillPropagating": "Este archivo se acaba de subir y puede que todavía se esté propagando por la red. Reintentando en {seconds} s...",
+  "@sharedFileStillPropagating": {
+    "description": "Shown while a just-uploaded shared file has not spread across the network yet, counting down the seconds to the next automatic retry",
+    "placeholders": {
+      "seconds": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "sharedFileUnlockedWithAccessKey": "Desbloqueado con tu clave de acceso. Para todos los demás, este archivo sigue cifrado.",
+  "@sharedFileUnlockedWithAccessKey": {
+    "description": "Shown after a private shared file has been unlocked with an access key"
+  },
+  "sharedFileUnlockFile": "Desbloquear el archivo",
+  "@sharedFileUnlockFile": {
+    "description": "Button that submits the access key on the shared file page"
+  },
+  "sharedFileVersionHistoryTitle": "Historial de versiones",
+  "@sharedFileVersionHistoryTitle": {
+    "description": "Title of the collapsed drawer holding the version history of a shared file"
+  },
+  "sharedFileViewLatest": "Ver la última",
+  "@sharedFileViewLatest": {
+    "description": "Button that opens the newest version of a shared file when the link is pinned to an older one"
+  },
+  "sharedFileViewSharedVersion": "Ver la versión compartida",
+  "@sharedFileViewSharedVersion": {
+    "description": "Button that takes the recipient back to the version the sender actually shared, after they have viewed the latest one"
   },
   "shareDrive": "Compartir unidad",
   "@shareDrive": {
@@ -1625,6 +1948,46 @@
   "shareFile": "Compartir archivo",
   "@shareFile": {
     "description": "The action of sharing a file link"
+  },
+  "shareFileAccessKeyLabel": "Clave de acceso",
+  "@shareFileAccessKeyLabel": {
+    "description": "Label of the read-only field holding the access key on the share file dialog"
+  },
+  "shareFileFinishingLink": "Todavía estamos añadiendo los datos de cifrado de este archivo. El enlace ya funciona.",
+  "@shareFileFinishingLink": {
+    "description": "Helper text on the share file dialog while the file's encryption details are still being fetched, reassuring the sharer that the link already works"
+  },
+  "shareFileHideDetails": "Ocultar los detalles del archivo",
+  "@shareFileHideDetails": {
+    "description": "Label of the toggle that keeps the file's name, size and type out of the share link"
+  },
+  "shareFileHideDetailsDescription": "Si los ocultas, el destinatario no verá nada del archivo (ni su nombre, ni su tamaño, ni su tipo) hasta que lo desbloquee.",
+  "@shareFileHideDetailsDescription": {
+    "description": "Helper text explaining what the recipient sees when the file's details are hidden from the share link"
+  },
+  "shareFileIncludeKeyInLink": "Incluir la clave en el enlace: cualquiera que tenga el enlace podrá abrir el archivo",
+  "@shareFileIncludeKeyInLink": {
+    "description": "Label of the checkbox that embeds the access key in the share link, which makes the link alone enough to open the file"
+  },
+  "shareFileKeyInLinkWarning": "Ahora este enlace abre el archivo por sí solo. Trátalo como si fuera el propio archivo.",
+  "@shareFileKeyInLinkWarning": {
+    "description": "Warning shown once the access key has been embedded in the share link"
+  },
+  "shareFileLinkLabel": "Enlace",
+  "@shareFileLinkLabel": {
+    "description": "Label of the read-only field holding the share link on the share file dialog"
+  },
+  "shareFilePinToThisVersion": "Enlazar solo a esta versión",
+  "@shareFilePinToThisVersion": {
+    "description": "Label of the toggle that pins the share link to the version of the file being shared"
+  },
+  "shareFilePinToThisVersionDescription": "Los destinatarios recibirán siempre esta versión, aunque subas una nueva.",
+  "@shareFilePinToThisVersionDescription": {
+    "description": "Helper text explaining that a pinned share link keeps pointing at the version being shared"
+  },
+  "shareFileSendKeySeparately": "Envía la clave por un canal distinto al del enlace. Un enlace y su clave en el mismo mensaje no protegen nada.",
+  "@shareFileSendKeySeparately": {
+    "description": "Helper text telling the sharer to send the access key through a different channel than the share link"
   },
   "shareFileWithOthers": "Compartir el archivo con otros",
   "@shareFileWithOthers": {
@@ -2053,6 +2416,10 @@
       }
     }
   },
+  "weWontRemindYou": "¡Bien! No te lo recordaremos otra vez.",
+  "@weWontRemindYou": {
+    "description": "We let the user know that we won't remind them again"
+  },
   "welcome": "Bienvenido",
   "@welcome": {
     "description": "welcome"
@@ -2094,14 +2461,6 @@
   "weReSorryEmphasized": "¡LO SENTIMOS!",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
-  },
-  "weWontRemindYou": "¡Bien! No te lo recordaremos otra vez.",
-  "@weWontRemindYou": {
-    "description": "We let the user know that we won't remind them to leave feedback again"
-  },
-  "weWontRemindYouDescription": "Si cambias de opinión y quieres dejar comentarios en otro momento, puedes hacerlo desde el enlace en tu menú.",
-  "@weWontRemindYouDescription": {
-    "description": "We let the user know where to find the 'Leave Feedback' button"
   },
   "whatIsAKeyFile": "¿Qué es un archivo de claves y cómo funciona?",
   "@whatIsAKeyFile": {},

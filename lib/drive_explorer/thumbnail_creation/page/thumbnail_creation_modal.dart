@@ -1,4 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/drive_explorer/thumbnail_creation/bloc/thumbnail_creation_bloc.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
@@ -42,12 +44,19 @@ class _ThumbnailCreationModal extends StatelessWidget {
           if (state is ThumbnailCreationSuccess) {
             context.read<DriveDetailCubit>().refreshDriveDataTable();
             Navigator.of(context).pop();
+          } else if (state is ThumbnailCreationError && state.isPaymentError) {
+            showTurboPaymentRequiredDialog(context);
           }
         },
         builder: (context, state) {
           if (state is ThumbnailCreationLoading) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is ThumbnailCreationError) {
+            if (state.isPaymentError) {
+              // The payment dialog is shown from the listener.
+              return Text(
+                  appLocalizationsOf(context).freeAllowanceUsedUpDescription);
+            }
             return const Text(
                 'An error occurred while creating the thumbnail.');
           } else if (state is ThumbnailCreationSuccess) {

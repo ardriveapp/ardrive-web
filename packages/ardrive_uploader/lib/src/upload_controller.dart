@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive_uploader/src/exceptions.dart';
 import 'package:ardrive_uploader/src/upload_dispatcher.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:arweave/arweave.dart';

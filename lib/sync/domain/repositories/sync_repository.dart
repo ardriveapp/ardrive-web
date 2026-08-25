@@ -152,6 +152,44 @@ class _SyncRepository implements SyncRepository {
   final Map<String, GhostFolder> _ghostFolders = {};
   final Set<String> _folderIds = <String>{};
 
+  /// Entities skipped this sync because their metadata could not be read,
+  /// keyed by drive id. Reported on [SyncProgress] so a later pass can surface
+  /// "failed files" in the UI.
+  ///
+  /// In-memory only — cleared at the start of each sync. Persisting these (so
+  /// they are retried across syncs instead of relying on the 240-block
+  /// look-back) is the follow-up described in
+  /// `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
+  final Map<String, Set<String>> _skippedEntityTxIdsByDrive = {};
+
+  int get _skippedEntityCount => _skippedEntityTxIdsByDrive.values
+      .fold(0, (sum, txIds) => sum + txIds.length);
+
+  Map<String, List<String>> get _skippedEntityTxIdsByDriveSnapshot => {
+        for (final entry in _skippedEntityTxIdsByDrive.entries)
+          entry.key: [...entry.value],
+      };
+
+  void _recordSkippedEntities(String driveId, List<String> txIds) {
+    if (txIds.isEmpty) return;
+    _skippedEntityTxIdsByDrive
+        .putIfAbsent(driveId, () => <String>{})
+        .addAll(txIds);
+  }
+
+  void _logSkippedEntities() {
+    if (_skippedEntityTxIdsByDrive.isEmpty) return;
+    logger.w(
+      'Sync skipped $_skippedEntityCount entities across '
+      '${_skippedEntityTxIdsByDrive.length} drive(s); their metadata could '
+      'not be read from the configured gateway. '
+      'See docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md',
+    );
+    for (final entry in _skippedEntityTxIdsByDrive.entries) {
+      logger.w('Drive ${entry.key} skipped tx ids: ${entry.value.join(', ')}');
+    }
+  }
+
   /// Maximum number of transactions to hold in memory during streaming sync.
   /// Larger values = better throughput, higher memory usage
   /// Smaller values = lower memory usage, more frequent DB commits
@@ -196,6 +234,7 @@ class _SyncRepository implements SyncRepository {
     // Clear shared state from any previous sync to prevent stale data
     _ghostFolders.clear();
     _folderIds.clear();
+    _skippedEntityTxIdsByDrive.clear();
 
     // The address of the currently logged-in wallet. All pending transactions
     // are uploads made by this wallet, so scoping the status query by it lets
@@ -241,10 +280,6 @@ class _SyncRepository implements SyncRepository {
         'Retrying for get the current block height',
       ),
     );
-
-    // Share gateway fallback reference so snapshot validation and data fetching
-    // use the same gateway cache (avoids duplicate Solana RPC calls)
-    _snapshotValidationService.gatewayFallback = _arweave.gatewayFallback;
 
     // Probe for drive activity to skip unchanged drives.
     // Partition drives: never-synced drives always need full sync and would
@@ -380,10 +415,12 @@ class _SyncRepository implements SyncRepository {
               ? syncedHeights.reduce(min)
               : 0;
 
+          var queryFailed = false;
           final snapshotsStream = _arweave.getAllSnapshotsForDrives(
             ownerDrives.map((d) => d.id).toList(),
             minBlock,
             ownerAddress: entry.key,
+            onQueryFailure: () => queryFailed = true,
           );
 
           await for (final snapshot in snapshotsStream) {
@@ -399,11 +436,31 @@ class _SyncRepository implements SyncRepository {
               logger.w('Snapshot ${snapshot.id} has no Drive-Id tag, skipping');
             }
           }
+
+          // Record an answer for every drive the query covered, including the
+          // ones it found nothing for. `_syncDrive` reads a missing entry as
+          // "nobody asked" and asks again per drive, so without this a drive
+          // with no snapshots pays for a second, identical query on every
+          // sync - the batch already told us the answer was none.
+          //
+          // Only when the query ran to completion: if it gave up part-way, a
+          // drive it never reached would be recorded as having none, and the
+          // per-drive fallback that exists for exactly that case would be
+          // suppressed.
+          if (!queryFailed) {
+            for (final drive in ownerDrives) {
+              prefetchedSnapshots.putIfAbsent(drive.id, () => []);
+            }
+          }
         }
 
+        final withSnapshots =
+            prefetchedSnapshots.values.where((v) => v.isNotEmpty).length;
         logger.i(
-            'Prefetched ${prefetchedSnapshots.values.expand((v) => v).length} '
-            'snapshots across ${prefetchedSnapshots.length} drives');
+            '[snapshot] prefetched '
+            '${prefetchedSnapshots.values.expand((v) => v).length} '
+            'for $withSnapshots of ${prefetchedSnapshots.length} drive(s); '
+            'the rest are known to have none and will not be re-queried');
       } catch (e) {
         logger.w('Snapshot prefetch failed, will fetch per-drive: $e');
         prefetchedSnapshots.clear();
@@ -639,8 +696,11 @@ class _SyncRepository implements SyncRepository {
         syncProgress = syncProgress.copyWith(
           progress: 1.0,
           statusMessage: 'Sync complete',
+          skippedEntityCount: _skippedEntityCount,
+          skippedEntityTxIdsByDrive: _skippedEntityTxIdsByDriveSnapshot,
         );
         syncProgressController.add(syncProgress);
+        _logSkippedEntities();
 
         // Close the controller when everything is done
         logger.d('Sync completed successfully, closing controller');
@@ -740,6 +800,7 @@ class _SyncRepository implements SyncRepository {
     // Clear shared state from any previous sync to prevent stale data
     _ghostFolders.clear();
     _folderIds.clear();
+    _skippedEntityTxIdsByDrive.clear();
 
     // Get the specific drive
     final drive =
@@ -923,8 +984,11 @@ class _SyncRepository implements SyncRepository {
         syncProgress = syncProgress.copyWith(
           progress: 1.0,
           statusMessage: 'Sync complete',
+          skippedEntityCount: _skippedEntityCount,
+          skippedEntityTxIdsByDrive: _skippedEntityTxIdsByDriveSnapshot,
         );
         syncProgressController.add(syncProgress);
+        _logSkippedEntities();
 
         logger.d('Single drive sync completed successfully, closing controller');
         await syncProgressController.close();
@@ -1546,10 +1610,9 @@ class _SyncRepository implements SyncRepository {
     // Wrap snapshot processing in try/finally to ensure disposal
     try {
       if (_configService.config.enableSyncFromSnapshot) {
-        logger.i('Syncing from snapshot: ${drive.id}');
-
         // Use prefetched snapshots if available (batched query),
         // otherwise fall back to per-drive query
+        final source = prefetchedSnapshots != null ? 'prefetched' : 'per-drive';
         final snapshotsStream = prefetchedSnapshots != null
             ? Stream.fromIterable(prefetchedSnapshots)
             : _arweave.getAllSnapshotsOfDrive(
@@ -1561,10 +1624,29 @@ class _SyncRepository implements SyncRepository {
           arweave: _arweave,
         ).toList();
 
+        logger.i('[snapshot] $driveId: ${snapshotItems.length} usable '
+            'from $source source (above block $lastBlockHeight)');
+
+        final beforeValidation = snapshotItems.length;
         List<SnapshotItem> snapshotsVerified = await _snapshotValidationService
             .validateSnapshotItems(snapshotItems);
 
+        if (snapshotsVerified.length != beforeValidation) {
+          final rejected = snapshotItems
+              .where((i) => !snapshotsVerified.contains(i))
+              .map((i) => i.txId)
+              .join(', ');
+          logger.w('[snapshot] $driveId: '
+              '${snapshotsVerified.length}/$beforeValidation available; '
+              'unreachable: $rejected');
+        } else if (beforeValidation > 0) {
+          logger.i('[snapshot] $driveId: all $beforeValidation available');
+        }
+
         snapshotItems = snapshotsVerified;
+      } else {
+        logger.i('[snapshot] $driveId: disabled by config '
+            '(enableSyncFromSnapshot)');
       }
 
       final SnapshotDriveHistory snapshotDriveHistory = SnapshotDriveHistory(
@@ -1591,6 +1673,30 @@ class _SyncRepository implements SyncRepository {
         driveId: driveId,
         ownerAddress: ownerAddress,
       );
+
+      // The line that says whether this sync took the fast path. Blocks served
+      // from a snapshot are read from one already-downloaded body; blocks left
+      // to GraphQL are walked a page at a time, which for an old drive is
+      // thousands of transactions and minutes of work. At info level
+      // deliberately: when a sync is inexplicably slow, this is the first
+      // thing worth seeing, and it is one line per drive.
+      // `Range.end` is inclusive - `isInRange` tests `value <= end`, and
+      // `union` treats `end + 1 == start` as contiguous - so the count has to
+      // include both endpoints. Without the +1 a single-block range reports
+      // zero, which is the one number this line must never print wrongly.
+      int blocksIn(HeightRange r) =>
+          r.rangeSegments.fold(0, (sum, s) => sum + (s.end - s.start + 1));
+
+      final fromSnapshots = blocksIn(snapshotDriveHistory.subRanges);
+      final fromGql = blocksIn(gqlDriveHistorySubRanges);
+
+      if (snapshotItems.isEmpty) {
+        logger.i('[snapshot] $driveId: none usable - walking all $fromGql '
+            'blocks over GraphQL');
+      } else {
+        logger.i('[snapshot] $driveId: $fromSnapshots blocks from '
+            '${snapshotItems.length} snapshot(s), $fromGql over GraphQL');
+      }
 
       logger.d(
           'Total range to query for: ${totalRangeToQueryFor.rangeSegments}\n'
@@ -1792,6 +1898,24 @@ class _SyncRepository implements SyncRepository {
       logger.i(
           'Drive ${drive.name} completed parse phase. Progress by block height: $fetchPhasePercentage%. Starting parse phase. Sync duration: $syncDriveTotalTime ms. Fetching used ${(averageBetweenFetchAndGet * 100).toStringAsFixed(2)}% of drive sync process');
     } finally {
+      // Where this drive's entity metadata actually came from. A snapshot
+      // that covers a range but serves none of its metadata is indis-
+      // tinguishable, from the outside, from one that is working - both look
+      // like "3 snapshots loaded" followed by a long sync. This is the line
+      // that tells them apart.
+      //
+      // Drained here rather than at the end of the happy path, for the same
+      // reason the cache below is: a sync that throws or is cancelled would
+      // otherwise leave its counts behind, and they are keyed by drive - so
+      // the next sync of that drive would add to them and report a total that
+      // never happened. Cancelling mid-sync is a normal thing to do.
+      final hits = _arweave.snapshotMetadataHits.remove(drive.id) ?? 0;
+      final misses = _arweave.snapshotMetadataMisses.remove(drive.id) ?? 0;
+      if (hits + misses > 0) {
+        logger.i('[snapshot] ${drive.id}: $hits entity metadata read(s) from '
+            'snapshots, $misses fetched from the gateway');
+      }
+
       // Always dispose snapshot cache, even on error or cancellation
       await SnapshotItemOnChain.dispose(drive.id);
       logger.d('Disposed snapshot cache for drive ${drive.id}');
@@ -1918,6 +2042,8 @@ class _SyncRepository implements SyncRepository {
             ownerAddress: ownerAddress,
             currentBlockHeight: currentBlockHeight,
           );
+
+          _recordSkippedEntities(drive.id, entityHistory.skippedTxIds);
 
           // Create entries for all the new revisions of file and folders in this drive.
           final newEntities = entityHistory.blockHistory

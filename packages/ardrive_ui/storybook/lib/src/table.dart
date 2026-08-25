@@ -120,15 +120,16 @@ int compareDate(File a, File b) {
 }
 
 class File extends IndexedItem {
+  // ignore: prefer_const_constructors_in_immutables
   File({
     required this.createdAt,
     required this.name,
     required this.size,
   }) : super(0);
 
-  String name;
-  DateTime createdAt;
-  String size;
+  final String name;
+  final DateTime createdAt;
+  final String size;
 
   @override
   List<Object?> get props => [name];

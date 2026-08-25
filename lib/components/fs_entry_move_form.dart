@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
@@ -62,6 +63,20 @@ class FsEntryMoveForm extends StatelessWidget {
           Navigator.pop(context);
         } else if (state is FsEntryMoveWalletMismatch) {
           Navigator.pop(context);
+        } else if (state is FsEntryMoveFailure) {
+          Navigator.pop(context); // dismiss the progress dialog
+          if (state.isPaymentError) {
+            showTurboPaymentRequiredDialog(context);
+          } else {
+            showArDriveDialog(
+              context,
+              content: ArDriveStandardModalNew(
+                title: appLocalizationsOf(context).error,
+                description:
+                    appLocalizationsOf(context).actionFailedTryAgain,
+              ),
+            );
+          }
         }
       },
       builder: (context, state) {

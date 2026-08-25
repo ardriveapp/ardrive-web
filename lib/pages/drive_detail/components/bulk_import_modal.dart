@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/bulk_import/bulk_import_bloc.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_event.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_state.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
@@ -138,6 +139,8 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
               ],
             ),
           );
+        } else if (state is BulkImportError && state.isPaymentError) {
+          showTurboPaymentRequiredDialog(context);
         } else if (state is BulkImportError) {
           showArDriveDialog(
             context,

@@ -5,6 +5,98 @@
     <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
     <meta name="description" content="Secure, permanent storage." />
 
+    <!--
+      Never send a route in a `Referer` header. Under hash routing the browser
+      already strips the fragment, so this changes nothing today - and it is
+      what makes path routing safe to switch on: a `/share/{id}?d=...` address
+      bar would otherwise ride along on every subresource request the page
+      makes, to gateways and any CDN among them. The payload being packed is no
+      defence: base64url is an encoding, and `n` and `ct` are private-file
+      secrets. See lib/utils/app_url_strategy.dart.
+    -->
+    <meta name="referrer" content="strict-origin" />
+
+    <!--
+      Legacy share-link boot shim - docs/FILE_SHARING_REDESIGN_PLAN.md §4.1.
+      First script in the document: it must finish before Flutter reads the
+      location.
+    -->
+    <script>
+      // MUST match `kAppUrlStrategy` in lib/utils/app_url_strategy.dart. Flip
+      // both or neither - test/utils/app_url_strategy_test.dart reads this file
+      // and fails if they disagree. Read that file before flipping anything:
+      // path routing needs SPA rewrites that do not exist yet.
+      window.ardriveUsePathUrlStrategy = false;
+
+      // Rewrites a legacy `#/file/{fileId}/view?fileKey=...` link onto the
+      // canonical `/share/{fileId}#k=...` route. A transliteration of
+      // `rewriteLegacyShareLink` in lib/utils/legacy_share_link.dart, which is
+      // where this logic is specified and tested; keep the two in step.
+      //
+      // `history.replaceState` performs no network request, so the key never
+      // leaves the browser during the migration - which is the whole point of
+      // doing this here rather than with a server redirect.
+      (function () {
+        // Rewriting to a path that 404s on refresh is worse than leaving the
+        // hash alone, so this stays dormant until path routing is switched on.
+        if (window.ardriveUsePathUrlStrategy !== true) return;
+
+        try {
+          var hash = window.location.hash;
+          if (!hash) return;
+
+          // Drive links (`#/drives/...`) are deliberately left untouched.
+          var match = new RegExp('^/file/([^/?#]+)/view(?:\\?(.*))?$')
+            .exec(hash.charAt(0) === '#' ? hash.slice(1) : hash);
+          if (!match) return;
+
+          var pairs = (match[2] || '').split('&');
+          var kept = [];
+          var key = null;
+          var legacyKey = null;
+
+          for (var i = 0; i < pairs.length; i++) {
+            var pair = pairs[i];
+            if (!pair) continue;
+
+            var separator = pair.indexOf('=');
+            var name = separator < 0 ? pair : pair.slice(0, separator);
+            var value = separator < 0 ? '' : pair.slice(separator + 1);
+
+            // Both key names are lifted out of the query and never written
+            // back into one: a path route's query is sent to the server.
+            if (name === 'k') {
+              if (key === null && value) key = value;
+            } else if (name === 'fileKey') {
+              if (legacyKey === null && value) legacyKey = value;
+            } else {
+              kept.push(pair);
+            }
+          }
+
+          var resolvedKey = key !== null ? key : legacyKey;
+          var target = '/share/' + match[1];
+          if (kept.length) target += '?' + kept.join('&');
+          if (resolvedKey !== null) target += '#k=' + resolvedKey;
+
+          window.history.replaceState(window.history.state, '', target);
+        } catch (e) {
+          // A shim that throws must not cost the user their page: the legacy
+          // hash route resolves in the app either way, it just keeps its old
+          // URL.
+          //
+          // The caught error is deliberately NOT passed along. `target` ends
+          // in `#k=<key>`, and a browser that rejects a `replaceState` URL
+          // quotes that URL in the message it throws - so logging `e` would
+          // print the recipient's file key into the console, where an
+          // extension or a pasted "what does this say?" screenshot can carry
+          // it away. Same rule `lib/utils/shared_file_link.dart` follows: the
+          // reason travels, the value never does.
+          console.warn('Legacy share link shim failed');
+        }
+      })();
+    </script>
+
     <!-- Open Graph meta tags -->
     <meta property="og:title" content="ArDrive">
     <meta property="og:description" content="Secure, permanent storage.">
@@ -29,22 +121,86 @@
     <script defer src="js/StreamSaver.min.js"></script>
     <script defer src="js/crypto_wallet_bridge.js"></script>
     <script defer src="js/lazy_loader.js"></script>
+    <!--
+      PDF.js 2.12.313, vendored under web/js/pdfjs/ - never from a CDN, because
+      this build is permanent on Arweave and could never be patched.
+
+      Loaded eagerly (deferred) because the pdfx web plugin asserts that
+      `pdfjsLib` exists when Flutter registers its plugins - so this 238 KB is
+      paid on every page load, login included, not only when a PDF is opened.
+      The 1 MB worker beside it is fetched only when one actually is.
+    -->
+    <script defer src="js/pdfjs/pdf.min.js"></script>
+    <script defer src="js/pdfjs/pdfjs_config.js"></script>
     <link rel="preload" href="main.dart.js" as="script">
     <link rel="preload" href="splash/img/splash.svg" as="image">
 
-    <!-- Plausible Web Analytics (async, non-blocking) -->
-    <script defer data-domain="app.ardrive.io" src="https://plausible.io/js/plausible.js"></script>
+    <!--
+      Plausible's browser script is deliberately NOT loaded.
 
-    <script defer src="https://cdn.jsdelivr.net/npm/pica@9.0.1/dist/pica.min.js" ></script>
+      It sends `location.href` - fragment included - to plausible.io on load
+      and on every engagement event. On a share link that string can contain
+      the file key: on the hash route the key rides the pseudo-query
+      (`/#/file/{id}/view?...&k=<key>`), and under path routing it becomes
+      `#k=<key>`. Either way `location.href` carries it, so every recipient
+      who opened a key-in-link share would have handed the decryption key to
+      a third party before Flutter even booted. The same applied to
+      `?driveKey=` on drive links.
 
-    <!-- Ethers.js for Ethereum wallet interactions -->
-    <!-- Load after saving/restoring define to avoid require.js conflict in debug mode -->
+      Analytics still work: `PlausibleEventTracker` POSTs to
+      https://plausible.io/api/event from Dart with a URL it synthesises from
+      an enum of known pages, so no secret can ride along.
+    -->
+
+    <!--
+      pica 9.0.1, vendored under web/js/pica/ - never from a CDN, for the same
+      reason as pdf.js above: this build is permanent on Arweave and could never
+      be patched, and a CDN script breaks under the strict CSP an AR.IO gateway
+      serves. It was also the last unpinned third party with full run of this
+      origin, which is the origin a recipient's file key sits on.
+
+      Read as the global `window.pica` by the `flutter_image_compress_web`
+      plugin on every resize (`jsWindow.pica()` in its src/pica.dart). The
+      plugin bundles an `assets/pica.min.js` of its own but never injects it,
+      so that global is the only copy there is: without it thumbnailing throws.
+      Reached from Dart through `FlutterImageCompress.compressWithList` in
+      packages/ardrive_utils/lib/src/generate_thumbnail.dart.
+
+      Loaded eagerly (deferred) at 35 KB - small enough that lazy-loading it
+      would cost more in moving parts than the bytes are worth.
+    -->
+    <script defer src="js/pica/pica.min.js"></script>
+
+    <!--
+      ethers 6.11.1, vendored under web/js/ethers/ - never from a CDN, same
+      reasoning as pdf.js and pica above.
+
+      Read as the global `window.ethers` by the Ethereum wallet and crypto
+      top-up paths - wallet_signer_cache_web.dart derives a public key through
+      `ethers.hashMessage` and `ethers.SigningKey`, crypto_payment_service_web
+      .dart calls `ethers.getBytes`, both under
+      lib/turbo/services/implementations/ - and by web/js/crypto_wallet_bridge.js.
+
+      THE DEFINE JUGGLING BELOW IS LOAD-BEARING; keep it. This is a UMD bundle,
+      so it tests `typeof define === "function" && define.amd` before anything
+      else and registers itself as an anonymous AMD module - never assigning
+      `window.ethers` - whenever require.js is present, as it is in debug
+      builds. Clearing `window.define` across the load forces the global branch,
+      and `onload` puts the original back. web/js/lazy_loader.js does the same
+      dance for arweave-wallet.js. This stays a hand-injected script rather than
+      a plain `defer` tag because a `defer` tag gives no hook to clear and
+      restore `define` around the load.
+
+      500 KB, eager, and only ever needed by Ethereum wallet flows - the one
+      script here with a real case for moving behind LazyLoader. Left eager in
+      this change because the define juggling has to survive the move intact.
+    -->
     <script>
       (function() {
         var _define = window.define;
         window.define = undefined;
         var script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/ethers@6.11.1/dist/ethers.umd.min.js';
+        script.src = 'js/ethers/ethers.umd.min.js';
         script.onload = function() {
           window.define = _define;
         };
@@ -61,7 +217,6 @@
       - arweave-wallet.js (693 KB) — loaded on wallet generation
     -->
 
-    <!-- End Plausible Web Analytics -->
     <script>
       // The value below is injected by flutter build, do not touch.
       var serviceWorkerVersion = null;

@@ -4,7 +4,6 @@ import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
-import 'package:ardrive/blocs/feedback_survey/feedback_survey_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
@@ -38,6 +37,7 @@ import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_flavors.dart';
+import 'package:ardrive/utils/app_url_strategy.dart';
 import 'package:ardrive/utils/dependency_injection_utils.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -84,6 +84,11 @@ late final LocalKeyValueStore localKeyValueStore;
 void main() async {
   await runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+
+    // Before anything can read a route. Hash routing (the default) leaves the
+    // engine's own strategy in place, so this is a no-op today - see
+    // `lib/utils/app_url_strategy.dart` for what has to land before it is not.
+    configureAppUrlStrategy();
 
     await _initializeServices();
 
@@ -306,10 +311,6 @@ class AppState extends State<App> {
           create: (context) => ActivityCubit(),
         ),
         BlocProvider(
-          create: (context) =>
-              FeedbackSurveyCubit(FeedbackSurveyInitialState()),
-        ),
-        BlocProvider(
           create: (context) => PromptToSnapshotBloc(
             userRepository: context.read<UserRepository>(),
             profileCubit: context.read<ProfileCubit>(),
@@ -492,7 +493,6 @@ class AppState extends State<App> {
             batchProcessor: BatchProcessor(),
             snapshotValidationService: SnapshotValidationService(
               configService: configService,
-              arioSDK: ArioSDKFactory().create(),
             ),
             arnsRepository: _.read<ARNSRepository>(),
             userPreferencesRepository: _.read<UserPreferencesRepository>(),

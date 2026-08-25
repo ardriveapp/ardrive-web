@@ -69,6 +69,7 @@ UploadPaymentEvaluator _uploadPaymentEvaluator(BuildContext context) {
     auth: context.read<ArDriveAuth>(),
     turboBalanceRetriever: _turboBalanceRetriever(context),
     turboUploadCostCalculator: _turboUploadCostCalculator(context),
+    turboUploadService: context.read<TurboUploadService>(),
     uploadCostEstimateCalculatorForAR:
         _uploadCostEstimateCalculatorForAR(context),
   );

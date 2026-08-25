@@ -1,4 +1,7 @@
+import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/components/turbo_payment_required_dialog.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_snapshot/create_snapshot_cubit.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
@@ -82,6 +85,12 @@ class CreateSnapshotDialog extends StatelessWidget {
               /// txsSyncedWithGqlCount: state.notSnapshottedTxsCount,
             ),
           );
+        } else if (state is SnapshotUploadFailure && state.isPaymentError) {
+          // This dialog is shown with barrierDismissible: false, so it has to
+          // be popped first — otherwise dismissing the payment dialog leaves
+          // an invisible, undismissable barrier over the app.
+          Navigator.of(context).pop();
+          showTurboPaymentRequiredDialog(context);
         }
       },
       builder: (context, state) {
@@ -93,6 +102,10 @@ class CreateSnapshotDialog extends StatelessWidget {
           return _loadingDialog(context, state);
         } else if (state is SnapshotUploadSuccess) {
           return _successDialog(context, drive.name);
+        } else if (state is SnapshotUploadFailure && state.isPaymentError) {
+          // Pop + payment dialog handled in the listener; render nothing for
+          // any frame between the state landing and the pop taking effect.
+          return const SizedBox.shrink();
         } else if (state is SnapshotUploadFailure ||
             state is ComputeSnapshotDataFailure) {
           return _failureDialog(context, drive.id);
@@ -114,44 +127,41 @@ class CreateSnapshotDialog extends StatelessWidget {
 Widget _explanationDialog(BuildContext context, Drive drive) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
   final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).newSnapshot,
-    content: SizedBox(
-      width: kMediumDialogWidth,
-      child: Row(
-        children: [
-          Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    children: splitTranslationsWithMultipleStyles(
-                      originalText: appLocalizationsOf(context)
-                          .createSnapshotExplanation(drive.name),
-                      defaultMapper: (t) => TextSpan(
-                        text: t,
-                        style: typography.paragraphNormal(),
-                      ),
-                      parts: {
-                        drive.name: (t) => TextSpan(
-                              text: t,
-                              style: typography.paragraphNormal().copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                      },
-                    ),
-                  ),
-                  style: typography.paragraphNormal(),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            children: splitTranslationsWithMultipleStyles(
+              originalText: appLocalizationsOf(context)
+                  .createSnapshotExplanation(drive.name),
+              defaultMapper: (t) => TextSpan(
+                text: t,
+                style: typography.paragraphNormal(
+                  color: colorTokens.textMid,
                 ),
-              ],
+              ),
+              parts: {
+                drive.name: (t) => TextSpan(
+                      text: t,
+                      style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textHigh,
+                      ),
+                    ),
+              },
             ),
           ),
-        ],
-      ),
+          style: typography.paragraphNormal(
+            color: colorTokens.textMid,
+          ),
+        ),
+      ],
     ),
     actions: [
       ModalAction(
@@ -246,30 +256,24 @@ String _loadingDialogDescription(
 
 Widget _successDialog(BuildContext context, String driveName) {
   final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).snapshotSuceeded,
-    content: SizedBox(
-      width: kMediumDialogWidth,
-      child: Row(
-        children: [
-          Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    text: appLocalizationsOf(context)
-                        .snapshotCreationSucceeded(driveName),
-                  ),
-                  style: typography.paragraphNormal(),
-                ),
-              ],
-            ),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: appLocalizationsOf(context)
+                .snapshotCreationSucceeded(driveName),
           ),
-        ],
-      ),
+          style: typography.paragraphNormal(
+            color: colorTokens.textMid,
+          ),
+        ),
+      ],
     ),
     actions: [
       ModalAction(
@@ -288,29 +292,23 @@ Widget _failureDialog(
 ) {
   final createSnapshotCubit = context.read<CreateSnapshotCubit>();
   final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).snapshotFailed,
-    content: SizedBox(
-      width: kMediumDialogWidth,
-      child: Row(
-        children: [
-          Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    text: appLocalizationsOf(context).snapshotCreationFailed,
-                  ),
-                  style: typography.paragraphNormal(),
-                ),
-              ],
-            ),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: appLocalizationsOf(context).snapshotCreationFailed,
           ),
-        ],
-      ),
+          style: typography.paragraphNormal(
+            color: colorTokens.textMid,
+          ),
+        ),
+      ],
     ),
     actions: [
       ModalAction(
@@ -334,33 +332,26 @@ Widget _insufficientBalanceDialog(
   CreateSnapshotInsufficientBalance state,
 ) {
   final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).insufficientARForUpload,
-    content: SizedBox(
-      width: kMediumDialogWidth,
-      child: Row(
-        children: [
-          Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text.rich(
-                  TextSpan(
-                    text: appLocalizationsOf(context)
-                        .insufficientBalanceForSnapshot(
-                      state.walletBalance,
-                      state.arCost,
-                    ),
-                  ),
-                  style: typography.paragraphNormal(),
-                ),
-              ],
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(
+            text: appLocalizationsOf(context).insufficientBalanceForSnapshot(
+              state.walletBalance,
+              state.arCost,
             ),
           ),
-        ],
-      ),
+          style: typography.paragraphNormal(
+            color: colorTokens.textMid,
+          ),
+        ),
+      ],
     ),
     actions: [
       ModalAction(
@@ -380,6 +371,7 @@ Widget _confirmDialog(
   CreateSnapshotState state,
 ) {
   final typography = ArDriveTypographyNew.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
   return ArDriveStandardModalNew(
     title: appLocalizationsOf(context).newSnapshot,
@@ -400,19 +392,24 @@ Widget _confirmDialog(
                               .snapshotOfDrive(drive.name),
                           defaultMapper: (t) => TextSpan(
                             text: t,
-                            style: typography.paragraphNormal(),
+                            style: typography.paragraphNormal(
+                              color: colorTokens.textMid,
+                            ),
                           ),
                           parts: {
                             drive.name: (t) => TextSpan(
                                   text: t,
-                                  style: typography.paragraphNormal().copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: typography.paragraphNormal(
+                                    fontWeight: ArFontWeight.semiBold,
+                                    color: colorTokens.textHigh,
+                                  ),
                                 ),
                           },
                         ),
                       ),
-                      style: typography.paragraphNormal(),
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textMid,
+                      ),
                     ),
                     Text.rich(
                       TextSpan(
@@ -423,22 +420,18 @@ Widget _confirmDialog(
                             ),
                           ),
                         ],
-                        style: typography.paragraphNormal(),
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textMid,
+                        ),
                       ),
                     ),
                     const Divider(),
                     const SizedBox(height: 16),
-                    if (state.isFreeThanksToTurbo) ...{
-                      Text(
-                        appLocalizationsOf(context).freeTurboTransaction,
-                        style: typography.paragraphNormal(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgDefault,
-                        ),
-                      ),
-                    } else ...{
+                    TurboFreeStatusMessage(
+                      status: state.freeStatus,
+                      padding: const EdgeInsets.only(bottom: 12),
+                    ),
+                    if (!state.isFreeThanksToTurbo) ...{
                       PaymentMethodSelector(
                         uploadMethodInfo: UploadPaymentMethodInfo(
                           uploadMethod: state.uploadMethod,
@@ -453,7 +446,7 @@ Widget _confirmDialog(
                           turboCredits: state.turboCredits,
                           sufficentCreditsBalance:
                               state.sufficientBalanceToPayWithTurbo,
-                          isFreeThanksToTurbo: false,
+                          freeStatus: FreeUploadStatus.notEligible,
                         ),
                         onTurboTopupSucess: () {
                           createSnapshotCubit.refreshTurboBalance();

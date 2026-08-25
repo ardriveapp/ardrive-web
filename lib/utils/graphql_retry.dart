@@ -23,10 +23,30 @@ class GraphQLRetry {
   final InternetChecker _internetChecker;
   final String _fallbackGraphqlUrl;
 
+  /// Attempts against the *primary* endpoint before falling back.
+  ///
+  /// This was 8. `package:retry` sleeps `200ms * 2^attempt` before each retry,
+  /// so 8 attempts is 7 sleeps - 0.4 + 0.8 + 1.6 + 3.2 + 6.4 + 12.8 + 25.6 =
+  /// **about 51 seconds** - spent on an endpoint that is usually not coming
+  /// back, *before* the fallback below is tried at all. Retrying a gateway
+  /// that is down does not recover the query; switching endpoints does.
+  ///
+  /// Five is the compromise. It spends ~6 seconds (0.4 + 0.8 + 1.6 + 3.2) on
+  /// the primary, which still rides out an ordinary blip, and reaches the
+  /// fallback roughly eight times sooner than before. Three was tempting but
+  /// too sharp: the fallback only arms for 429 and 5xx (see below), so a
+  /// dropped socket, a CORS failure, a DNS hiccup or any GraphQL `errors`
+  /// payload gets no second endpoint at all - for those, this budget is the
+  /// only resilience there is, and sync's paginated loop leans on it.
+  ///
+  /// It applies to every GraphQL call in the app, which is why it is stated
+  /// here once rather than tuned per call site.
+  static const defaultMaxAttempts = 5;
+
   Future<GraphQLResponse<T>> execute<T, U extends JsonSerializable>(
     GraphQLQuery<T, U> query, {
     Function(Exception e)? onRetry,
-    int maxAttempts = 8,
+    int maxAttempts = defaultMaxAttempts,
   }) async {
     // Try primary first
     try {
@@ -88,7 +108,7 @@ class GraphQLRetry {
     ArtemisClient client,
     GraphQLQuery<T, U> query, {
     Function(Exception e)? onRetry,
-    int maxAttempts = 8,
+    int maxAttempts = defaultMaxAttempts,
   }) {
     return retry(
       () async {

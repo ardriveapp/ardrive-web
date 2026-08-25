@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.85.0
+version: 2.86.0
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -28,6 +28,11 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
+    sdk: flutter
+  # For `setUrlStrategy`/`PathUrlStrategy` - see lib/utils/app_url_strategy.dart.
+  # Ships with the SDK and stubs itself out off the web, so it is safe to import
+  # unconditionally.
+  flutter_web_plugins:
     sdk: flutter
   ardrive_http:
     git:
@@ -142,6 +147,13 @@ dependencies:
   flutter_markdown: ^0.7.3+1
   markdown: ^7.1.1
   pub_semver: ^2.1.4
+  # Renders PDF pages to images for the in-app viewer. Pinned exactly, for two
+  # reasons: 2.6.0 is the newest release that resolves under the Flutter 3.19.6
+  # this project pins (2.7.0+ want `meta ^1.15.0` against the SDK's pinned
+  # `meta 1.11.0`, and 2.9.x additionally want Flutter >=3.24.0), and the pdf.js
+  # build vendored in `web/js/pdfjs/` is the exact one this version expects
+  # (2.12.313) - the two move together or not at all.
+  pdfx: 2.6.0
 
 dependency_overrides:
   stripe_js:

@@ -340,6 +340,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
           driveKey: checkDriveKey.key,
           driveOwner: await wallet.getAddress(),
           maxRetries: profileQueryMaxRetries,
+          // Login, not a user-initiated fetch: read the configured gateway
+          // twice rather than walking the GAR waterfall behind a spinner.
+          configuredGatewayOnly: true,
         );
 
         if (privateDrive == null) {
