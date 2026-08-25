@@ -1913,10 +1913,6 @@
       }
     }
   },
-  "sharedFileStoredPermanently": "यह फ़ाइल स्थायी रूप से संग्रहित है और इसे कभी भी डाउनलोड किया जा सकता है।",
-  "@sharedFileStoredPermanently": {
-    "description": "Reassurance shown at the bottom of the shared file page"
-  },
   "sharedFileUnlockedWithAccessKey": "आपकी ऐक्सेस कुंजी से अनलॉक किया गया। बाकी सभी के लिए यह फ़ाइल एन्क्रिप्टेड ही रहती है।",
   "@sharedFileUnlockedWithAccessKey": {
     "description": "Shown after a private shared file has been unlocked with an access key"
@@ -1928,10 +1924,6 @@
   "sharedFileVersionHistoryTitle": "वर्शन इतिहास",
   "@sharedFileVersionHistoryTitle": {
     "description": "Title of the collapsed drawer holding the version history of a shared file"
-  },
-  "sharedFileVersionHistoryUnavailable": "अभी हम वर्शन इतिहास लोड नहीं कर सके।",
-  "@sharedFileVersionHistoryUnavailable": {
-    "description": "Shown in the version history drawer when the revisions could not be loaded"
   },
   "sharedFileViewLatest": "नवीनतम देखें",
   "@sharedFileViewLatest": {

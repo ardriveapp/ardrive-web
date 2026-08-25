@@ -2294,10 +2294,6 @@
   "@sharedFileVersionHistoryTitle": {
     "description": "Title of the collapsed drawer holding the version history of a shared file"
   },
-  "sharedFileVersionHistoryUnavailable": "We couldn’t load the version history right now.",
-  "@sharedFileVersionHistoryUnavailable": {
-    "description": "Shown in the version history drawer when the revisions could not be loaded"
-  },
   "sharedFileViewLatest": "View latest",
   "@sharedFileViewLatest": {
     "description": "Button that opens the newest version of a shared file when the link is pinned to an older one"

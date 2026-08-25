@@ -1913,10 +1913,6 @@
       }
     }
   },
-  "sharedFileStoredPermanently": "このファイルは永続的に保存されており、いつでもダウンロードできます。",
-  "@sharedFileStoredPermanently": {
-    "description": "Reassurance shown at the bottom of the shared file page"
-  },
   "sharedFileUnlockedWithAccessKey": "あなたのアクセスキーでロックを解除しました。ほかの人にとっては、このファイルは暗号化されたままです。",
   "@sharedFileUnlockedWithAccessKey": {
     "description": "Shown after a private shared file has been unlocked with an access key"
@@ -1928,10 +1924,6 @@
   "sharedFileVersionHistoryTitle": "バージョン履歴",
   "@sharedFileVersionHistoryTitle": {
     "description": "Title of the collapsed drawer holding the version history of a shared file"
-  },
-  "sharedFileVersionHistoryUnavailable": "現在、バージョン履歴を読み込めませんでした。",
-  "@sharedFileVersionHistoryUnavailable": {
-    "description": "Shown in the version history drawer when the revisions could not be loaded"
   },
   "sharedFileViewLatest": "最新版を見る",
   "@sharedFileViewLatest": {
