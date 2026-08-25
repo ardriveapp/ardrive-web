@@ -97,6 +97,10 @@ void main() {
   FileRevision fileRevision({
     String name = 'Q3 Report.pdf',
     String dataTxId = 'data-tx-newest',
+    // Empty is what `_revisionFromPayload` produces: no link carries a drive
+    // id, and an empty one is exactly what marks a revision painted from the
+    // link alone.
+    String driveId = 'drive-id',
     // Distinct per revision by default, because the metadata transaction is
     // what identifies one. Tests that need two revisions over the same bytes -
     // a rename - set it explicitly.
@@ -108,7 +112,7 @@ void main() {
   }) {
     return FileRevision(
       fileId: fileId,
-      driveId: 'drive-id',
+      driveId: driveId,
       name: name,
       parentFolderId: 'parent-folder-id',
       size: size,
@@ -875,7 +879,10 @@ void main() {
       await pumpPage(
         tester,
         SharedFileLoadSuccess(
-          fileRevisions: [fileRevision()],
+          // Exactly what a v2 link paints before anything is fetched: no drive
+          // id, because no link carries one. If the preview needed it, this is
+          // the case that would fail.
+          fileRevisions: [fileRevision(driveId: '')],
           verification: LinkVerification.pending,
           detailsAreResolved: false,
         ),

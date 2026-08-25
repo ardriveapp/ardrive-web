@@ -610,7 +610,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
           }
         }
       } else {
-        final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
+        final file = await _bounded(
+          _arweave.getLatestFileEntityWithId(fileId, fileKey),
+          'checking the key against the file\'s metadata',
+        );
 
         if (file == null) {
           // The file exists - it is what the user is looking at - so the key is
@@ -1415,7 +1418,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     required int resolution,
   }) async {
     try {
-      final latest = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
+      final latest = await _bounded(
+        _arweave.getLatestFileEntityWithId(fileId, fileKey),
+        'checking whether a newer revision exists',
+      );
 
       if (latest == null || _isStale(resolution)) {
         return latest;
@@ -1614,7 +1620,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       }
     }
 
-    final latest = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
+    final latest = await _bounded(
+      _arweave.getLatestFileEntityWithId(fileId, fileKey),
+      'resolving the revision the link points at',
+    );
 
     if (latest == null) {
       return null;
