@@ -2334,6 +2334,63 @@
   "@shareDriveWithOthers": {
     "description": "The action of sharing a drive link"
   },
+  "shareFolderWithOthers": "Share folder with others",
+  "@shareFolderWithOthers": {
+    "description": "Title of the dialog that shares a link to one folder"
+  },
+  "shareFolder": "Share folder",
+  "@shareFolder": {
+    "description": "The action of sharing a link to a folder"
+  },
+  "shareDriveKeylessNotice": "The link alone won’t open this drive. The person you send it to also needs the access key above.",
+  "@shareDriveKeylessNotice": {
+    "description": "Explains that a private drive link without the key embedded needs the key sent separately"
+  },
+  "shareDriveAccessKeyLabel": "Drive access key",
+  "@shareDriveAccessKeyLabel": {
+    "description": "Label of the field holding the drive key handed over alongside a private drive link"
+  },
+  "shareDriveIncludeKeyInLink": "Include the key in the link",
+  "@shareDriveIncludeKeyInLink": {
+    "description": "Checkbox that embeds the drive key in the share link instead of handing it over separately"
+  },
+  "shareDriveKeyInLinkWarning": "Anyone with this link can open every file in the drive, including files added later. A drive key cannot be changed.",
+  "@shareDriveKeyInLinkWarning": {
+    "description": "Warning shown when the sharer chooses to embed the drive key in the link"
+  },
+  "shareDriveSendKeySeparately": "Send this key separately from the link.",
+  "@shareDriveSendKeySeparately": {
+    "description": "Helper text under the drive key field explaining the two-artifact handover"
+  },
+  "attachDriveLookingUp": "Looking up drive…",
+  "@attachDriveLookingUp": {
+    "description": "Shown while the entered drive ID is being resolved"
+  },
+  "attachDrivePrivateFound": "This is a private drive. Enter its access key to continue.",
+  "@attachDrivePrivateFound": {
+    "description": "Shown once a drive ID resolves to a private drive, so the user knows it was found and what is still needed"
+  },
+  "attachDriveNameResolved": "Drive found: {driveName}",
+  "@attachDriveNameResolved": {
+    "description": "Confirms the drive whose name has been read off the chain",
+    "placeholders": {
+      "driveName": {
+        "type": "String"
+      }
+    }
+  },
+  "shareDriveFailure": "We couldn’t create a share link for this drive. Check your connection and try again.",
+  "@shareDriveFailure": {
+    "description": "Shown in the share drive dialog when the link could not be built, most often because the drive key could not be read"
+  },
+  "shareDriveRevealLink": "Show link",
+  "@shareDriveRevealLink": {
+    "description": "Accessibility label for the control that reveals a masked share link"
+  },
+  "shareFileRevealKey": "Show access key",
+  "@shareFileRevealKey": {
+    "description": "Accessibility label for the control that reveals a masked access key"
+  },
   "shareFailedFile": "The file you are attempting to share is invalid and cannot be shared.",
   "@shareFailedFile": {
     "description": "Failed file share dialog text"

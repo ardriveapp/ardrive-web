@@ -298,6 +298,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         revision: revision,
         ownerAddress: state.ownerAddress ?? payload?.ownerAddress,
         licenseName: state.latestLicense?.meta.nameWithShortName,
+        detailsAreResolved: state.detailsAreResolved,
       ),
       SharedFileVersionsDrawer(
         revisions: state.activityRevisions,
@@ -499,11 +500,32 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   Future<void> _download(BuildContext context, FileRevision revision) async {
     setState(() => _isDownloading = true);
 
+    final payload = widget.state.payload;
+
+    // The link's own cipher, handed to the download so it does not re-fetch
+    // tags the link already delivered - the reason `c` and `iv` are in the
+    // schema at all.
+    //
+    // Only for a data item the link says is bundled. `verifyDownload` turns on
+    // the arweave client's chunk check for L1 transactions and is decided by a
+    // tag on that same lookup, so skipping the lookup for something that might
+    // be L1 would drop a check without saying so. A bundled item is not an L1
+    // transaction, so for those there is nothing to drop.
+    //
+    // It must also be *this* revision's cipher: the recipient may have moved
+    // the page to a newer one, whose bytes the link never described.
+    final linkDescribesTarget = payload != null &&
+        payload.hasCipherDetails &&
+        payload.bundledInTxId != null &&
+        payload.dataTxId == revision.dataTxId;
+
     try {
       await promptToDownloadSharedFile(
         revision: ARFSFactory().getARFSFileFromFileRevision(revision),
         context: context,
         fileKey: widget.state.fileKey,
+        cipher: linkDescribesTarget ? payload.cipher : null,
+        cipherIv: linkDescribesTarget ? payload.cipherIv : null,
       );
     } finally {
       if (mounted) {
@@ -838,20 +860,56 @@ class SharedFileDetailsDrawer extends StatelessWidget {
     required this.revision,
     this.ownerAddress,
     this.licenseName,
+    this.detailsAreResolved = true,
   });
 
   final FileRevision revision;
   final String? ownerAddress;
   final String? licenseName;
 
+  /// Whether [revision] holds the file's own record rather than what the link
+  /// claimed.
+  ///
+  /// A v2 link carries no timestamps, so until the metadata resolves the dates
+  /// on [revision] are the epoch placeholder. Showing those would put
+  /// "1970-01-01" in front of a recipient as though it were the upload date,
+  /// which is worse than showing nothing.
+  final bool detailsAreResolved;
+
   @override
   Widget build(BuildContext context) {
     final ownerAddress = this.ownerAddress;
     final licenseName = this.licenseName;
 
+    final contentType = revision.dataContentType;
+
     return _SharedFileDrawer(
       title: appLocalizationsOf(context).sharedFileDetailsDrawerTitle,
       children: [
+        // Type and dates lead, ahead of the identifiers. A recipient who was
+        // sent a link by a stranger has almost no way to judge what they are
+        // looking at, and *when it was uploaded* is the most useful signal
+        // they have - it was previously nowhere on this page, and the only
+        // date anywhere sat inside the version history, which is collapsed and
+        // not fetched until it is opened.
+        if (contentType != null && contentType.isNotEmpty)
+          _SharedFileDetailRow(
+            label: appLocalizationsOf(context).fileType,
+            value: contentType,
+            canCopy: false,
+          ),
+        if (detailsAreResolved) ...[
+          _SharedFileDetailRow(
+            label: appLocalizationsOf(context).dateCreated,
+            value: formatDateToUtcString(revision.dateCreated),
+            canCopy: false,
+          ),
+          _SharedFileDetailRow(
+            label: appLocalizationsOf(context).lastUpdated,
+            value: formatDateToUtcString(revision.lastModifiedDate),
+            canCopy: false,
+          ),
+        ],
         _SharedFileDetailRow(
           label: appLocalizationsOf(context).fileID,
           value: revision.fileId,

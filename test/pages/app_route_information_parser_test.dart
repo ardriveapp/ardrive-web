@@ -306,12 +306,12 @@ void main() {
     });
   });
 
-  group('restoreRouteInformation', () {
-    Future<AppRoutePath> roundTrip(AppRoutePath routePath) async {
-      final restored = parser.restoreRouteInformation(routePath);
+  Future<AppRoutePath> roundTripOf(AppRoutePath routePath) =>
+      parser.parseRouteInformation(parser.restoreRouteInformation(routePath));
 
-      return parser.parseRouteInformation(restored);
-    }
+  group('restoreRouteInformation', () {
+    Future<AppRoutePath> roundTrip(AppRoutePath routePath) =>
+        roundTripOf(routePath);
 
     test('a v1 link keeps the shape it has always had', () async {
       final routePath = await parse(
@@ -390,6 +390,21 @@ void main() {
       expect(restored.sharedRawDriveKey, validDriveKey);
     });
 
+    test('a nameless private drive link keeps its key', () async {
+      // A private drive link no longer carries a name - the name is a secret
+      // and the recipient's attach flow reads the real one off the chain. The
+      // key must survive the round trip regardless, or a refresh would drop it
+      // and the recipient would be asked to paste a key the link already had.
+      final routePath = await parse(
+        '/drives/$driveId?$driveKeyQueryParamName=$validDriveKey',
+      );
+
+      final restored = await roundTrip(routePath);
+
+      expect(restored.driveId, driveId);
+      expect(restored.sharedRawDriveKey, validDriveKey);
+    });
+
     test('a folder link still round trips', () async {
       final routePath = await parse('/drives/$driveId/folders/$folderId');
 
@@ -461,6 +476,35 @@ void main() {
       expect(routePath.driveId, driveId);
       expect(routePath.driveFolderId, folderId);
       expect(routePath.sharedDriveKey, isNull);
+    });
+
+    test('a folder link keeps its drive key instead of losing the folder',
+        () async {
+      // The key used to be decoded inside the drive branch, which returned
+      // from there - so a *valid* key made the folder segments unreachable and
+      // the link quietly resolved to the drive root. Only a damaged key ever
+      // reached the folder route, which is exactly backwards.
+      final routePath = await parse(
+        '/drives/$driveId/folders/$folderId'
+        '?$driveKeyQueryParamName=$validDriveKey',
+      );
+
+      expect(routePath.driveId, driveId);
+      expect(routePath.driveFolderId, folderId);
+      expect(routePath.sharedRawDriveKey, validDriveKey);
+      expect(routePath.sharedDriveKey, isNotNull);
+    });
+
+    test('a private folder link round trips with both', () async {
+      final routePath = await parse(
+        '/drives/$driveId/folders/$folderId'
+        '?$driveKeyQueryParamName=$validDriveKey',
+      );
+
+      final restored = await roundTripOf(routePath);
+
+      expect(restored.driveFolderId, folderId);
+      expect(restored.sharedRawDriveKey, validDriveKey);
     });
 
     test('parses a folder link', () async {

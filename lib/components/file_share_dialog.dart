@@ -1,5 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
-import 'package:ardrive/components/copy_button.dart';
+import 'package:ardrive/components/copyable_share_artifact.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -42,28 +42,13 @@ class FileShareDialog extends StatefulWidget {
 }
 
 class FileShareDialogState extends State<FileShareDialog> {
-  final shareLinkController = TextEditingController();
-  final fileKeyController = TextEditingController();
-
-  @override
-  void dispose() {
-    shareLinkController.dispose();
-    fileKeyController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return BlocConsumer<FileShareCubit, FileShareState>(
-      listener: (context, state) {
-        if (state is FileShareLoadSuccess) {
-          shareLinkController.text = state.fileShareLink.toString();
-          fileKeyController.text = state.fileKeyBase64 ?? '';
-        }
-      },
+    return BlocBuilder<FileShareCubit, FileShareState>(
       builder: (context, state) => ArDriveStandardModalNew(
         width: kLargeDialogWidth,
         scrollableContent: true,
@@ -131,11 +116,14 @@ class FileShareDialogState extends State<FileShareDialog> {
                     ],
                   ),
                 ),
-              _CopyableArtifact(
+              CopyableShareArtifact(
                 label: appLocalizationsOf(context).shareFileLinkLabel,
-                controller: shareLinkController,
                 text: state.fileShareLink.toString(),
                 copyLabel: appLocalizationsOf(context).copyLink,
+                revealLabel: appLocalizationsOf(context).shareDriveRevealLink,
+                // A link only holds a secret when the sharer chose to embed
+                // the key in it. A keyless link is not worth hiding.
+                isSecret: state.keyIsInLink,
               ),
               if (state.isLoadingCipherDetails)
                 _HelperText(
@@ -149,11 +137,12 @@ class FileShareDialogState extends State<FileShareDialog> {
                 ),
               if (state.hasSeparateKeyArtifact) ...[
                 const SizedBox(height: 16),
-                _CopyableArtifact(
+                CopyableShareArtifact(
                   label: appLocalizationsOf(context).shareFileAccessKeyLabel,
-                  controller: fileKeyController,
                   text: state.fileKeyBase64!,
                   copyLabel: appLocalizationsOf(context).copyAccessKey,
+                  revealLabel: appLocalizationsOf(context).shareFileRevealKey,
+                  isSecret: true,
                 ),
                 _HelperText(
                   appLocalizationsOf(context).shareFileSendKeySeparately,
@@ -229,65 +218,6 @@ class FileShareDialogState extends State<FileShareDialog> {
             )
         ],
       ),
-    );
-  }
-}
-
-/// A read-only field holding one of the artifacts of the handover, with its
-/// own copy affordance - the link and the key are copied one at a time, on
-/// purpose.
-class _CopyableArtifact extends StatelessWidget {
-  const _CopyableArtifact({
-    required this.label,
-    required this.controller,
-    required this.text,
-    required this.copyLabel,
-  });
-
-  final String label;
-  final TextEditingController controller;
-
-  /// What the copy button puts on the clipboard. Taken from the state rather
-  /// than from [controller], which is only how the value is displayed.
-  final String text;
-
-  final String copyLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: ArDriveTextFieldNew(
-            label: label,
-            controller: controller,
-            isEnabled: false,
-          ),
-        ),
-        const SizedBox(width: 16),
-        CopyButton(
-          positionX: 4,
-          positionY: 40,
-          copyMessageColor: colorTokens.containerRed,
-          showCopyText: true,
-          text: text,
-          child: Text(
-            copyLabel,
-            style: typography
-                .paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colorTokens.textMid,
-                )
-                .copyWith(
-                  decoration: TextDecoration.underline,
-                ),
-          ),
-        ),
-      ],
     );
   }
 }

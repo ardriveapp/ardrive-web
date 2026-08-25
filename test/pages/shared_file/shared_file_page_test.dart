@@ -59,11 +59,22 @@ void main() {
   late MockSharedFileCubit cubit;
   late StreamController<SharedFileState> states;
 
+  /// The value rendered beside [label] in the details drawer, scoped to that
+  /// label's own row.
+  Finder detailRowValue(String label, String value) => find.descendant(
+        of: find
+            .ancestor(of: find.text(label), matching: find.byType(Row))
+            .first,
+        matching: find.text(value),
+      );
+
   FileRevision fileRevision({
     String name = 'Q3 Report.pdf',
     String dataTxId = 'data-tx-newest',
     int size = 4821133,
     String? dataContentType = 'application/pdf',
+    DateTime? lastModifiedDate,
+    DateTime? dateCreated,
   }) {
     return FileRevision(
       fileId: fileId,
@@ -71,11 +82,11 @@ void main() {
       name: name,
       parentFolderId: 'parent-folder-id',
       size: size,
-      lastModifiedDate: DateTime.utc(2024, 3, 3),
+      lastModifiedDate: lastModifiedDate ?? DateTime.utc(2023, 11, 9),
       dataContentType: dataContentType,
       metadataTxId: 'metadata-tx',
       dataTxId: dataTxId,
-      dateCreated: DateTime.utc(2024, 3, 3),
+      dateCreated: dateCreated ?? DateTime.utc(2024, 3, 3),
       action: RevisionAction.create,
       isHidden: false,
     );
@@ -490,6 +501,35 @@ void main() {
       expect(find.text('metadata-tx'), findsOneWidget);
     });
 
+    testWidgets(
+        'the details drawer states the type and when the file was uploaded',
+        (tester) async {
+      // A recipient sent a link by a stranger has almost nothing to judge the
+      // file by, and the upload date is the strongest signal available. It
+      // used to appear nowhere on this page: the drawer listed only ids, and
+      // the sole date on the page sat inside the version history, which is
+      // collapsed and not fetched until opened.
+      await pumpPage(tester, success());
+
+      await tester.tap(find.byType(ExpansionTile).first);
+      await tester.pumpAndSettle();
+
+      // Each value is scoped to the row its label is in, so two rows cannot
+      // satisfy each other's assertion - a swap between created and modified
+      // would otherwise still pass. The expected strings are literal rather
+      // than run through `formatDateToUtcString`, which would let a formatter
+      // change rewrite the production output and the expectation together.
+      expect(detailRowValue('File type', 'application/pdf'), findsOneWidget);
+      expect(
+        detailRowValue('Date created', '2024-03-03 00:00:00 GMT+0'),
+        findsOneWidget,
+      );
+      expect(
+        detailRowValue('Last updated', '2023-11-09 00:00:00 GMT+0'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('asks for the version history only when it is opened',
         (tester) async {
       await pumpPage(tester, success());
@@ -567,6 +607,38 @@ void main() {
       expect(download.isDisabled, isTrue);
       // Nor a preview it cannot fetch.
       expect(find.text('Preview'), findsNothing);
+    });
+
+    testWidgets('shows no dates until the file\'s own record has them',
+        (tester) async {
+      // A v2 link carries no timestamps, so the revision it paints from holds
+      // the epoch placeholder until the metadata resolves. Rendering that puts
+      // "1970-01-01" in front of a recipient as though it were the upload
+      // date - worse than showing nothing, and worse than the placeholder was
+      // ever meant to be.
+      await pumpPage(
+        tester,
+        SharedFileLoadSuccess(
+          fileRevisions: [
+            fileRevision(
+              lastModifiedDate: DateTime.fromMillisecondsSinceEpoch(0),
+              dateCreated: DateTime.fromMillisecondsSinceEpoch(0),
+            ),
+          ],
+          verification: LinkVerification.pending,
+          detailsAreResolved: false,
+        ),
+      );
+
+      await tester.tap(find.byType(ExpansionTile).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Date created'), findsNothing);
+      expect(find.text('Last updated'), findsNothing);
+      expect(find.textContaining('1970'), findsNothing);
+
+      // The type still shows: the link really did carry it.
+      expect(find.text('File type'), findsOneWidget);
     });
 
     testWidgets('shows the verification badge the link earned', (tester) async {

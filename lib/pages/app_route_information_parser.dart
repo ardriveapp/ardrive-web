@@ -78,21 +78,27 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
           final driveId = uri.pathSegments[1];
           final name = uri.queryParameters['name'];
           final driveKeyBase64 = uri.queryParameters[driveKeyQueryParamName];
+
+          DriveKey? sharedDriveKey;
+          String? sharedRawDriveKey;
+
+          // Decoded once, before the route shape is decided, so that the key
+          // reaches whichever route matches. This used to sit inside the drive
+          // branch and return from there, which meant a *valid* key made the
+          // folder segments unreachable: `/drives/{id}/folders/{fid}?driveKey=`
+          // silently resolved to the drive root and lost the folder. Only a
+          // damaged key ever reached the folder route, which is the wrong way
+          // round.
           if (driveKeyBase64 != null && driveKeyBase64.isNotEmpty) {
             try {
-              final sharedDrivePkBytes =
-                  utils.decodeBase64ToBytes(driveKeyBase64);
-
-              return AppRoutePath.driveDetail(
-                driveId: driveId,
-                driveName: name,
-                sharedDrivePk: DriveKey(SecretKey(sharedDrivePkBytes), true),
-                sharedRawDriveKey: driveKeyBase64,
+              sharedDriveKey = DriveKey(
+                SecretKey(utils.decodeBase64ToBytes(driveKeyBase64)),
+                true,
               );
+              sharedRawDriveKey = driveKeyBase64;
             } catch (e) {
-              // Same as the shared file link below: a damaged key must not
-              // throw while the route is being parsed. Drop it and carry on to
-              // the keyless drive route.
+              // A damaged key must not throw while the route is being parsed.
+              // Drop it and carry on to the keyless route.
               //
               // The reason is logged and never the exception object: the
               // `source` of the `FormatException` a base64 decoder throws *is*
@@ -107,12 +113,22 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
 
           if (uri.pathSegments.length == 2) {
             // Handle '/drives/:driveId'
-            return AppRoutePath.driveDetail(driveId: driveId, driveName: name);
+            return AppRoutePath.driveDetail(
+              driveId: driveId,
+              driveName: name,
+              sharedDrivePk: sharedDriveKey,
+              sharedRawDriveKey: sharedRawDriveKey,
+            );
           } else if (uri.pathSegments.length == 4 &&
               uri.pathSegments[2] == 'folders') {
             //  Handle /drives/:driveId/folders/:folderId
             return AppRoutePath.folderDetail(
-                driveId: driveId, driveFolderId: uri.pathSegments[3]);
+              driveId: driveId,
+              driveFolderId: uri.pathSegments[3],
+              driveName: name,
+              sharedDrivePk: sharedDriveKey,
+              sharedRawDriveKey: sharedRawDriveKey,
+            );
           }
         }
 
@@ -207,21 +223,26 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
         uri: Uri.parse('/get-started'),
       );
     } else if (configuration.driveId != null) {
-      if (configuration.driveName != null &&
-          configuration.sharedRawDriveKey != null) {
-        return RouteInformation(
-          uri: Uri.parse(
-              '/drives/${configuration.driveId}?name=${configuration.driveName}'
-              '&$driveKeyQueryParamName=${configuration.sharedRawDriveKey}'),
-        );
-      }
+      final path = configuration.driveFolderId == null
+          ? '/drives/${configuration.driveId}'
+          : '/drives/${configuration.driveId}'
+              '/folders/${configuration.driveFolderId}';
 
-      return configuration.driveFolderId == null
-          ? RouteInformation(uri: Uri.parse('/drives/${configuration.driveId}'))
-          : RouteInformation(
-              uri: Uri.parse(
-                  '/drives/${configuration.driveId}/folders/${configuration.driveFolderId}'),
-            );
+      // Each part is written when it is there, rather than only when both are.
+      // A private drive link no longer carries a name, and the old shape wrote
+      // the key back *only* alongside one - so the key silently fell out of the
+      // address bar and a refresh asked the recipient for a key their link
+      // already had.
+      final query = <String>[
+        if (configuration.driveName != null)
+          'name=${Uri.encodeQueryComponent(configuration.driveName!)}',
+        if (configuration.sharedRawDriveKey != null)
+          '$driveKeyQueryParamName=${configuration.sharedRawDriveKey}',
+      ];
+
+      return RouteInformation(
+        uri: Uri.parse(query.isEmpty ? path : '$path?${query.join('&')}'),
+      );
     } else if (configuration.rawTransactionId != null) {
       return RouteInformation(
         uri: Uri.parse(
