@@ -1035,7 +1035,15 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     FileEntity? latest;
 
     try {
-      latest = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
+      // Bounded like every other read that gates what the recipient sees.
+      // Unbounded, a gateway that accepts the connection and then says nothing
+      // leaves `detailsAreResolved` false forever - and the desktop pane sits
+      // on "Loading file details..." with no preview and no way out, because
+      // the preview needs a drive id that only this read can supply.
+      latest = await _bounded(
+        _arweave.getLatestFileEntityWithId(fileId, fileKey),
+        'looking up the newest revision',
+      );
     } catch (e, stacktrace) {
       // A freshness check that fails changes nothing about the file in hand.
       logger.e(
@@ -1379,7 +1387,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     }
 
     try {
-      return _fileOwner = await _arweave.getOwnerForFileEntityWithId(fileId);
+      return _fileOwner = await _bounded(
+        _arweave.getOwnerForFileEntityWithId(fileId),
+        'resolving the file owner',
+      );
     } catch (e, stacktrace) {
       logger.e(
         'Failed to resolve the owner of the shared file',
@@ -1630,7 +1641,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     String metadataTxId,
     SecretKey? fileKey,
   ) async {
-    final transaction = await _arweave.getTransactionDetails(metadataTxId);
+    final transaction = await _bounded(
+      _arweave.getTransactionDetails(metadataTxId),
+      'reading the shared revision\'s metadata transaction',
+    );
 
     if (transaction == null) {
       return null;

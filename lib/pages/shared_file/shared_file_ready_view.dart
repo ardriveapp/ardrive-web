@@ -117,6 +117,32 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// Whether the resolver is fetching the revision the recipient asked for.
   bool _isChangingRevision = false;
 
+  /// Whether there is enough in hand to show the file itself.
+  ///
+  /// Deliberately not [SharedFileLoadSuccess.detailsAreResolved]. That flag
+  /// means "the file's own metadata came back", and gating the preview on it
+  /// made a preview that needs nothing from the chain wait for a round trip
+  /// that can hang - leaving the pane on "Loading file details..." with no
+  /// preview and no way out.
+  ///
+  /// The preview needs three things, and a v2 link carries all of them: the
+  /// data transaction, something to decide the type from, and - for a private
+  /// file - the key. It does *not* need the drive id, despite taking one:
+  /// [FsEntryPreviewCubit] only passes that to `_getFileKey`, which returns the
+  /// key it was handed before ever looking at it. The drive lookups that do use
+  /// it are on the logged-in path, which a recipient never takes.
+  bool _canPreview(FileRevision revision) {
+    if (revision.dataTxId.isEmpty) {
+      return false;
+    }
+
+    final hasType = (revision.dataContentType?.isNotEmpty ?? false) ||
+        widget.state.payload?.contentType?.isNotEmpty == true ||
+        revision.name.isNotEmpty;
+
+    return hasType;
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
@@ -147,7 +173,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         // resolved metadata knows about. There is no resting box on a phone -
         // an empty 360px band above the fold would cost more than it says -
         // so the preview simply appears once there is something to show.
-        if (widget.state.detailsAreResolved) ...[
+        if (_canPreview(revision)) ...[
           const SizedBox(height: 16),
           _buildPreview(context, revision, isInline: true),
         ],
@@ -399,7 +425,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       child: Center(
         // The preview reads the file through its drive, which only the
         // resolved metadata knows about.
-        child: widget.state.detailsAreResolved
+        child: _canPreview(revision)
             ? _buildPreview(context, revision, isInline: false)
             : _buildPaneAtRest(context, revision),
       ),

@@ -860,17 +860,47 @@ void main() {
       }
     });
 
-    testWidgets('the pane answers with a picture while it is still resolving',
+    testWidgets('an unresolved link still previews, because it has the bytes',
         (tester) async {
-      // The pane is 580x430 on a laptop, and a lone sentence in the middle of
-      // it reads as something that failed rather than as an answer. Every
-      // state that cannot show the file - not yet, not this type, too big -
-      // gets the file's own type icon over the sentence instead, so they all
-      // look like the same deliberate placeholder.
+      // The preview does not wait on the file's own metadata. It needs a data
+      // transaction, something to decide the type from, and - if private - the
+      // key, and a v2 link carries all three. It does *not* need the drive id,
+      // despite [FsEntryPreviewCubit] taking one: on this path that is only
+      // handed to `_getFileKey`, which returns the key it was given without
+      // looking at it.
+      //
+      // Gating on `detailsAreResolved` made a preview that needs nothing from
+      // the chain wait for a round trip that can hang, and left the pane on
+      // "Loading file details..." with no preview and no way out.
       await pumpPage(
         tester,
         SharedFileLoadSuccess(
           fileRevisions: [fileRevision()],
+          verification: LinkVerification.pending,
+          detailsAreResolved: false,
+        ),
+        surface: const Size(1440, 1000),
+      );
+
+      expect(find.byKey(sharedFilePreviewPaneKey), findsOneWidget);
+      expect(find.text('Loading file details...'), findsNothing);
+      // The preview is mounted, keyed on the bytes the link named.
+      expect(
+        find.byKey(const ValueKey('data-tx-newest'), skipOffstage: false),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the pane answers with a picture when there is nothing to show',
+        (tester) async {
+      // The pane is 580x430 on a laptop, and a lone sentence in the middle of
+      // it reads as something that failed rather than as an answer. A link with
+      // no data transaction is the case that genuinely cannot preview, and it
+      // gets the file's own type icon over the sentence.
+      await pumpPage(
+        tester,
+        SharedFileLoadSuccess(
+          fileRevisions: [fileRevision(dataTxId: '')],
           verification: LinkVerification.pending,
           detailsAreResolved: false,
         ),
@@ -883,7 +913,6 @@ void main() {
         find.descendant(of: pane, matching: find.text('Loading file details...')),
         findsOneWidget,
       );
-      // The picture above it, not a bare line of text in an empty box.
       expect(
         find.descendant(of: pane, matching: find.byType(ArDriveIcon)),
         findsWidgets,
