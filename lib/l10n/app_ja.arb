@@ -562,10 +562,6 @@
       }
     }
   },
-  "downloadVerified": "このファイルはアップロードされた元のファイルと一致しています。",
-  "@downloadVerified": {
-    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
-  },
   "downloadVerifying": "このファイルを確認しています...",
   "@downloadVerifying": {
     "description": "Title of the download dialog shown after the file is saved, while the integrity check is still running"

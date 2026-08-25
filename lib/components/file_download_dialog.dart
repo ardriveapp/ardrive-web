@@ -420,15 +420,23 @@ class FileDownloadDialog extends StatelessWidget {
       );
     }
 
+    // Nothing is said about a check that passed.
+    //
+    // "Verified" claimed more than it did. It never meant the bytes were
+    // checked against what the uploader signed - that is the data item
+    // signature, and it is not fetched here. It meant the AES-GCM MAC checked
+    // out, which is a real cryptographic check but not one the user can ever
+    // learn anything from: a MAC that fails throws out of the download, so the
+    // dialog below is only ever reached when it passed. A label on 100% of
+    // successes carries no information.
+    //
+    // It was also asymmetric. Only private GCM files could earn it, so a badge
+    // on those and silence on everything else implied public downloads were
+    // the lesser thing, which is the opposite of true and not a claim worth
+    // making by accident.
     return _modalWrapper(
       title: appLocalizationsOf(context).downloadFinished,
-      // The file name would normally be the modal's `description`, but
-      // [ArDriveStandardModalNew] renders `description` only when there is no
-      // `content`, so the advisory has to bring the name with it.
-      child: _DownloadOutcome(
-        fileName: state.fileName,
-        integrity: state.integrity,
-      ),
+      description: state.fileName,
       actions: [
         ModalAction(
           action: () {
@@ -688,95 +696,3 @@ class FileDownloadDialog extends StatelessWidget {
 /// [DataItemIntegrityVerdict.failed] never reaches here; it takes over the
 /// whole modal instead. See
 /// [FileDownloadDialog.downloadFinishedWithSuccessDialog].
-class _DownloadOutcome extends StatelessWidget {
-  const _DownloadOutcome({
-    required this.fileName,
-    required this.integrity,
-  });
-
-  final String fileName;
-
-  /// What the integrity check made of the bytes, when one ran.
-  final DataItemIntegrityVerdict? integrity;
-
-  @override
-  Widget build(BuildContext context) {
-    final verdict = integrity;
-
-    return SizedBox(
-      width: kMediumDialogWidth,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            fileName,
-            // The style [ArDriveStandardModalNew] gives its own `description`,
-            // which is where this line sits on every other download dialog.
-            style: ArDriveTypography.body.smallRegular(),
-            textAlign: TextAlign.left,
-          ),
-          // Only a verdict worth having is worth a line.
-          //
-          // "ArDrive couldn't check this file against the original" was on
-          // every public download, because checking against the original means
-          // a data item signature, and that means a GraphQL lookup this app no
-          // longer makes on the download path. Telling a user that a check
-          // they never asked for did not happen is not information; it is a
-          // disclaimer that makes a successful download read as a qualified
-          // one.
-          //
-          // A private AES-GCM file still says so, and means it: the MAC is
-          // computed locally over every byte before any of them are written,
-          // so that verdict costs nothing and is a real guarantee.
-          if (verdict == DataItemIntegrityVerdict.verified) ...[
-            const SizedBox(height: 12),
-            const _VerifiedNotice(),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// One line confirming the bytes checked out, in the icon-plus-caption shape
-/// the rest of the app uses for advisory notices.
-///
-/// Only reachable for a verdict of [DataItemIntegrityVerdict.verified]. The
-/// other two do not come here: `failed` takes over the whole modal, because
-/// bytes that contradict what was signed are the headline rather than a
-/// footnote, and `notVerified` says nothing at all - see [_DownloadOutcome].
-class _VerifiedNotice extends StatelessWidget {
-  const _VerifiedNotice();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final isLight = ArDriveTheme.of(context).themeData.name == 'light';
-
-    // `themeSuccessDefault` is green.400 in both themes and reads at only
-    // ~2.2:1 on a light surface, so the light theme takes the muted green
-    // instead - the same substitution the recipient page documents in
-    // [SharedFileColors.success].
-    final color =
-        isLight ? colors.themeSuccessMuted : colors.themeSuccessDefault;
-
-    return MergeSemantics(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ExcludeSemantics(
-            child: ArDriveIcons.checkCirle(size: 16, color: color),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              appLocalizationsOf(context).downloadVerified,
-              style: ArDriveTypography.body.captionRegular(color: color),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

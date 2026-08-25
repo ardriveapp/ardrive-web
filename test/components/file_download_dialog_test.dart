@@ -96,49 +96,37 @@ void main() {
   });
 
   group('the verdict on a finished download', () {
-    testWidgets('a verified file gets one quiet affirmative', (tester) async {
-      await pumpState(
-        tester,
-        const FileDownloadFinishedWithSuccess(
-          fileName: 'holiday.mp4',
-          integrity: DataItemIntegrityVerdict.verified,
-        ),
-      );
-
-      expect(find.text('Download finished!'), findsOneWidget);
-      expect(find.text('holiday.mp4'), findsOneWidget);
-      expect(
-        find.text('This file matches what was originally uploaded.'),
-        findsOneWidget,
-      );
-      expect(find.text('DONE'), findsOneWidget);
-    });
-
-    testWidgets('an unchecked file says nothing about being unchecked',
+    testWidgets('a finished download says it finished, and no more',
         (tester) async {
-      await pumpState(
-        tester,
-        const FileDownloadFinishedWithSuccess(
-          fileName: 'holiday.mp4',
-          integrity: DataItemIntegrityVerdict.notVerified,
-        ),
-      );
+      // Every verdict reads the same here, because none of them is worth a
+      // line. "Verified" claimed the bytes matched what the uploader signed,
+      // which is the data item signature and is not fetched on this path. What
+      // it really meant was that the AES-GCM MAC checked out - a real check,
+      // but one a user can never learn anything from: a MAC that fails throws
+      // out of the download, so this dialog is only ever reached when it
+      // passed.
+      for (final verdict in DataItemIntegrityVerdict.values) {
+        if (verdict == DataItemIntegrityVerdict.failed) continue;
 
-      // A finished download, said plainly. Checking a file "against the
-      // original" means a data item signature, which means a GraphQL lookup
-      // the download path no longer makes - so this verdict is on every public
-      // download, and a disclaimer about a check nobody asked for turns a
-      // success into a qualified one.
-      expect(find.text('Download finished!'), findsOneWidget);
-      expect(find.text('holiday.mp4'), findsOneWidget);
-      expect(find.textContaining('couldn’t check'), findsNothing);
-      expect(find.textContaining('check this file'), findsNothing);
+        await pumpState(
+          tester,
+          FileDownloadFinishedWithSuccess(
+            fileName: 'holiday.mp4',
+            integrity: verdict,
+          ),
+        );
 
-      // Nor anything from either of the verdicts that do have something to
-      // say.
-      expect(find.textContaining('Verified'), findsNothing);
-      expect(find.textContaining('doesn’t match'), findsNothing);
-      expect(find.textContaining('Delete it'), findsNothing);
+        expect(find.text('Download finished!'), findsOneWidget,
+            reason: 'for $verdict');
+        expect(find.text('holiday.mp4'), findsOneWidget, reason: 'for $verdict');
+        expect(find.text('DONE'), findsOneWidget, reason: 'for $verdict');
+
+        // No claim about the bytes, in either direction.
+        expect(find.textContaining('matches what was originally'), findsNothing,
+            reason: 'for $verdict');
+        expect(find.textContaining('couldn’t check'), findsNothing,
+            reason: 'for $verdict');
+      }
     });
 
     testWidgets('a failed verdict takes over the modal and says what to do',

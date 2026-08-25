@@ -562,10 +562,6 @@
       }
     }
   },
-  "downloadVerified": "此文件与最初上传的文件一致。",
-  "@downloadVerified": {
-    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
-  },
   "downloadVerifying": "正在检查此文件...",
   "@downloadVerifying": {
     "description": "Title of the download dialog shown after the file is saved, while the integrity check is still running"

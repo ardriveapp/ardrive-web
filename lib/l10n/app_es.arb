@@ -562,10 +562,6 @@
       }
     }
   },
-  "downloadVerified": "Este archivo coincide con lo que se subió originalmente.",
-  "@downloadVerified": {
-    "description": "Quiet affirmative line on the download success dialog when the integrity check passed"
-  },
   "downloadVerifying": "Comprobando este archivo...",
   "@downloadVerifying": {
     "description": "Title of the download dialog shown after the file is saved, while the integrity check is still running"
