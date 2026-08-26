@@ -265,10 +265,71 @@ class ArweaveService {
   /// check that does not pass therefore means "could not verify", never
   /// "tampered".
   Future<TransactionDetails$Query$Transaction?>
-      getTransactionDetailsWithSignature(String txId) async {
-    final query = await graphQLRetry.execute(TransactionDetailsQuery(
-        variables: TransactionDetailsArguments(txId: txId)));
-    return query.data?.transaction;
+      getTransactionDetailsWithSignature(String txId) {
+    final cached = _transactionDetails[txId];
+
+    if (cached != null) {
+      return cached;
+    }
+
+    final request = graphQLRetry
+        .execute(TransactionDetailsQuery(
+            variables: TransactionDetailsArguments(txId: txId)))
+        .then((query) => query.data?.transaction);
+
+    // The future is held, not the result, so callers that arrive together share
+    // one request rather than starting a second while the first is in flight -
+    // which is exactly what a preview and the download behind it do.
+    _transactionDetails[txId] = request;
+
+    return request.then((transaction) {
+      // An answer is kept; a miss is not. A transaction that could not be read
+      // may be a rate limit, a gateway that has not indexed it yet, or one that
+      // never will, and none of those is a fact worth remembering. `null` is
+      // also what a not-yet-mined transaction returns, and the page retries
+      // those on purpose.
+      if (transaction == null) {
+        _transactionDetails.remove(txId);
+      } else {
+        _rememberTransaction(txId);
+      }
+
+      return transaction;
+    }, onError: (Object error, StackTrace stackTrace) {
+      _transactionDetails.remove(txId);
+
+      throw error;
+    });
+  }
+
+  /// Transaction details already asked for, by transaction id.
+  ///
+  /// A transaction is immutable: its tags, owner and bundle are the same
+  /// answer every time, so asking twice is never anything but a second round
+  /// trip. Two callers on the shared file page ask for the same one - the
+  /// preview, to read the cipher it decrypts with, and the download behind it
+  /// for the same tags - and before this they each paid for it. On a connection
+  /// the gateway rate limits, the second is the one that fails.
+  final Map<String, Future<TransactionDetails$Query$Transaction?>>
+      _transactionDetails = {};
+
+  /// Insertion order, so the oldest entry is the one evicted.
+  final List<String> _transactionDetailsOrder = [];
+
+  /// How many transactions to remember.
+  ///
+  /// Small on purpose. This exists to stop one page asking the same question
+  /// twice, not to be a cache of the chain, and a recipient page looks at one
+  /// file.
+  static const _maxRememberedTransactions = 64;
+
+  void _rememberTransaction(String txId) {
+    _transactionDetailsOrder.remove(txId);
+    _transactionDetailsOrder.add(txId);
+
+    while (_transactionDetailsOrder.length > _maxRememberedTransactions) {
+      _transactionDetails.remove(_transactionDetailsOrder.removeAt(0));
+    }
   }
 
   Future<InfoOfTransactionToBePinned$Query$Transaction?> getInfoOfTxToBePinned(
