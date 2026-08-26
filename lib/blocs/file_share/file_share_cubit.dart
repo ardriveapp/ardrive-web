@@ -63,6 +63,15 @@ class FileShareCubit extends Cubit<FileShareState> {
 
   String? _cipher;
   String? _cipherIv;
+
+  /// Whether a private file's cipher could not be resolved.
+  ///
+  /// `c` is not an optimization. It is the only thing that tells a recipient
+  /// holding no key that the file is encrypted: without it the page reads the
+  /// file as public, and a download writes ciphertext to disk under the file's
+  /// own name. A link missing it is not a slower link, it is a broken one, so
+  /// the sharer is told rather than handed it silently.
+  bool _cipherDetailsFailed = false;
   bool _isLoadingCipherDetails = false;
 
   bool _detailsAreHidden = false;
@@ -214,12 +223,16 @@ class FileShareCubit extends Cubit<FileShareState> {
       _cipherIv = dataTx?.getTag(EntityTag.cipherIv);
 
       if (_cipher == null || _cipherIv == null) {
+        _cipherDetailsFailed = true;
+
         logger.w(
           'The data transaction of a shared private file carries no cipher '
-          'tags. The link will omit `c`/`iv`.',
+          'tags. The link cannot say the file is encrypted.',
         );
       }
     } catch (e) {
+      _cipherDetailsFailed = true;
+
       logger.e('Failed to fetch the cipher details of a shared file link', e);
     } finally {
       _isLoadingCipherDetails = false;
@@ -242,8 +255,22 @@ class FileShareCubit extends Cubit<FileShareState> {
         detailsAreHidden: _detailsAreHidden,
         isPinned: _isPinned,
         isLoadingCipherDetails: _isLoadingCipherDetails,
+        cipherDetailsFailed: _cipherDetailsFailed,
       ),
     );
+  }
+
+  /// Asks again for the cipher a private link needs.
+  Future<void> retryCipherDetails(String dataTxId) async {
+    if (_isLoadingCipherDetails) {
+      return;
+    }
+
+    _cipherDetailsFailed = false;
+    _isLoadingCipherDetails = true;
+    _emitLoadSuccess();
+
+    await _loadCipherDetails(dataTxId);
   }
 
   Uri _buildLink() => generateFileShareLinkV2(

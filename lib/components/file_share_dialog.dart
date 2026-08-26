@@ -130,6 +130,21 @@ class FileShareDialogState extends State<FileShareDialog> {
                   appLocalizationsOf(context).shareFileFinishingLink,
                   color: colorTokens.textLow,
                 ),
+              // Said out loud, because the link looks finished either way.
+              //
+              // Without `c` a recipient holding no key cannot tell the file is
+              // encrypted: the page reads it as public and the download writes
+              // ciphertext to disk under the file's own name. Handing this link
+              // over quietly is how that happens, so the sharer is told and
+              // given the one action that fixes it.
+              if (state.cipherDetailsFailed)
+                _HelperText(
+                  appLocalizationsOf(context).shareFileLinkIncomplete,
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeErrorDefault,
+                ),
               if (state.isPublicFile)
                 _HelperText(
                   appLocalizationsOf(context).anyoneCanAccessThisFile,

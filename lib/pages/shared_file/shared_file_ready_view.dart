@@ -594,6 +594,9 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         fileKey: widget.state.fileKey,
         cipher: linkDescribesTarget ? payload.cipher : null,
         cipherIv: linkDescribesTarget ? payload.cipherIv : null,
+        // Until the file's own metadata has been read, "public" is only the
+        // link's word for it.
+        publicIsUnconfirmed: !widget.state.detailsAreResolved,
       );
     } finally {
       if (mounted) {
