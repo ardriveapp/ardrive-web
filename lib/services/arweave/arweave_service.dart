@@ -240,32 +240,19 @@ class ArweaveService {
 
   /// The tags, owner address, block and bundle of a transaction.
   ///
-  /// Callers that also need the fields the integrity verifier reads should call
-  /// [getTransactionDetailsWithSignature] instead - it is the same single
-  /// request, not an extra one.
-  Future<TransactionCommonMixin?> getTransactionDetails(String txId) =>
-      getTransactionDetailsWithSignature(txId);
-
-  /// The same single `TransactionDetails` request as [getTransactionDetails],
-  /// typed as the concrete query result so callers can also read what it takes
-  /// to recompute a data item's deep hash signature: `signature`,
-  /// `ownerKey.key` (the owner's full public key), `anchor` and `recipient`
-  /// (the data item's target), next to the `tags` and `bundledIn` of
-  /// `TransactionCommon`.
+  /// This is the query the cipher path runs: the preview reads `Cipher` and
+  /// `Cipher-IV` off it to decrypt, and the download reads the same two. It
+  /// selects nothing else, because every field it selects is a field a gateway
+  /// can break it with.
   ///
-  /// `bundledIn != null` marks an L2 data item, the only case where those four
-  /// fields describe an ANS-104 deep hash. For an L1 transaction they describe
-  /// the L1 transaction itself, whose integrity comes from its `data_root`
-  /// instead.
-  ///
-  /// The schema declares all four non-null, so a gateway that does not index
-  /// one returns an empty string rather than null - indistinguishable from a
-  /// data item that genuinely carries no anchor or target (arweave.net returns
-  /// an empty `anchor` for L1 transactions that ar-io.dev returns in full). A
-  /// check that does not pass therefore means "could not verify", never
-  /// "tampered".
-  Future<TransactionDetails$Query$Transaction?>
-      getTransactionDetailsWithSignature(String txId) {
+  /// It used to be the same request as [getTransactionDetailsWithSignature],
+  /// which also selects `signature`, `anchor`, `recipient` and `ownerKey` for
+  /// the data item integrity check. The schema declares all four non-null, and
+  /// this code assumed a gateway that does not index one would answer with an
+  /// empty string. Some answer with `null`, and Artemis then fails
+  /// deserialization for the *entire* query - taking the cipher tags with it,
+  /// and with them every private preview and private download on that gateway.
+  Future<TransactionCommonMixin?> getTransactionDetails(String txId) {
     final cached = _transactionDetails[txId];
 
     if (cached != null) {
@@ -302,6 +289,33 @@ class ArweaveService {
     });
   }
 
+  /// Everything [getTransactionDetails] returns, plus what it takes to
+  /// recompute a data item's deep hash signature: `signature`, `ownerKey.key`
+  /// (the owner's full public key), `anchor` and `recipient` (the data item's
+  /// target).
+  ///
+  /// `bundledIn != null` marks an L2 data item, the only case where those four
+  /// fields describe an ANS-104 deep hash. For an L1 transaction they describe
+  /// the L1 transaction itself, whose integrity comes from its `data_root`
+  /// instead.
+  ///
+  /// A separate request from [getTransactionDetails], and deliberately so. The
+  /// schema declares those four non-null, but a gateway that does not index
+  /// them answers `null` and fails deserialization for the whole query. A
+  /// caller here is asking for verification and can be told it is unavailable;
+  /// the cipher path cannot, so it does not select them at all.
+  ///
+  /// Not memoized: nothing in the app calls this today - the data item
+  /// integrity check is off - and a verification is worth its own request when
+  /// one is asked for.
+  Future<TransactionDetailsWithSignature$Query$Transaction?>
+      getTransactionDetailsWithSignature(String txId) async {
+    final query = await graphQLRetry.execute(TransactionDetailsWithSignatureQuery(
+        variables: TransactionDetailsWithSignatureArguments(txId: txId)));
+
+    return query.data?.transaction;
+  }
+
   /// Transaction details already asked for, by transaction id.
   ///
   /// A transaction is immutable: its tags, owner and bundle are the same
@@ -310,8 +324,7 @@ class ArweaveService {
   /// preview, to read the cipher it decrypts with, and the download behind it
   /// for the same tags - and before this they each paid for it. On a connection
   /// the gateway rate limits, the second is the one that fails.
-  final Map<String, Future<TransactionDetails$Query$Transaction?>>
-      _transactionDetails = {};
+  final Map<String, Future<TransactionCommonMixin?>> _transactionDetails = {};
 
   /// Insertion order, so the oldest entry is the one evicted.
   final List<String> _transactionDetailsOrder = [];

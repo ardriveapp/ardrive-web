@@ -1,14 +1,22 @@
+# The tags, owner address, block and bundle of one transaction.
+#
+# Deliberately nothing more. This is the query the cipher path runs - the
+# preview reads `Cipher`/`Cipher-IV` off it to decrypt, and the download reads
+# the same two - so every field it selects is a field a gateway can break it
+# with.
+#
+# It used to also select `signature`, `anchor`, `recipient` and `ownerKey`, for
+# the data item integrity check. The schema declares all four non-null, and the
+# code assumed a gateway that does not index one would answer with an empty
+# string. Some answer with `null`, and Artemis then throws
+# `type 'JSNull' is not a subtype of type 'String'` for the *whole* query -
+# taking the cipher tags with it, and with them any private preview or download
+# on that gateway.
+#
+# Those fields now live in `SingleTransactionWithSignature.graphql`, where only
+# the verifier that needs them pays for them.
 query TransactionDetails($txId: ID!) {
   transaction(id: $txId) {
     ...TransactionCommon
-    signature
-    anchor
-    recipient
-    # `TransactionCommon` already selects `owner { address }`, so the public key
-    # has to be aliased: selecting `owner` twice would put two `owner` members
-    # of different types on the generated class.
-    ownerKey: owner {
-      key
-    }
   }
 }
