@@ -1310,6 +1310,63 @@ void main() {
     });
   });
 
+  group('the encoder writes only what the reader keeps', () {
+    /// What a link actually carries, after a full round trip.
+    SharedFileLinkPayload roundTrip(SharedFileLinkPayload payload) {
+      final location = buildSharedFileLinkLocation(
+        fileId: fileId,
+        payload: payload,
+      );
+
+      return SharedFileLinkPayload.tryParse(Uri.parse(location))!;
+    }
+
+    test('an over-long name is shortened rather than spent and discarded', () {
+      // The two ends disagreed: `_encodeText` truncates to 255 *bytes*, while
+      // `sanitizeName` drops anything over `maxNameLength` *characters* on the
+      // way back in. A 150 character name was written into the link and then
+      // thrown away by the reader - bytes spent for nothing, and no name shown
+      // until the metadata resolved.
+      final tooLong = 'a' * (SharedFileLinkPayload.maxNameLength + 30);
+
+      final carried = roundTrip(SharedFileLinkPayload(
+        dataTxId: dataTxId,
+        name: tooLong,
+      )).name;
+
+      expect(carried, isNotNull);
+      expect(carried!.length, SharedFileLinkPayload.maxNameLength);
+      expect(tooLong.startsWith(carried), isTrue);
+    });
+
+    test('a name the reader would reject is never written', () {
+      // A right-to-left override cannot be shortened into something
+      // acceptable, so it is dropped at the encoder instead of carried to a
+      // reader that will drop it.
+      final carried = roundTrip(const SharedFileLinkPayload(
+        dataTxId: dataTxId,
+        name: 'invoice\u202Egpj.exe',
+      )).name;
+
+      expect(carried, isNull);
+    });
+
+    test('a wide name is shortened on a rune boundary', () {
+      // Three bytes per character, so this is over the byte limit as well as
+      // the character one, and must not be cut through a rune.
+      final wide = '\u65e5' * (SharedFileLinkPayload.maxNameLength + 10);
+
+      final carried = roundTrip(SharedFileLinkPayload(
+        dataTxId: dataTxId,
+        name: wide,
+      )).name;
+
+      expect(carried, isNotNull);
+      expect(carried, wide.substring(0, carried!.length));
+      expect(carried.contains('\ufffd'), isFalse);
+    });
+  });
+
   group('round trips of the example links of §1.3', () {
     // The plan's examples are written on the Phase 3 path route
     // (`/share/{fileId}?d=…`); the schema is transport independent, so these
