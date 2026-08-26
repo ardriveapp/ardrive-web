@@ -8,6 +8,11 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/link_generators.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
+// Aliased: `cryptography` exports a `Cipher` of its own, and this file needs
+// both packages.
+import 'package:ardrive_crypto/ardrive_crypto.dart' as ardrive_crypto;
+import 'package:ardrive_uploader/ardrive_uploader.dart'
+    show maxSizeSupportedByGCMEncryption;
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -227,7 +232,7 @@ class FileShareCubit extends Cubit<FileShareState> {
 
         logger.w(
           'The data transaction of a shared private file carries no cipher '
-          'tags. The link cannot say the file is encrypted.',
+          'tags. The link will declare the file encrypted without them.',
         );
       }
     } catch (e) {
@@ -235,6 +240,7 @@ class FileShareCubit extends Cubit<FileShareState> {
 
       logger.e('Failed to fetch the cipher details of a shared file link', e);
     } finally {
+      _declarePrivacyWithoutTheGateway();
       _isLoadingCipherDetails = false;
 
       if (!isClosed && state is FileShareLoadSuccess) {
@@ -271,6 +277,40 @@ class FileShareCubit extends Cubit<FileShareState> {
     _emitLoadSuccess();
 
     await _loadCipherDetails(dataTxId);
+  }
+
+
+  /// Makes the link say "this file is encrypted" even when the gateway would
+  /// not say what it is encrypted *with*.
+  ///
+  /// `c` does two unrelated jobs. With `iv` beside it, it tells the recipient
+  /// which algorithm to decrypt with. On its own it does something far more
+  /// basic: it is the only thing that tells a recipient holding no key that a
+  /// key is needed at all. Without it the page reads a private file as public,
+  /// never prompts for the key, and offers a download that cannot work.
+  ///
+  /// The IV is random per upload and is only on the transaction, so it cannot
+  /// be recovered locally - nothing in the local database keeps it. The
+  /// algorithm can be inferred: this uploader writes AES-GCM below
+  /// [maxSizeSupportedByGCMEncryption] and AES-CTR above it.
+  ///
+  /// That inference can be wrong - `ardrive-cli` wrote AES-GCM at any size -
+  /// and it does not matter, because a `c` set here is never decrypted with.
+  /// Every consumer that decrypts requires `hasCipherDetails`, which is `c`
+  /// *and* `iv`, and this only runs when `iv` could not be fetched. What it
+  /// buys is the locked state, which is right regardless of algorithm.
+  void _declarePrivacyWithoutTheGateway() {
+    if (_cipher != null || _cipherIv != null) {
+      return;
+    }
+
+    if (_fileKeyBase64 == null) {
+      return;
+    }
+
+    _cipher = (_size ?? 0) <= maxSizeSupportedByGCMEncryption
+        ? ardrive_crypto.Cipher.aes256gcm
+        : ardrive_crypto.Cipher.aes256ctr;
   }
 
   Uri _buildLink() => generateFileShareLinkV2(
