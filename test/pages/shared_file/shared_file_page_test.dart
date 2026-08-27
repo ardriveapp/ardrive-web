@@ -469,7 +469,8 @@ void main() {
       expect(storage[SharedFileKeySession.storageKey(fileId)], wellFormedKey);
     });
 
-    testWidgets('a recipient who changes their mind while the key is being '
+    testWidgets(
+        'a recipient who changes their mind while the key is being '
         'checked is not overruled when it works', (tester) async {
       final storage = <String, String>{};
 
@@ -502,7 +503,8 @@ void main() {
       expect(storage, isEmpty);
     });
 
-    testWidgets('a remembered key that arrives late never overrides what the '
+    testWidgets(
+        'a remembered key that arrives late never overrides what the '
         'recipient typed', (tester) async {
       // Both well formed, and deliberately different: the assertion is about
       // *which* one is submitted.
@@ -532,7 +534,8 @@ void main() {
       expect(field.controller?.text, typedKey);
     });
 
-    testWidgets('a remembered key that arrives after the file is open does '
+    testWidgets(
+        'a remembered key that arrives after the file is open does '
         'not throw the page back to the gate', (tester) async {
       final gate = Completer<void>();
 
@@ -640,7 +643,8 @@ void main() {
       expect(find.text(filesize(12)), findsOneWidget);
     });
 
-    testWidgets('says so when the version history cannot be loaded, and never '
+    testWidgets(
+        'says so when the version history cannot be loaded, and never '
         'spins for ever', (tester) async {
       await pumpPage(tester, success());
 
@@ -876,13 +880,32 @@ void main() {
       // Gating on `detailsAreResolved` made a preview that needs nothing from
       // the chain wait for a round trip that can hang, and left the pane on
       // "Loading file details..." with no preview and no way out.
+      // Built the way the resolver builds it, not the way a resolved file
+      // looks. `_revisionFromPayload` takes the drive id from nowhere - no link
+      // carries one - and the name, size and type from the link itself, so a
+      // revision carrying a real drive id and its own content type would pass
+      // this test while the path it guards was broken.
+      const payload = SharedFileLinkPayload(
+        dataTxId: 'data-tx-newest',
+        name: 'Q3 Report.pdf',
+        size: 4821133,
+        contentType: 'application/pdf',
+      );
+
       await pumpPage(
         tester,
         SharedFileLoadSuccess(
-          // Exactly what a v2 link paints before anything is fetched: no drive
-          // id, because no link carries one. If the preview needed it, this is
-          // the case that would fail.
-          fileRevisions: [fileRevision(driveId: '')],
+          fileRevisions: [
+            fileRevision(
+              driveId: '',
+              name: payload.name!,
+              size: payload.size!,
+              dataContentType: payload.contentType,
+              // `payload.metadataTxId ?? ''` - this link named no revision.
+              metadataTxId: '',
+            ),
+          ],
+          payload: payload,
           verification: LinkVerification.pending,
           detailsAreResolved: false,
         ),
@@ -917,7 +940,8 @@ void main() {
       final pane = find.byKey(sharedFilePreviewPaneKey);
       expect(pane, findsOneWidget);
       expect(
-        find.descendant(of: pane, matching: find.text('Loading file details...')),
+        find.descendant(
+            of: pane, matching: find.text('Loading file details...')),
         findsOneWidget,
       );
       expect(
@@ -1109,7 +1133,8 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('a pinned link says which version it is showing, and puts the '
+    testWidgets(
+        'a pinned link says which version it is showing, and puts the '
         'shared one back', (tester) async {
       await pumpPage(
         tester,
