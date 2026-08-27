@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
@@ -16,6 +17,11 @@ import 'package:drift/drift.dart';
 import 'package:test/test.dart';
 
 import '../../test_utils/utils.dart';
+
+/// The one version this build writes and reads. Fixtures follow the constant
+/// rather than restating it — restating it is how a fixture ends up asserting
+/// a version the code no longer speaks.
+String get currentVersionString => DriveStateFormatVersion.current.toString();
 
 /// The import is exercised end to end, through a real seal and a real
 /// in-memory database, because every one of its rules is about the seam
@@ -2072,7 +2078,7 @@ void main() {
     test('a payload that is not a drive state container', () async {
       await attachDrive(db);
       final artifact = await sealArtifact(
-        {'version': '1.0', 'sections': <String, dynamic>{}},
+        {'version': currentVersionString, 'sections': <String, dynamic>{}},
         blockEnd: 900,
         entityCount: 0,
       );

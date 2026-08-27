@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart' show DriveKey;
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
@@ -28,6 +29,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../test_utils/utils.dart';
+
+/// The one version this build writes and reads. Fixtures follow the constant
+/// rather than restating it — restating it is how a fixture ends up asserting
+/// a version the code no longer speaks.
+String get currentVersionString => DriveStateFormatVersion.current.toString();
 
 /// Sync reading a drive state artifact as its first source
 /// (`docs/DRIVE_STATE_ARTIFACT.md` §5).
@@ -175,7 +181,7 @@ void main() {
           EntityTag.entityType: EntityTypeTag.driveState,
           EntityTag.driveId: driveId,
           EntityTag.driveStateId: 'drive-state-id',
-          EntityTag.stateVersion: '1.0',
+          EntityTag.stateVersion: currentVersionString,
           EntityTag.contentType: ContentType.octetStream,
           EntityTag.blockStart: '0',
           EntityTag.blockEnd: '${tamperedTagBlockEnd ?? blockEnd}',

@@ -10,6 +10,11 @@ import 'package:test/test.dart';
 
 import '../../test_utils/utils.dart';
 
+/// The one version this build writes and reads. Fixtures follow the constant
+/// rather than restating it — restating it is how a fixture ends up asserting
+/// a version the code no longer speaks.
+String get currentVersionString => DriveStateFormatVersion.current.toString();
+
 void main() {
   late Database db;
 
@@ -486,7 +491,7 @@ void main() {
       // A string, not the bare integer this used to be: `major.minor` is what
       // separates an addition an older reader can ignore from a change it
       // would misread (§6), and one integer cannot say which happened.
-      expect(json['version'], '1.0');
+      expect(json['version'], currentVersionString);
       expect(json['version'], DriveStateFormatVersion.current.toString());
     });
 
@@ -961,7 +966,7 @@ void main() {
     // dynamic types a real payload arrives with, rather than the tighter ones
     // Dart infers for a literal.
     Map<String, dynamic> minimalPayload() => jsonDecode(jsonEncode({
-          'version': '1.0',
+          'version': currentVersionString,
           'coverage': {'blockStart': 0, 'blockEnd': 900},
           'sections': {
             'drives': {
