@@ -94,15 +94,12 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// would push the preview off the top of the screen.
   static const double _infoPanelHeightWide = _previewPaneHeight;
 
-
-
   /// The largest the file's own thumbnail is drawn in the preview pane.
   ///
   /// ArDrive generates thumbnails at a 100px minimum edge, so this is roughly
   /// twice the source and about as far as one can be enlarged before it starts
   /// to look like a mistake.
   static const double _panePictureSize = 200;
-
 
   /// Whether a download is in flight.
   ///
@@ -297,12 +294,10 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
 
     return SharedFileIdentity(
       name: revision.name.isEmpty ? null : revision.name,
-      size: state.detailsAreResolved || revision.size > 0
-          ? revision.size
-          : null,
+      size:
+          state.detailsAreResolved || revision.size > 0 ? revision.size : null,
       contentType: revision.dataContentType ?? payload?.contentType,
-      thumbnailTxId:
-          showThumbnail ? _thumbnailTxId(state, revision) : null,
+      thumbnailTxId: showThumbnail ? _thumbnailTxId(state, revision) : null,
       // A private file's thumbnail is encrypted under the file key, so the
       // recipient's own access key is what renders it.
       fileKey: state.fileKey,
@@ -690,6 +685,11 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
           fileKey: widget.state.fileKey,
           cipher: linkDescribesTarget ? payload.cipher : null,
           cipherIv: linkDescribesTarget ? payload.cipherIv : null,
+          // Same word, same doubt, as the download below: until the file's own
+          // metadata has been read, "public" is only the link's word - and a
+          // preview that paints ciphertext beside a download that refuses to
+          // save it would be two answers to one question.
+          publicIsUnconfirmed: !widget.state.detailsAreResolved,
           maybeSelectedItem: item,
           driveDao: context.read<DriveDao>(),
           profileCubit: context.read<ProfileCubit>(),
@@ -786,7 +786,8 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     return _buildPanePlaceholder(
       context,
       revision: revision,
-      contentType: revision.dataContentType ?? widget.state.payload?.contentType,
+      contentType:
+          revision.dataContentType ?? widget.state.payload?.contentType,
       thumbnailTxId: _thumbnailTxId(widget.state, revision),
       message: message,
     );
@@ -1364,8 +1365,7 @@ class _VersionRadio extends StatelessWidget {
           shape: BoxShape.circle,
           color: isSelected ? colors.themeFgDefault : null,
           border: Border.all(
-            color:
-                isSelected ? colors.themeFgDefault : colorTokens.strokeMid,
+            color: isSelected ? colors.themeFgDefault : colorTokens.strokeMid,
             width: isSelected ? 4.5 : 1.5,
           ),
         ),

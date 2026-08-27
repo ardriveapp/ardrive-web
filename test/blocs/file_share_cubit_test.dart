@@ -519,6 +519,63 @@ void main() {
       expect(state.cipherDetailsFailed, isTrue);
       expect(payloadOf(state).dataTxId, dataTxId);
     });
+
+    test('an IV with no cipher beside it still says encrypted', () async {
+      // The one shape that used to slip through. The declaration was skipped
+      // whenever *either* value was present, so a transaction carrying `iv`
+      // and no `c` produced a link with an IV and nothing to say the file was
+      // encrypted - which is the whole failure this declaration exists to
+      // prevent, since the recipient's locked state keys off `c` alone.
+      when(() => arweave.getTransactionDetails(any())).thenAnswer(
+        (_) async => _TransactionWithTags(const {
+          EntityTag.cipherIv: cipherIv,
+        }),
+      );
+
+      final state = await loaded(createCubit());
+      final payload = payloadOf(state);
+
+      expect(payload.cipher, isNotNull);
+
+      // The orphan IV is dropped rather than carried: it decrypts nothing
+      // without a cipher, and `hasCipherDetails` needs both.
+      expect(payload.cipherIv, isNull);
+      expect(payload.hasCipherDetails, isFalse);
+      expect(state.cipherDetailsFailed, isTrue);
+    });
+
+    test('retrying picks up a cipher the gateway can finally answer for',
+        () async {
+      var attempts = 0;
+
+      when(() => arweave.getTransactionDetails(any())).thenAnswer((_) async {
+        attempts += 1;
+
+        if (attempts == 1) {
+          throw Exception('gateway is unreachable');
+        }
+
+        return _TransactionWithTags({
+          EntityTag.cipher: Cipher.aes256gcm,
+          EntityTag.cipherIv: cipherIv,
+        });
+      });
+
+      final cubit = createCubit();
+      final failed = await loaded(cubit);
+
+      expect(failed.cipherDetailsFailed, isTrue);
+      expect(payloadOf(failed).hasCipherDetails, isFalse);
+
+      await cubit.retryCipherDetails();
+
+      final state = cubit.state as FileShareLoadSuccess;
+
+      expect(state.cipherDetailsFailed, isFalse);
+      expect(payloadOf(state).cipher, Cipher.aes256gcm);
+      expect(payloadOf(state).cipherIv, cipherIv);
+      expect(payloadOf(state).hasCipherDetails, isTrue);
+    });
   });
 
   group('unshareable files', () {

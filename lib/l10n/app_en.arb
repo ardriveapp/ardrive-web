@@ -2407,7 +2407,7 @@
   "@shareFileAccessKeyLabel": {
     "description": "Label of the read-only field holding the access key on the share file dialog"
   },
-  "shareFileLinkIncomplete": "This link can't tell the recipient the file is encrypted. Close and share it again — if it keeps happening, the gateway is unreachable.",
+  "shareFileLinkIncomplete": "This link can't tell the recipient the file is encrypted. Try again — if it keeps happening, the gateway is unreachable.",
   "@shareFileLinkIncomplete": {
     "description": "Shown when a private file's cipher details could not be resolved, so the link would not declare the file encrypted"
   },

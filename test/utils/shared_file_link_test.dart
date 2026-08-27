@@ -568,7 +568,8 @@ void main() {
       expectIntactExcept(payload, SharedFileLinkParams.contentType);
     });
 
-    test('a content type code from a table this build has not grown is '
+    test(
+        'a content type code from a table this build has not grown is '
         'dropped', () {
       final payload = decodePacked(contentTypeField: const [250]);
 
@@ -636,8 +637,7 @@ void main() {
       expect(payload.detailsAreHidden, isTrue);
     });
 
-    test('a record of the wrong width is dropped, and the next one is not',
-        () {
+    test('a record of the wrong width is dropped, and the next one is not', () {
       final payload = decodePacked(
         records: [
           1, 4, 1, 2, 3, 4, //
@@ -1307,6 +1307,38 @@ void main() {
 
       expect(resolved.raw, fileKey);
       expect(resolved.source, SharedFileLinkKeySource.fragment);
+    });
+
+    test('a key in the query of a path route is refused outright', () {
+      // The one combination that leaks a file key: unlike the hash route, a
+      // path route's query is sent to the host, into its access log and out
+      // again in the `Referer` of anything the page loads.
+      //
+      // Thrown rather than asserted, and tested as a throw, because asserts are
+      // stripped from release builds - which is the only build where the leak
+      // would be real.
+      expect(
+        () => buildSharedFileLinkLocation(
+          fileId: fileId,
+          rawFileKey: fileKey,
+          route: SharedFileLinkRoute.share,
+          keyPlacement: SharedFileLinkKeyPlacement.hashQuery,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('a keyless path route is built without complaint', () {
+      // The guard is about the key, not the route: nothing to leak, nothing to
+      // refuse.
+      expect(
+        buildSharedFileLinkLocation(
+          fileId: fileId,
+          route: SharedFileLinkRoute.share,
+          keyPlacement: SharedFileLinkKeyPlacement.hashQuery,
+        ),
+        '/share/$fileId',
+      );
     });
   });
 

@@ -26,6 +26,14 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   /// direction that matters - see the check in `_downloadFile`.
   final bool publicIsUnconfirmed;
 
+  /// How long the "is this actually encrypted" preflight may take.
+  ///
+  /// It runs before a single byte moves, so it is held to the same kind of
+  /// budget as the reads that gate the shared file page rather than to the
+  /// service's much longer backstop. Exceeding it fails open: the download
+  /// proceeds, which is what it did before this check existed.
+  static const _encryptionPreflightTimeout = Duration(seconds: 10);
+
   SharedFileDownloadCubit({
     this.fileKey,
     this.cipher,
@@ -125,19 +133,19 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     // download must not spend a GraphQL round trip re-establishing something
     // already known.
     if (fileKey == null && !isPinFile && publicIsUnconfirmed) {
+      var isEncrypted = false;
+
       try {
-        final dataTx = await _arweave.getTransactionDetails(dataTxId);
+        // Bounded, because this one sits between the recipient pressing
+        // Download and anything happening. Everything else that gates what the
+        // recipient sees is bounded for the same reason; a preflight that hung
+        // would leave the dialog in `FileDownloadInProgress` with no bytes
+        // moving and no way out.
+        final dataTx = await _arweave
+            .getTransactionDetails(dataTxId)
+            .timeout(_encryptionPreflightTimeout);
 
-        if (dataTx?.getTag(EntityTag.cipher) != null) {
-          logger.e(
-            'A shared file link resolved as public, but its data transaction '
-            '$dataTxId is encrypted. Refusing to save ciphertext.',
-          );
-
-          throw const SharedFileIsEncryptedException();
-        }
-      } on SharedFileIsEncryptedException {
-        rethrow;
+        isEncrypted = dataTx?.getTag(EntityTag.cipher) != null;
       } catch (e) {
         // The check could not be made. A download that cannot be checked is
         // still a download the recipient asked for, and the overwhelming
@@ -145,6 +153,24 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
         logger.w(
           'Could not confirm whether shared file $dataTxId is encrypted: $e',
         );
+      }
+
+      // The recipient may have cancelled while that was in flight. Checked
+      // before either outcome is acted on - and before the throw below, which
+      // is why the encrypted case is carried out of the `try` as a flag rather
+      // than thrown from inside it: a cancelled download must neither start nor
+      // have its aborted state overwritten by a failure nobody is waiting for.
+      if (isClosed || state is FileDownloadAborted) {
+        return;
+      }
+
+      if (isEncrypted) {
+        logger.e(
+          'A shared file link resolved as public, but its data transaction '
+          '$dataTxId is encrypted. Refusing to save ciphertext.',
+        );
+
+        throw const SharedFileIsEncryptedException();
       }
     }
 

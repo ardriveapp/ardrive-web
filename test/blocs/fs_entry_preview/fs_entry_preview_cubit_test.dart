@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
@@ -5,8 +6,8 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
-import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
+import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/preview_object_urls.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -24,6 +25,23 @@ class MockDataGatewayFallback extends Mock implements DataGatewayFallback {}
 class MockDrive extends Mock implements Drive {}
 
 class MockSelectable<T> extends Mock implements Selectable<T> {}
+
+/// A data transaction carrying real tags.
+///
+/// `getTag` is an extension over [TransactionCommonMixin.tags], so stubbing
+/// `getTag` on a mock is never consulted - the extension reads `tags` itself.
+class _TransactionWithTags extends Fake implements TransactionCommonMixin {
+  _TransactionWithTags(this._tags);
+
+  final Map<String, String> _tags;
+
+  @override
+  List<TransactionCommonMixin$Tag> get tags => _tags.entries
+      .map((entry) => TransactionCommonMixin$Tag()
+        ..name = entry.key
+        ..value = entry.value)
+      .toList();
+}
 
 /// Mimics [DataGatewayFallback]'s serial waterfall: every entry of [gateways]
 /// is tried in order and the first one that does not throw wins.
@@ -207,6 +225,7 @@ void main() {
     PreviewObjectUrls? objectUrls,
     String? cipher,
     String? cipherIv,
+    bool publicIsUnconfirmed = false,
   }) {
     if (gatewayFallback != null) {
       when(() => mockArweaveService.gatewayFallback)
@@ -226,6 +245,7 @@ void main() {
       objectUrls: objectUrls,
       cipher: cipher,
       cipherIv: cipherIv,
+      publicIsUnconfirmed: publicIsUnconfirmed,
     );
   }
 
@@ -630,6 +650,111 @@ void main() {
   // decrypted here. What these tests hold down is where the bytes come from,
   // that they never come at all when they must not, and that a public file
   // still has the old open-in-a-new-tab escape hatch when they do not arrive.
+  group('FsEntryPreviewCubit a link that never said the file was private', () {
+    // The counterpart of the refusal in `shared_file_download_cubit.dart`. A
+    // download that refuses to save ciphertext while the preview beside it
+    // paints that same ciphertext as the file is two answers to one question -
+    // and the preview is the one the recipient sees first.
+
+    test(
+        'paints first, then retracts once the transaction says it is '
+        'encrypted', () async {
+      // Driven by hand rather than by `blocTest`, because the two halves of
+      // this are a race and the point is which one does *not* wait for the
+      // other: an auto-completing stub lets the check win and proves only half
+      // of it.
+      final lookup = Completer<TransactionCommonMixin?>();
+
+      when(() => mockArweaveService.getTransactionDetails(any()))
+          .thenAnswer((_) => lookup.future);
+
+      final cubit = buildSharedFileCubit(
+        item: createVideoItem(size: underLimitFileSize),
+        publicIsUnconfirmed: true,
+      );
+
+      final seen = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(seen.add);
+
+      await pumpEventQueue();
+
+      // The check has not answered, and the preview did not wait for it - the
+      // whole reason it runs beside the preview instead of in front of it.
+      expect(seen, [
+        const FsEntryPreviewVideo(
+          previewUrl: '$gatewayUrl/$dataTxId',
+          filename: 'clip.mp4',
+        ),
+      ]);
+
+      lookup.complete(
+        _TransactionWithTags(const {EntityTag.cipher: 'AES256-GCM'}),
+      );
+      await pumpEventQueue();
+
+      // And then it is taken back.
+      expect(seen.last, isA<FsEntryPreviewUnavailable>());
+
+      await sub.cancel();
+      await cubit.close();
+    });
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'leaves a genuinely public preview alone',
+      build: () {
+        when(() => mockArweaveService.getTransactionDetails(any()))
+            .thenAnswer((_) async => _TransactionWithTags(const {}));
+
+        return buildSharedFileCubit(
+          item: createVideoItem(size: underLimitFileSize),
+          publicIsUnconfirmed: true,
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      expect: () => [
+        const FsEntryPreviewVideo(
+          previewUrl: '$gatewayUrl/$dataTxId',
+          filename: 'clip.mp4',
+        ),
+      ],
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'a check that cannot be made leaves the preview alone',
+      build: () {
+        // Not evidence of encryption, and the preview was optimistic either
+        // way. The download makes its own check before writing anything.
+        when(() => mockArweaveService.getTransactionDetails(any()))
+            .thenThrow(Exception('gateway is unreachable'));
+
+        return buildSharedFileCubit(
+          item: createVideoItem(size: underLimitFileSize),
+          publicIsUnconfirmed: true,
+        );
+      },
+      wait: const Duration(milliseconds: 100),
+      expect: () => [
+        const FsEntryPreviewVideo(
+          previewUrl: '$gatewayUrl/$dataTxId',
+          filename: 'clip.mp4',
+        ),
+      ],
+    );
+
+    blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
+      'costs nothing once the file has been shown to be public',
+      build: () => buildSharedFileCubit(
+        item: createVideoItem(size: underLimitFileSize),
+      ),
+      wait: const Duration(milliseconds: 100),
+      verify: (_) {
+        // `publicIsUnconfirmed` false means the metadata parsed as plaintext,
+        // which is proof: encrypted metadata does not parse. Nothing to ask.
+        verifyNever(() => mockArweaveService.getTransactionDetails(any()));
+      },
+    );
+  });
+
   group('FsEntryPreviewCubit link-supplied cipher', () {
     late FakePreviewObjectUrls objectUrls;
 
@@ -672,8 +797,8 @@ void main() {
         ).called(1);
 
         // Still the decrypted bytes that reach the player.
-        expect(objectUrls.createdBytes.single,
-            Uint8List.fromList([5, 6, 7, 8]));
+        expect(
+            objectUrls.createdBytes.single, Uint8List.fromList([5, 6, 7, 8]));
       },
     );
 

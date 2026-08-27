@@ -42,7 +42,6 @@ class FileShareDialog extends StatefulWidget {
 }
 
 class FileShareDialogState extends State<FileShareDialog> {
-
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
@@ -191,9 +190,8 @@ class FileShareDialogState extends State<FileShareDialog> {
                     color: colorTokens.textMid,
                   ),
                   value: state.detailsAreHidden,
-                  onChanged: (value) => context
-                      .read<FileShareCubit>()
-                      .setDetailsAreHidden(value),
+                  onChanged: (value) =>
+                      context.read<FileShareCubit>().setDetailsAreHidden(value),
                 ),
                 _HelperText(
                   appLocalizationsOf(context).shareFileHideDetailsDescription,
@@ -220,6 +218,14 @@ class FileShareDialogState extends State<FileShareDialog> {
           ],
         ),
         actions: [
+          // Offered only when the link is the incomplete one, and beside Done
+          // rather than instead of it: the sharer may still choose to hand over
+          // a link that cannot announce itself, and that is their call to make.
+          if (state is FileShareLoadSuccess && state.cipherDetailsFailed)
+            ModalAction(
+              action: () => context.read<FileShareCubit>().retryCipherDetails(),
+              title: appLocalizationsOf(context).tryAgain,
+            ),
           if (state is FileShareLoadSuccess)
             ModalAction(
               action: () => Navigator.pop(context),

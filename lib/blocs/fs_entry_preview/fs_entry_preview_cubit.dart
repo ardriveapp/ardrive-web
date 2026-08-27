@@ -46,6 +46,25 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   final SecretKey? _fileKey;
 
+  /// Whether "this file is public" is still only the share link's word.
+  ///
+  /// The shared file page decides privacy from the link's `c`, and a link can
+  /// arrive without it - see the matching flag on `SharedFileDownloadCubit`.
+  /// When it does, this preview is about to render ciphertext as if it were the
+  /// file: mojibake in a document, a decoder error in an image or a PDF. So the
+  /// transaction is asked what it is, and a `Cipher` tag retracts the preview.
+  ///
+  /// The check runs *beside* the preview rather than in front of it. Waiting on
+  /// it would put a GraphQL round trip before the first paint of every public
+  /// shared file, which is the cost the link schema exists to avoid.
+  final bool _publicIsUnconfirmed;
+
+  /// Set once the transaction has said the bytes are encrypted.
+  ///
+  /// Latched rather than checked, because the retraction and the optimistic
+  /// preview are racing: whichever arrives second must not win.
+  bool _refusedAsEncrypted = false;
+
   /// Makes a playable URL out of decrypted bytes. See [PreviewObjectUrls] for
   /// what such a URL may - and may not - be handed to.
   final PreviewObjectUrls _objectUrls;
@@ -65,6 +84,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final previewMaxFileSize = 1024 * 1024 * 100;
   final allowedPreviewContentTypes = [];
 
+  /// How long the "is this actually encrypted" check may take.
+  ///
+  /// Nothing waits on it, so this only decides how long a preview that is
+  /// going to be retracted may stay on screen before the check gives up and
+  /// leaves it alone.
+  static const _encryptionProbeTimeout = Duration(seconds: 10);
+
   FsEntryPreviewCubit({
     required this.driveId,
     this.maybeSelectedItem,
@@ -78,6 +104,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     PreviewObjectUrls? objectUrls,
     String? cipher,
     String? cipherIv,
+    bool publicIsUnconfirmed = false,
   })  : _driveDao = driveDao,
         _configService = configService,
         _profileCubit = profileCubit,
@@ -86,6 +113,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         _fileKey = fileKey,
         _cipher = cipher,
         _cipherIv = cipherIv,
+        _publicIsUnconfirmed = publicIsUnconfirmed,
         _objectUrls = objectUrls ?? PreviewObjectUrls(),
         super(FsEntryPreviewInitial()) {
     if (isSharedFile) {
@@ -93,6 +121,21 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     } else {
       _preview();
     }
+  }
+
+  /// Nothing outlives a refusal except the refusal.
+  ///
+  /// The encryption check races the preview it is retracting, so once it has
+  /// spoken every later state - the image whose bytes had already been
+  /// requested, the document that finished decoding - is dropped rather than
+  /// allowed to paint ciphertext over the answer.
+  @override
+  void emit(FsEntryPreviewState state) {
+    if (_refusedAsEncrypted && state is! FsEntryPreviewUnavailable) {
+      return;
+    }
+
+    super.emit(state);
   }
 
   /// Image previews are buffered entirely in memory before being rendered, so
@@ -141,6 +184,16 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       if (!_supportedExtension(previewType, fileExtension)) {
         emit(FsEntryPreviewUnavailable());
         return;
+      }
+
+      // Started, not awaited: an unsupported type never needed it, and every
+      // supported one is better off painting now and being retracted than
+      // waiting on a round trip it will almost always discard. See
+      // [_publicIsUnconfirmed].
+      if (fileKey == null &&
+          _publicIsUnconfirmed &&
+          file.pinnedDataOwnerAddress == null) {
+        unawaited(_refuseIfEncrypted(file.dataTxId));
       }
 
       switch (previewType) {
@@ -339,16 +392,17 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     if (selectedItem != null) {
       if (selectedItem.runtimeType == FileDataTableItem) {
         final fileItem = selectedItem as FileDataTableItem;
-        
+
         // Try to preview immediately if we have a dataTxId
         if (fileItem.dataTxId.isNotEmpty) {
-          final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+          final drive =
+              await _driveDao.driveById(driveId: driveId).getSingleOrNull();
           if (drive != null) {
             // Attempt immediate preview with available data
             await _attemptImmediatePreview(fileItem, drive);
           }
         }
-        
+
         // Still watch for updates in case the file data changes
         _entrySubscription = _driveDao
             .fileById(fileId: selectedItem.id)
@@ -362,12 +416,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             // For public files, dataContentType comes from the data transaction tags
             // Fall back to filename-based MIME type lookup when not yet available
             String? contentType = file.dataContentType;
-            if (contentType == null || contentType == 'application/octet-stream') {
+            if (contentType == null ||
+                contentType == 'application/octet-stream') {
               // Check for .eml extension explicitly before falling back to lookupMimeType
               if (file.name.toLowerCase().endsWith('.eml')) {
                 contentType = 'message/rfc822';
               } else {
-                contentType = lookupMimeType(file.name) ?? contentType ?? 'application/octet-stream';
+                contentType = lookupMimeType(file.name) ??
+                    contentType ??
+                    'application/octet-stream';
               }
             }
             final fileExtension = contentType.split('/').last;
@@ -453,10 +510,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       emit(FsEntryPreviewUnavailable());
     }
   }
-  
-  Future<void> _attemptImmediatePreview(FileDataTableItem fileItem, Drive drive) async {
+
+  Future<void> _attemptImmediatePreview(
+      FileDataTableItem fileItem, Drive drive) async {
     // Check size limits
-    if (drive.isPrivate && fileItem.size != null && fileItem.size! > previewMaxFileSize) {
+    if (drive.isPrivate &&
+        fileItem.size != null &&
+        fileItem.size! > previewMaxFileSize) {
       return; // Wait for database sync for large private files
     }
 
@@ -474,7 +534,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
     final fileExtension = contentType.split('/').last;
     final previewType = contentType.split('/').first;
-    final previewUrl = '${_configService.config.arweaveGatewayForDataRequest.url}/${fileItem.dataTxId}';
+    final previewUrl =
+        '${_configService.config.arweaveGatewayForDataRequest.url}/${fileItem.dataTxId}';
 
     if (!_supportedExtension(previewType, fileExtension)) {
       return; // Will be handled by the subscription
@@ -495,7 +556,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         }
 
         // Check file size for document preview
-        if (fileItem.size != null && fileItem.size! > documentPreviewMaxFileSize) {
+        if (fileItem.size != null &&
+            fileItem.size! > documentPreviewMaxFileSize) {
           return;
         }
         // Check if it's an email file (use resolved contentType for private files)
@@ -523,7 +585,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         // For images, we can emit the preview URL immediately
         // The actual loading will happen in the widget
         emit(FsEntryPreviewImage(previewUrl: previewUrl));
-        
+
         // Still trigger the image preview for private decryption if needed
         if (drive.isPrivate && fileItem.pinnedDataOwnerAddress == null) {
           // We need to wait for the database sync to get the full FileEntry
@@ -590,8 +652,19 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
           break;
         case DrivePrivacyTag.private:
-          if (dataBytes == null || isPinFile) {
+          if (isPinFile) {
+            // Public bytes wearing a private drive's clothes: nothing to
+            // decrypt.
             _emitImagePreview(file, dataUrl, dataBytes: dataBytes);
+            break;
+          }
+
+          if (dataBytes == null) {
+            // No ciphertext means no plaintext. Said plainly rather than
+            // emitted as a preview holding a null, which only looked right
+            // because the widget happens to render bytes and never [dataUrl].
+            imagePreviewNotifier.value = null;
+            _emitUnavailable();
             break;
           }
 
@@ -602,9 +675,23 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             isPin: isPinFile,
           );
 
+          // Null whenever the drive key cannot be produced - no profile, or a
+          // private drive whose key is not in memory. Dereferencing it threw a
+          // null check error into the `catch` below, which reported it as an
+          // ordinary unpreviewable image with nothing in the log.
+          if (fileKey == null) {
+            logger.w(
+              'No file key for private image ${file.id}; cannot decrypt it '
+              'for preview.',
+            );
+            imagePreviewNotifier.value = null;
+            _emitUnavailable();
+            break;
+          }
+
           final decodedBytes = await _decodePrivateData(
             dataBytes,
-            fileKey!,
+            fileKey,
             file.dataTxId,
           );
 
@@ -646,9 +733,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     );
 
     if (dataBytes == null) {
+      // The notifier was set to `isLoading` above and is static, so leaving it
+      // there would spin under the *next* image this page previews.
+      imagePreviewNotifier.value = null;
       emit(FsEntryPreviewUnavailable());
       return;
     }
+
+    Uint8List? bytesToShow = dataBytes;
 
     if (isPrivate && !isPinFile) {
       final fileKey = await _getFileKey(
@@ -657,23 +749,34 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         isPrivate: true,
         isPin: false,
       );
-      final decodedBytes = await _decodePrivateData(
+
+      // Unreachable while `isPrivate` means "a key came with the link", since
+      // [_getFileKey] hands that same key straight back - but it is a `?` and
+      // the alternative to checking it is a crash swallowed by a caller.
+      if (fileKey == null) {
+        imagePreviewNotifier.value = null;
+        _emitUnavailable();
+        return;
+      }
+
+      bytesToShow = await _decodePrivateData(
         dataBytes,
-        fileKey!,
+        fileKey,
         file.dataTxId,
       );
-      imagePreviewNotifier.value = ImagePreviewNotification(
-        dataBytes: decodedBytes,
-        filename: file.name,
-        contentType: file.contentType,
-      );
-    } else {
-      imagePreviewNotifier.value = ImagePreviewNotification(
-        dataBytes: dataBytes,
-        filename: file.name,
-        contentType: file.contentType,
-      );
     }
+
+    // The retraction may have landed while the bytes were in flight, and it
+    // cannot reach the notifier from here.
+    if (_refusedAsEncrypted || isClosed) {
+      return;
+    }
+
+    imagePreviewNotifier.value = ImagePreviewNotification(
+      dataBytes: bytesToShow,
+      filename: file.name,
+      contentType: file.contentType,
+    );
 
     emit(FsEntryPreviewImage(previewUrl: previewUrl));
   }
@@ -729,8 +832,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return;
     }
 
-    emit(FsEntryPreviewAudio(
-        filename: selectedItem.name, previewUrl: url));
+    emit(FsEntryPreviewAudio(filename: selectedItem.name, previewUrl: url));
   }
 
   Future<void> _previewVideo(
@@ -750,8 +852,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return;
     }
 
-    emit(FsEntryPreviewVideo(
-        filename: selectedItem.name, previewUrl: url));
+    emit(FsEntryPreviewVideo(filename: selectedItem.name, previewUrl: url));
   }
 
   /// The URL the player should play, or `null` when there is not going to be
@@ -850,13 +951,54 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
   }
 
+  /// Takes back a preview that was only ever the link's word.
+  ///
+  /// The counterpart of the refusal in `shared_file_download_cubit.dart`, and
+  /// deliberately the same test on the same tag: a download that refuses to
+  /// save ciphertext while the preview beside it paints that ciphertext as the
+  /// file is two answers to one question.
+  ///
+  /// Failing to make the check leaves the preview alone. It is an optimistic
+  /// paint either way, and the download - the operation that would put the
+  /// bytes on disk under the file's own name - makes its own check.
+  Future<void> _refuseIfEncrypted(String dataTxId) async {
+    try {
+      // Memoized by id, so this is the same request the download makes rather
+      // than a second one, whichever of them asks first.
+      final dataTx = await _arweave
+          .getTransactionDetails(dataTxId)
+          .timeout(_encryptionProbeTimeout);
+
+      if (dataTx?.getTag(EntityTag.cipher) == null) {
+        return;
+      }
+    } catch (e) {
+      logger.w(
+        'Could not confirm whether shared file $dataTxId is encrypted: $e',
+      );
+      return;
+    }
+
+    logger.w(
+      'A shared file link resolved as public, but its data transaction '
+      '$dataTxId is encrypted. Retracting the preview.',
+    );
+
+    _refusedAsEncrypted = true;
+
+    // The image path delivers bytes through a notifier rather than through
+    // state, so the latch on [emit] does not reach it.
+    imagePreviewNotifier.value = null;
+
+    _emitUnavailable();
+  }
+
   Future<void> _previewDocument(
     bool isPrivate,
     FileDataTableItem selectedItem,
     String previewUrl, {
     SecretKey? fileKey,
   }) async {
-
     emit(const FsEntryPreviewLoading());
 
     try {
@@ -882,12 +1024,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
       if (isPrivate && !isPinFile) {
         // Get file key if not provided
-        final SecretKey? decryptionKey = fileKey ?? await _getFileKey(
-          fileId: selectedItem.id,
-          driveId: driveId,
-          isPrivate: true,
-          isPin: isPinFile,
-        );
+        final SecretKey? decryptionKey = fileKey ??
+            await _getFileKey(
+              fileId: selectedItem.id,
+              driveId: driveId,
+              isPrivate: true,
+              isPin: isPinFile,
+            );
 
         if (decryptionKey == null) {
           emit(FsEntryPreviewUnavailable());
@@ -911,9 +1054,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
       // Convert bytes to string
       String content = utf8.decode(bytesToDecode, allowMalformed: true);
-      
+
       // Pretty-print JSON files for better readability
-      if (selectedItem.contentType == 'application/json' || 
+      if (selectedItem.contentType == 'application/json' ||
           selectedItem.contentType == 'application/x.arweave-manifest+json') {
         try {
           final dynamic jsonData = json.decode(content);
@@ -991,10 +1134,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       }
 
       // Convert bytes to string
-      final String emlContent = utf8.decode(bytesToDecode, allowMalformed: true);
+      final String emlContent =
+          utf8.decode(bytesToDecode, allowMalformed: true);
 
       // Parse using JS interop
-      final ParsedEmail parsedEmail = await EmlParserService.parseEml(emlContent);
+      final ParsedEmail parsedEmail =
+          await EmlParserService.parseEml(emlContent);
 
       emit(FsEntryPreviewEmail(
         previewUrl: previewUrl,

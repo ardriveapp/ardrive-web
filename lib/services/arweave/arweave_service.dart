@@ -75,9 +75,10 @@ class ArweaveService {
     this._driveDao,
     this._configService, {
     ArtemisClient? artemisClient,
-  }) : _gql = artemisClient ?? ArtemisClient(_graphqlUrlFromGateway(
-            _configService.config.arweaveGatewayUrl ??
-                defaultGraphqlGateway)) {
+  }) : _gql = artemisClient ??
+            ArtemisClient(_graphqlUrlFromGateway(
+                _configService.config.arweaveGatewayUrl ??
+                    defaultGraphqlGateway)) {
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
@@ -252,6 +253,12 @@ class ArweaveService {
   /// empty string. Some answer with `null`, and Artemis then fails
   /// deserialization for the *entire* query - taking the cipher tags with it,
   /// and with them every private preview and private download on that gateway.
+  ///
+  /// What is remembered is the transaction's tags, owner and bundle, which do
+  /// not change. `block` is on it too and *does* - it is null until the
+  /// transaction is mined - so a caller that wants mined status must ask
+  /// somewhere else rather than read it off a memo that may predate the block.
+  /// Nothing does today.
   Future<TransactionCommonMixin?> getTransactionDetails(String txId) {
     final cached = _transactionDetails[txId];
 
@@ -262,7 +269,16 @@ class ArweaveService {
     final request = graphQLRetry
         .execute(TransactionDetailsQuery(
             variables: TransactionDetailsArguments(txId: txId)))
-        .then((query) => query.data?.transaction);
+        .then((query) => query.data?.transaction)
+        // Bounded here rather than at each call site, because the memo is what
+        // makes an unbounded read dangerous: the entry is only removed once the
+        // future settles, so a request that never does is handed to every later
+        // caller for the life of this service - one hang poisoning one
+        // transaction forever. `GraphQLRetry` has no timeout of its own; it
+        // spends ~6s of backoff on the primary and then retries a fallback, so
+        // this is a backstop well clear of a slow-but-working read, not a UX
+        // deadline. Callers that need a tighter one still apply it themselves.
+        .timeout(_transactionDetailsTimeout);
 
     // The future is held, not the result, so callers that arrive together share
     // one request rather than starting a second while the first is in flight -
@@ -310,8 +326,9 @@ class ArweaveService {
   /// one is asked for.
   Future<TransactionDetailsWithSignature$Query$Transaction?>
       getTransactionDetailsWithSignature(String txId) async {
-    final query = await graphQLRetry.execute(TransactionDetailsWithSignatureQuery(
-        variables: TransactionDetailsWithSignatureArguments(txId: txId)));
+    final query = await graphQLRetry.execute(
+        TransactionDetailsWithSignatureQuery(
+            variables: TransactionDetailsWithSignatureArguments(txId: txId)));
 
     return query.data?.transaction;
   }
@@ -335,6 +352,15 @@ class ArweaveService {
   /// twice, not to be a cache of the chain, and a recipient page looks at one
   /// file.
   static const _maxRememberedTransactions = 64;
+
+  /// How long a memoized transaction read may stay in flight.
+  ///
+  /// Generous, because it is the backstop that guarantees the memo entry
+  /// settles rather than a deadline anyone waits on - the retry ladder plus a
+  /// fallback endpoint can legitimately take tens of seconds on a bad
+  /// connection, and cutting that short would turn a slow read into a failed
+  /// one.
+  static const _transactionDetailsTimeout = Duration(seconds: 60);
 
   void _rememberTransaction(String txId) {
     _transactionDetailsOrder.remove(txId);
@@ -508,7 +534,8 @@ class ArweaveService {
   /// Fetches pending (unmined) transactions for a drive.
   /// These are transactions that have been indexed but don't yet have a block.
   /// Used to show Turbo-uploaded files immediately before they're mined.
-  Stream<List<DriveEntityHistoryTransactionModel>> getPendingTransactionsForDrive(
+  Stream<List<DriveEntityHistoryTransactionModel>>
+      getPendingTransactionsForDrive(
     String driveId, {
     required String ownerAddress,
   }) async* {
@@ -549,7 +576,8 @@ class ArweaveService {
             .toList();
 
         if (pendingTransactions.isNotEmpty) {
-          logger.d('Found ${pendingTransactions.length} pending transactions for drive $driveId');
+          logger.d(
+              'Found ${pendingTransactions.length} pending transactions for drive $driveId');
           yield pendingTransactions;
         }
 
@@ -762,9 +790,8 @@ class ArweaveService {
       // Process unmined transactions using currentBlockHeight
       // They appear "as of now" and will be updated when actually mined
       // Transaction status system handles pending → confirmed transition
-      final blockHeight = transaction.block?.height
-          ?? currentBlockHeight
-          ?? lastBlockHeight;
+      final blockHeight =
+          transaction.block?.height ?? currentBlockHeight ?? lastBlockHeight;
 
       if (blockHistory.isEmpty ||
           blockHistory.last.blockHeight != blockHeight) {
@@ -898,7 +925,8 @@ class ArweaveService {
     // line each would be the slowest part of the sync.
     snapshotMetadataMisses.update(driveId, (v) => v + 1, ifAbsent: () => 1);
 
-    return getEntityDataFromNetwork(txId: txId).then<Uint8List?>((d) => d)
+    return getEntityDataFromNetwork(txId: txId)
+        .then<Uint8List?>((d) => d)
         .catchError((e) {
       logger.e('Failed to get entity data from network for tx $txId', e);
       return null;
@@ -1626,8 +1654,7 @@ class ArweaveService {
       }
       for (var edge in queryEdges) {
         final fileTx = edge.node;
-        final fileDataRes =
-            await _gatewayFallback.fetchData(fileTx.id, client);
+        final fileDataRes = await _gatewayFallback.fetchData(fileTx.id, client);
 
         try {
           fileEntities.add(

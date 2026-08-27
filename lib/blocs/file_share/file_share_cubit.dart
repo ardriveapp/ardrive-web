@@ -267,8 +267,14 @@ class FileShareCubit extends Cubit<FileShareState> {
   }
 
   /// Asks again for the cipher a private link needs.
-  Future<void> retryCipherDetails(String dataTxId) async {
-    if (_isLoadingCipherDetails) {
+  ///
+  /// Cheap to offer: [ArweaveService.getTransactionDetails] memoizes by id, so
+  /// a lookup that has since succeeded for this transaction answers without
+  /// touching the network at all.
+  Future<void> retryCipherDetails() async {
+    final dataTxId = _dataTxId;
+
+    if (_isLoadingCipherDetails || dataTxId == null) {
       return;
     }
 
@@ -278,7 +284,6 @@ class FileShareCubit extends Cubit<FileShareState> {
 
     await _loadCipherDetails(dataTxId);
   }
-
 
   /// Makes the link say "this file is encrypted" even when the gateway would
   /// not say what it is encrypted *with*.
@@ -297,16 +302,24 @@ class FileShareCubit extends Cubit<FileShareState> {
   /// That inference can be wrong - `ardrive-cli` wrote AES-GCM at any size -
   /// and it does not matter, because a `c` set here is never decrypted with.
   /// Every consumer that decrypts requires `hasCipherDetails`, which is `c`
-  /// *and* `iv`, and this only runs when `iv` could not be fetched. What it
+  /// *and* `iv`, and this only runs when `c` could not be fetched. What it
   /// buys is the locked state, which is right regardless of algorithm.
   void _declarePrivacyWithoutTheGateway() {
-    if (_cipher != null || _cipherIv != null) {
+    // Only `c` decides this. Testing `iv` as well would let the one case where
+    // the gateway returned an IV and no cipher skip the inference and ship a
+    // link with `iv` and no `c` - which is precisely the link this exists to
+    // prevent, because the recipient's locked state keys off `c` alone.
+    if (_cipher != null) {
       return;
     }
 
     if (_fileKeyBase64 == null) {
       return;
     }
+
+    // An IV with no cipher beside it decrypts nothing and would only travel as
+    // dead weight; `hasCipherDetails` requires both.
+    _cipherIv = null;
 
     _cipher = (_size ?? 0) <= maxSizeSupportedByGCMEncryption
         ? ardrive_crypto.Cipher.aes256gcm

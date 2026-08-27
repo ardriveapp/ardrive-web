@@ -159,7 +159,6 @@ class _RecordingDownloader implements ArDriveDownloader {
   Future<void> dispose() => _resumes.close();
 }
 
-
 /// A data transaction as GraphQL hands it over, carrying whatever tags a test
 /// gives it.
 ///
@@ -302,6 +301,42 @@ void main() {
     expect(downloader.downloadFileCalls, 1);
   });
 
+  test('cancelling during the encryption check stops the download', () async {
+    // The check sits between the recipient pressing Download and anything
+    // happening, so it is the window most likely to be cancelled in. Nothing
+    // may outlive that: neither a download started after the fact, nor a
+    // failure state painted over the cancellation.
+    final arweave = MockArweaveService();
+    final downloader = _RecordingDownloader();
+    final lookup = Completer<TransactionCommonMixin?>();
+
+    when(() => arweave.getTransactionDetails(any()))
+        .thenAnswer((_) => lookup.future);
+
+    final cubit = cubitFor(
+      downloader,
+      arweave: arweave,
+      publicIsUnconfirmed: true,
+    );
+
+    // Wait for the download to be sitting in the check.
+    await cubit.stream.firstWhere((s) => s is FileDownloadInProgress);
+
+    cubit.abortDownload();
+
+    // The gateway answers late, and says the worst thing it could say.
+    lookup.complete(
+      _FakeDataTransaction(tags: const {EntityTag.cipher: 'AES256-GCM'}),
+    );
+    await pumpEventQueue();
+
+    expect(cubit.state, isA<FileDownloadAborted>());
+    expect(downloader.downloadFileCalls, 0);
+
+    await cubit.close();
+    await downloader.dispose();
+  });
+
   test('a size check that throws costs the check, not the download', () async {
     final downloader = _RecordingDownloader();
 
@@ -392,7 +427,8 @@ void main() {
       await downloader.dispose();
     });
 
-    test('a verdict that never arrives does not trap the download in '
+    test(
+        'a verdict that never arrives does not trap the download in '
         '"checking"', () {
       // [ArDriveDownloader.integrity] is documented to always complete, and
       // every path in the downloader settles it. The dialog is a
@@ -535,7 +571,8 @@ void main() {
     await downloader.dispose();
   });
 
-  test('a reconnect before the first progress tick is not announced over a '
+  test(
+      'a reconnect before the first progress tick is not announced over a '
       'spinner', () async {
     // [FileDownloadInProgress] is an indeterminate spinner, which never looks
     // frozen. Only a bar that has stopped moving needs explaining.

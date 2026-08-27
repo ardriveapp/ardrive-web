@@ -755,7 +755,8 @@ class SharedFileLinkPayload extends Equatable {
     putFixed(_bitOwner, _encodeId(ownerAddress, SharedFileLinkParams.owner));
     putFixed(_bitCipherIv, _encodeCipherIv(cipherIv));
     putVariable(_bitSize, _encodeSize(size));
-    putVariable(_bitName, _encodeText(_nameForLink(name), SharedFileLinkParams.name));
+    putVariable(
+        _bitName, _encodeText(_nameForLink(name), SharedFileLinkParams.name));
 
     final contentTypeField = _encodeContentType(contentType);
 
@@ -864,8 +865,7 @@ class SharedFileLinkPayload extends Equatable {
     final metadataTxId =
         reader.fixed(present, _bitMetadataTxId, _idLengthInBytes);
     final ownerAddress = reader.fixed(present, _bitOwner, _idLengthInBytes);
-    final cipherIv =
-        reader.fixed(present, _bitCipherIv, cipherIvLengthInBytes);
+    final cipherIv = reader.fixed(present, _bitCipherIv, cipherIvLengthInBytes);
     final size = reader.variable(present, _bitSize);
     final name = reader.variable(present, _bitName);
     final contentType = _decodeContentType(reader, present);
@@ -1164,7 +1164,6 @@ class SharedFileLinkPayload extends Equatable {
     return size;
   }
 
-
   /// A name in the shape the reader will actually keep.
   ///
   /// The two ends disagreed. [_encodeText] truncates to what one length byte
@@ -1324,9 +1323,8 @@ class SharedFileLinkPayload extends Equatable {
     }
 
     if (code != _contentTypeIsLiteral) {
-      final known = code <= _contentTypeTable.length
-          ? _contentTypeTable[code - 1]
-          : null;
+      final known =
+          code <= _contentTypeTable.length ? _contentTypeTable[code - 1] : null;
 
       if (known == null) {
         // A code from a table this build has not grown yet. The type is worth
@@ -1692,19 +1690,25 @@ String buildSharedFileLinkLocation({
   // sent: to the host, into its access log, and out again in the `Referer` of
   // anything the page loads. Only a fragment is safe there.
   //
-  // Stated as an assert because it is a programming error rather than a
-  // runtime condition - there is no input that reaches it, only a call that
-  // should not have been written - and it fires in every debug and test run,
-  // which is where such a call would be made.
-  assert(
-    route != SharedFileLinkRoute.share ||
-        keyPlacement == SharedFileLinkKeyPlacement.fragment ||
-        candidateKey == null ||
-        candidateKey.isEmpty,
-    'A file key must not be placed in the query of a path route: unlike the '
-    'hash route, that query is sent to the server. Use '
-    'SharedFileLinkKeyPlacement.fragment.',
-  );
+  // Thrown rather than asserted. It *is* a programming error - there is no
+  // input that reaches it, only a call that should not have been written - and
+  // an assert would catch that in every debug and test run. But asserts are
+  // stripped from release builds, so an assert is exactly no guard at all in
+  // the one build where the leak would be real. The failure this prevents is a
+  // file key in a server's access log, which is not recoverable by anyone
+  // afterwards; refusing to build the link is.
+  if (route == SharedFileLinkRoute.share &&
+      keyPlacement != SharedFileLinkKeyPlacement.fragment &&
+      candidateKey != null &&
+      candidateKey.isNotEmpty) {
+    throw ArgumentError.value(
+      keyPlacement,
+      'keyPlacement',
+      'A file key must not be placed in the query of a path route: unlike the '
+          'hash route, that query is sent to the server. Use '
+          'SharedFileLinkKeyPlacement.fragment.',
+    );
+  }
 
   final path = route.pathFor(fileId);
   final key =
