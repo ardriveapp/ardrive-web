@@ -27,8 +27,37 @@
 library;
 
 /// Bumped only when an older reader would *misinterpret* a payload, never for
-/// an addition (proposal §6, D9). Mirrors the `State-Version` tag.
-const artifactFormatVersion = '1.0';
+/// an addition. Mirrors the `State-Version` tag, and a reader refuses any
+/// artifact whose tag and payload disagree.
+///
+/// **Deliberately `0.x` while this is being tried out.** Nothing published
+/// under a `0.` major is a format anyone has committed to: a later reader
+/// refuses it by the ordinary major check rather than by a special case, so
+/// experiments on staging cannot be mistaken for the real thing later. The
+/// bump to `1.0` is the moment this stops being an experiment, and it should
+/// be a deliberate commit, not a side effect.
+const artifactFormatVersion = '0.1';
+
+/// Whether a reader implementing [artifactFormatVersion] may read [version].
+///
+/// Above `1.0` the major is the compatibility unit: a minor is additive and
+/// optional, so any minor within the reader's own major is readable.
+///
+/// **Below it, the minor is the compatibility unit.** `0.x` means the format
+/// is not settled, so `0.2` is free to mean something `0.1` would
+/// misinterpret — exactly as semver treats a zero major. Requiring an exact
+/// match while experimenting is what stops an artifact published from a
+/// staging build being read by a later one that changed the format underneath
+/// it. It is also the stricter of the two rules, and strictness is cheap here:
+/// the cost of refusing is one ordinary sync.
+bool artifactVersionIsReadable(String version) {
+  final theirs = version.split('.');
+  final ours = artifactFormatVersion.split('.');
+  if (theirs.length < 2 || ours.length < 2) return false;
+  if (theirs.first != ours.first) return false;
+  if (ours.first == '0') return theirs[1] == ours[1];
+  return true;
+}
 
 /// Every table an artifact carries, in dependency order, with the exact DDL a
 /// reader validates against.

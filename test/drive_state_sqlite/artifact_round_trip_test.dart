@@ -258,9 +258,21 @@ void main() {
       );
     });
 
-    test('an older major, explicitly rather than silently', () async {
+    test('a different 0.x minor — while experimenting, minor is breaking',
+        () async {
+      // 0.1 and 0.9 share a major. Above 1.0 that would mean "readable"; in
+      // the 0.x range it must not, or an artifact published from a staging
+      // build could be read by a later build that changed the format
+      // underneath it.
       await expectRefused(
         await tamper("UPDATE meta SET version = '0.9'"),
+        ArtifactImportRefusal.unsupportedVersion,
+      );
+    });
+
+    test('a malformed version string', () async {
+      await expectRefused(
+        await tamper("UPDATE meta SET version = 'banana'"),
         ArtifactImportRefusal.unsupportedVersion,
       );
     });

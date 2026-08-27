@@ -213,7 +213,7 @@ Future<void> _validate(
   final meta = metaRows.single;
 
   final version = meta.read<String>('version');
-  if (version.split('.').first != artifactFormatVersion.split('.').first) {
+  if (!artifactVersionIsReadable(version)) {
     throw ArtifactImportRefused(
       ArtifactImportRefusal.unsupportedVersion,
       version,
