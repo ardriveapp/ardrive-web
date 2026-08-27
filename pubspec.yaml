@@ -186,6 +186,10 @@ dependency_overrides:
     path: ./packages/ardrive_ui
 
 dev_dependencies:
+  # Test-only: the artifact tamper helpers open a raw artifact file, which
+  # must NOT be opened through Drift (that would run onCreate and write the
+  # app's schema into it).
+  sqlite3: ^2.4.2
   integration_test:
     sdk: flutter
   flutter_test:
