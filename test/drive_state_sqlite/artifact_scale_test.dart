@@ -54,6 +54,7 @@ void main() {
       blockEnd: 1814228,
     );
     final buildMs = DateTime.now().difference(built).inMilliseconds;
+    final afterExport = _rss();
 
     final gzipStarted = DateTime.now();
     final gzipped = gzip.encode(artifact.bytes).length;
@@ -95,7 +96,7 @@ void main() {
   RSS - a VM figure, not a browser heap; process-wide
   before seeding            $rssBefore MiB
   after seeding             $afterSeed MiB
-  after export              ${_rss()} MiB
+  after export              $afterExport MiB
   after gzip                $afterSeal MiB
   after import              $afterImport MiB
 

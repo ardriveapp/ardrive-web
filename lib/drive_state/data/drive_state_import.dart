@@ -593,8 +593,6 @@ class DriveStateImporter {
         export = await readArtifactAsExport(
           _driveDao.attachedDatabase,
           alias: 'artifact',
-          blockStart: blockStart,
-          blockEnd: blockEnd,
         );
       } finally {
         await _driveDao.customStatement('DETACH DATABASE artifact');

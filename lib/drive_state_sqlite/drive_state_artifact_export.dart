@@ -43,6 +43,13 @@ abstract class ArtifactSink {
   /// The path SQLite should `ATTACH`.
   String get path;
 
+  /// How large the artifact is, without materialising it.
+  ///
+  /// Separate from [read] so an oversized artifact can be refused before its
+  /// bytes are pulled into memory — otherwise the bound meant to protect the
+  /// producer's memory is only checked after that memory has been spent.
+  Future<int> size();
+
   /// The bytes at [path], once the database has been detached.
   Future<Uint8List> read();
 
@@ -90,6 +97,15 @@ Future<DriveStateArtifact> exportDriveState(
   try {
     await db.customStatement('ATTACH DATABASE ? AS artifact', [sink.path]);
     try {
+      // One database snapshot for the whole export. Without it a local sync
+      // write can commit between the entry copy and the revision copy, and the
+      // artifact then carries mismatched state that passes both the schema gate
+      // and the entity count — an artifact whose files are hidden after import
+      // because their revisions describe a different moment.
+      //
+      // BEGIN comes after ATTACH because SQLite refuses to attach inside a
+      // transaction.
+      await db.customStatement('BEGIN');
       for (final ddl in artifactSchema.entries) {
         await db.customStatement(
           ddl.value.replaceFirst('CREATE TABLE ', 'CREATE TABLE artifact.'),
@@ -135,17 +151,23 @@ Future<DriveStateArtifact> exportDriveState(
         ],
       );
 
-      final bytes = await () async {
-        await db.customStatement('DETACH DATABASE artifact');
-        return sink.read();
-      }();
+      await db.customStatement('COMMIT');
 
-      if (maxBytes != null && bytes.length > maxBytes) {
-        throw ArtifactExportRefused(
-          ArtifactExportRefusal.tooLarge,
-          '${bytes.length} bytes exceeds $maxBytes',
-        );
+      await db.customStatement('DETACH DATABASE artifact');
+
+      // Weighed before it is read. `read()` would pull the whole file into
+      // memory, which is the cost this bound exists to avoid paying.
+      if (maxBytes != null) {
+        final size = await sink.size();
+        if (size > maxBytes) {
+          throw ArtifactExportRefused(
+            ArtifactExportRefusal.tooLarge,
+            '$size bytes exceeds $maxBytes',
+          );
+        }
       }
+
+      final bytes = await sink.read();
 
       return DriveStateArtifact(
         bytes: bytes,
@@ -154,8 +176,11 @@ Future<DriveStateArtifact> exportDriveState(
         driveId: driveId,
       );
     } catch (_) {
-      // DETACH may already have run; a second attempt is harmless and a
-      // failure here must not mask the original error.
+      // Both may already have run; a second attempt is harmless and a failure
+      // here must not mask the original error.
+      try {
+        await db.customStatement('ROLLBACK');
+      } catch (_) {}
       try {
         await db.customStatement('DETACH DATABASE artifact');
       } catch (_) {}

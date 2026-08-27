@@ -37,11 +37,16 @@ bool _bool(QueryRow row, String column) => row.read<int>(column) != 0;
 /// Assumes the caller has already refused anything whose `sqlite_master` is
 /// not the frozen schema — these selects name columns that only exist because
 /// that check passed.
+///
+/// **Coverage and version come from the artifact's own `meta` row, never from
+/// the tags.** They are the half the owner signed, and the importer's whole
+/// reason for comparing them against the tags is that a tag is chosen by
+/// whoever posted the transaction and nobody signs it. Filling them in from
+/// the tags would make that comparison compare a value with itself, and a
+/// re-tagged artifact — the attack the check exists for — would pass.
 Future<DriveStateExport> readArtifactAsExport(
   GeneratedDatabase db, {
   required String alias,
-  required int blockStart,
-  required int blockEnd,
 }) async {
   Future<List<QueryRow>> all(String table) =>
       db.customSelect('SELECT * FROM $alias.$table').get().then(
@@ -49,6 +54,7 @@ Future<DriveStateExport> readArtifactAsExport(
           );
 
   final driveRow = (await all('drives')).single;
+  final meta = (await all('meta')).single;
 
   return DriveStateExport(
     drive: ExportedDrive(
@@ -183,7 +189,10 @@ Future<DriveStateExport> readArtifactAsExport(
           customGQLTags: r.readNullable<String>('customGQLTags'),
         ),
     ],
-    coverage: DriveStateCoverage(blockStart: blockStart, blockEnd: blockEnd),
-    version: DriveStateFormatVersion.current,
+    coverage: DriveStateCoverage(
+      blockStart: meta.read<int>('blockStart'),
+      blockEnd: meta.read<int>('blockEnd'),
+    ),
+    version: DriveStateFormatVersion.parse(meta.read<String>('version')),
   );
 }

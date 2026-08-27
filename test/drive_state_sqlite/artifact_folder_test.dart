@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart';
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_import.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
 import 'package:test/test.dart';
 
@@ -19,6 +20,7 @@ import 'artifact_fixture.dart';
 /// travel. All three are rows in `folder_entries`, which is why they survive —
 /// but that is a claim worth executing.
 void main() {
+  _keyMaterialSurvivesImport();
   late Directory dir;
   late Database producer;
   late Database consumer;
@@ -157,5 +159,85 @@ void main() {
 
     // 20 folders, 3 files: at most three folders contain anything.
     expect((await folderIds(consumer)).length, 20);
+  });
+}
+
+/// Importing must never touch a column the artifact does not carry.
+///
+/// Withholding key material from the export is only half the guarantee. The
+/// other half is the merge: `INSERT OR REPLACE` deletes the conflicting row and
+/// reinserts it, so every withheld column comes back as its default — and on
+/// `drives` those columns are the key to the user's own private drive. An
+/// import that did that would leave the drive permanently unopenable, having
+/// destroyed the one copy of the key while reporting success.
+void _keyMaterialSurvivesImport() {
+  late Directory dir;
+  late Database producer;
+  late Database consumer;
+
+  setUp(() {
+    dir = Directory.systemTemp.createTempSync('keymat');
+    producer = Database(NativeDatabase.memory());
+    consumer = Database(NativeDatabase.memory());
+  });
+
+  tearDown(() async {
+    await producer.close();
+    await consumer.close();
+    if (dir.existsSync()) dir.deleteSync(recursive: true);
+  });
+
+  test('the local drive key survives an import that updates the drive row',
+      () async {
+    await seedDrive(producer, files: 5, folders: 2);
+    // The consumer already has this drive, with its key — which is the only
+    // state in which an import happens at all.
+    await seedDrive(consumer, files: 0, folders: 0);
+
+    final before = await consumer
+        .customSelect(
+          'SELECT encryptedKey, keyEncryptionIv, syncCursor, lastBlockHeight '
+          'FROM drives WHERE id = ?',
+          variables: [const Variable<String>(testDriveId)],
+        )
+        .getSingle();
+    expect(before.readNullable<Uint8List>('encryptedKey'), isNotNull);
+
+    final artifact = await exportDriveState(
+      producer,
+      driveId: testDriveId,
+      sink: FileArtifactSink('${dir.path}/a.db'),
+      blockEnd: 1814228,
+    );
+    await importDriveState(
+      consumer,
+      driveId: testDriveId,
+      source: await FileArtifactSource.of('${dir.path}/r.db', artifact.bytes),
+      knownOwner: testOwner,
+      knownPrivacy: 'private',
+      syncedToBlock: 0,
+    );
+
+    final after = await consumer
+        .customSelect(
+          'SELECT encryptedKey, keyEncryptionIv, syncCursor, lastBlockHeight, '
+          'name FROM drives WHERE id = ?',
+          variables: [const Variable<String>(testDriveId)],
+        )
+        .getSingle();
+
+    expect(after.readNullable<Uint8List>('encryptedKey'),
+        before.readNullable<Uint8List>('encryptedKey'),
+        reason: 'the drive key was destroyed by its own artifact');
+    expect(after.readNullable<Uint8List>('keyEncryptionIv'),
+        before.readNullable<Uint8List>('keyEncryptionIv'));
+    expect(after.readNullable<String>('syncCursor'),
+        before.readNullable<String>('syncCursor'));
+    expect(after.readNullable<int>('lastBlockHeight'),
+        before.readNullable<int>('lastBlockHeight'),
+        reason: 'the local watermark is not the artifact to set');
+
+    // And the columns the artifact does carry did update.
+    expect(after.read<String>('name'), 'A drive');
   });
 }

@@ -261,7 +261,7 @@ void main() {
       expect(candidate.entityType, 'drive-state');
       expect(candidate.arFsVersion, '0.15');
       expect(candidate.driveStateId, 'STATE_UUID');
-      expect(candidate.stateVersion, '1.0');
+      expect(candidate.stateVersion, currentVersionString);
       expect(candidate.contentEncoding, 'gzip');
       expect(candidate.entityCount, 12043);
       expect(candidate.cipher, 'AES256-GCM');

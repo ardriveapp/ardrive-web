@@ -317,6 +317,28 @@ const artifactProjection = <String, List<String>>{
   ],
 };
 
+/// The conflict target for each table on import — its primary key.
+///
+/// Needed because the merge is an **upsert on the projected columns**, not
+/// `INSERT OR REPLACE`. `REPLACE` deletes the conflicting row and inserts a new
+/// one, so any column the projection does not carry is reset to its default.
+/// On `drives` that means `encryptedKey`, `keyEncryptionIv`,
+/// `driveKeyGenerated`, `syncCursor` and `lastBlockHeight` — importing an
+/// artifact would destroy the key to the user's own private drive and leave it
+/// unopenable.
+///
+/// Withholding those columns from the artifact is only half the guarantee; not
+/// clobbering them on the way in is the other half.
+const artifactConflictTarget = <String, List<String>>{
+  'drives': ['id'],
+  'folder_entries': ['id', 'driveId'],
+  'file_entries': ['id', 'driveId'],
+  'drive_revisions': ['driveId', 'dateCreated'],
+  'folder_revisions': ['folderId', 'driveId', 'dateCreated'],
+  'file_revisions': ['fileId', 'driveId', 'dateCreated'],
+  'licenses': ['fileId', 'driveId', 'dataTxId', 'licenseTxId'],
+};
+
 /// The column each table is filtered by when copying one drive out.
 const _driveColumn = <String, String>{
   'drives': 'id',

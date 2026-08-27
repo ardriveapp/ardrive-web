@@ -103,7 +103,14 @@ Future<ArtifactImportResult> importDriveState(
   required int syncedToBlock,
 }) async {
   try {
-    await db.customStatement('ATTACH DATABASE ? AS artifact', [source.path]);
+    try {
+      // Inside the refusal handler: a file that is not a database at all fails
+      // here, and must be a refusal like any other rather than a raw
+      // SqliteException escaping to a caller that has no arm for it.
+      await db.customStatement('ATTACH DATABASE ? AS artifact', [source.path]);
+    } catch (e) {
+      throw ArtifactImportRefused(ArtifactImportRefusal.notADatabase, '$e');
+    }
     try {
       await _validate(
         db,
@@ -120,12 +127,25 @@ Future<ArtifactImportResult> importDriveState(
       return await db.transaction(() async {
         final rows = <String, int>{};
         for (final entry in artifactProjection.entries) {
-          final columns = entry.value.join(', ');
+          final table = entry.key;
+          final columns = entry.value;
+          final target = artifactConflictTarget[table]!;
+          // An upsert on the projected columns, never INSERT OR REPLACE.
+          // REPLACE would delete the conflicting row and reinsert it, resetting
+          // every column the artifact does not carry — on `drives` that is the
+          // user's own drive key.
+          final assignments = columns
+              .where((c) => !target.contains(c))
+              .map((c) => '$c = excluded.$c')
+              .join(', ');
+          final joined = columns.join(', ');
           await db.customStatement(
-            'INSERT OR REPLACE INTO main.${entry.key} ($columns) '
-            'SELECT $columns FROM artifact.${entry.key}',
+            'INSERT INTO main.$table ($joined) '
+            'SELECT $joined FROM artifact.$table '
+            'WHERE true '
+            'ON CONFLICT(${target.join(', ')}) DO UPDATE SET $assignments',
           );
-          rows[entry.key] = await _count(db, 'artifact.${entry.key}');
+          rows[table] = await _count(db, 'artifact.$table');
         }
 
         var before = await _count(db, 'main.network_transactions');
@@ -163,13 +183,17 @@ Future<ArtifactImportRefused?> validateAttachedArtifact(
   GeneratedDatabase db, {
   required String alias,
 }) async {
-  final integrity =
-      await db.customSelect('PRAGMA $alias.integrity_check').getSingle();
-  final verdict = integrity.data.values.first;
-  if (verdict != 'ok') {
+  // One row per problem found, so a corrupt file returns several and
+  // getSingle() would throw StateError — losing the refusal this function
+  // promises and reporting `Bad state:` from an outer handler instead.
+  final integrity = await db.customSelect('PRAGMA $alias.integrity_check').get();
+  final verdict = integrity.isEmpty ? 'no result' : integrity.first.data.values.first;
+  if (integrity.length != 1 || verdict != 'ok') {
     return ArtifactImportRefused(
       ArtifactImportRefusal.notADatabase,
-      '$verdict',
+      integrity.length > 1
+          ? '${integrity.length} problems, first: $verdict'
+          : '$verdict',
     );
   }
 
@@ -219,48 +243,8 @@ Future<void> _validate(
   required String knownPrivacy,
   required int syncedToBlock,
 }) async {
-  final integrity =
-      await db.customSelect('PRAGMA artifact.integrity_check').getSingle();
-  if (integrity.data.values.first != 'ok') {
-    throw ArtifactImportRefused(
-      ArtifactImportRefusal.notADatabase,
-      '${integrity.data.values.first}',
-    );
-  }
-
-  // Nothing but the tables we froze. A view or trigger here would run our own
-  // SELECT against attacker-chosen SQL, so the shape is checked before a
-  // single row is read.
-  final objects = await db.customSelect(
-    'SELECT type, name, sql FROM artifact.sqlite_master '
-    "WHERE name NOT LIKE 'sqlite_%'",
-  ).get();
-  final seen = <String, String>{};
-  for (final row in objects) {
-    final type = row.read<String>('type');
-    final name = row.read<String>('name');
-    if (type != 'table') {
-      throw ArtifactImportRefused(
-        ArtifactImportRefusal.unexpectedSchema,
-        'found $type "$name"',
-      );
-    }
-    seen[name] = row.read<String>('sql');
-  }
-  if (seen.length != artifactSchema.length) {
-    throw ArtifactImportRefused(
-      ArtifactImportRefusal.unexpectedSchema,
-      'expected ${artifactSchema.keys.toList()}, found ${seen.keys.toList()}',
-    );
-  }
-  for (final entry in artifactSchema.entries) {
-    if (seen[entry.key] != entry.value) {
-      throw ArtifactImportRefused(
-        ArtifactImportRefusal.unexpectedSchema,
-        'table "${entry.key}" is not the frozen schema',
-      );
-    }
-  }
+  final refusal = await validateAttachedArtifact(db, alias: 'artifact');
+  if (refusal != null) throw refusal;
 
   final metaRows = await db.customSelect('SELECT * FROM artifact.meta').get();
   if (metaRows.length != 1) {

@@ -31,6 +31,9 @@ class _FileSink implements ArtifactSink {
   _FileSink(this.path, this._dir);
 
   @override
+  Future<int> size() => File(path).length();
+
+  @override
   Future<Uint8List> read() => File(path).readAsBytes();
 
   @override

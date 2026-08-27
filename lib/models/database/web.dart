@@ -43,7 +43,7 @@ LazyDatabase openConnection() {
     final fs = await IndexedDbFileSystem.open(dbName: _indexedDbName);
     sqlite3.registerVirtualFileSystem(fs, makeDefault: true);
 
-    await _migrateFromSqlJsIfNeeded(fs);
+    await _migrateFromSqlJsIfNeeded(sqlite3, fs);
 
     webSqlite = (sqlite3: sqlite3, vfs: fs);
 
@@ -71,7 +71,10 @@ LazyDatabase openConnection() {
 /// Every failure here ends with the user on the login screen and their old
 /// data still in place, never with a half-written database: nothing is written
 /// unless a whole, plausible SQLite file was read.
-Future<void> _migrateFromSqlJsIfNeeded(VirtualFileSystem fs) async {
+Future<void> _migrateFromSqlJsIfNeeded(
+  WasmSqlite3 sqlite3,
+  VirtualFileSystem fs,
+) async {
   if (fs.xAccess(_vfsDatabasePath, 0) != 0) return;
 
   final Uint8List legacyBytes;
@@ -91,18 +94,26 @@ Future<void> _migrateFromSqlJsIfNeeded(VirtualFileSystem fs) async {
 
   if (legacyBytes.length < 16) return;
 
-  // Anything that is not a SQLite file starts empty rather than opening a
-  // broken database. An empty database is a login screen; a corrupt one is a
-  // wedged app.
-  if (String.fromCharCodes(legacyBytes.sublist(0, 15)) != 'SQLite format 3') {
+  // The full 16-byte header, NUL included. A prefix check that stops at 15
+  // accepts any sixteenth byte.
+  const header = 'SQLite format 3\u0000';
+  if (String.fromCharCodes(legacyBytes.sublist(0, 16)) != header) {
     logger.w('the stored sql.js database is not a SQLite file; starting fresh');
     return;
   }
 
+  // Staged, not written straight to the real path. Creating _vfsDatabasePath
+  // is what makes this migration a one-shot — the `xAccess` check above skips
+  // it forever after — so the real path must not exist until the bytes have
+  // proved they open. Anything less means one bad read permanently costs the
+  // user a database that was still sitting in the legacy store.
+  const staging = '$_vfsDatabasePath.migrating';
   try {
+    if (fs.xAccess(staging, 0) != 0) fs.xDelete(staging, 0);
+
     final file = fs
         .xOpen(
-          Sqlite3Filename(_vfsDatabasePath),
+          Sqlite3Filename(staging),
           SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE,
         )
         .file;
@@ -111,12 +122,44 @@ Future<void> _migrateFromSqlJsIfNeeded(VirtualFileSystem fs) async {
     } finally {
       file.xClose();
     }
+
+    // Prove it opens and is internally consistent before it becomes the
+    // database this app boots from.
+    final probe = sqlite3.open(staging);
+    try {
+      final check = probe.select('PRAGMA quick_check');
+      final verdict = check.isEmpty ? 'no result' : check.first.values.first;
+      if (check.length != 1 || verdict != 'ok') {
+        throw StateError('quick_check said $verdict');
+      }
+    } finally {
+      probe.dispose();
+    }
+
+    // Promote. Copying rather than renaming because the VFS interface has no
+    // rename; the staged copy is deleted either way.
+    final promoted = fs
+        .xOpen(
+          Sqlite3Filename(_vfsDatabasePath),
+          SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE,
+        )
+        .file;
+    try {
+      promoted.xWrite(legacyBytes, 0);
+    } finally {
+      promoted.xClose();
+    }
     logger.i('migrated ${legacyBytes.length} bytes from sql.js to sqlite3 wasm');
   } catch (e) {
-    // Leave nothing half-written: a partial database would be worse than none.
+    // Leave nothing half-written. The legacy copy is untouched, so the next
+    // start tries again rather than opening a database that is missing rows.
     logger.e('failed to migrate the sql.js database', e);
     try {
       fs.xDelete(_vfsDatabasePath, 0);
+    } catch (_) {}
+  } finally {
+    try {
+      if (fs.xAccess(staging, 0) != 0) fs.xDelete(staging, 0);
     } catch (_) {}
   }
 }

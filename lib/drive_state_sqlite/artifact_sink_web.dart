@@ -35,11 +35,16 @@ VirtualFileSystem get _vfs {
   return held.vfs;
 }
 
-/// Artifacts live beside the database on the same filesystem. Named per drive
-/// so two exports cannot collide, and deleted on dispose either way — an
-/// artifact left behind would be persisted to IndexedDB along with everything
-/// else on this filesystem.
-String _pathFor(String label) => '/drive_state_$label.db';
+/// Artifacts live beside the database on the same filesystem, and every
+/// operation gets its own path.
+///
+/// The drive id alone is not unique enough: two exports of the same drive would
+/// return the same path, and since a sink clears a stale file before attaching,
+/// the second would delete the first's database out from under it and both
+/// would read or write the same one. The counter costs nothing and removes the
+/// question.
+int _sequence = 0;
+String _pathFor(String label) => '/drive_state_${label}_${_sequence++}.db';
 
 Future<ArtifactSink> createArtifactSink(String label) async {
   final path = _pathFor(label);
@@ -77,6 +82,17 @@ class _VfsSink implements ArtifactSink {
   final String path;
   final VirtualFileSystem _fs;
   _VfsSink(this.path, this._fs);
+
+  @override
+  Future<int> size() async {
+    final file = _fs.xOpen(Sqlite3Filename(path), SqlFlag.SQLITE_OPEN_READONLY)
+        .file;
+    try {
+      return file.xFileSize();
+    } finally {
+      file.xClose();
+    }
+  }
 
   @override
   Future<Uint8List> read() async {

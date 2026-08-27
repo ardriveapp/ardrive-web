@@ -19,6 +19,9 @@ class FileArtifactSink implements ArtifactSink {
   FileArtifactSink(this.path);
 
   @override
+  Future<int> size() => File(path).length();
+
+  @override
   Future<Uint8List> read() => File(path).readAsBytes();
 
   @override

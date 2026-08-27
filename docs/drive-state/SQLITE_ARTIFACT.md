@@ -128,6 +128,6 @@ interpolated counters into them, the same trap `#2188` hit and documented.
 
 Run this branch's with:
 
-```
+```sh
 flutter test test/drive_state_sqlite/artifact_scale_test.dart --run-skipped
 ```
