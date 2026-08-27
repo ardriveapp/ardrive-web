@@ -68,6 +68,10 @@ dependencies:
   json_annotation: ^4.8.0
   mime: ^1.0.0
   drift: ^2.12.1
+  # The web database runs sqlite3 compiled to WebAssembly, and the artifact
+  # code reaches its VirtualFileSystem directly to read an attached database
+  # back out. web/sqlite3.wasm must match this version — see tool/check_wasm_version.sh.
+  sqlite3: ^2.4.2
   path_provider: ^2.0.2
   reactive_forms: ^14.1.0
   rxdart: ^0.27.1
@@ -186,10 +190,6 @@ dependency_overrides:
     path: ./packages/ardrive_ui
 
 dev_dependencies:
-  # Test-only: the artifact tamper helpers open a raw artifact file, which
-  # must NOT be opened through Drift (that would run onCreate and write the
-  # app's schema into it).
-  sqlite3: ^2.4.2
   integration_test:
     sdk: flutter
   flutter_test:
