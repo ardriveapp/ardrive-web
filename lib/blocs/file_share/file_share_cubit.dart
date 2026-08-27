@@ -200,7 +200,14 @@ class FileShareCubit extends Cubit<FileShareState> {
 
   /// How long the one network read on this side may take before the link is
   /// presented as final without `c`/`iv`.
-  static const _cipherDetailsTimeout = Duration(seconds: 10);
+  ///
+  /// Raised from ten seconds, which was under `GraphQLRetry`'s own ladder: it
+  /// sleeps about six seconds across its five attempts on the primary endpoint
+  /// before falling back to Goldsky, so a ten second budget expired part way
+  /// through the primary and the fallback never ran. That is the difference
+  /// between a link that carries `c`/`iv` and one that only declares the file
+  /// encrypted, on exactly the connection where it matters most.
+  static const _cipherDetailsTimeout = Duration(seconds: 15);
 
   /// Fetches `c`/`iv` - the only two link fields that are not in the local
   /// database - and folds them into the link when they arrive.

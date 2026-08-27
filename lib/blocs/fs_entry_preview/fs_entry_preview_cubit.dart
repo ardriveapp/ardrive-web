@@ -84,13 +84,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   final previewMaxFileSize = 1024 * 1024 * 100;
   final allowedPreviewContentTypes = [];
 
-  /// How long the "is this actually encrypted" check may take.
-  ///
-  /// Nothing waits on it, so this only decides how long a preview that is
-  /// going to be retracted may stay on screen before the check gives up and
-  /// leaves it alone.
-  static const _encryptionProbeTimeout = Duration(seconds: 10);
-
   FsEntryPreviewCubit({
     required this.driveId,
     this.maybeSelectedItem,
@@ -961,13 +954,18 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   /// Failing to make the check leaves the preview alone. It is an optimistic
   /// paint either way, and the download - the operation that would put the
   /// bytes on disk under the file's own name - makes its own check.
+  ///
+  /// Deliberately given no deadline of its own beyond the service's backstop.
+  /// Nothing waits on this, so a shorter budget buys no responsiveness; all it
+  /// does is give up before `GraphQLRetry` has finished its five attempts on
+  /// the primary endpoint and reached the fallback - which means the check
+  /// fails open, and a preview of ciphertext stays on screen, precisely on the
+  /// slow connection that made the link incomplete in the first place.
   Future<void> _refuseIfEncrypted(String dataTxId) async {
     try {
       // Memoized by id, so this is the same request the download makes rather
       // than a second one, whichever of them asks first.
-      final dataTx = await _arweave
-          .getTransactionDetails(dataTxId)
-          .timeout(_encryptionProbeTimeout);
+      final dataTx = await _arweave.getTransactionDetails(dataTxId);
 
       if (dataTx?.getTag(EntityTag.cipher) == null) {
         return;

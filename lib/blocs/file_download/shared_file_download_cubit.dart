@@ -28,11 +28,19 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
 
   /// How long the "is this actually encrypted" preflight may take.
   ///
-  /// It runs before a single byte moves, so it is held to the same kind of
-  /// budget as the reads that gate the shared file page rather than to the
-  /// service's much longer backstop. Exceeding it fails open: the download
-  /// proceeds, which is what it did before this check existed.
-  static const _encryptionPreflightTimeout = Duration(seconds: 10);
+  /// It runs before a single byte moves, so it is held to the same budget as
+  /// the reads that gate the shared file page ([SharedFileCubit.
+  /// defaultReadTimeout]) rather than to the service's much longer backstop.
+  /// Exceeding it fails open: the download proceeds, which is what it did
+  /// before this check existed.
+  ///
+  /// Not lower. `GraphQLRetry` spends about six seconds *sleeping* between its
+  /// five attempts on the primary endpoint before it falls back to Goldsky at
+  /// all, on top of the requests themselves. A budget under that does not make
+  /// the check fast, it makes it useless: it expires part way through the
+  /// primary ladder, so the fallback is never reached and the check fails open
+  /// on exactly the rate limited connection it exists for.
+  static const _encryptionPreflightTimeout = Duration(seconds: 15);
 
   SharedFileDownloadCubit({
     this.fileKey,
