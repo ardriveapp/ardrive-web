@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
@@ -16,82 +14,15 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' show AesGcm, SecretKey;
 import 'package:drift/drift.dart';
-import 'package:sqlite3/sqlite3.dart' as raw;
 import 'package:test/test.dart';
 
 import '../../test_utils/utils.dart';
+import '../artifact_sql.dart';
 
 /// The one version this build writes and reads. Fixtures follow the constant
 /// rather than restating it — restating it is how a fixture ends up asserting
 /// a version the code no longer speaks.
 String get currentVersionString => DriveStateFormatVersion.current.toString();
-
-/// Runs [statements] against an artifact's bytes and hands back what they
-/// leave behind.
-///
-/// This is the SQLite container's answer to reaching into a decoded JSON map:
-/// a test that needs one field to disagree with its tags writes that field
-/// with SQL.
-///
-/// **Raw sqlite3, never Drift.** Opening an artifact through `Database()`
-/// runs its `onCreate` and writes the app's entire schema into the file,
-/// which the reader's schema gate then refuses for a reason that has nothing
-/// to do with the test.
-Uint8List editArtifact(Uint8List bytes, List<String> statements) {
-  final dir = Directory.systemTemp.createTempSync('drive-state-edit');
-  try {
-    final path = '${dir.path}/artifact.db';
-    File(path).writeAsBytesSync(bytes);
-    final db = raw.sqlite3.open(path);
-    try {
-      for (final statement in statements) {
-        db.execute(statement);
-      }
-    } finally {
-      db.dispose();
-    }
-    return File(path).readAsBytesSync();
-  } finally {
-    dir.deleteSync(recursive: true);
-  }
-}
-
-/// One row out of an artifact, for the tests that have to name a value the
-/// payload actually carries.
-Map<String, Object?> artifactRow(Uint8List bytes, String sql) {
-  final dir = Directory.systemTemp.createTempSync('drive-state-read');
-  try {
-    final path = '${dir.path}/artifact.db';
-    File(path).writeAsBytesSync(bytes);
-    final db = raw.sqlite3.open(path);
-    try {
-      return Map<String, Object?>.from(db.select(sql).first);
-    } finally {
-      db.dispose();
-    }
-  } finally {
-    dir.deleteSync(recursive: true);
-  }
-}
-
-/// The first column of the first row [sql] returns.
-Object? artifactValue(Uint8List bytes, String sql) =>
-    artifactRow(bytes, sql).values.first;
-
-/// The `Entity-Count` a correct producer tags an artifact with: its folders,
-/// its files, and the drive itself, counted out of the container rather than
-/// restated beside it.
-int entitiesIn(Uint8List bytes) => artifactValue(
-      bytes,
-      'SELECT (SELECT count(*) FROM drives) '
-      '+ (SELECT count(*) FROM folder_entries) '
-      '+ (SELECT count(*) FROM file_entries) AS c',
-    )! as int;
-
-/// Drift stores `DATETIME` as unix seconds and the artifact carries the
-/// column through unchanged, so a date read out of one is seconds.
-DateTime artifactDate(Object? seconds) =>
-    DateTime.fromMillisecondsSinceEpoch((seconds! as int) * 1000);
 
 /// The import is exercised end to end, through a real seal and a real
 /// in-memory database, because every one of its rules is about the seam

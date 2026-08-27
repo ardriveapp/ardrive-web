@@ -1,11 +1,11 @@
-import 'dart:convert';
-
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart';
+import 'package:ardrive/drive_state_sqlite/artifact_sink.dart';
+import 'package:ardrive/drive_state_sqlite/artifact_to_export.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
@@ -15,6 +15,56 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:test/test.dart';
 
 import '../../test_utils/utils.dart';
+import '../artifact_sql.dart';
+
+/// The rows a sealed payload actually carries, read the way the importer
+/// reads them: the artifact is attached as a database and its tables are
+/// selected from, never parsed.
+Future<DriveStateExport> rowsSealedIn(Uint8List payload) async {
+  final scratch = getTestDb();
+  final source = await createArtifactSource('creation-service', payload);
+  try {
+    await scratch.customStatement(
+      'ATTACH DATABASE ? AS artifact',
+      [source.path],
+    );
+    try {
+      return await readArtifactAsExport(scratch, alias: 'artifact');
+    } finally {
+      await scratch.customStatement('DETACH DATABASE artifact');
+    }
+  } finally {
+    await source.dispose();
+    await scratch.close();
+  }
+}
+
+/// The same rows, ordered the way [exportDriveState] orders them.
+///
+/// An artifact carries its rows in the order they were copied, which is the
+/// producer's insertion order, and `DriveStateExport` compares its lists
+/// element by element. Ordering both sides is what lets the comparison be
+/// about the rows rather than about a scan order neither side promises.
+DriveStateExport inTheOrderTheExportUses(DriveStateExport export) =>
+    DriveStateExport(
+      drive: export.drive,
+      folders: [...export.folders]..sort((a, b) => a.id.compareTo(b.id)),
+      files: [...export.files]..sort((a, b) => a.id.compareTo(b.id)),
+      driveRevisions: [...export.driveRevisions]
+        ..sort((a, b) => a.dateCreated.compareTo(b.dateCreated)),
+      folderRevisions: [...export.folderRevisions]..sort((a, b) =>
+          a.folderId != b.folderId
+              ? a.folderId.compareTo(b.folderId)
+              : a.dateCreated.compareTo(b.dateCreated)),
+      fileRevisions: [...export.fileRevisions]..sort((a, b) =>
+          a.fileId != b.fileId
+              ? a.fileId.compareTo(b.fileId)
+              : a.dateCreated.compareTo(b.dateCreated)),
+      licenses: [...export.licenses]
+        ..sort((a, b) => a.licenseTxId.compareTo(b.licenseTxId)),
+      coverage: export.coverage,
+      version: export.version,
+    );
 
 /// The creation path, and above all the one thing it must refuse.
 ///
@@ -46,6 +96,10 @@ void main() {
   late SecretKey driveKey;
 
   setUpAll(() async {
+    // Reading a sealed payload back opens a scratch database beside the
+    // fixture's own, which is what drift warns about and is not a race here.
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+
     // The fixed test JWK rather than a generated wallet: this suite signs
     // once, and key generation would dominate its runtime.
     wallet = getTestWallet();
@@ -223,8 +277,7 @@ void main() {
     /// assertion that survives someone deciding the constructor would be
     /// tidier with two integers.
     test('tags the block range the sealed payload itself claims', () async {
-      final payload = codec.lastPayloadJson!;
-      final claimed = payload['coverage'] as Map<String, dynamic>;
+      final claimed = codec.lastPayloadMeta!;
 
       final tx = Transaction();
       artifact.entity.addEntityTagsToTransaction(tx);
@@ -242,13 +295,13 @@ void main() {
     /// permanently and having paid for it - so the assertion is that they come
     /// from one constant, not two that happen to match today.
     test('tags the same format version the sealed payload declares', () {
-      final payload = codec.lastPayloadJson!;
+      final declared = codec.lastPayloadMeta!['version'];
 
       final tx = Transaction();
       artifact.entity.addEntityTagsToTransaction(tx);
 
-      expect(tagsOf(tx)[EntityTag.stateVersion], payload['version']);
-      expect(payload['version'], DriveStateFormatVersion.current.toString());
+      expect(tagsOf(tx)[EntityTag.stateVersion], declared);
+      expect(declared, DriveStateFormatVersion.current.toString());
     });
 
     test("declares Block-End as the drive's own sync watermark", () {
@@ -305,11 +358,11 @@ void main() {
 
     test('seals a payload that round-trips back to the exported rows',
         () async {
-      final export = await exportDriveState(driveDao, driveId);
-
       expect(
-        DriveStateExport.fromJson(codec.lastPayloadJson!),
-        equals(export),
+        inTheOrderTheExportUses(await rowsSealedIn(codec.lastPlaintext!)),
+        equals(inTheOrderTheExportUses(
+          await exportDriveState(driveDao, driveId),
+        )),
       );
     });
 
@@ -388,23 +441,26 @@ void main() {
       expect(tags[EntityTag.blockStart], '0');
       expect(tags[EntityTag.blockEnd], '$lastBlockHeight');
       expect(tags[EntityTag.entityCount], '$expectedEntityCount');
+      // Still this build's version: public support is folded into the
+      // initial format rather than added as a minor bump, because nothing has
+      // been published.
       expect(
         tags[EntityTag.stateVersion],
         DriveStateFormatVersion.current.toString(),
       );
-      // Still 1.0: public support is folded into the initial format rather
-      // than added as a minor bump, because nothing has been published.
-      expect(tags[EntityTag.stateVersion], '1.0');
     });
 
     test('seals the same payload a private drive would', () async {
-      final export = await exportDriveState(driveDao, driveId);
-
       expect(
-        DriveStateExport.fromJson(codec.lastPayloadJson!),
-        equals(export),
+        inTheOrderTheExportUses(await rowsSealedIn(codec.lastPlaintext!)),
+        equals(inTheOrderTheExportUses(
+          await exportDriveState(driveDao, driveId),
+        )),
       );
-      expect(codec.lastPayloadJson!['version'], '1.0');
+      expect(
+        codec.lastPayloadMeta!['version'],
+        DriveStateFormatVersion.current.toString(),
+      );
     });
 
     test('is unsent, like every other prepared artifact', () {
@@ -612,9 +668,13 @@ class _RecordingCodec implements DriveStateEnvelopeCodec {
   @override
   int get maxPlaintextBytes => _real.maxPlaintextBytes;
 
-  Map<String, dynamic>? get lastPayloadJson => lastPlaintext == null
+  /// The `meta` row of the artifact the service sealed.
+  ///
+  /// The payload is a SQLite database, so what the artifact claims about
+  /// itself is read with a query rather than looked up in a decoded map.
+  Map<String, Object?>? get lastPayloadMeta => lastPlaintext == null
       ? null
-      : jsonDecode(utf8.decode(lastPlaintext!)) as Map<String, dynamic>;
+      : artifactRow(lastPlaintext!, 'SELECT * FROM meta');
 
   /// What the service resolved from the drive row, recorded so a test can
   /// assert the codec was asked for the chain the drive's privacy calls for -
