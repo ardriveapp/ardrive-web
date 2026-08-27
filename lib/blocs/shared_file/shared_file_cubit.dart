@@ -1515,7 +1515,16 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
       final current = state;
 
-      if (current is SharedFileLoadSuccess) {
+      // The licence belongs to one revision, and these no longer run one at a
+      // time. Selection used to hold the version controls until the licence
+      // came back, which serialised them by accident; now that it does not, a
+      // recipient can pick A then B and A's request can finish last.
+      //
+      // [_isStale] cannot catch that: `_resolution` marks a new *load* - a key
+      // being tried - and picking a version is not one. So the target itself is
+      // the guard.
+      if (current is SharedFileLoadSuccess &&
+          isSameRevision(revision, current.revision)) {
         emit(current.copyWith(latestLicense: license));
       }
     } catch (e, stacktrace) {

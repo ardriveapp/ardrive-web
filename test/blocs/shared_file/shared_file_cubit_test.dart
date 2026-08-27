@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:ardrive/blocs/shared_file/shared_file_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -67,6 +68,33 @@ class _FakeMetadataTransaction extends Fake implements TransactionCommonMixin {
       .toList();
 }
 
+/// A cubit whose licence lookups a test finishes by hand.
+///
+/// [SharedFileCubit.fetchLicenseForRevision] is the seam: overriding it drives
+/// the ordering this is about without standing up the whole licence stack,
+/// which is not what is under test.
+class _RaceableLicenseCubit extends SharedFileCubit {
+  _RaceableLicenseCubit({
+    required super.fileId,
+    required super.arweave,
+    required super.licenseService,
+    super.linkPayload,
+  });
+
+  /// One completer per revision, keyed by the bytes it describes.
+  final Map<String, Completer<LicenseState?>> licenseCalls = {};
+
+  @override
+  Future<LicenseState?> fetchLicenseForRevision(
+    FileRevision revision, {
+    String? owner,
+  }) =>
+      (licenseCalls[revision.dataTxId] ??= Completer<LicenseState?>()).future;
+}
+
+/// Two of these are distinguishable by identity, which is all the race needs.
+class _FakeLicense extends Fake implements LicenseState {}
+
 void main() {
   // A well formed base64 file key. It never decrypts anything here - the
   // arweave service is mocked - it only has to survive decodeBase64ToBytes.
@@ -89,6 +117,9 @@ void main() {
     String metadataTx = metadataTxId,
     int size = 100,
     String owner = ownerAddress,
+    // Only a revision that names a license is ever fetched for one; the
+    // license race test needs two that do.
+    String? licenseTx,
   }) {
     final entity = FileEntity(
       id: fileId,
@@ -99,6 +130,7 @@ void main() {
       lastModifiedDate: createdAt,
       dataTxId: dataTx,
       dataContentType: 'text/plain',
+      licenseTxId: licenseTx,
     );
 
     entity.txId = metadataTx;
@@ -1248,6 +1280,99 @@ void main() {
       expect(selected.newerVersionAvailable, isFalse);
       // The link's own revision is remembered, so the way back stays open.
       expect(selected.linkRevision, isNotNull);
+    });
+
+    test('a licence that arrives late never lands on another revision',
+        () async {
+      // Selection used to hold the version controls until the licence came
+      // back, which serialised these by accident. Now that it does not, a
+      // recipient can pick A and then B while A's request is still running -
+      // and `_isStale` cannot catch A finishing last, because `_resolution`
+      // marks a new *load*, not a new selection.
+      when(() => arweave.getFilePrivacyForId(any()))
+          .thenAnswer((_) async => DrivePrivacyTag.public);
+      when(() => arweave.getLatestFileEntityWithId(any(), any())).thenAnswer(
+        (_) async => fileEntity(
+          createdAt: DateTime(2024, 1, 2),
+          dataTx: 'data-tx-newer',
+          metadataTx: 'metadata-tx-newer',
+          licenseTx: 'license-newer',
+        ),
+      );
+      when(() => arweave.getAllFileEntitiesWithId(any(), any())).thenAnswer(
+        (_) async => [
+          fileEntity(
+            createdAt: DateTime(2024, 1, 1),
+            name: 'first.txt',
+            licenseTx: 'license-first',
+          ),
+          fileEntity(
+            createdAt: DateTime(2024, 1, 2),
+            name: 'newer.txt',
+            dataTx: 'data-tx-newer',
+            metadataTx: 'metadata-tx-newer',
+            licenseTx: 'license-newer',
+          ),
+        ],
+      );
+
+      // The link's own verification is not what is under test, but leaving it
+      // to throw would change which revision the page settles on.
+      when(() => arweave.getTransactionDetails(any()))
+          .thenAnswer((_) async => null);
+
+      final cubit = _RaceableLicenseCubit(
+        fileId: fileId,
+        arweave: arweave,
+        licenseService: licenseService,
+        linkPayload: v2Payload(),
+      );
+
+      await cubit.backgroundWork;
+      await cubit.loadActivity();
+
+      final history = (cubit.state as SharedFileLoadSuccess).activityRevisions;
+      final newer = history.firstWhere((r) => r.dataTxId == 'data-tx-newer');
+      final first = history.firstWhere((r) => r.dataTxId == dataTxId);
+
+      final firstLicence = _FakeLicense();
+      final newerLicence = _FakeLicense();
+
+      // The page opens on the revision the link named, so selecting that one
+      // would be a no-op. Pick the newer one, then change your mind back before
+      // its licence has answered.
+      await cubit.showRevision(newer);
+      await cubit.showRevision(first);
+
+      expect(
+        (cubit.state as SharedFileLoadSuccess).revision.dataTxId,
+        dataTxId,
+        reason: 'the second selection is what the recipient is looking at',
+      );
+
+      // The one being looked at answers first...
+      cubit.licenseCalls[dataTxId]!.complete(firstLicence);
+      await pumpEventQueue();
+
+      expect(
+        (cubit.state as SharedFileLoadSuccess).latestLicense,
+        same(firstLicence),
+      );
+
+      // ...and then the abandoned one answers late.
+      cubit.licenseCalls['data-tx-newer']!.complete(newerLicence);
+      await pumpEventQueue();
+
+      final settled = cubit.state as SharedFileLoadSuccess;
+
+      expect(settled.revision.dataTxId, dataTxId);
+      expect(
+        settled.latestLicense,
+        same(firstLicence),
+        reason: "the abandoned revision's licence must not overwrite it",
+      );
+
+      await cubit.close();
     });
 
     test('selecting an older version says a newer one exists', () async {

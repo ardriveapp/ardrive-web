@@ -762,6 +762,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         fileKey,
         file.dataTxId,
       );
+
+      // Decryption failed. Said the way every other private path here says it,
+      // rather than published as an image preview holding no image - which is
+      // the shape [_previewPdf] and [_mediaUrl] both refuse.
+      if (bytesToShow == null) {
+        imagePreviewNotifier.value = null;
+        _emitUnavailable();
+        return;
+      }
     }
 
     // The retraction may have landed while the bytes were in flight, and it
@@ -991,7 +1000,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     // The image path delivers bytes through a notifier rather than through
     // state, so the latch on [emit] does not reach it.
-    imagePreviewNotifier.value = null;
+    //
+    // Guarded on `isClosed` for the same reason [_emitUnavailable] is: the
+    // notifier is static and shared by every preview cubit, and this check has
+    // no deadline of its own, so it can land long after this cubit is gone -
+    // at which point clearing it would blank an image a different, live cubit
+    // had published, with nothing to put it back.
+    if (!isClosed) {
+      imagePreviewNotifier.value = null;
+    }
 
     _emitUnavailable();
   }
