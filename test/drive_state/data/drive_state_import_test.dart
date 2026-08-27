@@ -1,9 +1,11 @@
-import 'dart:convert';
+import 'dart:io';
 
 import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
-import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
+import 'package:ardrive/drive_state_sqlite/artifact_sink.dart';
+import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
+    as sqlite;
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
@@ -14,6 +16,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' show AesGcm, SecretKey;
 import 'package:drift/drift.dart';
+import 'package:sqlite3/sqlite3.dart' as raw;
 import 'package:test/test.dart';
 
 import '../../test_utils/utils.dart';
@@ -22,6 +25,73 @@ import '../../test_utils/utils.dart';
 /// rather than restating it — restating it is how a fixture ends up asserting
 /// a version the code no longer speaks.
 String get currentVersionString => DriveStateFormatVersion.current.toString();
+
+/// Runs [statements] against an artifact's bytes and hands back what they
+/// leave behind.
+///
+/// This is the SQLite container's answer to reaching into a decoded JSON map:
+/// a test that needs one field to disagree with its tags writes that field
+/// with SQL.
+///
+/// **Raw sqlite3, never Drift.** Opening an artifact through `Database()`
+/// runs its `onCreate` and writes the app's entire schema into the file,
+/// which the reader's schema gate then refuses for a reason that has nothing
+/// to do with the test.
+Uint8List editArtifact(Uint8List bytes, List<String> statements) {
+  final dir = Directory.systemTemp.createTempSync('drive-state-edit');
+  try {
+    final path = '${dir.path}/artifact.db';
+    File(path).writeAsBytesSync(bytes);
+    final db = raw.sqlite3.open(path);
+    try {
+      for (final statement in statements) {
+        db.execute(statement);
+      }
+    } finally {
+      db.dispose();
+    }
+    return File(path).readAsBytesSync();
+  } finally {
+    dir.deleteSync(recursive: true);
+  }
+}
+
+/// One row out of an artifact, for the tests that have to name a value the
+/// payload actually carries.
+Map<String, Object?> artifactRow(Uint8List bytes, String sql) {
+  final dir = Directory.systemTemp.createTempSync('drive-state-read');
+  try {
+    final path = '${dir.path}/artifact.db';
+    File(path).writeAsBytesSync(bytes);
+    final db = raw.sqlite3.open(path);
+    try {
+      return Map<String, Object?>.from(db.select(sql).first);
+    } finally {
+      db.dispose();
+    }
+  } finally {
+    dir.deleteSync(recursive: true);
+  }
+}
+
+/// The first column of the first row [sql] returns.
+Object? artifactValue(Uint8List bytes, String sql) =>
+    artifactRow(bytes, sql).values.first;
+
+/// The `Entity-Count` a correct producer tags an artifact with: its folders,
+/// its files, and the drive itself, counted out of the container rather than
+/// restated beside it.
+int entitiesIn(Uint8List bytes) => artifactValue(
+      bytes,
+      'SELECT (SELECT count(*) FROM drives) '
+      '+ (SELECT count(*) FROM folder_entries) '
+      '+ (SELECT count(*) FROM file_entries) AS c',
+    )! as int;
+
+/// Drift stores `DATETIME` as unix seconds and the artifact carries the
+/// column through unchanged, so a date read out of one is seconds.
+DateTime artifactDate(Object? seconds) =>
+    DateTime.fromMillisecondsSinceEpoch((seconds! as int) * 1000);
 
 /// The import is exercised end to end, through a real seal and a real
 /// in-memory database, because every one of its rules is about the seam
@@ -87,7 +157,7 @@ void main() {
   /// disagreeing with the body it describes.
   Future<({DriveStateArtifactCandidate candidate, Uint8List body})>
       sealArtifact(
-    Map<String, dynamic> payload, {
+    Uint8List payload, {
     String taggedDriveId = driveId,
     required int blockEnd,
     int blockStart = 0,
@@ -112,6 +182,10 @@ void main() {
     /// A `Cipher-IV` tag value of the test's choosing, for the cases where
     /// what matters is that nothing ever reads it.
     String? cipherIvTag,
+
+    /// No `State-Version` tag at all. Distinct from a null [stateVersion],
+    /// which means "whatever a correct producer would write".
+    bool omitStateVersionTag = false,
     Wallet? signer,
 
     /// What the *payload* claims about its own coverage, which is the half of
@@ -124,28 +198,39 @@ void main() {
     /// A payload with no coverage claim at all - what a producer that predated
     /// the field would have written, if one had ever published.
     bool omitSignedCoverage = false,
+
+    /// Bytes that are not a drive state container at all. Nothing can be
+    /// written into them, so the coverage claim and the entity count are the
+    /// caller's to state.
+    bool payloadIsOpaque = false,
   }) async {
-    if (omitSignedCoverage) {
-      payload.remove('coverage');
-    } else {
-      payload['coverage'] =
-          signedCoverage ?? {'blockStart': blockStart, 'blockEnd': blockEnd};
+    if (!payloadIsOpaque) {
+      if (omitSignedCoverage) {
+        // `meta` is one row of NOT NULL columns, so "a payload with no
+        // coverage claim" has no expression inside this container. The
+        // nearest a producer could publish is a payload with no `meta` row at
+        // all, and the reader then refuses it before it can compare a claim
+        // it never found - a coarser refusal than the JSON container's
+        // `coverageMismatch`, and the honest one here.
+        payload = editArtifact(payload, ['DELETE FROM meta']);
+      } else {
+        final coverage =
+            signedCoverage ?? {'blockStart': blockStart, 'blockEnd': blockEnd};
+        payload = editArtifact(payload, [
+          'UPDATE meta SET blockStart = ${coverage['blockStart']}, '
+          'blockEnd = ${coverage['blockEnd']}',
+        ]);
+      }
     }
 
     final sealed = await codec.seal(
-      plaintext: Uint8List.fromList(utf8.encode(jsonEncode(payload))),
+      plaintext: payload,
       protection:
           protection ?? (key == null ? privateDrive : protectionFor(key)),
       wallet: signer ?? owner,
     );
     expect(sealed.isSealed, isTrue, reason: sealed.toString());
     final envelope = sealed.envelope!;
-
-    final sections = payload['sections'] as Map<String, dynamic>;
-    int rowsIn(String section) =>
-        ((sections[section] as Map<String, dynamic>?)?['rows'] as List?)
-            ?.length ??
-        0;
 
     return (
       candidate: DriveStateArtifactCandidate(
@@ -156,12 +241,12 @@ void main() {
           EntityTag.entityType: EntityTypeTag.driveState,
           EntityTag.driveId: taggedDriveId,
           EntityTag.driveStateId: 'drive-state-id',
-          EntityTag.stateVersion: stateVersion ?? currentVersionString,
+          if (!omitStateVersionTag)
+            EntityTag.stateVersion: stateVersion ?? currentVersionString,
           EntityTag.contentType: ContentType.octetStream,
           EntityTag.blockStart: '$blockStart',
           EntityTag.blockEnd: '$blockEnd',
-          EntityTag.entityCount:
-              '${entityCount ?? rowsIn(driveSectionName) + rowsIn(folderEntriesSectionName) + rowsIn(fileEntriesSectionName)}',
+          EntityTag.entityCount: '${entityCount ?? entitiesIn(payload)}',
           if ((withCipherTags ?? envelope.isEncrypted) && !omitCipherTag)
             EntityTag.cipher: cipher ?? Cipher.aes256,
           if ((withCipherTags ?? envelope.isEncrypted) && !omitCipherIvTag)
@@ -178,20 +263,22 @@ void main() {
     );
   }
 
-  /// The producer's export, as the plain JSON a payload actually arrives as,
-  /// so a test can reach in and make one field disagree with its tags.
-  Future<Map<String, dynamic>> exportedPayload([String id = driveId]) async {
-    final export = await exportDriveState(producerDb.driveDao, id);
-    return jsonDecode(jsonEncode(export.toJson())) as Map<String, dynamic>;
+  /// The producer's artifact: a real SQLite database, built the way the
+  /// producer builds one, so a test can reach into it with SQL and make one
+  /// field disagree with its tags.
+  ///
+  /// `blockEnd` is 0 here and is written afterwards by [sealArtifact], which
+  /// is the layer that knows what coverage a given test wants the payload to
+  /// claim.
+  Future<Uint8List> exportedPayload([String id = driveId]) async {
+    final artifact = await sqlite.exportDriveState(
+      producerDb,
+      driveId: id,
+      sink: await createArtifactSink('import-test'),
+      blockEnd: 0,
+    );
+    return artifact.bytes;
   }
-
-  List<Map<String, dynamic>> rowsOf(
-    Map<String, dynamic> payload,
-    String section,
-  ) =>
-      ((payload['sections'] as Map<String, dynamic>)[section]
-              as Map<String, dynamic>)['rows']
-          .cast<Map<String, dynamic>>();
 
   /// Attaches a drive to the consumer, the way a client that is about to sync
   /// one already has it: a row, its key material, and nothing synced yet.
@@ -302,8 +389,7 @@ void main() {
         expectedOwnerAddress: ownerAddress,
       );
 
-      expect(result.outcome, DriveStateOutcome.unknownVersion,
-          reason: result.detail);
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
       expect(result.stats!.foldersWritten, 3);
       expect(result.stats!.filesWritten, 3);
       expect(result.stats!.rowsKeptLocallyNewer, 0);
@@ -487,8 +573,10 @@ void main() {
 
       // The consumer already knows one of the artifact's data transactions,
       // and knows it failed.
-      final failedTxId =
-          rowsOf(payload, fileRevisionsSectionName).first['dataTxId'] as String;
+      final failedTxId = artifactValue(
+        payload,
+        'SELECT dataTxId FROM file_revisions ORDER BY fileId LIMIT 1',
+      )! as String;
 
       await db.into(db.networkTransactions).insert(
             NetworkTransactionsCompanion.insert(
@@ -571,26 +659,23 @@ void main() {
         () async {
       await attachDrive(db);
       final payload = await exportedPayload();
-      final published = rowsOf(payload, fileRevisionsSectionName).first;
+      final published = artifactRow(
+        payload,
+        'SELECT * FROM file_revisions ORDER BY fileId LIMIT 1',
+      );
 
       await db.into(db.fileRevisions).insert(
             FileRevisionsCompanion.insert(
-              fileId: published['fileId'] as String,
+              fileId: published['fileId']! as String,
               driveId: driveId,
-              parentFolderId: published['parentFolderId'] as String,
+              parentFolderId: published['parentFolderId']! as String,
               name: 'what-this-client-recorded',
-              metadataTxId: published['metadataTxId'] as String,
-              dataTxId: published['dataTxId'] as String,
+              metadataTxId: published['metadataTxId']! as String,
+              dataTxId: published['dataTxId']! as String,
               action: RevisionAction.create,
-              size: published['size'] as int,
-              lastModifiedDate: DateTime.fromMillisecondsSinceEpoch(
-                published['lastModifiedDate'] as int,
-              ),
-              dateCreated: Value(
-                DateTime.fromMillisecondsSinceEpoch(
-                  published['dateCreated'] as int,
-                ),
-              ),
+              size: published['size']! as int,
+              lastModifiedDate: artifactDate(published['lastModifiedDate']),
+              dateCreated: Value(artifactDate(published['dateCreated'])),
             ),
           );
 
@@ -660,8 +745,10 @@ void main() {
 
     test('rejects a payload whose revisions belong to another drive', () async {
       await attachDrive(db);
-      final payload = await exportedPayload();
-      rowsOf(payload, fileRevisionsSectionName).first['driveId'] = otherDriveId;
+      final payload = editArtifact(await exportedPayload(), [
+        "UPDATE file_revisions SET driveId = '$otherDriveId' "
+            'WHERE rowid = (SELECT MIN(rowid) FROM file_revisions)',
+      ]);
 
       final artifact = await sealArtifact(payload, blockEnd: 900);
       final result = await importer.import(
@@ -679,19 +766,13 @@ void main() {
 
     test('rejects a payload whose licences belong to another drive', () async {
       await attachDrive(db);
-      final payload = await exportedPayload();
       // The producer has no licences, so put one there to be rejected.
-      rowsOf(payload, licensesSectionName).add({
-        'fileId': 'a-file',
-        'driveId': otherDriveId,
-        'dataTxId': 'a-data-tx',
-        'licenseTxType': 'assertion',
-        'licenseTxId': 'a-license-tx',
-        'bundledIn': null,
-        'dateCreated': 1000,
-        'licenseType': 'udl',
-        'customGQLTags': null,
-      });
+      final payload = editArtifact(await exportedPayload(), [
+        'INSERT INTO licenses (fileId, driveId, dataTxId, licenseTxType, '
+            'licenseTxId, bundledIn, dateCreated, licenseType, customGQLTags) '
+            "VALUES ('a-file', '$otherDriveId', 'a-data-tx', 'assertion', "
+            "'a-license-tx', NULL, 1000, 'udl', NULL)",
+      ]);
 
       final artifact = await sealArtifact(payload, blockEnd: 900);
       final result = await importer.import(
@@ -711,10 +792,12 @@ void main() {
     test('does not clobber a row the database holds a newer copy of', () async {
       await attachDrive(db);
       final payload = await exportedPayload();
-      final artifactFile = rowsOf(payload, fileEntriesSectionName).first;
-      final contestedId = artifactFile['id'] as String;
-      final afterTheArtifact = DateTime.fromMillisecondsSinceEpoch(
-              artifactFile['lastUpdated'] as int)
+      final artifactFile = artifactRow(
+        payload,
+        'SELECT id, lastUpdated FROM file_entries ORDER BY id LIMIT 1',
+      );
+      final contestedId = artifactFile['id']! as String;
+      final afterTheArtifact = artifactDate(artifactFile['lastUpdated'])
           .add(const Duration(days: 1));
 
       // Renamed locally after the artifact was published - the ordinary case
@@ -834,12 +917,29 @@ void main() {
   /// metadata would have re-derived the ghost, so an unresolved parent is a
   /// permanently invisible file rather than a temporarily misplaced one.
   group('the row graph', () {
-    /// Removes a folder's revision, which is exactly what makes the export
-    /// treat its entry as a row this client invented: a ghost, in other words.
+    /// Removes a folder's revision, leaving its entry row behind: a row the
+    /// producer holds and nothing on chain vouches for, which is what a ghost
+    /// and a root folder placeholder both are.
     Future<void> forgetFolderRevisions(List<String> folderIds) =>
         (producerDb.delete(producerDb.folderRevisions)
               ..where((r) => r.folderId.isIn(folderIds)))
             .go();
+
+    /// Removes a folder from the producer entirely - its entry row and the
+    /// revision behind it - so the artifact carries neither.
+    ///
+    /// The JSON export filtered `folder_entries` down to the rows a revision
+    /// vouched for, so dropping the revision was enough to keep a folder out
+    /// of a payload. The SQLite export copies the table whole, so a fixture
+    /// that wants a folder absent from the artifact has to remove both. The
+    /// case under test is unchanged: a file travels and its parent folder
+    /// does not.
+    Future<void> forgetFolders(List<String> folderIds) async {
+      await forgetFolderRevisions(folderIds);
+      await (producerDb.delete(producerDb.folderEntries)
+            ..where((f) => f.id.isIn(folderIds)))
+          .go();
+    }
 
     Future<DriveStateImportResult> publishAndImport() async {
       final artifact =
@@ -857,7 +957,7 @@ void main() {
             .getSingle();
 
     test('materialises the ghost a file\'s parent has become', () async {
-      await forgetFolderRevisions([nestedFolderId]);
+      await forgetFolders([nestedFolderId]);
       await attachDrive(db);
 
       final result = await publishAndImport();
@@ -1069,14 +1169,7 @@ void main() {
       // run the filter. A payload that skipped it is offering a guess of its
       // own - possibly its *own* ghost, stamped `now` - and a guess does not
       // get to overrule this client's guess.
-      final payload = await exportedPayload();
-      final revisions = (payload['sections']
-              as Map<String, dynamic>)[folderRevisionsSectionName]
-          as Map<String, dynamic>;
-      revisions['rows'] = (revisions['rows'] as List)
-          .where(
-              (r) => (r as Map<String, dynamic>)['folderId'] != nestedFolderId)
-          .toList();
+      await forgetFolderRevisions([nestedFolderId]);
 
       await attachDrive(db);
       await db.into(db.folderEntries).insert(
@@ -1091,7 +1184,8 @@ void main() {
             ),
           );
 
-      final artifact = await sealArtifact(payload, blockEnd: 900);
+      final artifact =
+          await sealArtifact(await exportedPayload(), blockEnd: 900);
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
@@ -1135,7 +1229,7 @@ void main() {
       // The producer's root folder metadata never resolved, so the payload
       // cannot carry it - but the consumer attached this drive and holds
       // `DriveDao._rootFolderPlaceholder`'s row for it. Nothing is missing.
-      await forgetFolderRevisions([rootFolderId]);
+      await forgetFolders([rootFolderId]);
       await attachDrive(db);
       await db.into(db.folderEntries).insert(
             FolderEntriesCompanion.insert(
@@ -1157,7 +1251,7 @@ void main() {
       // keeping its own `rootFolderId` rather than adopting the payload's - so
       // there is no claim to refuse, and a stand-in parented at a root that
       // does not exist would be an orphan of the kind it was written to fix.
-      await forgetFolderRevisions(
+      await forgetFolders(
         [rootFolderId, nestedFolderId, 'empty-nested-folder-id0'],
       );
       await (producerDb.delete(producerDb.fileEntries)
@@ -1452,9 +1546,9 @@ void main() {
     test('rejects a payload for a different drive than the Drive-Id tag',
         () async {
       await attachDrive(db);
-      final payload = await exportedPayload();
-      rowsOf(payload, driveSectionName).first['id'] =
-          'a-completely-other-drive';
+      final payload = editArtifact(await exportedPayload(), [
+        "UPDATE drives SET id = 'a-completely-other-drive'",
+      ]);
 
       final artifact = await sealArtifact(payload, blockEnd: 900);
       final result = await importer.import(
@@ -1472,8 +1566,10 @@ void main() {
     test('rejects a payload carrying a row that belongs to another drive',
         () async {
       await attachDrive(db);
-      final payload = await exportedPayload();
-      rowsOf(payload, fileEntriesSectionName).first['driveId'] = otherDriveId;
+      final payload = editArtifact(await exportedPayload(), [
+        "UPDATE file_entries SET driveId = '$otherDriveId' "
+            'WHERE rowid = (SELECT MIN(rowid) FROM file_entries)',
+      ]);
 
       final artifact = await sealArtifact(payload, blockEnd: 900);
       final result = await importer.import(
@@ -1491,8 +1587,9 @@ void main() {
     test('rejects a payload whose owner is not the one it verified against',
         () async {
       await attachDrive(db);
-      final payload = await exportedPayload();
-      rowsOf(payload, driveSectionName).first['ownerAddress'] = 'someone-else';
+      final payload = editArtifact(await exportedPayload(), [
+        "UPDATE drives SET ownerAddress = 'someone-else'",
+      ]);
 
       final artifact = await sealArtifact(payload, blockEnd: 900);
       final result = await importer.import(
@@ -1783,8 +1880,10 @@ void main() {
 
     test('a State-Version tagged with a newer major', () async {
       await attachDrive(db);
-      final payload = await exportedPayload();
-      payload['version'] = '9.0';
+      final payload = editArtifact(
+        await exportedPayload(),
+        ["UPDATE meta SET version = '9.0'"],
+      );
       final artifact = await sealArtifact(
         payload,
         blockEnd: 900,
@@ -1808,8 +1907,10 @@ void main() {
       // wrong reason if it happens to lack a section, and not refused at all
       // if it does not.
       await attachDrive(db);
-      final payload = await exportedPayload();
-      payload['version'] = '0.0';
+      final payload = editArtifact(
+        await exportedPayload(),
+        ["UPDATE meta SET version = '0.0'"],
+      );
       final artifact = await sealArtifact(
         payload,
         blockEnd: 900,
@@ -1850,6 +1951,9 @@ void main() {
           await exportedPayload(),
           blockEnd: 900,
           stateVersion: tagged,
+          // `null` is the absent tag, which is the same fact to a reader as
+          // an unparseable one: there is no version to compare.
+          omitStateVersionTag: tagged == null,
         );
 
         final result = await importer.import(
@@ -1912,19 +2016,15 @@ void main() {
     // constant.
     test('a minor this build has never heard of is refused while at 0.x',
         () async {
-      // The whole reason for two components. A minor moves for an addition,
-      // and additions are exactly what unknown sections and fields are ignored
-      // for - so a higher minor of this build's major must land, not be turned
-      // away. Tagged and signed at the same 1.7 because a producer writes one
+      // While the major is 0 the minor is the compatibility unit, so 1.7 and
+      // this build's version are two formats rather than one with an addition
+      // in it. Tagged and signed at the same 1.7 because a producer writes one
       // constant into both.
       await attachDrive(db);
-      final payload = await exportedPayload();
-      payload['version'] = '1.7';
-      (payload['sections'] as Map<String, dynamic>)['aggregate_totals'] = {
-        'rows': [
-          {'whatever': 1},
-        ],
-      };
+      final payload = editArtifact(
+        await exportedPayload(),
+        ["UPDATE meta SET version = '1.7'"],
+      );
 
       final artifact = await sealArtifact(
         payload,
@@ -1939,8 +2039,38 @@ void main() {
         expectedOwnerAddress: ownerAddress,
       );
 
-      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
-      expect(await fileRows(db), isNotEmpty);
+      expect(result.outcome, DriveStateOutcome.unknownVersion);
+      expect(result.detail, contains('1.7'));
+      expect(await fileRows(db), isEmpty);
+    });
+
+    test('a table this reader does not know is refused, not ignored',
+        () async {
+      // The JSON payload ignored a section it did not know, so a producer
+      // could add an optional one without stranding older clients. The SQLite
+      // container reverses that on purpose: the schema gate matches
+      // `sqlite_master` against the frozen schema byte for byte, because a
+      // reader that tolerated an unknown table would be running its own
+      // statements against a shape nobody agreed to. An addition therefore
+      // costs a major version bump, which is the price of the gate.
+      await attachDrive(db);
+      final payload = editArtifact(
+        await exportedPayload(),
+        ['CREATE TABLE aggregate_totals (whatever INTEGER)'],
+      );
+
+      final artifact = await sealArtifact(payload, blockEnd: 900);
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.integrityFailed);
+      expect(result.detail, contains('aggregate_totals'));
+      expect(await fileRows(db), isEmpty);
     });
 
     test('a State-Version tag that disagrees with the signed payload',
@@ -1953,15 +2083,15 @@ void main() {
       // to believe the half anybody can rewrite.
       await attachDrive(db);
 
-      for (final tagged in ['1.1', '1.9']) {
-        final payload = await exportedPayload();
-        payload['version'] = '1.0';
-
-        final artifact = await sealArtifact(
-          payload,
-          blockEnd: 900,
-          stateVersion: tagged,
+      // The tag is the one this build reads, so step 2 passes and the
+      // disagreement is the only thing left to refuse the artifact.
+      for (final declared in ['0.2', '0.9']) {
+        final payload = editArtifact(
+          await exportedPayload(),
+          ["UPDATE meta SET version = '$declared'"],
         );
+
+        final artifact = await sealArtifact(payload, blockEnd: 900);
 
         final result = await importer.import(
           candidate: artifact.candidate,
@@ -1973,10 +2103,11 @@ void main() {
         expect(
           result.outcome,
           DriveStateOutcome.integrityFailed,
-          reason: 'tagged $tagged over a payload signed 1.0',
+          reason: 'tagged $currentVersionString over a payload signed '
+              '$declared',
         );
-        expect(result.detail, contains(tagged));
-        expect(result.detail, contains('1.0'));
+        expect(result.detail, contains(currentVersionString));
+        expect(result.detail, contains(declared));
         expect(await fileRows(db), isEmpty);
       }
     });
@@ -2085,10 +2216,13 @@ void main() {
 
     test('a payload that is not a drive state container', () async {
       await attachDrive(db);
+      // Bytes that are not a database at all, so there is no schema to gate
+      // and the refusal comes from the attach itself.
       final artifact = await sealArtifact(
-        {'version': currentVersionString, 'sections': <String, dynamic>{}},
+        Uint8List.fromList(List.filled(64, 7)),
         blockEnd: 900,
         entityCount: 0,
+        payloadIsOpaque: true,
       );
 
       final result = await importer.import(
@@ -2101,52 +2235,26 @@ void main() {
       expect(result.outcome, DriveStateOutcome.integrityFailed);
     });
 
-    test('a signed payload from a format version newer than this build',
-        () async {
-      // The tag says 1.0 and passes; the version inside the signature is what
-      // refuses it. That is the copy that governs, because it is the only one
-      // the owner signed.
-      await attachDrive(db);
-      final payload = await exportedPayload();
-      payload['version'] = '9.0';
-
-      final artifact = await sealArtifact(payload, blockEnd: 900);
-      final result = await importer.import(
-        candidate: artifact.candidate,
-        body: artifact.body,
-        protection: privateDrive,
-        expectedOwnerAddress: ownerAddress,
-      );
-
-      expect(result.outcome, DriveStateOutcome.unknownVersion);
-      expect(result.detail, contains('newer'));
-    });
-
-    test('a signed payload from a format version older than this build',
-        () async {
-      await attachDrive(db);
-      final payload = await exportedPayload();
-      payload['version'] = '0.0';
-
-      final artifact = await sealArtifact(payload, blockEnd: 900);
-      final result = await importer.import(
-        candidate: artifact.candidate,
-        body: artifact.body,
-        protection: privateDrive,
-        expectedOwnerAddress: ownerAddress,
-      );
-
-      expect(result.outcome, DriveStateOutcome.unknownVersion);
-      expect(result.detail, contains('predates'));
-      expect(result.detail, isNot(contains('section')));
-    });
-
-    test('a signed payload whose version cannot be parsed', () async {
+    test('a signed payload whose version is not this build\'s is refused, '
+        'in both directions', () async {
+      // The tag is the one this build reads and passes; the version inside
+      // the signature is what refuses the artifact. That is the copy that
+      // governs, because it is the only one the owner signed.
+      //
+      // Reported as `integrityFailed` rather than `unknownVersion`, and the
+      // difference is worth naming. The JSON reader gated the payload's own
+      // version as it parsed it, so a signed 9.0 came back as "your client is
+      // old". `readArtifactAsExport` has no such gate - it parses
+      // `meta.version` and hands it on - so what refuses these is the
+      // tag/payload cross-check one step later. Nothing unreadable is
+      // accepted either way; what is lost is the sentence a sync log gets.
       await attachDrive(db);
 
-      for (final declared in ['1', '1.0.0', 'x.y', '', 1, null]) {
-        final payload = await exportedPayload();
-        payload['version'] = declared;
+      for (final declared in ['9.0', '0.0']) {
+        final payload = editArtifact(
+          await exportedPayload(),
+          ["UPDATE meta SET version = '$declared'"],
+        );
 
         final artifact = await sealArtifact(payload, blockEnd: 900);
         final result = await importer.import(
@@ -2159,7 +2267,39 @@ void main() {
         expect(
           result.outcome,
           DriveStateOutcome.integrityFailed,
-          reason: '$declared is not a version to compare against',
+          reason: 'a payload signed $declared',
+        );
+        expect(result.detail, contains(declared));
+        expect(await fileRows(db), isEmpty);
+      }
+    });
+
+    test('a signed payload whose version cannot be parsed', () async {
+      await attachDrive(db);
+
+      // `meta.version` is `TEXT NOT NULL`, so the absent and non-string cases
+      // the JSON payload could hold have no expression here: a missing value
+      // is a row the insert refuses to write, and an integer 1 is stored as
+      // the string '1' by the column's affinity. What is left is every
+      // string that is not a `major.minor` version.
+      for (final declared in ['1', '1.0.0', 'x.y', '']) {
+        final payload = editArtifact(
+          await exportedPayload(),
+          ["UPDATE meta SET version = '$declared'"],
+        );
+
+        final artifact = await sealArtifact(payload, blockEnd: 900);
+        final result = await importer.import(
+          candidate: artifact.candidate,
+          body: artifact.body,
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(
+          result.outcome,
+          DriveStateOutcome.integrityFailed,
+          reason: '"$declared" is not a version to compare against',
         );
         expect(await fileRows(db), isEmpty);
       }
