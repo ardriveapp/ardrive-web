@@ -25,6 +25,8 @@ import 'artifact_fixture.dart';
 /// ```
 /// flutter test test/drive_state_sqlite/artifact_scale_test.dart --run-skipped
 /// ```
+int _rss() => ProcessInfo.currentRss ~/ 1048576;
+
 void main() {
   test('41,767 files through the SQLite path', () async {
     const files = 41767;
@@ -38,10 +40,12 @@ void main() {
     addTearDown(producer.close);
     addTearDown(consumer.close);
 
+    final rssBefore = _rss();
     final seeded = DateTime.now();
     await seedDrive(producer, files: files, folders: folders);
     final seedMs = DateTime.now().difference(seeded).inMilliseconds;
 
+    final afterSeed = _rss();
     final built = DateTime.now();
     final artifact = await exportDriveState(
       producer,
@@ -51,7 +55,10 @@ void main() {
     );
     final buildMs = DateTime.now().difference(built).inMilliseconds;
 
+    final gzipStarted = DateTime.now();
     final gzipped = gzip.encode(artifact.bytes).length;
+    final gzipMs = DateTime.now().difference(gzipStarted).inMilliseconds;
+    final afterSeal = _rss();
 
     final imported = DateTime.now();
     final result = await importDriveState(
@@ -64,6 +71,7 @@ void main() {
       syncedToBlock: 0,
     );
     final importMs = DateTime.now().difference(imported).inMilliseconds;
+    final afterImport = _rss();
 
     // ignore: avoid_print
     print('''
@@ -71,18 +79,31 @@ void main() {
   SQLite artifact, $files files / $folders folders
   ------------------------------------------------------
   seeded in                 $seedMs ms
-  artifact (uncompressed)   ${artifact.bytes.length} B
-                            ${(artifact.bytes.length / 1048576).toStringAsFixed(2)} MiB
-  artifact (gzipped)        $gzipped B
-                            ${(gzipped / 1048576).toStringAsFixed(2)} MiB
+  artifact (uncompressed)   ${artifact.bytes.length} B = ${(artifact.bytes.length / 1048576).toStringAsFixed(2)} MiB
+  artifact (gzipped)        $gzipped B = ${(gzipped / 1048576).toStringAsFixed(2)} MiB
+  compression ratio         ${(artifact.bytes.length / gzipped).toStringAsFixed(2)}x
+  bytes per entity (uncomp) ${artifact.bytes.length ~/ artifact.entityCount}
   entities                  ${artifact.entityCount}
   rows merged               ${result.totalRows}
   network_transactions      ${result.transactionsRegenerated}
-  build                     $buildMs ms
-  import                    $importMs ms
 
-  #2188 (JSON) for comparison, at the same file count:
-  serialised 52.16 MiB / gzipped 9.55 MiB / seal 4000 ms / import 9000 ms
+  export (ATTACH+INSERT)    $buildMs ms
+  gzip                      $gzipMs ms
+  producer, end to end      ${buildMs + gzipMs} ms
+  import, end to end        $importMs ms
+
+  RSS - a VM figure, not a browser heap; process-wide
+  before seeding            $rssBefore MiB
+  after seeding             $afterSeed MiB
+  after export              ${_rss()} MiB
+  after gzip                $afterSeal MiB
+  after import              $afterImport MiB
+
+  #2188 (JSON), the same test run on this machine:
+  serialised 52.16 MiB / gzipped 9.55 MiB / ratio 5.46x / 1306 B per entity
+  export 9111 ms + jsonEncode 1274 ms + gzip 2619 ms = 13004 ms producer
+  import 7444 ms end to end
+  RSS 787 MiB before seeding, run peak 1003 MiB
 ''');
 
     expect(result.rowsByTable['file_entries'], files);

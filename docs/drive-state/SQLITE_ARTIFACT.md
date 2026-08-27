@@ -87,10 +87,47 @@ This is a prototype for a decision, not a feature.
 
 ## Measurements
 
-Run with:
+Both branches' own measurement tests, run on the same machine, at 41,767
+files. `#2188`'s figures are from checking out that branch and running
+`test/drive_state/drive_state_scale_measurement_test.dart`; they reproduce its
+reported sizes exactly (52.16 / 9.55 MiB), which is what makes the comparison
+sound.
+
+| | `#2188` (JSON) | this branch (SQLite) | |
+|---|---|---|---|
+| serialised | 52.16 MiB | **17.70 MiB** | 2.9x smaller |
+| gzipped | 9.55 MiB | **5.98 MiB** | 1.6x smaller |
+| bytes per entity | 1,306 | **439** | |
+| **producer, end to end** | **13,004 ms** | **679 ms** | **19x** |
+| — export | 9,111 ms | 267 ms | |
+| — encode | 1,274 ms | none | |
+| — gzip | 2,619 ms | 412 ms | |
+| import, end to end | 7,444 ms | **584 ms** | 12.7x |
+| process RSS | 787 MiB baseline, 1,003 MiB peak | 182 MiB baseline, 349 MiB peak | |
+
+**On the producer figure.** `#2188`'s PR reports "seal 4 s", which is its
+`jsonEncode` plus `gzip` — 3,893 ms here, matching. Its **export** step is a
+separate 9,111 ms that the headline does not include. Comparing like with like
+means comparing everything needed to get compressed bytes, which is 13,004 ms
+against 679 ms.
+
+**On the RSS figures.** Process-wide, monotonic, on the Dart VM — not a browser
+heap, and both include the fixture's own database. The baselines differ because
+the two tests build their fixtures differently, so the deltas are the honest
+comparison: **+216 MiB** for the JSON path, **+167 MiB** for this one, against a
+much lower floor. The JSON path's cost is concentrated in `jsonEncode + utf8`,
+which is the step this branch does not have.
+
+**Caveats, both directions.** `#2188`'s fixture carries 43,756 file revisions
+(1.05 per entity) to this branch's 41,767 (1.0), and 121 folders to this
+branch's 430 — so it moves about 5% more revision rows and this one moves more
+folders. Neither fixture has `customJsonMetadata`, `customGQLTags` or licence
+rows. Transaction ids are 32 bytes of entropy in both, which matters: an
+earlier run of this branch's test reported 1.90 MiB gzipped because the fixture
+interpolated counters into them, the same trap `#2188` hit and documented.
+
+Run this branch's with:
 
 ```
 flutter test test/drive_state_sqlite/artifact_scale_test.dart --run-skipped
 ```
-
-To be filled in from that run.
