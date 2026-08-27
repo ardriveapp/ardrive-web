@@ -8,6 +8,9 @@ import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
+import 'package:ardrive/drive_state_sqlite/artifact_sink.dart';
+import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
+    as sqlite;
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -74,9 +77,16 @@ void main() {
 
   Future<({DriveStateArtifactCandidate candidate, Uint8List body})>
       publishArtifact() async {
-    final export = await exportDriveState(producerDb.driveDao, driveId);
+    // A SQLite database, built the way the producer builds one, so every
+    // finding below is met through the real container.
+    final artifact = await sqlite.exportDriveState(
+      producerDb,
+      driveId: driveId,
+      sink: await createArtifactSink('qa-findings'),
+      blockEnd: await _watermark(producerDb, driveId),
+    );
     final sealed = await codec.seal(
-      plaintext: Uint8List.fromList(utf8.encode(jsonEncode(export.toJson()))),
+      plaintext: artifact.bytes,
       protection: privateDrive,
       wallet: owner,
     );
@@ -94,13 +104,13 @@ void main() {
           EntityTag.driveStateId: 'drive-state-id',
           EntityTag.stateVersion: currentVersionString,
           EntityTag.contentType: ContentType.octetStream,
-          EntityTag.blockStart: '${export.coverage.blockStart}',
-          EntityTag.blockEnd: '${export.coverage.blockEnd}',
-          EntityTag.entityCount: '${export.entityCount}',
+          EntityTag.blockStart: '0',
+          EntityTag.blockEnd: '${artifact.blockEnd}',
+          EntityTag.entityCount: '${artifact.entityCount}',
           EntityTag.cipher: Cipher.aes256,
           EntityTag.cipherIv: envelope.cipherIvAsBase64!,
         },
-        minedAtHeight: export.coverage.blockEnd,
+        minedAtHeight: artifact.blockEnd,
       ),
       body: envelope.body,
     );
@@ -259,12 +269,18 @@ void main() {
     await producerDb.close();
   });
 
-  /// FINDING 1 — a ghost folder is dropped from the payload, and every file
-  /// inside it is imported with a `parentFolderId` naming a folder that is not
-  /// there. Nothing in the app lists a file by anything but its parent, so the
-  /// file is invisible; and the import advances the watermark past the range
-  /// whose metadata would have made sync re-derive the ghost, so it stays
-  /// invisible.
+  /// FINDING 1 — a file whose parent folder is not in the payload is imported
+  /// with a `parentFolderId` naming a folder that is not there. Nothing in the
+  /// app lists a file by anything but its parent, so the file is invisible;
+  /// and the import advances the watermark past the range whose metadata would
+  /// have made sync re-derive the ghost, so it stays invisible.
+  ///
+  /// The two containers reach the same requirement by different roads. The
+  /// JSON export filtered `folder_entries` down to the rows a revision
+  /// vouched for, so a ghost never travelled and the importer had to rebuild
+  /// one. The SQLite export copies the table whole, so the producer's ghost
+  /// row travels as it stands — which is why the assertion below is on the
+  /// folder existing, not on which side put it there.
   group('a drive with a ghost folder', () {
     setUp(() async {
       await seedProducerWithAGhost();
@@ -321,9 +337,13 @@ void main() {
   /// to the consumer's stand-in, and the drive keeps a uuid-named folder
   /// parented to its root instead of the real one.
   ///
-  /// The export lane guards the mirror image of this — it refuses to *publish*
-  /// a fabricated row, for exactly this reason (`_folderEntryCameFromChain`).
-  /// The import side has no such guard.
+  /// The JSON export lane guarded the mirror image of this — it refused to
+  /// *publish* a fabricated row, for exactly this reason
+  /// (`_folderEntryCameFromChain`). The SQLite export copies `folder_entries`
+  /// whole and has no such filter, so what stands between a producer's
+  /// stand-in and a consumer's real row is the import side alone:
+  /// `_folderStandInLoses`, which compares which folders each side has a
+  /// revision for rather than which timestamp is newer.
   group('a consumer that already invented a stand-in row', () {
     const realFolderId = 'a-real-folder';
 
@@ -662,4 +682,16 @@ void main() {
       expect(proposal, contains('producer\'s memory'));
     });
   });
+}
+
+/// The producer's own sync watermark, which is what an artifact may claim and
+/// nothing more.
+Future<int> _watermark(Database db, String driveId) async {
+  final row = await db
+      .customSelect(
+        'SELECT lastBlockHeight FROM drives WHERE id = ?',
+        variables: [Variable<String>(driveId)],
+      )
+      .getSingle();
+  return row.readNullable<int>('lastBlockHeight') ?? 0;
 }
