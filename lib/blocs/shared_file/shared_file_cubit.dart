@@ -412,11 +412,18 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
     emit(_withTarget(current, revision, showsLatestRevision: isNewest));
 
-    await _fetchLicense(
+    // Not awaited. The target has already moved, and the caller
+    // (`shared_file_ready_view.dart`, `_changeRevision`) holds the version
+    // picker and the freshness banner disabled for exactly as long as this
+    // future runs - so awaiting a licence lookup here left the recipient
+    // unable to pick another version until a GraphQL round trip they never
+    // asked for came back. It folds the licence in when it lands, and
+    // `_isStale` drops it if the target has moved on by then.
+    unawaited(_fetchLicense(
       revision,
       current.ownerAddress,
       resolution: _resolution,
-    );
+    ));
   }
 
   /// Takes the file's newest revision as what the page shows and downloads.
@@ -494,7 +501,11 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       ownerAddress: latest.ownerAddress,
     ));
 
-    await _fetchLicense(revision, latest.ownerAddress, resolution: resolution);
+    // Not awaited, for the reason given in [showRevision]: this future is what
+    // the view holds the version controls disabled for.
+    unawaited(
+      _fetchLicense(revision, latest.ownerAddress, resolution: resolution),
+    );
   }
 
   /// Puts the revision the link named back as what the page shows and
@@ -518,11 +529,12 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
     emit(_withTarget(current, linkRevision, showsLatestRevision: false));
 
-    await _fetchLicense(
+    // Not awaited, for the reason given in [showRevision].
+    unawaited(_fetchLicense(
       linkRevision,
       current.ownerAddress,
       resolution: _resolution,
-    );
+    ));
   }
 
   /// Recovers from a data transaction that no gateway will serve.
