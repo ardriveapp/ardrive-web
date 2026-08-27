@@ -94,13 +94,24 @@ void main() {
     expect(row.read<String>('path'), '/Empty');
   });
 
-  test('a ghost folder survives, and stays a ghost', () async {
+  test('a ghost folder does NOT travel — it is one client\'s guess', () async {
     // A ghost is a folder referenced by files whose own metadata was never
-    // found — a normal state, not corruption. It has an entry row and no
-    // revision, which is exactly the shape an export that only carried
-    // revisions would drop while keeping the files inside it. Those files
-    // would then be unreachable, because nothing lists a file except by its
-    // parent.
+    // found. Its `folder_entries` row has no revision behind it: this client
+    // fabricated it, stamped `DateTime.now()`.
+    //
+    // So it must not be published. The merge resolves conflicts by which side
+    // is newer, and a row stamped `now` outranks every real row — publishing
+    // one would make this client's guess outrank the truth in every client
+    // that imported it, permanently, with no later sync to correct it.
+    //
+    // The cost is paid on the other side on purpose: the ghost's *files* do
+    // have revisions and do travel, so the payload names a parent it does not
+    // carry, and the importer closes that graph itself with
+    // `_ghostFolderStandIn`. Each client's guess stays its own.
+    //
+    // I had this backwards first and asserted the ghost survived — the JSON
+    // exporter's `_folderEntryCameFromChain` is where the rule was written
+    // down, and the SQLite projection had dropped it.
     await seedDrive(producer, files: 5, folders: 2);
     await producer.customStatement(
       'INSERT INTO folder_entries (id, driveId, name, parentFolderId, path, '
@@ -121,25 +132,28 @@ void main() {
 
     await roundTrip();
 
-    expect(await folderIds(consumer), contains('ghost-folder'));
-    final ghost = await consumer
-        .customSelect(
-          "SELECT isGhost FROM folder_entries WHERE id = 'ghost-folder'",
-        )
-        .getSingle();
-    expect(ghost.read<int>('isGhost'), 1,
-        reason: 'a ghost that arrives as an ordinary folder is a folder the '
-            'user can never fix');
+    expect(await folderIds(consumer), isNot(contains('ghost-folder')),
+        reason: 'a fabricated row must not become every importer\'s fact');
+  });
 
-    // And the file inside it is reachable, which is the thing the ghost row
-    // exists to make possible.
-    final child = await consumer
-        .customSelect(
-          'SELECT count(*) AS c FROM file_entries '
-          "WHERE parentFolderId = 'ghost-folder'",
-        )
+  test('a file entry with no revision does not travel either', () async {
+    // Same rule, applied where nothing fabricates a row today. It is applied
+    // anyway because the rule is "publish what the chain said", not "publish
+    // what no known bug wrote" — the next stand-in should be dropped by a
+    // filter that already exists rather than one nobody remembered to add.
+    await seedDrive(producer, files: 3, folders: 1);
+    await producer.customStatement(
+      'DELETE FROM file_revisions WHERE fileId = ?',
+      ['file-1'],
+    );
+
+    await roundTrip();
+
+    final rows = await consumer
+        .customSelect('SELECT count(*) AS c FROM file_entries '
+            "WHERE id = 'file-1'")
         .getSingle();
-    expect(child.read<int>('c'), 1);
+    expect(rows.read<int>('c'), 0);
   });
 
   test('a drive whose root folder has no entry row exports faithfully',

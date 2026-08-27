@@ -339,6 +339,39 @@ const artifactConflictTarget = <String, List<String>>{
   'licenses': ['fileId', 'driveId', 'dataTxId', 'licenseTxId'],
 };
 
+/// An extra condition on the rows a table may publish, beyond belonging to the
+/// drive.
+///
+/// **Nothing travels that no revision vouches for.** A `folder_entries` row
+/// with no `folder_revisions` row is not something the chain said — it is this
+/// client's own stand-in for a ghost folder, or `DriveDao`'s root-folder
+/// placeholder. Those rows are stamped `DateTime.now()`, and the merge resolves
+/// conflicts by which side is newer, so publishing one would make **this
+/// client's guess outrank every real row in every client that imported it**,
+/// for ever.
+///
+/// The cost is paid on the other side, deliberately: a ghost's *files* do have
+/// revisions and so do travel, leaving the payload naming a parent it does not
+/// carry. The importer closes that graph itself with `_ghostFolderStandIn`,
+/// where a fabricated row stays one client's guess instead of becoming
+/// everyone's.
+///
+/// `file_entries` has no path that fabricates a row today, so this filters
+/// nothing out of a healthy database. It is applied anyway, because the rule
+/// the export needs is "publish what the chain said", not "publish what no
+/// known bug wrote" — the next stand-in should be dropped by a filter that
+/// already exists rather than by one nobody remembered to add.
+const artifactChainOnlyPredicate = <String, String>{
+  'folder_entries': 'EXISTS (SELECT 1 FROM main.folder_revisions r '
+      'WHERE r.folderId = t.id AND r.driveId = t.driveId)',
+  'file_entries': 'EXISTS (SELECT 1 FROM main.file_revisions r '
+      'WHERE r.fileId = t.id AND r.driveId = t.driveId)',
+  // Through the file it is attached to: a licence on a file that was filtered
+  // out is a row about nothing.
+  'licenses': 'EXISTS (SELECT 1 FROM main.file_revisions r '
+      'WHERE r.fileId = t.fileId AND r.driveId = t.driveId)',
+};
+
 /// The column each table is filtered by when copying one drive out.
 const _driveColumn = <String, String>{
   'drives': 'id',

@@ -1100,6 +1100,11 @@ void main() {
       // run the filter. A payload that skipped it is offering a guess of its
       // own - possibly its *own* ghost, stamped `now` - and a guess does not
       // get to overrule this client's guess.
+      //
+      // Since the exporter now applies that filter, the offending payload has
+      // to be built on purpose: drop the revision on the producer so the row
+      // is genuinely unvouched, then put it back into the artifact by hand —
+      // which is exactly what a producer that skipped the filter would ship.
       await forgetFolderRevisions([nestedFolderId]);
 
       await attachDrive(db);
@@ -1115,8 +1120,16 @@ void main() {
             ),
           );
 
-      final artifact =
-          await sealArtifact(await exportedPayload(), blockEnd: 900);
+      final payload = editArtifact(await exportedPayload(), [
+        // The row the filter correctly withheld, put back.
+        'INSERT OR REPLACE INTO folder_entries '
+            '(id, driveId, name, parentFolderId, path, dateCreated, '
+            'lastUpdated, isGhost, isHidden) '
+            "VALUES ('$nestedFolderId', '$driveId', '$nestedFolderId', "
+            "'$rootFolderId', '', 1700000000, 1700000000, 1, 0)",
+      ]);
+
+      final artifact = await sealArtifact(payload, blockEnd: 900);
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,

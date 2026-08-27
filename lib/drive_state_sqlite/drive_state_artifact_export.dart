@@ -115,10 +115,14 @@ Future<DriveStateArtifact> exportDriveState(
       for (final entry in artifactProjection.entries) {
         final table = entry.key;
         final columns = entry.value.join(', ');
+        // Aliased `t` so the chain-only predicate can name its own row.
+        final qualified = entry.value.map((c) => 't.$c').join(', ');
+        final chainOnly = artifactChainOnlyPredicate[table];
         await db.customStatement(
           'INSERT INTO artifact.$table ($columns) '
-          'SELECT $columns FROM main.$table '
-          'WHERE ${driveFilterColumn(table)} = ?',
+          'SELECT $qualified FROM main.$table t '
+          'WHERE t.${driveFilterColumn(table)} = ?'
+          '${chainOnly == null ? '' : ' AND $chainOnly'}',
           [driveId],
         );
       }
