@@ -92,7 +92,7 @@ void main() {
     required int blockEnd,
     int blockStart = 0,
     int? entityCount,
-    String? stateVersion = '1.0',
+    String? stateVersion,
     String? cipher,
     SecretKey? key,
 
@@ -156,7 +156,7 @@ void main() {
           EntityTag.entityType: EntityTypeTag.driveState,
           EntityTag.driveId: taggedDriveId,
           EntityTag.driveStateId: 'drive-state-id',
-          if (stateVersion != null) EntityTag.stateVersion: stateVersion,
+          EntityTag.stateVersion: stateVersion ?? currentVersionString,
           EntityTag.contentType: ContentType.octetStream,
           EntityTag.blockStart: '$blockStart',
           EntityTag.blockEnd: '$blockEnd',
@@ -302,7 +302,8 @@ void main() {
         expectedOwnerAddress: ownerAddress,
       );
 
-      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(result.outcome, DriveStateOutcome.unknownVersion,
+          reason: result.detail);
       expect(result.stats!.foldersWritten, 3);
       expect(result.stats!.filesWritten, 3);
       expect(result.stats!.rowsKeptLocallyNewer, 0);
@@ -1783,11 +1784,11 @@ void main() {
     test('a State-Version tagged with a newer major', () async {
       await attachDrive(db);
       final payload = await exportedPayload();
-      payload['version'] = '2.0';
+      payload['version'] = '9.0';
       final artifact = await sealArtifact(
         payload,
         blockEnd: 900,
-        stateVersion: '2.0',
+        stateVersion: '9.0',
       );
 
       final result = await importer.import(
@@ -1808,11 +1809,11 @@ void main() {
       // if it does not.
       await attachDrive(db);
       final payload = await exportedPayload();
-      payload['version'] = '0.9';
+      payload['version'] = '0.0';
       final artifact = await sealArtifact(
         payload,
         blockEnd: 900,
-        stateVersion: '0.9',
+        stateVersion: '0.0',
       );
 
       final result = await importer.import(
@@ -1903,7 +1904,14 @@ void main() {
       }
     });
 
-    test('a minor this build has never heard of imports normally', () async {
+    // While the format version is in the 0.x range the additive-minor rule is
+    // deliberately suspended — an unknown minor is a different format, not an
+    // extension of this one. The above-1.0 behaviour it used to assert is
+    // covered by `readableBy` in drive_state_format_version_test, which can
+    // test both regimes because it names the reader instead of reading the
+    // constant.
+    test('a minor this build has never heard of is refused while at 0.x',
+        () async {
       // The whole reason for two components. A minor moves for an addition,
       // and additions are exactly what unknown sections and fields are ignored
       // for - so a higher minor of this build's major must land, not be turned
@@ -2100,7 +2108,7 @@ void main() {
       // the owner signed.
       await attachDrive(db);
       final payload = await exportedPayload();
-      payload['version'] = '2.0';
+      payload['version'] = '9.0';
 
       final artifact = await sealArtifact(payload, blockEnd: 900);
       final result = await importer.import(
@@ -2118,7 +2126,7 @@ void main() {
         () async {
       await attachDrive(db);
       final payload = await exportedPayload();
-      payload['version'] = '0.9';
+      payload['version'] = '0.0';
 
       final artifact = await sealArtifact(payload, blockEnd: 900);
       final result = await importer.import(

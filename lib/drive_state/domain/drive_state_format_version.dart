@@ -130,8 +130,8 @@ class DriveStateFormatVersion extends Equatable
     return parsed;
   }
 
-  /// Whether this build may read a payload written under this version: same
-  /// major, any minor.
+  /// Whether this build may read a payload written under this version.
+  ///
   /// Above `1.0` the major is the compatibility unit: a minor is additive and
   /// optional, so any minor within this build's major is readable.
   ///
@@ -142,13 +142,39 @@ class DriveStateFormatVersion extends Equatable
   /// one staging build being read by a later build that changed the format
   /// underneath it. It is the stricter rule, and strictness is cheap here:
   /// refusing costs one ordinary sync.
-  bool get isReadableByThisBuild => current.major == 0
-      ? major == 0 && minor == current.minor
-      : major == current.major;
+  bool get isReadableByThisBuild => readableBy(current);
+
+  /// The rule itself, against an arbitrary reader.
+  ///
+  /// Takes the reader as a parameter rather than reading [current] so that
+  /// both regimes can be tested. With [current] at `0.1`, a test of the
+  /// above-1.0 behaviour would otherwise be untestable — and an untested
+  /// branch of a compatibility rule is one that stops being true the moment
+  /// the constant moves.
+  bool readableBy(DriveStateFormatVersion reader) => reader.major == 0
+      ? major == 0 && minor == reader.minor
+      : major == reader.major;
+
+  /// Newer than [reader], comparing on whichever component is load-bearing so
+  /// this stays the exact complement of [readableBy].
+  bool newerThan(DriveStateFormatVersion reader) => reader.major == 0
+      ? (major > 0 || (major == 0 && minor > reader.minor))
+      : major > reader.major;
+
+  /// Older than [reader], on the same terms.
+  bool olderThan(DriveStateFormatVersion reader) => reader.major == 0
+      ? (major == 0 && minor < reader.minor)
+      : major < reader.major;
 
   /// The artifact was written by a client newer than this one, under a format
   /// that changed something this build would misread.
-  bool get isNewerThanThisBuild => major > current.major;
+  ///
+  /// Compares on whichever component is load-bearing, so this stays the exact
+  /// complement of [isReadableByThisBuild]. In the `0.x` range that is the
+  /// minor: `0.9` is newer than `0.1`, and saying "same major, therefore
+  /// neither newer nor older" would leave an unreadable artifact with no arm
+  /// to report — which is the failure §6.1 is about, met from the other end.
+  bool get isNewerThanThisBuild => newerThan(current);
 
   /// The artifact was written under a format this build has moved past.
   ///
@@ -161,7 +187,7 @@ class DriveStateFormatVersion extends Equatable
   /// looking for a truncated payload instead of an obsolete one; one that
   /// happens to be structurally compatible is **accepted**, under a format
   /// nobody agreed to.
-  bool get isOlderThanThisBuild => major < current.major;
+  bool get isOlderThanThisBuild => olderThan(current);
 
   @override
   int compareTo(DriveStateFormatVersion other) => major != other.major

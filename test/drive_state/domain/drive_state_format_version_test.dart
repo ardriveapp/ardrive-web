@@ -2,11 +2,16 @@ import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:test/test.dart';
 
 void main() {
+  _bothRegimes();
   group('DriveStateFormatVersion', () {
-    test('this build writes 1.0', () {
-      expect(DriveStateFormatVersion.current.major, 1);
-      expect(DriveStateFormatVersion.current.minor, 0);
-      expect(DriveStateFormatVersion.current.toString(), '1.0');
+    test('this build writes 0.1 — an experiment, not a commitment', () {
+      // 0.x is deliberate. Nothing published under a zero major is a format
+      // anyone has committed to, and a later reader refuses it by the ordinary
+      // rule rather than by a special case. The bump to 1.0 is the moment this
+      // stops being an experiment and should be its own decision.
+      expect(DriveStateFormatVersion.current.major, 0);
+      expect(DriveStateFormatVersion.current.minor, 1);
+      expect(DriveStateFormatVersion.current.toString(), '0.1');
     });
 
     group('tryParse', () {
@@ -174,19 +179,24 @@ void main() {
     });
 
     group('the reader rule', () {
-      test("accepts every minor of this build's major", () {
-        // Only upwards is expressible while `current` is x.0, but the rule is
-        // symmetric: the comparison is on the major and the minor is not
-        // consulted at all.
-        for (final minor in [0, 1, 9, 10, 999999999]) {
+      test('accepts only its exact version while the major is 0', () {
+        // The additive-minor rule is suspended in the 0.x range: an unknown
+        // minor is a different format, not an extension of this one. The
+        // above-1.0 behaviour is covered by `readableBy` below, which names
+        // its reader and so can test both regimes.
+        for (final minor in [0, 2, 9, 10, 999999999]) {
           final version = DriveStateFormatVersion(
             DriveStateFormatVersion.current.major,
             minor,
           );
 
-          expect(version.isReadableByThisBuild, isTrue);
-          expect(version.isNewerThanThisBuild, isFalse);
-          expect(version.isOlderThanThisBuild, isFalse);
+          expect(version.isReadableByThisBuild, isFalse);
+          // And each one still reports a direction, so there is always an arm
+          // to explain the refusal with.
+          expect(
+            version.isNewerThanThisBuild || version.isOlderThanThisBuild,
+            isTrue,
+          );
         }
       });
 
@@ -198,11 +208,14 @@ void main() {
         expect(version.isOlderThanThisBuild, isFalse);
       });
 
-      test('refuses a lower major, and says which it was', () {
+      test('refuses an older version, and says which it was', () {
         // Two separate questions rather than one "unreadable" flag, because
         // the two directions need two different sentences: one says this
         // client is behind, the other says the artifact is.
-        const version = DriveStateFormatVersion(0, 9);
+        //
+        // While `current` is 0.1 the only older version expressible is 0.0 —
+        // the comparison is on the minor here, which is what makes 0.x strict.
+        const version = DriveStateFormatVersion(0, 0);
 
         expect(version.isReadableByThisBuild, isFalse);
         expect(version.isOlderThanThisBuild, isTrue);
@@ -217,6 +230,57 @@ void main() {
 
           expect(version.isNewerThanThisBuild, isTrue);
           expect(version.isReadableByThisBuild, isFalse);
+        }
+      });
+    });
+  });
+}
+
+void _bothRegimes() {
+  // `readableBy` names its reader instead of reading the constant, so both
+  // sides of the rule can be tested no matter where `current` happens to sit.
+  group('the compatibility rule, in both regimes', () {
+    const v = DriveStateFormatVersion.new;
+
+    group('above 1.0 the major is the unit — a minor is additive', () {
+      const reader = DriveStateFormatVersion(1, 2);
+
+      test('any minor within the reader major is readable', () {
+        expect(v(1, 0).readableBy(reader), isTrue);
+        expect(v(1, 2).readableBy(reader), isTrue);
+        expect(v(1, 7).readableBy(reader), isTrue,
+            reason: 'a minor this reader has never heard of is additive');
+      });
+
+      test('another major is not, and says which direction', () {
+        expect(v(2, 0).readableBy(reader), isFalse);
+        expect(v(2, 0).newerThan(reader), isTrue);
+        expect(v(0, 9).readableBy(reader), isFalse);
+        expect(v(0, 9).olderThan(reader), isTrue);
+      });
+    });
+
+    group('in 0.x the minor is the unit — nothing is additive yet', () {
+      const reader = DriveStateFormatVersion(0, 1);
+
+      test('only the exact version is readable', () {
+        expect(v(0, 1).readableBy(reader), isTrue);
+        expect(v(0, 2).readableBy(reader), isFalse,
+            reason: '0.x is unsettled: 0.2 may mean what 0.1 would misread');
+        expect(v(0, 0).readableBy(reader), isFalse);
+      });
+
+      test('every unreadable version still has a direction to report', () {
+        // The failure §6.1 is about, from the other end: a version that is
+        // neither readable nor newer nor older has no arm to report, and the
+        // reader falls back to complaining about the payload's shape.
+        for (final other in [v(0, 0), v(0, 2), v(0, 9), v(1, 0), v(9, 9)]) {
+          if (other.readableBy(reader)) continue;
+          expect(
+            other.newerThan(reader) || other.olderThan(reader),
+            isTrue,
+            reason: '$other is unreadable but reports neither direction',
+          );
         }
       });
     });
