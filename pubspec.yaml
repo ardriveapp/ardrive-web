@@ -186,6 +186,10 @@ dependency_overrides:
     path: ./packages/ardrive_ui
 
 dev_dependencies:
+  # Used only by test/drive_state_prototype (see
+  # docs/drive-state/ATTACH_VFS_PROTOTYPE.md). Pinned to whatever drift
+  # already resolves; the prototype fetches the matching sqlite3.wasm.
+  sqlite3: ^2.4.2
   integration_test:
     sdk: flutter
   flutter_test:
