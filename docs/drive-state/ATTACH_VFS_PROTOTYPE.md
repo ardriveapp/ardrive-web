@@ -148,3 +148,49 @@ None of it imports application code, and none of it is wired into the app.
 `flutter test` picks up the VM half; the browser half needs the script, because
 `flutter test --platform chrome` serves only the compiled test bundle and not
 the package's own files.
+
+---
+
+## Which storage tier does this origin get?
+
+D12's bounded-memory claim depends on OPFS. Drift picks a tier at runtime, and
+only two of the five give bounded memory:
+
+| tier | requires | bounded memory |
+|---|---|---|
+| `opfsShared` | a shared worker that can spawn a nested dedicated worker | **yes** |
+| `opfsLocks` | cross-origin isolation (`SharedArrayBuffer`) | **yes** |
+| `sharedIndexedDb` | shared workers | no — whole database in RAM |
+| `unsafeIndexedDb` | dedicated workers | no — whole database in RAM |
+| `inMemory` | — | no |
+
+`IndexedDbFileSystem` wraps an `InMemoryFileSystem` and reads the file fully
+into it (`sqlite3-2.4.2/lib/src/wasm/vfs/indexed_db.dart:411,419,524`), so the
+IndexedDB tiers persist asynchronously but do not page.
+
+`WasmDatabase.probe()` answers this, but it is Dart inside `main.dart.js` and
+cannot be called from a console. `tool/drift_storage_probe.js` reproduces the
+same decision in plain JavaScript — the same checks, in the same worker scopes
+— so it can be pasted into DevTools on any origin:
+
+```
+copy(await fetch('...').then(r => r.text()))   // or just paste the file
+```
+
+`storage_probe_smoke_test.dart` runs it in Chrome and asserts it returns one of
+the five tiers, so the snippet is known to work rather than assumed to.
+
+**This matters because the app deploys to two origins.**
+`.github/workflows/production.yaml` deploys to Firebase Hosting *and*, via
+`ar-io/ar-io-deploy`, to Arweave. Response headers are controllable on the
+first and not on the second, and `opfsLocks` needs `Cross-Origin-Opener-Policy`
+and `Cross-Origin-Embedder-Policy`. Run the probe on both before costing the
+migration.
+
+One caution about enabling those headers on the origin where you can:
+`COEP: require-corp` blocks cross-origin subresources that lack a
+`Cross-Origin-Resource-Policy` header. Gateways send
+`access-control-allow-origin: *` but no CORP, so CORS-mode `fetch` still
+succeeds while a plain `<img src>` — which is what Flutter's `Image.network`
+uses on web — would be blocked. `COEP: credentialless` avoids that on Chrome;
+Safari needs checking.
