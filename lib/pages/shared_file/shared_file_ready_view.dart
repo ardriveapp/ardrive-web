@@ -94,15 +94,12 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// would push the preview off the top of the screen.
   static const double _infoPanelHeightWide = _previewPaneHeight;
 
-
-
   /// The largest the file's own thumbnail is drawn in the preview pane.
   ///
   /// ArDrive generates thumbnails at a 100px minimum edge, so this is roughly
   /// twice the source and about as far as one can be enlarged before it starts
   /// to look like a mistake.
   static const double _panePictureSize = 200;
-
 
   /// Whether a download is in flight.
   ///
@@ -116,6 +113,32 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
 
   /// Whether the resolver is fetching the revision the recipient asked for.
   bool _isChangingRevision = false;
+
+  /// Whether there is enough in hand to show the file itself.
+  ///
+  /// Deliberately not [SharedFileLoadSuccess.detailsAreResolved]. That flag
+  /// means "the file's own metadata came back", and gating the preview on it
+  /// made a preview that needs nothing from the chain wait for a round trip
+  /// that can hang - leaving the pane on "Loading file details..." with no
+  /// preview and no way out.
+  ///
+  /// The preview needs three things, and a v2 link carries all of them: the
+  /// data transaction, something to decide the type from, and - for a private
+  /// file - the key. It does *not* need the drive id, despite taking one:
+  /// [FsEntryPreviewCubit] only passes that to `_getFileKey`, which returns the
+  /// key it was handed before ever looking at it. The drive lookups that do use
+  /// it are on the logged-in path, which a recipient never takes.
+  bool _canPreview(FileRevision revision) {
+    if (revision.dataTxId.isEmpty) {
+      return false;
+    }
+
+    final hasType = (revision.dataContentType?.isNotEmpty ?? false) ||
+        widget.state.payload?.contentType?.isNotEmpty == true ||
+        revision.name.isNotEmpty;
+
+    return hasType;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +170,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         // resolved metadata knows about. There is no resting box on a phone -
         // an empty 360px band above the fold would cost more than it says -
         // so the preview simply appears once there is something to show.
-        if (widget.state.detailsAreResolved) ...[
+        if (_canPreview(revision)) ...[
           const SizedBox(height: 16),
           _buildPreview(context, revision, isInline: true),
         ],
@@ -271,12 +294,10 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
 
     return SharedFileIdentity(
       name: revision.name.isEmpty ? null : revision.name,
-      size: state.detailsAreResolved || revision.size > 0
-          ? revision.size
-          : null,
+      size:
+          state.detailsAreResolved || revision.size > 0 ? revision.size : null,
       contentType: revision.dataContentType ?? payload?.contentType,
-      thumbnailTxId:
-          showThumbnail ? _thumbnailTxId(state, revision) : null,
+      thumbnailTxId: showThumbnail ? _thumbnailTxId(state, revision) : null,
       // A private file's thumbnail is encrypted under the file key, so the
       // recipient's own access key is what renders it.
       fileKey: state.fileKey,
@@ -399,7 +420,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       child: Center(
         // The preview reads the file through its drive, which only the
         // resolved metadata knows about.
-        child: widget.state.detailsAreResolved
+        child: _canPreview(revision)
             ? _buildPreview(context, revision, isInline: false)
             : _buildPaneAtRest(context, revision),
       ),
@@ -568,6 +589,9 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         fileKey: widget.state.fileKey,
         cipher: linkDescribesTarget ? payload.cipher : null,
         cipherIv: linkDescribesTarget ? payload.cipherIv : null,
+        // Until the file's own metadata has been read, "public" is only the
+        // link's word for it.
+        publicIsUnconfirmed: !widget.state.detailsAreResolved,
       );
     } finally {
       if (mounted) {
@@ -639,50 +663,72 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         payload.hasCipherDetails &&
         payload.dataTxId == revision.dataTxId;
 
+    // Deliberately *not* `!detailsAreResolved`, which is true for every link at
+    // first paint and would send a query on behalf of every public file this
+    // page ever shows. The metadata read that decides this is already in
+    // flight; only its failure means anything, because a public file's metadata
+    // always parses. The download makes the stricter test - it is the one that
+    // would put ciphertext on disk under the file's own name.
+    final publicIsUnconfirmed = widget.state.detailsResolutionFailed;
+
     return AnimatedSwitcher(
       // Short, and a fade rather than a slide: the pane is not moving, its
       // contents are being replaced. Long enough not to read as a flicker,
       // short enough that picking a version still feels immediate.
       duration: const Duration(milliseconds: 180),
-      child: BlocProvider<FsEntryPreviewCubit>(
-        // Keyed on the bytes being previewed.
-        //
-        // Without this the provider builds its cubit once and keeps it, so
-        // moving the target left the preview showing the revision the page
-        // opened on while Download fetched a different one - two answers to
-        // "what am I looking at", and the quieter one was wrong. That was
-        // already reachable through "Get latest" before the version list
-        // existed; the list only made it easy to hit.
-        key: ValueKey(revision.dataTxId),
-        create: (context) => FsEntryPreviewCubit(
-          crypto: ArDriveCrypto(),
-          isSharedFile: true,
-          driveId: revision.driveId,
-          fileKey: widget.state.fileKey,
-          cipher: linkDescribesTarget ? payload.cipher : null,
-          cipherIv: linkDescribesTarget ? payload.cipherIv : null,
-          maybeSelectedItem: item,
-          driveDao: context.read<DriveDao>(),
-          profileCubit: context.read<ProfileCubit>(),
-          arweave: context.read<ArweaveService>(),
-          configService: context.read<ConfigService>(),
-        ),
-        child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
-          builder: (context, previewState) {
-            final preview = _buildPreviewBody(context, previewState, item);
+      // What the switcher animates between, and what decides whether the cubit
+      // below is rebuilt from scratch.
+      //
+      // The doubt belongs here rather than on the provider because it arrives
+      // *late*: it starts false and only ever turns true, after the metadata
+      // read has come back empty. By then the preview on screen was built on
+      // the link's word alone and is very likely painting ciphertext, so
+      // rebuilding it to go and check is the point - and the bytes it
+      // re-fetches were the wrong bytes anyway. A public file resolves, so this
+      // never changes and one cubit serves the life of the page.
+      child: KeyedSubtree(
+        key: ValueKey('${revision.dataTxId}|$publicIsUnconfirmed'),
+        child: BlocProvider<FsEntryPreviewCubit>(
+          // Keyed on the bytes being previewed.
+          //
+          // Without this the provider builds its cubit once and keeps it, so
+          // moving the target left the preview showing the revision the page
+          // opened on while Download fetched a different one - two answers to
+          // "what am I looking at", and the quieter one was wrong. That was
+          // already reachable through "Get latest" before the version list
+          // existed; the list only made it easy to hit.
+          key: ValueKey(revision.dataTxId),
+          create: (context) => FsEntryPreviewCubit(
+            crypto: ArDriveCrypto(),
+            isSharedFile: true,
+            driveId: revision.driveId,
+            fileKey: widget.state.fileKey,
+            cipher: linkDescribesTarget ? payload.cipher : null,
+            cipherIv: linkDescribesTarget ? payload.cipherIv : null,
+            publicIsUnconfirmed: publicIsUnconfirmed,
+            maybeSelectedItem: item,
+            driveDao: context.read<DriveDao>(),
+            profileCubit: context.read<ProfileCubit>(),
+            arweave: context.read<ArweaveService>(),
+            configService: context.read<ConfigService>(),
+          ),
+          child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
+            builder: (context, previewState) {
+              final preview = _buildPreviewBody(context, previewState, item);
 
-            if (!isInline) {
-              return preview;
-            }
+              if (!isInline) {
+                return preview;
+              }
 
-            // On a phone the preview is part of a scrolling column, so a state
-            // whose content is one sentence gets the height of one sentence. A
-            // fixed 360 band around it left dead space above and below it and
-            // pushed the drawers under it off the screen.
-            return _previewFillsItsBox(previewState)
-                ? SizedBox(height: _inlinePreviewHeight, child: preview)
-                : preview;
-          },
+              // On a phone the preview is part of a scrolling column, so a state
+              // whose content is one sentence gets the height of one sentence. A
+              // fixed 360 band around it left dead space above and below it and
+              // pushed the drawers under it off the screen.
+              return _previewFillsItsBox(previewState)
+                  ? SizedBox(height: _inlinePreviewHeight, child: preview)
+                  : preview;
+            },
+          ),
         ),
       ),
     );
@@ -757,7 +803,8 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     return _buildPanePlaceholder(
       context,
       revision: revision,
-      contentType: revision.dataContentType ?? widget.state.payload?.contentType,
+      contentType:
+          revision.dataContentType ?? widget.state.payload?.contentType,
       thumbnailTxId: _thumbnailTxId(widget.state, revision),
       message: message,
     );
@@ -1335,8 +1382,7 @@ class _VersionRadio extends StatelessWidget {
           shape: BoxShape.circle,
           color: isSelected ? colors.themeFgDefault : null,
           border: Border.all(
-            color:
-                isSelected ? colors.themeFgDefault : colorTokens.strokeMid,
+            color: isSelected ? colors.themeFgDefault : colorTokens.strokeMid,
             width: isSelected ? 4.5 : 1.5,
           ),
         ),

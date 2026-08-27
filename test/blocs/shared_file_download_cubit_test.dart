@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ardrive/blocs/file_download/file_download_cubit.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
@@ -158,12 +159,31 @@ class _RecordingDownloader implements ArDriveDownloader {
   Future<void> dispose() => _resumes.close();
 }
 
+/// A data transaction as GraphQL hands it over, carrying whatever tags a test
+/// gives it.
+///
+/// `getTag` is an extension method over [TransactionCommonMixin.tags], so a
+/// mock of `getTag` is never consulted - the extension reads `tags` directly.
+class _FakeDataTransaction extends Fake implements TransactionCommonMixin {
+  _FakeDataTransaction({Map<String, String> tags = const {}}) : _tags = tags;
+
+  final Map<String, String> _tags;
+
+  @override
+  List<TransactionCommonMixin$Tag> get tags => _tags.entries
+      .map((entry) => TransactionCommonMixin$Tag()
+        ..name = entry.key
+        ..value = entry.value)
+      .toList();
+}
+
 /// The recipient's download.
 void main() {
   SharedFileDownloadCubit cubitFor(
     _RecordingDownloader downloader, {
     ArweaveService? arweave,
     SecretKey? fileKey,
+    bool publicIsUnconfirmed = false,
     String? cipher,
     String? cipherIv,
     DownloadPolicy policy = const _UnavailablePolicy(),
@@ -176,6 +196,7 @@ void main() {
       fileKey: fileKey,
       cipher: cipher,
       cipherIv: cipherIv,
+      publicIsUnconfirmed: publicIsUnconfirmed,
       downloadPolicy: policy,
     );
   }
@@ -201,6 +222,119 @@ void main() {
     await cubit.stream.firstWhere((s) => s is! FileDownloadStarting);
 
     verifyNever(() => arweave.getTransactionDetails(any()));
+  });
+
+  /// Collects everything the cubit says, from before it says anything.
+  Future<List<FileDownloadState>> observe(SharedFileDownloadCubit cubit) async {
+    final seen = <FileDownloadState>[];
+    final sub = cubit.stream.listen(seen.add);
+    await pumpEventQueue();
+    await sub.cancel();
+
+    return seen;
+  }
+
+  test('an encrypted file with no key is refused, not saved as ciphertext',
+      () async {
+    // The failure this exists to stop: `file_share_cubit` resolves a private
+    // file's cipher on a bounded, unawaited lookup and treats the link as
+    // complete when it fails - which it does on any connection the gateway
+    // rate limits. The recipient then reads a private file as public, nothing
+    // decrypts, and the ciphertext is written to disk under the file's own
+    // name. No step errors; the user gets a file their OS cannot open.
+    final arweave = MockArweaveService();
+    final downloader = _RecordingDownloader();
+
+    when(() => arweave.getTransactionDetails(any())).thenAnswer(
+      (_) async => _FakeDataTransaction(
+        tags: const {EntityTag.cipher: 'AES256-GCM'},
+      ),
+    );
+
+    // No key: exactly what a link that failed to declare its cipher produces.
+    final seen = await observe(
+      cubitFor(downloader, arweave: arweave, publicIsUnconfirmed: true),
+    );
+
+    final failures = seen.whereType<FileDownloadFailure>();
+    expect(failures, isNotEmpty);
+    expect(
+      failures.last.reason,
+      FileDownloadFailureReason.encryptedWithoutKey,
+    );
+
+    // And nothing was handed to the downloader to write.
+    expect(downloader.downloadFileCalls, 0);
+  });
+
+  test('a public file is downloaded, not refused', () async {
+    // The same check must not turn every public shared download into a
+    // failure: a transaction with no `Cipher` tag is what public looks like.
+    final arweave = MockArweaveService();
+    final downloader = _RecordingDownloader();
+
+    when(() => arweave.getTransactionDetails(any()))
+        .thenAnswer((_) async => _FakeDataTransaction());
+
+    final seen = await observe(
+      cubitFor(downloader, arweave: arweave, publicIsUnconfirmed: true),
+    );
+
+    expect(seen.whereType<FileDownloadFailure>(), isEmpty);
+    expect(downloader.downloadFileCalls, 1);
+  });
+
+  test('a check that cannot be made does not cost the download', () async {
+    // A gateway that will not answer is not evidence of encryption, and the
+    // overwhelming majority of these downloads are what they say they are.
+    final arweave = MockArweaveService();
+    final downloader = _RecordingDownloader();
+
+    when(() => arweave.getTransactionDetails(any()))
+        .thenThrow(Exception('gateway is unreachable'));
+
+    final seen = await observe(
+      cubitFor(downloader, arweave: arweave, publicIsUnconfirmed: true),
+    );
+
+    expect(seen.whereType<FileDownloadFailure>(), isEmpty);
+    expect(downloader.downloadFileCalls, 1);
+  });
+
+  test('cancelling during the encryption check stops the download', () async {
+    // The check sits between the recipient pressing Download and anything
+    // happening, so it is the window most likely to be cancelled in. Nothing
+    // may outlive that: neither a download started after the fact, nor a
+    // failure state painted over the cancellation.
+    final arweave = MockArweaveService();
+    final downloader = _RecordingDownloader();
+    final lookup = Completer<TransactionCommonMixin?>();
+
+    when(() => arweave.getTransactionDetails(any()))
+        .thenAnswer((_) => lookup.future);
+
+    final cubit = cubitFor(
+      downloader,
+      arweave: arweave,
+      publicIsUnconfirmed: true,
+    );
+
+    // Wait for the download to be sitting in the check.
+    await cubit.stream.firstWhere((s) => s is FileDownloadInProgress);
+
+    cubit.abortDownload();
+
+    // The gateway answers late, and says the worst thing it could say.
+    lookup.complete(
+      _FakeDataTransaction(tags: const {EntityTag.cipher: 'AES256-GCM'}),
+    );
+    await pumpEventQueue();
+
+    expect(cubit.state, isA<FileDownloadAborted>());
+    expect(downloader.downloadFileCalls, 0);
+
+    await cubit.close();
+    await downloader.dispose();
   });
 
   test('a size check that throws costs the check, not the download', () async {
@@ -293,7 +427,8 @@ void main() {
       await downloader.dispose();
     });
 
-    test('a verdict that never arrives does not trap the download in '
+    test(
+        'a verdict that never arrives does not trap the download in '
         '"checking"', () {
       // [ArDriveDownloader.integrity] is documented to always complete, and
       // every path in the downloader settles it. The dialog is a
@@ -436,7 +571,8 @@ void main() {
     await downloader.dispose();
   });
 
-  test('a reconnect before the first progress tick is not announced over a '
+  test(
+      'a reconnect before the first progress tick is not announced over a '
       'spinner', () async {
     // [FileDownloadInProgress] is an indeterminate spinner, which never looks
     // frozen. Only a bar that has stopped moving needs explaining.

@@ -105,6 +105,7 @@ Future<void> promptToDownloadSharedFile({
   required ARFSFileEntity revision,
   String? cipher,
   String? cipherIv,
+  bool publicIsUnconfirmed = false,
 }) {
   final cubit = SharedFileDownloadCubit(
     arDriveDownloader: ArDriveDownloader(
@@ -117,6 +118,7 @@ Future<void> promptToDownloadSharedFile({
     fileKey: fileKey,
     cipher: cipher,
     cipherIv: cipherIv,
+    publicIsUnconfirmed: publicIsUnconfirmed,
     arweave: context.read<ArweaveService>(),
   );
   return showArDriveDialog(
@@ -218,6 +220,21 @@ class FileDownloadDialog extends StatelessWidget {
                   description: appLocalizationsOf(context)
                       .downloadMustRestartDescription,
                   retryTitle: appLocalizationsOf(context).downloadStartOver,
+                );
+              case FileDownloadFailureReason.encryptedWithoutKey:
+                // Not retryable, and deliberately not phrased as a failure of
+                // the file: the bytes are fine and fetching them again cannot
+                // supply a key the recipient never had.
+                return _modalWrapper(
+                  title: appLocalizationsOf(context).downloadNeedsKey,
+                  description:
+                      appLocalizationsOf(context).downloadNeedsKeyDescription,
+                  actions: [
+                    ModalAction(
+                      action: () => Navigator.pop(context),
+                      title: appLocalizationsOf(context).ok,
+                    ),
+                  ],
                 );
               case FileDownloadFailureReason.fileAboveLimit:
                 return _fileDownloadFailedDueToFileAbovePrivateLimit(context);

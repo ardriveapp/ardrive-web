@@ -568,7 +568,8 @@ void main() {
       expectIntactExcept(payload, SharedFileLinkParams.contentType);
     });
 
-    test('a content type code from a table this build has not grown is '
+    test(
+        'a content type code from a table this build has not grown is '
         'dropped', () {
       final payload = decodePacked(contentTypeField: const [250]);
 
@@ -636,8 +637,7 @@ void main() {
       expect(payload.detailsAreHidden, isTrue);
     });
 
-    test('a record of the wrong width is dropped, and the next one is not',
-        () {
+    test('a record of the wrong width is dropped, and the next one is not', () {
       final payload = decodePacked(
         records: [
           1, 4, 1, 2, 3, 4, //
@@ -1307,6 +1307,95 @@ void main() {
 
       expect(resolved.raw, fileKey);
       expect(resolved.source, SharedFileLinkKeySource.fragment);
+    });
+
+    test('a key in the query of a path route is refused outright', () {
+      // The one combination that leaks a file key: unlike the hash route, a
+      // path route's query is sent to the host, into its access log and out
+      // again in the `Referer` of anything the page loads.
+      //
+      // Thrown rather than asserted, and tested as a throw, because asserts are
+      // stripped from release builds - which is the only build where the leak
+      // would be real.
+      expect(
+        () => buildSharedFileLinkLocation(
+          fileId: fileId,
+          rawFileKey: fileKey,
+          route: SharedFileLinkRoute.share,
+          keyPlacement: SharedFileLinkKeyPlacement.hashQuery,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
+    test('a keyless path route is built without complaint', () {
+      // The guard is about the key, not the route: nothing to leak, nothing to
+      // refuse.
+      expect(
+        buildSharedFileLinkLocation(
+          fileId: fileId,
+          route: SharedFileLinkRoute.share,
+          keyPlacement: SharedFileLinkKeyPlacement.hashQuery,
+        ),
+        '/share/$fileId',
+      );
+    });
+  });
+
+  group('the encoder writes only what the reader keeps', () {
+    /// What a link actually carries, after a full round trip.
+    SharedFileLinkPayload roundTrip(SharedFileLinkPayload payload) {
+      final location = buildSharedFileLinkLocation(
+        fileId: fileId,
+        payload: payload,
+      );
+
+      return SharedFileLinkPayload.tryParse(Uri.parse(location))!;
+    }
+
+    test('an over-long name is shortened rather than spent and discarded', () {
+      // The two ends disagreed: `_encodeText` truncates to 255 *bytes*, while
+      // `sanitizeName` drops anything over `maxNameLength` *characters* on the
+      // way back in. A 150 character name was written into the link and then
+      // thrown away by the reader - bytes spent for nothing, and no name shown
+      // until the metadata resolved.
+      final tooLong = 'a' * (SharedFileLinkPayload.maxNameLength + 30);
+
+      final carried = roundTrip(SharedFileLinkPayload(
+        dataTxId: dataTxId,
+        name: tooLong,
+      )).name;
+
+      expect(carried, isNotNull);
+      expect(carried!.length, SharedFileLinkPayload.maxNameLength);
+      expect(tooLong.startsWith(carried), isTrue);
+    });
+
+    test('a name the reader would reject is never written', () {
+      // A right-to-left override cannot be shortened into something
+      // acceptable, so it is dropped at the encoder instead of carried to a
+      // reader that will drop it.
+      final carried = roundTrip(const SharedFileLinkPayload(
+        dataTxId: dataTxId,
+        name: 'invoice\u202Egpj.exe',
+      )).name;
+
+      expect(carried, isNull);
+    });
+
+    test('a wide name is shortened on a rune boundary', () {
+      // Three bytes per character, so this is over the byte limit as well as
+      // the character one, and must not be cut through a rune.
+      final wide = '\u65e5' * (SharedFileLinkPayload.maxNameLength + 10);
+
+      final carried = roundTrip(SharedFileLinkPayload(
+        dataTxId: dataTxId,
+        name: wide,
+      )).name;
+
+      expect(carried, isNotNull);
+      expect(carried, wide.substring(0, carried!.length));
+      expect(carried.contains('\ufffd'), isFalse);
     });
   });
 
