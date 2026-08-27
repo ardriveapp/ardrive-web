@@ -151,6 +151,20 @@ class SharedFileLoadSuccess extends SharedFileState {
   /// background metadata resolution fills them in.
   final bool detailsAreResolved;
 
+  /// Whether the background metadata resolution has finished *without* being
+  /// able to read the file's own record.
+  ///
+  /// The difference from `!detailsAreResolved` is the whole point: that is true
+  /// for every link at first paint, while this is only ever true once the read
+  /// has actually been attempted and come back empty.
+  ///
+  /// It is the page's one signal that a link may be lying about privacy.
+  /// Metadata that parses is proof the file is public - encrypted metadata does
+  /// not parse - so a public file always resolves and this stays false. A
+  /// private file whose link lost its `c` cannot resolve, and that failure is
+  /// what tells the preview to go and ask the transaction what it really is.
+  final bool detailsResolutionFailed;
+
   /// The file's revision history, once [SharedFileCubit.loadActivity] has been
   /// asked for it. Empty until then.
   final List<FileRevision> activityRevisions;
@@ -184,6 +198,7 @@ class SharedFileLoadSuccess extends SharedFileState {
     this.newerVersionAvailable = false,
     this.isPinned = false,
     this.detailsAreResolved = true,
+    this.detailsResolutionFailed = false,
     this.activityRevisions = const [],
     this.activityStatus = SharedFileActivityStatus.notLoaded,
     this.linkRevision,
@@ -210,6 +225,7 @@ class SharedFileLoadSuccess extends SharedFileState {
     bool? newerVersionAvailable,
     bool? isPinned,
     bool? detailsAreResolved,
+    bool? detailsResolutionFailed,
     List<FileRevision>? activityRevisions,
     SharedFileActivityStatus? activityStatus,
     FileRevision? linkRevision,
@@ -226,6 +242,8 @@ class SharedFileLoadSuccess extends SharedFileState {
             newerVersionAvailable ?? this.newerVersionAvailable,
         isPinned: isPinned ?? this.isPinned,
         detailsAreResolved: detailsAreResolved ?? this.detailsAreResolved,
+        detailsResolutionFailed:
+            detailsResolutionFailed ?? this.detailsResolutionFailed,
         activityRevisions: activityRevisions ?? this.activityRevisions,
         activityStatus: activityStatus ?? this.activityStatus,
         linkRevision: linkRevision ?? this.linkRevision,
@@ -246,6 +264,7 @@ class SharedFileLoadSuccess extends SharedFileState {
         newerVersionAvailable,
         isPinned,
         detailsAreResolved,
+        detailsResolutionFailed,
         activityRevisions,
         activityStatus,
         linkRevision,

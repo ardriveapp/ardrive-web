@@ -473,6 +473,54 @@ void main() {
       expect(resolved.verification, LinkVerification.verified);
     });
 
+    test('a file whose metadata reads is never doubted', () async {
+      // The signal the preview spends a query on. A public file's metadata
+      // parses - encrypted metadata does not - so a resolution that succeeds
+      // must leave no doubt behind, or every public shared file pays for a
+      // check that has nothing to find.
+      when(() => arweave.getLatestFileEntityWithId(any(), any())).thenAnswer(
+        (_) async => fileEntity(createdAt: DateTime(2024, 1, 1)),
+      );
+
+      final cubit = createCubit(payload: v2Payload());
+
+      expect(
+        (cubit.state as SharedFileLoadSuccess).detailsResolutionFailed,
+        isFalse,
+        reason: 'nothing has been attempted yet, so nothing is in doubt',
+      );
+
+      await cubit.backgroundWork;
+
+      final state = cubit.state as SharedFileLoadSuccess;
+
+      expect(state.detailsAreResolved, isTrue);
+      expect(state.detailsResolutionFailed, isFalse);
+    });
+
+    test('a file whose metadata never reads is left in doubt', () async {
+      // What a private file shared without its `c` looks like from here: the
+      // metadata is encrypted, the recipient has no key, so it never parses and
+      // the read comes back empty. That failure - not "not resolved yet" - is
+      // what tells the preview to go and ask the transaction what it is.
+      when(() => arweave.getLatestFileEntityWithId(any(), any()))
+          .thenAnswer((_) async => null);
+
+      final cubit = createCubit(payload: v2Payload());
+
+      expect(
+        (cubit.state as SharedFileLoadSuccess).detailsResolutionFailed,
+        isFalse,
+      );
+
+      await cubit.backgroundWork;
+
+      final state = cubit.state as SharedFileLoadSuccess;
+
+      expect(state.detailsAreResolved, isFalse);
+      expect(state.detailsResolutionFailed, isTrue);
+    });
+
     test('never probes the first writer when the link names the owner',
         () async {
       when(() => arweave.getLatestFileEntityWithId(any(), any())).thenAnswer(

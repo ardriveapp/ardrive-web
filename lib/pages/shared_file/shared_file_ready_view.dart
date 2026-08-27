@@ -663,55 +663,72 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         payload.hasCipherDetails &&
         payload.dataTxId == revision.dataTxId;
 
+    // Deliberately *not* `!detailsAreResolved`, which is true for every link at
+    // first paint and would send a query on behalf of every public file this
+    // page ever shows. The metadata read that decides this is already in
+    // flight; only its failure means anything, because a public file's metadata
+    // always parses. The download makes the stricter test - it is the one that
+    // would put ciphertext on disk under the file's own name.
+    final publicIsUnconfirmed = widget.state.detailsResolutionFailed;
+
     return AnimatedSwitcher(
       // Short, and a fade rather than a slide: the pane is not moving, its
       // contents are being replaced. Long enough not to read as a flicker,
       // short enough that picking a version still feels immediate.
       duration: const Duration(milliseconds: 180),
-      child: BlocProvider<FsEntryPreviewCubit>(
-        // Keyed on the bytes being previewed.
-        //
-        // Without this the provider builds its cubit once and keeps it, so
-        // moving the target left the preview showing the revision the page
-        // opened on while Download fetched a different one - two answers to
-        // "what am I looking at", and the quieter one was wrong. That was
-        // already reachable through "Get latest" before the version list
-        // existed; the list only made it easy to hit.
-        key: ValueKey(revision.dataTxId),
-        create: (context) => FsEntryPreviewCubit(
-          crypto: ArDriveCrypto(),
-          isSharedFile: true,
-          driveId: revision.driveId,
-          fileKey: widget.state.fileKey,
-          cipher: linkDescribesTarget ? payload.cipher : null,
-          cipherIv: linkDescribesTarget ? payload.cipherIv : null,
-          // Same word, same doubt, as the download below: until the file's own
-          // metadata has been read, "public" is only the link's word - and a
-          // preview that paints ciphertext beside a download that refuses to
-          // save it would be two answers to one question.
-          publicIsUnconfirmed: !widget.state.detailsAreResolved,
-          maybeSelectedItem: item,
-          driveDao: context.read<DriveDao>(),
-          profileCubit: context.read<ProfileCubit>(),
-          arweave: context.read<ArweaveService>(),
-          configService: context.read<ConfigService>(),
-        ),
-        child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
-          builder: (context, previewState) {
-            final preview = _buildPreviewBody(context, previewState, item);
+      // What the switcher animates between, and what decides whether the cubit
+      // below is rebuilt from scratch.
+      //
+      // The doubt belongs here rather than on the provider because it arrives
+      // *late*: it starts false and only ever turns true, after the metadata
+      // read has come back empty. By then the preview on screen was built on
+      // the link's word alone and is very likely painting ciphertext, so
+      // rebuilding it to go and check is the point - and the bytes it
+      // re-fetches were the wrong bytes anyway. A public file resolves, so this
+      // never changes and one cubit serves the life of the page.
+      child: KeyedSubtree(
+        key: ValueKey('${revision.dataTxId}|$publicIsUnconfirmed'),
+        child: BlocProvider<FsEntryPreviewCubit>(
+          // Keyed on the bytes being previewed.
+          //
+          // Without this the provider builds its cubit once and keeps it, so
+          // moving the target left the preview showing the revision the page
+          // opened on while Download fetched a different one - two answers to
+          // "what am I looking at", and the quieter one was wrong. That was
+          // already reachable through "Get latest" before the version list
+          // existed; the list only made it easy to hit.
+          key: ValueKey(revision.dataTxId),
+          create: (context) => FsEntryPreviewCubit(
+            crypto: ArDriveCrypto(),
+            isSharedFile: true,
+            driveId: revision.driveId,
+            fileKey: widget.state.fileKey,
+            cipher: linkDescribesTarget ? payload.cipher : null,
+            cipherIv: linkDescribesTarget ? payload.cipherIv : null,
+            publicIsUnconfirmed: publicIsUnconfirmed,
+            maybeSelectedItem: item,
+            driveDao: context.read<DriveDao>(),
+            profileCubit: context.read<ProfileCubit>(),
+            arweave: context.read<ArweaveService>(),
+            configService: context.read<ConfigService>(),
+          ),
+          child: BlocBuilder<FsEntryPreviewCubit, FsEntryPreviewState>(
+            builder: (context, previewState) {
+              final preview = _buildPreviewBody(context, previewState, item);
 
-            if (!isInline) {
-              return preview;
-            }
+              if (!isInline) {
+                return preview;
+              }
 
-            // On a phone the preview is part of a scrolling column, so a state
-            // whose content is one sentence gets the height of one sentence. A
-            // fixed 360 band around it left dead space above and below it and
-            // pushed the drawers under it off the screen.
-            return _previewFillsItsBox(previewState)
-                ? SizedBox(height: _inlinePreviewHeight, child: preview)
-                : preview;
-          },
+              // On a phone the preview is part of a scrolling column, so a state
+              // whose content is one sentence gets the height of one sentence. A
+              // fixed 360 band around it left dead space above and below it and
+              // pushed the drawers under it off the screen.
+              return _previewFillsItsBox(previewState)
+                  ? SizedBox(height: _inlinePreviewHeight, child: preview)
+                  : preview;
+            },
+          ),
         ),
       ),
     );

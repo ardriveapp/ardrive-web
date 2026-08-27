@@ -46,7 +46,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   final SecretKey? _fileKey;
 
-  /// Whether "this file is public" is still only the share link's word.
+  /// Whether the page has reason to doubt that this file is public.
   ///
   /// The shared file page decides privacy from the link's `c`, and a link can
   /// arrive without it - see the matching flag on `SharedFileDownloadCubit`.
@@ -54,9 +54,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   /// file: mojibake in a document, a decoder error in an image or a PDF. So the
   /// transaction is asked what it is, and a `Cipher` tag retracts the preview.
   ///
-  /// The check runs *beside* the preview rather than in front of it. Waiting on
-  /// it would put a GraphQL round trip before the first paint of every public
-  /// shared file, which is the cost the link schema exists to avoid.
+  /// The caller is expected to pass *doubt*, not merely "not resolved yet".
+  /// `SharedFileLoadSuccess.detailsResolutionFailed` is the signal: a public
+  /// file's metadata always parses, so a resolution that finished empty is the
+  /// only thing here that means anything. Passing "not yet resolved" instead
+  /// would spend a query on behalf of every public file the page ever shows.
+  ///
+  /// The check still runs *beside* the preview rather than in front of it, so
+  /// even when it does fire nothing waits on it.
   final bool _publicIsUnconfirmed;
 
   /// Set once the transaction has said the bytes are encrypted.

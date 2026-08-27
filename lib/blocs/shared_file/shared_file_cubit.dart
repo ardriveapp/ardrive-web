@@ -678,7 +678,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       // single request goes out before it.
       _backgroundWork = Future(
         () => _runBackgroundWork(payload, fileKey, resolution: resolution),
-      );
+      ).whenComplete(() => _markResolutionSettled(resolution: resolution));
 
       unawaited(_backgroundWork);
       return;
@@ -821,11 +821,35 @@ class SharedFileCubit extends Cubit<SharedFileState> {
           ),
         ),
       ]),
-    );
+    ).whenComplete(() => _markResolutionSettled(resolution: resolution));
 
     unawaited(_backgroundWork);
 
     return true;
+  }
+
+  /// Records that the metadata resolution has finished without reading the
+  /// file's own record.
+  ///
+  /// Distinct from `!detailsAreResolved`, which is true for every link at first
+  /// paint and therefore says nothing. This only becomes true once the read has
+  /// been attempted and come back empty - and a public file's metadata always
+  /// reads, because encrypted metadata does not parse. So it is the one honest
+  /// signal that a link may have been wrong about privacy, and it is what the
+  /// preview waits for before spending a query asking the transaction what it
+  /// really is.
+  void _markResolutionSettled({required int resolution}) {
+    if (isClosed || _isStale(resolution)) {
+      return;
+    }
+
+    final current = state;
+
+    if (current is! SharedFileLoadSuccess || current.detailsAreResolved) {
+      return;
+    }
+
+    emit(current.copyWith(detailsResolutionFailed: true));
   }
 
   /// Today's resolution path, unchanged: privacy probe, then every revision of
