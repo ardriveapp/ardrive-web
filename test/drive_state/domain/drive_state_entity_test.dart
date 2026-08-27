@@ -13,6 +13,12 @@ import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:test/test.dart';
 
+/// The one version this build writes and reads. Tests follow the constant
+/// rather than restating it, so moving the format version does not mean
+/// editing every fixture — which is how a fixture ends up asserting a
+/// version the code no longer speaks.
+String get currentVersionString => DriveStateFormatVersion.current.toString();
+
 typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
 
@@ -61,7 +67,7 @@ void main() {
           EntityTag.entityType: EntityTypeTag.driveState,
           EntityTag.driveId: driveId,
           EntityTag.driveStateId: driveStateId,
-          EntityTag.stateVersion: '1.0',
+          EntityTag.stateVersion: currentVersionString,
           EntityTag.contentType: ContentType.octetStream,
           EntityTag.blockStart: '0',
           EntityTag.blockEnd: '1814228',

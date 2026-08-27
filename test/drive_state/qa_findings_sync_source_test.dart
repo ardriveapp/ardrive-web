@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/data/drive_state_sync_source.dart';
@@ -11,6 +12,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/mocks.dart';
+
+/// The one version this build writes and reads. Tests follow the constant
+/// rather than restating it, so moving the format version does not mean
+/// editing every fixture — which is how a fixture ends up asserting a
+/// version the code no longer speaks.
+String get currentVersionString => DriveStateFormatVersion.current.toString();
 
 class _MockImporter extends Mock implements DriveStateImporter {}
 
@@ -68,7 +75,7 @@ void main() {
         tags: {
           EntityTag.entityType: EntityTypeTag.driveState,
           EntityTag.driveId: driveId,
-          EntityTag.stateVersion: '1.0',
+          EntityTag.stateVersion: currentVersionString,
           EntityTag.blockStart: '0',
           EntityTag.blockEnd: '$blockEnd',
           EntityTag.entityCount: '3',

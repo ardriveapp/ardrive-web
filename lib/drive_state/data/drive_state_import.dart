@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
@@ -8,6 +7,9 @@ import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/drive_state_sqlite/artifact_sink.dart';
+import 'package:ardrive/drive_state_sqlite/artifact_to_export.dart';
+import 'package:ardrive/drive_state_sqlite/drive_state_artifact_import.dart';
 import 'package:ardrive/sync/utils/network_transaction_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart'
     show DrivePrivacyTag, EntityTag;
@@ -546,25 +548,64 @@ class DriveStateImporter {
       );
     }
 
-    // 4. Parse. Untrusted bytes reach a JSON decoder and a typed projection,
-    //    and never SQLite directly (§2.4).
+    // 4. Open the payload. It is a SQLite database, so the danger §2.4 warns
+    //    about is real and is met head on rather than avoided: the file is
+    //    attached read-only, `PRAGMA integrity_check` must pass, and its
+    //    `sqlite_master` must match the frozen schema byte for byte — no
+    //    views, no triggers, no virtual tables, no indexes, nothing but the
+    //    eight tables this reader agreed to. Only then is a row read.
+    //
+    //    The rows then travel through the same [DriveStateExport] the JSON
+    //    reader produced, so every guard below — identity, coverage, ghost
+    //    folders, cycle detection, newer-row-wins — is the one that was
+    //    already reviewed and tested. The container changed; the merge did
+    //    not.
+    if (!artifactSinkSupported) {
+      return const DriveStateImportResult.rejected(
+        DriveStateOutcome.integrityFailed,
+        'this platform cannot open a drive state artifact yet',
+      );
+    }
+
     final DriveStateExport export;
+    final source = await createArtifactSource(driveId, opened.plaintext!);
     try {
-      export = DriveStateExport.fromJson(
-        jsonDecode(utf8.decode(opened.plaintext!)) as Map<String, dynamic>,
+      await _driveDao.customStatement(
+        'ATTACH DATABASE ? AS artifact',
+        [source.path],
       );
-    } on DriveStateFormatException catch (e) {
-      return DriveStateImportResult.rejected(
-        e.error == DriveStateFormatError.unsupportedVersion
-            ? DriveStateOutcome.unknownVersion
-            : DriveStateOutcome.integrityFailed,
-        e.message,
-      );
+      try {
+        final refusal = await validateAttachedArtifact(
+          _driveDao.attachedDatabase,
+          alias: 'artifact',
+        );
+        if (refusal != null) {
+          // Both arms are integrityFailed on purpose: §7's vocabulary
+          // distinguishes *why a drive did not use its artifact*, and "the
+          // bytes were not the thing they claimed" is one answer whether the
+          // file was corrupt or carried a schema nobody agreed to. The detail
+          // carries the distinction for the log.
+          return DriveStateImportResult.rejected(
+            DriveStateOutcome.integrityFailed,
+            refusal.detail,
+          );
+        }
+        export = await readArtifactAsExport(
+          _driveDao.attachedDatabase,
+          alias: 'artifact',
+          blockStart: blockStart,
+          blockEnd: blockEnd,
+        );
+      } finally {
+        await _driveDao.customStatement('DETACH DATABASE artifact');
+      }
     } catch (e) {
       return DriveStateImportResult.rejected(
         DriveStateOutcome.integrityFailed,
         'the payload is not a readable drive state container: $e',
       );
+    } finally {
+      await source.dispose();
     }
 
     // 5. Version agreement. Step 2 read the `State-Version` tag; this is the

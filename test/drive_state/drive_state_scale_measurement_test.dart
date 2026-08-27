@@ -6,6 +6,7 @@ import 'dart:io' show ProcessInfo;
 import 'dart:math';
 
 import 'package:archive/archive.dart';
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
@@ -23,6 +24,12 @@ import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../test_utils/utils.dart';
+
+/// The one version this build writes and reads. Tests follow the constant
+/// rather than restating it, so moving the format version does not mean
+/// editing every fixture — which is how a fixture ends up asserting a
+/// version the code no longer speaks.
+String get currentVersionString => DriveStateFormatVersion.current.toString();
 
 /// Weighs the real wire format at the size of the user's actual drive, and
 /// then carries that drive all the way through the pipeline it was built for.
@@ -489,7 +496,7 @@ seal (gzip+sign+GCM)      ${sealWatch.elapsedMilliseconds} ms
         EntityTag.entityType: EntityTypeTag.driveState,
         EntityTag.driveId: driveId,
         EntityTag.driveStateId: 'measured-drive-state-id',
-        EntityTag.stateVersion: '1.0',
+        EntityTag.stateVersion: currentVersionString,
         EntityTag.contentType: ContentType.octetStream,
         EntityTag.blockStart: '${export.coverage.blockStart}',
         EntityTag.blockEnd: '${export.coverage.blockEnd}',

@@ -1,3 +1,4 @@
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
@@ -6,6 +7,12 @@ import 'package:artemis/schema/graphql_query.dart';
 import 'package:artemis/schema/graphql_response.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:json_annotation/json_annotation.dart';
+
+/// The one version this build writes and reads. Tests follow the constant
+/// rather than restating it, so moving the format version does not mean
+/// editing every fixture — which is how a fixture ends up asserting a
+/// version the code no longer speaks.
+String get currentVersionString => DriveStateFormatVersion.current.toString();
 
 const _driveId = 'a4d2b9a5-2ac6-4c1e-8f4f-1a4a3e2d1c00';
 const _owner = 'OWNER_ADDRESS';
@@ -234,7 +241,7 @@ void main() {
             unixTime: 1700000123,
             extraTags: {
               'Drive-State-Id': 'STATE_UUID',
-              'State-Version': '1.0',
+              'State-Version': currentVersionString,
               'Content-Encoding': 'gzip',
               'Entity-Count': '12043',
               'Cipher': 'AES256-GCM',

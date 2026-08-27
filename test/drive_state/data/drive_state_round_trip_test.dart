@@ -1,8 +1,11 @@
 import 'dart:convert';
 
 import 'package:ardrive/arns/utils/parse_assigned_names_from_string.dart';
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
-import 'package:ardrive/drive_state/data/drive_state_export.dart';
+import 'package:ardrive/drive_state_sqlite/artifact_sink.dart';
+import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
+    as sqlite;
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
@@ -21,6 +24,12 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:test/test.dart';
 
 import '../../test_utils/utils.dart';
+
+/// The one version this build writes and reads. Tests follow the constant
+/// rather than restating it, so moving the format version does not mean
+/// editing every fixture — which is how a fixture ends up asserting a
+/// version the code no longer speaks.
+String get currentVersionString => DriveStateFormatVersion.current.toString();
 
 /// The acceptance test for the whole artifact: a drive published by one client
 /// and opened by another has to *render*.
@@ -374,11 +383,18 @@ void main() {
     String drive = driveId,
     DriveStateProtection? protection,
   }) async {
-    final export = await exportDriveState(producerDb.driveDao, drive);
-    final payload = jsonEncode(export.toJson());
+    // The payload is a SQLite database, built the way the producer builds it,
+    // so this round trip exercises the real container rather than a fixture's
+    // idea of one.
+    final artifact = await sqlite.exportDriveState(
+      producerDb,
+      driveId: drive,
+      sink: await createArtifactSink('round-trip-$drive'),
+      blockEnd: await _watermark(producerDb, drive),
+    );
 
     final sealed = await codec.seal(
-      plaintext: Uint8List.fromList(utf8.encode(payload)),
+      plaintext: artifact.bytes,
       protection: protection ?? privateDrive,
       wallet: owner,
     );
@@ -394,11 +410,11 @@ void main() {
           EntityTag.entityType: EntityTypeTag.driveState,
           EntityTag.driveId: drive,
           EntityTag.driveStateId: 'drive-state-id',
-          EntityTag.stateVersion: '1.0',
+          EntityTag.stateVersion: currentVersionString,
           EntityTag.contentType: ContentType.octetStream,
-          EntityTag.blockStart: '${export.coverage.blockStart}',
-          EntityTag.blockEnd: '${export.coverage.blockEnd}',
-          EntityTag.entityCount: '${export.entityCount}',
+          EntityTag.blockStart: '0',
+          EntityTag.blockEnd: '${artifact.blockEnd}',
+          EntityTag.entityCount: '${artifact.entityCount}',
           // Written from what was actually sealed, so a public drive's
           // artifact carries neither tag - which is how a reader tells the
           // two chains apart.
@@ -406,7 +422,7 @@ void main() {
           if (envelope.isEncrypted)
             EntityTag.cipherIv: envelope.cipherIvAsBase64!,
         },
-        minedAtHeight: export.coverage.blockEnd,
+        minedAtHeight: artifact.blockEnd,
       ),
       body: envelope.body,
     );
@@ -1534,4 +1550,16 @@ void main() {
       expect(byDrive.folder.id, rootOnlyRootId);
     });
   });
+}
+
+/// The producer's own sync watermark, which is what an artifact may claim and
+/// nothing more.
+Future<int> _watermark(Database db, String driveId) async {
+  final row = await db
+      .customSelect(
+        'SELECT lastBlockHeight FROM drives WHERE id = ?',
+        variables: [Variable<String>(driveId)],
+      )
+      .getSingle();
+  return row.readNullable<int>('lastBlockHeight') ?? 0;
 }

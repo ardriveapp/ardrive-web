@@ -26,6 +26,8 @@
 /// on, and it is off in the wasm build the browser runs.
 library;
 
+import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
+
 /// Bumped only when an older reader would *misinterpret* a payload, never for
 /// an addition. Mirrors the `State-Version` tag, and a reader refuses any
 /// artifact whose tag and payload disagree.
@@ -36,7 +38,7 @@ library;
 /// experiments on staging cannot be mistaken for the real thing later. The
 /// bump to `1.0` is the moment this stops being an experiment, and it should
 /// be a deliberate commit, not a side effect.
-const artifactFormatVersion = '0.1';
+final artifactFormatVersion = DriveStateFormatVersion.current.toString();
 
 /// Whether a reader implementing [artifactFormatVersion] may read [version].
 ///
@@ -51,12 +53,14 @@ const artifactFormatVersion = '0.1';
 /// it. It is also the stricter of the two rules, and strictness is cheap here:
 /// the cost of refusing is one ordinary sync.
 bool artifactVersionIsReadable(String version) {
-  final theirs = version.split('.');
-  final ours = artifactFormatVersion.split('.');
-  if (theirs.length < 2 || ours.length < 2) return false;
-  if (theirs.first != ours.first) return false;
-  if (ours.first == '0') return theirs[1] == ours[1];
-  return true;
+  try {
+    return DriveStateFormatVersion.parse(version).isReadableByThisBuild;
+  } catch (_) {
+    // A version string that cannot be parsed is not a version this build
+    // implements. Refusing is a fallback, so there is nothing to report but
+    // the refusal itself.
+    return false;
+  }
 }
 
 /// Every table an artifact carries, in dependency order, with the exact DDL a

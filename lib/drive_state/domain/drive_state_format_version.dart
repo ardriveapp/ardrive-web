@@ -61,7 +61,7 @@ class DriveStateFormatVersion extends Equatable
   /// constants that must always be equal are two constants that can eventually
   /// differ, and a producer whose tag and payload disagree publishes an
   /// artifact every reader refuses — paid for, permanent, uncorrectable.
-  static const DriveStateFormatVersion current = DriveStateFormatVersion(1, 0);
+  static const DriveStateFormatVersion current = DriveStateFormatVersion(0, 1);
 
   final int major;
   final int minor;
@@ -132,7 +132,19 @@ class DriveStateFormatVersion extends Equatable
 
   /// Whether this build may read a payload written under this version: same
   /// major, any minor.
-  bool get isReadableByThisBuild => major == current.major;
+  /// Above `1.0` the major is the compatibility unit: a minor is additive and
+  /// optional, so any minor within this build's major is readable.
+  ///
+  /// **In the `0.x` range the minor is the compatibility unit instead.** `0.x`
+  /// says the format is not settled, so `0.2` is free to mean something `0.1`
+  /// would misinterpret — exactly as semver treats a zero major. Requiring an
+  /// exact match while experimenting is what stops an artifact published from
+  /// one staging build being read by a later build that changed the format
+  /// underneath it. It is the stricter rule, and strictness is cheap here:
+  /// refusing costs one ordinary sync.
+  bool get isReadableByThisBuild => current.major == 0
+      ? major == 0 && minor == current.minor
+      : major == current.major;
 
   /// The artifact was written by a client newer than this one, under a format
   /// that changed something this build would misread.

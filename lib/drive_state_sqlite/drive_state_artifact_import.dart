@@ -149,6 +149,65 @@ Future<ArtifactImportResult> importDriveState(
   }
 }
 
+/// The part of validation that is about the *file* rather than about the drive
+/// it claims to describe: it is a well-formed database, and it is only the
+/// shape this reader agreed to.
+///
+/// Exposed separately because the importer in `lib/drive_state/` runs it
+/// before reading a single row, while its own guards — identity, coverage,
+/// version — are already implemented there and operate on the parsed rows.
+/// One gate, one place, called from both.
+///
+/// Returns null when the file is acceptable.
+Future<ArtifactImportRefused?> validateAttachedArtifact(
+  GeneratedDatabase db, {
+  required String alias,
+}) async {
+  final integrity =
+      await db.customSelect('PRAGMA $alias.integrity_check').getSingle();
+  final verdict = integrity.data.values.first;
+  if (verdict != 'ok') {
+    return ArtifactImportRefused(
+      ArtifactImportRefusal.notADatabase,
+      '$verdict',
+    );
+  }
+
+  // A view or trigger here would run this reader's own SELECT against
+  // attacker-chosen SQL, so the shape is settled before any row is read.
+  final objects = await db.customSelect(
+    'SELECT type, name, sql FROM $alias.sqlite_master '
+    "WHERE name NOT LIKE 'sqlite_%'",
+  ).get();
+  final seen = <String, String>{};
+  for (final row in objects) {
+    final type = row.read<String>('type');
+    final name = row.read<String>('name');
+    if (type != 'table') {
+      return ArtifactImportRefused(
+        ArtifactImportRefusal.unexpectedSchema,
+        'found $type "$name"',
+      );
+    }
+    seen[name] = row.read<String>('sql');
+  }
+  if (seen.length != artifactSchema.length) {
+    return ArtifactImportRefused(
+      ArtifactImportRefusal.unexpectedSchema,
+      'expected ${artifactSchema.keys.toList()}, found ${seen.keys.toList()}',
+    );
+  }
+  for (final entry in artifactSchema.entries) {
+    if (seen[entry.key] != entry.value) {
+      return ArtifactImportRefused(
+        ArtifactImportRefusal.unexpectedSchema,
+        'table "${entry.key}" is not the frozen schema',
+      );
+    }
+  }
+  return null;
+}
+
 Future<int> _count(GeneratedDatabase db, String table) async =>
     (await db.customSelect('SELECT count(*) AS c FROM $table').getSingle())
         .read<int>('c');
