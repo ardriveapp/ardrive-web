@@ -1,15 +1,15 @@
-import 'dart:convert';
-
 import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart' show DriveKey;
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
-import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/data/drive_state_sync_source.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
+import 'package:ardrive/drive_state_sqlite/artifact_sink.dart';
+import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
+    as sqlite;
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/config/app_config.dart';
@@ -160,12 +160,18 @@ void main() {
       lastBlockHeight: Value(blockEnd),
     ));
 
-    final export = await exportDriveState(producerDb.driveDao, driveId);
-    expect(export.coverage.blockEnd, blockEnd);
-    final payload = utf8.encode(jsonEncode(export.toJson()));
+    // A real artifact, built the way the producer builds one: a SQLite
+    // database, not a serialisation of rows.
+    final artifact = await sqlite.exportDriveState(
+      producerDb,
+      driveId: driveId,
+      sink: await createArtifactSink('drive-state-sync'),
+      blockEnd: blockEnd,
+    );
+    expect(artifact.blockEnd, blockEnd);
 
     final sealed = await codec.seal(
-      plaintext: Uint8List.fromList(payload),
+      plaintext: artifact.bytes,
       protection: protection ?? protectionFor(sealedWith ?? driveKey),
       wallet: owner,
     );
@@ -185,7 +191,7 @@ void main() {
           EntityTag.contentType: ContentType.octetStream,
           EntityTag.blockStart: '0',
           EntityTag.blockEnd: '${tamperedTagBlockEnd ?? blockEnd}',
-          EntityTag.entityCount: '${entityCount ?? export.entityCount}',
+          EntityTag.entityCount: '${entityCount ?? artifact.entityCount}',
           // Written from what was sealed: a public drive's artifact carries
           // neither tag, and that absence is the discriminator.
           if (sealed.envelope!.isEncrypted) EntityTag.cipher: Cipher.aes256,
@@ -317,8 +323,8 @@ void main() {
       rootFolderFileCount: 2,
       nestedFolderFileCount: 1,
     );
-    // `addTestFilesToDb` writes file revisions but no folder ones, and the
-    // export carries only chain-derived rows. This is a producer whose
+    // `addTestFilesToDb` writes file revisions but no folder ones. The file
+    // list joins entries through revisions, so this is a producer whose
     // folders all synced.
     await addFolderRevisionsToDb(
       producerDb,
