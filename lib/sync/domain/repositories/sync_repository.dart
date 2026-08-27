@@ -1610,7 +1610,15 @@ class _SyncRepository implements SyncRepository {
     required int lastBlockHeight,
     required int currentBlockHeight,
     required bool syncDeep,
+    required SyncCancellationToken token,
   }) async {
+    // Before anything is fetched. This runs ahead of the fetch loop's own
+    // first check, and the read below downloads a body sized like a snapshot
+    // and will try up to three candidates — so without a check here a user who
+    // cancelled would keep downloading until the read returned, once per drive
+    // under `syncAllDrives`.
+    token.checkCancellation();
+
     if (!_configService.config.enableSyncFromDriveState) {
       return lastBlockHeight;
     }
@@ -1736,7 +1744,13 @@ class _SyncRepository implements SyncRepository {
       lastBlockHeight: lastBlockHeight,
       currentBlockHeight: currentBlockHeight,
       syncDeep: syncDeep,
+      token: token,
     );
+
+    // And again after: the artifact read is the longest thing that can happen
+    // before the fetch loop starts, so a cancel arriving during it is observed
+    // here rather than after the first page of GraphQL.
+    token.checkCancellation();
 
     final fetchPhaseStartDT = DateTime.now();
 

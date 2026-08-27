@@ -142,6 +142,66 @@ void main() {
     expect(child.read<int>('c'), 1);
   });
 
+  test('a drive whose root folder has no entry row exports faithfully',
+      () async {
+    // Reachable, not hypothetical: sync deliberately declines to create a
+    // ghost when the missing folder *is* the drive's root
+    // (`sync_repository.dart:1259`), so a drive can carry a `rootFolderId`
+    // that no `folder_entries` row answers.
+    //
+    // The export must reproduce that rather than paper over it — inventing a
+    // root row here would publish a folder the producer does not have, and
+    // every client importing it would then disagree with the producer about
+    // what the drive contains.
+    //
+    // The consumer's side is handled in the merge by `_rootFolderStandIn`
+    // (`drive_state/data/drive_state_import.dart:917`), which materialises a
+    // placeholder that is deliberately *not* marked `isGhost` — the upsert
+    // landing the real metadata leaves absent columns alone, so the flag would
+    // stick for ever — and carries no `parentFolderId`, since pointing the
+    // root at the root is a self-reference.
+    // `seedDrive` never writes a row for the root itself — every folder it
+    // creates is parented at `root-<driveId>` and nothing answers that id — so
+    // this is the state the whole file has been running in, and it is worth
+    // making explicit rather than leaving as an accident of the fixture.
+    await seedDrive(producer, files: 4, folders: 2);
+    const rootId = 'root-$testDriveId';
+    final rootRows = await producer
+        .customSelect('SELECT count(*) AS c FROM folder_entries WHERE id = ?',
+            variables: [const Variable<String>(rootId)])
+        .getSingle();
+    expect(rootRows.read<int>('c'), 0, reason: 'precondition');
+
+    final artifact = await exportDriveState(
+      producer,
+      driveId: testDriveId,
+      sink: FileArtifactSink('${dir.path}/a.db'),
+      blockEnd: 1814228,
+    );
+
+    // 4 files + 2 folders + the drive. The root is named but not present, and
+    // is not counted — inventing a row for it here would publish a folder the
+    // producer does not have, and every importing client would then disagree
+    // with the producer about what the drive contains.
+    expect(artifact.entityCount, 7);
+
+    await importDriveState(
+      consumer,
+      driveId: testDriveId,
+      source: await FileArtifactSource.of('${dir.path}/r.db', artifact.bytes),
+      knownOwner: testOwner,
+      knownPrivacy: 'private',
+      syncedToBlock: 0,
+    );
+
+    final root = await consumer.customSelect(
+      'SELECT rootFolderId FROM drives WHERE id = ?',
+      variables: [const Variable<String>(testDriveId)],
+    ).getSingle();
+    expect(root.read<String>('rootFolderId'), 'root-$testDriveId',
+        reason: 'the drive must still name the root it had');
+  });
+
   test('folder revisions travel, so the folder has a history', () async {
     await seedDrive(producer, files: 5, folders: 3);
     await roundTrip();
