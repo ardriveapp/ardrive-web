@@ -258,7 +258,7 @@ void main() {
         expect(tags[EntityTag.entityType], EntityTypeTag.driveState);
         expect(tags[EntityTag.driveId], driveId);
         expect(tags[EntityTag.driveStateId], driveStateId);
-        expect(tags[EntityTag.stateVersion], '1.0');
+        expect(tags[EntityTag.stateVersion], currentVersionString);
         expect(tags[EntityTag.contentType], ContentType.octetStream);
         expect(tags[EntityTag.blockStart], '0');
         expect(tags[EntityTag.blockEnd], '1814228');
@@ -324,7 +324,7 @@ void main() {
 
         expect(read.id, driveStateId);
         expect(read.driveId, driveId);
-        expect(read.stateVersion, const DriveStateFormatVersion(1, 0));
+        expect(read.stateVersion, DriveStateFormatVersion.current);
         expect(read.blockStart, 0);
         expect(read.blockEnd, 1814228);
         expect(read.dataStart, 1102394);
@@ -369,7 +369,7 @@ void main() {
         // version - which is exactly how this test failed to catch anything on
         // its first draft.
         final read = await DriveStateEntity.fromTransaction(
-          taggedVersion('1.0'),
+          taggedVersion(currentVersionString),
           body,
         );
         expect(read.stateVersion, DriveStateFormatVersion.current);

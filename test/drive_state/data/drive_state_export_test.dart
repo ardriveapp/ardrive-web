@@ -1062,19 +1062,38 @@ void main() {
       );
     });
 
-    test('accepts any minor of its own major', () {
-      // The whole point of the split: a minor moves for an addition, and
-      // additions are what unknown sections and fields are ignored for. A
-      // reader that refused a higher minor would refuse the artifacts §6 was
-      // written to keep readable.
-      for (final minor in [0, 1, 9, 10, 999]) {
-        final payload = minimalPayload()..['version'] = '1.$minor';
+    test('refuses any other minor while the major is 0', () {
+      // Above 1.0 a minor moves for an addition, and additions are what
+      // unknown sections and fields are ignored for — so a higher minor must
+      // stay readable. That rule is suspended while the major is 0: an
+      // unsettled format has no additions to be compatible with, and 0.2 is
+      // free to mean what 0.1 would misread.
+      //
+      // The above-1.0 half is tested in drive_state_format_version_test
+      // against `readableBy`, which names its reader and so can exercise both
+      // regimes whatever `current` happens to be.
+      for (final minor in [0, 2, 9, 10, 999]) {
+        final payload = minimalPayload()
+          ..['version'] = '${DriveStateFormatVersion.current.major}.$minor';
 
-        final export = DriveStateExport.fromJson(payload);
-
-        expect(export.drive.id, 'drive-id');
-        expect(export.version, DriveStateFormatVersion(1, minor));
+        expect(
+          () => DriveStateExport.fromJson(payload),
+          throwsA(isA<DriveStateFormatException>().having(
+            (e) => e.error,
+            'error',
+            DriveStateFormatError.unsupportedVersion,
+          )),
+        );
       }
+    });
+
+    test('accepts its own exact version', () {
+      final payload = minimalPayload()..['version'] = currentVersionString;
+
+      final export = DriveStateExport.fromJson(payload);
+
+      expect(export.drive.id, 'drive-id');
+      expect(export.version, DriveStateFormatVersion.current);
     });
 
     test('rejects a newer major, with a distinct reason', () {
@@ -1101,7 +1120,9 @@ void main() {
       // why that is not good enough: it is structurally the current format
       // with a different number on it, so every check below passes and the
       // artifact is imported under a format nobody agreed to.
-      final payload = minimalPayload()..['version'] = '0.9';
+      // 0.0 rather than 0.9: while `current` is 0.1 the comparison is on the
+      // minor, so 0.9 is *newer* and 0.0 is the only older version expressible.
+      final payload = minimalPayload()..['version'] = '0.0';
 
       expect(
         () => DriveStateExport.fromJson(payload),
