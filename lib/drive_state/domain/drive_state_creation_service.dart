@@ -1,9 +1,10 @@
-import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
+import 'package:ardrive/drive_state_sqlite/artifact_sink.dart';
+import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
+    as sqlite;
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart';
 import 'package:ardrive/models/models.dart';
@@ -264,8 +265,35 @@ class DriveStateCreationService {
       );
     }
 
-    final export = await exportDriveState(_driveDao, driveId);
-    final blockEnd = export.coverage.blockEnd;
+    // The payload is a SQLite database built with ATTACH + INSERT ... SELECT,
+    // not a serialisation of rows. Everything downstream — the codec, the
+    // entity, the tags, discovery, the uploader — is unchanged by that: they
+    // deal in bytes and tags, and the container is not their business.
+    if (!artifactSinkSupported) {
+      return const DriveStateCreationResult.refused(
+        DriveStateCreationRefusal.sealFailed,
+        'Publishing a drive state is not available on this platform yet.',
+      );
+    }
+
+    final sink = await createArtifactSink(driveId);
+    final sqlite.DriveStateArtifact artifact;
+    try {
+      artifact = await sqlite.exportDriveState(
+        _driveDao.attachedDatabase,
+        driveId: driveId,
+        sink: sink,
+        blockEnd: drive.lastBlockHeight ?? 0,
+      );
+    } on sqlite.ArtifactExportRefused catch (e) {
+      return DriveStateCreationResult.refused(
+        e.reason == sqlite.ArtifactExportRefusal.tooLarge
+            ? DriveStateCreationRefusal.payloadTooLarge
+            : DriveStateCreationRefusal.sealFailed,
+        e.detail,
+      );
+    }
+    final blockEnd = artifact.blockEnd;
 
     // The same gate again, against the value that will actually be published.
     // Reachable if the drive was reset or detached mid-prepare.
@@ -277,9 +305,7 @@ class DriveStateCreationService {
       );
     }
 
-    final plaintext = Uint8List.fromList(
-      utf8.encode(jsonEncode(export.toJson())),
-    );
+    final plaintext = artifact.bytes;
 
     final sealed = await _codec.seal(
       plaintext: plaintext,
@@ -306,10 +332,10 @@ class DriveStateCreationService {
       // contradict it. `Block-Start` is always 0 there, because every
       // artifact is a full copy of the drive as of its `Block-End` and
       // supersedes every earlier one outright (§3.4).
-      coverage: export.coverage,
-      dataStart: _dataStart(export),
-      dataEnd: _dataEnd(export, blockEnd),
-      entityCount: export.entityCount,
+      coverage: DriveStateCoverage(blockStart: 0, blockEnd: blockEnd),
+      dataStart: _dataStart(artifact),
+      dataEnd: _dataEnd(artifact, blockEnd),
+      entityCount: artifact.entityCount,
     );
 
     return DriveStateCreationResult.prepared(
@@ -317,7 +343,7 @@ class DriveStateCreationService {
         entity: entity,
         driveId: driveId,
         driveName: drive.name,
-        entityCount: export.entityCount,
+        entityCount: artifact.entityCount,
         sizeInBytes: envelope.body.lengthInBytes,
       ),
     );
@@ -338,14 +364,20 @@ class DriveStateCreationService {
   /// artifact carries no entities without fetching and decrypting it. An
   /// export with no folders and no files is a drive with nothing in it — not
   /// even a root folder row — which is a drive worth nothing to publish.
-  static int _dataStart(DriveStateExport export) =>
-      _carriesEntities(export) ? 0 : -1;
+  /// `Data-Start` / `Data-End` — the range where data was actually found, as
+  /// against the range searched. `-1` for an empty artifact, so a reader can
+  /// tell "nothing here" from "starts at block 0" without fetching the body.
+  ///
+  /// The drive row alone is not data: an artifact carrying only its own drive
+  /// and no entities has found nothing worth a reader's bandwidth.
+  static int _dataStart(sqlite.DriveStateArtifact a) =>
+      _carriesEntities(a) ? 0 : -1;
 
-  static int _dataEnd(DriveStateExport export, int blockEnd) =>
-      _carriesEntities(export) ? blockEnd : -1;
+  static int _dataEnd(sqlite.DriveStateArtifact a, int blockEnd) =>
+      _carriesEntities(a) ? blockEnd : -1;
 
-  static bool _carriesEntities(DriveStateExport export) =>
-      export.folders.isNotEmpty || export.files.isNotEmpty;
+  static bool _carriesEntities(sqlite.DriveStateArtifact a) =>
+      a.entityCount > 1;
 
   static String _sealRefusalMessage(DriveStateEnvelopeFailure failure) {
     switch (failure) {
