@@ -1,9 +1,9 @@
 {
-  "configVersion": 2,
-  "defaultArweaveGatewayUrl": "https://ar-io.dev",
+  "configVersion": 3,
+  "defaultArweaveGatewayUrl": "https://turbo-gateway.com",
   "defaultArweaveGatewayForDataRequest": {
-    "label": "AR.IO Testnet",
-    "url": "https://ar-io.dev"
+    "label": "Turbo Gateway",
+    "url": "https://turbo-gateway.com"
   },
   "useTurboUpload": true,
   "useTurboPayment": true,
