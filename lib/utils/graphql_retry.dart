@@ -9,15 +9,29 @@ import 'package:retry/retry.dart';
 
 /// Retry every GraphQL query for `ArtemisClient`
 ///
-/// On 429 or 5xx errors, falls back to arweave.net/graphql (Goldsky proxy)
-/// since most AR.IO gateways don't index ArDrive L2 data.
+/// On 429 or 5xx errors, falls back to Goldsky since most AR.IO gateways don't
+/// index ArDrive L2 data.
 class GraphQLRetry {
   GraphQLRetry(this._client,
       {required InternetChecker internetChecker,
       String? fallbackGraphqlUrl})
       : _internetChecker = internetChecker,
         _fallbackGraphqlUrl =
-            fallbackGraphqlUrl ?? 'https://arweave.net/graphql';
+            fallbackGraphqlUrl ?? defaultFallbackGraphqlUrl;
+
+  /// Where a query goes when the primary endpoint will not serve it.
+  ///
+  /// Goldsky directly, rather than `arweave.net/graphql`, which is a proxy in
+  /// front of this same index: going through it adds a hop that applies its
+  /// own rate limiting, so a fallback armed *because* the primary returned 429
+  /// could arrive at another 429 earned by nobody. The backend answering is
+  /// the same either way.
+  ///
+  /// Note this endpoint clamps `first` above 100 to 100 edges while still
+  /// reporting `hasNextPage: false`, so a paginating caller must not ask it
+  /// for more than 100.
+  static const defaultFallbackGraphqlUrl =
+      'https://arweave-search.goldsky.com/graphql';
 
   final ArtemisClient _client;
   final InternetChecker _internetChecker;
