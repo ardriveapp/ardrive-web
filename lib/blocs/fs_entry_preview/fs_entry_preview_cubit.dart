@@ -1270,7 +1270,19 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         dataBytes,
         fileKey,
       );
-    } catch (e) {
+    } catch (e, stacktrace) {
+      // Said out loud. This used to return `null` in silence, and the only
+      // thing downstream of it is "this file can't be previewed here" - so a
+      // file that failed to decrypt was indistinguishable from a file of a
+      // type we do not preview, in the logs as well as on screen. A private
+      // AES-CTR file failed here for years and reported itself as an
+      // unsupported format.
+      logger.e(
+        'Failed to decrypt $dataTxId for preview',
+        e,
+        stacktrace,
+      );
+
       return null;
     }
   }
