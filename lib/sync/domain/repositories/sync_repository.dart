@@ -18,6 +18,7 @@ import 'package:ardrive/models/folder_revision.dart';
 import 'package:ardrive/services/arweave/arweave.dart'
     hide SnapshotEntityTransaction;
 import 'package:ardrive/services/config/config.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/data/snapshot_validation_service.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
@@ -61,6 +62,40 @@ const _txConfirmationBatchTimeout = Duration(seconds: 15);
 const _txStatusUpdateTimeout = Duration(seconds: 30);
 
 abstract class SyncRepository {
+  /// The total transaction-parse budget, shared out across the drives still to
+  /// be synced.
+  @visibleForTesting
+  static const maxTransactionParseBatchSize = 200;
+
+  /// How many transactions each remaining drive may parse per batch.
+  ///
+  /// The budget is divided by the drives left to sync, so a wallet with more of
+  /// them parses in smaller batches. Integer division makes that reach **zero**
+  /// once more than [maxTransactionParseBatchSize] drives remain, and
+  /// `BatchProcessor` throws `ArgumentError('Batch size cannot be 0')` on a
+  /// batch of zero - so past that point a wallet could not sync at all, and the
+  /// failure was an argument error rather than anything naming the cause.
+  ///
+  /// Clamped to at least one. A batch of one is slow; a batch of zero is a
+  /// crash. No wallet is known to hold that many drives today, so this is a
+  /// floor under a future scale rather than a fix for anyone's sync now.
+  ///
+  /// The subtraction is guarded too: `drivesSynced` reaching `drivesCount`
+  /// would divide by zero, which throws a different error for the same reason.
+  @visibleForTesting
+  static int transactionParseBatchSizeFor({
+    required int drivesCount,
+    required int drivesSynced,
+  }) {
+    final remaining = drivesCount - drivesSynced;
+
+    if (remaining <= 1) {
+      return maxTransactionParseBatchSize;
+    }
+
+    return max(1, maxTransactionParseBatchSize ~/ remaining);
+  }
+
   Stream<double> syncDriveById({
     required String driveId,
     required String ownerAddress,
@@ -311,16 +346,13 @@ class _SyncRepository implements SyncRepository {
         if (previouslySyncedDrives.isEmpty) {
           // All drives are never-synced; skip probe entirely
           if (neverSyncedDrives.isNotEmpty) {
-            logger.i(
-                '${neverSyncedDrives.length} drives need first-time sync');
+            logger.i('${neverSyncedDrives.length} drives need first-time sync');
           }
         } else {
           // Group previously-synced drives by owner for efficient probing
           final drivesByOwner = <String, List<Drive>>{};
           for (final drive in previouslySyncedDrives) {
-            drivesByOwner
-                .putIfAbsent(drive.ownerAddress, () => [])
-                .add(drive);
+            drivesByOwner.putIfAbsent(drive.ownerAddress, () => []).add(drive);
           }
 
           final activeDriveIds = <String>{};
@@ -353,8 +385,7 @@ class _SyncRepository implements SyncRepository {
 
           // Add previously-synced drives that have activity
           drivesToSync.addAll(
-            previouslySyncedDrives
-                .where((d) => activeDriveIds.contains(d.id)),
+            previouslySyncedDrives.where((d) => activeDriveIds.contains(d.id)),
           );
 
           final skipped = drives.length - drivesToSync.length;
@@ -362,8 +393,7 @@ class _SyncRepository implements SyncRepository {
             logger.i('Skipping $skipped unchanged drives');
           }
           if (neverSyncedDrives.isNotEmpty) {
-            logger.i(
-                '${neverSyncedDrives.length} drives need first-time sync');
+            logger.i('${neverSyncedDrives.length} drives need first-time sync');
           }
         }
       } catch (e) {
@@ -409,11 +439,10 @@ class _SyncRepository implements SyncRepository {
           // drives (lastBlockHeight=0) don't drag the query back to genesis.
           final syncedHeights = ownerDrives
               .where((d) => (d.lastBlockHeight ?? 0) > 0)
-              .map((d) =>
-                  _calculateSyncLastBlockHeight(d.lastBlockHeight ?? 0));
-          final minBlock = syncedHeights.isNotEmpty
-              ? syncedHeights.reduce(min)
-              : 0;
+              .map(
+                  (d) => _calculateSyncLastBlockHeight(d.lastBlockHeight ?? 0));
+          final minBlock =
+              syncedHeights.isNotEmpty ? syncedHeights.reduce(min) : 0;
 
           var queryFailed = false;
           final snapshotsStream = _arweave.getAllSnapshotsForDrives(
@@ -456,8 +485,7 @@ class _SyncRepository implements SyncRepository {
 
         final withSnapshots =
             prefetchedSnapshots.values.where((v) => v.isNotEmpty).length;
-        logger.i(
-            '[snapshot] prefetched '
+        logger.i('[snapshot] prefetched '
             '${prefetchedSnapshots.values.expand((v) => v).length} '
             'for $withSnapshots of ${prefetchedSnapshots.length} drive(s); '
             'the rest are known to have none and will not be re-queried');
@@ -498,14 +526,13 @@ class _SyncRepository implements SyncRepository {
                 ? 0
                 : _calculateSyncLastBlockHeight(drive.lastBlockHeight ?? 0),
             currentBlockHeight: currentBlockHeight,
-            transactionParseBatchSize:
-                200 ~/ (syncProgress.drivesCount - syncProgress.drivesSynced),
+            transactionParseBatchSize: _transactionParseBatchSize(syncProgress),
             ownerAddress: drive.ownerAddress,
             txFechedCallback: txFechedCallback,
             cancellationToken: token,
             prefetchedSnapshots: prefetchedSnapshots[drive.id],
-            skipPendingTxFetch: walletAddress != null &&
-                drive.ownerAddress != walletAddress,
+            skipPendingTxFetch:
+                walletAddress != null && drive.ownerAddress != walletAddress,
           );
 
           double currentDriveProgress = 0;
@@ -543,10 +570,10 @@ class _SyncRepository implements SyncRepository {
 
           final updatedFailedDrives =
               List<String>.from(syncProgress.failedDriveIds)..add(drive.id);
-          final updatedErrorMessages =
-              Map<String, String>.from(syncProgress.errorMessages)
-                ..putIfAbsent(
-                    drive.id, () => '${drive.name}: ${_extractErrorMessage(e)}');
+          final updatedErrorMessages = Map<String, String>.from(
+              syncProgress.errorMessages)
+            ..putIfAbsent(
+                drive.id, () => '${drive.name}: ${_extractErrorMessage(e)}');
 
           // Still increment progress but mark as failed (cap at 90%)
           totalProgress += 1;
@@ -665,8 +692,7 @@ class _SyncRepository implements SyncRepository {
                 onTimeout: () {
                   // Check if cancelled before timing out
                   token.checkCancellation();
-                  logger.w(
-                      'Transaction status update timed out after '
+                  logger.w('Transaction status update timed out after '
                       '${_txStatusUpdateTimeout.inSeconds}s');
                   // Update status message to indicate timeout but don't treat as error
                   syncProgress = syncProgress.copyWith(
@@ -803,8 +829,7 @@ class _SyncRepository implements SyncRepository {
     _skippedEntityTxIdsByDrive.clear();
 
     // Get the specific drive
-    final drive =
-        await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+    final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
     if (drive == null) {
       yield SyncProgress.emptySyncCompleted();
       return;
@@ -849,8 +874,8 @@ class _SyncRepository implements SyncRepository {
           ownerAddress: drive.ownerAddress,
           txFechedCallback: txFechedCallback,
           cancellationToken: token,
-          skipPendingTxFetch: walletAddress != null &&
-              drive.ownerAddress != walletAddress,
+          skipPendingTxFetch:
+              walletAddress != null && drive.ownerAddress != walletAddress,
         );
 
         await for (var driveProgress in driveSyncProgress) {
@@ -958,8 +983,7 @@ class _SyncRepository implements SyncRepository {
             _txStatusUpdateTimeout,
             onTimeout: () {
               token.checkCancellation();
-              logger.w(
-                  'Transaction status update timed out after '
+              logger.w('Transaction status update timed out after '
                   '${_txStatusUpdateTimeout.inSeconds}s for single drive');
               syncProgress = syncProgress.copyWith(
                 statusMessage: 'Completing sync...',
@@ -990,7 +1014,8 @@ class _SyncRepository implements SyncRepository {
         syncProgressController.add(syncProgress);
         _logSkippedEntities();
 
-        logger.d('Single drive sync completed successfully, closing controller');
+        logger
+            .d('Single drive sync completed successfully, closing controller');
         await syncProgressController.close();
       } catch (e) {
         if (e is SyncCancelledException) {
@@ -1035,7 +1060,8 @@ class _SyncRepository implements SyncRepository {
       _folderIds.clear();
       // Remove any ghost folders for this drive from the instance map
       _ghostFolders.removeWhere((_, v) => v.driveId == driveId);
-      logger.d('Single drive sync failed with error, closing controller: $error');
+      logger
+          .d('Single drive sync failed with error, closing controller: $error');
       if (!syncProgressController.isClosed) {
         syncProgressController.addError(error);
         await syncProgressController.close();
@@ -1061,9 +1087,8 @@ class _SyncRepository implements SyncRepository {
 
     // Load all pending transactions and filter to this drive
     final allPendingTxs = await driveDao.pendingTransactions().get();
-    final drivePendingTxs = allPendingTxs
-        .where((tx) => driveDataTxIds.contains(tx.id))
-        .toList();
+    final drivePendingTxs =
+        allPendingTxs.where((tx) => driveDataTxIds.contains(tx.id)).toList();
 
     logger.i(
         'Loaded ${drivePendingTxs.length} pending transactions for drive (from ${allPendingTxs.length} total)');
@@ -1148,16 +1173,14 @@ class _SyncRepository implements SyncRepository {
           continue;
         }
 
-        final txConfirmed =
-            confirmationCount >= kRequiredTxConfirmationCount;
+        final txConfirmed = confirmationCount >= kRequiredTxConfirmationCount;
         final txNotFound = confirmationCount < 0;
 
         String? txStatus;
         DateTime? transactionDateCreated;
 
         if (pendingTxMap[txId]!.transactionDateCreated != null) {
-          transactionDateCreated =
-              pendingTxMap[txId]!.transactionDateCreated!;
+          transactionDateCreated = pendingTxMap[txId]!.transactionDateCreated!;
         } else {
           transactionDateCreated = dateCreatedCache[txId];
         }
@@ -1331,6 +1354,12 @@ class _SyncRepository implements SyncRepository {
     );
   }
 
+  int _transactionParseBatchSize(SyncProgress progress) =>
+      SyncRepository.transactionParseBatchSizeFor(
+        drivesCount: progress.drivesCount,
+        drivesSynced: progress.drivesSynced,
+      );
+
   int _calculateSyncLastBlockHeight(int lastBlockHeight) {
     logger.d('Calculating sync last block height: $lastBlockHeight');
     if (_lastSync != null) {
@@ -1495,8 +1524,7 @@ class _SyncRepository implements SyncRepository {
           continue;
         }
 
-        final txConfirmed =
-            confirmationCount >= kRequiredTxConfirmationCount;
+        final txConfirmed = confirmationCount >= kRequiredTxConfirmationCount;
         final txNotFound = confirmationCount < 0;
 
         String? txStatus;
@@ -1504,8 +1532,7 @@ class _SyncRepository implements SyncRepository {
         DateTime? transactionDateCreated;
 
         if (pendingTxMap[txId]!.transactionDateCreated != null) {
-          transactionDateCreated =
-              pendingTxMap[txId]!.transactionDateCreated!;
+          transactionDateCreated = pendingTxMap[txId]!.transactionDateCreated!;
         } else {
           transactionDateCreated = dateCreatedCache[txId];
         }
@@ -1552,7 +1579,6 @@ class _SyncRepository implements SyncRepository {
       );
     }
   }
-
 
   bool _isOverThePendingTime(DateTime? transactionCreatedDate) {
     // If don't have the date information we cannot assume that is over the pending time
@@ -1615,8 +1641,8 @@ class _SyncRepository implements SyncRepository {
         final source = prefetchedSnapshots != null ? 'prefetched' : 'per-drive';
         final snapshotsStream = prefetchedSnapshots != null
             ? Stream.fromIterable(prefetchedSnapshots)
-            : _arweave.getAllSnapshotsOfDrive(
-                driveId, lastBlockHeight, ownerAddress: ownerAddress);
+            : _arweave.getAllSnapshotsOfDrive(driveId, lastBlockHeight,
+                ownerAddress: ownerAddress);
 
         snapshotItems = await SnapshotItem.instantiateAll(
           snapshotsStream,
@@ -1830,16 +1856,14 @@ class _SyncRepository implements SyncRepository {
       } else {
         // Check local DB first: only query the gateway if we have
         // locally-tracked pending transactions for this drive
-        final localPending = await _driveDao
-            .pendingTransactionsForDrive(driveId: driveId)
-            .get();
+        final localPending =
+            await _driveDao.pendingTransactionsForDrive(driveId: driveId).get();
 
         if (localPending.isEmpty) {
           logger.d(
               'No locally pending transactions for drive ${drive.id}, skipping GQL query');
         } else {
-          logger.d(
-              'Fetching pending transactions for drive ${drive.id} '
+          logger.d('Fetching pending transactions for drive ${drive.id} '
               '(${localPending.length} locally pending)');
 
           try {
