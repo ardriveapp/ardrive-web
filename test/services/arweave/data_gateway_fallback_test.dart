@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -11,6 +13,34 @@ class _MockArioSDK extends Mock implements ArioSDK {}
 class _MockArweave extends Mock implements Arweave {}
 
 class _MockArweaveApi extends Mock implements ArweaveApi {}
+
+/// The HTTP client the preview waterfall reads through.
+///
+/// `fetchData` streams its body so its timeout measures silence rather than
+/// duration, which means it goes through `Client` rather than
+/// `ArweaveApi.getSandboxedTx`. Sync still uses the latter, so those tests keep
+/// mocking the api.
+class _FakeHttpClient extends BaseClient {
+  _FakeHttpClient(this._respond);
+
+  final StreamedResponse Function(int attempt) _respond;
+
+  int sends = 0;
+  bool closed = false;
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    sends += 1;
+
+    return _respond(sends);
+  }
+
+  @override
+  void close() => closed = true;
+}
+
+StreamedResponse _streamed(String body, int status) =>
+    StreamedResponse(Stream.value(utf8.encode(body)), status);
 
 void main() {
   late _MockArioSDK arioSDK;
@@ -36,7 +66,8 @@ void main() {
   });
 
   group('fetchDataForSync — single configured gateway', () {
-    test('returns the response without retrying when the first attempt '
+    test(
+        'returns the response without retrying when the first attempt '
         'succeeds', () async {
       when(() => primaryApi.getSandboxedTx(txId))
           .thenAnswer((_) async => Response('metadata', 200));
@@ -62,7 +93,8 @@ void main() {
       expect(attempts, 2);
     });
 
-    test('gives up after two attempts on a persistent transient failure, so '
+    test(
+        'gives up after two attempts on a persistent transient failure, so '
         'the caller can skip the item', () async {
       when(() => primaryApi.getSandboxedTx(txId))
           .thenAnswer((_) async => Response('boom', 500));
@@ -116,9 +148,7 @@ void main() {
       var calls = 0;
       when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
         calls++;
-        return calls == 1
-            ? Response('boom', 500)
-            : Response('not found', 404);
+        return calls == 1 ? Response('boom', 500) : Response('not found', 404);
       });
 
       await expectLater(
@@ -244,11 +274,113 @@ void main() {
     });
   });
 
+  group('a preview budget measures silence, not duration', () {
+    /// Chunks spaced [gap] apart, so the whole body takes [count] * [gap] to
+    /// arrive while no single wait ever reaches the budget.
+    Stream<List<int>> dribble({
+      required int count,
+      required Duration gap,
+    }) async* {
+      for (var i = 0; i < count; i++) {
+        await Future<void>.delayed(gap);
+        yield utf8.encode('chunk$i');
+      }
+    }
+
+    test('a body that keeps arriving is never cut off for taking a while',
+        () async {
+      // The failure this exists for. `getSandboxedTx` buffers the whole body
+      // behind one `Future`, so its timeout was a deadline on the transfer -
+      // and a 48 MiB preview needs more than any budget sized for metadata.
+      // Every gateway was abandoned mid-body and the file was reported
+      // unpreviewable while it was arriving perfectly well.
+      //
+      // Ten chunks, 50ms apart, is 500ms of transfer under a 200ms budget: it
+      // completes only if the budget is measuring gaps rather than total time.
+      final client = _FakeHttpClient(
+        (_) => StreamedResponse(
+          dribble(count: 10, gap: const Duration(milliseconds: 50)),
+          200,
+        ),
+      );
+
+      final patient = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+        dataRequestTimeout: const Duration(milliseconds: 200),
+      );
+
+      final response = await patient.fetchData(txId, primaryClient);
+
+      expect(response.statusCode, 200);
+      expect(
+          response.body,
+          'chunk0chunk1chunk2chunk3chunk4chunk5chunk6chunk7'
+          'chunk8chunk9');
+    });
+
+    test('the backstop hangs up on a read that outlives it', () async {
+      // `Future.timeout` does not cancel what it times out. Without closing the
+      // client the read would carry on buffering - up to the 100 MiB preview
+      // cap - and hold its connection long after the caller was told it had
+      // failed. Chunks keep arriving inside the per-chunk budget, so only the
+      // total can end this one.
+      final client = _FakeHttpClient(
+        (_) => StreamedResponse(
+          dribble(count: 50, gap: const Duration(milliseconds: 20)),
+          200,
+        ),
+      );
+
+      final bounded = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+        dataRequestTimeout: const Duration(milliseconds: 200),
+        dataTotalTimeout: const Duration(milliseconds: 120),
+      );
+
+      await expectLater(
+        bounded.fetchData(txId, primaryClient),
+        throwsA(isA<Object>()),
+      );
+
+      expect(
+        client.closed,
+        isTrue,
+        reason: 'the connection must be hung up, not left reading',
+      );
+    });
+
+    test('a gateway that goes quiet is still dropped', () async {
+      // The other half: patience must not become indifference. One chunk, then
+      // nothing for longer than the budget.
+      final client = _FakeHttpClient(
+        (_) => StreamedResponse(
+          dribble(count: 2, gap: const Duration(milliseconds: 400)),
+          200,
+        ),
+      );
+
+      final patient = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+        dataRequestTimeout: const Duration(milliseconds: 100),
+      );
+
+      await expectLater(
+        patient.fetchData(txId, primaryClient),
+        throwsA(isA<Object>()),
+      );
+    });
+  });
+
   group('waterfall preserved for non-sync paths', () {
     test('fetchData still consults the GAR (download/preview resilience)',
         () async {
-      when(() => primaryApi.getSandboxedTx(txId))
-          .thenAnswer((_) async => Response('metadata', 200));
+      fallback = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => _FakeHttpClient((_) => _streamed('metadata', 200)),
+      );
 
       await fallback.fetchData(txId, primaryClient);
 
@@ -269,7 +401,8 @@ void main() {
       verify(() => arioSDK.getGateways()).called(1);
     });
 
-    test('fetchData and fetchDataForSync differ in GAR usage for the same '
+    test(
+        'fetchData and fetchDataForSync differ in GAR usage for the same '
         'transaction', () async {
       when(() => primaryApi.getSandboxedTx(txId))
           .thenAnswer((_) async => Response('metadata', 200));
@@ -277,7 +410,12 @@ void main() {
       await fallback.fetchDataForSync(txId, primaryClient);
       verifyNever(() => arioSDK.getGateways());
 
-      await fallback.fetchData(txId, primaryClient);
+      DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => _FakeHttpClient((_) => _streamed('metadata', 200)),
+      ).fetchData(txId, primaryClient).ignore();
+      await pumpEventQueue();
+
       verify(() => arioSDK.getGateways()).called(1);
     });
 
@@ -288,19 +426,22 @@ void main() {
     /// the configured gateway and nowhere else yet.
     test('retries the configured gateway once on a 404, then succeeds',
         () async {
-      var attempts = 0;
-      when(() => primaryApi.getSandboxedTx(txId)).thenAnswer((_) async {
-        attempts++;
-        return attempts == 1
-            ? Response('not found', 404)
-            : Response('metadata', 200);
-      });
+      final client = _FakeHttpClient(
+        (attempt) => attempt == 1
+            ? _streamed('not found', 404)
+            : _streamed('metadata', 200),
+      );
+
+      fallback = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      );
 
       final response = await fallback.fetchData(txId, primaryClient);
 
       expect(response.statusCode, 200);
       expect(response.body, 'metadata');
-      verify(() => primaryApi.getSandboxedTx(txId)).called(2);
+      expect(client.sends, 2);
     });
 
     /// The extra attempt is for a gateway that is a beat behind, not one that
@@ -312,30 +453,40 @@ void main() {
       // keeps the assertion about retries free of any real network call.
       when(() => primaryApi.gatewayUrl)
           .thenReturn(Uri.parse('https://arweave.net'));
-      when(() => primaryApi.getSandboxedTx(txId))
-          .thenAnswer((_) async => Response('server error', 500));
+
+      final client = _FakeHttpClient((_) => _streamed('server error', 500));
+
+      fallback = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      );
 
       await expectLater(
         fallback.fetchData(txId, primaryClient),
         throwsA(isA<Object>()),
       );
 
-      verify(() => primaryApi.getSandboxedTx(txId)).called(1);
+      expect(client.sends, 1);
     });
 
     test('a persistent 404 on the configured gateway is still not found',
         () async {
       when(() => primaryApi.gatewayUrl)
           .thenReturn(Uri.parse('https://arweave.net'));
-      when(() => primaryApi.getSandboxedTx(txId))
-          .thenAnswer((_) async => Response('not found', 404));
+
+      final client = _FakeHttpClient((_) => _streamed('not found', 404));
+
+      fallback = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      );
 
       await expectLater(
         fallback.fetchData(txId, primaryClient),
         throwsA(isA<TransactionNotFound>()),
       );
 
-      verify(() => primaryApi.getSandboxedTx(txId)).called(2);
+      expect(client.sends, 2);
     });
 
     test('a drive signature read on the sync path never reaches the GAR',

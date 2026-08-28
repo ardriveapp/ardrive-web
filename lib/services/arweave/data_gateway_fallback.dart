@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:ardrive/components/sandboxed_transaction_view/arweave_sandbox_url.dart';
 import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -36,6 +37,7 @@ class DataGatewayFallback {
 
   static const _maxGarFallbacks = 2;
   static const _garListTimeout = Duration(seconds: 5);
+
   /// How long one gateway read waits before being abandoned.
   ///
   /// Ten seconds, not five. Sync reads run through [ArweaveService.runPooled],
@@ -66,7 +68,19 @@ class DataGatewayFallback {
 
   /// Total budget for a large-body read, covering both attempts.
   static const largeBodyTotalTimeout = Duration(seconds: 130);
-  static const _totalFetchTimeout = Duration(seconds: 25);
+
+  /// Backstop for the whole [fetchData] waterfall.
+  ///
+  /// Generous, and not a deadline anyone is meant to reach. Each attempt there
+  /// is bounded by silence rather than duration, so a hung gateway is dropped
+  /// in [_requestTimeout] and four of them cost well under a minute. What this
+  /// still catches is a gateway dribbling bytes indefinitely - fast enough
+  /// never to go quiet, too slow to ever finish.
+  ///
+  /// It was twenty five seconds, which was a deadline: a fifty megabyte
+  /// preview needed 2 MB/s to fit inside it, so the cap ended reads that were
+  /// working.
+  static const _totalFetchTimeout = Duration(minutes: 3);
   static const _hedgeDelay = Duration(milliseconds: 1500);
   static const _downloadTimeout = Duration(seconds: 15);
 
@@ -114,13 +128,25 @@ class DataGatewayFallback {
   final Duration _syncRequestTimeout;
   final Duration _syncLargeBodyRequestTimeout;
 
+  /// Injectable so a test can make a body outlive its own budget, which is the
+  /// only way to tell a stall timeout from a deadline.
+  final Duration _dataRequestTimeout;
+
+  /// Injectable for the same reason: the backstop is three minutes, and a test
+  /// has to be able to reach it to prove the connection is hung up.
+  final Duration _dataTotalTimeout;
+
   DataGatewayFallback({
     required ArioSDK arioSDK,
     Client Function()? clientFactory,
     @visibleForTesting Duration? syncRequestTimeout,
     @visibleForTesting Duration? syncLargeBodyRequestTimeout,
+    @visibleForTesting Duration? dataRequestTimeout,
+    @visibleForTesting Duration? dataTotalTimeout,
   })  : _arioSDK = arioSDK,
         _clientFactory = clientFactory ?? Client.new,
+        _dataRequestTimeout = dataRequestTimeout ?? _requestTimeout,
+        _dataTotalTimeout = dataTotalTimeout ?? _totalFetchTimeout,
         _syncRequestTimeout = syncRequestTimeout ?? _requestTimeout,
         _syncLargeBodyRequestTimeout =
             syncLargeBodyRequestTimeout ?? largeBodyRequestTimeout;
@@ -132,11 +158,25 @@ class DataGatewayFallback {
   ///
   /// If ALL gateways return 404, throws [TransactionNotFound].
   Future<Response> fetchData(String txId, Arweave primaryClient) async {
-    return _serialFetch(txId, primaryClient)
-        .timeout(_totalFetchTimeout, onTimeout: () {
-      logger.w('Total fetch timeout exceeded for tx $txId');
-      throw Exception('Total fetch timeout exceeded for tx $txId');
-    });
+    // One client for the whole waterfall, so the backstop below has something
+    // to hang up with. `Future.timeout` does not cancel what it times out: the
+    // read would otherwise carry on buffering - up to the 100 MiB preview cap -
+    // and holding its connection long after the caller was told it had failed.
+    // Closing the client aborts the request in flight (`BrowserClient.close`
+    // fires its `AbortController`).
+    final httpClient = _clientFactory();
+
+    try {
+      return await _serialFetch(txId, primaryClient, httpClient: httpClient)
+          .timeout(_dataTotalTimeout, onTimeout: () {
+        logger.w('Total fetch timeout exceeded for tx $txId');
+        httpClient.close();
+
+        throw Exception('Total fetch timeout exceeded for tx $txId');
+      });
+    } finally {
+      httpClient.close();
+    }
   }
 
   /// Fetch transaction data for **sync** metadata reads.
@@ -170,9 +210,9 @@ class DataGatewayFallback {
     Arweave primaryClient, {
     bool largeBody = false,
   }) async {
-    return _syncFetch(txId, primaryClient, largeBody: largeBody).timeout(
-        largeBody ? largeBodyTotalTimeout : _syncTotalFetchTimeout,
-        onTimeout: () {
+    return _syncFetch(txId, primaryClient, largeBody: largeBody)
+        .timeout(largeBody ? largeBodyTotalTimeout : _syncTotalFetchTimeout,
+            onTimeout: () {
       logger.w('Total sync fetch timeout exceeded for tx $txId');
       throw Exception('Total sync fetch timeout exceeded for tx $txId');
     });
@@ -192,9 +232,8 @@ class DataGatewayFallback {
         return await _tryGateway(
           primaryClient,
           txId,
-          requestTimeout: largeBody
-              ? _syncLargeBodyRequestTimeout
-              : _syncRequestTimeout,
+          requestTimeout:
+              largeBody ? _syncLargeBodyRequestTimeout : _syncRequestTimeout,
         );
       } on _ErrorFromStatus catch (e) {
         // A 404 is NOT treated as final here, and the reasoning that said it
@@ -241,7 +280,11 @@ class DataGatewayFallback {
     );
   }
 
-  Future<Response> _serialFetch(String txId, Arweave primaryClient) async {
+  Future<Response> _serialFetch(
+    String txId,
+    Arweave primaryClient, {
+    required Client httpClient,
+  }) async {
     final clients = await _buildClientList(primaryClient);
     var all404 = true;
 
@@ -269,7 +312,7 @@ class DataGatewayFallback {
         var retryable = false;
 
         try {
-          final response = await _tryGateway(client, txId);
+          final response = await _tryGatewayStreamed(client, txId, httpClient);
           if (!isPrimary) {
             logger.i('Fallback gateway $gatewayName succeeded for tx $txId');
           }
@@ -509,8 +552,8 @@ class DataGatewayFallback {
             if (all404) {
               completer.completeError(DownloadFileNotFoundException(txId));
             } else {
-              completer.completeError(
-                  DownloadNetworkException(txId, e.toString()));
+              completer
+                  .completeError(DownloadNetworkException(txId, e.toString()));
             }
           }
         }),
@@ -533,8 +576,8 @@ class DataGatewayFallback {
       try {
         final response = await _tryManifestGateway(client, txId);
         if (client != primaryClient) {
-          logger.i(
-              'Fallback gateway $gatewayName succeeded for manifest $txId');
+          logger
+              .i('Fallback gateway $gatewayName succeeded for manifest $txId');
         }
         return response;
       } on _ErrorFromStatus catch (e) {
@@ -587,6 +630,79 @@ class DataGatewayFallback {
     }
 
     return clients;
+  }
+
+  /// A gateway read whose budget measures **silence**, not duration.
+  ///
+  /// [_tryGateway] buffers the whole body behind one `Future`, and a `Future`
+  /// timeout is a deadline on the transfer - it cannot tell a gateway that has
+  /// stopped answering from fifty megabytes arriving perfectly well. Previews
+  /// are capped at 100 MiB, so under that deadline a large file could not be
+  /// read from any gateway: each was abandoned mid-body on any connection
+  /// slower than the file divided by the budget, and the user saw
+  /// "unpreviewable" for a file that was arriving fine.
+  ///
+  /// Reading the body as a stream makes the timeout fire only when no chunk
+  /// has arrived for that long. A slow body finishes; a dead gateway is still
+  /// dropped just as quickly. `BrowserClient` reads through a `ReadableStream`,
+  /// so this is chunk-wise on the web too, not only on the VM.
+  ///
+  /// Sync deliberately keeps [_tryGateway]: its reads are a few hundred bytes
+  /// each and there are hundreds of them, so a wall clock is the right shape
+  /// there and one less moving part.
+  Future<Response> _tryGatewayStreamed(
+    Arweave client,
+    String txId,
+    Client httpClient, {
+    Duration? requestTimeout,
+  }) async {
+    final budget = requestTimeout ?? _dataRequestTimeout;
+
+    {
+      final request = Request(
+        'GET',
+        Uri.parse(
+          arweaveSandboxUrl(txId: txId, gatewayUrl: client.api.gatewayUrl) ??
+              '${client.api.gatewayUrl.origin}/$txId',
+        ),
+      );
+
+      final response = await httpClient.send(request).timeout(budget);
+
+      if (response.statusCode < 200 || response.statusCode > 208) {
+        // Nobody is going to read this body, and the client is shared by every
+        // gateway in the waterfall now - so an abandoned error response would
+        // hold its reader open for the rest of the run rather than until the
+        // end of this attempt. `getSandboxedTx` consumed the body whatever the
+        // status; streaming has to say so.
+        await response.stream.listen(null).cancel();
+
+        throw _ErrorFromStatus(response.statusCode, txId);
+      }
+
+      final chunks = <List<int>>[];
+      var length = 0;
+
+      await for (final chunk in response.stream.timeout(budget)) {
+        chunks.add(chunk);
+        length += chunk.length;
+      }
+
+      final body = Uint8List(length);
+      var offset = 0;
+
+      for (final chunk in chunks) {
+        body.setRange(offset, offset + chunk.length, chunk);
+        offset += chunk.length;
+      }
+
+      return Response.bytes(
+        body,
+        response.statusCode,
+        headers: response.headers,
+        reasonPhrase: response.reasonPhrase,
+      );
+    }
   }
 
   Future<Response> _tryGateway(

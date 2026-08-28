@@ -117,7 +117,7 @@ Future<Transaction> createEncryptedTransaction(
   SecretKey key, {
   String cipher = Cipher.aes256gcm,
 }) async {
-  final impl = cipherBufferImpl(cipher);
+  final impl = cipherBufferEncryptImpl(cipher);
 
   final encryptionRes = await impl.encrypt(data, secretKey: key);
 
@@ -166,7 +166,7 @@ Future<DataItem> createEncryptedDataItem(
   SecretKey key, {
   String cipher = Cipher.aes256gcm,
 }) async {
-  final impl = cipherBufferImpl(cipher);
+  final impl = cipherBufferEncryptImpl(cipher);
 
   final encryptionRes = await impl.encrypt(data.toList(), secretKey: key);
 
