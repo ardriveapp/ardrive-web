@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
@@ -27,9 +29,18 @@ part 'drive_state_creation_state.dart';
 /// to price is a hard stop: an artifact whose cost could not be established is
 /// never offered for confirmation, because the whole purpose of the
 /// confirmation is to show a price that cannot be taken back once paid.
+/// How long the cost estimate may take before the user is told rather than
+/// left watching a spinner.
+///
+/// Generous, because it fans out to a gateway, the Turbo payment service and a
+/// fiat rate, and a slow answer is still a useful one. Finite, because the
+/// alternative is what this replaced: no answer, no error, no log.
+const kCostEstimateTimeout = Duration(seconds: 45);
+
 class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
   final String driveId;
 
+  final Duration _costEstimateTimeout;
   final DriveStateCreationService _service;
   final DriveStateUploader _uploader;
   final DriveStatePublishCostEstimator _costEstimator;
@@ -51,7 +62,13 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     this.turboBalanceRefreshDelay = const Duration(seconds: 2),
-  })  : _service = service,
+
+    /// Overridable so the deadline can be tested without waiting for it. The
+    /// production value is [costEstimateTimeout]; nothing but a test passes
+    /// anything else.
+    Duration? costEstimateTimeout,
+  })  : _costEstimateTimeout = costEstimateTimeout ?? kCostEstimateTimeout,
+        _service = service,
         _uploader = uploader,
         _costEstimator = costEstimator,
         _profileCubit = profileCubit,
@@ -119,13 +136,26 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
 
       final artifact = result.artifact!;
 
+      logger.i('[drive-state] $driveId: pricing ${artifact.sizeInBytes} bytes');
+
       final DriveStatePublishCost cost;
       try {
-        cost = await _costEstimator.estimate(
-          sizeInBytes: artifact.sizeInBytes,
-          wallet: profile.user.wallet,
-          walletBalance: profile.user.walletBalance,
-        );
+        // A deadline, because none of the calls inside `estimate` has one and
+        // several are only guarded against *errors*. A `try`/`catch` does
+        // nothing for a future that simply never completes, and the modal has
+        // no way to say "still waiting" — it says "Preparing" for ever.
+        //
+        // Pricing is also the least load-bearing thing here: it decides which
+        // transport is offered and what figure is shown. Failing it loudly
+        // costs the user a retry; hanging on it costs them the feature with no
+        // explanation.
+        cost = await _costEstimator
+            .estimate(
+              sizeInBytes: artifact.sizeInBytes,
+              wallet: profile.user.wallet,
+              walletBalance: profile.user.walletBalance,
+            )
+            .timeout(_costEstimateTimeout);
       } catch (e, stackTrace) {
         if (isClosed) return;
 
@@ -135,13 +165,20 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
           stackTrace,
         );
         emit(DriveStateCreationFailure(
-          'The cost of publishing could not be determined, so nothing is '
-          'being offered for confirmation. Nothing was uploaded and nothing '
-          'was spent.',
+          e is TimeoutException
+              ? 'Working out what this would cost took longer than '
+                  '${_costEstimateTimeout.inSeconds} seconds, so nothing is '
+                  'being offered for confirmation. Nothing was uploaded and '
+                  'nothing was spent. Try again in a moment.'
+              : 'The cost of publishing could not be determined, so nothing is '
+                  'being offered for confirmation. Nothing was uploaded and '
+                  'nothing was spent.',
         ));
         return;
       }
       if (isClosed) return;
+
+      logger.i('[drive-state] $driveId: priced, offering confirmation');
 
       emit(DriveStateCreationReady(
         artifact: artifact,

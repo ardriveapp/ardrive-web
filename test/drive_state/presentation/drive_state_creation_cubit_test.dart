@@ -141,7 +141,35 @@ void main() {
         profileCubit: profileCubit,
         driveDao: driveDao,
         turboBalanceRefreshDelay: Duration.zero,
+        costEstimateTimeout: const Duration(milliseconds: 50),
       );
+
+  group('a cost estimate that never returns', () {
+    // None of the calls inside `estimate` carries a deadline, and several are
+    // guarded only against *errors* — a try/catch does nothing for a future
+    // that never completes. Before the deadline, that left the modal showing
+    // "Preparing an artifact" for ever, with no log and no way for the user to
+    // tell a slow answer from no answer. It cost an afternoon of guessing.
+    blocTest<DriveStateCreationCubit, DriveStateCreationState>(
+      'is given up on, and says so, rather than spinning for ever',
+      setUp: () {
+        when(() => costEstimator.estimate(
+              sizeInBytes: any(named: 'sizeInBytes'),
+              wallet: any(named: 'wallet'),
+              walletBalance: any(named: 'walletBalance'),
+              // Never completes. Not an error: the case a catch cannot see.
+            )).thenAnswer((_) => Completer<DriveStatePublishCost>().future);
+      },
+      build: cubitWith,
+      act: (cubit) => cubit.prepare(),
+      verify: (cubit) {
+        final state = cubit.state as DriveStateCreationFailure;
+        expect(state.message, contains('longer than'));
+        expect(state.message, contains('nothing was spent'),
+            reason: 'the user must be told no money moved');
+      },
+    );
+  });
 
   group('prepare', () {
     blocTest<DriveStateCreationCubit, DriveStateCreationState>(
@@ -757,3 +785,4 @@ PreparedDriveStateArtifact _anyArtifact() => PreparedDriveStateArtifact(
       entityCount: 1,
       sizeInBytes: 1,
     );
+

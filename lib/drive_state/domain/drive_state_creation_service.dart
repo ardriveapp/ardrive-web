@@ -2,6 +2,7 @@
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/drive_state_sqlite/artifact_sink.dart';
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart'
     as sqlite;
@@ -197,6 +198,23 @@ class DriveStateCreationService {
   ///
   /// Nothing is sent. The returned entity has no transaction id, and this
   /// class has no way to give it one.
+  /// Marks a stage of [prepare], with how long the previous one took.
+  ///
+  /// The publish path used to log nothing between opening the modal and being
+  /// ready, so a preparation that stopped part-way was indistinguishable from
+  /// one that was merely slow: no stage, no timing, no reason. That is the
+  /// failure §7 exists to prevent, in the one flow §7's vocabulary did not
+  /// reach — and it cost an afternoon of guessing from an empty network tab.
+  ///
+  /// Deliberately `logger.i` rather than `logger.d`: a debug line that is
+  /// filtered out by default is not there when somebody needs it, and this is
+  /// a handful of lines per user-initiated publish, not a loop.
+  void _stage(String driveId, String stage, Stopwatch since) {
+    logger.i('[drive-state] $driveId: $stage '
+        '(+${since.elapsedMilliseconds}ms)');
+    since.reset();
+  }
+
   Future<DriveStateCreationResult> prepare({
     required String driveId,
     required SecretKey? driveKey,
@@ -206,6 +224,9 @@ class DriveStateCreationService {
     // drive whose completeness cannot be vouched for is not exported at all —
     // there is no partial artifact, no "publish anyway", and no ordering in
     // which the export happens first and the check is consulted afterwards.
+    final clock = Stopwatch()..start();
+    _stage(driveId, 'preparing an artifact', clock);
+
     final skipStatus = _skipSource.statusFor(driveId);
     if (!skipStatus.isClean) {
       return DriveStateCreationResult.refused(
@@ -276,6 +297,8 @@ class DriveStateCreationService {
       );
     }
 
+    _stage(driveId, 'checks passed, opening a sink', clock);
+
     final sink = await createArtifactSink(driveId);
     final sqlite.DriveStateArtifact artifact;
     try {
@@ -293,6 +316,13 @@ class DriveStateCreationService {
         e.detail,
       );
     }
+    _stage(
+      driveId,
+      'exported ${artifact.entityCount} entities, '
+      '${artifact.bytes.length} bytes',
+      clock,
+    );
+
     final blockEnd = artifact.blockEnd;
 
     // The same gate again, against the value that will actually be published.
@@ -306,6 +336,10 @@ class DriveStateCreationService {
     }
 
     final plaintext = artifact.bytes;
+
+    // The signature happens inside `seal`, so a wallet that never answers
+    // stops between this line and the next.
+    _stage(driveId, 'sealing (gzip, sign, encrypt)', clock);
 
     final sealed = await _codec.seal(
       plaintext: plaintext,
@@ -323,6 +357,7 @@ class DriveStateCreationService {
     }
 
     final envelope = sealed.envelope!;
+    _stage(driveId, 'sealed ${envelope.body.lengthInBytes} bytes', clock);
 
     final entity = DriveStateEntity.fromEnvelope(
       envelope: envelope,
@@ -337,6 +372,8 @@ class DriveStateCreationService {
       dataEnd: _dataEnd(artifact, blockEnd),
       entityCount: artifact.entityCount,
     );
+
+    _stage(driveId, 'ready to price', clock);
 
     return DriveStateCreationResult.prepared(
       PreparedDriveStateArtifact(
