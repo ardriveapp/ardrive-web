@@ -97,6 +97,10 @@ void main() {
   FileRevision fileRevision({
     String name = 'Q3 Report.pdf',
     String dataTxId = 'data-tx-newest',
+    // Empty is what `_revisionFromPayload` produces: no link carries a drive
+    // id, and an empty one is exactly what marks a revision painted from the
+    // link alone.
+    String driveId = 'drive-id',
     // Distinct per revision by default, because the metadata transaction is
     // what identifies one. Tests that need two revisions over the same bytes -
     // a rename - set it explicitly.
@@ -108,7 +112,7 @@ void main() {
   }) {
     return FileRevision(
       fileId: fileId,
-      driveId: 'drive-id',
+      driveId: driveId,
       name: name,
       parentFolderId: 'parent-folder-id',
       size: size,
@@ -465,7 +469,8 @@ void main() {
       expect(storage[SharedFileKeySession.storageKey(fileId)], wellFormedKey);
     });
 
-    testWidgets('a recipient who changes their mind while the key is being '
+    testWidgets(
+        'a recipient who changes their mind while the key is being '
         'checked is not overruled when it works', (tester) async {
       final storage = <String, String>{};
 
@@ -498,7 +503,8 @@ void main() {
       expect(storage, isEmpty);
     });
 
-    testWidgets('a remembered key that arrives late never overrides what the '
+    testWidgets(
+        'a remembered key that arrives late never overrides what the '
         'recipient typed', (tester) async {
       // Both well formed, and deliberately different: the assertion is about
       // *which* one is submitted.
@@ -528,7 +534,8 @@ void main() {
       expect(field.controller?.text, typedKey);
     });
 
-    testWidgets('a remembered key that arrives after the file is open does '
+    testWidgets(
+        'a remembered key that arrives after the file is open does '
         'not throw the page back to the gate', (tester) async {
       final gate = Completer<void>();
 
@@ -636,7 +643,8 @@ void main() {
       expect(find.text(filesize(12)), findsOneWidget);
     });
 
-    testWidgets('says so when the version history cannot be loaded, and never '
+    testWidgets(
+        'says so when the version history cannot be loaded, and never '
         'spins for ever', (tester) async {
       await pumpPage(tester, success());
 
@@ -860,17 +868,69 @@ void main() {
       }
     });
 
-    testWidgets('the pane answers with a picture while it is still resolving',
+    testWidgets('an unresolved link still previews, because it has the bytes',
         (tester) async {
-      // The pane is 580x430 on a laptop, and a lone sentence in the middle of
-      // it reads as something that failed rather than as an answer. Every
-      // state that cannot show the file - not yet, not this type, too big -
-      // gets the file's own type icon over the sentence instead, so they all
-      // look like the same deliberate placeholder.
+      // The preview does not wait on the file's own metadata. It needs a data
+      // transaction, something to decide the type from, and - if private - the
+      // key, and a v2 link carries all three. It does *not* need the drive id,
+      // despite [FsEntryPreviewCubit] taking one: on this path that is only
+      // handed to `_getFileKey`, which returns the key it was given without
+      // looking at it.
+      //
+      // Gating on `detailsAreResolved` made a preview that needs nothing from
+      // the chain wait for a round trip that can hang, and left the pane on
+      // "Loading file details..." with no preview and no way out.
+      // Built the way the resolver builds it, not the way a resolved file
+      // looks. `_revisionFromPayload` takes the drive id from nowhere - no link
+      // carries one - and the name, size and type from the link itself, so a
+      // revision carrying a real drive id and its own content type would pass
+      // this test while the path it guards was broken.
+      const payload = SharedFileLinkPayload(
+        dataTxId: 'data-tx-newest',
+        name: 'Q3 Report.pdf',
+        size: 4821133,
+        contentType: 'application/pdf',
+      );
+
       await pumpPage(
         tester,
         SharedFileLoadSuccess(
-          fileRevisions: [fileRevision()],
+          fileRevisions: [
+            fileRevision(
+              driveId: '',
+              name: payload.name!,
+              size: payload.size!,
+              dataContentType: payload.contentType,
+              // `payload.metadataTxId ?? ''` - this link named no revision.
+              metadataTxId: '',
+            ),
+          ],
+          payload: payload,
+          verification: LinkVerification.pending,
+          detailsAreResolved: false,
+        ),
+        surface: const Size(1440, 1000),
+      );
+
+      expect(find.byKey(sharedFilePreviewPaneKey), findsOneWidget);
+      expect(find.text('Loading file details...'), findsNothing);
+      // The preview is mounted, keyed on the bytes the link named.
+      expect(
+        find.byKey(const ValueKey('data-tx-newest'), skipOffstage: false),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the pane answers with a picture when there is nothing to show',
+        (tester) async {
+      // The pane is 580x430 on a laptop, and a lone sentence in the middle of
+      // it reads as something that failed rather than as an answer. A link with
+      // no data transaction is the case that genuinely cannot preview, and it
+      // gets the file's own type icon over the sentence.
+      await pumpPage(
+        tester,
+        SharedFileLoadSuccess(
+          fileRevisions: [fileRevision(dataTxId: '')],
           verification: LinkVerification.pending,
           detailsAreResolved: false,
         ),
@@ -880,10 +940,10 @@ void main() {
       final pane = find.byKey(sharedFilePreviewPaneKey);
       expect(pane, findsOneWidget);
       expect(
-        find.descendant(of: pane, matching: find.text('Loading file details...')),
+        find.descendant(
+            of: pane, matching: find.text('Loading file details...')),
         findsOneWidget,
       );
-      // The picture above it, not a bare line of text in an empty box.
       expect(
         find.descendant(of: pane, matching: find.byType(ArDriveIcon)),
         findsWidgets,
@@ -1073,7 +1133,8 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('a pinned link says which version it is showing, and puts the '
+    testWidgets(
+        'a pinned link says which version it is showing, and puts the '
         'shared one back', (tester) async {
       await pumpPage(
         tester,

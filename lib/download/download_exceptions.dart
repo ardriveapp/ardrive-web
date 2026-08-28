@@ -37,3 +37,17 @@ class DownloadStalledException implements Exception {
   String toString() =>
       'Download stalled for $txId: no data for ${timeout.inSeconds}s';
 }
+
+/// A file the page resolved as public turned out to be encrypted.
+///
+/// Raised instead of writing ciphertext to disk under the file's own name. The
+/// recipient is missing the key, or the link never said one was needed - see
+/// the guard in `shared_file_download_cubit.dart`.
+class SharedFileIsEncryptedException implements Exception {
+  const SharedFileIsEncryptedException();
+
+  @override
+  String toString() =>
+      'The file is encrypted and no key is in play; refusing to save '
+      'ciphertext.';
+}

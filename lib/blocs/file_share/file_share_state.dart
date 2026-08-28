@@ -52,6 +52,10 @@ class FileShareLoadSuccess extends FileShareState {
   /// `c`/`iv`, which costs the recipient one GraphQL request at download time.
   final bool isLoadingCipherDetails;
 
+  /// The cipher a private link needs could not be resolved, so the link it
+  /// would hand over cannot say the file is encrypted.
+  final bool cipherDetailsFailed;
+
   const FileShareLoadSuccess({
     required this.fileName,
     required this.fileShareLink,
@@ -62,6 +66,7 @@ class FileShareLoadSuccess extends FileShareState {
     this.detailsAreHidden = false,
     this.isPinned = false,
     this.isLoadingCipherDetails = false,
+    this.cipherDetailsFailed = false,
   });
 
   /// Whether the sharer has a key to hand over separately from the link.
@@ -78,6 +83,7 @@ class FileShareLoadSuccess extends FileShareState {
         detailsAreHidden,
         isPinned,
         isLoadingCipherDetails,
+        cipherDetailsFailed,
       ];
 
   // Equatable stringifies its props in debug builds, and one of them is key

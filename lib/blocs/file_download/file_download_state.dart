@@ -155,4 +155,10 @@ enum FileDownloadFailureReason {
   /// and retrying cannot help: the same bytes would fail the same check. The
   /// dialog for this one therefore offers no "Try again".
   integrityCheckFailed,
+
+  /// The link resolved as public, but the file's data transaction is
+  /// encrypted. Nothing was saved: the alternative is writing ciphertext to
+  /// disk under the file's own name, which reads as a corrupt file with no
+  /// explanation. Not retryable - the bytes are fine, the key is missing.
+  encryptedWithoutKey,
 }

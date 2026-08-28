@@ -1,0 +1,22 @@
+# Everything `TransactionDetails` selects, plus what it takes to recompute a
+# data item's ANS-104 deep hash.
+#
+# Separate from `TransactionDetails` on purpose. The schema declares
+# `signature`, `anchor` and `recipient` non-null, but gateways that do not index
+# them answer with `null`, which fails deserialization for the entire query. Any
+# caller of this one is asking for verification and can be told it is
+# unavailable; the cipher path cannot, so it does not select these at all.
+query TransactionDetailsWithSignature($txId: ID!) {
+  transaction(id: $txId) {
+    ...TransactionCommon
+    signature
+    anchor
+    recipient
+    # `TransactionCommon` already selects `owner { address }`, so the public key
+    # has to be aliased: selecting `owner` twice would put two `owner` members
+    # of different types on the generated class.
+    ownerKey: owner {
+      key
+    }
+  }
+}

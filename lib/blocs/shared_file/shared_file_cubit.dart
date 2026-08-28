@@ -412,11 +412,18 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
     emit(_withTarget(current, revision, showsLatestRevision: isNewest));
 
-    await _fetchLicense(
+    // Not awaited. The target has already moved, and the caller
+    // (`shared_file_ready_view.dart`, `_changeRevision`) holds the version
+    // picker and the freshness banner disabled for exactly as long as this
+    // future runs - so awaiting a licence lookup here left the recipient
+    // unable to pick another version until a GraphQL round trip they never
+    // asked for came back. It folds the licence in when it lands, and
+    // `_isStale` drops it if the target has moved on by then.
+    unawaited(_fetchLicense(
       revision,
       current.ownerAddress,
       resolution: _resolution,
-    );
+    ));
   }
 
   /// Takes the file's newest revision as what the page shows and downloads.
@@ -494,7 +501,11 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       ownerAddress: latest.ownerAddress,
     ));
 
-    await _fetchLicense(revision, latest.ownerAddress, resolution: resolution);
+    // Not awaited, for the reason given in [showRevision]: this future is what
+    // the view holds the version controls disabled for.
+    unawaited(
+      _fetchLicense(revision, latest.ownerAddress, resolution: resolution),
+    );
   }
 
   /// Puts the revision the link named back as what the page shows and
@@ -518,11 +529,12 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
     emit(_withTarget(current, linkRevision, showsLatestRevision: false));
 
-    await _fetchLicense(
+    // Not awaited, for the reason given in [showRevision].
+    unawaited(_fetchLicense(
       linkRevision,
       current.ownerAddress,
       resolution: _resolution,
-    );
+    ));
   }
 
   /// Recovers from a data transaction that no gateway will serve.
@@ -610,7 +622,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
           }
         }
       } else {
-        final file = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
+        final file = await _bounded(
+          _arweave.getLatestFileEntityWithId(fileId, fileKey),
+          'checking the key against the file\'s metadata',
+        );
 
         if (file == null) {
           // The file exists - it is what the user is looking at - so the key is
@@ -663,7 +678,7 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       // single request goes out before it.
       _backgroundWork = Future(
         () => _runBackgroundWork(payload, fileKey, resolution: resolution),
-      );
+      ).whenComplete(() => _markResolutionSettled(resolution: resolution));
 
       unawaited(_backgroundWork);
       return;
@@ -806,11 +821,35 @@ class SharedFileCubit extends Cubit<SharedFileState> {
           ),
         ),
       ]),
-    );
+    ).whenComplete(() => _markResolutionSettled(resolution: resolution));
 
     unawaited(_backgroundWork);
 
     return true;
+  }
+
+  /// Records that the metadata resolution has finished without reading the
+  /// file's own record.
+  ///
+  /// Distinct from `!detailsAreResolved`, which is true for every link at first
+  /// paint and therefore says nothing. This only becomes true once the read has
+  /// been attempted and come back empty - and a public file's metadata always
+  /// reads, because encrypted metadata does not parse. So it is the one honest
+  /// signal that a link may have been wrong about privacy, and it is what the
+  /// preview waits for before spending a query asking the transaction what it
+  /// really is.
+  void _markResolutionSettled({required int resolution}) {
+    if (isClosed || _isStale(resolution)) {
+      return;
+    }
+
+    final current = state;
+
+    if (current is! SharedFileLoadSuccess || current.detailsAreResolved) {
+      return;
+    }
+
+    emit(current.copyWith(detailsResolutionFailed: true));
   }
 
   /// Today's resolution path, unchanged: privacy probe, then every revision of
@@ -1035,7 +1074,15 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     FileEntity? latest;
 
     try {
-      latest = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
+      // Bounded like every other read that gates what the recipient sees.
+      // Unbounded, a gateway that accepts the connection and then says nothing
+      // leaves `detailsAreResolved` false forever - and the desktop pane sits
+      // on "Loading file details..." with no preview and no way out, because
+      // the preview needs a drive id that only this read can supply.
+      latest = await _bounded(
+        _arweave.getLatestFileEntityWithId(fileId, fileKey),
+        'looking up the newest revision',
+      );
     } catch (e, stacktrace) {
       // A freshness check that fails changes nothing about the file in hand.
       logger.e(
@@ -1379,7 +1426,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     }
 
     try {
-      return _fileOwner = await _arweave.getOwnerForFileEntityWithId(fileId);
+      return _fileOwner = await _bounded(
+        _arweave.getOwnerForFileEntityWithId(fileId),
+        'resolving the file owner',
+      );
     } catch (e, stacktrace) {
       logger.e(
         'Failed to resolve the owner of the shared file',
@@ -1404,7 +1454,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     required int resolution,
   }) async {
     try {
-      final latest = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
+      final latest = await _bounded(
+        _arweave.getLatestFileEntityWithId(fileId, fileKey),
+        'checking whether a newer revision exists',
+      );
 
       if (latest == null || _isStale(resolution)) {
         return latest;
@@ -1462,7 +1515,16 @@ class SharedFileCubit extends Cubit<SharedFileState> {
 
       final current = state;
 
-      if (current is SharedFileLoadSuccess) {
+      // The licence belongs to one revision, and these no longer run one at a
+      // time. Selection used to hold the version controls until the licence
+      // came back, which serialised them by accident; now that it does not, a
+      // recipient can pick A then B and A's request can finish last.
+      //
+      // [_isStale] cannot catch that: `_resolution` marks a new *load* - a key
+      // being tried - and picking a version is not one. So the target itself is
+      // the guard.
+      if (current is SharedFileLoadSuccess &&
+          isSameRevision(revision, current.revision)) {
         emit(current.copyWith(latestLicense: license));
       }
     } catch (e, stacktrace) {
@@ -1603,7 +1665,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
       }
     }
 
-    final latest = await _arweave.getLatestFileEntityWithId(fileId, fileKey);
+    final latest = await _bounded(
+      _arweave.getLatestFileEntityWithId(fileId, fileKey),
+      'resolving the revision the link points at',
+    );
 
     if (latest == null) {
       return null;
@@ -1630,7 +1695,10 @@ class SharedFileCubit extends Cubit<SharedFileState> {
     String metadataTxId,
     SecretKey? fileKey,
   ) async {
-    final transaction = await _arweave.getTransactionDetails(metadataTxId);
+    final transaction = await _bounded(
+      _arweave.getTransactionDetails(metadataTxId),
+      'reading the shared revision\'s metadata transaction',
+    );
 
     if (transaction == null) {
       return null;

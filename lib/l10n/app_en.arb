@@ -948,6 +948,14 @@
   "@downloadNetworkErrorDescription": {
     "description": "Description for network error during download"
   },
+  "downloadNeedsKey": "This file is encrypted",
+  "@downloadNeedsKey": {
+    "description": "Shown when a shared file turns out to be encrypted and no access key is in play"
+  },
+  "downloadNeedsKeyDescription": "Nothing was saved. This file needs an access key, and the link didn't include one. Ask whoever shared it for the key.",
+  "@downloadNeedsKeyDescription": {
+    "description": "Explains that the download was refused because the file is encrypted and no key was supplied"
+  },
   "downloadFileNotFound": "File Not Found",
   "@downloadFileNotFound": {
     "description": "Title when downloaded file is not found on any gateway"
@@ -2398,6 +2406,10 @@
   "shareFileAccessKeyLabel": "Access key",
   "@shareFileAccessKeyLabel": {
     "description": "Label of the read-only field holding the access key on the share file dialog"
+  },
+  "shareFileLinkIncomplete": "This link can't tell the recipient the file is encrypted. Try again — if it keeps happening, the gateway is unreachable.",
+  "@shareFileLinkIncomplete": {
+    "description": "Shown when a private file's cipher details could not be resolved, so the link would not declare the file encrypted"
   },
   "shareFileFinishingLink": "Still adding this file’s encryption details. The link already works.",
   "@shareFileFinishingLink": {

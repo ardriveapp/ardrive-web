@@ -75,9 +75,10 @@ class ArweaveService {
     this._driveDao,
     this._configService, {
     ArtemisClient? artemisClient,
-  }) : _gql = artemisClient ?? ArtemisClient(_graphqlUrlFromGateway(
-            _configService.config.arweaveGatewayUrl ??
-                defaultGraphqlGateway)) {
+  }) : _gql = artemisClient ??
+            ArtemisClient(_graphqlUrlFromGateway(
+                _configService.config.arweaveGatewayUrl ??
+                    defaultGraphqlGateway)) {
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
@@ -240,35 +241,134 @@ class ArweaveService {
 
   /// The tags, owner address, block and bundle of a transaction.
   ///
-  /// Callers that also need the fields the integrity verifier reads should call
-  /// [getTransactionDetailsWithSignature] instead - it is the same single
-  /// request, not an extra one.
-  Future<TransactionCommonMixin?> getTransactionDetails(String txId) =>
-      getTransactionDetailsWithSignature(txId);
+  /// This is the query the cipher path runs: the preview reads `Cipher` and
+  /// `Cipher-IV` off it to decrypt, and the download reads the same two. It
+  /// selects nothing else, because every field it selects is a field a gateway
+  /// can break it with.
+  ///
+  /// It used to be the same request as [getTransactionDetailsWithSignature],
+  /// which also selects `signature`, `anchor`, `recipient` and `ownerKey` for
+  /// the data item integrity check. The schema declares all four non-null, and
+  /// this code assumed a gateway that does not index one would answer with an
+  /// empty string. Some answer with `null`, and Artemis then fails
+  /// deserialization for the *entire* query - taking the cipher tags with it,
+  /// and with them every private preview and private download on that gateway.
+  ///
+  /// What is remembered is the transaction's tags, owner and bundle, which do
+  /// not change. `block` is on it too and *does* - it is null until the
+  /// transaction is mined - so a caller that wants mined status must ask
+  /// somewhere else rather than read it off a memo that may predate the block.
+  /// Nothing does today.
+  Future<TransactionCommonMixin?> getTransactionDetails(String txId) {
+    final cached = _transactionDetails[txId];
 
-  /// The same single `TransactionDetails` request as [getTransactionDetails],
-  /// typed as the concrete query result so callers can also read what it takes
-  /// to recompute a data item's deep hash signature: `signature`,
-  /// `ownerKey.key` (the owner's full public key), `anchor` and `recipient`
-  /// (the data item's target), next to the `tags` and `bundledIn` of
-  /// `TransactionCommon`.
+    if (cached != null) {
+      return cached;
+    }
+
+    final request = graphQLRetry
+        .execute(TransactionDetailsQuery(
+            variables: TransactionDetailsArguments(txId: txId)))
+        .then((query) => query.data?.transaction)
+        // Bounded here rather than at each call site, because the memo is what
+        // makes an unbounded read dangerous: the entry is only removed once the
+        // future settles, so a request that never does is handed to every later
+        // caller for the life of this service - one hang poisoning one
+        // transaction forever. `GraphQLRetry` has no timeout of its own; it
+        // spends ~6s of backoff on the primary and then retries a fallback, so
+        // this is a backstop well clear of a slow-but-working read, not a UX
+        // deadline. Callers that need a tighter one still apply it themselves.
+        .timeout(_transactionDetailsTimeout);
+
+    // The future is held, not the result, so callers that arrive together share
+    // one request rather than starting a second while the first is in flight -
+    // which is exactly what a preview and the download behind it do.
+    _transactionDetails[txId] = request;
+
+    return request.then((transaction) {
+      // An answer is kept; a miss is not. A transaction that could not be read
+      // may be a rate limit, a gateway that has not indexed it yet, or one that
+      // never will, and none of those is a fact worth remembering. `null` is
+      // also what a not-yet-mined transaction returns, and the page retries
+      // those on purpose.
+      if (transaction == null) {
+        _transactionDetails.remove(txId);
+      } else {
+        _rememberTransaction(txId);
+      }
+
+      return transaction;
+    }, onError: (Object error, StackTrace stackTrace) {
+      _transactionDetails.remove(txId);
+
+      throw error;
+    });
+  }
+
+  /// Everything [getTransactionDetails] returns, plus what it takes to
+  /// recompute a data item's deep hash signature: `signature`, `ownerKey.key`
+  /// (the owner's full public key), `anchor` and `recipient` (the data item's
+  /// target).
   ///
   /// `bundledIn != null` marks an L2 data item, the only case where those four
   /// fields describe an ANS-104 deep hash. For an L1 transaction they describe
   /// the L1 transaction itself, whose integrity comes from its `data_root`
   /// instead.
   ///
-  /// The schema declares all four non-null, so a gateway that does not index
-  /// one returns an empty string rather than null - indistinguishable from a
-  /// data item that genuinely carries no anchor or target (arweave.net returns
-  /// an empty `anchor` for L1 transactions that ar-io.dev returns in full). A
-  /// check that does not pass therefore means "could not verify", never
-  /// "tampered".
-  Future<TransactionDetails$Query$Transaction?>
+  /// A separate request from [getTransactionDetails], and deliberately so. The
+  /// schema declares those four non-null, but a gateway that does not index
+  /// them answers `null` and fails deserialization for the whole query. A
+  /// caller here is asking for verification and can be told it is unavailable;
+  /// the cipher path cannot, so it does not select them at all.
+  ///
+  /// Not memoized: nothing in the app calls this today - the data item
+  /// integrity check is off - and a verification is worth its own request when
+  /// one is asked for.
+  Future<TransactionDetailsWithSignature$Query$Transaction?>
       getTransactionDetailsWithSignature(String txId) async {
-    final query = await graphQLRetry.execute(TransactionDetailsQuery(
-        variables: TransactionDetailsArguments(txId: txId)));
+    final query = await graphQLRetry.execute(
+        TransactionDetailsWithSignatureQuery(
+            variables: TransactionDetailsWithSignatureArguments(txId: txId)));
+
     return query.data?.transaction;
+  }
+
+  /// Transaction details already asked for, by transaction id.
+  ///
+  /// A transaction is immutable: its tags, owner and bundle are the same
+  /// answer every time, so asking twice is never anything but a second round
+  /// trip. Two callers on the shared file page ask for the same one - the
+  /// preview, to read the cipher it decrypts with, and the download behind it
+  /// for the same tags - and before this they each paid for it. On a connection
+  /// the gateway rate limits, the second is the one that fails.
+  final Map<String, Future<TransactionCommonMixin?>> _transactionDetails = {};
+
+  /// Insertion order, so the oldest entry is the one evicted.
+  final List<String> _transactionDetailsOrder = [];
+
+  /// How many transactions to remember.
+  ///
+  /// Small on purpose. This exists to stop one page asking the same question
+  /// twice, not to be a cache of the chain, and a recipient page looks at one
+  /// file.
+  static const _maxRememberedTransactions = 64;
+
+  /// How long a memoized transaction read may stay in flight.
+  ///
+  /// Generous, because it is the backstop that guarantees the memo entry
+  /// settles rather than a deadline anyone waits on - the retry ladder plus a
+  /// fallback endpoint can legitimately take tens of seconds on a bad
+  /// connection, and cutting that short would turn a slow read into a failed
+  /// one.
+  static const _transactionDetailsTimeout = Duration(seconds: 60);
+
+  void _rememberTransaction(String txId) {
+    _transactionDetailsOrder.remove(txId);
+    _transactionDetailsOrder.add(txId);
+
+    while (_transactionDetailsOrder.length > _maxRememberedTransactions) {
+      _transactionDetails.remove(_transactionDetailsOrder.removeAt(0));
+    }
   }
 
   Future<InfoOfTransactionToBePinned$Query$Transaction?> getInfoOfTxToBePinned(
@@ -434,7 +534,8 @@ class ArweaveService {
   /// Fetches pending (unmined) transactions for a drive.
   /// These are transactions that have been indexed but don't yet have a block.
   /// Used to show Turbo-uploaded files immediately before they're mined.
-  Stream<List<DriveEntityHistoryTransactionModel>> getPendingTransactionsForDrive(
+  Stream<List<DriveEntityHistoryTransactionModel>>
+      getPendingTransactionsForDrive(
     String driveId, {
     required String ownerAddress,
   }) async* {
@@ -475,7 +576,8 @@ class ArweaveService {
             .toList();
 
         if (pendingTransactions.isNotEmpty) {
-          logger.d('Found ${pendingTransactions.length} pending transactions for drive $driveId');
+          logger.d(
+              'Found ${pendingTransactions.length} pending transactions for drive $driveId');
           yield pendingTransactions;
         }
 
@@ -688,9 +790,8 @@ class ArweaveService {
       // Process unmined transactions using currentBlockHeight
       // They appear "as of now" and will be updated when actually mined
       // Transaction status system handles pending → confirmed transition
-      final blockHeight = transaction.block?.height
-          ?? currentBlockHeight
-          ?? lastBlockHeight;
+      final blockHeight =
+          transaction.block?.height ?? currentBlockHeight ?? lastBlockHeight;
 
       if (blockHistory.isEmpty ||
           blockHistory.last.blockHeight != blockHeight) {
@@ -824,7 +925,8 @@ class ArweaveService {
     // line each would be the slowest part of the sync.
     snapshotMetadataMisses.update(driveId, (v) => v + 1, ifAbsent: () => 1);
 
-    return getEntityDataFromNetwork(txId: txId).then<Uint8List?>((d) => d)
+    return getEntityDataFromNetwork(txId: txId)
+        .then<Uint8List?>((d) => d)
         .catchError((e) {
       logger.e('Failed to get entity data from network for tx $txId', e);
       return null;
@@ -1516,22 +1618,43 @@ class ArweaveService {
           ),
         ),
       );
+      final allEdges = allFileEntitiesQuery.data!.transactions.edges;
+
+      if (allEdges.isEmpty) {
+        break;
+      }
+
       final List<
               AllFileEntitiesWithId$Query$TransactionConnection$TransactionEdge>
-          queryEdges = allFileEntitiesQuery.data!.transactions.edges
+          queryEdges = allEdges
               .where(
                 (element) => doesTagsContainValidArFSVersion(
                   element.node.tags.map((e) => Tag(e.name, e.value)).toList(),
                 ),
               )
               .toList();
+
+      // A page with nothing usable on it is not the end of the history.
+      //
+      // This used to `break`, which is the difference between this walk and
+      // [getLatestFileEntityWithId] - and the reason a file could report "no
+      // other versions" while the newest-first query found it immediately.
+      // This one sorts HEIGHT_ASC, so the first page it sees is the file's
+      // *oldest* transactions, which are the ones most likely to predate the
+      // ArFS version tag this filter requires. Stopping there discarded every
+      // later page, and the caller reads an empty result as a failure.
       if (queryEdges.isEmpty) {
-        break;
+        cursor = allEdges.last.cursor;
+
+        if (!allFileEntitiesQuery.data!.transactions.pageInfo.hasNextPage) {
+          break;
+        }
+
+        continue;
       }
       for (var edge in queryEdges) {
         final fileTx = edge.node;
-        final fileDataRes =
-            await _gatewayFallback.fetchData(fileTx.id, client);
+        final fileDataRes = await _gatewayFallback.fetchData(fileTx.id, client);
 
         try {
           fileEntities.add(

@@ -18,10 +18,35 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
   /// The cipher IV the share link named. Travels with [cipher] or not at all.
   final String? cipherIv;
 
+  /// Whether "this file is public" is still only the link's word.
+  ///
+  /// False once the file's own metadata has been read as plaintext, which is
+  /// proof: encrypted metadata does not parse. While it is true the page is
+  /// going on the link alone, and a link can be wrong about this in the one
+  /// direction that matters - see the check in `_downloadFile`.
+  final bool publicIsUnconfirmed;
+
+  /// How long the "is this actually encrypted" preflight may take.
+  ///
+  /// It runs before a single byte moves, so it is held to the same budget as
+  /// the reads that gate the shared file page ([SharedFileCubit.
+  /// defaultReadTimeout]) rather than to the service's much longer backstop.
+  /// Exceeding it fails open: the download proceeds, which is what it did
+  /// before this check existed.
+  ///
+  /// Not lower. `GraphQLRetry` spends about six seconds *sleeping* between its
+  /// five attempts on the primary endpoint before it falls back to Goldsky at
+  /// all, on top of the requests themselves. A budget under that does not make
+  /// the check fast, it makes it useless: it expires part way through the
+  /// primary ladder, so the fallback is never reached and the check fails open
+  /// on exactly the rate limited connection it exists for.
+  static const _encryptionPreflightTimeout = Duration(seconds: 15);
+
   SharedFileDownloadCubit({
     this.fileKey,
     this.cipher,
     this.cipherIv,
+    this.publicIsUnconfirmed = false,
     required this.revision,
     required ArweaveService arweave,
     required ArDriveCrypto crypto,
@@ -93,6 +118,68 @@ class SharedFileDownloadCubit extends FileDownloadCubit {
     if (dataTxId == null) {
       throw StateError(
           'Data transaction id is null for file ${revision.id} with name ${revision.name}');
+    }
+
+    // A file with no key in play, that nothing has *shown* to be public.
+    //
+    // The page decides a file is private from the link's `c`, and a link can
+    // arrive without it: `file_share_cubit` resolves the cipher on a bounded,
+    // unawaited lookup and treats the link as complete when it fails - which
+    // it does on any connection the gateway rate limits. The recipient then
+    // reads a private file as public, nothing decrypts, and `downloadFile`
+    // writes the ciphertext to disk under the file's own name. No step errors,
+    // because every step did what it was told; the user gets a file their OS
+    // cannot open and nothing says why.
+    //
+    // So in that one case - no key, and the file's own metadata never read -
+    // ask the transaction what it is. A `Cipher` tag means the bytes are
+    // encrypted and cannot be delivered, which is a failure with a name rather
+    // than a corrupt download.
+    //
+    // Deliberately not on every public download. Metadata that parsed is proof
+    // the file is public, because encrypted metadata does not parse, and a
+    // download must not spend a GraphQL round trip re-establishing something
+    // already known.
+    if (fileKey == null && !isPinFile && publicIsUnconfirmed) {
+      var isEncrypted = false;
+
+      try {
+        // Bounded, because this one sits between the recipient pressing
+        // Download and anything happening. Everything else that gates what the
+        // recipient sees is bounded for the same reason; a preflight that hung
+        // would leave the dialog in `FileDownloadInProgress` with no bytes
+        // moving and no way out.
+        final dataTx = await _arweave
+            .getTransactionDetails(dataTxId)
+            .timeout(_encryptionPreflightTimeout);
+
+        isEncrypted = dataTx?.getTag(EntityTag.cipher) != null;
+      } catch (e) {
+        // The check could not be made. A download that cannot be checked is
+        // still a download the recipient asked for, and the overwhelming
+        // majority of them are exactly what they say they are.
+        logger.w(
+          'Could not confirm whether shared file $dataTxId is encrypted: $e',
+        );
+      }
+
+      // The recipient may have cancelled while that was in flight. Checked
+      // before either outcome is acted on - and before the throw below, which
+      // is why the encrypted case is carried out of the `try` as a flag rather
+      // than thrown from inside it: a cancelled download must neither start nor
+      // have its aborted state overwritten by a failure nobody is waiting for.
+      if (isClosed || state is FileDownloadAborted) {
+        return;
+      }
+
+      if (isEncrypted) {
+        logger.e(
+          'A shared file link resolved as public, but its data transaction '
+          '$dataTxId is encrypted. Refusing to save ciphertext.',
+        );
+
+        throw const SharedFileIsEncryptedException();
+      }
     }
 
     if (fileKey != null && !isPinFile) {
