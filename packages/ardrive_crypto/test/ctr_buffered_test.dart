@@ -55,6 +55,31 @@ void main() {
     expect(decrypted, equals(plaintext));
   });
 
+  test('encryption stays AES-GCM only', () async {
+    // Adding CTR to the *decrypt* map must not quietly enable it for writing.
+    // `Cipher.encrypt` picks its own nonce when none is given, and AesCtr's is
+    // 16 bytes where every ArDrive reader requires 12 - `AesCtrStream` throws
+    // on any other length. Encrypting CTR here would tag `Cipher-IV` with the
+    // wrong length and put a permanently undecryptable file on Arweave.
+    expect(() => cipherBufferEncryptImpl(Cipher.aes256gcm), returnsNormally);
+    expect(
+      () => cipherBufferEncryptImpl(Cipher.aes256ctr),
+      throwsArgumentError,
+      reason: 'a generated CTR nonce is the wrong length for every reader',
+    );
+
+    final key = SecretKey(List<int>.generate(32, (i) => i));
+
+    await expectLater(
+      createEncryptedTransaction(
+        Uint8List.fromList([1, 2, 3]),
+        key,
+        cipher: Cipher.aes256ctr,
+      ),
+      throwsArgumentError,
+    );
+  });
+
   test('the buffered cipher knows both algorithms', () {
     // The regression itself: this threw ArgumentError for CTR, so every
     // private CTR preview died before reaching any decryption at all.

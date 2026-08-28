@@ -38,6 +38,31 @@ crypto.Cipher cipherBufferImpl(String cipherName) {
   return impl;
 }
 
+/// The buffered cipher for *encrypting* [cipherName].
+///
+/// AES-GCM only, deliberately, even though [cipherBufferImpl] can now decrypt
+/// AES-CTR as well. `Cipher.encrypt` generates its own nonce when none is
+/// given, and `AesCtr`'s is **16 bytes** where every ArDrive reader expects
+/// **12** - `AesCtrStream` throws on any other length. Encrypting CTR through
+/// here would therefore tag `Cipher-IV` with sixteen bytes and write a file to
+/// Arweave that nothing can ever decrypt, permanently and silently.
+///
+/// That is the hazard the note on [cipherBufferImpl] was pointing at. It is
+/// real, and it belongs here on the encrypt path rather than as an absence on
+/// the decrypt one - where all it did was make private CTR files unpreviewable.
+crypto.Cipher cipherBufferEncryptImpl(String cipherName) {
+  if (cipherName != Cipher.aes256gcm) {
+    throw ArgumentError.value(
+      cipherName,
+      'cipherName',
+      'Buffered encryption is AES-GCM only: this path cannot choose the nonce, '
+          'and a generated AES-CTR nonce is the wrong length for every reader.',
+    );
+  }
+
+  return AesGcm.with256bits();
+}
+
 FutureOr<DecryptStream> cipherStreamDecryptImpl(
   String cipherName, {
   required Uint8List keyData,
