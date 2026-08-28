@@ -27,6 +27,18 @@ part 'sync_state.dart';
 typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
 
+/// Who asked for a sync.
+///
+/// A [userInitiated] sync is one the user pressed a button for, so it is
+/// allowed to hold the whole app while it runs. A [background] sync is one that
+/// merely happened - the sync on login is the only one in production - and has
+/// to stay out of the way: the app remains usable and the top bar's indicator
+/// is the only place it reports itself.
+enum SyncTrigger {
+  background,
+  userInitiated,
+}
+
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
 class SyncCubit extends Cubit<SyncState> {
@@ -66,9 +78,9 @@ class SyncCubit extends Cubit<SyncState> {
   Map<String, List<String>> get lastSyncSkippedEntityTxIdsByDrive =>
       _lastSyncSkippedEntityTxIdsByDrive;
 
-  int get lastSyncSkippedEntityCount => _lastSyncSkippedEntityTxIdsByDrive
-      .values
-      .fold(0, (sum, txIds) => sum + txIds.length);
+  int get lastSyncSkippedEntityCount =>
+      _lastSyncSkippedEntityTxIdsByDrive.values
+          .fold(0, (sum, txIds) => sum + txIds.length);
 
   void _captureSkippedEntities(SyncProgress progress) {
     _lastSyncSkippedEntityTxIdsByDrive = progress.skippedEntityTxIdsByDrive;
@@ -130,7 +142,10 @@ class SyncCubit extends Cubit<SyncState> {
       // Skip tab visibility check for initial sync because the user just logged in
       // (which requires wallet interaction, proving they're active). The wallet popup
       // may cause the browser to consider the tab unfocused momentarily.
-      startSync(skipTabVisibilityCheck: true);
+      startSync(
+        skipTabVisibilityCheck: true,
+        trigger: SyncTrigger.background,
+      );
     } else {
       logger.d('Skipping full sync: syncAllDrivesOnLogin is disabled');
       syncMetadataOnly();
@@ -145,7 +160,11 @@ class SyncCubit extends Cubit<SyncState> {
         .map((value) {
       /// Only start sync if autoSync is enabled.
       if (_configService.config.autoSync) {
-        return Stream.fromFuture(startSync());
+        // Nobody asked for this one either: it is a timer firing, so it has to
+        // stay out of the way exactly like the sync on login.
+        return Stream.fromFuture(
+          startSync(trigger: SyncTrigger.background),
+        );
       }
     }).listen((_) {
       logger.d('Listening to startSync periodic stream');
@@ -252,11 +271,11 @@ class SyncCubit extends Cubit<SyncState> {
     }
   }
 
-
   Future<void> startSync({
     bool deepSync = false,
     bool skipTabVisibilityCheck = false,
     List<String>? driveIdsToRetry,
+    SyncTrigger trigger = SyncTrigger.userInitiated,
   }) async {
     logger.i('Starting Sync');
 
@@ -279,7 +298,7 @@ class SyncCubit extends Cubit<SyncState> {
 
       _initSync = DateTime.now();
 
-      emit(SyncInProgress());
+      emit(SyncInProgress(trigger: trigger));
       // Emit initial progress AFTER SyncInProgress so the modal is already
       // listening to the stream when we emit
       syncProgressController.add(_syncProgress);
@@ -377,6 +396,7 @@ class SyncCubit extends Cubit<SyncState> {
           drivesCompleted: _syncProgress.drivesSynced,
           totalDrives: _syncProgress.drivesCount,
           cancelledAt: DateTime.now(),
+          trigger: trigger,
         ));
         _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
         return; // Exit early for cancellation
@@ -427,6 +447,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<void> startSyncForDrive({
     required String driveId,
     bool deepSync = false,
+    SyncTrigger trigger = SyncTrigger.userInitiated,
   }) async {
     logger.i('Starting Sync for drive: $driveId, deepSync: $deepSync');
 
@@ -435,7 +456,8 @@ class SyncCubit extends Cubit<SyncState> {
       await waitCurrentSync();
       // Re-check: another caller may have started syncing while we waited
       if (state is SyncInProgress) {
-        logger.d('Another sync started while waiting, aborting single drive sync');
+        logger.d(
+            'Another sync started while waiting, aborting single drive sync');
         return;
       }
     }
@@ -458,7 +480,7 @@ class SyncCubit extends Cubit<SyncState> {
 
       _initSync = DateTime.now();
 
-      emit(SyncInProgress());
+      emit(SyncInProgress(trigger: trigger));
       // Emit initial progress AFTER SyncInProgress so the modal is already
       // listening to the stream when we emit
       syncProgressController.add(_syncProgress);
@@ -472,13 +494,15 @@ class SyncCubit extends Cubit<SyncState> {
 
         // For ArConnect users, check tab visibility
         if (isArConnect && !_tabVisibility.isTabFocused()) {
-          logger.d('Tab hidden for ArConnect user, skipping single drive sync...');
+          logger.d(
+              'Tab hidden for ArConnect user, skipping single drive sync...');
           emit(SyncIdle());
           return;
         }
 
         if (_activityCubit.state is ActivityInProgress) {
-          logger.d('Uninterruptible activity in progress, skipping single drive sync...');
+          logger.d(
+              'Uninterruptible activity in progress, skipping single drive sync...');
           emit(SyncIdle());
           return;
         }
@@ -530,6 +554,7 @@ class SyncCubit extends Cubit<SyncState> {
           drivesCompleted: _syncProgress.drivesSynced,
           totalDrives: _syncProgress.drivesCount,
           cancelledAt: DateTime.now(),
+          trigger: trigger,
         ));
         _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
         return;

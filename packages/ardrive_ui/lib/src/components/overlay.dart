@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 
 export 'package:flutter_portal/flutter_portal.dart'
-    show Anchor, Aligned, Filled;
+    show Anchor, Aligned, AxisFlag, Filled;
 
 class ArDriveDropdown extends StatefulWidget {
   const ArDriveDropdown({
@@ -24,6 +24,7 @@ class ArDriveDropdown extends StatefulWidget {
     this.onClick,
     this.hasDivider = true,
     this.hasBorder = true,
+    this.header,
   });
 
   final double height;
@@ -37,6 +38,12 @@ class ArDriveDropdown extends StatefulWidget {
   final Function? onClick;
   final bool hasDivider;
   final bool hasBorder;
+
+  /// Sits above the items and outside their hover wrapper, for a menu that
+  /// needs to state something rather than offer it. It does not highlight like
+  /// an action; it is still dismissed by the overlay's barrier like the rest of
+  /// the menu.
+  final Widget? header;
 
   // retruns the alignment based if the current widget y coordinate is greater than half the screen height
   final Alignment Function(bool)? calculateVerticalAlignment;
@@ -129,6 +136,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
+                    if (widget.header != null) widget.header!,
                     Column(
                       children: List.generate(widget.items.length, (index) {
                         return GestureDetector(
