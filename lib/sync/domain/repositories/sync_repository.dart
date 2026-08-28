@@ -309,6 +309,14 @@ class _SyncRepository implements SyncRepository {
 
     yield syncProgress;
 
+    // The first network call of a sync, and the one that has nothing local to
+    // fall back on. Until now the dialog sat at 0% with nothing to say while a
+    // slow gateway was asked for the chain head.
+    syncProgress = syncProgress.copyWith(
+      statusMessage: 'Connecting to the network...',
+    );
+    yield syncProgress;
+
     final currentBlockHeight = await retry(
       () async => await _arweave.getCurrentBlockHeight(),
       onRetry: (exception) => logger.w(
@@ -323,6 +331,13 @@ class _SyncRepository implements SyncRepository {
     List<Drive> drivesToSync;
     if (syncDeep) {
       drivesToSync = drives;
+      // A deep sync passes lastBlockHeight: 0 for every drive below, so every
+      // drive is read from the start of its history - not just the ones that
+      // have never been synced. Nothing is skipped, so skippedDriveCount is
+      // left at its zero default.
+      syncProgress = syncProgress.copyWith(
+        firstTimeSyncDriveCount: drives.length,
+      );
     } else {
       syncProgress = syncProgress.copyWith(
         statusMessage: 'Checking for changes...',
@@ -348,6 +363,9 @@ class _SyncRepository implements SyncRepository {
           if (neverSyncedDrives.isNotEmpty) {
             logger.i('${neverSyncedDrives.length} drives need first-time sync');
           }
+          syncProgress = syncProgress.copyWith(
+            firstTimeSyncDriveCount: neverSyncedDrives.length,
+          );
         } else {
           // Group previously-synced drives by owner for efficient probing
           final drivesByOwner = <String, List<Drive>>{};
@@ -395,10 +413,22 @@ class _SyncRepository implements SyncRepository {
           if (neverSyncedDrives.isNotEmpty) {
             logger.i('${neverSyncedDrives.length} drives need first-time sync');
           }
+          syncProgress = syncProgress.copyWith(
+            firstTimeSyncDriveCount: neverSyncedDrives.length,
+            skippedDriveCount: skipped,
+          );
         }
       } catch (e) {
         logger.w('Drive activity probe failed, syncing all drives: $e');
         drivesToSync = drives;
+        // The probe could not answer, so every drive is synced and none is
+        // skipped. Each still walks from its own watermark, so the drives read
+        // from the start of their history are exactly the never-synced ones.
+        syncProgress = syncProgress.copyWith(
+          firstTimeSyncDriveCount:
+              drives.where((d) => (d.lastBlockHeight ?? 0) == 0).length,
+          skippedDriveCount: 0,
+        );
       }
     }
 
@@ -411,7 +441,12 @@ class _SyncRepository implements SyncRepository {
     if (numberOfDrivesToSync == 0) {
       // Probe found no drives with activity — this is a successful no-op sync
       logger.i('No drives need syncing');
-      yield SyncProgress.emptySyncCompleted();
+      // Carry the probe's counts through. "Nothing to do" is exactly the sync
+      // where the number of drives it skipped is the whole story.
+      yield SyncProgress.emptySyncCompleted().copyWith(
+        firstTimeSyncDriveCount: syncProgress.firstTimeSyncDriveCount,
+        skippedDriveCount: syncProgress.skippedDriveCount,
+      );
       _lastSync = DateTime.now();
       return;
     }
@@ -424,6 +459,13 @@ class _SyncRepository implements SyncRepository {
     // each drive's sync to avoid redundant per-drive snapshot queries.
     final prefetchedSnapshots = <String, List<SnapshotEntityTransaction>>{};
     if (_configService.config.enableSyncFromSnapshot && !syncDeep) {
+      // The single largest download of a sync - tens of MB for a wallet with
+      // history - and the longest stretch of it that said nothing at all.
+      syncProgress = syncProgress.copyWith(
+        statusMessage: 'Downloading drive snapshots...',
+      );
+      yield syncProgress;
+
       try {
         // Reuse the drivesByOwner grouping from the probe (or rebuild it)
         final snapshotDrivesByOwner = <String, List<Drive>>{};
@@ -493,6 +535,10 @@ class _SyncRepository implements SyncRepository {
         logger.w('Snapshot prefetch failed, will fetch per-drive: $e');
         prefetchedSnapshots.clear();
       }
+
+      // Clear the prefetch status message
+      syncProgress = syncProgress.copyWith(statusMessage: null);
+      yield syncProgress;
     }
 
     double totalProgress = 0;
@@ -839,6 +885,19 @@ class _SyncRepository implements SyncRepository {
       drivesCount: 1,
       isSingleDriveSync: true,
       driveName: drive.name,
+      // Same question this path already answers below when it decides where to
+      // start the walk: a deep sync reads from block zero, and so does a drive
+      // that has never been synced. Set here rather than left at its default,
+      // because a field that is only correct on the all-drives path is worse
+      // than one that is absent - a caller cannot tell which it is holding.
+      firstTimeSyncDriveCount:
+          syncDeep || (drive.lastBlockHeight ?? 0) == 0 ? 1 : 0,
+    );
+    yield syncProgress;
+
+    // Same silent first call as the all-drives path.
+    syncProgress = syncProgress.copyWith(
+      statusMessage: 'Connecting to the network...',
     );
     yield syncProgress;
 
@@ -848,6 +907,11 @@ class _SyncRepository implements SyncRepository {
         'Retrying for get the current block height',
       ),
     );
+
+    // Clear it again: the drive walk that follows is reported as a percentage,
+    // and the dialog already names this drive in its title.
+    syncProgress = syncProgress.copyWith(statusMessage: null);
+    yield syncProgress;
 
     final StreamController<SyncProgress> syncProgressController =
         StreamController<SyncProgress>.broadcast();

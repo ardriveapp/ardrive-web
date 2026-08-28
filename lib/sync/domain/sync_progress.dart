@@ -21,6 +21,8 @@ class SyncProgress extends LinearProgress {
     this.driveName,
     this.skippedEntityCount = 0,
     this.skippedEntityTxIdsByDrive = const {},
+    this.firstTimeSyncDriveCount = 0,
+    this.skippedDriveCount = 0,
   });
 
   factory SyncProgress.initial() {
@@ -84,6 +86,17 @@ class SyncProgress extends LinearProgress {
   /// "failed files" in the UI. See `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
   final Map<String, List<String>> skippedEntityTxIdsByDrive;
 
+  /// Number of drives in this sync that are read from the start of their
+  /// history rather than from a watermark, and so cost a full history walk:
+  /// the drives that have never been synced before, and — in a deep sync,
+  /// which rewinds every drive to block zero — all of them.
+  final int firstTimeSyncDriveCount;
+
+  /// Number of drives the activity probe found unchanged and left out of this
+  /// sync. Zero for a deep sync, and zero when the probe could not answer -
+  /// in both of those cases nothing was skipped.
+  final int skippedDriveCount;
+
   /// Flat list of every skipped transaction id, drive association discarded.
   List<String> get skippedEntityTxIds =>
       [...skippedEntityTxIdsByDrive.values.expand((txIds) => txIds)];
@@ -110,6 +123,8 @@ class SyncProgress extends LinearProgress {
     Object? driveName = _absent,
     int? skippedEntityCount,
     Map<String, List<String>>? skippedEntityTxIdsByDrive,
+    int? firstTimeSyncDriveCount,
+    int? skippedDriveCount,
   }) {
     return SyncProgress(
       numberOfEntities: numberOfEntities ?? this.numberOfEntities,
@@ -131,6 +146,9 @@ class SyncProgress extends LinearProgress {
       skippedEntityCount: skippedEntityCount ?? this.skippedEntityCount,
       skippedEntityTxIdsByDrive:
           skippedEntityTxIdsByDrive ?? this.skippedEntityTxIdsByDrive,
+      firstTimeSyncDriveCount:
+          firstTimeSyncDriveCount ?? this.firstTimeSyncDriveCount,
+      skippedDriveCount: skippedDriveCount ?? this.skippedDriveCount,
     );
   }
 }
