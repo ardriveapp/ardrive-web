@@ -43,13 +43,19 @@ void main() {
       // terms of what the consumer rejects.
       final batchSize = sizeFor(5000);
 
-      expect(
-        () => BatchProcessor().batchProcess<int>(
-          list: const [1, 2, 3],
+      // Consumed, not merely called. `batchProcess` is `async*`, so its
+      // `batchSize` guard does not run until something listens - a test that
+      // only calls it passes with a batch size of zero, which is the single
+      // value the guard exists to reject.
+      //
+      // The list is mutable because `batchProcess` clears it.
+      await expectLater(
+        BatchProcessor().batchProcess<int>(
+          list: [1, 2, 3],
           batchSize: batchSize,
           endOfBatchCallback: (_) => const Stream<double>.empty(),
         ),
-        returnsNormally,
+        emitsDone,
       );
     });
 
