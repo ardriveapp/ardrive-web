@@ -26,6 +26,7 @@ class _FakeHttpClient extends BaseClient {
   final StreamedResponse Function(int attempt) _respond;
 
   int sends = 0;
+  bool closed = false;
 
   @override
   Future<StreamedResponse> send(BaseRequest request) async {
@@ -33,6 +34,9 @@ class _FakeHttpClient extends BaseClient {
 
     return _respond(sends);
   }
+
+  @override
+  void close() => closed = true;
 }
 
 StreamedResponse _streamed(String body, int status) =>
@@ -313,6 +317,38 @@ void main() {
           response.body,
           'chunk0chunk1chunk2chunk3chunk4chunk5chunk6chunk7'
           'chunk8chunk9');
+    });
+
+    test('the backstop hangs up on a read that outlives it', () async {
+      // `Future.timeout` does not cancel what it times out. Without closing the
+      // client the read would carry on buffering - up to the 100 MiB preview
+      // cap - and hold its connection long after the caller was told it had
+      // failed. Chunks keep arriving inside the per-chunk budget, so only the
+      // total can end this one.
+      final client = _FakeHttpClient(
+        (_) => StreamedResponse(
+          dribble(count: 50, gap: const Duration(milliseconds: 20)),
+          200,
+        ),
+      );
+
+      final bounded = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+        dataRequestTimeout: const Duration(milliseconds: 200),
+        dataTotalTimeout: const Duration(milliseconds: 120),
+      );
+
+      await expectLater(
+        bounded.fetchData(txId, primaryClient),
+        throwsA(isA<Object>()),
+      );
+
+      expect(
+        client.closed,
+        isTrue,
+        reason: 'the connection must be hung up, not left reading',
+      );
     });
 
     test('a gateway that goes quiet is still dropped', () async {

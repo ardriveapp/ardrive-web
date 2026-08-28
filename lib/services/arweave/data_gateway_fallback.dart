@@ -132,15 +132,21 @@ class DataGatewayFallback {
   /// only way to tell a stall timeout from a deadline.
   final Duration _dataRequestTimeout;
 
+  /// Injectable for the same reason: the backstop is three minutes, and a test
+  /// has to be able to reach it to prove the connection is hung up.
+  final Duration _dataTotalTimeout;
+
   DataGatewayFallback({
     required ArioSDK arioSDK,
     Client Function()? clientFactory,
     @visibleForTesting Duration? syncRequestTimeout,
     @visibleForTesting Duration? syncLargeBodyRequestTimeout,
     @visibleForTesting Duration? dataRequestTimeout,
+    @visibleForTesting Duration? dataTotalTimeout,
   })  : _arioSDK = arioSDK,
         _clientFactory = clientFactory ?? Client.new,
         _dataRequestTimeout = dataRequestTimeout ?? _requestTimeout,
+        _dataTotalTimeout = dataTotalTimeout ?? _totalFetchTimeout,
         _syncRequestTimeout = syncRequestTimeout ?? _requestTimeout,
         _syncLargeBodyRequestTimeout =
             syncLargeBodyRequestTimeout ?? largeBodyRequestTimeout;
@@ -152,11 +158,25 @@ class DataGatewayFallback {
   ///
   /// If ALL gateways return 404, throws [TransactionNotFound].
   Future<Response> fetchData(String txId, Arweave primaryClient) async {
-    return _serialFetch(txId, primaryClient).timeout(_totalFetchTimeout,
-        onTimeout: () {
-      logger.w('Total fetch timeout exceeded for tx $txId');
-      throw Exception('Total fetch timeout exceeded for tx $txId');
-    });
+    // One client for the whole waterfall, so the backstop below has something
+    // to hang up with. `Future.timeout` does not cancel what it times out: the
+    // read would otherwise carry on buffering - up to the 100 MiB preview cap -
+    // and holding its connection long after the caller was told it had failed.
+    // Closing the client aborts the request in flight (`BrowserClient.close`
+    // fires its `AbortController`).
+    final httpClient = _clientFactory();
+
+    try {
+      return await _serialFetch(txId, primaryClient, httpClient: httpClient)
+          .timeout(_dataTotalTimeout, onTimeout: () {
+        logger.w('Total fetch timeout exceeded for tx $txId');
+        httpClient.close();
+
+        throw Exception('Total fetch timeout exceeded for tx $txId');
+      });
+    } finally {
+      httpClient.close();
+    }
   }
 
   /// Fetch transaction data for **sync** metadata reads.
@@ -260,7 +280,11 @@ class DataGatewayFallback {
     );
   }
 
-  Future<Response> _serialFetch(String txId, Arweave primaryClient) async {
+  Future<Response> _serialFetch(
+    String txId,
+    Arweave primaryClient, {
+    required Client httpClient,
+  }) async {
     final clients = await _buildClientList(primaryClient);
     var all404 = true;
 
@@ -288,7 +312,7 @@ class DataGatewayFallback {
         var retryable = false;
 
         try {
-          final response = await _tryGatewayStreamed(client, txId);
+          final response = await _tryGatewayStreamed(client, txId, httpClient);
           if (!isPrimary) {
             logger.i('Fallback gateway $gatewayName succeeded for tx $txId');
           }
@@ -628,13 +652,13 @@ class DataGatewayFallback {
   /// there and one less moving part.
   Future<Response> _tryGatewayStreamed(
     Arweave client,
-    String txId, {
+    String txId,
+    Client httpClient, {
     Duration? requestTimeout,
   }) async {
     final budget = requestTimeout ?? _dataRequestTimeout;
-    final httpClient = _clientFactory();
 
-    try {
+    {
       final request = Request(
         'GET',
         Uri.parse(
@@ -671,8 +695,6 @@ class DataGatewayFallback {
         headers: response.headers,
         reasonPhrase: response.reasonPhrase,
       );
-    } finally {
-      httpClient.close();
     }
   }
 
