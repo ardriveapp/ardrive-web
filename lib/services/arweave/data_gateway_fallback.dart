@@ -670,6 +670,13 @@ class DataGatewayFallback {
       final response = await httpClient.send(request).timeout(budget);
 
       if (response.statusCode < 200 || response.statusCode > 208) {
+        // Nobody is going to read this body, and the client is shared by every
+        // gateway in the waterfall now - so an abandoned error response would
+        // hold its reader open for the rest of the run rather than until the
+        // end of this attempt. `getSandboxedTx` consumed the body whatever the
+        // status; streaming has to say so.
+        await response.stream.listen(null).cancel();
+
         throw _ErrorFromStatus(response.statusCode, txId);
       }
 
