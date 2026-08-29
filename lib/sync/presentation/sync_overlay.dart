@@ -20,10 +20,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// opening drives and uploading while it runs; the top bar's [SyncButton] is
 /// the only place it shows up.
 ///
-/// Errors are the exception to that. [SyncCompleteWithErrors] blocks whatever
-/// asked for it, because it is the one sync outcome that asks a question - the
-/// modal offers a retry - and a question nobody sees is a question nobody
-/// answers.
+/// Errors follow the same rule. A failure the user was waiting on keeps the
+/// modal it was already holding, retry button and all. A failure from a sync
+/// nobody asked for does not seize the screen to ask a question the user has
+/// no context for - it reports at the top bar's [SyncButton], where the sync
+/// was running, and keeps Retry reachable in that button's menu.
 class SyncOverlay extends StatelessWidget {
   const SyncOverlay({
     super.key,
@@ -46,8 +47,12 @@ class SyncOverlay extends StatelessWidget {
     if (state is SyncComplete) {
       return false;
     }
+    // Errors used to be the one terminal state with no trigger to honour, so
+    // a login sync that painted nothing while it ran would still drop a scrim
+    // and "Sync Incomplete" over whatever the user was in the middle of the
+    // moment one drive out of several failed. It reports at the top bar now.
     if (state is SyncCompleteWithErrors) {
-      return true;
+      return state.trigger == SyncTrigger.userInitiated;
     }
     if (state is SyncInProgress) {
       return state.trigger == SyncTrigger.userInitiated;

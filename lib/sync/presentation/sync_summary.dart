@@ -29,8 +29,13 @@ bool syncSummaryIsFresh(SyncComplete state, {DateTime? now}) =>
 /// the freshness boundary would run almost twice the intended time. The timer
 /// is counted from when the sync finished, not from when something happened to
 /// draw it.
-Duration syncSummaryRemaining(SyncComplete state, {DateTime? now}) {
-  final elapsed = (now ?? DateTime.now()).difference(state.completedAt);
+Duration syncSummaryRemaining(SyncComplete state, {DateTime? now}) =>
+    syncSummaryRemainingSince(state.completedAt, now: now);
+
+/// [syncSummaryRemaining] for anything that carries a finish time - a failure
+/// announces itself on the same terms a result does.
+Duration syncSummaryRemainingSince(DateTime completedAt, {DateTime? now}) {
+  final elapsed = (now ?? DateTime.now()).difference(completedAt);
   final remaining = syncSummaryDuration - elapsed;
   return remaining.isNegative ? Duration.zero : remaining;
 }

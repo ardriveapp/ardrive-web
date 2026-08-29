@@ -9,20 +9,26 @@ import 'package:flutter_test/flutter_test.dart';
 /// which is the sync the user most needs to learn they can ignore next time.
 void main() {
   group('how long a result is entitled to', () {
+    // A fixed clock, not the wall clock: these assert durations to the
+    // millisecond, and a GC pause between constructing the state and reading
+    // the remainder would otherwise fail them for a reason unrelated to the
+    // code. syncSummaryRemaining takes `now` precisely so it can be pinned.
+    final now = DateTime(2026, 8, 29, 12);
+
     SyncComplete completedAgo(Duration ago) => SyncComplete(
           entitiesSynced: 0,
           skippedEntityCount: 0,
           isSingleDriveSync: false,
           driveName: null,
           trigger: SyncTrigger.background,
-          completedAt: DateTime.now().subtract(ago),
+          completedAt: now.subtract(ago),
           sequence: 1,
         );
 
     test('a fresh result gets the whole window', () {
-      final remaining = syncSummaryRemaining(completedAgo(Duration.zero));
-      expect(remaining.inMilliseconds,
-          closeTo(syncSummaryDuration.inMilliseconds, 100));
+      final remaining =
+          syncSummaryRemaining(completedAgo(Duration.zero), now: now);
+      expect(remaining, syncSummaryDuration);
     });
 
     test('a result built near the boundary gets only what is left', () {
@@ -31,14 +37,14 @@ void main() {
       // its entitlement.
       final remaining = syncSummaryRemaining(
         completedAgo(syncSummaryDuration - const Duration(milliseconds: 200)),
+        now: now,
       );
-      expect(remaining, lessThan(const Duration(milliseconds: 400)));
-      expect(remaining, greaterThan(Duration.zero));
+      expect(remaining, const Duration(milliseconds: 200));
     });
 
     test('an expired result gets nothing, never a negative', () {
       expect(
-        syncSummaryRemaining(completedAgo(const Duration(hours: 1))),
+        syncSummaryRemaining(completedAgo(const Duration(hours: 1)), now: now),
         Duration.zero,
       );
     });

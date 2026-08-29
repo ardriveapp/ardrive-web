@@ -99,22 +99,52 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
-  testWidgets('errors block even when nobody asked for the sync',
-      (tester) async {
-    await tester.pumpWidget(
-      wrap(
-        SyncCompleteWithErrors(
-          failedDrives: 1,
-          totalDrives: 3,
-          failedDriveIds: const ['drive-id'],
-          errorMessages: const {'drive-id': 'the gateway said no'},
-        ),
-      ),
-    );
+  SyncCompleteWithErrors failed({
+    SyncTrigger trigger = SyncTrigger.userInitiated,
+  }) =>
+      SyncCompleteWithErrors(
+        failedDrives: 1,
+        totalDrives: 3,
+        failedDriveIds: const ['drive-id'],
+        errorMessages: const {'drive-id': 'the gateway said no'},
+        trigger: trigger,
+      );
+
+  testWidgets('a failure the user waited for keeps its modal', (tester) async {
+    // They are looking at the sync; the answer belongs where the question was
+    // asked, retry and all.
+    await tester.pumpWidget(wrap(failed()));
     await tester.pump();
 
     expect(find.byType(SyncScrim), findsOneWidget);
     expect(find.text('Retry Failed'), findsOneWidget);
+  });
+
+  testWidgets('a failure nobody asked for does not take the screen',
+      (tester) async {
+    // The login sync paints nothing while it runs, so the user is in the
+    // middle of something else. One drive out of several failing used to drop
+    // a full-screen scrim and "Sync Incomplete - Errors Detected" over it -
+    // SyncCompleteWithErrors was the only terminal state with no trigger to
+    // honour. It reports at the top bar's sync button instead.
+    await tester.pumpWidget(wrap(failed(trigger: SyncTrigger.background)));
+    await tester.pump();
+
+    expect(find.byType(SyncScrim), findsNothing);
+    expect(find.byType(ArDriveStandardModalNew), findsNothing);
+    expect(find.text('Sync Incomplete - Errors Detected'), findsNothing);
+  });
+
+  testWidgets('every terminal state follows the sync it came from',
+      (tester) async {
+    for (final trigger in SyncTrigger.values) {
+      expect(
+        SyncOverlay.blocksTheApp(failed(trigger: trigger)),
+        trigger == SyncTrigger.userInitiated,
+        reason: 'a $trigger sync that failed must block exactly as much as a '
+            '$trigger sync that is running',
+      );
+    }
   });
 
   testWidgets('cancelling follows the sync it came from', (tester) async {

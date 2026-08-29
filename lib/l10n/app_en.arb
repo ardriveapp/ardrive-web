@@ -2780,6 +2780,24 @@
   "@retryFailedDrives": {
     "description": "Button to retry syncing only the drives that failed"
   },
+  "syncDrivesFailed": "{failed} of {total} drives could not be synced",
+  "@syncDrivesFailed": {
+    "description": "How a sync nobody asked for reports its failures at the top bar. Short on purpose: the long warning belongs in the modal a user-initiated sync is already holding",
+    "placeholders": {
+      "failed": {
+        "type": "int",
+        "example": "2"
+      },
+      "total": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "multiSelectPausedWhileSyncing": "Selecting several items is paused while syncing",
+  "@multiSelectPausedWhileSyncing": {
+    "description": "Why ctrl-click and ctrl-A do nothing in the file list while a sync is rewriting rows"
+  },
   "syncElapsedTime": "{seconds}s elapsed",
   "@syncElapsedTime": {
     "description": "Elapsed time shown during sync after 5 seconds",

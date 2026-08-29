@@ -371,4 +371,114 @@ void main() {
       },
     );
   });
+
+  group('DriveDetailCubit during a background sync', () {
+    const otherDriveId = 'other-drive-id';
+    const otherRootFolderId = 'other-root-folder-id';
+
+    /// A second drive, fully readable: the one the user clicks over to.
+    Future<void> insertOtherDrive() async {
+      await db.into(db.drives).insert(
+            DrivesCompanion.insert(
+              id: otherDriveId,
+              name: 'Other Drive',
+              ownerAddress: ownerAddress,
+              rootFolderId: otherRootFolderId,
+              privacy: DrivePrivacyTag.public,
+              lastBlockHeight: const Value(100),
+            ),
+          );
+
+      await db.into(db.folderEntries).insert(
+            FolderEntriesCompanion.insert(
+              id: otherRootFolderId,
+              driveId: otherDriveId,
+              name: 'Other Drive',
+              path: '',
+            ),
+          );
+
+      await driveDao.insertFolderRevision(
+        FolderRevisionsCompanion.insert(
+          folderId: otherRootFolderId,
+          driveId: otherDriveId,
+          name: 'Other Drive',
+          metadataTxId: 'other-metadata-tx-id',
+          action: RevisionAction.create,
+        ),
+      );
+    }
+
+    /// Clicking a drive while the login sync is still running used to produce
+    /// nothing at all - no navigation, no spinner, no error, the drive the
+    /// user had just left still on screen - for as long as the sync ran, which
+    /// on a large wallet is minutes. `openFolder` awaited the sync as its
+    /// first statement, and `changeDrive` had already cancelled the folder
+    /// subscription and moved the drive id by then, so the screen was showing
+    /// something the cubit had already stopped maintaining.
+    ///
+    /// While a sync scrimmed the whole app the click was impossible. Now that
+    /// a background sync leaves the app usable, it is the first thing a tester
+    /// does.
+    test('a drive clicked during a background sync answers straight away',
+        () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-1');
+      await insertOtherDrive();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(cubit.state, isA<DriveDetailLoadSuccess>(),
+          reason: 'precondition: the first drive is on screen');
+
+      // A sync that is running and has not finished. Deliberately never
+      // completed: the point is what the app does *during* it.
+      final syncing = Completer<void>();
+      when(() => syncCubit.waitCurrentSync()).thenAnswer((_) => syncing.future);
+
+      unawaited(cubit.changeDrive(otherDriveId));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        cubit.state,
+        isA<DriveDetailLoadInProgress>(),
+        reason: 'the click has to be answered before the wait, not after it - '
+            'otherwise the drive the user left stays on screen, with nothing '
+            'to say the app heard them, for the whole sync',
+      );
+    });
+
+    /// The wait itself is not the bug and must survive: a folder opened
+    /// against a half-written database is the reason it is there.
+    test('the folder still waits for the sync before it is read', () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-1');
+      await insertOtherDrive();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final syncing = Completer<void>();
+      when(() => syncCubit.waitCurrentSync()).thenAnswer((_) => syncing.future);
+
+      unawaited(cubit.changeDrive(otherDriveId));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(cubit.state, isA<DriveDetailLoadInProgress>(),
+          reason: 'precondition: the click was answered');
+
+      syncing.complete();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      final state = cubit.state;
+      expect(state, isA<DriveDetailLoadSuccess>());
+      expect((state as DriveDetailLoadSuccess).currentDrive.id, otherDriveId);
+    });
+  });
 }

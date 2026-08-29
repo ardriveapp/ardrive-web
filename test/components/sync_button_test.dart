@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/components/app_top_bar.dart';
+import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
@@ -40,6 +41,8 @@ void main() {
     when(() => syncCubit.syncProgressController).thenReturn(progressController);
     when(() => syncCubit.syncProgress).thenReturn(SyncProgress.initial());
     when(() => syncCubit.syncStartTime).thenReturn(DateTime.now());
+    when(() => syncCubit.clearErrorState()).thenReturn(null);
+    when(() => syncCubit.retryFailedDrives(any())).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -577,5 +580,253 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(find.byType(ArDriveDropdown), findsOneWidget);
+  });
+
+  /// A sync that ended with drives it could not read, as the cubit reports it.
+  SyncCompleteWithErrors failed({
+    SyncTrigger trigger = SyncTrigger.background,
+    DateTime? completedAt,
+  }) =>
+      SyncCompleteWithErrors(
+        completedAt: completedAt,
+        failedDrives: 2,
+        totalDrives: 5,
+        failedDriveIds: const ['drive-a', 'drive-b'],
+        errorMessages: const {'drive-a': 'the gateway said no'},
+        trigger: trigger,
+      );
+
+  /// Opens the resync menu and waits for it to finish expanding.
+  Future<void> openMenu(WidgetTester tester) async {
+    await tester.tap(find.byType(SyncButton));
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  ArDriveDropdownItemTile itemNamed(WidgetTester tester, String name) =>
+      tester.widget<ArDriveDropdownItemTile>(
+        find.widgetWithText(ArDriveDropdownItemTile, name),
+      );
+
+  /// The menu entry behind an item, so a test can ask whether it has anything
+  /// to run. The items live in the portal's overlay, where a synthesised tap
+  /// lands on the dropdown's own dismiss barrier rather than on the row, so
+  /// what the row would do is read off the item instead of mimed at it.
+  ArDriveDropdownItem entryNamed(WidgetTester tester, String name) =>
+      tester.widget<ArDriveDropdownItem>(
+        find.ancestor(
+          of: find.widgetWithText(ArDriveDropdownItemTile, name),
+          matching: find.byType(ArDriveDropdownItem),
+        ),
+      );
+
+  group('the menu while a sync runs', () {
+    testWidgets('resync says it is unavailable rather than doing nothing',
+        (tester) async {
+      // `SyncCubit.startSync` returns immediately while a sync is in progress -
+      // a guard written when a running sync scrimmed the app and nobody could
+      // ask. Now the menu is fully interactive, so an item that looks normal,
+      // closes the menu and drops the request is a lie.
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      await openMenu(tester);
+      expect(itemNamed(tester, 'Resync').isDisabled, isFalse,
+          reason: 'precondition: an idle menu offers the actions');
+      expect(itemNamed(tester, 'Deep Resync').isDisabled, isFalse);
+      expect(entryNamed(tester, 'Resync').onClick, isNotNull);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+      await startSyncing(tester);
+      await openMenu(tester);
+
+      expect(itemNamed(tester, 'Resync').isDisabled, isTrue);
+      expect(itemNamed(tester, 'Deep Resync').isDisabled, isTrue);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a resync that cannot start is never recorded as one',
+        (tester) async {
+      // The dropped request used to take a Plausible event and a profile-name
+      // refresh with it. Both live in the same closure as the startSync call,
+      // and a disabled item has no closure at all.
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+      await startSyncing(tester);
+      await openMenu(tester);
+
+      // Nothing to run at all, which is what keeps the event out: the
+      // Plausible call and the profile-name refresh sat in the same closure as
+      // the startSync that would have been dropped.
+      expect(entryNamed(tester, 'Resync').onClick, isNull);
+      expect(entryNamed(tester, 'Deep Resync').onClick, isNull);
+
+      verifyNever(() => syncCubit.startSync(deepSync: false));
+      verifyNever(() => syncCubit.startSync(deepSync: true));
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+
+  group('a background sync that failed', () {
+    testWidgets('says so at the top bar rather than over the app',
+        (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      await startSyncing(tester);
+      stateController.add(failed());
+      await tester.pump(const Duration(milliseconds: 10));
+
+      // Beside the indicator that was turning for it - the same surface a
+      // successful background sync reports at, and clearly not a success.
+      expect(find.text('Sync Incomplete - Errors Detected'), findsOneWidget);
+      expect(find.text('2 of 5 drives could not be synced'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('is drawn as a failure, not as a result', (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(failed());
+      await tester.pump(const Duration(milliseconds: 10));
+
+      final colorTokens = lightTheme().colorTokens;
+
+      final pill = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.text('Sync Incomplete - Errors Detected'),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect(
+        (pill.decoration! as BoxDecoration).border,
+        Border.all(color: colorTokens.strokeRed),
+      );
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('leaves retry reachable after the announcement has gone',
+        (tester) async {
+      // The announcement takes itself away like every other one. The failure
+      // does not: the question it asks - retry these drives? - is still open,
+      // and the modal that used to ask it is no longer allowed to.
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(failed());
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+
+      expect(find.text('Sync Incomplete - Errors Detected'), findsNothing,
+          reason: 'precondition: the announcement has had its few seconds');
+
+      await openMenu(tester);
+
+      expect(find.text('Sync Incomplete - Errors Detected'), findsOneWidget);
+      expect(find.text('Retry Failed'), findsOneWidget);
+
+      entryNamed(tester, 'Retry Failed').onClick!();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      verify(() => syncCubit.clearErrorState()).called(1);
+      verify(() => syncCubit.retryFailedDrives(['drive-a', 'drive-b']))
+          .called(1);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a failure the user asked for is left to its own modal',
+        (tester) async {
+      // It has been holding a modal the whole time, and that modal has the
+      // same retry in it - see SyncOverlay.
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(failed(trigger: SyncTrigger.userInitiated));
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.text('Sync Incomplete - Errors Detected'), findsNothing);
+      expect(find.text('2 of 5 drives could not be synced'), findsNothing);
+
+      await openMenu(tester);
+      expect(find.text('Retry Failed'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+
+  group('the menu survives what the sync does', () {
+    testWidgets('a menu open when a sync starts is still open after it starts',
+        (tester) async {
+      // Three structurally different subtrees used to occupy this slot, so
+      // every transition changed the widget type at that position and took the
+      // dropdown's element - and its open flag - with it. A thumb already
+      // moving towards Resync landed on the page behind.
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      await openMenu(tester);
+      expect(find.text('Resync'), findsOneWidget,
+          reason: 'precondition: the menu is open');
+
+      await startSyncing(tester);
+
+      expect(
+        find.text('Resync'),
+        findsOneWidget,
+        reason: 'a sync starting must not close a menu the user has open',
+      );
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a menu open when a sync ends is still open after it ends',
+        (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      await startSyncing(tester);
+      await openMenu(tester);
+      expect(find.text('Resync'), findsOneWidget,
+          reason: 'precondition: the menu is open during the sync');
+
+      stateController.add(finished(entitiesSynced: 12));
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(
+        find.text('Resync'),
+        findsOneWidget,
+        reason: 'a sync finishing must not close a menu the user has open',
+      );
+      // And the result still lands, beside the menu rather than instead of it.
+      expect(find.text('12 items changed'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+  testWidgets('a failure that has had its moment is not announced again',
+      (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    // SyncCompleteWithErrors stays the cubit's state until the next sync runs.
+    // Without a freshness gate the red pill replayed in full on every rebuild
+    // of the top bar - i.e. on every drive click, for the rest of the session.
+    stateController.add(failed(
+      completedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+    ));
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(find.text('Sync Incomplete - Errors Detected'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
   });
 }
