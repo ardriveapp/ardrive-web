@@ -61,6 +61,130 @@ const _txConfirmationBatchTimeout = Duration(seconds: 15);
 /// batch can complete; remaining work resumes on the next sync.
 const _txStatusUpdateTimeout = Duration(seconds: 30);
 
+/// Where each phase of a sync ends on the 0..1 progress bar.
+///
+/// The split follows one rule: bar travel goes where progress is real. A phase
+/// that reports what it has actually done gets room to report it; a phase that
+/// cannot report gets almost none, because every point handed to it is a point
+/// the bar crosses without knowing anything.
+///
+/// The walk keeps the large share. It is the only phase whose length grows
+/// with the user's history, and the only one that already reports continuously
+/// - per drive, and per block range inside a drive - so its share is the part
+/// of the bar that genuinely tracks work. The four phases after it split the
+/// remaining sixth between them by the same rule.
+const _progressDriveWalkEnd = 0.85;
+
+/// Ghost folder creation: local database writes over a map already in memory,
+/// usually empty. A phase that flashes past does not get bar real estate it
+/// cannot use, so the share is small - but it is not zero, because a drive
+/// with hundreds of ghosts really does take a moment, and this reports per row
+/// written.
+const _progressGhostFoldersEnd = 0.88;
+
+/// Reading what the snapshots already covered, and the hidden-item preference.
+/// Local queries that already happen, reported per chunk read. Fast for most
+/// wallets and slow for a few, so: a small share, spent granularly.
+const _progressPendingScanEnd = 0.92;
+
+/// The local half of the transaction-status phase: the pinned-data owner
+/// overrides, the per-drive owners, the pending rows, and the date pre-load.
+/// All local reads that were already being made and were counted in nothing
+/// before. They report a step each, which is why this share is the largest of
+/// the tail - it is the last stretch of the bar backed by finished work.
+const _progressTxPrepEnd = 0.97;
+
+/// Asking the gateway which pending transactions confirmed - the one phase in
+/// the tail that leaves the machine, bounded only by [_txStatusUpdateTimeout].
+///
+/// It gets the smallest share of all, which is the opposite of what its
+/// duration would suggest, and deliberate: it reports one step per 5000
+/// pending transactions, so for a real user it reports exactly one step, when
+/// the gateway answers. Points given to it would be points the bar crosses on
+/// no evidence. Instead the bar goes indeterminate for the duration - see
+/// [SyncProgress.isIndeterminate] - and this constant is only where the number
+/// picks back up once the gateway is done with.
+const _progressTxStatusEnd = 0.99;
+
+/// The last hundredth is completion itself - the final writes and the summary
+/// - so a finished sync says so by moving, not by having sat at the end for a
+/// while already. Success lands here exactly.
+const _progressComplete = 1.0;
+
+/// Linear interpolation inside one phase's share of the bar, where [fraction]
+/// is how much of that phase's own work is done.
+double _phaseProgress(double start, double end, double fraction) =>
+    start + (end - start) * fraction.clamp(0.0, 1.0);
+
+/// The one place a sync's progress reaches the outside world.
+///
+/// Every emission passes through here, and `progress` is never published below
+/// the highest value already published. A bar that jumps backwards reads as a
+/// bug even when both numbers are individually defensible, and there is more
+/// than one way to produce one here: drives sync concurrently over a shared
+/// counter, and a single drive's progress is derived from block heights that a
+/// composite history can hand back out of order. Enforcing the guarantee where
+/// progress is published means no future caller can regress it by accident.
+@visibleForTesting
+class MonotonicProgressSink {
+  final StreamController<SyncProgress> _controller =
+      StreamController<SyncProgress>.broadcast();
+
+  double _highWaterMark = 0;
+
+  Stream<SyncProgress> get stream => _controller.stream;
+
+  bool get isClosed => _controller.isClosed;
+
+  /// Bounds and clamps without publishing, for the emissions a sync yields
+  /// directly. Returns what the caller should go on holding as its progress.
+  ///
+  /// The bound to 0..1 is not defensive tidiness: a drive's walk progress is
+  /// `1 - (head - blockHeight) / range`, and `head` is read once at the top of
+  /// a sync that then runs for minutes. A transaction mined after that read
+  /// sits above the head and makes the term negative, so the walk hands up a
+  /// number greater than 1. Un-bounded, that number became the high-water mark
+  /// and pinned every later emission - the whole tail, and "Sync complete"
+  /// itself - to a bar that read 240% and never moved again.
+  SyncProgress raise(SyncProgress progress) {
+    final bounded = progress.progress.clamp(0.0, _progressComplete);
+    if (bounded < _highWaterMark) {
+      return progress.copyWith(progress: _highWaterMark);
+    }
+    _highWaterMark = bounded;
+    return bounded == progress.progress
+        ? progress
+        : progress.copyWith(progress: bounded);
+  }
+
+  /// Clamps and publishes. Returns what was published, so the caller's copy
+  /// and the listener's copy never disagree.
+  ///
+  /// Publishing to a closed controller throws, and this sink is reachable from
+  /// work the sync has already stopped waiting for: `Future.timeout` does not
+  /// cancel its source, so an abandoned `_updateTransactionStatuses` goes on
+  /// issuing confirmation batches while the sync finishes and closes here. A
+  /// throw there would abort the batches it had left, silently - the fired
+  /// timeout swallows the error - and leave transaction statuses unwritten.
+  /// Reporting stops at close; the work does not.
+  SyncProgress add(SyncProgress progress) {
+    final raised = raise(progress);
+    if (!_controller.isClosed) {
+      _controller.add(raised);
+    }
+    return raised;
+  }
+
+  void addError(Object error) {
+    if (_controller.isClosed) {
+      return;
+    }
+    _controller.addError(error);
+  }
+
+  Future<void> close() => _controller.close();
+}
+
 abstract class SyncRepository {
   /// The total transaction-parse budget, shared out across the drives still to
   /// be synced.
@@ -147,6 +271,11 @@ abstract class SyncRepository {
     required DriveDao driveDao,
     required Map<FolderID, GhostFolder> ghostFolders,
     String? ownerAddress,
+
+    /// Called as each ghost row is written, with the fraction of them done.
+    /// Reporting only; it changes nothing about what is written or in what
+    /// order.
+    void Function(double fraction)? onProgress,
   });
 
   Future<int> getCurrentBlockHeight();
@@ -302,6 +431,10 @@ class _SyncRepository implements SyncRepository {
     _skippedEntityTxIdsByDrive.clear();
     _syncedEntityIdsByDrive.clear();
 
+    // Every emission of this sync, from the first to the last, goes out
+    // through one sink, so the number it reports can only ever climb.
+    final syncProgressController = MonotonicProgressSink();
+
     // The address of the currently logged-in wallet. All pending transactions
     // are uploads made by this wallet, so scoping the status query by it lets
     // the gateway prune its search space. Cross-owner txs (e.g. data txs of
@@ -330,7 +463,7 @@ class _SyncRepository implements SyncRepository {
     }
 
     if (drives.isEmpty) {
-      yield SyncProgress.emptySyncCompleted();
+      yield syncProgressController.raise(SyncProgress.emptySyncCompleted());
       _lastSync = DateTime.now();
       return;
     }
@@ -338,7 +471,7 @@ class _SyncRepository implements SyncRepository {
     SyncProgress syncProgress =
         SyncProgress.initial().copyWith(drivesCount: drives.length);
 
-    yield syncProgress;
+    yield syncProgress = syncProgressController.raise(syncProgress);
 
     // The first network call of a sync, and the one that has nothing local to
     // fall back on. Until now the dialog sat at 0% with nothing to say while a
@@ -346,7 +479,7 @@ class _SyncRepository implements SyncRepository {
     syncProgress = syncProgress.copyWith(
       statusMessage: 'Connecting to the network...',
     );
-    yield syncProgress;
+    yield syncProgress = syncProgressController.raise(syncProgress);
 
     final currentBlockHeight = await retry(
       () async => await _arweave.getCurrentBlockHeight(),
@@ -373,7 +506,7 @@ class _SyncRepository implements SyncRepository {
       syncProgress = syncProgress.copyWith(
         statusMessage: 'Checking for changes...',
       );
-      yield syncProgress;
+      yield syncProgress = syncProgressController.raise(syncProgress);
       try {
         final neverSyncedDrives = <Drive>[];
         final previouslySyncedDrives = <Drive>[];
@@ -465,7 +598,7 @@ class _SyncRepository implements SyncRepository {
 
     // Clear the probe status message
     syncProgress = syncProgress.copyWith(statusMessage: null);
-    yield syncProgress;
+    yield syncProgress = syncProgressController.raise(syncProgress);
 
     final numberOfDrivesToSync = drivesToSync.length;
 
@@ -474,16 +607,18 @@ class _SyncRepository implements SyncRepository {
       logger.i('No drives need syncing');
       // Carry the probe's counts through. "Nothing to do" is exactly the sync
       // where the number of drives it skipped is the whole story.
-      yield SyncProgress.emptySyncCompleted().copyWith(
-        firstTimeSyncDriveCount: syncProgress.firstTimeSyncDriveCount,
-        skippedDriveCount: syncProgress.skippedDriveCount,
+      yield syncProgressController.raise(
+        SyncProgress.emptySyncCompleted().copyWith(
+          firstTimeSyncDriveCount: syncProgress.firstTimeSyncDriveCount,
+          skippedDriveCount: syncProgress.skippedDriveCount,
+        ),
       );
       _lastSync = DateTime.now();
       return;
     }
 
     syncProgress = syncProgress.copyWith(drivesCount: numberOfDrivesToSync);
-    yield syncProgress;
+    yield syncProgress = syncProgressController.raise(syncProgress);
 
     // Batch-fetch snapshots for all drives per owner (1 GQL query per owner
     // instead of 1 per drive). Results are grouped by Drive-Id and passed to
@@ -495,7 +630,7 @@ class _SyncRepository implements SyncRepository {
       syncProgress = syncProgress.copyWith(
         statusMessage: 'Downloading drive snapshots...',
       );
-      yield syncProgress;
+      yield syncProgress = syncProgressController.raise(syncProgress);
 
       try {
         // Reuse the drivesByOwner grouping from the probe (or rebuild it)
@@ -569,13 +704,10 @@ class _SyncRepository implements SyncRepository {
 
       // Clear the prefetch status message
       syncProgress = syncProgress.copyWith(statusMessage: null);
-      yield syncProgress;
+      yield syncProgress = syncProgressController.raise(syncProgress);
     }
 
     double totalProgress = 0;
-
-    final StreamController<SyncProgress> syncProgressController =
-        StreamController<SyncProgress>.broadcast();
 
     // Reset the failure simulator for new sync session
     if (SyncFailureSimulator.instance.isEnabled) {
@@ -617,23 +749,31 @@ class _SyncRepository implements SyncRepository {
             // Check for cancellation during sync
             token.checkCancellation();
 
-            // Reserve 10% for post-sync operations (cap drive sync at 90%)
-            currentDriveProgress =
-                (totalProgress + driveProgress) / numberOfDrivesToSync * 0.9;
-            if (currentDriveProgress > syncProgress.progress) {
-              syncProgress = syncProgress.copyWith(
-                progress: currentDriveProgress,
-              );
-            }
-            syncProgressController.add(syncProgress);
+            // The walk's whole share of the bar, divided across the drives
+            // in it. The sink guards the ordering - these drives run
+            // concurrently over a shared counter, and a drive's own progress
+            // is read off block heights a composite history can hand back out
+            // of order - but the ceiling has to be applied here, at the phase
+            // it belongs to. A transaction mined after the head was read
+            // yields a drive progress above 1, and a walk value above the
+            // walk's end would become the high-water mark and pin the whole
+            // tail behind it without ever exceeding 1.0.
+            currentDriveProgress = ((totalProgress + driveProgress) /
+                    numberOfDrivesToSync *
+                    _progressDriveWalkEnd)
+                .clamp(0.0, _progressDriveWalkEnd);
+            syncProgress = syncProgress.copyWith(
+              progress: currentDriveProgress,
+            );
+            syncProgress = syncProgressController.add(syncProgress);
           }
           totalProgress += 1;
           syncProgress = syncProgress.copyWith(
             drivesSynced: syncProgress.drivesSynced + 1,
-            // Cap at 90% for drive syncing
-            progress: (totalProgress / numberOfDrivesToSync) * 0.9,
+            progress:
+                (totalProgress / numberOfDrivesToSync) * _progressDriveWalkEnd,
           );
-          syncProgressController.add(syncProgress);
+          syncProgress = syncProgressController.add(syncProgress);
         } catch (e) {
           // Handle cancellation specially
           if (e is SyncCancelledException) {
@@ -652,16 +792,17 @@ class _SyncRepository implements SyncRepository {
             ..putIfAbsent(
                 drive.id, () => '${drive.name}: ${_extractErrorMessage(e)}');
 
-          // Still increment progress but mark as failed (cap at 90%)
+          // Still increment progress but mark as failed
           totalProgress += 1;
           syncProgress = syncProgress.copyWith(
             drivesSynced: syncProgress.drivesSynced + 1,
-            progress: (totalProgress / numberOfDrivesToSync) * 0.9,
+            progress:
+                (totalProgress / numberOfDrivesToSync) * _progressDriveWalkEnd,
             failedQueries: syncProgress.failedQueries + 1,
             failedDriveIds: updatedFailedDrives,
             errorMessages: updatedErrorMessages,
           );
-          syncProgressController.add(syncProgress);
+          syncProgress = syncProgressController.add(syncProgress);
         }
       }),
       eagerError: false, // Continue processing even if some drives fail
@@ -695,18 +836,37 @@ class _SyncRepository implements SyncRepository {
         // Check for cancellation before ghost creation
         token.checkCancellation();
 
-        // Update progress to 92% for ghost creation
+        // The walk is over, so this phase starts where the walk ended
+        // rather than skipping past it.
         syncProgress = syncProgress.copyWith(
-          progress: 0.92,
+          progress: _progressDriveWalkEnd,
           statusMessage: 'Creating ghost folders...',
         );
-        syncProgressController.add(syncProgress);
+        syncProgress = syncProgressController.add(syncProgress);
 
         await createGhosts(
           driveDao: _driveDao,
           ownerAddress: await wallet?.getAddress(),
           ghostFolders: _ghostFolders,
+          onProgress: (fraction) {
+            syncProgress = syncProgress.copyWith(
+              progress: _phaseProgress(
+                _progressDriveWalkEnd,
+                _progressGhostFoldersEnd,
+                fraction,
+              ),
+            );
+            syncProgress = syncProgressController.add(syncProgress);
+          },
         );
+
+        // Ghosts are done whether there were any to write or not, so the
+        // phase closes on its own boundary instead of leaving the bar
+        // wherever the loop happened to stop.
+        syncProgress = syncProgress.copyWith(
+          progress: _progressGhostFoldersEnd,
+        );
+        syncProgress = syncProgressController.add(syncProgress);
 
         /// Clear the ghost folders after they are created
         _ghostFolders.clear();
@@ -725,17 +885,18 @@ class _SyncRepository implements SyncRepository {
         // Check for cancellation before transaction status updates
         token.checkCancellation();
 
-        // Update progress to 96% for transaction status updates
         syncProgress = syncProgress.copyWith(
-          progress: 0.96,
+          progress: _progressGhostFoldersEnd,
           statusMessage: 'Updating transaction statuses...',
         );
-        syncProgressController.add(syncProgress);
+        syncProgress = syncProgressController.add(syncProgress);
 
         final metadataTxsFromSnapshots =
             await SnapshotItemOnChain.getAllCachedTransactionIds();
         final confirmedFileTxIds = <String>[];
         if (metadataTxsFromSnapshots.isNotEmpty) {
+          final chunkCount = (metadataTxsFromSnapshots.length / 500).ceil();
+          var chunksRead = 0;
           for (var i = 0; i < metadataTxsFromSnapshots.length; i += 500) {
             final chunk = metadataTxsFromSnapshots.sublist(
                 i, min(i + 500, metadataTxsFromSnapshots.length));
@@ -743,6 +904,17 @@ class _SyncRepository implements SyncRepository {
                 .fileRevisionDataTxIdsByMetadataTxIds(metadataTxIds: chunk)
                 .get();
             confirmedFileTxIds.addAll(rows);
+            // One chunk read is one step of this phase - reported off the
+            // query that was already being made, not a new one.
+            chunksRead++;
+            syncProgress = syncProgress.copyWith(
+              progress: _phaseProgress(
+                _progressGhostFoldersEnd,
+                _progressPendingScanEnd,
+                chunksRead / chunkCount,
+              ),
+            );
+            syncProgress = syncProgressController.add(syncProgress);
           }
         }
         // Clear cached transaction IDs now that we've used them
@@ -753,6 +925,14 @@ class _SyncRepository implements SyncRepository {
         final hasHiddenItems = await _driveDao.hasHiddenItems().getSingle();
         await _userPreferencesRepository.saveUserHasHiddenItem(hasHiddenItems);
         await _userPreferencesRepository.load();
+
+        // Everything readable locally has been read; what is left is the
+        // gateway.
+        syncProgress = syncProgress.copyWith(
+          progress: _progressPendingScanEnd,
+        );
+        syncProgress = syncProgressController.add(syncProgress);
+
         // Wrap transaction status update with cancellation check and timeout
         try {
           await Future.wait(
@@ -764,6 +944,30 @@ class _SyncRepository implements SyncRepository {
                 ownerAddress: walletAddress,
                 txsIdsToSkip: confirmedFileTxIds,
                 cancellationToken: token,
+                onLocalProgress: (fraction) {
+                  syncProgress = syncProgress.copyWith(
+                    progress: _phaseProgress(
+                      _progressPendingScanEnd,
+                      _progressTxPrepEnd,
+                      fraction,
+                    ),
+                  );
+                  syncProgress = syncProgressController.add(syncProgress);
+                },
+                onProgress: (fraction) {
+                  syncProgress = syncProgress.copyWith(
+                    progress: _phaseProgress(
+                      _progressTxPrepEnd,
+                      _progressTxStatusEnd,
+                      fraction,
+                    ),
+                  );
+                  syncProgress = syncProgressController.add(syncProgress);
+                },
+                onGatewayPhase: (active) {
+                  syncProgress = syncProgress.copyWith(isIndeterminate: active);
+                  syncProgress = syncProgressController.add(syncProgress);
+                },
               ).timeout(
                 _txStatusUpdateTimeout,
                 onTimeout: () {
@@ -774,8 +978,9 @@ class _SyncRepository implements SyncRepository {
                   // Update status message to indicate timeout but don't treat as error
                   syncProgress = syncProgress.copyWith(
                     statusMessage: 'Completing sync...',
+                    isIndeterminate: false,
                   );
-                  syncProgressController.add(syncProgress);
+                  syncProgress = syncProgressController.add(syncProgress);
                   // Continue without updating transaction statuses
                 },
               ),
@@ -790,20 +995,30 @@ class _SyncRepository implements SyncRepository {
           // Don't fail the entire sync if transaction status update fails
         }
 
+        // The gateway is done with, however that went - answered, failed or
+        // timed out. The phase closes on its boundary either way, because the
+        // work after it is the completion itself, and the bar goes back to
+        // being a number here whatever the loop did or did not manage to say.
+        syncProgress = syncProgress.copyWith(
+          progress: _progressTxStatusEnd,
+          isIndeterminate: false,
+        );
+        syncProgress = syncProgressController.add(syncProgress);
+
         _lastSync = DateTime.now();
         // Invalidate drive caches so next sync re-fetches fresh data
         _userDrivesUpdateFuture = null;
         _arweave.clearUserDriveTxsCache();
 
-        // Update progress to 100% when truly complete
+        // Exactly 1.0, and only here.
         syncProgress = syncProgress.copyWith(
-          progress: 1.0,
+          progress: _progressComplete,
           statusMessage: 'Sync complete',
           entitiesSynced: _syncedEntityCount,
           skippedEntityCount: _skippedEntityCount,
           skippedEntityTxIdsByDrive: _skippedEntityTxIdsByDriveSnapshot,
         );
-        syncProgressController.add(syncProgress);
+        syncProgress = syncProgressController.add(syncProgress);
         _logSkippedEntities();
 
         // Close the controller when everything is done
@@ -907,10 +1122,14 @@ class _SyncRepository implements SyncRepository {
     _skippedEntityTxIdsByDrive.clear();
     _syncedEntityIdsByDrive.clear();
 
+    // Every emission of this sync, from the first to the last, goes out
+    // through one sink, so the number it reports can only ever climb.
+    final syncProgressController = MonotonicProgressSink();
+
     // Get the specific drive
     final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
     if (drive == null) {
-      yield SyncProgress.emptySyncCompleted();
+      yield syncProgressController.raise(SyncProgress.emptySyncCompleted());
       return;
     }
 
@@ -926,13 +1145,13 @@ class _SyncRepository implements SyncRepository {
       firstTimeSyncDriveCount:
           syncDeep || (drive.lastBlockHeight ?? 0) == 0 ? 1 : 0,
     );
-    yield syncProgress;
+    yield syncProgress = syncProgressController.raise(syncProgress);
 
     // Same silent first call as the all-drives path.
     syncProgress = syncProgress.copyWith(
       statusMessage: 'Connecting to the network...',
     );
-    yield syncProgress;
+    yield syncProgress = syncProgressController.raise(syncProgress);
 
     final currentBlockHeight = await retry(
       () async => await _arweave.getCurrentBlockHeight(),
@@ -944,10 +1163,7 @@ class _SyncRepository implements SyncRepository {
     // Clear it again: the drive walk that follows is reported as a percentage,
     // and the dialog already names this drive in its title.
     syncProgress = syncProgress.copyWith(statusMessage: null);
-    yield syncProgress;
-
-    final StreamController<SyncProgress> syncProgressController =
-        StreamController<SyncProgress>.broadcast();
+    yield syncProgress = syncProgressController.raise(syncProgress);
 
     // Store ghost folders for this drive only
     final driveGhostFolders = <String, GhostFolder>{};
@@ -979,19 +1195,24 @@ class _SyncRepository implements SyncRepository {
           // Check for cancellation during sync
           token.checkCancellation();
 
-          // Reserve 10% for post-sync operations (cap drive sync at 90%)
-          final currentProgress = driveProgress * 0.9;
-          if (currentProgress > syncProgress.progress) {
-            syncProgress = syncProgress.copyWith(progress: currentProgress);
-          }
-          syncProgressController.add(syncProgress);
+          // The walk's whole share of the bar. The sink guards the ordering
+          // - a drive's progress is read off block heights a composite
+          // history can hand back out of order - but the ceiling belongs
+          // here: a transaction mined after the head was read yields a drive
+          // progress above 1, and a walk value above the walk's end would
+          // pin every phase after it without ever exceeding 1.0.
+          syncProgress = syncProgress.copyWith(
+            progress: (driveProgress * _progressDriveWalkEnd)
+                .clamp(0.0, _progressDriveWalkEnd),
+          );
+          syncProgress = syncProgressController.add(syncProgress);
         }
 
         syncProgress = syncProgress.copyWith(
           drivesSynced: 1,
-          progress: 0.9,
+          progress: _progressDriveWalkEnd,
         );
-        syncProgressController.add(syncProgress);
+        syncProgress = syncProgressController.add(syncProgress);
 
         // Copy ghost folders for this drive only
         for (final entry in _ghostFolders.entries) {
@@ -1003,12 +1224,13 @@ class _SyncRepository implements SyncRepository {
         // Check for cancellation before ghost creation
         token.checkCancellation();
 
-        // Update progress to 92% for ghost creation
+        // The walk is over, so this phase starts where the walk ended
+        // rather than skipping past it.
         syncProgress = syncProgress.copyWith(
-          progress: 0.92,
+          progress: _progressDriveWalkEnd,
           statusMessage: 'Creating ghost folders...',
         );
-        syncProgressController.add(syncProgress);
+        syncProgress = syncProgressController.add(syncProgress);
 
         logger.i('Creating ghosts for single drive sync...');
 
@@ -1016,7 +1238,24 @@ class _SyncRepository implements SyncRepository {
           driveDao: _driveDao,
           ownerAddress: await wallet?.getAddress(),
           ghostFolders: driveGhostFolders,
+          onProgress: (fraction) {
+            syncProgress = syncProgress.copyWith(
+              progress: _phaseProgress(
+                _progressDriveWalkEnd,
+                _progressGhostFoldersEnd,
+                fraction,
+              ),
+            );
+            syncProgress = syncProgressController.add(syncProgress);
+          },
         );
+
+        // Ghosts are done whether there were any to write or not, so the
+        // phase closes on its own boundary.
+        syncProgress = syncProgress.copyWith(
+          progress: _progressGhostFoldersEnd,
+        );
+        syncProgress = syncProgressController.add(syncProgress);
 
         // Remove processed ghost folders from the main map
         for (final key in driveGhostFolders.keys) {
@@ -1033,18 +1272,36 @@ class _SyncRepository implements SyncRepository {
         // Check for cancellation before transaction status updates
         token.checkCancellation();
 
-        // Update progress to 96% for transaction status updates
         syncProgress = syncProgress.copyWith(
-          progress: 0.96,
+          progress: _progressGhostFoldersEnd,
           statusMessage: 'Updating transaction statuses...',
         );
-        syncProgressController.add(syncProgress);
+        syncProgress = syncProgressController.add(syncProgress);
 
         logger.i('Updating transaction statuses for single drive...');
+
+        // This phase's local reads: the drive's revisions, the transaction ids
+        // the snapshots already covered, then the hidden-item preference.
+        // Three steps, reported as each one lands. All three reads already
+        // happened; only the reporting is new.
+        const localReadCount = 3;
+        var localReadsDone = 0;
+        void reportLocalRead() {
+          localReadsDone++;
+          syncProgress = syncProgress.copyWith(
+            progress: _phaseProgress(
+              _progressGhostFoldersEnd,
+              _progressPendingScanEnd,
+              localReadsDone / localReadCount,
+            ),
+          );
+          syncProgress = syncProgressController.add(syncProgress);
+        }
 
         // Get file revisions for this specific drive to scope transaction updates
         final driveFileRevisions =
             await _driveDao.db.fileRevisions.select().get();
+        reportLocalRead();
         final driveDataTxIds = driveFileRevisions
             .where((r) => r.driveId == driveId)
             .map((r) => r.dataTxId)
@@ -1052,6 +1309,7 @@ class _SyncRepository implements SyncRepository {
 
         final metadataTxsFromSnapshots =
             await SnapshotItemOnChain.getAllCachedTransactionIds();
+        reportLocalRead();
         final confirmedFileTxIds = driveFileRevisions
             .where((file) =>
                 file.driveId == driveId &&
@@ -1066,6 +1324,7 @@ class _SyncRepository implements SyncRepository {
         final hasHiddenItems = await _driveDao.hasHiddenItems().getSingle();
         await _userPreferencesRepository.saveUserHasHiddenItem(hasHiddenItems);
         await _userPreferencesRepository.load();
+        reportLocalRead();
 
         try {
           await _updateTransactionStatusesForDrive(
@@ -1076,6 +1335,30 @@ class _SyncRepository implements SyncRepository {
             ownerAddress: drive.ownerAddress,
             txsIdsToSkip: confirmedFileTxIds,
             cancellationToken: token,
+            onLocalProgress: (fraction) {
+              syncProgress = syncProgress.copyWith(
+                progress: _phaseProgress(
+                  _progressPendingScanEnd,
+                  _progressTxPrepEnd,
+                  fraction,
+                ),
+              );
+              syncProgress = syncProgressController.add(syncProgress);
+            },
+            onProgress: (fraction) {
+              syncProgress = syncProgress.copyWith(
+                progress: _phaseProgress(
+                  _progressTxPrepEnd,
+                  _progressTxStatusEnd,
+                  fraction,
+                ),
+              );
+              syncProgress = syncProgressController.add(syncProgress);
+            },
+            onGatewayPhase: (active) {
+              syncProgress = syncProgress.copyWith(isIndeterminate: active);
+              syncProgress = syncProgressController.add(syncProgress);
+            },
           ).timeout(
             _txStatusUpdateTimeout,
             onTimeout: () {
@@ -1084,8 +1367,9 @@ class _SyncRepository implements SyncRepository {
                   '${_txStatusUpdateTimeout.inSeconds}s for single drive');
               syncProgress = syncProgress.copyWith(
                 statusMessage: 'Completing sync...',
+                isIndeterminate: false,
               );
-              syncProgressController.add(syncProgress);
+              syncProgress = syncProgressController.add(syncProgress);
             },
           );
         } catch (e) {
@@ -1096,20 +1380,29 @@ class _SyncRepository implements SyncRepository {
               'Failed to update transaction statuses for single drive, continuing: $e');
         }
 
+        // The gateway is done with, however that went. The phase closes on its
+        // boundary either way, because the work after it is the completion,
+        // and the bar goes back to being a number here regardless.
+        syncProgress = syncProgress.copyWith(
+          progress: _progressTxStatusEnd,
+          isIndeterminate: false,
+        );
+        syncProgress = syncProgressController.add(syncProgress);
+
         _lastSync = DateTime.now();
         // Invalidate drive caches so next sync re-fetches fresh data
         _userDrivesUpdateFuture = null;
         _arweave.clearUserDriveTxsCache();
 
-        // Update progress to 100% when truly complete
+        // Exactly 1.0, and only here.
         syncProgress = syncProgress.copyWith(
-          progress: 1.0,
+          progress: _progressComplete,
           statusMessage: 'Sync complete',
           entitiesSynced: _syncedEntityCount,
           skippedEntityCount: _skippedEntityCount,
           skippedEntityTxIdsByDrive: _skippedEntityTxIdsByDriveSnapshot,
         );
-        syncProgressController.add(syncProgress);
+        syncProgress = syncProgressController.add(syncProgress);
         _logSkippedEntities();
 
         logger
@@ -1144,12 +1437,12 @@ class _SyncRepository implements SyncRepository {
 
         syncProgress = syncProgress.copyWith(
           drivesSynced: 1,
-          progress: 1.0,
+          progress: _progressComplete,
           failedQueries: 1,
           failedDriveIds: [driveId],
           errorMessages: updatedErrorMessages,
         );
-        syncProgressController.add(syncProgress);
+        syncProgress = syncProgressController.add(syncProgress);
         await syncProgressController.close();
       }
     }).catchError((error) async {
@@ -1178,13 +1471,37 @@ class _SyncRepository implements SyncRepository {
     String? ownerAddress,
     List<TxID> txsIdsToSkip = const [],
     SyncCancellationToken? cancellationToken,
+
+    /// Called as this phase's local database reads land, with the fraction of
+    /// them done. Both already happened; only the reporting is new.
+    void Function(double fraction)? onLocalProgress,
+
+    /// Called as the rest of the phase lands - the date pre-load chunks and
+    /// each gateway confirmation batch - with the fraction of it done.
+    /// Reporting only.
+    void Function(double fraction)? onProgress,
+
+    /// Called with true when the gateway confirmation loop begins and false
+    /// when it is over. See [_updateTransactionStatuses].
+    void Function(bool active)? onGatewayPhase,
   }) async {
     cancellationToken?.checkCancellation();
 
+    // The two local reads this phase makes before it touches the gateway,
+    // reported as each lands. Both were already being made.
+    const localReadCount = 2;
+    var localReadsDone = 0;
+    void reportLocalRead() {
+      localReadsDone++;
+      onLocalProgress?.call(localReadsDone / localReadCount);
+    }
+
     final ownerOverrides = await _buildPinnedDataTxOwnerOverrides(driveDao);
+    reportLocalRead();
 
     // Load all pending transactions and filter to this drive
     final allPendingTxs = await driveDao.pendingTransactions().get();
+    reportLocalRead();
     final drivePendingTxs =
         allPendingTxs.where((tx) => driveDataTxIds.contains(tx.id)).toList();
 
@@ -1206,6 +1523,23 @@ class _SyncRepository implements SyncRepository {
         .map((e) => e.key)
         .toList();
 
+    // What is left of the phase after the local reads above, counted off the
+    // work it already does: one step per date pre-load chunk, one per
+    // confirmation batch. No extra query, and no invented ramp - a phase with
+    // a single batch reports a single step, because a single step is what it
+    // has. Finer detail than this lives inside the gateway call itself and
+    // would mean changing ArweaveService, which is why the gateway stretch is
+    // drawn as indeterminate rather than as a number.
+    const page = 5000;
+    final totalSteps = (txIdsNeedingDates.length / 500).ceil() +
+        (pendingTxMap.length / page).ceil();
+    var stepsDone = 0;
+    void reportStep() {
+      if (totalSteps == 0) return;
+      stepsDone++;
+      onProgress?.call(stepsDone / totalSteps);
+    }
+
     final dateCreatedCache = <String, DateTime?>{};
     if (txIdsNeedingDates.isNotEmpty) {
       for (var i = 0; i < txIdsNeedingDates.length; i += 500) {
@@ -1217,12 +1551,21 @@ class _SyncRepository implements SyncRepository {
         for (final row in rows) {
           dateCreatedCache[row.dataTxId] = row.dateCreated;
         }
+        reportStep();
       }
     }
 
     final length = pendingTxMap.length;
     final list = pendingTxMap.keys.toList();
-    const page = 5000;
+
+    // From here the phase belongs to the gateway, and how long it takes is
+    // the gateway's to know. Rather than cross points of the bar on no
+    // evidence, the bar goes indeterminate for the duration and picks the
+    // number back up on the far side - however that side is reached.
+    final batchCount = (length / page).ceil();
+    if (batchCount > 0) {
+      onGatewayPhase?.call(true);
+    }
 
     for (var i = 0; i < length / page; i++) {
       cancellationToken?.checkCancellation();
@@ -1309,6 +1652,11 @@ class _SyncRepository implements SyncRepository {
       if (updates.isNotEmpty) {
         await driveDao.insertNewNetworkTransactions(updates);
       }
+      reportStep();
+    }
+
+    if (batchCount > 0) {
+      onGatewayPhase?.call(false);
     }
 
     // Mark skipped transactions as confirmed
@@ -1329,6 +1677,7 @@ class _SyncRepository implements SyncRepository {
     required DriveDao driveDao,
     required Map<FolderID, GhostFolder> ghostFolders,
     String? ownerAddress,
+    void Function(double fraction)? onProgress,
   }) async {
     final ghostFoldersByDrive =
         <DriveID, Map<FolderID, FolderEntriesCompanion>>{};
@@ -1388,8 +1737,13 @@ class _SyncRepository implements SyncRepository {
     // Insert all ghost folders in a single transaction
     if (ghostFoldersToCreate.isNotEmpty) {
       await driveDao.transaction(() async {
+        var inserted = 0;
         for (final folderEntry in ghostFoldersToCreate) {
           await driveDao.into(driveDao.folderEntries).insert(folderEntry);
+          // The same single transaction over the same rows in the same order.
+          // The only new thing is that each row is reported as it lands.
+          inserted++;
+          onProgress?.call(inserted / ghostFoldersToCreate.length);
         }
       });
     }
@@ -1509,20 +1863,50 @@ class _SyncRepository implements SyncRepository {
     String? ownerAddress,
     List<TxID> txsIdsToSkip = const [],
     SyncCancellationToken? cancellationToken,
+
+    /// Called as this phase's local database reads land, with the fraction of
+    /// them done. Every one of them already happened; only the reporting is
+    /// new.
+    void Function(double fraction)? onLocalProgress,
+
+    /// Called as the rest of the phase lands - the date pre-load chunks and
+    /// each gateway confirmation batch - with the fraction of it done.
+    /// Reporting only.
+    void Function(double fraction)? onProgress,
+
+    /// Called with true when the gateway confirmation loop begins and false
+    /// when it is over. Nothing in here can measure that loop, so the bar is
+    /// told to stop pretending to for its duration.
+    void Function(bool active)? onGatewayPhase,
   }) async {
     // Check for cancellation at the start
     cancellationToken?.checkCancellation();
 
+    // Three local database reads happen before the gateway is touched, and
+    // were counted in nothing: the bar rested on the number the phase started
+    // from until the gateway answered. A step each costs nothing - the reads
+    // were already being made - and is the only granularity in this phase that
+    // is real.
+    const localReadCount = 3;
+    var localReadsDone = 0;
+    void reportLocalRead() {
+      localReadsDone++;
+      onLocalProgress?.call(localReadsDone / localReadCount);
+    }
+
     final ownerOverrides = await _buildPinnedDataTxOwnerOverrides(driveDao);
+    reportLocalRead();
     // Scope each pending tx by the owner of its own drive rather than assuming
     // the logged-in wallet owns everything (which is wrong for attached drives
     // owned by other wallets, and null when browsing without a wallet).
     final ownersByTxId = await _buildPendingTxDriveOwners(driveDao);
+    reportLocalRead();
 
     // Load all pending transactions
     // Note: We load all at once here, but the memory impact is acceptable
     // since we're just building a map. The original code did the same.
     final allPendingTxs = await driveDao.pendingTransactions().get();
+    reportLocalRead();
 
     logger.i('Loaded ${allPendingTxs.length} pending transactions');
 
@@ -1547,6 +1931,23 @@ class _SyncRepository implements SyncRepository {
         .map((e) => e.key)
         .toList();
 
+    // What is left of the phase after the local reads above, counted off the
+    // work it already does: one step per date pre-load chunk, one per
+    // confirmation batch. No extra query, and no invented ramp - a phase with
+    // a single batch reports a single step, because a single step is what it
+    // has. Finer detail than this lives inside the gateway call itself and
+    // would mean changing ArweaveService, which is why the gateway stretch is
+    // drawn as indeterminate rather than as a number.
+    const page = 5000;
+    final totalSteps = (txIdsNeedingDates.length / 500).ceil() +
+        (pendingTxMap.length / page).ceil();
+    var stepsDone = 0;
+    void reportStep() {
+      if (totalSteps == 0) return;
+      stepsDone++;
+      onProgress?.call(stepsDone / totalSteps);
+    }
+
     final dateCreatedCache = <String, DateTime?>{};
     if (txIdsNeedingDates.isNotEmpty) {
       for (var i = 0; i < txIdsNeedingDates.length; i += 500) {
@@ -1558,13 +1959,21 @@ class _SyncRepository implements SyncRepository {
         for (final row in rows) {
           dateCreatedCache[row.dataTxId] = row.dateCreated;
         }
+        reportStep();
       }
     }
 
     final length = pendingTxMap.length;
     final list = pendingTxMap.keys.toList();
 
-    const page = 5000;
+    // From here the phase belongs to the gateway, and how long it takes is
+    // the gateway's to know. Rather than cross points of the bar on no
+    // evidence, the bar goes indeterminate for the duration and picks the
+    // number back up on the far side - however that side is reached.
+    final batchCount = (length / page).ceil();
+    if (batchCount > 0) {
+      onGatewayPhase?.call(true);
+    }
 
     for (var i = 0; i < length / page; i++) {
       // Check for cancellation before each batch
@@ -1665,7 +2074,13 @@ class _SyncRepository implements SyncRepository {
       if (updates.isNotEmpty) {
         await driveDao.insertNewNetworkTransactions(updates);
       }
+      reportStep();
     }
+
+    if (batchCount > 0) {
+      onGatewayPhase?.call(false);
+    }
+
     if (txsIdsToSkip.isNotEmpty) {
       await driveDao.insertNewNetworkTransactions(
         txsIdsToSkip

@@ -222,7 +222,15 @@ class SyncButton extends StatelessWidget {
 
             return _SyncButtonMenu(
               status: _syncStatus(context, syncProgress),
-              child: _SyncProgressRing(progress: syncProgress?.progress),
+              // A phase that cannot measure itself hands the ring no value, so
+              // it sweeps as well as turns - the same honesty the modal's bar
+              // gets. The rotation is its own repeating animation either way,
+              // so the ring never freezes into a static arc.
+              child: _SyncProgressRing(
+                progress: syncProgress != null && syncProgress.isIndeterminate
+                    ? null
+                    : syncProgress?.progress,
+              ),
             );
           },
         );
@@ -245,10 +253,14 @@ class SyncButton extends StatelessWidget {
       title: syncProgress.isSingleDriveSync
           ? appLocalizationsOf(context).syncingSingleDrive
           : appLocalizationsOf(context).syncingAllDrives,
+      // The percentage stands in only when the sync has no phase to name and
+      // a number worth showing; an unmeasurable phase always has a message.
       detail: syncProgress.statusMessage ??
-          appLocalizationsOf(context).syncProgressPercentage(
-            (syncProgress.progress * 100).round().toString(),
-          ),
+          (syncProgress.isIndeterminate
+              ? null
+              : appLocalizationsOf(context).syncProgressPercentage(
+                  (syncProgress.progress * 100).round().toString(),
+                )),
       showElapsed: true,
     );
   }

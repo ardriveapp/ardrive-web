@@ -178,6 +178,36 @@ void main() {
     expect(ring().value, 0.5);
   });
 
+  testWidgets('a phase that cannot measure itself empties the ring',
+      (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    await startSyncing(tester);
+
+    CircularProgressIndicator ring() =>
+        tester.widget<CircularProgressIndicator>(
+          find.byType(CircularProgressIndicator),
+        );
+
+    progressController.add(SyncProgress.initial().copyWith(progress: 0.97));
+    await tester.pump(const Duration(milliseconds: 10));
+    expect(ring().value, 0.97);
+
+    // The gateway phase cannot know its own length, so the ring stops
+    // claiming a fraction and sweeps instead of sitting at 97%.
+    progressController.add(SyncProgress.initial().copyWith(
+      progress: 0.97,
+      isIndeterminate: true,
+      statusMessage: 'Updating transaction statuses...',
+    ));
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(ring().value, isNull);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('the ring keeps moving while progress stands still',
       (tester) async {
     await tester.pumpWidget(wrap());

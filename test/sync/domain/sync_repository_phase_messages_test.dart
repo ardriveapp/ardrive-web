@@ -329,7 +329,7 @@ void main() {
       // The dialog renders statusMessage INSTEAD OF the "{n}% complete"
       // readout (app_shell.dart, `if (statusMessage != null) ... else ...`).
       // A message set during the walk would blank the only number the user
-      // sees for the whole 0->90% stretch, so the walk must stay silent.
+      // sees for the whole length of the walk, so the walk must stay silent.
       final drive = _makeDrive(
         id: 'a',
         ownerAddress: ownerAddress,
@@ -349,9 +349,16 @@ void main() {
 
       final emitted = await collectProgress();
 
-      // The walk is everything the drive loop caps at 90%.
-      final walk =
-          emitted.where((p) => p.progress > 0 && p.progress <= 0.9).toList();
+      // The walk is the stretch before the post-sync phases announce
+      // themselves - it ends where ghost folder creation begins. Bounding it
+      // by a progress value instead would pin this test to whatever share of
+      // the bar the walk currently owns, which is not what it is about.
+      final tailStart = emitted
+          .indexWhere((p) => p.statusMessage == 'Creating ghost folders...');
+      final walk = emitted
+          .sublist(0, tailStart == -1 ? emitted.length : tailStart)
+          .where((p) => p.progress > 0)
+          .toList();
       expect(walk, isNotEmpty);
       expect(walk.every((p) => p.statusMessage == null), isTrue);
       expect(
