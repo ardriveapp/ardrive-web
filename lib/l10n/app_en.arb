@@ -2691,6 +2691,61 @@
       }
     }
   },
+  "syncComplete": "Sync Complete",
+  "@syncComplete": {
+    "description": "Title of the summary a finished sync ends on"
+  },
+  "syncSummaryNothingNew": "Up to date — nothing new",
+  "@syncSummaryNothingNew": {
+    "description": "Summary of a sync that found nothing new in any drive"
+  },
+  "syncSummaryNothingNewInDrive": "{driveName} is up to date — nothing new",
+  "@syncSummaryNothingNewInDrive": {
+    "description": "Summary of a single drive sync that found nothing new",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Photos"
+      }
+    }
+  },
+  "syncSummaryEntities": "{count, plural, =1{1 item changed} other{{count} items changed}}",
+  "@syncSummaryEntities": {
+    "description": "Summary of a sync that changed something. Says \"changed\", not \"new\": a rename, move or new version writes a revision too. Never says how many drives, because the sync only knows how many it walked",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "12"
+      }
+    }
+  },
+  "syncSummaryEntitiesInDrive": "{count, plural, =1{1 item changed in {driveName}} other{{count} items changed in {driveName}}}",
+  "@syncSummaryEntitiesInDrive": {
+    "description": "Summary of a single drive sync that changed something",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "12"
+      },
+      "driveName": {
+        "type": "String",
+        "example": "Photos"
+      }
+    }
+  },
+  "syncSummarySkippedEntities": "{count, plural, =1{1 update could not be read} other{{count} updates could not be read}}",
+  "@syncSummarySkippedEntities": {
+    "description": "How many updates a sync had to leave out because their metadata could not be read. Counts transactions, not files",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      }
+    }
+  },
   "syncCompleteWithErrors": "Sync Incomplete - Errors Detected",
   "@syncCompleteWithErrors": {
     "description": "Title when sync completes but some drives failed"

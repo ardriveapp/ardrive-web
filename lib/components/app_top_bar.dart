@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
@@ -9,6 +11,7 @@ import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
+import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
@@ -178,6 +181,28 @@ class SyncButton extends StatelessWidget {
           );
         }
 
+        if (syncState is SyncComplete &&
+            syncState.trigger == SyncTrigger.background &&
+            // A result that has already had its few seconds is not announced
+            // again because the bar was rebuilt - see [syncSummaryIsFresh].
+            syncSummaryIsFresh(syncState)) {
+          // A sync nobody asked for says how it went where it ran, and then
+          // takes it back. Keyed on which result it is so a second one replaces
+          // the first rather than queueing behind it - two zero-change syncs
+          // read identically, and the second one still has to show.
+          return SyncSummaryFlash(
+            key: ValueKey(syncState.sequence),
+            summary: syncCompleteSummaryParts(
+              appLocalizationsOf(context),
+              syncState,
+            ),
+            showFor: syncSummaryRemaining(syncState),
+            child: _SyncButtonMenu(
+              child: ArDriveIcons.refresh(color: colorTokens.textMid),
+            ),
+          );
+        }
+
         if (syncState is! SyncInProgress) {
           return _SyncButtonMenu(
             child: ArDriveIcons.refresh(color: colorTokens.textMid),
@@ -225,6 +250,133 @@ class SyncButton extends StatelessWidget {
             (syncProgress.progress * 100).round().toString(),
           ),
       showElapsed: true,
+    );
+  }
+}
+
+/// What a finished background sync found, beside the indicator that was
+/// turning for it, for [syncSummaryDuration] and no longer.
+///
+/// It hangs off the button in an overlay rather than in the top bar's own row:
+/// a result that arrives while the user is reading something else must not
+/// push the bar's contents sideways, and it has to be able to leave again
+/// without moving them back.
+class SyncSummaryFlash extends StatefulWidget {
+  const SyncSummaryFlash({
+    super.key,
+    required this.summary,
+    required this.showFor,
+    required this.child,
+  });
+
+  /// The finished sync - see [syncCompleteSummaryParts].
+  final SyncSummary summary;
+
+  /// What is left of [syncSummaryDuration] for this result, counted from when
+  /// the sync finished rather than from when this was built.
+  final Duration showFor;
+
+  /// The idle sync button the summary is anchored to.
+  final Widget child;
+
+  @override
+  State<SyncSummaryFlash> createState() => _SyncSummaryFlashState();
+}
+
+class _SyncSummaryFlashState extends State<SyncSummaryFlash> {
+  Timer? _dismiss;
+  bool _showing = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _dismiss = Timer(widget.showFor, () {
+      if (mounted) {
+        setState(() => _showing = false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _dismiss?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveOverlay(
+      visible: _showing,
+      // No barrier: a report is not a question, so it never takes the next
+      // click - the resync menu underneath still opens on the first one.
+      closeOnBarrierTap: false,
+      anchor: const Aligned(
+        follower: Alignment.topRight,
+        target: Alignment.bottomRight,
+        offset: Offset(0, 8),
+        // The button sits at the top bar's trailing edge, so on a phone the
+        // summary is wider than the room left of it.
+        shiftToWithinBound: AxisFlag(x: true),
+      ),
+      content: _SyncSummaryPill(summary: widget.summary),
+      child: widget.child,
+    );
+  }
+}
+
+/// The summary itself: a quiet couple of lines in the surface colours, so a
+/// result that needs nothing from the user does not read like a warning.
+///
+/// The pill is capped at [_syncStatusHeaderWidth], which on a phone is most of
+/// the screen, so what arrived is allowed two lines and then an ellipsis. What
+/// could not be read is not: it goes on its own line underneath, full length.
+/// On one line it was joined last, so a long drive name pushed it past the cap
+/// and the ellipsis ate exactly the clause that says this sync has holes in it.
+class _SyncSummaryPill extends StatelessWidget {
+  const _SyncSummaryPill({required this.summary});
+
+  final SyncSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final arrived = summary.arrived;
+    final unreadable = summary.unreadable;
+
+    return IgnorePointer(
+      // The margin is what keeps a gutter on the narrowest phone: the anchor's
+      // shiftToWithinBound pulls the follower to x=0, so without it the pill
+      // sits flush against the screen edge while its right side keeps its
+      // inset, and reads as misaligned rather than as a floating card.
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8),
+        constraints: const BoxConstraints(maxWidth: _syncStatusHeaderWidth),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: colorTokens.containerL1,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: colorTokens.strokeLow),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (arrived != null)
+              Text(
+                arrived,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: typography.paragraphSmall(color: colorTokens.textHigh),
+              ),
+            if (unreadable != null)
+              Text(
+                unreadable,
+                style: typography.paragraphSmall(color: colorTokens.textHigh),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -293,6 +293,62 @@ void main() {
       expect(cubit.state, isA<DriveDetailLoadSuccess>());
     });
 
+    /// `SyncComplete` extends `SyncIdle` precisely so this handler keeps
+    /// firing: it gates on `syncState is SyncIdle`, and a sibling state would
+    /// leave a drive sitting on "Drive Not Synced" after the sync that fixed
+    /// it. Nothing fed a `SyncComplete` through this consumer until now.
+    ///
+    /// The drive stream is frozen first, so the recovery cannot come from
+    /// anywhere else. `watchDrive` is the only thing here that watches the
+    /// drives table; pinned to a single emission, the writes below reach the
+    /// database without reaching the cubit, and the sync-completion handler is
+    /// the only path left that can move it off the unsynced screen.
+    test('a finished sync that reports a result still refreshes the drive',
+        () async {
+      await insertDrive(lastBlockHeight: 0);
+
+      final frozenDrive =
+          await driveDao.driveById(driveId: driveId).getSingle();
+      when(() => driveRepository.watchDrive(driveId: any(named: 'driveId')))
+          .thenAnswer((_) => Stream.value(frozenDrive));
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(cubit.state, isA<DriveDetailLoadUnsynced>(),
+          reason: 'precondition: the drive starts out unsynced');
+
+      // The sync writes the root revision. Straight into the table rather
+      // than through `insertRootFolderRevision`, which also writes the
+      // metadata's network transaction - and the folder listing joins that
+      // table, so going through the DAO would re-fire the folder stream and
+      // repair the state on its own, leaving nothing for this test to prove.
+      await db.into(db.folderRevisions).insert(
+            FolderRevisionsCompanion.insert(
+              folderId: rootFolderId,
+              driveId: driveId,
+              name: 'Test Drive',
+              metadataTxId: 'metadata-tx-id',
+              action: RevisionAction.create,
+            ),
+          );
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(cubit.state, isA<DriveDetailLoadUnsynced>(),
+          reason: 'precondition: nothing the cubit watches has fired, so only '
+              'the sync result can recover this drive');
+
+      syncStates.add(SyncComplete(
+        entitiesSynced: 3,
+        completedAt: DateTime.now(),
+        sequence: 1,
+      ));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(cubit.state, isA<DriveDetailLoadSuccess>());
+    });
+
     blocTest<DriveDetailCubit, DriveDetailState>(
       'stays unsynced while the root metadata is still missing',
       setUp: () => insertDrive(lastBlockHeight: 0),
@@ -300,7 +356,13 @@ void main() {
       act: (cubit) async {
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        syncStates.add(SyncIdle());
+        // A result, not a bare idle: a sync that finished having found
+        // nothing must not be mistaken for metadata arriving.
+        syncStates.add(SyncComplete(
+          entitiesSynced: 0,
+          completedAt: DateTime.now(),
+          sequence: 1,
+        ));
 
         await Future<void>.delayed(const Duration(milliseconds: 200));
       },

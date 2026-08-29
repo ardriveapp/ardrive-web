@@ -212,6 +212,36 @@ class _SyncRepository implements SyncRepository {
         .addAll(txIds);
   }
 
+  /// Number of file and folder revisions this sync actually wrote to the
+  /// database, keyed by drive id. Accumulated here for the same reason the
+  /// skipped tx ids are: the write is the only place that knows what was
+  /// written, and `SyncProgress.entitiesSynced` is otherwise a number nothing
+  /// ever sets - it stayed 0 through a sync that pulled in five hundred files,
+  /// and every surface built on it reported "nothing new".
+  ///
+  /// Taken from the revisions actually inserted, not from the lists the batch
+  /// hands back. Those also carry revisions read from the cache for entities
+  /// that turned out not to have changed, and every sync re-walks the last
+  /// [kBlockHeightLookBack] blocks - so counting them would report a drive
+  /// full of new items on a sync that wrote none.
+  ///
+  /// Ids, not revisions: one file arriving with three historical versions
+  /// writes three revisions but is one item to the person reading the summary,
+  /// and a first sync walks a drive's whole history.
+  ///
+  /// In-memory only - cleared at the start of each sync.
+  final Map<String, Set<String>> _syncedEntityIdsByDrive = {};
+
+  int get _syncedEntityCount =>
+      _syncedEntityIdsByDrive.values.fold(0, (sum, ids) => sum + ids.length);
+
+  void _recordSyncedEntities(String driveId, Iterable<String> entityIds) {
+    if (entityIds.isEmpty) return;
+    _syncedEntityIdsByDrive
+        .putIfAbsent(driveId, () => <String>{})
+        .addAll(entityIds);
+  }
+
   void _logSkippedEntities() {
     if (_skippedEntityTxIdsByDrive.isEmpty) return;
     logger.w(
@@ -270,6 +300,7 @@ class _SyncRepository implements SyncRepository {
     _ghostFolders.clear();
     _folderIds.clear();
     _skippedEntityTxIdsByDrive.clear();
+    _syncedEntityIdsByDrive.clear();
 
     // The address of the currently logged-in wallet. All pending transactions
     // are uploads made by this wallet, so scoping the status query by it lets
@@ -768,6 +799,7 @@ class _SyncRepository implements SyncRepository {
         syncProgress = syncProgress.copyWith(
           progress: 1.0,
           statusMessage: 'Sync complete',
+          entitiesSynced: _syncedEntityCount,
           skippedEntityCount: _skippedEntityCount,
           skippedEntityTxIdsByDrive: _skippedEntityTxIdsByDriveSnapshot,
         );
@@ -873,6 +905,7 @@ class _SyncRepository implements SyncRepository {
     _ghostFolders.clear();
     _folderIds.clear();
     _skippedEntityTxIdsByDrive.clear();
+    _syncedEntityIdsByDrive.clear();
 
     // Get the specific drive
     final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
@@ -1072,6 +1105,7 @@ class _SyncRepository implements SyncRepository {
         syncProgress = syncProgress.copyWith(
           progress: 1.0,
           statusMessage: 'Sync complete',
+          entitiesSynced: _syncedEntityCount,
           skippedEntityCount: _skippedEntityCount,
           skippedEntityTxIdsByDrive: _skippedEntityTxIdsByDriveSnapshot,
         );
@@ -2337,6 +2371,8 @@ class _SyncRepository implements SyncRepository {
     await _driveDao.insertNewFileRevisions(newRevisions);
     await _driveDao.insertNewNetworkTransactions(newNetworkTransactions);
 
+    _recordSyncedEntities(driveId, newRevisions.map((r) => r.fileId.value));
+
     return latestRevisions.values.toList();
   }
 
@@ -2383,6 +2419,8 @@ class _SyncRepository implements SyncRepository {
     );
     await _driveDao.insertNewFolderRevisions(newRevisions);
     await _driveDao.insertNewNetworkTransactions(newNetworkTransactions);
+
+    _recordSyncedEntities(driveId, newRevisions.map((r) => r.folderId.value));
 
     return latestRevisions.values.toList();
   }
