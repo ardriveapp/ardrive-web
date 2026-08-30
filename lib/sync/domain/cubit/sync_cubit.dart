@@ -173,7 +173,9 @@ class SyncCubit extends Cubit<SyncState> {
       );
     } else {
       logger.d('Skipping full sync: syncAllDrivesOnLogin is disabled');
-      syncMetadataOnly();
+      // Not awaited, exactly like the startSync above it: the periodic
+      // subscription below must be created on the same beat it always was.
+      _syncOnlyIfThereIsWork();
     }
 
     // Cancel any existing subscription before creating a new one
@@ -194,6 +196,61 @@ class SyncCubit extends Cubit<SyncState> {
     }).listen((_) {
       logger.d('Listening to startSync periodic stream');
     });
+  }
+
+  /// The login path when the user is not syncing everything on start.
+  ///
+  /// Two things still have to happen. The drive list is refreshed either way -
+  /// [syncMetadataOnly] is `updateUserDrives` and nothing more, so a drive that
+  /// was created or renamed elsewhere still appears. Not syncing must not mean
+  /// not noticing drives.
+  ///
+  /// Then, and only then, the one case where a full sync is still owed: an
+  /// upload whose transaction has not been resolved yet. Nothing but a sync
+  /// resolves it, so a sync that finishes work the user already started is the
+  /// only one this path will run. It is a local read and makes no network
+  /// request.
+  ///
+  /// Deliberately NOT "and sync when the database is empty". A first login
+  /// with this setting off shows the drive list with no contents, and each
+  /// drive opens on the "Drive Not Synced" card with its own Sync button -
+  /// which is the honest outcome of turning the setting off, and an
+  /// affordance that already exists. Syncing anyway overrode an explicit
+  /// choice to protect the user from a state they had asked for.
+  ///
+  /// When we skip, the user is told nothing, and that is the point. Silence is
+  /// the feature being asked for here: an unlock that says "not syncing" has
+  /// simply moved the interruption rather than removed it, and it would be a
+  /// notice about an absence of work, which is the least useful thing to
+  /// report. The state the app is in is the ordinary idle one, and Resync sits
+  /// in the top bar for anyone who wants a sync anyway. The case where the
+  /// silence would be a lie - work outstanding - is the case that syncs.
+  Future<void> _syncOnlyIfThereIsWork() async {
+    await syncMetadataOnly();
+
+    if (isClosed) return;
+
+    bool thereIsWork;
+    try {
+      thereIsWork = await _syncRepository.hasPendingTransactions();
+    } catch (e, stackTrace) {
+      // A failed local read is not a reason to sync, and not a reason to fail
+      // a login: the drive list is already refreshed and Resync still works.
+      logger.e('Could not check whether a sync was owed', e, stackTrace);
+      return;
+    }
+
+    if (isClosed || !thereIsWork) {
+      logger.d('Nothing owed: leaving the login sync skipped');
+      return;
+    }
+
+    logger.i('Syncing on login: transactions are still pending');
+
+    startSync(
+      skipTabVisibilityCheck: true,
+      trigger: SyncTrigger.background,
+    );
   }
 
   void restartSyncOnFocus() {
@@ -287,6 +344,12 @@ class SyncCubit extends Cubit<SyncState> {
         logger.d('Metadata-only sync completed successfully');
       } catch (e, stackTrace) {
         logger.e('Error fetching drive metadata', e, stackTrace);
+        // Say so. This used to be swallowed because a full sync ran alongside
+        // it and reported its own failure; now it is the only thing that runs
+        // on a default login, so a gateway that will not answer would leave an
+        // empty sidebar, no error, and nothing to explain it.
+        emit(SyncFailure(error: e, stackTrace: stackTrace));
+        return;
       }
       emit(SyncIdle());
     } else {

@@ -9,6 +9,14 @@ class UserPreferences extends Equatable {
   final String? lastSelectedDriveId;
   final bool showHiddenFiles;
   final bool userHasHiddenDrive;
+
+  /// Whether logging in walks every drive's whole history.
+  ///
+  /// Defaults to false: a login should not spend the user's first minute on a
+  /// full sync they did not ask for. A user who turned the setting on keeps
+  /// the old behaviour, and one who turned it off is unaffected - only the
+  /// never-touched case changes. The login path still refreshes the drive list
+  /// either way, and still syncs when a transaction is left unresolved.
   final bool syncAllDrivesOnLogin;
 
   const UserPreferences({
@@ -16,7 +24,7 @@ class UserPreferences extends Equatable {
     required this.lastSelectedDriveId,
     this.showHiddenFiles = false,
     this.userHasHiddenDrive = false,
-    this.syncAllDrivesOnLogin = true,
+    this.syncAllDrivesOnLogin = false,
   });
 
   @override

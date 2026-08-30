@@ -76,6 +76,10 @@ void main() {
         .thenAnswer((_) async => 0);
     when(() => syncRepository.numberOfFoldersInWallet())
         .thenAnswer((_) async => 0);
+    // Nothing is waiting to be resolved, so the login path has no work that
+    // would make it sync on its own.
+    when(() => syncRepository.hasPendingTransactions())
+        .thenAnswer((_) async => false);
   });
 
   SyncCubit buildCubit({required bool syncAllDrivesOnLogin}) {

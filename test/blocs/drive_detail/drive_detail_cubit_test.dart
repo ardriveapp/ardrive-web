@@ -29,6 +29,8 @@ class MockBreadcrumbBuilder extends Mock implements BreadcrumbBuilder {}
 /// that is missing, a load that resolves after the user moved on. A DriveDao
 /// stubbed with canned answers reproduces none of that.
 void main() {
+  setUpAll(() => registerFallbackValue(SyncTrigger.background));
+
   late Database db;
   late DriveDao driveDao;
   late MockDriveRepository driveRepository;
@@ -275,6 +277,7 @@ void main() {
       when(() => syncCubit.startSyncForDrive(
             driveId: any(named: 'driveId'),
             deepSync: any(named: 'deepSync'),
+            trigger: any(named: 'trigger'),
           )).thenAnswer((_) async => insertRootFolderRevision());
 
       final emitted = <DriveDetailState>[];
@@ -283,6 +286,17 @@ void main() {
       await cubit.syncCurrentDrive();
       await Future<void>.delayed(const Duration(milliseconds: 200));
       await subscription.cancel();
+
+      // With "sync drives on login" off this is the primary way a drive gets
+      // synced, so the flow has to feel right: the panel it was pressed from
+      // reports the sync itself. A userInitiated trigger would scrim the app
+      // and draw a modal carrying the same phase and progress twice.
+      final trigger = verify(() => syncCubit.startSyncForDrive(
+            driveId: any(named: 'driveId'),
+            deepSync: any(named: 'deepSync'),
+            trigger: captureAny(named: 'trigger'),
+          )).captured.last;
+      expect(trigger, SyncTrigger.background);
 
       expect(
         emitted.whereType<DriveDetailLoadUnsynced>(),

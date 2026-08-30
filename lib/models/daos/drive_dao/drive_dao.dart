@@ -895,6 +895,21 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<bool> userHasHiddenItems() {
     return hasHiddenItems().getSingle();
   }
+
+  /// Whether any transaction is still waiting to be resolved as confirmed or
+  /// failed.
+  ///
+  /// Asks only whether one exists - `LIMIT 1` against the status index - rather
+  /// than reading every pending row the way [pendingTransactions] does. The
+  /// caller only needs the yes/no, and a wallet mid-upload can have thousands.
+  Future<bool> hasPendingTransactions() async {
+    final query = selectOnly(networkTransactions)
+      ..addColumns([networkTransactions.id])
+      ..where(networkTransactions.status.equals(TransactionStatus.pending))
+      ..limit(1);
+
+    return (await query.get()).isNotEmpty;
+  }
 }
 
 class FolderNotFoundInDriveException implements Exception {
