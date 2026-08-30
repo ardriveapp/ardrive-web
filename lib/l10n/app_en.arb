@@ -641,6 +641,16 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
+  "driveWillOpenWhenSyncFinishes": "{driveName} will open when the sync finishes",
+  "@driveWillOpenWhenSyncFinishes": {
+    "description": "Shown in the explorer while a background sync is running and a drive is waiting on it, so the wait says which drive it is for and that nothing needs to be clicked again",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Photos"
+      }
+    }
+  },
   "syncThisDriveDescription": "Fetch the latest files and folders from this drive.",
   "@syncThisDriveDescription": {
     "description": "Description for the sync drive action card"
@@ -1783,6 +1793,20 @@
   "onboarding3Title": "Total Privacy Control",
   "@onboarding3Title": {
     "description": "Title of 4th page of onboarding"
+  },
+  "openingDrive": "Opening drive",
+  "@openingDrive": {
+    "description": "Shown in the explorer while a drive is being opened and no sync is running, when the drive's name is not known"
+  },
+  "openingDriveNamed": "Opening {driveName}",
+  "@openingDriveNamed": {
+    "description": "Shown in the explorer while a named drive is being opened and no sync is running",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Photos"
+      }
+    }
   },
   "onceUploadedCantBeRemoved": "Once uploaded, your data can’t be removed.",
   "@onceUploadedCantBeRemoved": {

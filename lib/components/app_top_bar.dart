@@ -11,6 +11,7 @@ import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
+import 'package:ardrive/sync/presentation/sync_elapsed_time.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -750,47 +751,10 @@ class _SyncStatusHeader extends StatelessWidget {
           if (status.showElapsed)
             const Padding(
               padding: EdgeInsets.only(top: 4),
-              child: _SyncElapsedTime(),
+              child: SyncElapsedTime(),
             ),
         ],
       ),
-    );
-  }
-}
-
-/// Seconds since the running sync started, counted where a phone can read it.
-class _SyncElapsedTime extends StatefulWidget {
-  const _SyncElapsedTime();
-
-  @override
-  State<_SyncElapsedTime> createState() => _SyncElapsedTimeState();
-}
-
-class _SyncElapsedTimeState extends State<_SyncElapsedTime> {
-  // Held in a field, not built in `build`: progress events rebuild this header
-  // often, and a stream rebuilt each time restarts its timer before it fires,
-  // so the counter would tick to the sync's cadence instead of the clock's.
-  final Stream<int> _ticks =
-      Stream.periodic(const Duration(seconds: 1), (i) => i);
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return StreamBuilder<int>(
-      stream: _ticks,
-      builder: (context, _) {
-        final elapsed =
-            DateTime.now().difference(context.read<SyncCubit>().syncStartTime);
-
-        return Text(
-          appLocalizationsOf(context).syncElapsedTime(
-            elapsed.inSeconds.toString(),
-          ),
-          style: typography.paragraphSmall(color: colorTokens.textLow),
-        );
-      },
     );
   }
 }
