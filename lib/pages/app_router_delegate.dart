@@ -376,6 +376,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                             context.read<PromptToSnapshotBloc>(),
                         userPreferencesRepository:
                             context.read<UserPreferencesRepository>(),
+                        syncCubit: context.read<SyncCubit>(),
                       ),
                     ),
                     BlocProvider<PrivateDriveMigrationBloc>(
