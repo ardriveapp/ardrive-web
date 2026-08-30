@@ -164,9 +164,13 @@ class _UnsyncedDriveMobileView extends StatelessWidget {
   final Drive drive;
   final bool isOwner;
 
+  /// See [DriveDetailUnsyncedCard.syncFoundNothing].
+  final bool syncFoundNothing;
+
   const _UnsyncedDriveMobileView({
     required this.drive,
     required this.isOwner,
+    this.syncFoundNothing = false,
   });
 
   @override
@@ -209,7 +213,10 @@ class _UnsyncedDriveMobileView extends StatelessWidget {
         ),
         // Content area
         Expanded(
-          child: DriveDetailUnsyncedCard(drive: drive),
+          child: DriveDetailUnsyncedCard(
+            drive: drive,
+            syncFoundNothing: syncFoundNothing,
+          ),
         ),
       ],
     );
@@ -305,10 +312,32 @@ class _UnsyncedDriveMobileView extends StatelessWidget {
 class DriveDetailUnsyncedCard extends StatelessWidget {
   final Drive drive;
 
+  /// Whether a sync has already run against this drive and come back with
+  /// nothing.
+  ///
+  /// The card is the same card either way - same frame, same two actions - but
+  /// it does not repeat itself. Before a sync it says the drive needs one;
+  /// after one that found no root metadata it says the sync ran and what it
+  /// found, and the primary action stops being the button that was already
+  /// pressed. Rendering the identical card twice reads as a Sync Now that did
+  /// nothing.
+  final bool syncFoundNothing;
+
   const DriveDetailUnsyncedCard({
     super.key,
     required this.drive,
+    this.syncFoundNothing = false,
   });
+
+  /// What this drive's situation is, in a headline.
+  String _title(BuildContext context) => syncFoundNothing
+      ? appLocalizationsOf(context).driveSyncFoundNothing
+      : appLocalizationsOf(context).driveNotSynced;
+
+  /// And what to do about it.
+  String _description(BuildContext context) => syncFoundNothing
+      ? appLocalizationsOf(context).driveSyncFoundNothingDescription
+      : appLocalizationsOf(context).driveNotSyncedDescription;
 
   @override
   Widget build(BuildContext context) {
@@ -327,7 +356,7 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
         children: [
           const SizedBox(height: 40),
           Text(
-            appLocalizationsOf(context).driveNotSynced,
+            _title(context),
             style: typography.heading4(fontWeight: ArFontWeight.bold),
             textAlign: TextAlign.center,
           ),
@@ -335,7 +364,7 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              appLocalizationsOf(context).driveNotSyncedDescription,
+              _description(context),
               style: typography.paragraphLarge(
                 color: colorTokens.textLow,
                 fontWeight: ArFontWeight.semiBold,
@@ -372,14 +401,15 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      appLocalizationsOf(context).driveNotSynced,
+                      _title(context),
                       style: typography.display(
                         fontWeight: ArFontWeight.bold,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      appLocalizationsOf(context).driveNotSyncedDescription,
+                      _description(context),
                       style: typography.heading5(
                         color: colorTokens.textLow,
                         fontWeight: ArFontWeight.semiBold,
@@ -424,7 +454,9 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            appLocalizationsOf(context).syncThisDriveDescription,
+            syncFoundNothing
+                ? appLocalizationsOf(context).syncThisDriveCheckAgainDescription
+                : appLocalizationsOf(context).syncThisDriveDescription,
             style: typography.paragraphNormal(
               color: colorTokens.textMid,
               fontWeight: ArFontWeight.semiBold,
@@ -433,7 +465,13 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           ArDriveButtonNew(
-            text: appLocalizationsOf(context).syncNow,
+            // Not "Sync Now" a second time: that button has been pressed, and
+            // offering it again unchanged is what made the screen read as a
+            // loop. Checking again is worth doing - a drive created moments
+            // ago does turn up - so the action stays, under its real name.
+            text: syncFoundNothing
+                ? appLocalizationsOf(context).checkAgain
+                : appLocalizationsOf(context).syncNow,
             typography: typography,
             onPressed: () {
               context.read<DriveDetailCubit>().syncCurrentDrive();

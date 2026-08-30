@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_detail_syncing_card.dart';
@@ -420,6 +421,100 @@ void main() {
 
     await tester.pumpWidget(const SizedBox());
   });
+
+  /// A sync that ran, finished and found nothing must not be drawn as a sync
+  /// that never happened. Before this the card came back word for word -
+  /// "Drive Not Synced", "Sync now to see your files and folders", the same
+  /// Sync Now button - so pressing it read as a button that did nothing.
+  group('the unsynced card after a sync that found nothing', () {
+    /// How many layout overflows the card produces, drained so they do not
+    /// leak into the next test. The two 283x283 action tiles do not fit their
+    /// own contents under the test font's square glyphs; that predates this
+    /// work, so what matters is that the new copy does not add to it.
+    int overflowsRendering(WidgetTester tester) {
+      var count = 0;
+      while (tester.takeException() != null) {
+        count++;
+      }
+      return count;
+    }
+
+    Future<int> pumpCard(
+      WidgetTester tester, {
+      required bool syncFoundNothing,
+      Size size = phoneSize,
+    }) async {
+      await tester.binding.setSurfaceSize(size);
+      await tester.pumpWidget(
+        host(
+          DriveDetailUnsyncedCard(
+            drive: drive(id: 'drive-1', name: 'Photos'),
+            syncFoundNothing: syncFoundNothing,
+          ),
+          size: size,
+        ),
+      );
+      await tester.pump();
+      return overflowsRendering(tester);
+    }
+
+    testWidgets('says the sync looked and found nothing', (tester) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpCard(tester, syncFoundNothing: true);
+
+      expect(find.text('Nothing Found Yet'), findsOneWidget);
+      expect(
+        find.textContaining('The sync finished, but nothing for this drive'),
+        findsOneWidget,
+      );
+
+      // Not the card that was already acted on, and not the button that was
+      // already pressed.
+      expect(find.text('Drive Not Synced'), findsNothing);
+      expect(find.text('Sync Now'), findsNothing);
+      expect(find.text('Check Again'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('leaves the first-time card alone', (tester) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpCard(tester, syncFoundNothing: false);
+
+      expect(find.text('Drive Not Synced'), findsOneWidget);
+      expect(find.text('Sync Now'), findsOneWidget);
+      expect(find.text('Nothing Found Yet'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('adds no overflow at 320px, on either wording', (tester) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final before = await pumpCard(tester, syncFoundNothing: false);
+      await tester.pumpWidget(const SizedBox());
+      final after = await pumpCard(tester, syncFoundNothing: true);
+      await tester.pumpWidget(const SizedBox());
+
+      expect(after, lessThanOrEqualTo(before),
+          reason: 'the longer wording must not push the card off a phone');
+    });
+
+    testWidgets('reads the same on a desktop', (tester) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpCard(tester, syncFoundNothing: true, size: desktopSize);
+
+      expect(find.text('Nothing Found Yet'), findsOneWidget);
+      expect(find.text('Check Again'), findsOneWidget);
+      expect(find.text('Drive Not Synced'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+
   testWidgets('the bar does not rewind when the sync ends', (tester) async {
     // When the sync finishes, the subtitle, the phase line and the elapsed
     // counter all disappear at once and the Column's children shrink. An
@@ -452,5 +547,87 @@ void main() {
     );
 
     await tester.pumpWidget(const SizedBox());
+  });
+
+  group('when the drive list could not be read at all', () {
+    late MockDriveDetailCubit driveDetailCubit;
+
+    setUp(() {
+      driveDetailCubit = MockDriveDetailCubit();
+      whenListen(
+        driveDetailCubit,
+        const Stream<DriveDetailState>.empty(),
+        initialState: DriveDetailDrivesUnavailable(),
+      );
+      when(() => driveDetailCubit.retryLoadingDrives())
+          .thenAnswer((_) async {});
+    });
+
+    Widget unavailable({ArDriveThemeData? theme, Size size = phoneSize}) =>
+        host(
+          BlocProvider<DriveDetailCubit>.value(
+            value: driveDetailCubit,
+            child: const DriveDetailSyncingCard.driveListUnavailable(),
+          ),
+          theme: theme,
+          size: size,
+        );
+
+    testWidgets('says what happened, and never that the user has no drives',
+        (tester) async {
+      await tester.binding.setSurfaceSize(phoneSize);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(unavailable());
+      await tester.pump();
+
+      expect(find.text('Your Drives Could Not Be Loaded'), findsOneWidget);
+      expect(
+        find.textContaining('Your drives are safe'),
+        findsOneWidget,
+      );
+
+      // The three things the old screen did that this one may not: claim the
+      // list is empty, offer a drive to create, and pretend work is still
+      // going on.
+      expect(find.textContaining('Getting Started'), findsNothing);
+      expect(find.textContaining('Create new'), findsNothing);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('offers a retry that actually runs one', (tester) async {
+      await tester.binding.setSurfaceSize(phoneSize);
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(unavailable());
+      await tester.pump();
+
+      await tester.tap(find.text('Try Again'));
+      await tester.pump();
+
+      verify(() => driveDetailCubit.retryLoadingDrives()).called(1);
+    });
+
+    testWidgets('fits a 320px phone and a wide desktop, in both themes',
+        (tester) async {
+      for (final theme in [
+        lightTheme(),
+        ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode()),
+      ]) {
+        for (final size in [phoneSize, desktopSize]) {
+          await tester.binding.setSurfaceSize(size);
+          await tester.pumpWidget(unavailable(theme: theme, size: size));
+          await tester.pump();
+
+          expect(find.text('Your Drives Could Not Be Loaded'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          await tester.pumpWidget(const SizedBox());
+        }
+      }
+
+      await tester.binding.setSurfaceSize(null);
+    });
   });
 }

@@ -641,6 +641,26 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
+  "driveSyncFoundNothing": "Nothing Found Yet",
+  "@driveSyncFoundNothing": {
+    "description": "Title of the unsynced drive card after a sync has already run against it and found no root metadata, so the card does not repeat the screen the user just pressed Sync Now on"
+  },
+  "driveSyncFoundNothingDescription": "The sync finished, but nothing for this drive has appeared on Arweave yet. A drive created moments ago can take a few minutes to show up.",
+  "@driveSyncFoundNothingDescription": {
+    "description": "Says what the sync actually did, so a second identical card does not read as a button that did nothing"
+  },
+  "checkAgain": "Check Again",
+  "@checkAgain": {
+    "description": "Action on the unsynced drive card once a sync has already looked and found nothing. Deliberately not Sync Now, which was the button that was already pressed"
+  },
+  "driveListUnavailable": "Your Drives Could Not Be Loaded",
+  "@driveListUnavailable": {
+    "description": "Shown when the drive list could not be read at all. Never says the user has no drives - we do not know whether they do"
+  },
+  "driveListUnavailableDescription": "We could not reach the network to read your drive list. Your drives are safe and nothing has been lost.",
+  "@driveListUnavailableDescription": {
+    "description": "Explains that a drive list that could not be loaded is a network problem, not a missing drive"
+  },
   "driveWillOpenWhenSyncFinishes": "{driveName} will open when the sync finishes",
   "@driveWillOpenWhenSyncFinishes": {
     "description": "Shown in the explorer while a background sync is running and a drive is waiting on it, so the wait says which drive it is for and that nothing needs to be clicked again",
@@ -652,6 +672,10 @@
     }
   },
   "syncThisDriveDescription": "Fetch the latest files and folders from this drive.",
+  "syncThisDriveCheckAgainDescription": "Look again for this drive's files and folders on Arweave.",
+  "@syncThisDriveCheckAgainDescription": {
+    "description": "Action tile description on the card shown after a sync found nothing for this drive"
+  },
   "@syncThisDriveDescription": {
     "description": "Description for the sync drive action card"
   },
@@ -2803,6 +2827,14 @@
   "retryFailedDrives": "Retry Failed",
   "@retryFailedDrives": {
     "description": "Button to retry syncing only the drives that failed"
+  },
+  "syncFailed": "Drives Could Not Be Loaded",
+  "@syncFailed": {
+    "description": "Top bar title for a sync that could not be done at all, as against one that got through some drives and not others"
+  },
+  "syncFailedDetail": "We could not reach the network to read your drive list.",
+  "@syncFailedDetail": {
+    "description": "What a failed sync means for what is on screen: the drive list is whatever was last read, not what is out there"
   },
   "syncDrivesFailed": "{failed} of {total} drives could not be synced",
   "@syncDrivesFailed": {

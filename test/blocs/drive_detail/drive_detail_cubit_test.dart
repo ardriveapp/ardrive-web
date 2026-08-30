@@ -495,4 +495,229 @@ void main() {
       expect((state as DriveDetailLoadSuccess).currentDrive.id, otherDriveId);
     });
   });
+
+  /// What an empty local database means, which is three different things.
+  ///
+  /// The app used to render all three as one: "Getting Started", two
+  /// create-a-drive buttons and an empty sidebar, on EVERY login with an empty
+  /// database, for the whole length of the drive-list fetch, on the success
+  /// path. `DrivesCubit` reports Drift's immediate empty-table read before
+  /// `updateUserDrives` has returned anything, and the wait in
+  /// `showEmptyDriveDetail` did not cover that fetch.
+  group('DriveDetailCubit and an empty drive list', () {
+    /// The cubit as the explorer builds it when there is no drive to show at
+    /// all - the state a fresh login lands in before the drive list arrives.
+    DriveDetailCubit buildCubitWithNoDrive() => DriveDetailCubit(
+          driveId: '',
+          profileCubit: profileCubit,
+          driveDao: driveDao,
+          configService: configService,
+          activityTracker: activityTracker,
+          auth: auth,
+          breadcrumbBuilder: breadcrumbBuilder,
+          syncCubit: syncCubit,
+          driveRepository: driveRepository,
+        );
+
+    /// The drive-list refresh, under the test's control: it finishes when the
+    /// test says it has, and not before.
+    late Completer<void> driveListRead;
+
+    setUp(() {
+      driveListRead = Completer<void>();
+      when(() => syncCubit.waitForDriveListRefresh())
+          .thenAnswer((_) => driveListRead.future);
+      when(() => syncCubit.driveListRefreshFailed).thenReturn(false);
+      when(() => syncCubit.syncMetadataOnly()).thenAnswer((_) async {});
+    });
+
+    test('does not say the user has no drives while the list is still loading',
+        () async {
+      final cubit = buildCubitWithNoDrive();
+      addTearDown(cubit.close);
+
+      final emitted = <DriveDetailState>[];
+      final subscription = cubit.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+
+      unawaited(cubit.showEmptyDriveDetail());
+      await pumpEventQueue(times: 100);
+
+      // Nothing has read the drive list, so nothing may claim it is empty.
+      // The explorer stays on the panel that says the drives are loading.
+      expect(cubit.state, isA<DriveDetailLoadInProgress>());
+      expect(
+        emitted.whereType<DriveDetailLoadEmpty>(),
+        isEmpty,
+        reason: '"Getting Started" is a claim about a list nobody has read',
+      );
+    });
+
+    test('says the user has no drives once the list has actually been read',
+        () async {
+      final cubit = buildCubitWithNoDrive();
+      addTearDown(cubit.close);
+
+      unawaited(cubit.showEmptyDriveDetail());
+      await pumpEventQueue(times: 100);
+      expect(cubit.state, isA<DriveDetailLoadInProgress>(),
+          reason: 'precondition: the refresh has not finished yet');
+
+      driveListRead.complete();
+      await pumpEventQueue(times: 100);
+
+      // The screen is still right for the user it was written for.
+      expect(cubit.state, isA<DriveDetailLoadEmpty>());
+    });
+
+    test('a refresh that failed is not a user with no drives', () async {
+      when(() => syncCubit.driveListRefreshFailed).thenReturn(true);
+
+      final cubit = buildCubitWithNoDrive();
+      addTearDown(cubit.close);
+
+      final emitted = <DriveDetailState>[];
+      final subscription = cubit.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+
+      driveListRead.complete();
+      await cubit.showEmptyDriveDetail();
+      await pumpEventQueue(times: 100);
+
+      expect(cubit.state, isA<DriveDetailDrivesUnavailable>());
+      expect(
+        emitted.whereType<DriveDetailLoadEmpty>(),
+        isEmpty,
+        reason: 'we could not find out, so we must not answer',
+      );
+    });
+
+    test('a retry that succeeds gets the user off the failure screen',
+        () async {
+      when(() => syncCubit.driveListRefreshFailed).thenReturn(true);
+
+      final cubit = buildCubitWithNoDrive();
+      addTearDown(cubit.close);
+
+      driveListRead.complete();
+      await cubit.showEmptyDriveDetail();
+      await pumpEventQueue(times: 100);
+      expect(cubit.state, isA<DriveDetailDrivesUnavailable>(),
+          reason: 'precondition: the refresh failed');
+
+      // The retry runs the request that failed, and this time it works.
+      when(() => syncCubit.syncMetadataOnly()).thenAnswer((_) async {
+        when(() => syncCubit.driveListRefreshFailed).thenReturn(false);
+      });
+
+      final emitted = <DriveDetailState>[];
+      final subscription = cubit.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+
+      await cubit.retryLoadingDrives();
+      await pumpEventQueue(times: 100);
+
+      verify(() => syncCubit.syncMetadataOnly()).called(1);
+      // It says it is working again before it lands anywhere.
+      expect(emitted.first, isA<DriveDetailLoadInProgress>());
+      expect(cubit.state, isA<DriveDetailLoadEmpty>());
+    });
+
+    test('a retry that finds drives does not claim the user has none',
+        () async {
+      // The bug this pins: showEmptyDriveDetail claimed emptiness from the
+      // cubit's own state and never asked whether drives existed. On the
+      // login path DrivesCubit had already established that; on the retry
+      // path nothing had - so a Try Again that WORKED showed "Getting
+      // Started / Create a new drive" to a user who had just been told their
+      // drives could not be loaded.
+      when(() => syncCubit.driveListRefreshFailed).thenReturn(true);
+
+      final cubit = buildCubitWithNoDrive();
+      addTearDown(cubit.close);
+
+      driveListRead.complete();
+      await cubit.showEmptyDriveDetail();
+      await pumpEventQueue(times: 100);
+      expect(cubit.state, isA<DriveDetailDrivesUnavailable>(),
+          reason: 'precondition: the refresh failed');
+
+      // This time the retry succeeds AND the drive list turns out to have
+      // drives in it.
+      when(() => syncCubit.syncMetadataOnly()).thenAnswer((_) async {
+        await insertDrive(lastBlockHeight: 0);
+        when(() => syncCubit.driveListRefreshFailed).thenReturn(false);
+      });
+
+      await cubit.retryLoadingDrives();
+      await pumpEventQueue(times: 100);
+
+      expect(cubit.state, isNot(isA<DriveDetailLoadEmpty>()),
+          reason: 'told a user with drives that they have none');
+    });
+
+    test('a refresh that succeeds anywhere clears the failure screen',
+        () async {
+      // The top bar has its own Try Again, which calls syncMetadataOnly
+      // directly. Without this the body went on saying the drives could not
+      // be loaded while the bar above it reported everything was fine.
+      when(() => syncCubit.driveListRefreshFailed).thenReturn(true);
+
+      final cubit = buildCubitWithNoDrive();
+      addTearDown(cubit.close);
+
+      driveListRead.complete();
+      await cubit.showEmptyDriveDetail();
+      await pumpEventQueue(times: 100);
+      expect(cubit.state, isA<DriveDetailDrivesUnavailable>());
+
+      // The refresh succeeds somewhere else entirely.
+      when(() => syncCubit.driveListRefreshFailed).thenReturn(false);
+      syncStates.add(SyncIdle());
+      await pumpEventQueue(times: 100);
+
+      expect(cubit.state, isNot(isA<DriveDetailDrivesUnavailable>()),
+          reason: 'the failure screen outlived the failure');
+    });
+  });
+
+  /// A sync that ran, finished and found nothing must not be rendered as a
+  /// sync that never happened.
+  group('DriveDetailCubit after a sync that found nothing', () {
+    test('says the sync looked, rather than re-offering the same card',
+        () async {
+      await insertDrive(lastBlockHeight: 0);
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      final before = cubit.state;
+      expect(before, isA<DriveDetailLoadUnsynced>(),
+          reason: 'precondition: the drive starts out unsynced');
+      expect((before as DriveDetailLoadUnsynced).syncFoundNothing, isFalse,
+          reason: 'precondition: nothing has been synced yet');
+
+      // The sync runs to the end and writes no root revision - the drive's
+      // metadata simply is not out there yet.
+      when(() => syncCubit.startSyncForDrive(
+            driveId: any(named: 'driveId'),
+            deepSync: any(named: 'deepSync'),
+            trigger: any(named: 'trigger'),
+          )).thenAnswer((_) async {});
+      when(() => syncCubit.state).thenReturn(SyncIdle());
+
+      await cubit.syncCurrentDrive();
+      await pumpEventQueue(times: 100);
+
+      final after = cubit.state;
+      expect(after, isA<DriveDetailLoadUnsynced>());
+      expect(
+        (after as DriveDetailLoadUnsynced).syncFoundNothing,
+        isTrue,
+        reason: 'the card the user pressed Sync Now on must not come back '
+            'word for word, as though the press did nothing',
+      );
+    });
+  });
 }

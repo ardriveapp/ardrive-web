@@ -24,11 +24,25 @@ class SyncInProgress extends SyncState {
   List<Object> get props => [trigger];
 }
 
+/// A sync that could not be done at all, as against one that got through some
+/// drives and not others - see [SyncCompleteWithErrors].
+///
+/// `syncMetadataOnly` is the only place this is terminal: everywhere else
+/// `onError` emits it and `SyncIdle` in the same turn, so it flashes past.
+/// Terminal is what makes it worth reporting - it means the drive list itself
+/// could not be read, and stays true until something refreshes it.
 class SyncFailure extends SyncState {
   final Object? error;
   final StackTrace? stackTrace;
 
-  SyncFailure({this.error, this.stackTrace});
+  /// When it failed, on the same terms as [SyncCompleteWithErrors.completedAt]
+  /// and deliberately out of [props] for the same reason: the top bar's
+  /// announcement is entitled to a few seconds from the moment of the failure,
+  /// not a fresh few seconds every time something rebuilds the bar.
+  final DateTime failedAt;
+
+  SyncFailure({this.error, this.stackTrace, DateTime? failedAt})
+      : failedAt = failedAt ?? DateTime.now();
 }
 
 class SyncEmpty extends SyncState {}
