@@ -20,6 +20,7 @@ class SyncProgress extends LinearProgress {
     required this.numberOfDrivesAtGetMetadataPhase,
     this.failedQueries = 0,
     this.failedDriveIds = const [],
+    this.syncedDriveIds = const [],
     this.errorMessages = const {},
     this.statusMessage,
     this.isSingleDriveSync = false,
@@ -76,6 +77,14 @@ class SyncProgress extends LinearProgress {
   // New fields for tracking failures
   final int failedQueries;
   final List<String> failedDriveIds;
+
+  /// The drives this sync walked all the way to the end.
+  ///
+  /// Kept as ids rather than a count because it is the only thing that can
+  /// answer "when was *this* drive last synced": the count says how many
+  /// finished, never which. Failures are not in here - a drive that could not
+  /// be read was not synced.
+  final List<String> syncedDriveIds;
   final Map<String, String> errorMessages; // driveId -> error message
   final String? statusMessage; // Status message for post-sync operations
 
@@ -137,6 +146,7 @@ class SyncProgress extends LinearProgress {
     int? numberOfDrivesAtGetMetadataPhase,
     int? failedQueries,
     List<String>? failedDriveIds,
+    List<String>? syncedDriveIds,
     Map<String, String>? errorMessages,
     Object? statusMessage = _absent,
     bool? isSingleDriveSync,
@@ -157,6 +167,7 @@ class SyncProgress extends LinearProgress {
           this.numberOfDrivesAtGetMetadataPhase,
       failedQueries: failedQueries ?? this.failedQueries,
       failedDriveIds: failedDriveIds ?? this.failedDriveIds,
+      syncedDriveIds: syncedDriveIds ?? this.syncedDriveIds,
       errorMessages: errorMessages ?? this.errorMessages,
       statusMessage: statusMessage == _absent
           ? this.statusMessage

@@ -11,6 +11,7 @@ import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
+import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
 import 'package:ardrive/drive_explorer/dock/ardrive_dock.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_modal.dart';
 import 'package:ardrive/entities/constants.dart';
@@ -39,6 +40,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   bool signingIn = false;
 
   bool gettingStarted = false;
+
+  /// Whether the drives list is what is on screen.
+  ///
+  /// Where a login lands when it has no link to honour. It is deliberately not
+  /// derived from `driveId == null`: a drive is selected underneath the list -
+  /// the sidebar has to show something - so only this says which of the two
+  /// the user is actually looking at.
+  bool showingDrivesList = false;
 
   String? driveId;
   String? driveName;
@@ -123,10 +132,22 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   bool get isViewingSharedFile => sharedFileId != null;
   bool get isViewingRawTransaction => rawTransactionId != null;
 
+  /// Whether the session is already pointed at something in particular.
+  ///
+  /// The one question the landing decision turns on. A link - a drive, a
+  /// folder inside one, a shared file, a raw transaction - has already put its
+  /// target here by the time a login completes, and every one of those links
+  /// is permanent public API. So the drives list is where a login goes only
+  /// when the answer is no.
+  @visibleForTesting
+  bool get hasARouteToHonour =>
+      tryingToViewDrive || isViewingSharedFile || isViewingRawTransaction;
+
   @override
   AppRoutePath get currentConfiguration => AppRoutePath(
         signingIn: signingIn,
         getStarted: gettingStarted,
+        drivesList: showingDrivesList,
         driveId: driveId,
         driveName: driveName,
         sharedDriveKey: sharedDriveKey,
@@ -208,6 +229,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               if ((signingIn || gettingStarted) && state is ProfileLoggedIn) {
                 signingIn = false;
                 gettingStarted = false;
+
+                // And land on the list of drives rather than inside one the
+                // app has not looked at yet. Only when there is nothing else
+                // to honour: a deep link - a drive, a folder, a shared file, a
+                // raw transaction - has already set its target in
+                // `setNewRoutePath`, and is left exactly as it was.
+                if (!hasARouteToHonour) {
+                  showingDrivesList = true;
+                }
+
                 notifyListeners();
               }
             },
@@ -245,6 +276,23 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 shell = const LoginPage();
               } else if (gettingStarted) {
                 shell = const LoginPage(gettingStarted: true);
+              } else if (showingDrivesList && state is ProfileLoggedIn) {
+                // A separate subtree from the explorer's, deliberately. The
+                // explorer's `DriveDetailCubit` is created once and switched
+                // between drives afterwards; sharing one with this page would
+                // leave it created against no drive at all, so opening a drive
+                // from the list would land in a cubit that never learned which
+                // drive it was for. Replacing the subtree builds it against
+                // the drive the user actually chose.
+                //
+                // It still provides one, because the sidebar reads it - and
+                // the sidebar does not change here.
+                shell = BlocProvider(
+                  create: (context) => _driveDetailCubit(context, rootPath),
+                  child: AppShell(
+                    page: DrivesListPage(onOpenDrive: openDriveFromList),
+                  ),
+                );
               } else if (state is ProfileLoggedIn ||
                   anonymouslyShowDriveDetail) {
                 driveId = driveId ?? rootPath;
@@ -257,23 +305,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                     }
                   },
                   child: BlocProvider(
-                    create: (context) => DriveDetailCubit(
-                      driveRepository: DriveRepository(
-                        driveDao: context.read<DriveDao>(),
-                        auth: context.read<ArDriveAuth>(),
-                      ),
-                      activityTracker: context.read<ActivityTracker>(),
-                      driveId: driveId!,
-                      initialFolderId: driveFolderId,
-                      profileCubit: context.read<ProfileCubit>(),
-                      driveDao: context.read<DriveDao>(),
-                      configService: context.read<ConfigService>(),
-                      auth: context.read<ArDriveAuth>(),
-                      breadcrumbBuilder: BreadcrumbBuilder(
-                        context.read<FolderRepository>(),
-                      ),
-                      syncCubit: context.read<SyncCubit>(),
-                    ),
+                    create: (context) => _driveDetailCubit(context, driveId!),
                     child: MultiBlocListener(
                       listeners: [
                         BlocListener<DriveDetailCubit, DriveDetailState>(
@@ -430,10 +462,58 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     );
   }
 
+  DriveDetailCubit _driveDetailCubit(BuildContext context, String driveId) {
+    return DriveDetailCubit(
+      driveRepository: DriveRepository(
+        driveDao: context.read<DriveDao>(),
+        auth: context.read<ArDriveAuth>(),
+      ),
+      activityTracker: context.read<ActivityTracker>(),
+      driveId: driveId,
+      initialFolderId: driveFolderId,
+      profileCubit: context.read<ProfileCubit>(),
+      driveDao: context.read<DriveDao>(),
+      configService: context.read<ConfigService>(),
+      auth: context.read<ArDriveAuth>(),
+      breadcrumbBuilder: BreadcrumbBuilder(
+        context.read<FolderRepository>(),
+      ),
+      syncCubit: context.read<SyncCubit>(),
+    );
+  }
+
+  /// Leaves the drives list for the drive the user picked out of it.
+  ///
+  /// Called by the page rather than listened for here: the drives cubit
+  /// selects a drive on its own as soon as the list loads, and treating that
+  /// as navigation would close the page before it had been read. The page
+  /// knows which selections came from a person - a row, or the sidebar - and
+  /// only those reach this.
+  ///
+  /// Navigation and nothing else. Opening a drive from the list also fetches
+  /// it when nothing has walked it yet, but that decision is not made here and
+  /// cannot be: it needs the drive's sync state, and this method has no
+  /// context to read it from. It is made one step earlier, by
+  /// [DrivesListCubit.syncDriveIfNeverSynced], on every selection that reaches
+  /// this - which is every selection a person made, from either surface.
+  /// `drives_list_open_syncs_test.dart` holds the two together.
+  @visibleForTesting
+  void openDriveFromList(String driveId) {
+    showingDrivesList = false;
+    this.driveId = driveId;
+    // The list has no folder in view, and the drive opens at its root.
+    driveFolderId = null;
+    _pendingFolderDriveId = null;
+    _pendingFolderId = null;
+
+    notifyListeners();
+  }
+
   @override
   Future<void> setNewRoutePath(AppRoutePath configuration) async {
     signingIn = configuration.signingIn;
     gettingStarted = configuration.getStarted;
+    showingDrivesList = configuration.drivesList;
     driveId = configuration.driveId;
     driveName = configuration.driveName;
     driveFolderId = configuration.driveFolderId;
@@ -455,6 +535,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   void clearState() {
     signingIn = true;
     gettingStarted = false;
+    showingDrivesList = false;
     driveId = null;
     driveName = null;
     driveFolderId = null;

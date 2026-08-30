@@ -111,6 +111,16 @@ const _progressTxStatusEnd = 0.99;
 /// while already. Success lands here exactly.
 const _progressComplete = 1.0;
 
+/// What a single-drive sync calls the stretch between asking the gateway for
+/// the drive's history and the first block height coming back.
+///
+/// Named rather than left blank because that stretch has no fraction to
+/// report and the panel falls through to the percentage when there is no
+/// phase - which is how the whole wait came to read "0% complete" without
+/// moving. The all-drives path names each of its phases; this one is not
+/// allowed to be the silent one.
+const String _readingDriveHistoryMessage = 'Reading the drive history...';
+
 /// Linear interpolation inside one phase's share of the bar, where [fraction]
 /// is how much of that phase's own work is done.
 double _phaseProgress(double start, double end, double fraction) =>
@@ -777,12 +787,20 @@ class _SyncRepository implements SyncRepository {
                 .clamp(0.0, _progressDriveWalkEnd);
             syncProgress = syncProgress.copyWith(
               progress: currentDriveProgress,
+              // Live, for the same reason as the single-drive walk: a count
+              // that can only rise is a better thing to watch than a fraction
+              // that cannot move.
+              entitiesSynced: _syncedEntityCount,
             );
             syncProgress = syncProgressController.add(syncProgress);
           }
           totalProgress += 1;
           syncProgress = syncProgress.copyWith(
             drivesSynced: syncProgress.drivesSynced + 1,
+            // Recorded only on the path that got to the end. The catch below
+            // increments the same counters for a drive that failed, and a
+            // drive that failed has not been synced.
+            syncedDriveIds: [...syncProgress.syncedDriveIds, drive.id],
             progress:
                 (totalProgress / numberOfDrivesToSync) * _progressDriveWalkEnd,
           );
@@ -1173,9 +1191,22 @@ class _SyncRepository implements SyncRepository {
       ),
     );
 
-    // Clear it again: the drive walk that follows is reported as a percentage,
-    // and the dialog already names this drive in its title.
-    syncProgress = syncProgress.copyWith(statusMessage: null);
+    // The walk that follows is reported as a percentage - but not yet. Its
+    // first fraction is read off a block height, and no block height exists
+    // until the gateway has answered the whole first history query, which on a
+    // never-walked drive is the longest single wait in the sync. Clearing the
+    // message here is what put a motionless "0% complete" on screen for that
+    // entire round trip: a figure the sync did not have, sitting still, which
+    // is the one thing this panel exists to stop.
+    //
+    // So the phase names itself and the bar is told it has nothing to measure.
+    // Both are given up the moment the walk reports a fraction of its own -
+    // see walkHasMeasuredProgress below - and the percentage takes over
+    // from there, exactly as it did.
+    syncProgress = syncProgress.copyWith(
+      statusMessage: _readingDriveHistoryMessage,
+      isIndeterminate: true,
+    );
     yield syncProgress = syncProgressController.raise(syncProgress);
 
     // Store ghost folders for this drive only
@@ -1204,9 +1235,24 @@ class _SyncRepository implements SyncRepository {
               walletAddress != null && drive.ownerAddress != walletAddress,
         );
 
+        // Whether the walk has yet produced a fraction that means something.
+        // Until it has, the panel is showing a named phase and a sweeping bar
+        // rather than a number; the first real measurement is what hands the
+        // display back to the percentage.
+        var walkHasMeasuredProgress = false;
+
         await for (var driveProgress in driveSyncProgress) {
           // Check for cancellation during sync
           token.checkCancellation();
+
+          if (!walkHasMeasuredProgress && driveProgress > 0) {
+            walkHasMeasuredProgress = true;
+
+            syncProgress = syncProgress.copyWith(
+              statusMessage: null,
+              isIndeterminate: false,
+            );
+          }
 
           // The walk's whole share of the bar. The sink guards the ordering
           // - a drive's progress is read off block heights a composite
@@ -1217,13 +1263,27 @@ class _SyncRepository implements SyncRepository {
           syncProgress = syncProgress.copyWith(
             progress: (driveProgress * _progressDriveWalkEnd)
                 .clamp(0.0, _progressDriveWalkEnd),
+            // The count is already accumulating per batch in
+            // _recordSyncedEntities; it was only ever read at the final
+            // emission. Published live it is a better number than the
+            // percentage beside it: it needs no total, so it is honest from
+            // the first batch, it can only go up, and it is in the user's own
+            // units rather than blocks.
+            entitiesSynced: _syncedEntityCount,
           );
           syncProgress = syncProgressController.add(syncProgress);
         }
 
+        // The walk is over however it went, so whatever it was allowed to
+        // withhold while it had nothing to measure is given back here: a walk
+        // that ended without ever reporting a fraction must not leave the bar
+        // sweeping into the phases that follow it.
         syncProgress = syncProgress.copyWith(
           drivesSynced: 1,
+          syncedDriveIds: [driveId],
           progress: _progressDriveWalkEnd,
+          statusMessage: null,
+          isIndeterminate: false,
         );
         syncProgress = syncProgressController.add(syncProgress);
 
@@ -1448,12 +1508,18 @@ class _SyncRepository implements SyncRepository {
               ..putIfAbsent(
                   driveId, () => '${drive.name}: ${_extractErrorMessage(e)}');
 
+        // Whatever phase the sync was in, it is not in it any more. A
+        // terminal emission that still names the wait it died during - and
+        // still tells the bar it cannot be measured - describes work nothing
+        // is doing.
         syncProgress = syncProgress.copyWith(
           drivesSynced: 1,
           progress: _progressComplete,
           failedQueries: 1,
           failedDriveIds: [driveId],
           errorMessages: updatedErrorMessages,
+          statusMessage: null,
+          isIndeterminate: false,
         );
         syncProgress = syncProgressController.add(syncProgress);
         await syncProgressController.close();

@@ -374,4 +374,124 @@ void main() {
       await cubit.close();
     });
   });
+
+  group('what a finished sync writes down', () {
+    /// Per-drive, because that is the only answer a list of drives can give
+    /// honestly: a single-drive sync leaves every other drive as stale as it
+    /// was, and one global "last synced" cannot say so.
+    setUp(() {
+      when(() => userPreferencesRepository.saveDrivesLastSynced(
+            any(),
+            at: any(named: 'at'),
+          )).thenAnswer((_) async {});
+    });
+
+    test('records every drive the sync walked', () async {
+      repositoryReports(
+        SyncProgress.emptySyncCompleted()
+            .copyWith(syncedDriveIds: ['drive-a', 'drive-b']),
+      );
+
+      final cubit = buildCubit();
+      await cubit.startSync();
+      await Future<void>.delayed(Duration.zero);
+
+      final captured = verify(
+        () => userPreferencesRepository.saveDrivesLastSynced(
+          captureAny(),
+          at: any(named: 'at'),
+        ),
+      ).captured.single as Iterable<String>;
+
+      expect(captured, ['drive-a', 'drive-b']);
+
+      await cubit.close();
+    });
+
+    test('records the one drive a single-drive sync walked', () async {
+      repositoryReportsForOneDrive(
+        SyncProgress.emptySyncCompleted().copyWith(syncedDriveIds: ['drive-a']),
+      );
+
+      final cubit = buildCubit();
+      await cubit.startSyncForDrive(driveId: 'drive-a');
+      await Future<void>.delayed(Duration.zero);
+
+      final captured = verify(
+        () => userPreferencesRepository.saveDrivesLastSynced(
+          captureAny(),
+          at: any(named: 'at'),
+        ),
+      ).captured.single as Iterable<String>;
+
+      expect(captured, ['drive-a']);
+
+      await cubit.close();
+    });
+
+    test('writes nothing when no drive was walked to the end', () async {
+      // A sync that failed on every drive has nothing to record. Saying
+      // otherwise would put "Synced just now" on a drive that was not.
+      repositoryReports(SyncProgress.emptySyncCompleted());
+
+      final cubit = buildCubit();
+      await cubit.startSync();
+      await Future<void>.delayed(Duration.zero);
+
+      verifyNever(
+        () => userPreferencesRepository.saveDrivesLastSynced(
+          any(),
+          at: any(named: 'at'),
+        ),
+      );
+
+      await cubit.close();
+    });
+  });
+
+  group('which drive a running sync is for', () {
+    test('a single-drive sync names it', () async {
+      repositoryReportsForOneDrive(SyncProgress.emptySyncCompleted());
+
+      final cubit = buildCubit();
+
+      // Captured while the sync is running: it is released on every path out.
+      String? whileRunning;
+      final subscription = cubit.stream.listen((state) {
+        if (state is SyncInProgress) {
+          whileRunning = cubit.syncingDriveId;
+        }
+      });
+
+      await cubit.startSyncForDrive(driveId: 'drive-a');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(whileRunning, 'drive-a');
+
+      await subscription.cancel();
+      await cubit.close();
+    });
+
+    test('a sync of everything names none, because it covers all of them',
+        () async {
+      repositoryReports(SyncProgress.emptySyncCompleted());
+
+      final cubit = buildCubit();
+
+      String? whileRunning = 'not-read-yet';
+      final subscription = cubit.stream.listen((state) {
+        if (state is SyncInProgress) {
+          whileRunning = cubit.syncingDriveId;
+        }
+      });
+
+      await cubit.startSync();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(whileRunning, isNull);
+
+      await subscription.cancel();
+      await cubit.close();
+    });
+  });
 }

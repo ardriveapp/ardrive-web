@@ -473,6 +473,10 @@
     "description": "Deep Sync Tooltip Text"
   },
   "detachDrive": "Detach Drive?",
+  "detachDriveAction": "Detach Drive",
+  "@detachDriveAction": {
+    "description": "Menu command that opens the detach confirmation. The dialog's own title keeps its question mark; a list of commands should not read as a list of questions"
+  },
   "@detachDrive": {
     "description": "Detach Drive Title"
   },
@@ -655,9 +659,9 @@
   },
   "driveListUnavailable": "Your Drives Could Not Be Loaded",
   "@driveListUnavailable": {
-    "description": "Shown when the drive list could not be read at all. Never says the user has no drives - we do not know whether they do"
+    "description": "Shown when the drive list could not be read at all. Never says the user has no drives - whether they do is not known"
   },
-  "driveListUnavailableDescription": "We could not reach the network to read your drive list. Your drives are safe and nothing has been lost.",
+  "driveListUnavailableDescription": "The network could not be reached to read your drive list. Your drives are safe and nothing has been lost.",
   "@driveListUnavailableDescription": {
     "description": "Explains that a drive list that could not be loaded is a network problem, not a missing drive"
   },
@@ -670,6 +674,110 @@
         "example": "Photos"
       }
     }
+  },
+  "yourDrives": "Your Drives",
+  "@yourDrives": {
+    "description": "Title of the page a login lands on: the list of every drive this wallet can open"
+  },
+  "driveSharedWithMe": "Shared with me",
+  "@driveSharedWithMe": {
+    "description": "Marker on a drive owned by somebody else and attached by this user"
+  },
+  "driveNeverSynced": "Never synced",
+  "@driveNeverSynced": {
+    "description": "Sync state of a drive whose history has never been read on this device. Deliberately not \"Empty\" - nothing has looked"
+  },
+  "driveSyncingNow": "Syncing...",
+  "@driveSyncingNow": {
+    "description": "Sync state of a drive a sync is walking right now"
+  },
+  "driveSyncedTimeUnknown": "Synced",
+  "@driveSyncedTimeUnknown": {
+    "description": "Sync state of a drive that has been walked but whose time was never recorded - every drive synced by an earlier version. Says what is known and no more"
+  },
+  "driveSyncedJustNow": "Synced just now",
+  "@driveSyncedJustNow": {
+    "description": "Sync state of a drive synced less than a minute ago"
+  },
+  "driveSyncedMinutesAgo": "{count, plural, one{Synced 1 minute ago} other{Synced {count} minutes ago}}",
+  "@driveSyncedMinutesAgo": {
+    "description": "Sync state of a drive synced within the hour",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "driveSyncedHoursAgo": "{count, plural, one{Synced 1 hour ago} other{Synced {count} hours ago}}",
+  "@driveSyncedHoursAgo": {
+    "description": "Sync state of a drive synced within the day",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "driveSyncedDaysAgo": "{count, plural, one{Synced 1 day ago} other{Synced {count} days ago}}",
+  "@driveSyncedDaysAgo": {
+    "description": "Sync state of a drive synced within the week",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "driveSyncedOnDate": "Synced {date}",
+  "@driveSyncedOnDate": {
+    "description": "Sync state of a drive last synced long enough ago that a date reads better than a count of days",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "12 Aug 2026"
+      }
+    }
+  },
+  "driveItemCount": "{count, plural, =0{No items} one{1 item} other{{count} items}}",
+  "@driveItemCount": {
+    "description": "How many files this drive holds on this device. Only ever shown for a drive that has actually been walked",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "42"
+      }
+    }
+  },
+  "driveCreatedOnDate": "Created {date}",
+  "@driveCreatedOnDate": {
+    "description": "When the drive itself was created",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "12 Aug 2026"
+      }
+    }
+  },
+  "lastSynced": "Last synced",
+  "@lastSynced": {
+    "description": "Column heading over the per-drive sync state"
+  },
+  "items": "Items",
+  "@items": {
+    "description": "Column heading over the per-drive file count"
+  },
+  "notKnownUntilSynced": "Not known until this drive has been synced",
+  "@notKnownUntilSynced": {
+    "description": "Explains the dash standing in for a drive's item count and size. A number is being withheld, not a zero reported"
+  },
+  "nothingSyncedYetTitle": "Nothing has been synced yet",
+  "@nothingSyncedYetTitle": {
+    "description": "Shown above the drives list when no drive on this device has ever been walked"
+  },
+  "nothingSyncedYetDescription": "Your drives are listed, but their contents have not been fetched yet. Sync them all now, or open one to fetch just that drive.",
+  "@nothingSyncedYetDescription": {
+    "description": "Says what the drives list can and cannot show before anything has been synced, and offers the two ways out"
   },
   "syncThisDriveDescription": "Fetch the latest files and folders from this drive.",
   "syncThisDriveCheckAgainDescription": "Look again for this drive's files and folders on Arweave.",
@@ -2832,7 +2940,7 @@
   "@syncFailed": {
     "description": "Top bar title for a sync that could not be done at all, as against one that got through some drives and not others"
   },
-  "syncFailedDetail": "We could not reach the network to read your drive list.",
+  "syncFailedDetail": "The network could not be reached to read your drive list.",
   "@syncFailedDetail": {
     "description": "What a failed sync means for what is on screen: the drive list is whatever was last read, not what is out there"
   },
@@ -2861,6 +2969,17 @@
       "seconds": {
         "type": "String",
         "example": "45"
+      }
+    }
+  },
+  "syncFoundSoFar": "{count, plural, =1{Found 1 item so far...} other{Found {count} items so far...}}",
+  "@syncFoundSoFar": {
+    "description": "What a running sync has pulled in. Preferred over a percentage: it needs no total, so it is honest from the first batch, it can only rise, and it is in files and folders rather than blocks",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "47"
       }
     }
   },

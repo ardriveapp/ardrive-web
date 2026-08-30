@@ -3,13 +3,16 @@ import 'dart:async';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/mocks.dart';
 
@@ -65,6 +68,69 @@ void main() {
       ),
     );
   }
+
+  Drive publicDrive(String id) => Drive(
+        id: id,
+        rootFolderId: '$id-root',
+        ownerAddress: 'me',
+        name: id,
+        privacy: DrivePrivacyTag.public,
+        isHidden: false,
+        dateCreated: DateTime(2024, 3, 4),
+        lastUpdated: DateTime(2024, 3, 4),
+      );
+
+  DrivesLoadSuccess withDrives(List<Drive> drives, {String? selected}) =>
+      DrivesLoadSuccess(
+        selectedDriveId: selected,
+        userDrives: drives,
+        sharedDrives: const [],
+        drivesWithAlerts: const [],
+        canCreateNewDrive: true,
+      );
+
+  /// A drive tap has to reach whatever is on screen.
+  ///
+  /// On the drives list the selected drive is not what is drawn - the list is -
+  /// and the tile for the drive that happened to be selected underneath it
+  /// returned without selecting anything, so the tap was silent.
+  group('tapping a drive', () {
+    testWidgets('selects it', (tester) async {
+      when(() => drivesCubit.selectDrive(any())).thenReturn(null);
+
+      await tester.pumpWidget(
+        wrap(withDrives([publicDrive('drive-a')], selected: 'drive-b')),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('drive-a'));
+      await tester.pump();
+
+      verify(() => drivesCubit.selectDrive('drive-a')).called(1);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('selects it even when it is the one already selected',
+        (tester) async {
+      when(() => drivesCubit.selectDrive(any())).thenReturn(null);
+      when(() => driveDetailCubit.openFolder()).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        wrap(withDrives([publicDrive('drive-a')], selected: 'drive-a')),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('drive-a'));
+      await tester.pump();
+
+      // The explorer still opens the drive's root folder, as it always has.
+      verify(() => driveDetailCubit.openFolder()).called(1);
+      verify(() => drivesCubit.selectDrive('drive-a')).called(1);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
 
   testWidgets('says it is still looking rather than showing nothing',
       (tester) async {

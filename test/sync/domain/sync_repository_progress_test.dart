@@ -439,9 +439,19 @@ void main() {
       final indeterminate = emitted.where((p) => p.isIndeterminate).toList();
       expect(indeterminate, isNotEmpty,
           reason: 'the gateway phase pretended to have a number');
+
+      // The rule is not "only the gateway phase is indeterminate" - reading the
+      // drive history is unmeasurable too, and says so. The rule is that a bar
+      // which has stopped claiming a number always names what it is doing, so
+      // an unmeasurable phase is never also a silent one.
       for (final progress in indeterminate) {
-        expect(progress.statusMessage, 'Updating transaction statuses...');
+        expect(progress.statusMessage, isA<String>(),
+            reason: 'an unmeasurable phase left the user with nothing to read');
       }
+      expect(
+        indeterminate.map((p) => p.statusMessage),
+        contains('Updating transaction statuses...'),
+      );
       expect(emitted.last.isIndeterminate, isFalse);
       expect(emitted.last.progress, 1.0);
     });

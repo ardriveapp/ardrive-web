@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -17,6 +18,15 @@ abstract class UserPreferencesRepository {
   Future<void> saveUserHasHiddenItem(bool userHasHiddenDrive);
   Future<void> saveSyncAllDrivesOnLogin(bool syncAllDrivesOnLogin);
 
+  /// Records that these drives have just been walked to the end.
+  ///
+  /// Called with every drive a finished sync covered, so an all-drives sync
+  /// writes one timestamp across the wallet and a single-drive sync writes one
+  /// for that drive. Drives a sync failed on are deliberately not passed: a
+  /// drive that could not be read was not synced, and saying otherwise is the
+  /// exact kind of confident wrong answer this series exists to remove.
+  Future<void> saveDrivesLastSynced(Iterable<String> driveIds, {DateTime? at});
+
   factory UserPreferencesRepository({
     LocalKeyValueStore? store,
     required ThemeDetector themeDetector,
@@ -29,6 +39,48 @@ abstract class UserPreferencesRepository {
     );
   }
 }
+
+/// Where the per-drive sync times are kept, as a JSON object of drive id to
+/// milliseconds since epoch.
+///
+/// One key holding a map rather than a key per drive: the store is a flat
+/// namespace shared with everything else the app persists, and a wallet with
+/// thirty drives should not leave thirty stray keys behind it.
+const _driveLastSyncedAtKey = 'driveLastSyncedAt';
+
+Map<String, DateTime> _decodeDriveLastSyncedAt(String? stored) {
+  if (stored == null || stored.isEmpty) {
+    return const {};
+  }
+
+  try {
+    final decoded = jsonDecode(stored);
+
+    if (decoded is! Map) {
+      return const {};
+    }
+
+    final result = <String, DateTime>{};
+
+    decoded.forEach((key, value) {
+      if (key is String && value is int) {
+        result[key] = DateTime.fromMillisecondsSinceEpoch(value);
+      }
+    });
+
+    return result;
+  } catch (_) {
+    // Unreadable is the same as unknown. A drive whose timestamp cannot be
+    // parsed reads as never synced, which is the honest answer and the one the
+    // page already knows how to draw.
+    return const {};
+  }
+}
+
+String _encodeDriveLastSyncedAt(Map<String, DateTime> value) => jsonEncode({
+      for (final entry in value.entries)
+        entry.key: entry.value.millisecondsSinceEpoch,
+    });
 
 class _UserPreferencesRepository implements UserPreferencesRepository {
   LocalKeyValueStore? _store;
@@ -79,6 +131,8 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
         _themeDetector.getOSDefaultTheme().name;
     final lastSelectedDriveId = _store!.getString('lastSelectedDriveId');
     final showHiddenFiles = _store!.getBool('showHiddenFiles') ?? false;
+    final driveLastSyncedAt =
+        _decodeDriveLastSyncedAt(_store!.getString(_driveLastSyncedAtKey));
     // Nothing stored means the user never touched the toggle, and the shipped
     // default is not to sync on login. A stored value - either way - is an
     // explicit choice and is honoured as it stands.
@@ -91,6 +145,7 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
       showHiddenFiles: showHiddenFiles,
       userHasHiddenDrive: _store!.getBool('userHasHiddenDrive') ?? false,
       syncAllDrivesOnLogin: syncAllDrivesOnLogin,
+      driveLastSyncedAt: driveLastSyncedAt,
     );
 
     _userPreferencesController.sink.add(_currentUserPreferences!);
@@ -148,6 +203,39 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     );
   }
 
+  @override
+  Future<void> saveDrivesLastSynced(
+    Iterable<String> driveIds, {
+    DateTime? at,
+  }) async {
+    if (driveIds.isEmpty) {
+      return;
+    }
+
+    if (_currentUserPreferences == null) {
+      await load();
+    }
+
+    final when = at ?? DateTime.now();
+
+    // Merged rather than replaced: a single-drive sync must not erase what the
+    // other drives were last known to be.
+    final merged = Map<String, DateTime>.from(
+      _currentUserPreferences!.driveLastSyncedAt,
+    );
+
+    for (final driveId in driveIds) {
+      merged[driveId] = when;
+    }
+
+    await _updatePreference(
+      key: _driveLastSyncedAtKey,
+      value: _encodeDriveLastSyncedAt(merged),
+      updateFunction: (_) =>
+          _currentUserPreferences!.copyWith(driveLastSyncedAt: merged),
+    );
+  }
+
   Future<LocalKeyValueStore> _getStore() async {
     _store ??= await LocalKeyValueStore.getInstance();
 
@@ -159,6 +247,10 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     (await _getStore()).remove('lastSelectedDriveId');
     (await _getStore()).remove('showHiddenFiles');
     (await _getStore()).remove('userHasHiddenDrive');
+    // Logging out drops every local table (`deleteAllTables`), so every drive
+    // is about to read as never synced whether this is cleared or not. Keeping
+    // it would leave "Synced 2 hours ago" sitting over an empty drive.
+    (await _getStore()).remove(_driveLastSyncedAtKey);
     // Note: syncAllDrivesOnLogin is NOT cleared - it's a global preference
     // that should persist across sessions and logins
 
@@ -172,6 +264,7 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
       lastSelectedDriveId: null,
       showHiddenFiles: false,
       userHasHiddenDrive: false,
+      driveLastSyncedAt: const {},
       // Keep syncAllDrivesOnLogin unchanged
     );
 

@@ -97,6 +97,7 @@ void main() {
   const connecting = 'Connecting to the network...';
   const checking = 'Checking for changes...';
   const downloading = 'Downloading drive snapshots...';
+  const readingHistory = 'Reading the drive history...';
 
   /// Configures the repository. Snapshot prefetch is off by default, matching
   /// the other sync repository tests; the prefetch group turns it on.
@@ -526,8 +527,14 @@ void main() {
   });
 
   group('syncSingleDrive', () {
-    test('announces the block height fetch, then clears it for the walk',
+    test('names the wait for this drive history instead of showing a nought',
         () async {
+      // This is the emission the user sits on for the whole first GraphQL
+      // round trip, which on a never-walked drive is the longest single wait
+      // in the sync. It used to carry no message and no measurement, and the
+      // panel falls through to the percentage when there is no phase - so it
+      // read "0% complete", motionless, for as long as the gateway took. That
+      // is the exact thing this series exists to stop.
       final drive = _makeDrive(
         id: 'a',
         ownerAddress: ownerAddress,
@@ -543,12 +550,90 @@ void main() {
           emitted.indexWhere((p) => p.statusMessage == connecting);
       expect(connectingIndex, isNonNegative);
 
-      // Cleared before the walk: from here the dialog shows the percentage,
-      // and its title already names this drive. The drive itself then fails
-      // its walk, so this is the whole of what a single drive sync says.
       expect(emitted.length, greaterThan(connectingIndex + 1));
-      expect(emitted[connectingIndex + 1].statusMessage, null);
-      expect(statusMessagesOf(emitted), [connecting]);
+
+      // The walk fails, so the emission published before it is the last one -
+      // and it is the one that was on screen.
+      // The emission left on screen for the length of the round trip.
+      final beforeTheWalk = emitted[connectingIndex + 1];
+      expect(
+        beforeTheWalk.statusMessage,
+        readingHistory,
+        reason: 'the wait before the walk has to say what it is waiting for',
+      );
+      expect(
+        beforeTheWalk.isIndeterminate,
+        true,
+        reason: 'nothing has measured anything yet, so the bar must sweep '
+            'rather than draw a figure the sync does not have',
+      );
+      expect(beforeTheWalk.progress, 0);
+
+      expect(statusMessagesOf(emitted), [connecting, readingHistory]);
+
+      // And nothing after the block height is a bare nought: no phase to
+      // name, nothing indeterminate, and a figure of zero - which is exactly
+      // what the panel renders as a motionless "0% complete".
+      expect(
+        emitted.skip(connectingIndex).where((p) =>
+            p.progress == 0 && p.statusMessage == null && !p.isIndeterminate),
+        isEmpty,
+      );
+    });
+
+    test('hands the walk back to the percentage the moment it measures one',
+        () async {
+      // The named phase and the sweeping bar are for the stretch with nothing
+      // to measure and no longer: once the walk reports a fraction of its own
+      // there is a number worth showing, and the panel draws the phase in
+      // preference to the number whenever there is one. A message that
+      // survived into the walk would blank the percentage for the whole of it,
+      // which is the mirror image of the bug this replaced.
+      final drive = _makeDrive(
+        id: 'a',
+        ownerAddress: ownerAddress,
+        lastBlockHeight: 50000,
+        name: 'Photos',
+      );
+      when(() => mockDriveDao.driveById(driveId: 'a'))
+          .thenReturn(FakeSelectable([drive]));
+      stubSuccessfulDriveSync([drive]);
+
+      final emitted = await collectSingleDriveProgress('a');
+
+      final ghosts = emitted
+          .indexWhere((p) => p.statusMessage == 'Creating ghost folders...');
+      expect(ghosts, isNonNegative,
+          reason: 'the fixture never got past the walk');
+
+      // The walk's own emissions: it has measured something, and it has not
+      // yet reported the drive done.
+      final walk = emitted
+          .sublist(0, ghosts)
+          .where((p) => p.progress > 0 && p.drivesSynced == 0)
+          .toList();
+
+      expect(walk, isNotEmpty,
+          reason: 'the fixture never measured anything, so nothing below is '
+              'about a measured walk');
+      expect(
+        walk.every((p) => p.statusMessage == null),
+        true,
+        reason: 'the walk has a percentage now, and the panel shows a phase '
+            'in preference to it',
+      );
+      expect(
+        walk.every((p) => !p.isIndeterminate),
+        true,
+        reason: 'a bar told it cannot measure this will sweep past a figure '
+            'the walk is publishing',
+      );
+
+      // And the walk's last word is a number, not a sweep.
+      final walkEnded = emitted[ghosts - 1];
+      expect(walkEnded.drivesSynced, 1);
+      expect(walkEnded.statusMessage, null);
+      expect(walkEnded.isIndeterminate, false);
     });
 
     test('reports the drive as first-time when it has never been synced',

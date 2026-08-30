@@ -305,20 +305,27 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
       subtitle = null;
     }
 
-    // The phase names itself whenever the sync has one to give. The percentage
-    // stands in only when it does not *and* the number means something: an
-    // unmeasurable phase must not leave a figure sitting still on screen, which
-    // is the one thing this panel exists to stop.
+    // The phase names itself whenever the sync has one to give. Otherwise the
+    // count of what has been found stands in - it needs no total, so it is
+    // honest from the first batch, and it can only rise. The percentage is the
+    // last resort, and only while it means something: an unmeasurable phase
+    // must never leave a figure sitting still on screen, which is the one
+    // thing this panel exists to stop.
     final String? detail;
     if (progress == null) {
       detail = null;
+    } else if (progress.statusMessage != null) {
+      detail = progress.statusMessage;
+    } else if (progress.entitiesSynced > 0) {
+      detail = appLocalizationsOf(context).syncFoundSoFar(
+        progress.entitiesSynced,
+      );
+    } else if (progress.isIndeterminate) {
+      detail = null;
     } else {
-      detail = progress.statusMessage ??
-          (progress.isIndeterminate
-              ? null
-              : appLocalizationsOf(context).syncProgressPercentage(
-                  (progress.progress * 100).round().toString(),
-                ));
+      detail = appLocalizationsOf(context).syncProgressPercentage(
+        (progress.progress * 100).round().toString(),
+      );
     }
 
     return _panel([

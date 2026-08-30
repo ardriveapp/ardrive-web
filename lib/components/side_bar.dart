@@ -774,8 +774,13 @@ class _Accordion extends StatelessWidget {
                           if (state.selectedDriveId == d.id) {
                             // opens the root folder
                             context.read<DriveDetailCubit>().openFolder();
-                            return;
                           }
+
+                          // Selecting an already-selected drive changes no
+                          // state, and used to return here. That left the tap
+                          // silent on the drives list, where the selected
+                          // drive is not what is on screen - the list is, and
+                          // it opens a drive when one is chosen.
                           context.read<DrivesCubit>().selectDrive(d.id);
                         },
                         isSelected: state.selectedDriveId == d.id,

@@ -630,4 +630,35 @@ void main() {
       await tester.binding.setSurfaceSize(null);
     });
   });
+  testWidgets('reports what it has found rather than a fraction it cannot move',
+      (tester) async {
+    // The count accumulates per batch in the repository and used to be read
+    // only at the end. A percentage needs a total the walk does not have until
+    // it finishes; a count needs nothing, cannot stall, and is in the user's
+    // own units.
+    await pumpSyncing(
+      tester,
+      reporting: SyncProgress.initial().copyWith(
+        progress: 0.02,
+        entitiesSynced: 47,
+      ),
+    );
+
+    expect(find.text('Found 47 items so far...'), findsOneWidget);
+    expect(find.text('2% complete'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('falls back to the percentage before anything has been found',
+      (tester) async {
+    await pumpSyncing(
+      tester,
+      reporting: SyncProgress.initial().copyWith(progress: 0.42),
+    );
+
+    expect(find.text('42% complete'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
 }

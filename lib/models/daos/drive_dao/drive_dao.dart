@@ -896,6 +896,37 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return hasHiddenItems().getSingle();
   }
 
+  /// How much of each drive is actually on this device, in one pass.
+  ///
+  /// Grouped rather than asked per drive: the drives list wants both numbers
+  /// for every drive at once, and a wallet with thirty drives should cost one
+  /// query rather than sixty. A drive with no local file rows is simply absent
+  /// from the map - there is no row to group - which the caller reads as zero.
+  ///
+  /// Both numbers describe the local database and nothing else. A drive that
+  /// has never been walked has no rows, so its size reads as zero bytes rather
+  /// than as the truth, which is that we do not know. That is why
+  /// [DriveContentSummary.totalSize] is only ever published for a drive whose
+  /// history has actually been walked - see `DriveListItem.size`.
+  Future<Map<String, DriveContentSummary>> driveContentSummaries() async {
+    final itemCount = fileEntries.id.count();
+    final totalSize = fileEntries.size.sum();
+
+    final query = selectOnly(fileEntries)
+      ..addColumns([fileEntries.driveId, itemCount, totalSize])
+      ..groupBy([fileEntries.driveId]);
+
+    final rows = await query.get();
+
+    return {
+      for (final row in rows)
+        row.read(fileEntries.driveId)!: DriveContentSummary(
+          itemCount: row.read(itemCount) ?? 0,
+          totalSize: row.read(totalSize) ?? 0,
+        ),
+    };
+  }
+
   /// Whether any transaction is still waiting to be resolved as confirmed or
   /// failed.
   ///
@@ -910,6 +941,29 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     return (await query.get()).isNotEmpty;
   }
+}
+
+/// What the local database holds for one drive.
+///
+/// Deliberately not "what the drive contains": both numbers count synced rows,
+/// so they are a description of this device, not of Arweave.
+class DriveContentSummary extends Equatable {
+  const DriveContentSummary({
+    required this.itemCount,
+    required this.totalSize,
+  });
+
+  static const empty = DriveContentSummary(itemCount: 0, totalSize: 0);
+
+  /// File entries stored locally for this drive. Folders are not items here -
+  /// a folder is where items live, not one of them.
+  final int itemCount;
+
+  /// The sum of those files' sizes, in bytes.
+  final int totalSize;
+
+  @override
+  List<Object?> get props => [itemCount, totalSize];
 }
 
 class FolderNotFoundInDriveException implements Exception {

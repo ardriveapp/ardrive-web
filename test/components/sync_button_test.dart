@@ -783,7 +783,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 10));
 
       expect(find.text('Drives Could Not Be Loaded'), findsOneWidget);
-      expect(find.text('We could not reach the network to read your drive list.'), findsOneWidget);
+      expect(
+          find.text(
+              'The network could not be reached to read your drive list.'),
+          findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -859,7 +862,10 @@ void main() {
 
       // Gone from the announcement, still in the menu: the indicator is what
       // carries a failure that is no longer news.
-      expect(find.text('We could not reach the network to read your drive list.'), findsNothing);
+      expect(
+          find.text(
+              'The network could not be reached to read your drive list.'),
+          findsNothing);
 
       await openMenu(tester);
       expect(find.text('Try Again'), findsOneWidget);

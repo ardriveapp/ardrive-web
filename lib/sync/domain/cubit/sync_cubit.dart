@@ -59,6 +59,17 @@ class SyncCubit extends Cubit<SyncState> {
   DateTime? _lastSync;
   DateTime _initSync = DateTime.now();
 
+  String? _syncingDriveId;
+
+  /// The single drive a running sync covers, or null.
+  ///
+  /// Null means two different things and the state says which: no sync is
+  /// running, or the running sync covers every drive. A surface that lists
+  /// drives needs this to say "Syncing..." on the row it is true of instead of
+  /// on all of them - [SyncProgress] carries a drive *name* for the modal to
+  /// print, and names are not identity.
+  String? get syncingDriveId => _syncingDriveId;
+
   /// Exposed for the sync modal to display elapsed time.
   DateTime get syncStartTime => _initSync;
 
@@ -445,6 +456,9 @@ class SyncCubit extends Cubit<SyncState> {
 
       _initSync = DateTime.now();
 
+      // Every drive is covered, so no single drive owns this one.
+      _syncingDriveId = null;
+
       emit(SyncInProgress(trigger: trigger));
       // Emit initial progress AFTER SyncInProgress so the modal is already
       // listening to the stream when we emit
@@ -575,6 +589,8 @@ class SyncCubit extends Cubit<SyncState> {
 
     _captureSkippedEntities(_syncProgress);
 
+    unawaited(_recordDrivesSynced());
+
     // Check if sync completed with errors (only for non-cancelled syncs)
     if (_syncProgress.hasErrors) {
       logger.w('Sync completed with ${_syncProgress.failedQueries} errors');
@@ -637,6 +653,10 @@ class SyncCubit extends Cubit<SyncState> {
       SecretKey? cipherKey;
 
       _initSync = DateTime.now();
+
+      // Which drive this sync is for, so a surface listing drives can say
+      // "Syncing..." on that row alone.
+      _syncingDriveId = driveId;
 
       emit(SyncInProgress(trigger: trigger));
       // Emit initial progress AFTER SyncInProgress so the modal is already
@@ -726,6 +746,10 @@ class SyncCubit extends Cubit<SyncState> {
         _currentSyncToken?.dispose();
         _currentSyncToken = null;
       }
+
+      // Released on every path out, cancellation included: nothing is running
+      // for this drive any more.
+      _syncingDriveId = null;
     }
 
     _lastSync = DateTime.now();
@@ -737,6 +761,8 @@ class SyncCubit extends Cubit<SyncState> {
     _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
 
     _captureSkippedEntities(_syncProgress);
+
+    unawaited(_recordDrivesSynced());
 
     // Check if sync completed with errors
     if (_syncProgress.hasErrors) {
@@ -754,6 +780,34 @@ class SyncCubit extends Cubit<SyncState> {
       emit(_syncComplete(trigger));
     } else {
       emit(SyncIdle());
+    }
+  }
+
+  /// Writes down that the drives this sync walked are current as of now.
+  ///
+  /// Per drive rather than one global timestamp, because "when did we last
+  /// look at this drive" is the only question the drives list can answer
+  /// honestly: a single-drive sync leaves every other drive exactly as stale
+  /// as it was.
+  ///
+  /// Fire and forget, and never allowed to take a finished sync down with it.
+  /// The sync has already succeeded by the time this runs; a preferences write
+  /// that fails is worth a log line and nothing more.
+  Future<void> _recordDrivesSynced() async {
+    final syncedDriveIds = _syncProgress.syncedDriveIds;
+
+    if (syncedDriveIds.isEmpty) {
+      return;
+    }
+
+    try {
+      await _userPreferencesRepository.saveDrivesLastSynced(syncedDriveIds);
+    } catch (e, stackTrace) {
+      logger.e(
+        'Could not record when these drives were last synced',
+        e,
+        stackTrace,
+      );
     }
   }
 
