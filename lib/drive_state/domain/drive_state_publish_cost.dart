@@ -101,11 +101,20 @@ class DriveStatePublishCost extends Equatable {
       ];
 }
 
-/// How long any single call in the estimate may take before it is abandoned.
+/// How long the AR leg may take before it is abandoned.
 ///
-/// Four legs at ten seconds each stays under the cubit's own 45-second
-/// deadline, which is what keeps that one a backstop.
-const kEstimateLegTimeout = Duration(seconds: 10);
+/// Longer than a Turbo leg because it is not one call: a price, a community
+/// tip and an AR/USD conversion, each bounded in turn. It is also the leg that
+/// must not fail, AR being the transport that always has to exist.
+const kArCostLegTimeout = Duration(seconds: 20);
+
+/// How long any single Turbo call may take before it is abandoned.
+const kTurboLegTimeout = Duration(seconds: 6);
+
+/// Worst case is 20 + 6 + 6 + 6 = 38 seconds, which stays under the cubit's
+/// own 45-second deadline. That margin is what keeps the cubit's timeout a
+/// backstop for something unforeseen rather than the thing that always fires
+/// first, with nothing to say about which call is outstanding.
 
 /// Prices an artifact with the same collaborators the snapshot dialog uses.
 ///
@@ -120,7 +129,14 @@ class DriveStatePublishCostEstimator {
   final PstService _pst;
   final TurboBalanceRetriever _turboBalanceRetriever;
   final ConfigService _configService;
-  final Duration _legTimeout;
+
+  /// Overrides every leg's own budget when set. Tests only.
+  final Duration? _legTimeout;
+
+  /// Overrides how long the community tip may take. Tests only, and separate
+  /// from [_legTimeout] because the two have to be set independently: a test
+  /// for the tip timing out needs the leg containing it to outlive it.
+  final Duration? _pstFeeTimeout;
 
   DriveStatePublishCostEstimator({
     required ArweaveService arweave,
@@ -128,13 +144,15 @@ class DriveStatePublishCostEstimator {
     required PstService pst,
     required TurboBalanceRetriever turboBalanceRetriever,
     required ConfigService configService,
-    Duration legTimeout = kEstimateLegTimeout,
+    Duration? legTimeout,
+    Duration? pstFeeTimeout,
   })  : _arweave = arweave,
         _paymentService = paymentService,
         _pst = pst,
         _turboBalanceRetriever = turboBalanceRetriever,
         _configService = configService,
-        _legTimeout = legTimeout;
+        _legTimeout = legTimeout,
+        _pstFeeTimeout = pstFeeTimeout;
 
   /// Runs one leg of the estimate under its own deadline, and records how long
   /// it took.
@@ -148,15 +166,20 @@ class DriveStatePublishCostEstimator {
   /// The per-leg deadline also keeps the total under the caller's own, so that
   /// one stays a backstop for something unforeseen rather than the thing that
   /// always fires first with nothing to say.
-  Future<T> _leg<T>(String name, Future<T> Function() run) async {
+  Future<T> _leg<T>(
+    String name,
+    Duration budget,
+    Future<T> Function() run,
+  ) async {
+    final deadline = _legTimeout ?? budget;
     final since = Stopwatch()..start();
     try {
-      final value = await run().timeout(_legTimeout);
+      final value = await run().timeout(deadline);
       logger.d('[drive-state] priced $name in ${since.elapsedMilliseconds}ms');
       return value;
     } on TimeoutException {
       logger.e(
-        '[drive-state] $name did not answer within ${_legTimeout.inSeconds}s',
+        '[drive-state] $name did not answer within ${deadline.inSeconds}s',
       );
       rethrow;
     }
@@ -179,6 +202,9 @@ class DriveStatePublishCostEstimator {
       arweaveService: _arweave,
       pstService: _pst,
       arCostToUsd: ConvertArToUSD(arweave: _arweave),
+      // Only ever set by a test, which cannot afford to wait out the real one.
+      pstFeeTimeout:
+          _pstFeeTimeout ?? UploadCostEstimateCalculatorForAR.kPstFeeTimeout,
     );
 
     final turboCostCalculator = TurboCostCalculator(
@@ -195,6 +221,7 @@ class DriveStatePublishCostEstimator {
 
     final costEstimateAr = await _leg(
       'the AR cost',
+      kArCostLegTimeout,
       () => arCalculator.calculateCost(totalSize: sizeInBytes),
     );
 
@@ -206,6 +233,7 @@ class DriveStatePublishCostEstimator {
       try {
         costEstimateTurbo = await _leg(
           'the Turbo cost',
+          kTurboLegTimeout,
           () => turboCalculator.calculateCost(totalSize: sizeInBytes),
         );
       } catch (e) {
@@ -225,6 +253,7 @@ class DriveStatePublishCostEstimator {
     try {
       turboBalance = await _leg(
         'the Turbo balance',
+        kTurboLegTimeout,
         () => _turboBalanceRetriever.getBalance(wallet),
       );
     } catch (e) {
@@ -273,6 +302,7 @@ class DriveStatePublishCostEstimator {
     try {
       allowance = await _leg(
         'the Turbo free allowance',
+        kTurboLegTimeout,
         () => _turboBalanceRetriever.getFreeAllowance(wallet),
       );
     } catch (e) {

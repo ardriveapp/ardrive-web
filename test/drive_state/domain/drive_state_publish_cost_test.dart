@@ -93,18 +93,25 @@ void main() {
         .thenAnswer((_) async => const TurboFreeAllowance.unknown());
   });
 
-  DriveStatePublishCostEstimator estimator({Duration? legTimeout}) =>
+  DriveStatePublishCostEstimator estimator({
+    Duration? legTimeout,
+    Duration? pstFeeTimeout,
+  }) =>
       DriveStatePublishCostEstimator(
         arweave: arweave,
         paymentService: paymentService,
         pst: pst,
         turboBalanceRetriever: turboBalanceRetriever,
         configService: configService,
-        legTimeout: legTimeout ?? kEstimateLegTimeout,
+        legTimeout: legTimeout,
+        pstFeeTimeout: pstFeeTimeout,
       );
 
-  Future<DriveStatePublishCost> estimate({Duration? legTimeout}) =>
-      estimator(legTimeout: legTimeout).estimate(
+  Future<DriveStatePublishCost> estimate({
+    Duration? legTimeout,
+    Duration? pstFeeTimeout,
+  }) =>
+      estimator(legTimeout: legTimeout, pstFeeTimeout: pstFeeTimeout).estimate(
         sizeInBytes: 1024,
         wallet: wallet,
         walletBalance: BigInt.from(1000000),
@@ -206,6 +213,25 @@ void main() {
       expect(cost.isTurboUploadPossible, isFalse);
       expect(cost.defaultMethod, UploadMethod.ar);
       expect(cost.costEstimateAr.totalCost, greaterThan(BigInt.zero));
+    });
+
+    test('a community tip that never answers still prices the artifact',
+        () async {
+      // The call that actually hung in the field. Reading the community
+      // contract goes through a chain of oracles and retries, none of which
+      // has a deadline of its own, and the fee is optional here - the AR
+      // calculator already proceeds without it when it throws. A hang must
+      // not be the one form of that failure which costs the user the feature.
+      when(() => pst.getPSTFee(any())).thenAnswer((_) => neverAnswers());
+
+      // The leg has to outlive the tip, or the test proves the wrong thing.
+      final cost = await estimate(
+        legTimeout: const Duration(seconds: 5),
+        pstFeeTimeout: short,
+      );
+
+      expect(cost.costEstimateAr.totalCost, greaterThan(BigInt.zero));
+      expect(cost.costEstimateAr.pstFee, BigInt.zero);
     });
 
     test('an AR price that never answers fails instead of waiting for ever',
