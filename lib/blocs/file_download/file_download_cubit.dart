@@ -199,6 +199,11 @@ FileDownloadFailureReason classifyDownloadError(Object error) {
   if (error is DownloadIntegrityException) {
     return FileDownloadFailureReason.integrityCheckFailed;
   }
+  // Also never retryable, and for the same shape of reason: fetching the bytes
+  // again cannot supply a key the recipient was never given.
+  if (error is SharedFileIsEncryptedException) {
+    return FileDownloadFailureReason.encryptedWithoutKey;
+  }
   return FileDownloadFailureReason.unknownError;
 }
 

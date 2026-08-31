@@ -8,6 +8,11 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/link_generators.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
+// Aliased: `cryptography` exports a `Cipher` of its own, and this file needs
+// both packages.
+import 'package:ardrive_crypto/ardrive_crypto.dart' as ardrive_crypto;
+import 'package:ardrive_uploader/ardrive_uploader.dart'
+    show maxSizeSupportedByGCMEncryption;
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -63,6 +68,15 @@ class FileShareCubit extends Cubit<FileShareState> {
 
   String? _cipher;
   String? _cipherIv;
+
+  /// Whether a private file's cipher could not be resolved.
+  ///
+  /// `c` is not an optimization. It is the only thing that tells a recipient
+  /// holding no key that the file is encrypted: without it the page reads the
+  /// file as public, and a download writes ciphertext to disk under the file's
+  /// own name. A link missing it is not a slower link, it is a broken one, so
+  /// the sharer is told rather than handed it silently.
+  bool _cipherDetailsFailed = false;
   bool _isLoadingCipherDetails = false;
 
   bool _detailsAreHidden = false;
@@ -186,7 +200,14 @@ class FileShareCubit extends Cubit<FileShareState> {
 
   /// How long the one network read on this side may take before the link is
   /// presented as final without `c`/`iv`.
-  static const _cipherDetailsTimeout = Duration(seconds: 10);
+  ///
+  /// Raised from ten seconds, which was under `GraphQLRetry`'s own ladder: it
+  /// sleeps about six seconds across its five attempts on the primary endpoint
+  /// before falling back to Goldsky, so a ten second budget expired part way
+  /// through the primary and the fallback never ran. That is the difference
+  /// between a link that carries `c`/`iv` and one that only declares the file
+  /// encrypted, on exactly the connection where it matters most.
+  static const _cipherDetailsTimeout = Duration(seconds: 15);
 
   /// Fetches `c`/`iv` - the only two link fields that are not in the local
   /// database - and folds them into the link when they arrive.
@@ -214,14 +235,19 @@ class FileShareCubit extends Cubit<FileShareState> {
       _cipherIv = dataTx?.getTag(EntityTag.cipherIv);
 
       if (_cipher == null || _cipherIv == null) {
+        _cipherDetailsFailed = true;
+
         logger.w(
           'The data transaction of a shared private file carries no cipher '
-          'tags. The link will omit `c`/`iv`.',
+          'tags. The link will declare the file encrypted without them.',
         );
       }
     } catch (e) {
+      _cipherDetailsFailed = true;
+
       logger.e('Failed to fetch the cipher details of a shared file link', e);
     } finally {
+      _declarePrivacyWithoutTheGateway();
       _isLoadingCipherDetails = false;
 
       if (!isClosed && state is FileShareLoadSuccess) {
@@ -242,8 +268,69 @@ class FileShareCubit extends Cubit<FileShareState> {
         detailsAreHidden: _detailsAreHidden,
         isPinned: _isPinned,
         isLoadingCipherDetails: _isLoadingCipherDetails,
+        cipherDetailsFailed: _cipherDetailsFailed,
       ),
     );
+  }
+
+  /// Asks again for the cipher a private link needs.
+  ///
+  /// Cheap to offer: [ArweaveService.getTransactionDetails] memoizes by id, so
+  /// a lookup that has since succeeded for this transaction answers without
+  /// touching the network at all.
+  Future<void> retryCipherDetails() async {
+    final dataTxId = _dataTxId;
+
+    if (_isLoadingCipherDetails || dataTxId == null) {
+      return;
+    }
+
+    _cipherDetailsFailed = false;
+    _isLoadingCipherDetails = true;
+    _emitLoadSuccess();
+
+    await _loadCipherDetails(dataTxId);
+  }
+
+  /// Makes the link say "this file is encrypted" even when the gateway would
+  /// not say what it is encrypted *with*.
+  ///
+  /// `c` does two unrelated jobs. With `iv` beside it, it tells the recipient
+  /// which algorithm to decrypt with. On its own it does something far more
+  /// basic: it is the only thing that tells a recipient holding no key that a
+  /// key is needed at all. Without it the page reads a private file as public,
+  /// never prompts for the key, and offers a download that cannot work.
+  ///
+  /// The IV is random per upload and is only on the transaction, so it cannot
+  /// be recovered locally - nothing in the local database keeps it. The
+  /// algorithm can be inferred: this uploader writes AES-GCM below
+  /// [maxSizeSupportedByGCMEncryption] and AES-CTR above it.
+  ///
+  /// That inference can be wrong - `ardrive-cli` wrote AES-GCM at any size -
+  /// and it does not matter, because a `c` set here is never decrypted with.
+  /// Every consumer that decrypts requires `hasCipherDetails`, which is `c`
+  /// *and* `iv`, and this only runs when `c` could not be fetched. What it
+  /// buys is the locked state, which is right regardless of algorithm.
+  void _declarePrivacyWithoutTheGateway() {
+    // Only `c` decides this. Testing `iv` as well would let the one case where
+    // the gateway returned an IV and no cipher skip the inference and ship a
+    // link with `iv` and no `c` - which is precisely the link this exists to
+    // prevent, because the recipient's locked state keys off `c` alone.
+    if (_cipher != null) {
+      return;
+    }
+
+    if (_fileKeyBase64 == null) {
+      return;
+    }
+
+    // An IV with no cipher beside it decrypts nothing and would only travel as
+    // dead weight; `hasCipherDetails` requires both.
+    _cipherIv = null;
+
+    _cipher = (_size ?? 0) <= maxSizeSupportedByGCMEncryption
+        ? ardrive_crypto.Cipher.aes256gcm
+        : ardrive_crypto.Cipher.aes256ctr;
   }
 
   Uri _buildLink() => generateFileShareLinkV2(

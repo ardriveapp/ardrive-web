@@ -23,6 +23,7 @@ import 'package:ardrive/models/folder_revision.dart';
 import 'package:ardrive/services/arweave/arweave.dart'
     hide SnapshotEntityTransaction;
 import 'package:ardrive/services/config/config.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/data/snapshot_validation_service.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
@@ -76,6 +77,41 @@ abstract class SyncRepository {
   // against a caller's intent, so "correct" has no meaning for it, and a
   // corrected version would still be a second, untested entry point beside
   // [syncSingleDrive], which does the same job and is the one the app calls.
+
+  /// The total transaction-parse budget, shared out across the drives still to
+  /// be synced.
+  @visibleForTesting
+  static const maxTransactionParseBatchSize = 200;
+
+  /// How many transactions each remaining drive may parse per batch.
+  ///
+  /// The budget is divided by the drives left to sync, so a wallet with more of
+  /// them parses in smaller batches. Integer division makes that reach **zero**
+  /// once more than [maxTransactionParseBatchSize] drives remain, and
+  /// `BatchProcessor` throws `ArgumentError('Batch size cannot be 0')` on a
+  /// batch of zero - so past that point a wallet could not sync at all, and the
+  /// failure was an argument error rather than anything naming the cause.
+  ///
+  /// Clamped to at least one. A batch of one is slow; a batch of zero is a
+  /// crash. No wallet is known to hold that many drives today, so this is a
+  /// floor under a future scale rather than a fix for anyone's sync now.
+  ///
+  /// The subtraction is guarded too: `drivesSynced` reaching `drivesCount`
+  /// would divide by zero, which throws a different error for the same reason.
+  @visibleForTesting
+  static int transactionParseBatchSizeFor({
+    required int drivesCount,
+    required int drivesSynced,
+  }) {
+    final remaining = drivesCount - drivesSynced;
+
+    if (remaining <= 1) {
+      return maxTransactionParseBatchSize;
+    }
+
+    return max(1, maxTransactionParseBatchSize ~/ remaining);
+  }
+
 
   /// Syncs a single drive by its ID, with optional deep sync.
   /// Returns a stream of SyncProgress that can be used to track progress.
@@ -529,8 +565,7 @@ class _SyncRepository implements SyncRepository {
                 : _calculateSyncLastBlockHeight(drive.lastBlockHeight ?? 0),
             currentBlockHeight: currentBlockHeight,
             syncDeep: syncDeep,
-            transactionParseBatchSize:
-                200 ~/ (syncProgress.drivesCount - syncProgress.drivesSynced),
+            transactionParseBatchSize: _transactionParseBatchSize(syncProgress),
             ownerAddress: drive.ownerAddress,
             txFechedCallback: txFechedCallback,
             cancellationToken: token,
@@ -1346,6 +1381,12 @@ class _SyncRepository implements SyncRepository {
       ),
     );
   }
+
+  int _transactionParseBatchSize(SyncProgress progress) =>
+      SyncRepository.transactionParseBatchSizeFor(
+        drivesCount: progress.drivesCount,
+        drivesSynced: progress.drivesSynced,
+      );
 
   int _calculateSyncLastBlockHeight(int lastBlockHeight) {
     logger.d('Calculating sync last block height: $lastBlockHeight');

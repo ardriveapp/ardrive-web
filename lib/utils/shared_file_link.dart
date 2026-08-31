@@ -755,7 +755,8 @@ class SharedFileLinkPayload extends Equatable {
     putFixed(_bitOwner, _encodeId(ownerAddress, SharedFileLinkParams.owner));
     putFixed(_bitCipherIv, _encodeCipherIv(cipherIv));
     putVariable(_bitSize, _encodeSize(size));
-    putVariable(_bitName, _encodeText(name, SharedFileLinkParams.name));
+    putVariable(
+        _bitName, _encodeText(_nameForLink(name), SharedFileLinkParams.name));
 
     final contentTypeField = _encodeContentType(contentType);
 
@@ -864,8 +865,7 @@ class SharedFileLinkPayload extends Equatable {
     final metadataTxId =
         reader.fixed(present, _bitMetadataTxId, _idLengthInBytes);
     final ownerAddress = reader.fixed(present, _bitOwner, _idLengthInBytes);
-    final cipherIv =
-        reader.fixed(present, _bitCipherIv, cipherIvLengthInBytes);
+    final cipherIv = reader.fixed(present, _bitCipherIv, cipherIvLengthInBytes);
     final size = reader.variable(present, _bitSize);
     final name = reader.variable(present, _bitName);
     final contentType = _decodeContentType(reader, present);
@@ -1164,6 +1164,49 @@ class SharedFileLinkPayload extends Equatable {
     return size;
   }
 
+  /// A name in the shape the reader will actually keep.
+  ///
+  /// The two ends disagreed. [_encodeText] truncates to what one length byte
+  /// can address - 255 *bytes* - while [sanitizeName] drops anything over
+  /// [maxNameLength] *characters* on the way back in, and drops a name
+  /// carrying control or direction characters outright. A 150 character name
+  /// was therefore written into the link and then thrown away by the reader:
+  /// bytes spent for nothing, and a recipient shown no name at all until the
+  /// metadata resolves.
+  ///
+  /// Truncating beats dropping, which is [_encodeText]'s own rule: a shortened
+  /// name still tells the recipient what they are looking at. A name the
+  /// reader would reject for its characters is dropped here rather than
+  /// carried, because there is no shortening that would make it acceptable.
+  static String? _nameForLink(String? value) {
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+
+    if (unsafeNameCharacterPattern.hasMatch(value)) {
+      logger.w(
+        'Dropped `${SharedFileLinkParams.name}` from a shared file link: it '
+        'contains control or direction characters.',
+      );
+
+      return null;
+    }
+
+    if (value.length <= maxNameLength) {
+      return value;
+    }
+
+    // Never between the halves of a rune - the same rule [_encodeText]
+    // applies, for the same reason.
+    var end = maxNameLength;
+
+    while (end > 0 && _isHighSurrogate(value.codeUnitAt(end - 1))) {
+      end -= 1;
+    }
+
+    return end == 0 ? null : value.substring(0, end);
+  }
+
   /// UTF-8, truncated on a rune boundary to what one length byte can address.
   ///
   /// Truncating beats dropping - a shortened name hint still tells the
@@ -1280,9 +1323,8 @@ class SharedFileLinkPayload extends Equatable {
     }
 
     if (code != _contentTypeIsLiteral) {
-      final known = code <= _contentTypeTable.length
-          ? _contentTypeTable[code - 1]
-          : null;
+      final known =
+          code <= _contentTypeTable.length ? _contentTypeTable[code - 1] : null;
 
       if (known == null) {
         // A code from a table this build has not grown yet. The type is worth
@@ -1639,8 +1681,36 @@ String buildSharedFileLinkLocation({
       SharedFileLinkKeyPlacement.hashQuery,
   SharedFileLinkRoute route = SharedFileLinkRoute.legacy,
 }) {
-  final path = route.pathFor(fileId);
   final candidateKey = rawFileKey ?? payload?.key.raw;
+
+  // The one combination that leaks a file key.
+  //
+  // On the hash route everything after `#` stays in the browser, so a key in
+  // the query is never sent anywhere. On a path route that same query *is*
+  // sent: to the host, into its access log, and out again in the `Referer` of
+  // anything the page loads. Only a fragment is safe there.
+  //
+  // Thrown rather than asserted. It *is* a programming error - there is no
+  // input that reaches it, only a call that should not have been written - and
+  // an assert would catch that in every debug and test run. But asserts are
+  // stripped from release builds, so an assert is exactly no guard at all in
+  // the one build where the leak would be real. The failure this prevents is a
+  // file key in a server's access log, which is not recoverable by anyone
+  // afterwards; refusing to build the link is.
+  if (route == SharedFileLinkRoute.share &&
+      keyPlacement != SharedFileLinkKeyPlacement.fragment &&
+      candidateKey != null &&
+      candidateKey.isNotEmpty) {
+    throw ArgumentError.value(
+      keyPlacement,
+      'keyPlacement',
+      'A file key must not be placed in the query of a path route: unlike the '
+          'hash route, that query is sent to the server. Use '
+          'SharedFileLinkKeyPlacement.fragment.',
+    );
+  }
+
+  final path = route.pathFor(fileId);
   final key =
       candidateKey == null || candidateKey.isEmpty ? null : candidateKey;
 

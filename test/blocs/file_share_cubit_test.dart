@@ -473,33 +473,108 @@ void main() {
       expect(payloadOf(pinned).metadataTxId, metadataTxId);
     });
 
-    test('a failed cipher lookup still yields a usable link', () async {
+    test('a failed cipher lookup still says the file is encrypted', () async {
+      // This test used to assert that such a link was "usable", on the
+      // reasoning that `c`/`iv` only save the recipient a lookup. They do not.
+      // `c` on its own is the only thing that tells a recipient holding no key
+      // that a key is needed: without it the page reads a private file as
+      // public, never prompts, and a download writes ciphertext to disk under
+      // the file's own name.
       when(() => arweave.getTransactionDetails(any()))
           .thenAnswer((_) async => throw Exception('gateway is unreachable'));
 
       final state = await loaded(createCubit());
       final payload = payloadOf(state);
 
-      expect(payload.cipher, isNull);
+      // Declared encrypted, without the gateway's help.
+      expect(payload.cipher, isNotNull);
+
+      // The IV is random per upload and lives only on the transaction, so it
+      // is genuinely gone. That keeps `hasCipherDetails` false, which is what
+      // stops the inferred algorithm from ever being decrypted with.
       expect(payload.cipherIv, isNull);
+      expect(payload.hasCipherDetails, isFalse);
+
+      // And the sharer is told, rather than handed a link that looks finished.
+      expect(state.cipherDetailsFailed, isTrue);
       expect(state.isLoadingCipherDetails, isFalse);
       expect(state.fileKeyBase64, await expectedFileKey());
 
-      // Everything else is still there, so the recipient pays one GraphQL
-      // request at download time and nothing more (§1.2).
       expect(payload.hasFastPathTarget, isTrue);
-      expect(payload.hasCipherDetails, isFalse);
       expect(payload.name, fileName);
     });
 
-    test('a transaction without cipher tags yields a usable link', () async {
+    test('a transaction without cipher tags still says encrypted', () async {
+      // Same reasoning as the failed lookup above: tags that are not there are
+      // no more reason to hand over a link that cannot say the file needs a
+      // key.
       when(() => arweave.getTransactionDetails(any()))
           .thenAnswer((_) async => _TransactionWithTags(const {}));
 
       final state = await loaded(createCubit());
 
-      expect(payloadOf(state).cipher, isNull);
+      expect(payloadOf(state).cipher, isNotNull);
+      expect(payloadOf(state).cipherIv, isNull);
+      expect(payloadOf(state).hasCipherDetails, isFalse);
+      expect(state.cipherDetailsFailed, isTrue);
       expect(payloadOf(state).dataTxId, dataTxId);
+    });
+
+    test('an IV with no cipher beside it still says encrypted', () async {
+      // The one shape that used to slip through. The declaration was skipped
+      // whenever *either* value was present, so a transaction carrying `iv`
+      // and no `c` produced a link with an IV and nothing to say the file was
+      // encrypted - which is the whole failure this declaration exists to
+      // prevent, since the recipient's locked state keys off `c` alone.
+      when(() => arweave.getTransactionDetails(any())).thenAnswer(
+        (_) async => _TransactionWithTags(const {
+          EntityTag.cipherIv: cipherIv,
+        }),
+      );
+
+      final state = await loaded(createCubit());
+      final payload = payloadOf(state);
+
+      expect(payload.cipher, isNotNull);
+
+      // The orphan IV is dropped rather than carried: it decrypts nothing
+      // without a cipher, and `hasCipherDetails` needs both.
+      expect(payload.cipherIv, isNull);
+      expect(payload.hasCipherDetails, isFalse);
+      expect(state.cipherDetailsFailed, isTrue);
+    });
+
+    test('retrying picks up a cipher the gateway can finally answer for',
+        () async {
+      var attempts = 0;
+
+      when(() => arweave.getTransactionDetails(any())).thenAnswer((_) async {
+        attempts += 1;
+
+        if (attempts == 1) {
+          throw Exception('gateway is unreachable');
+        }
+
+        return _TransactionWithTags({
+          EntityTag.cipher: Cipher.aes256gcm,
+          EntityTag.cipherIv: cipherIv,
+        });
+      });
+
+      final cubit = createCubit();
+      final failed = await loaded(cubit);
+
+      expect(failed.cipherDetailsFailed, isTrue);
+      expect(payloadOf(failed).hasCipherDetails, isFalse);
+
+      await cubit.retryCipherDetails();
+
+      final state = cubit.state as FileShareLoadSuccess;
+
+      expect(state.cipherDetailsFailed, isFalse);
+      expect(payloadOf(state).cipher, Cipher.aes256gcm);
+      expect(payloadOf(state).cipherIv, cipherIv);
+      expect(payloadOf(state).hasCipherDetails, isTrue);
     });
   });
 
