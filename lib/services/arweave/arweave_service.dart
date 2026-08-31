@@ -670,11 +670,24 @@ class ArweaveService {
   /// one slow or failing item costs the whole chunk its duration.
   ///
   /// [task] owns its error handling — a task that throws aborts the run.
+  ///
+  /// [onItemDone] is called once for every task that returns, at the moment it
+  /// returns, before its worker claims the next index. It is the only thing
+  /// inside this loop that a caller can see move: the run itself reports
+  /// nothing until all of it is over, and for metadata fetches that is one
+  /// HTTP round trip per item at [concurrency] at a time — the longest silence
+  /// in a sync. Counting is the caller's job; this says only "one more is
+  /// done", so the hook cannot be read as a total the pool does not own.
+  ///
+  /// It must not throw and it must not await: it runs between a slot being
+  /// released and the next index being claimed, so anything slow here is
+  /// concurrency taken away from the fetches.
   @visibleForTesting
   static Future<void> runPooled({
     required int concurrency,
     required int itemCount,
     required Future<void> Function(int index) task,
+    void Function()? onItemDone,
   }) async {
     if (itemCount <= 0) return;
 
@@ -692,6 +705,7 @@ class ArweaveService {
         if (i >= itemCount) return;
         nextIndex++;
         await task(i);
+        onItemDone?.call();
       }
     }
 
@@ -703,6 +717,13 @@ class ArweaveService {
   /// mounts the `blockHistory`
   ///
   /// returns DriveEntityHistory object
+  ///
+  /// [onEntityFetched] fires once per entity in [entityTxs], as each one is
+  /// finished with rather than when the batch is. It is the sync's only view
+  /// into this loop: every entity's metadata body is one HTTP round trip, run
+  /// `maxConcurrentDataFetches` at a time, and a drive with three thousand
+  /// revisions spends nearly the whole of its "reading the drive history" here
+  /// with nothing else to report.
   Future<DriveEntityHistory> createDriveEntityHistoryFromTransactions(
     List<DriveEntityHistoryTransactionModel> entityTxs,
     SecretKey? driveKey,
@@ -710,6 +731,7 @@ class ArweaveService {
     required String ownerAddress,
     required DriveID driveId,
     int? currentBlockHeight,
+    void Function()? onEntityFetched,
   }) async {
     // Limit concurrent data fetches to avoid overwhelming the gateway.
     //
@@ -731,6 +753,12 @@ class ArweaveService {
     await runPooled(
       concurrency: maxConcurrent,
       itemCount: entityTxs.length,
+      // One per entity, whether its body was fetched, skipped or already in
+      // hand - the caller is counting how much of the batch is behind it, not
+      // how many requests were made, so an entity that costs no request still
+      // has to land. Without that the count would stop short of the total on
+      // any batch holding a snapshot or a broken private entity.
+      onItemDone: onEntityFetched,
       task: (i) async {
         final entity = entityTxs[i].transactionCommonMixin;
         final tags = HashMap.fromIterable(

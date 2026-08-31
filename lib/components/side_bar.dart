@@ -11,8 +11,11 @@ import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/sync/domain/sync_run.dart';
+import 'package:ardrive/sync/presentation/sync_history_panel.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -25,6 +28,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+
+/// The nav's way back to the drives list.
+///
+/// Named so a test can find it in either of the two shapes it is drawn in -
+/// with its label on the drawer and the expanded rail, and as a bare icon on
+/// the collapsed one, where there is no text to look for.
+const Key sideBarDrivesListLinkKey = Key('sideBarDrivesListLink');
 
 class AppSideBar extends StatefulWidget {
   const AppSideBar({super.key});
@@ -95,6 +105,10 @@ class _AppSideBarState extends State<AppSideBar> {
                       context,
                       true,
                     ),
+                    const SizedBox(
+                      height: 16,
+                    ),
+                    _buildDrivesListLink(isMobile: true),
                     const SizedBox(
                       height: 16,
                     ),
@@ -193,8 +207,23 @@ class _AppSideBarState extends State<AppSideBar> {
                               context,
                               false,
                             ),
+                            // The way back to the drives list, drawn in the
+                            // gap that was already here rather than in room
+                            // taken from the drive list below it. This column
+                            // spent 56px on nothing between the New button
+                            // and the drives; 16 + the entry's own 25 + 16 is
+                            // 57 of it, so the list starts a pixel from where
+                            // it started before. At a larger text scale the
+                            // entry grows and the list moves down with it,
+                            // exactly as everything else in this column does.
+                            // `side_bar_drives_list_link_test.dart` measures
+                            // it.
                             const SizedBox(
-                              height: 56,
+                              height: 16,
+                            ),
+                            _buildDrivesListLink(isMobile: false),
+                            const SizedBox(
+                              height: 16,
                             ),
                             _isExpanded
                                 ? BlocBuilder<DrivesCubit, DrivesState>(
@@ -241,6 +270,38 @@ class _AppSideBarState extends State<AppSideBar> {
             ),
           ),
         );
+      },
+    );
+  }
+
+  /// The way back to the list of drives.
+  ///
+  /// Above the drive list because it is navigation and that is what this
+  /// column is for, and because the list of everything is where every file
+  /// manager puts it: over the things it contains, not beside them.
+  ///
+  /// The drive the user came from stays selected underneath it - see
+  /// [AppRouterDelegate.showDrivesList] - so this is a round trip of one tap
+  /// each way rather than a door that closes behind them.
+  Widget _buildDrivesListLink({required bool isMobile}) {
+    return _DrivesListLink(
+      key: sideBarDrivesListLinkKey,
+      // A collapsed desktop rail is 64px wide and shows no drive names either;
+      // the icon carries it there, with the label in a tooltip.
+      showLabel: isMobile || _isExpanded,
+      // The left edge the accordion's own section headings sit on, so this
+      // reads as their peer rather than as a row inside one of them. The
+      // drawer has no such gutter and the collapsed rail centres its icon.
+      leftPadding: isMobile || !_isExpanded ? 0 : 43,
+      // The drive rows do this too: on a phone the nav is a drawer over the
+      // page, and a drawer that stays open over what it just navigated to is
+      // covering the answer.
+      onTap: () {
+        if (Scaffold.maybeOf(context) != null) {
+          Scaffold.of(context).closeDrawer();
+        }
+
+        context.read<AppRouterDelegate>().showDrivesList();
       },
     );
   }
@@ -432,6 +493,91 @@ class _AppSideBarState extends State<AppSideBar> {
   }
 }
 
+/// The way back to the list of drives, in the nav, above the drives.
+///
+/// `showingDrivesList` used to be set in exactly one place - on login - so a
+/// user who opened a drive could not get back to the list without the
+/// browser's back button or typing the address. This is the way back, and it
+/// is a route rather than a re-render: the address bar reads `/drives`
+/// afterwards, so a bookmark and the browser's own history agree with what is
+/// on screen.
+///
+/// Not drawn as selected, ever. The drive the user came from keeps the
+/// selection underneath - that is what makes returning to it one tap - and two
+/// highlighted rows would be two claims about where they are.
+class _DrivesListLink extends StatelessWidget {
+  const _DrivesListLink({
+    super.key,
+    required this.showLabel,
+    required this.leftPadding,
+    required this.onTap,
+  });
+
+  /// False on the collapsed desktop rail, which is 64px wide and shows no
+  /// drive names either. The label becomes the tooltip there.
+  final bool showLabel;
+
+  final double leftPadding;
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final label = appLocalizationsOf(context).yourDrives;
+
+    return ArDriveClickArea(
+      // The words the page itself is titled with. One destination named one
+      // way, or the nav and the page it opens are two different places.
+      tooltip: label,
+      child: GestureDetector(
+        onTap: onTap,
+        // The whole row, not just the ink under the glyphs: a nav item that
+        // only answers on its text is a smaller target than it looks.
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: leftPadding,
+            right: 8,
+            // The drive rows' own vertical padding, so this sits in the same
+            // rhythm as the list it stands above.
+            top: 2,
+            bottom: 2,
+          ),
+          child: Row(
+            mainAxisAlignment:
+                showLabel ? MainAxisAlignment.start : MainAxisAlignment.center,
+            children: [
+              ArDriveIcons.bullertList(
+                size: 16,
+                color: colorTokens.textMid,
+              ),
+              if (showLabel) ...[
+                const SizedBox(width: 8),
+                // Wraps rather than ellipsizes, which is what the drive names
+                // below it do (they are an Expanded Text with no maxLines). At
+                // text scale 2.0 a single line clipped this to "Your D..."
+                // while every drive under it stayed readable - one nav, two
+                // rules, and the truncated one was the destination.
+                Flexible(
+                  child: Text(
+                    label,
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textMid,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class DriveListTile extends StatelessWidget {
   final Drive drive;
   final bool hasAlert;
@@ -545,6 +691,11 @@ Future<void> showSupportModal({
     content: ArDriveStandardModalNew(
       hasCloseButton: true,
       title: appLocalizationsOf(context).help,
+      // The modal now carries the sync history as well as the log export, so
+      // it is taller than the screen on a phone at a large text scale. Bounded
+      // and scrolling rather than clipped: the Download button at the bottom
+      // is the reason a user opened this, and it must stay reachable.
+      scrollableContent: true,
       content: SizedBox(
         width: 384,
         child: Column(
@@ -601,11 +752,16 @@ Future<void> showSupportModal({
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      appLocalizationsOf(context).helpCenter,
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textLink,
-                        fontWeight: ArFontWeight.semiBold,
+                    // Flexible: at 320px and text scale 2.0 these labels are
+                    // wider than the modal that holds them, and a Row with
+                    // nothing that can give overflows by the difference.
+                    Flexible(
+                      child: Text(
+                        appLocalizationsOf(context).helpCenter,
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLink,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -626,11 +782,16 @@ Future<void> showSupportModal({
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      appLocalizationsOf(context).discord,
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textLink,
-                        fontWeight: ArFontWeight.semiBold,
+                    // Flexible: at 320px and text scale 2.0 these labels are
+                    // wider than the modal that holds them, and a Row with
+                    // nothing that can give overflows by the difference.
+                    Flexible(
+                      child: Text(
+                        appLocalizationsOf(context).discord,
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLink,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -651,11 +812,16 @@ Future<void> showSupportModal({
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      appLocalizationsOf(context).developerDocs,
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textLink,
-                        fontWeight: ArFontWeight.semiBold,
+                    // Flexible: at 320px and text scale 2.0 these labels are
+                    // wider than the modal that holds them, and a Row with
+                    // nothing that can give overflows by the difference.
+                    Flexible(
+                      child: Text(
+                        appLocalizationsOf(context).developerDocs,
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLink,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -682,6 +848,30 @@ Future<void> showSupportModal({
                 color: colorTokens.textMid,
               ),
             ),
+            const SizedBox(height: 24),
+            // Level two of the sync report, here rather than anywhere else
+            // because this modal is already the surface for "something is
+            // wrong" and the logs a user would send support are one button
+            // below it. It is reachable from the sync indicator's menu too,
+            // which is where somebody watching a slow sync is looking.
+            Text(
+              appLocalizationsOf(context).syncHistory,
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+                color: colorTokens.textHigh,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              appLocalizationsOf(context).syncHistoryDescription(
+                syncHistoryLimit,
+              ),
+              style: typography.paragraphSmall(
+                color: colorTokens.textMid,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const SyncHistoryPanel(),
           ],
         ),
       ),

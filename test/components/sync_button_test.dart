@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/app_top_bar.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
@@ -22,11 +24,13 @@ void main() {
   // The running indicator's ring never settles, so every pump here elapses a
   // beat rather than calling pumpAndSettle - which would spin forever.
   late MockSyncBloc syncCubit;
+  late MockDrivesCubit drivesCubit;
   late StreamController<SyncState> stateController;
   late StreamController<SyncProgress> progressController;
 
   setUp(() {
     syncCubit = MockSyncBloc();
+    drivesCubit = MockDrivesCubit();
     // Broadcast on purpose: a single-subscription controller with nobody
     // listening never completes its close(), so a SyncButton unwired from the
     // cubit would hang this file's tearDown instead of failing a test.
@@ -38,12 +42,29 @@ void main() {
       stateController.stream,
       initialState: SyncIdle(),
     );
+    // The top bar reads the drive list for one string: the name of the drive a
+    // single-drive sync is walking.
+    whenListen(
+      drivesCubit,
+      const Stream<DrivesState>.empty(),
+      initialState: DrivesLoadSuccess(
+        selectedDriveId: null,
+        userDrives: [_drive(id: 'drive-a', name: 'Family Photos')],
+        sharedDrives: [_drive(id: 'drive-b', name: 'Shared Reports')],
+        drivesWithAlerts: const [],
+        canCreateNewDrive: true,
+      ),
+    );
     when(() => syncCubit.syncProgressController).thenReturn(progressController);
     when(() => syncCubit.syncProgress).thenReturn(SyncProgress.initial());
     when(() => syncCubit.syncStartTime).thenReturn(DateTime.now());
+    // Null is "no single-drive sync is running", which is every case but the
+    // ones that say otherwise.
+    when(() => syncCubit.syncingDriveId).thenReturn(null);
     when(() => syncCubit.clearErrorState()).thenReturn(null);
     when(() => syncCubit.retryFailedDrives(any())).thenAnswer((_) async {});
     when(() => syncCubit.syncMetadataOnly()).thenAnswer((_) async {});
+    when(() => syncCubit.clearCancelledState()).thenReturn(null);
   });
 
   tearDown(() async {
@@ -64,8 +85,11 @@ void main() {
           ],
           supportedLocales: const [Locale('en', '')],
           home: Scaffold(
-            body: BlocProvider<SyncCubit>.value(
-              value: syncCubit,
+            body: MultiBlocProvider(
+              providers: [
+                BlocProvider<SyncCubit>.value(value: syncCubit),
+                BlocProvider<DrivesCubit>.value(value: drivesCubit),
+              ],
               child: body,
             ),
           ),
@@ -267,81 +291,6 @@ void main() {
     expect(tooltip.message, isNot(contains('42.0')));
   });
 
-  testWidgets('tapping the indicator reports the sync without a hover',
-      (tester) async {
-    await tester.pumpWidget(wrap());
-    await tester.pump();
-
-    await startSyncing(
-      tester,
-      reporting: SyncProgress.initial().copyWith(
-        progress: 0.42,
-        statusMessage: 'Downloading drive snapshots...',
-      ),
-    );
-
-    // No pointer goes near the button: this is the phone's only way in.
-    await tester.tap(find.byType(SyncButton));
-    await tester.pump(const Duration(milliseconds: 300));
-
-    expect(find.text('Syncing All Drives'), findsOneWidget);
-    expect(find.text('Downloading drive snapshots...'), findsOneWidget);
-    expect(find.textContaining('s elapsed'), findsOneWidget);
-    // And the actions the menu is there for are still under it.
-    expect(find.text('Resync'), findsOneWidget);
-
-    // Dispose the tree while the header's own periodic timer is still ours.
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('the status header stays on screen on a narrow phone',
-      (tester) async {
-    await tester.binding.setSurfaceSize(const Size(320, 640));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    await tester.pumpWidget(wrapNarrow(trailingChrome: 120));
-    await tester.pump();
-
-    await startSyncing(
-      tester,
-      reporting: SyncProgress.initial().copyWith(
-        progress: 0.42,
-        statusMessage: 'Downloading drive snapshots...',
-      ),
-    );
-
-    await tester.tap(find.byType(SyncButton));
-    await tester.pump(const Duration(milliseconds: 300));
-
-    // The menu is wider than the room left of a right-anchored button on a
-    // 320px screen, so without the anchor's shift the first characters of both
-    // lines sit off the left edge and cannot be read.
-    expect(
-      tester.getTopLeft(find.text('Syncing All Drives')).dx,
-      greaterThanOrEqualTo(0),
-    );
-    expect(
-      tester.getTopLeft(find.text('Downloading drive snapshots...')).dx,
-      greaterThanOrEqualTo(0),
-    );
-
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('the status header keeps out of an idle menu', (tester) async {
-    await tester.pumpWidget(wrap());
-    await tester.pump();
-
-    await tester.tap(find.byType(SyncButton));
-    await tester.pump(const Duration(milliseconds: 300));
-
-    expect(find.text('Resync'), findsOneWidget);
-    expect(find.textContaining('s elapsed'), findsNothing);
-    expect(find.text('Syncing All Drives'), findsNothing);
-
-    await tester.pumpWidget(const SizedBox());
-  });
-
   testWidgets('starting a sync does not move the top bar', (tester) async {
     await tester.pumpWidget(wrap());
     await tester.pump();
@@ -385,7 +334,7 @@ void main() {
     stateController.add(finished());
     await tester.pump(const Duration(milliseconds: 10));
 
-    expect(find.text('Up to date — nothing new'), findsOneWidget);
+    expect(find.text('Up to date, nothing new'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
   });
@@ -397,11 +346,11 @@ void main() {
     stateController.add(finished());
     await tester.pump(const Duration(milliseconds: 10));
 
-    expect(find.text('Up to date — nothing new'), findsOneWidget);
+    expect(find.text('Up to date, nothing new'), findsOneWidget);
 
     await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
-    expect(find.text('Up to date — nothing new'), findsNothing);
+    expect(find.text('Up to date, nothing new'), findsNothing);
   });
 
   testWidgets('a second result that reads the same is shown again',
@@ -413,7 +362,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10));
     await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
-    expect(find.text('Up to date — nothing new'), findsNothing);
+    expect(find.text('Up to date, nothing new'), findsNothing);
 
     // Two zero-change syncs read identically, and land in the same
     // millisecond when nothing does any I/O between them. The second one is
@@ -422,7 +371,7 @@ void main() {
     stateController.add(finished());
     await tester.pump(const Duration(milliseconds: 10));
 
-    expect(find.text('Up to date — nothing new'), findsOneWidget);
+    expect(find.text('Up to date, nothing new'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
   });
@@ -436,7 +385,7 @@ void main() {
     stateController.add(finished());
     await tester.pump(const Duration(milliseconds: 10));
 
-    expect(find.text('Up to date — nothing new'), findsOneWidget);
+    expect(find.text('Up to date, nothing new'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
   });
@@ -549,7 +498,7 @@ void main() {
       final pill = tester.widget<Container>(
         find
             .ancestor(
-              of: find.text('Up to date — nothing new'),
+              of: find.text('Up to date, nothing new'),
               matching: find.byType(Container),
             )
             .first,
@@ -731,7 +680,6 @@ void main() {
 
       await openMenu(tester);
 
-      expect(find.text('Sync Incomplete - Errors Detected'), findsOneWidget);
       expect(find.text('Retry Failed'), findsOneWidget);
 
       entryNamed(tester, 'Retry Failed').onClick!();
@@ -744,21 +692,24 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('a failure the user asked for is left to its own modal',
+    testWidgets('a failure the user asked for reports here too',
         (tester) async {
-      // It has been holding a modal the whole time, and that modal has the
-      // same retry in it - see SyncOverlay.
+      // It used to be filtered out, because a user-initiated sync was holding
+      // a modal that said the same thing with the same retry. That modal is
+      // gone, so this is the only surface left: filtering here now would leave
+      // a sync the user pressed a button for reporting its failures nowhere at
+      // all.
       await tester.pumpWidget(wrap());
       await tester.pump();
 
       stateController.add(failed(trigger: SyncTrigger.userInitiated));
       await tester.pump(const Duration(milliseconds: 10));
 
-      expect(find.text('Sync Incomplete - Errors Detected'), findsNothing);
-      expect(find.text('2 of 5 drives could not be synced'), findsNothing);
+      expect(find.text('Sync Incomplete - Errors Detected'), findsOneWidget);
+      expect(find.text('2 of 5 drives could not be synced'), findsOneWidget);
 
       await openMenu(tester);
-      expect(find.text('Retry Failed'), findsNothing);
+      expect(find.text('Retry Failed'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -804,10 +755,9 @@ void main() {
           reason: 'precondition: the announcement has had its few seconds');
 
       // The failure outlives it, in the surface a partial failure uses: the
-      // menu the indicator opens.
+      // menu the indicator opens, and the indicator's own red triangle.
       await openMenu(tester);
 
-      expect(find.text('Drives Could Not Be Loaded'), findsOneWidget);
       expect(find.text('Try Again'), findsOneWidget);
 
       entryNamed(tester, 'Try Again').onClick!();
@@ -940,4 +890,121 @@ void main() {
 
     await tester.pumpWidget(const SizedBox());
   });
+
+  /// The two states the app used to emit and render nowhere at all.
+  group('states that had no surface', () {
+    testWidgets('a wallet that changed under the sync says so', (tester) async {
+      // `arconnectSync` emits SyncWalletMismatch and signs the user out. It
+      // was rendered by nothing: the user was bounced to login with no
+      // explanation from the layer that noticed.
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(SyncWalletMismatch());
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.text('Wallet Changed'), findsOneWidget);
+      expect(
+        find.text('You were signed out because your wallet changed.'),
+        findsOneWidget,
+      );
+
+      // And it outlives the announcement, on the indicator itself, like every
+      // other way a sync can end badly.
+      await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+
+      final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+      expect(tooltip.message, contains('Wallet Changed'));
+      expect(
+        tooltip.message,
+        contains('You were signed out because your wallet changed.'),
+      );
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a wallet that changed is drawn as a problem', (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(SyncWalletMismatch());
+      await tester.pump(const Duration(milliseconds: 10));
+
+      final colorTokens =
+          ArDriveTheme.of(tester.element(find.byType(SyncButton)))
+              .themeData
+              .colorTokens;
+
+      expect(
+        tester.widget<Text>(find.text('Wallet Changed')).style?.color,
+        colorTokens.textRed,
+      );
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a cancelled sync says what it got through', (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(
+        SyncCancelled(
+          drivesCompleted: 1,
+          totalDrives: 3,
+          cancelledAt: DateTime.now(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.text('Sync Cancelled'), findsOneWidget);
+      expect(find.text('Completed 1 of 3 drives'), findsOneWidget);
+
+      final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+      expect(tooltip.message, contains('Sync Cancelled'));
+      expect(tooltip.message, contains('Completed 1 of 3 drives'));
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a cancelled sync is let go of once it has been reported',
+        (tester) async {
+      // The OK button that used to call this lived on the modal, and the modal
+      // is gone. Without a replacement the cubit would rest in SyncCancelled
+      // for the rest of the session - and two things wait on SyncIdle to do
+      // their work: the explorer's refresh and the shared-file handover.
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(
+        SyncCancelled(
+          drivesCompleted: 1,
+          totalDrives: 3,
+          cancelledAt: DateTime.now(),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 10));
+
+      verifyNever(() => syncCubit.clearCancelledState());
+
+      await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+
+      verify(() => syncCubit.clearCancelledState()).called(1);
+      expect(find.text('Sync Cancelled'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
 }
+
+/// A drive row as `DrivesCubit` hands them over, with only the two fields the
+/// top bar reads filled in with anything meaningful.
+Drive _drive({required String id, required String name}) => Drive(
+      id: id,
+      name: name,
+      rootFolderId: 'root-$id',
+      ownerAddress: 'owner',
+      privacy: 'public',
+      isHidden: false,
+      dateCreated: DateTime(2026),
+      lastUpdated: DateTime(2026),
+    );

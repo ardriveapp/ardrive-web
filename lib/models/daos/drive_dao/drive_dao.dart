@@ -909,11 +909,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   /// [DriveContentSummary.totalSize] is only ever published for a drive whose
   /// history has actually been walked - see `DriveListItem.size`.
   Future<Map<String, DriveContentSummary>> driveContentSummaries() async {
-    final itemCount = fileEntries.id.count();
+    final fileCount = fileEntries.id.count();
     final totalSize = fileEntries.size.sum();
 
     final query = selectOnly(fileEntries)
-      ..addColumns([fileEntries.driveId, itemCount, totalSize])
+      ..addColumns([fileEntries.driveId, fileCount, totalSize])
       ..groupBy([fileEntries.driveId]);
 
     final rows = await query.get();
@@ -921,7 +921,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return {
       for (final row in rows)
         row.read(fileEntries.driveId)!: DriveContentSummary(
-          itemCount: row.read(itemCount) ?? 0,
+          fileCount: row.read(fileCount) ?? 0,
           totalSize: row.read(totalSize) ?? 0,
         ),
     };
@@ -949,21 +949,27 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 /// so they are a description of this device, not of Arweave.
 class DriveContentSummary extends Equatable {
   const DriveContentSummary({
-    required this.itemCount,
+    required this.fileCount,
     required this.totalSize,
   });
 
-  static const empty = DriveContentSummary(itemCount: 0, totalSize: 0);
+  static const empty = DriveContentSummary(fileCount: 0, totalSize: 0);
 
-  /// File entries stored locally for this drive. Folders are not items here -
-  /// a folder is where items live, not one of them.
-  final int itemCount;
+  /// File entries stored locally for this drive.
+  ///
+  /// Files only, and named for it. It was `itemCount`, described as "folders
+  /// are not items here" - while the sync counts a folder as an item and says
+  /// so on the same page, so a drive of three folders and two files read
+  /// "Found 5 items", "5 items changed" and "2 items" at once. An item is
+  /// whatever a sync writes, a file or a folder; this is not that number and
+  /// no longer borrows its word.
+  final int fileCount;
 
   /// The sum of those files' sizes, in bytes.
   final int totalSize;
 
   @override
-  List<Object?> get props => [itemCount, totalSize];
+  List<Object?> get props => [fileCount, totalSize];
 }
 
 class FolderNotFoundInDriveException implements Exception {

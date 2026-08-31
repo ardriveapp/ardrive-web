@@ -258,6 +258,7 @@ void main() {
           .thenAnswer((_) async => true);
       // Logging out drops every local table, so a per-drive sync time kept
       // across it would sit over an empty drive.
+      when(() => mockStore.remove('syncHistory')).thenAnswer((_) async => true);
       when(() => mockStore.remove('driveLastSyncedAt'))
           .thenAnswer((_) async => true);
       when(() => mockStore.remove('userHasHiddenDrive'))
@@ -270,6 +271,9 @@ void main() {
       verify(() => mockStore.remove('showHiddenFiles')).called(1);
       verify(() => mockStore.remove('userHasHiddenDrive')).called(1);
       verify(() => mockStore.remove('driveLastSyncedAt')).called(1);
+      // The record of what this wallet's syncs did goes with everything else
+      // local: the next user to log in on this device has no business in it.
+      verify(() => mockStore.remove('syncHistory')).called(1);
       // Verify syncAllDrivesOnLogin is NOT removed (should persist)
       verifyNever(() => mockStore.remove('syncAllDrivesOnLogin'));
 

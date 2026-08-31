@@ -405,10 +405,12 @@ void main() {
     );
     await tester.pump();
 
-    // The card's two 283x283 action tiles do not fit their own contents under
-    // the test font's square glyphs. That predates this work, is not what this
-    // test is about, and the card is left exactly as it was found.
-    while (tester.takeException() != null) {}
+    // No exception drain here. One used to sit on this widget, justified by
+    // the action tiles not fitting their own contents - and it is exactly what
+    // hid the card's buttons being laid out past its clip boundary at large
+    // text scale, where a tap reached nothing at all. The tiles size to their
+    // content now, so an overflow here is a real regression and must fail.
+    expect(tester.takeException(), isNull);
 
     expect(find.text('Drive Not Synced'), findsOneWidget);
     expect(find.text('Sync Now'), findsOneWidget);
@@ -498,8 +500,14 @@ void main() {
       final after = await pumpCard(tester, syncFoundNothing: true);
       await tester.pumpWidget(const SizedBox());
 
-      expect(after, lessThanOrEqualTo(before),
-          reason: 'the longer wording must not push the card off a phone');
+      // Absolute, not comparative. "No worse than before" was only ever a
+      // defensible assertion while the tiles were a fixed square that
+      // overflowed on its own; they size to their content now, so the honest
+      // bar is zero - and a comparison against a non-zero baseline is how an
+      // overflow stays invisible.
+      expect(before, 0, reason: 'the card overflows a phone as it is');
+      expect(after, 0,
+          reason: 'the longer wording pushes the card off a phone');
     });
 
     testWidgets('reads the same on a desktop', (tester) async {
@@ -650,6 +658,83 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  group('the phase that can be counted', () {
+    // The panel and the strip carry the same sentence for the same moment.
+    // Every revision's metadata is one HTTP round trip, a few at a time, and
+    // this is the only figure that moves while they are in flight.
+    testWidgets('says how much of the fetch is behind it', (tester) async {
+      await pumpSyncing(
+        tester,
+        reporting: SyncProgress.initial().copyWith(
+          progress: 0.02,
+          // The phase's own name, which is true and cannot move.
+          statusMessage: 'Reading the drive history...',
+          metadataFetchesCompleted: 340,
+          metadataFetchesTotal: 2180,
+        ),
+      );
+
+      expect(find.text('Reading 340 of 2,180...'), findsOneWidget);
+      expect(find.text('Reading the drive history...'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('invents no total when there is no fetch to report',
+        (tester) async {
+      await pumpSyncing(
+        tester,
+        reporting: SyncProgress.initial().copyWith(
+          statusMessage: 'Creating ghost folders...',
+        ),
+      );
+
+      expect(find.textContaining('Reading'), findsNothing);
+      expect(find.text('Creating ghost folders...'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    for (final theme in [
+      ('light', lightTheme()),
+      ('dark', ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode())),
+    ]) {
+      testWidgets('fits a 320px phone at text scale 2.0 in ${theme.$1}',
+          (tester) async {
+        tester.view.physicalSize = phoneSize;
+        tester.view.devicePixelRatio = 1;
+        tester.platformDispatcher.textScaleFactorTestValue = 2;
+        addTearDown(tester.view.reset);
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        await pumpSyncing(
+          tester,
+          theme: theme.$2,
+          reporting: SyncProgress.initial().copyWith(
+            progress: 0.02,
+            // Five figures on both sides: the widest this line gets for a
+            // real drive.
+            metadataFetchesCompleted: 12345,
+            metadataFetchesTotal: 12345,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 1100));
+
+        expect(tester.takeException(), isNull);
+        final finder = find.text('Reading 12,345 of 12,345...');
+        expect(finder, findsOneWidget);
+        expect(tester.getTopLeft(finder).dx, greaterThanOrEqualTo(0));
+        expect(tester.getBottomRight(finder).dx, lessThanOrEqualTo(320.0));
+        expect(
+          tester.renderObject<RenderParagraph>(finder).didExceedMaxLines,
+          isFalse,
+        );
+
+        await tester.pumpWidget(const SizedBox());
+      });
+    }
+  });
+
   testWidgets('falls back to the percentage before anything has been found',
       (tester) async {
     await pumpSyncing(
@@ -658,6 +743,31 @@ void main() {
     );
 
     expect(find.text('42% complete'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+  testWidgets('does not promise a drive will open on another drive\'s sync',
+      (tester) async {
+    // A single-drive sync of a different drive finishes without touching this
+    // one, so "Photos will open when the sync finishes" is a promise the
+    // running sync cannot keep - and it counts the other drive's items while
+    // it makes it.
+    selectDrive('Photos');
+    when(() => syncCubit.syncingDriveId).thenReturn('some-other-drive');
+
+    await pumpSyncing(
+      tester,
+      reporting: SyncProgress.initial().copyWith(
+        progress: 0.4,
+        isSingleDriveSync: true,
+      ),
+    );
+
+    expect(find.text('Photos will open when the sync finishes'), findsNothing);
+    expect(
+      find.text('Another drive is syncing. This one opens once you sync it.'),
+      findsOneWidget,
+    );
 
     await tester.pumpWidget(const SizedBox());
   });

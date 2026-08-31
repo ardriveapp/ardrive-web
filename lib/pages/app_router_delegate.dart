@@ -509,6 +509,38 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     notifyListeners();
   }
 
+  /// Back to the list of drives - the same place a login lands.
+  ///
+  /// `showingDrivesList` was set in exactly one place, on login, so once a
+  /// drive had been opened the list was unreachable without the browser's back
+  /// button or typing `/drives`. A landing page you cannot return to is not a
+  /// landing page.
+  ///
+  /// It sets the same one flag the login path sets, on this same delegate, so
+  /// the two arrive at one state rather than at two that resemble each other.
+  /// [currentConfiguration] then reads `/drives`, which is what makes the
+  /// address bar, a bookmark and the browser's own back and forward agree with
+  /// what is on screen.
+  ///
+  /// [driveId] is deliberately left alone: the sidebar has to show something
+  /// selected, and the drive the user came from is the right thing for it to
+  /// show - going back into it costs one tap. [driveFolderId] is left alone
+  /// for the same reason, so that tap lands where they were rather than at the
+  /// drive's root.
+  ///
+  /// A no-op when the list is already what is on screen, so a second tap does
+  /// not push a second identical history entry for the browser's back button
+  /// to have to walk back through.
+  void showDrivesList() {
+    if (showingDrivesList) {
+      return;
+    }
+
+    showingDrivesList = true;
+
+    notifyListeners();
+  }
+
   @override
   Future<void> setNewRoutePath(AppRoutePath configuration) async {
     signingIn = configuration.signingIn;

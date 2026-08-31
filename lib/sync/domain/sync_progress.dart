@@ -30,6 +30,8 @@ class SyncProgress extends LinearProgress {
     this.firstTimeSyncDriveCount = 0,
     this.skippedDriveCount = 0,
     this.isIndeterminate = false,
+    this.metadataFetchesCompleted = 0,
+    this.metadataFetchesTotal = 0,
   });
 
   factory SyncProgress.initial() {
@@ -113,6 +115,28 @@ class SyncProgress extends LinearProgress {
   /// in both of those cases nothing was skipped.
   final int skippedDriveCount;
 
+  /// Entity metadata bodies this sync has finished with, and how many it has
+  /// asked for, counted across the whole sync rather than per drive or per
+  /// batch.
+  ///
+  /// This is the one number that moves during the longest phase of a sync.
+  /// Every file and folder revision's metadata is a separate HTTP round trip,
+  /// run `maxConcurrentDataFetches` at a time, and nothing else the sync
+  /// reports advances while those are in flight: `progress` is read off block
+  /// heights the walk has not reached yet, and [entitiesSynced] only moves
+  /// when a whole batch's fetches are done and its revisions are written. A
+  /// drive with three thousand revisions therefore sat on one unchanging line
+  /// for minutes.
+  ///
+  /// Both climb and neither is ever republished lower. [metadataFetchesTotal]
+  /// is what has been asked for so far, not a prediction of the drive's size:
+  /// history arrives in chunks, so it grows as the walk finds more, and it is
+  /// never a figure the sync does not yet have. Zero on both means there is no
+  /// fetch to report - before the first batch, and after the walk is over -
+  /// and the surfaces fall back to what they said before this existed.
+  final int metadataFetchesCompleted;
+  final int metadataFetchesTotal;
+
   /// True while the sync is inside a phase whose length it cannot know and
   /// whose progress it cannot measure - today, the gateway round trip that
   /// asks which pending transactions confirmed. That phase reports one step
@@ -156,6 +180,8 @@ class SyncProgress extends LinearProgress {
     int? firstTimeSyncDriveCount,
     int? skippedDriveCount,
     bool? isIndeterminate,
+    int? metadataFetchesCompleted,
+    int? metadataFetchesTotal,
   }) {
     return SyncProgress(
       numberOfEntities: numberOfEntities ?? this.numberOfEntities,
@@ -181,6 +207,9 @@ class SyncProgress extends LinearProgress {
           firstTimeSyncDriveCount ?? this.firstTimeSyncDriveCount,
       skippedDriveCount: skippedDriveCount ?? this.skippedDriveCount,
       isIndeterminate: isIndeterminate ?? this.isIndeterminate,
+      metadataFetchesCompleted:
+          metadataFetchesCompleted ?? this.metadataFetchesCompleted,
+      metadataFetchesTotal: metadataFetchesTotal ?? this.metadataFetchesTotal,
     );
   }
 }

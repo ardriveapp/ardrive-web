@@ -169,7 +169,7 @@ void main() {
       final state = await settle(loaded(await drivesNamed(['drive-a'])))
           as DrivesListLoaded;
 
-      expect(state.drives.single.itemCount, 2);
+      expect(state.drives.single.fileCount, 2);
       expect(state.drives.single.totalSize, 350);
       expect(state.drives.single.hasBeenWalked, isTrue);
     });
@@ -182,7 +182,7 @@ void main() {
 
       // Zero rows is what the table holds; it is not what the drive holds.
       expect(state.drives.single.hasBeenWalked, isFalse);
-      expect(state.drives.single.itemCount, isNull);
+      expect(state.drives.single.fileCount, isNull);
       expect(state.drives.single.totalSize, isNull);
     });
 
@@ -198,7 +198,7 @@ void main() {
 
       // A sync that ran and found nothing is a finding: no items, zero bytes.
       expect(state.drives.single.hasBeenWalked, isTrue);
-      expect(state.drives.single.itemCount, 0);
+      expect(state.drives.single.fileCount, 0);
       expect(state.drives.single.lastSyncedAt, DateTime(2026, 8, 1));
     });
 
@@ -456,6 +456,9 @@ void main() {
 /// A sync doing nothing, which is what every test here starts from.
 class _Idle implements SyncState {
   const _Idle();
+
+  @override
+  bool get isSuccessfulCompletion => false;
 
   @override
   List<Object> get props => const [];

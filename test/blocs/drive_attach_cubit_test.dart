@@ -86,14 +86,14 @@ void main() {
 
       when(() => arweave.getLatestDriveEntityWithId(notFoundDriveId))
           .thenAnswer((_) => Future.value(null));
-      when(() => arweave.getDrivePrivacyForId(validDriveId)).thenAnswer(
-          (_) => Future.value(DrivePrivacyResult(
+      when(() => arweave.getDrivePrivacyForId(validDriveId))
+          .thenAnswer((_) => Future.value(DrivePrivacyResult(
                 privacy: DrivePrivacyTag.public,
                 ownerAddress: 'test-owner',
                 driveTx: MockTransactionCommonMixin(),
               )));
-      when(() => arweave.getDrivePrivacyForId(validPrivateDriveId)).thenAnswer(
-          (_) => Future.value(DrivePrivacyResult(
+      when(() => arweave.getDrivePrivacyForId(validPrivateDriveId))
+          .thenAnswer((_) => Future.value(DrivePrivacyResult(
                 privacy: DrivePrivacyTag.private,
                 ownerAddress: 'test-owner',
                 driveTx: MockTransactionCommonMixin(),
@@ -107,7 +107,7 @@ void main() {
           )).thenAnswer((_) => Future.value());
 
       when(() => syncBloc.startSyncForDrive(driveId: any(named: 'driveId')))
-          .thenAnswer((_) => Future.value(null));
+          .thenAnswer((_) => Future.value(true));
 
       when(() => syncBloc.waitCurrentSync())
           .thenAnswer((_) => Future.value(null));
@@ -218,8 +218,7 @@ void main() {
         ],
         wait: const Duration(milliseconds: 1200),
         verify: (_) async {
-          verify(() =>
-                  syncBloc.startSyncForDrive(driveId: validPrivateDriveId))
+          verify(() => syncBloc.startSyncForDrive(driveId: validPrivateDriveId))
               .called(1);
           verify(() => drivesBloc.selectDrive(validPrivateDriveId)).called(1);
         },

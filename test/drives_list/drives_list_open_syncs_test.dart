@@ -24,6 +24,9 @@ class _Idle implements SyncState {
   const _Idle();
 
   @override
+  bool get isSuccessfulCompletion => false;
+
+  @override
   List<Object> get props => const [];
 
   @override
@@ -69,7 +72,7 @@ void main() {
           driveId: any(named: 'driveId'),
           deepSync: any(named: 'deepSync'),
           trigger: any(named: 'trigger'),
-        )).thenAnswer((_) async {});
+        )).thenAnswer((_) async => true);
   });
 
   tearDown(() async => db.close());

@@ -145,6 +145,11 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
                   isLoadingDrives: syncState is SyncLoadingDrives,
                   progress: reportsProgress ? snapshot.data : null,
                   driveName: _driveName(drivesState, snapshot.data),
+                  syncCoversThisDrive: _coversSelectedDrive(
+                    drivesState,
+                    syncState,
+                    context.read<SyncCubit>().syncingDriveId,
+                  ),
                 );
 
                 return _frame(context, content);
@@ -247,6 +252,24 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
   /// it. The drive they selected is the one that will open, so it wins; a
   /// single-drive sync names its own drive and stands in when there is no
   /// selection to read yet.
+  /// Whether the sync that is running is one this drive will be opened by.
+  ///
+  /// A single-drive sync of another drive finishes without touching this one,
+  /// so promising that this drive "will open when the sync finishes" is a
+  /// promise the sync cannot keep - and the wait it describes is not the wait
+  /// the user is in.
+  bool _coversSelectedDrive(
+    DrivesState drivesState,
+    SyncState syncState,
+    String? syncingDriveId,
+  ) {
+    if (syncState is! SyncInProgress) return false;
+    // An all-drives sync covers everything.
+    if (syncingDriveId == null) return true;
+    if (drivesState is! DrivesLoadSuccess) return false;
+    return drivesState.selectedDriveId == syncingDriveId;
+  }
+
   String? _driveName(DrivesState drivesState, SyncProgress? progress) {
     if (drivesState is DrivesLoadSuccess) {
       final selectedDriveId = drivesState.selectedDriveId;
@@ -275,6 +298,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
     required bool isSyncing,
     required bool showElapsed,
     required bool isLoadingDrives,
+    required bool syncCoversThisDrive,
     required SyncProgress? progress,
     required String? driveName,
   }) {
@@ -294,10 +318,15 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
               : appLocalizationsOf(context).syncingAllDrives;
       // Says what the wait is for as well as what it is: this folder opens on
       // its own when the sync is done, and nothing has to be clicked again.
+      // Only when the running sync is one that will open it - a single-drive
+      // sync of a different drive finishes without touching this one, and
+      // saying otherwise promises something that will not happen.
       subtitle = driveName == null
           ? null
-          : appLocalizationsOf(context)
-              .driveWillOpenWhenSyncFinishes(driveName);
+          : syncCoversThisDrive
+              ? appLocalizationsOf(context)
+                  .driveWillOpenWhenSyncFinishes(driveName)
+              : appLocalizationsOf(context).anotherDriveIsSyncingFirst;
     } else {
       title = driveName == null
           ? appLocalizationsOf(context).openingDrive
@@ -305,8 +334,14 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
       subtitle = null;
     }
 
-    // The phase names itself whenever the sync has one to give. Otherwise the
-    // count of what has been found stands in - it needs no total, so it is
+    // The metadata fetch first, ahead of the phase's own name: it is the only
+    // one of these that moves during the phase it belongs to. Every revision's
+    // metadata is a separate request, a few at a time, and the panel held one
+    // unchanging line across all of them. A total of zero means there is no
+    // such fetch to report - never a total this panel made up.
+    //
+    // Then the phase names itself whenever the sync has one to give. Otherwise
+    // the count of what has been found stands in - it needs no total, so it is
     // honest from the first batch, and it can only rise. The percentage is the
     // last resort, and only while it means something: an unmeasurable phase
     // must never leave a figure sitting still on screen, which is the one
@@ -314,6 +349,11 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
     final String? detail;
     if (progress == null) {
       detail = null;
+    } else if (progress.metadataFetchesTotal > 0) {
+      detail = appLocalizationsOf(context).syncReadingMetadata(
+        progress.metadataFetchesCompleted,
+        progress.metadataFetchesTotal,
+      );
     } else if (progress.statusMessage != null) {
       detail = progress.statusMessage;
     } else if (progress.entitiesSynced > 0) {

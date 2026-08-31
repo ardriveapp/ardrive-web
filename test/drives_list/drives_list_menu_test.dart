@@ -1,13 +1,23 @@
+import 'dart:async';
+
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_actions_menu.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../test_utils/mocks.dart';
 
 /// The per-drive menu, where the drives are listed.
 ///
@@ -16,6 +26,30 @@ import 'package:flutter_test/flutter_test.dart';
 /// cost a phone any row height - the rows are the page, and a menu that pushed
 /// each of them 16px taller would be the most expensive thing on it.
 void main() {
+  late MockSyncBloc syncCubit;
+  late StreamController<SyncState> syncStates;
+
+  setUpAll(() {
+    registerFallbackValue(SyncTrigger.background);
+  });
+
+  setUp(() {
+    syncCubit = MockSyncBloc();
+    syncStates = StreamController<SyncState>.broadcast();
+
+    whenListen(syncCubit, syncStates.stream, initialState: SyncIdle());
+    when(() => syncCubit.syncProgress).thenReturn(SyncProgress.initial());
+    when(() => syncCubit.startSyncForDrive(
+          driveId: any(named: 'driveId'),
+          deepSync: any(named: 'deepSync'),
+          trigger: any(named: 'trigger'),
+        )).thenAnswer((_) async => true);
+  });
+
+  tearDown(() async {
+    await syncStates.close();
+  });
+
   Drive drive({
     String id = 'drive-a',
     String name = 'Photos',
@@ -39,7 +73,7 @@ void main() {
         isSharedWithMe: false,
         dateCreated: DateTime(2026, 3, 4),
         hasBeenWalked: false,
-        itemCount: null,
+        fileCount: null,
         totalSize: null,
         lastSyncedAt: null,
         isSyncing: false,
@@ -58,7 +92,14 @@ void main() {
           // ArDriveDropdown puts its items in a portal; without one the menu
           // renders but can never open, and every assertion below about what
           // it offers would pass by finding nothing.
-          home: Portal(child: Scaffold(body: child)),
+          home: Portal(
+            child: Scaffold(
+              body: BlocProvider<SyncCubit>.value(
+                value: syncCubit,
+                child: child,
+              ),
+            ),
+          ),
         ),
       );
 
@@ -66,8 +107,13 @@ void main() {
     WidgetTester tester, {
     required bool isOwner,
     bool isHidden = false,
+    bool isSyncing = false,
     Size size = const Size(1200, 900),
   }) async {
+    if (isSyncing) {
+      when(() => syncCubit.state).thenReturn(SyncInProgress());
+    }
+
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -86,6 +132,50 @@ void main() {
     await tester.tap(find.byType(DriveActionsMenu));
     await tester.pumpAndSettle();
   }
+
+  group('the sync it offers, while a sync runs', () {
+    ArDriveDropdownItemTile itemNamed(WidgetTester tester, String name) =>
+        tester.widget<ArDriveDropdownItemTile>(
+          find.widgetWithText(ArDriveDropdownItemTile, name),
+        );
+
+    ArDriveDropdownItem entryNamed(WidgetTester tester, String name) =>
+        tester.widget<ArDriveDropdownItem>(
+          find.ancestor(
+            of: find.widgetWithText(ArDriveDropdownItemTile, name),
+            matching: find.byType(ArDriveDropdownItem),
+          ),
+        );
+
+    testWidgets('is live when nothing is running', (tester) async {
+      await openMenu(tester, isOwner: true);
+
+      expect(itemNamed(tester, 'Sync This Drive').isDisabled, isFalse);
+      expect(entryNamed(tester, 'Sync This Drive').onClick, isNotNull);
+    });
+
+    testWidgets('says it is unavailable rather than doing nothing',
+        (tester) async {
+      // `SyncCubit.startSyncForDrive` refuses outright while a sync runs - one
+      // at a time, no queue. An item that looks normal, closes the menu and
+      // drops the request is a lie, and `isDisabled` is what draws it as
+      // unavailable: ArDriveDropdownItemTile picks its colours off the flag
+      // alone, so a null callback on its own leaves it looking live.
+      await openMenu(tester, isOwner: true, isSyncing: true);
+
+      expect(itemNamed(tester, 'Sync This Drive').isDisabled, isTrue);
+      expect(entryNamed(tester, 'Sync This Drive').onClick, isNull);
+    });
+
+    testWidgets('and the other actions are untouched', (tester) async {
+      // A running sync has nothing to do with renaming or sharing a drive.
+      await openMenu(tester, isOwner: true, isSyncing: true);
+
+      expect(itemNamed(tester, 'Rename Drive').isDisabled, isFalse);
+      expect(itemNamed(tester, 'Share Drive').isDisabled, isFalse);
+      expect(entryNamed(tester, 'Share Drive').onClick, isNotNull);
+    });
+  });
 
   group('what the menu offers', () {
     testWidgets('a drive you own: sync, rename, share, hide - and no detach',

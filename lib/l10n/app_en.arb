@@ -657,6 +657,14 @@
   "@checkAgain": {
     "description": "Action on the unsynced drive card once a sync has already looked and found nothing. Deliberately not Sync Now, which was the button that was already pressed"
   },
+  "driveSyncNotStartedAnotherDriveIsSyncing": "Another drive is syncing, so this one was not started. Sync it once that one finishes.",
+  "@driveSyncNotStartedAnotherDriveIsSyncing": {
+    "description": "Shown on the unsynced drive card when a sync for a different drive is running. One sync runs at a time and there is no queue, so opening this drive started nothing - this is what says so, instead of leaving the user on a card with no request in flight and no explanation"
+  },
+  "driveSyncAlreadyRunningForThisDrive": "A sync is already running for this drive.",
+  "@driveSyncAlreadyRunningForThisDrive": {
+    "description": "Shown on the unsynced drive card when the running sync already covers this drive - its own sync, or a sync of all drives - so the unavailable Sync buttons are accounted for"
+  },
   "driveListUnavailable": "Your Drives Could Not Be Loaded",
   "@driveListUnavailable": {
     "description": "Shown when the drive list could not be read at all. Never says the user has no drives - whether they do is not known"
@@ -664,6 +672,10 @@
   "driveListUnavailableDescription": "The network could not be reached to read your drive list. Your drives are safe and nothing has been lost.",
   "@driveListUnavailableDescription": {
     "description": "Explains that a drive list that could not be loaded is a network problem, not a missing drive"
+  },
+  "anotherDriveIsSyncingFirst": "Another drive is syncing. This one opens once you sync it.",
+  "@anotherDriveIsSyncingFirst": {
+    "description": "Shown while waiting on a drive when the running sync is a single-drive sync of a DIFFERENT drive - it will finish without touching this one, so the usual promise that this drive opens when the sync ends would not be kept"
   },
   "driveWillOpenWhenSyncFinishes": "{driveName} will open when the sync finishes",
   "@driveWillOpenWhenSyncFinishes": {
@@ -739,9 +751,9 @@
       }
     }
   },
-  "driveItemCount": "{count, plural, =0{No items} one{1 item} other{{count} items}}",
-  "@driveItemCount": {
-    "description": "How many files this drive holds on this device. Only ever shown for a drive that has actually been walked",
+  "driveFileCount": "{count, plural, =0{No files} one{1 file} other{{count} files}}",
+  "@driveFileCount": {
+    "description": "How many files this drive holds on this device. Files only - folders are counted as items by the sync, which is the other half of what used to make one word mean two things on the same page. Only ever shown for a drive that has actually been walked",
     "placeholders": {
       "count": {
         "type": "int",
@@ -763,9 +775,9 @@
   "@lastSynced": {
     "description": "Column heading over the per-drive sync state"
   },
-  "items": "Items",
-  "@items": {
-    "description": "Column heading over the per-drive file count"
+  "driveListFilesHeading": "Files",
+  "@driveListFilesHeading": {
+    "description": "Column heading over the per-drive file count. Not \"Items\": the sync counts folders as items and this column does not, so the two surfaces put different numbers under one word on the same screen"
   },
   "notKnownUntilSynced": "Not known until this drive has been synced",
   "@notKnownUntilSynced": {
@@ -774,6 +786,14 @@
   "nothingSyncedYetTitle": "Nothing has been synced yet",
   "@nothingSyncedYetTitle": {
     "description": "Shown above the drives list when no drive on this device has ever been walked"
+  },
+  "nothingSyncedYetSyncingTitle": "Fetching your drives",
+  "@nothingSyncedYetSyncingTitle": {
+    "description": "Replaces nothingSyncedYetTitle while a sync is actually running, so the card does not offer work that is already under way beside a strip reporting it"
+  },
+  "nothingSyncedYetSyncingDescription": "The contents of these drives are being fetched now. Each row will say what it holds as it arrives.",
+  "@nothingSyncedYetSyncingDescription": {
+    "description": "Replaces nothingSyncedYetDescription while a sync is running. It also explains the disabled button beside it"
   },
   "nothingSyncedYetDescription": "Your drives are listed, but their contents have not been fetched yet. Sync them all now, or open one to fetch just that drive.",
   "@nothingSyncedYetDescription": {
@@ -2514,7 +2534,7 @@
   "@sharedFileVersionPinned": {
     "description": "Chip marking the version a pinned share link deliberately points at, as opposed to merely the version the link carried"
   },
-  "sharedFileVersionsLooking": "Looking for other versions\u2026",
+  "sharedFileVersionsLooking": "Looking for other versions...",
   "@sharedFileVersionsLooking": {
     "description": "Shown while the rest of a file's version history is being fetched"
   },
@@ -2522,7 +2542,7 @@
   "@sharedFileVersionsUnavailableShort": {
     "description": "Shown when the version history could not be read; the version the recipient was sent is still listed and downloadable"
   },
-  "attachDriveLookingUp": "Looking up drive…",
+  "attachDriveLookingUp": "Looking up drive...",
   "@attachDriveLookingUp": {
     "description": "Shown while the entered drive ID is being resolved"
   },
@@ -2539,9 +2559,9 @@
       }
     }
   },
-  "shareDriveFailure": "We couldn’t create a share link for this drive. Check your connection and try again.",
+  "shareDriveFailure": "The link for this drive could not be built. Its access key could not be read on this device. Syncing the drive may bring it in.",
   "@shareDriveFailure": {
-    "description": "Shown in the share drive dialog when the link could not be built, most often because the drive key could not be read"
+    "description": "Shown in the share drive dialog when the link could not be built. The work is entirely local - the drive key is read from the database - so it names that rather than blaming the network, and points at the one thing that can change the answer"
   },
   "shareDriveRevealLink": "Show link",
   "@shareDriveRevealLink": {
@@ -2563,7 +2583,7 @@
   "@shareFileAccessKeyLabel": {
     "description": "Label of the read-only field holding the access key on the share file dialog"
   },
-  "shareFileLinkIncomplete": "This link can't tell the recipient the file is encrypted. Try again — if it keeps happening, the gateway is unreachable.",
+  "shareFileLinkIncomplete": "This link can't tell the recipient the file is encrypted. Try again. If it keeps happening, the gateway is unreachable.",
   "@shareFileLinkIncomplete": {
     "description": "Shown when a private file's cipher details could not be resolved, so the link would not declare the file encrypted"
   },
@@ -2851,11 +2871,11 @@
   "@syncComplete": {
     "description": "Title of the summary a finished sync ends on"
   },
-  "syncSummaryNothingNew": "Up to date — nothing new",
+  "syncSummaryNothingNew": "Up to date, nothing new",
   "@syncSummaryNothingNew": {
     "description": "Summary of a sync that found nothing new in any drive"
   },
-  "syncSummaryNothingNewInDrive": "{driveName} is up to date — nothing new",
+  "syncSummaryNothingNewInDrive": "{driveName} is up to date, nothing new",
   "@syncSummaryNothingNewInDrive": {
     "description": "Summary of a single drive sync that found nothing new",
     "placeholders": {
@@ -2944,6 +2964,28 @@
   "@syncFailedDetail": {
     "description": "What a failed sync means for what is on screen: the drive list is whatever was last read, not what is out there"
   },
+  "syncWalletChanged": "Wallet Changed",
+  "@syncWalletChanged": {
+    "description": "Top bar title for a sync that stopped because the connected ArConnect wallet is no longer the one the session was signed in with"
+  },
+  "syncWalletChangedDetail": "You were signed out because your wallet changed.",
+  "@syncWalletChangedDetail": {
+    "description": "Why the app bounced the user to login. Without it the sync layer noticed the wallet change and said nothing"
+  },
+  "syncCancelledDrives": "Completed {completed} of {total} drives",
+  "@syncCancelledDrives": {
+    "description": "What a cancelled sync got through, short enough for the top bar's announcement. The long warning belongs elsewhere",
+    "placeholders": {
+      "completed": {
+        "type": "int",
+        "example": "2"
+      },
+      "total": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
   "syncDrivesFailed": "{failed} of {total} drives could not be synced",
   "@syncDrivesFailed": {
     "description": "How a sync nobody asked for reports its failures at the top bar. Short on purpose: the long warning belongs in the modal a user-initiated sync is already holding",
@@ -2974,12 +3016,158 @@
   },
   "syncFoundSoFar": "{count, plural, =1{Found 1 item so far...} other{Found {count} items so far...}}",
   "@syncFoundSoFar": {
-    "description": "What a running sync has pulled in. Preferred over a percentage: it needs no total, so it is honest from the first batch, it can only rise, and it is in files and folders rather than blocks",
+    "description": "What a running sync has pulled in. Preferred over a percentage: it needs no total, so it is honest from the first batch, it can only rise, and it is in files and folders rather than blocks. An item is a file or a folder, here and everywhere else the word is used",
     "placeholders": {
       "count": {
         "type": "int",
         "format": "decimalPattern",
         "example": "47"
+      }
+    }
+  },
+  "syncHistory": "Sync history",
+  "@syncHistory": {
+    "description": "Heading over the record of recent syncs, and the label of the row in the sync menu that opens it. Level two of the sync report: level nought is the turning indicator, level one is the header inside that menu"
+  },
+  "syncHistoryDescription": "What the most recent syncs did on this device. The last {count} are kept, and they go when you log out.",
+  "@syncHistoryDescription": {
+    "description": "Says what the sync history covers and what its limits are, so a user does not read a short list as a claim that nothing else ever happened",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "20"
+      }
+    }
+  },
+  "syncHistoryEmpty": "Nothing has synced on this device yet.",
+  "@syncHistoryEmpty": {
+    "description": "Shown when no sync has ever finished for this wallet on this device. Deliberately not an error and not a blank panel - nothing has happened, which is a fact and not a fault"
+  },
+  "syncHistoryEmptyDescription": "Syncs are listed here as they finish.",
+  "@syncHistoryEmptyDescription": {
+    "description": "Says what would fill the empty sync history, so it reads as a list waiting for entries rather than a feature that is broken"
+  },
+  "syncHistoryAllDrives": "All drives",
+  "@syncHistoryAllDrives": {
+    "description": "What a history entry is titled when the sync covered every drive rather than one named one"
+  },
+  "syncHistoryRunSummary": "{when} · {trigger} · took {duration}",
+  "@syncHistoryRunSummary": {
+    "description": "The line under a sync history entry's title: when the sync started, who asked for it, and how long it took",
+    "placeholders": {
+      "when": {
+        "type": "String",
+        "example": "12 minutes ago"
+      },
+      "trigger": {
+        "type": "String",
+        "example": "automatic"
+      },
+      "duration": {
+        "type": "String",
+        "example": "8s"
+      }
+    }
+  },
+  "syncHistoryTriggerAutomatic": "automatic",
+  "@syncHistoryTriggerAutomatic": {
+    "description": "A sync nobody asked for - the sync on login, or the periodic one - inside syncHistoryRunSummary"
+  },
+  "syncHistoryTriggerManual": "started by you",
+  "@syncHistoryTriggerManual": {
+    "description": "A sync the user pressed a button for, inside syncHistoryRunSummary"
+  },
+  "syncHistoryJustNow": "Just now",
+  "@syncHistoryJustNow": {
+    "description": "When a sync in the history started, less than a minute ago"
+  },
+  "syncHistoryMinutesAgo": "{count, plural, one{1 minute ago} other{{count} minutes ago}}",
+  "@syncHistoryMinutesAgo": {
+    "description": "When a sync in the history started, within the hour",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "syncHistoryHoursAgo": "{count, plural, one{1 hour ago} other{{count} hours ago}}",
+  "@syncHistoryHoursAgo": {
+    "description": "When a sync in the history started, within the day",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "syncHistoryDurationSeconds": "{seconds}s",
+  "@syncHistoryDurationSeconds": {
+    "description": "How long a sync took, under a minute",
+    "placeholders": {
+      "seconds": {
+        "type": "String",
+        "example": "8"
+      }
+    }
+  },
+  "syncHistoryDurationMinutes": "{minutes}m {seconds}s",
+  "@syncHistoryDurationMinutes": {
+    "description": "How long a sync took, a minute or more",
+    "placeholders": {
+      "minutes": {
+        "type": "String",
+        "example": "2"
+      },
+      "seconds": {
+        "type": "String",
+        "example": "14"
+      }
+    }
+  },
+  "syncHistoryFoundItems": "{count, plural, =0{Nothing new} one{1 new item} other{{count} new items}}",
+  "@syncHistoryFoundItems": {
+    "description": "What a finished sync wrote. An item is a file or a folder, here and everywhere else the word is used. Zero is a result and says so rather than being left out",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "12"
+      }
+    }
+  },
+  "syncHistoryFailedDetail": "This sync could not be done, so nothing was read.",
+  "@syncHistoryFailedDetail": {
+    "description": "What a history entry says about a sync that threw before it could walk any drive"
+  },
+  "syncHistoryCancelledDetail": "This sync was stopped before it finished.",
+  "@syncHistoryCancelledDetail": {
+    "description": "What a history entry says about a sync that was cancelled part way"
+  },
+  "syncHistorySkipped": "{count, plural, one{1 item could not be read} other{{count} items could not be read}}",
+  "@syncHistorySkipped": {
+    "description": "Entities a sync dropped because their metadata could not be fetched. Reported even on a sync that otherwise succeeded, because those files will not be on screen",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "3"
+      }
+    }
+  },
+  "syncReadingMetadata": "Reading {completed} of {total}...",
+  "@syncReadingMetadata": {
+    "description": "What a sync is doing during its longest phase: every file and folder revision's metadata is fetched from the gateway one request at a time, a few at a time. Both figures are real - the total is what has been asked for so far, and it rises as the drive's history arrives - and the first one advances on every request that comes back, which is the only thing that moves while this phase runs",
+    "placeholders": {
+      "completed": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "340"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2180"
       }
     }
   },
@@ -3307,7 +3495,7 @@
   },
   "walletAddress": "Wallet address:",
   "@walletAddress": {
-    "description": "E.g. \"The wallet address is… ABCDEFGH\""
+    "description": "E.g. \"The wallet address is... ABCDEFGH\""
   },
   "walletChangedDuringManifestCreation": "Provided wallet has unexpectedly changed during manifest creation...",
   "@walletChangedDuringManifestCreation": {

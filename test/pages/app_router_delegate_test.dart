@@ -1,3 +1,4 @@
+import 'package:ardrive/pages/app_route_information_parser.dart';
 import 'package:ardrive/pages/app_route_path.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -111,6 +112,79 @@ void main() {
       delegate.onDriveSelected(driveId);
 
       expect(delegate.driveFolderId, isNull);
+    });
+  });
+
+  group('the way back to the drives list', () {
+    // `showingDrivesList` was set in exactly one place - on login - so once a
+    // drive was opened the list was unreachable without the browser's back
+    // button or typing the address.
+    final parser = AppRouteInformationParser();
+
+    String addressBar(AppRouterDelegate delegate) =>
+        parser.restoreRouteInformation(delegate.currentConfiguration).uri.path;
+
+    test('lands where a login lands, and says so in the address bar', () async {
+      await delegate.setNewRoutePath(
+        AppRoutePath.driveDetail(driveId: driveId),
+      );
+      delegate.onDriveSelected(driveId);
+
+      delegate.showDrivesList();
+
+      // The same single flag the login path sets - and it is the flag, not
+      // `driveId == null`, that decides which of the two is on screen.
+      expect(delegate.showingDrivesList, isTrue);
+      expect(delegate.currentConfiguration.drivesList, isTrue);
+      // Bookmarkable, and the browser's own back and forward agree with it.
+      expect(addressBar(delegate), '/drives');
+    });
+
+    test('leaves the drive selected underneath, folder and all', () async {
+      // Going back into the drive is one tap, and it lands where the user was
+      // rather than at the drive's root.
+      await delegate.setNewRoutePath(
+        AppRoutePath.folderDetail(driveId: driveId, driveFolderId: folderId),
+      );
+      delegate.onDriveSelected(driveId);
+
+      delegate.showDrivesList();
+
+      expect(delegate.driveId, driveId);
+      expect(delegate.driveFolderId, folderId);
+    });
+
+    test('tells the router, once, and not twice for the same tap', () async {
+      var notifications = 0;
+      delegate.addListener(() => notifications++);
+
+      await delegate.setNewRoutePath(
+        AppRoutePath.driveDetail(driveId: driveId),
+      );
+
+      delegate.showDrivesList();
+      expect(notifications, 1, reason: 'the router has to be told');
+
+      delegate.showDrivesList();
+      expect(notifications, 1,
+          reason: 'a second identical history entry is one more press of the '
+              "browser's back button for nothing");
+    });
+
+    test('a link still wins over it', () async {
+      // Deep links are permanent public API. Arriving at one from the list
+      // resolves it exactly as arriving at it from anywhere else does.
+      delegate.showDrivesList();
+
+      await delegate.setNewRoutePath(
+        AppRoutePath.folderDetail(driveId: driveId, driveFolderId: folderId),
+      );
+      delegate.onDriveSelected(driveId);
+
+      expect(delegate.showingDrivesList, isFalse);
+      expect(delegate.driveId, driveId);
+      expect(delegate.driveFolderId, folderId);
+      expect(addressBar(delegate), '/drives/$driveId/folders/$folderId');
     });
   });
 

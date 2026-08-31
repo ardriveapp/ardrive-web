@@ -196,7 +196,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         isSharedWithMe: sharedDriveIds.contains(drive.id),
         dateCreated: drive.dateCreated,
         hasBeenWalked: hasBeenWalked,
-        itemCount: hasBeenWalked ? summary.itemCount : null,
+        fileCount: hasBeenWalked ? summary.fileCount : null,
         totalSize: hasBeenWalked ? summary.totalSize : null,
         lastSyncedAt: syncedAt,
         isSyncing: syncState is SyncInProgress &&
@@ -284,6 +284,12 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         return;
       }
 
+      // A sync running for a *different* drive is refused here - one at a
+      // time, no queue - and this call returns having started nothing. That
+      // is deliberate and it is not hidden: the panel the user lands on says
+      // that another drive is syncing and that this one was not started, so
+      // the offer to sync it is theirs to take when that one ends. See
+      // `DriveDetailUnsyncedCard`.
       unawaited(
         _syncCubit.startSyncForDrive(
           driveId: driveId,

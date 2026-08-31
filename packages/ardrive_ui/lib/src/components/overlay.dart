@@ -98,7 +98,12 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    dropdownHeight = widget.maxHeight ?? widget.items.length * widget.height;
+    // The rows grow with the reader's text scale (see ArDriveDropdownItemTile),
+    // so the box that holds them has to as well or it clips them.
+    dropdownHeight = widget.maxHeight ??
+        widget.items.length *
+            widget.height *
+            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
 
     final dropdownTheme = ArDriveTheme.of(context).themeData.dropdownTheme;
 
@@ -152,9 +157,22 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                             child: Row(
                               mainAxisSize: MainAxisSize.max,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [widget.items[index]],
+                                // Expanded, so the item is laid out to the
+                                // menu's width. A Row hands its non-flexible
+                                // children an unbounded main axis, so an item
+                                // used to measure itself at whatever width its
+                                // longest word wanted and the menu overflowed
+                                // by the difference - which on a 320px phone
+                                // at text scale 2.0 was 58 pixels off the
+                                // right edge of every menu in the app. A
+                                // bounded width is also what lets a label
+                                // inside the item give at all.
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [widget.items[index]],
+                                  ),
                                 ),
                               ],
                             ),

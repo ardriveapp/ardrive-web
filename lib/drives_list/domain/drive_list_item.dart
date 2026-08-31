@@ -5,7 +5,7 @@ import 'package:equatable/equatable.dart';
 ///
 /// Every field is either a fact or explicitly absent. There is no field here
 /// whose zero doubles as "we do not know" - that distinction is what
-/// [hasBeenWalked] carries, and it is why [itemCount] and [totalSize] are
+/// [hasBeenWalked] carries, and it is why [fileCount] and [totalSize] are
 /// nullable rather than defaulted.
 class DriveListItem extends Equatable {
   const DriveListItem({
@@ -15,7 +15,7 @@ class DriveListItem extends Equatable {
     required this.isSharedWithMe,
     required this.dateCreated,
     required this.hasBeenWalked,
-    required this.itemCount,
+    required this.fileCount,
     required this.totalSize,
     required this.lastSyncedAt,
     required this.isSyncing,
@@ -47,9 +47,12 @@ class DriveListItem extends Equatable {
 
   /// Files stored locally for this drive, or null when the drive has never
   /// been walked and the number would therefore be a guess dressed as a count.
-  final int? itemCount;
+  ///
+  /// Files, not items: a sync counts folders as items too, and one word over
+  /// two different numbers on one page is what this name used to be.
+  final int? fileCount;
 
-  /// The sum of those files' sizes in bytes, on the same terms as [itemCount].
+  /// The sum of those files' sizes in bytes, on the same terms as [fileCount].
   final int? totalSize;
 
   /// When this device last finished a sync covering this drive.
@@ -71,7 +74,7 @@ class DriveListItem extends Equatable {
         isSharedWithMe,
         dateCreated,
         hasBeenWalked,
-        itemCount,
+        fileCount,
         totalSize,
         lastSyncedAt,
         isSyncing,

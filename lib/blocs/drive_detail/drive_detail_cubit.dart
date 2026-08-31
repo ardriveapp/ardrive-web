@@ -907,17 +907,40 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       final rootFolderId = currentState.drive.rootFolderId;
 
       _isExplicitSync = true;
+      final bool synced;
       try {
         // The panel this was pressed from reports the sync itself, so there is
         // nothing for a modal to add - it would only cover the report with a
         // copy of it and take the app away. See [DriveDetailSyncingCard].
         emit(DriveDetailLoadInProgress());
-        await _syncCubit.startSync(trigger: SyncTrigger.background);
+        synced = await _syncCubit.startSync(trigger: SyncTrigger.background);
       } finally {
         _isExplicitSync = false;
       }
 
+      // Whether a sync ran is the cubit's answer, not something to infer from
+      // the state beforehand: it can also decline for a hidden tab, an
+      // uninterruptible activity, or a cancellation, and every one of those
+      // reads afterwards as a drive that is as empty as it was. Reporting what
+      // a sync "found" when none ran is the one thing this panel must not do.
+      if (!synced) {
+        if (isClosed || _driveId != driveId) return;
+        emit(currentState);
+        return;
+      }
+
       if (isClosed || _driveId != driveId) return;
+
+      // The same rule as `syncCurrentDrive`, and the same reason: only a sync
+      // that ran to the end may have its findings reported. This path had the
+      // identical hole - it read the drive and reported what it found after a
+      // sync that had failed on some drives, or on all of them.
+      if (!_syncCubit.state.isSuccessfulCompletion) {
+        // Back to the panel the press came from, rather than leaving the
+        // explorer on a loading state that nothing else will replace.
+        emit(currentState);
+        return;
+      }
 
       final drive =
           await _driveDao.driveById(driveId: driveId).getSingleOrNull();
@@ -951,13 +974,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       final rootFolderId = state.drive.rootFolderId;
 
       _isExplicitSync = true;
+      final bool synced;
       try {
         emit(DriveDetailLoadInProgress());
         // Background, not because nobody asked - they pressed Sync Now - but
         // because the panel they pressed it from already shows the phase, the
         // progress and the elapsed time. A modal over it is the same report
         // twice, and takes away the app while it does it.
-        await _syncCubit.startSyncForDrive(
+        synced = await _syncCubit.startSyncForDrive(
           driveId: driveId,
           deepSync: false,
           trigger: SyncTrigger.background,
@@ -966,19 +990,47 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _isExplicitSync = false;
       }
 
-      // Guard: Only proceed if sync completed successfully and we're still
-      // viewing the same drive (user hasn't navigated away during sync)
-      final syncState = _syncCubit.state;
-      final currentState = this.state;
+      // Nothing ran, so there is nothing to report. Everything below reads the
+      // drive and reports what the sync found; on a refusal - one sync at a
+      // time, no queue - it would find the drive exactly as empty as it was
+      // and emit `syncFoundNothing`, telling the user a sync looked when none
+      // ever started. The answer comes from the sync itself rather than from
+      // guessing at its state afterwards, so a future caller cannot lose it.
+      if (!synced) {
+        // Back to exactly the panel the press came from, flags and all -
+        // unless the screen has moved on, in which case restoring this drive's
+        // panel would put it over another drive's.
+        if (isClosed || _driveId != driveId) return;
 
-      // Check if sync was cancelled or had errors
-      if (syncState is SyncCancelled || syncState is SyncFailure) {
-        // Sync was cancelled or failed, don't navigate
+        emit(state);
         return;
       }
 
-      // Check if we're still on the same drive (user might have navigated away)
-      if (currentState is! DriveDetailLoadInProgress || _driveId != driveId) {
+      // Still this drive, and still the loading state this call put up. Any
+      // other state means something else owns the screen now and this result
+      // is not its business.
+      if (isClosed || _driveId != driveId) return;
+
+      if (this.state is! DriveDetailLoadInProgress) {
+        return;
+      }
+
+      // Only a sync that ran to the end may have its findings reported. Every
+      // other ending - cancelled, failed outright, finished with failed drives
+      // - leaves the drive exactly as empty as it was, and reporting that as
+      // "the sync looked and found nothing" is a confident, false explanation
+      // for a network read that did not happen.
+      //
+      // Asked of the state rather than enumerated here: a guard naming
+      // `SyncCancelled` and `SyncFailure` let `SyncCompleteWithErrors` fall
+      // straight through to `syncFoundNothing`, and the next state added
+      // would have done the same. See [SyncState.isSuccessfulCompletion].
+      if (!_syncCubit.state.isSuccessfulCompletion) {
+        // Back to the panel the press came from. Returning without emitting
+        // strands the explorer on "Opening Drive X" forever - nothing else
+        // emits, and neither the following `SyncIdle` nor a later Resync
+        // rescues a state nothing is waiting on.
+        emit(state);
         return;
       }
 

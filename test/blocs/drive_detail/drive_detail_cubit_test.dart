@@ -99,6 +99,18 @@ void main() {
         );
   }
 
+  /// What `SyncCubit` is left in by a sync that ran to the end and succeeded.
+  ///
+  /// Written once, here, because it is the state the whole "may this panel
+  /// report what the sync found?" decision turns on - and because a test that
+  /// stubs a bare `SyncIdle` is describing a sync that never ran, whatever the
+  /// `startSyncForDrive` stub returned beside it.
+  SyncComplete succeededSync() => SyncComplete(
+        entitiesSynced: 0,
+        sequence: 1,
+        completedAt: DateTime(2026, 3, 4),
+      );
+
   DriveDetailCubit buildCubit() => DriveDetailCubit(
         driveId: driveId,
         profileCubit: profileCubit,
@@ -278,7 +290,12 @@ void main() {
             driveId: any(named: 'driveId'),
             deepSync: any(named: 'deepSync'),
             trigger: any(named: 'trigger'),
-          )).thenAnswer((_) async => insertRootFolderRevision());
+          )).thenAnswer((_) async {
+        insertRootFolderRevision();
+        // The sync ran - see `SyncCubit.startSyncForDrive`.
+        when(() => syncCubit.state).thenReturn(succeededSync());
+        return true;
+      });
 
       final emitted = <DriveDetailState>[];
       final subscription = cubit.stream.listen(emitted.add);
@@ -704,8 +721,10 @@ void main() {
             driveId: any(named: 'driveId'),
             deepSync: any(named: 'deepSync'),
             trigger: any(named: 'trigger'),
-          )).thenAnswer((_) async {});
-      when(() => syncCubit.state).thenReturn(SyncIdle());
+          )).thenAnswer((_) async => true);
+      // What a sync that ran to the end actually leaves behind. Only this
+      // state entitles the panel to report what the sync found.
+      when(() => syncCubit.state).thenReturn(succeededSync());
 
       await cubit.syncCurrentDrive();
       await pumpEventQueue(times: 100);
@@ -719,5 +738,243 @@ void main() {
             'word for word, as though the press did nothing',
       );
     });
+
+    test('nor about an all-drives sync that never started', () async {
+      // The sibling of the test below, and the one that survived the first
+      // fix: `startSync` used to return void, so this path guessed from
+      // `SyncInProgress` beforehand - which is blind to a sync that declines
+      // for a hidden tab, an uninterruptible activity, or a cancellation. Each
+      // of those reads afterwards as a drive as empty as it was.
+      await insertDrive(lastBlockHeight: 0);
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(cubit.state, isA<DriveDetailLoadUnsynced>(),
+          reason: 'precondition: the drive starts out unsynced');
+
+      // Declined for a reason the state before the call cannot show.
+      when(() => syncCubit.startSync(
+            deepSync: any(named: 'deepSync'),
+            trigger: any(named: 'trigger'),
+            skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
+            driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          )).thenAnswer((_) async => false);
+      when(() => syncCubit.state).thenReturn(SyncIdle());
+
+      await cubit.syncAllAndRefreshCurrentDrive();
+      await pumpEventQueue(times: 100);
+
+      final after = cubit.state;
+      expect(after, isA<DriveDetailLoadUnsynced>());
+      expect(
+        (after as DriveDetailLoadUnsynced).syncFoundNothing,
+        isFalse,
+        reason: 'nothing ran, so nothing may be reported about what it found',
+      );
+    });
+
+    test('and says nothing at all about a sync that never started', () async {
+      // One sync at a time, no queue: `startSyncForDrive` refuses outright
+      // while one is running and returns having started nothing. Reading the
+      // drive afterwards and reporting what it found turns that refusal into
+      // "the sync looked and found nothing" - a sentence about a sync that
+      // never happened.
+      await insertDrive(lastBlockHeight: 0);
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(cubit.state, isA<DriveDetailLoadUnsynced>(),
+          reason: 'precondition: the drive starts out unsynced');
+
+      // The refusal, exactly as the cubit reports it.
+      when(() => syncCubit.startSyncForDrive(
+            driveId: any(named: 'driveId'),
+            deepSync: any(named: 'deepSync'),
+            trigger: any(named: 'trigger'),
+          )).thenAnswer((_) async => false);
+      when(() => syncCubit.state).thenReturn(SyncIdle());
+
+      final emitted = <DriveDetailState>[];
+      final subscription = cubit.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+
+      await cubit.syncCurrentDrive();
+      await pumpEventQueue(times: 100);
+
+      final after = cubit.state;
+      expect(after, isA<DriveDetailLoadUnsynced>());
+      expect(
+        (after as DriveDetailLoadUnsynced).syncFoundNothing,
+        isFalse,
+        reason: 'nothing ran, so nothing may be reported about what it found',
+      );
+      expect(
+        emitted.whereType<DriveDetailLoadUnsynced>().where(
+              (state) => state.syncFoundNothing,
+            ),
+        isEmpty,
+        reason: 'not even in passing',
+      );
+    });
+  });
+
+  /// A sync that did not succeed has not "found" anything, and the user is
+  /// entitled to know the read failed rather than be told their drive has not
+  /// turned up on Arweave yet.
+  group('DriveDetailCubit after a sync that did not succeed', () {
+    /// Every terminal state a sync can end in that is not a success, and what
+    /// each one is.
+    ///
+    /// A list rather than three tests, because the point is the shape of the
+    /// rule: the guard used to name `SyncCancelled` and `SyncFailure`, and
+    /// `SyncCompleteWithErrors` - added later - fell straight through it into
+    /// "the sync finished, but nothing for this drive has appeared on Arweave
+    /// yet". `_LaterState` stands for the state somebody adds next.
+    final endings = <String, SyncState>{
+      'a sync that failed on some drives': SyncCompleteWithErrors(
+        failedDrives: 1,
+        totalDrives: 1,
+        failedDriveIds: const [driveId],
+        errorMessages: const {driveId: 'gateway said no'},
+      ),
+      'a sync that was cancelled': SyncCancelled(
+        drivesCompleted: 0,
+        totalDrives: 1,
+        cancelledAt: DateTime(2026, 3, 4),
+      ),
+      'a sync that failed outright': SyncFailure(error: 'boom'),
+      'a state that did not exist when the guard was written': _LaterState(),
+    };
+
+    endings.forEach((description, syncState) {
+      test('$description is not reported as a look that found nothing',
+          () async {
+        await insertDrive(lastBlockHeight: 0);
+
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        expect(cubit.state, isA<DriveDetailLoadUnsynced>(),
+            reason: 'precondition: the drive starts out unsynced');
+
+        // A sync did start - this is not the refusal path - and it ended here.
+        when(() => syncCubit.startSyncForDrive(
+              driveId: any(named: 'driveId'),
+              deepSync: any(named: 'deepSync'),
+              trigger: any(named: 'trigger'),
+            )).thenAnswer((_) async {
+          when(() => syncCubit.state).thenReturn(syncState);
+          return true;
+        });
+
+        final emitted = <DriveDetailState>[];
+        final subscription = cubit.stream.listen(emitted.add);
+        addTearDown(subscription.cancel);
+
+        await cubit.syncCurrentDrive();
+        await pumpEventQueue(times: 100);
+
+        expect(
+          emitted.whereType<DriveDetailLoadUnsynced>().where(
+                (state) => state.syncFoundNothing,
+              ),
+          isEmpty,
+          reason: 'the network read did not succeed, so "the sync finished, '
+              'but nothing for this drive has appeared on Arweave yet" is a '
+              'reassuring explanation for something that did not happen',
+        );
+      });
+
+      test('$description leaves a screen the user can act from', () async {
+        // The other half of the same bug: a guard that returns without
+        // emitting leaves the explorer on the loading state this method put
+        // up - "Opening Drive X", a sweeping bar, no elapsed time, forever.
+        // Neither the following SyncIdle nor a later Resync rescues it.
+        await insertDrive(lastBlockHeight: 0);
+
+        final cubit = buildCubit();
+        addTearDown(cubit.close);
+
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        when(() => syncCubit.startSyncForDrive(
+              driveId: any(named: 'driveId'),
+              deepSync: any(named: 'deepSync'),
+              trigger: any(named: 'trigger'),
+            )).thenAnswer((_) async {
+          when(() => syncCubit.state).thenReturn(syncState);
+          return true;
+        });
+
+        await cubit.syncCurrentDrive();
+        await pumpEventQueue(times: 100);
+
+        expect(
+          cubit.state,
+          isNot(isA<DriveDetailLoadInProgress>()),
+          reason: 'nothing else emits after this, so a loading state left up '
+              'here is a screen with no way out of it',
+        );
+        expect(cubit.state, isA<DriveDetailLoadUnsynced>());
+      });
+    });
+
+    test('nor after an all-drives sync that failed on some drives', () async {
+      // `syncAllAndRefreshCurrentDrive` had the identical hole.
+      await insertDrive(lastBlockHeight: 0);
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(cubit.state, isA<DriveDetailLoadUnsynced>(),
+          reason: 'precondition: the drive starts out unsynced');
+
+      when(() => syncCubit.startSync(
+            deepSync: any(named: 'deepSync'),
+            trigger: any(named: 'trigger'),
+            skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
+            driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          )).thenAnswer((_) async {
+        when(() => syncCubit.state).thenReturn(SyncCompleteWithErrors(
+          failedDrives: 1,
+          totalDrives: 3,
+          failedDriveIds: const [driveId],
+          errorMessages: const {driveId: 'gateway said no'},
+        ));
+        return true;
+      });
+
+      final emitted = <DriveDetailState>[];
+      final subscription = cubit.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+
+      await cubit.syncAllAndRefreshCurrentDrive();
+      await pumpEventQueue(times: 100);
+
+      expect(
+        emitted.whereType<DriveDetailLoadUnsynced>().where(
+              (state) => state.syncFoundNothing,
+            ),
+        isEmpty,
+        reason: 'a sync that failed on this drive may not report what it '
+            'found here',
+      );
+      expect(cubit.state, isA<DriveDetailLoadUnsynced>());
+      expect(cubit.state, isNot(isA<DriveDetailLoadInProgress>()));
+    });
   });
 }
+
+/// The state somebody adds after this guard was written.
+///
+/// It exists so the rule is tested as a rule. Every sync state inherits
+/// `isSuccessfulCompletion => false` and has to say otherwise to be treated as
+/// a success, so a state nobody has thought of yet cannot become a sentence
+/// about what a sync found.
+class _LaterState extends SyncState {}

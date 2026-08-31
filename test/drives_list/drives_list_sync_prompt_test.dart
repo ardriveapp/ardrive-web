@@ -6,6 +6,7 @@ import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -21,6 +22,10 @@ import 'package:flutter_test/flutter_test.dart';
 /// something at a band of widths nobody had rendered.
 void main() {
   const title = 'Nothing has been synced yet';
+  const description =
+      'Your drives are listed, but their contents have not been fetched yet. '
+      'Sync them all now, or open one to fetch just that drive.';
+  const syncingTitle = 'Fetching your drives';
 
   /// The real face, loaded from the design system's own asset.
   ///
@@ -46,17 +51,17 @@ void main() {
     await loader.load();
   });
 
-  DriveListItem unwalked(String id) => DriveListItem(
+  DriveListItem unwalked(String id, {bool isSyncing = false}) => DriveListItem(
         id: id,
         name: id,
         isPrivate: false,
         isSharedWithMe: false,
         dateCreated: DateTime(2026, 3, 4),
         hasBeenWalked: false,
-        itemCount: null,
+        fileCount: null,
         totalSize: null,
         lastSyncedAt: null,
-        isSyncing: false,
+        isSyncing: isSyncing,
       );
 
   Widget host(Widget child) => ArDriveTheme(
@@ -78,24 +83,38 @@ void main() {
   /// The card's own width is asserted afterwards rather than assumed: a
   /// surface size that is silently clamped renders a different width than the
   /// one under test, and a layout test that never looks has proved nothing.
-  Future<Size> pumpAt(WidgetTester tester, double width) async {
+  Future<Size> pumpAt(
+    WidgetTester tester,
+    double width, {
+    bool isSyncing = false,
+    double textScale = 1,
+  }) async {
     await tester.binding.setSurfaceSize(Size(width, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
       host(
-        DrivesListBody(
-          state: DrivesListLoaded(drives: [unwalked('a')]),
-          onOpenDrive: (_) {},
-          onTryAgain: () {},
-          onSyncAllDrives: () {},
+        Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.linear(textScale),
+            ),
+            child: DrivesListBody(
+              state: DrivesListLoaded(
+                drives: [unwalked('a', isSyncing: isSyncing)],
+              ),
+              onOpenDrive: (_) {},
+              onTryAgain: () {},
+              onSyncAllDrives: () {},
+            ),
+          ),
         ),
       ),
     );
 
     // The card is the decorated box the title sits inside.
     final card = find.ancestor(
-      of: find.text(title),
+      of: find.text(isSyncing ? syncingTitle : title),
       matching: find.byType(Container),
     );
 
@@ -180,7 +199,14 @@ void main() {
       // The narrowest card the rule admits, plus the page padding either side.
       const surface = driveListSyncPromptTextMinimum + 16 + 180 + 32 + 32;
 
-      expect(driveListSyncPromptShowsColumns(surface - 32), isTrue);
+      expect(
+        driveListSyncPromptShowsColumns(
+          surface - 32,
+          textMinimum: driveListSyncPromptTextMinimum,
+          buttonWidth: 180,
+        ),
+        isTrue,
+      );
 
       await pumpAt(tester, surface);
 
@@ -203,7 +229,14 @@ void main() {
     testWidgets('stacks one pixel below it', (tester) async {
       const surface = driveListSyncPromptTextMinimum + 16 + 180 + 32 + 32 - 1;
 
-      expect(driveListSyncPromptShowsColumns(surface - 32), isFalse);
+      expect(
+        driveListSyncPromptShowsColumns(
+          surface - 32,
+          textMinimum: driveListSyncPromptTextMinimum,
+          buttonWidth: 180,
+        ),
+        isFalse,
+      );
 
       await pumpAt(tester, surface);
 
@@ -213,6 +246,90 @@ void main() {
       expect(button.top, greaterThanOrEqualTo(words.bottom),
           reason: 'two columns do not fit here, so the card has to stack');
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('the card says which of the two it is', () {
+    // The offer and the strip are on one screen. While a sync ran, this card
+    // went on saying "their contents have not been fetched yet. Sync them all
+    // now" beside a strip reporting "Found 340 items so far..." and above the
+    // very button it names, disabled. Three surfaces, two of them wrong.
+    testWidgets('offers the sync while there is one to offer', (tester) async {
+      await pumpAt(tester, 1000);
+
+      expect(find.text(title), findsOneWidget);
+      expect(find.text(description), findsOneWidget);
+    });
+
+    testWidgets('and reports the one already running instead', (tester) async {
+      await pumpAt(tester, 1000, isSyncing: true);
+
+      expect(find.text(syncingTitle), findsOneWidget);
+      expect(find.text(title), findsNothing,
+          reason: 'the contents are being fetched right now, so "have not '
+              'been fetched yet" is not true');
+      expect(find.text(description), findsNothing);
+      expect(
+        find.textContaining('Sync them all now'),
+        findsNothing,
+        reason: 'it names an action it has just drawn as unavailable',
+      );
+    });
+  });
+
+  group('the reader\'s text scale', () {
+    // `ArDriveButtonNew` applies `maxWidth` as a fixed SizedBox width and
+    // ellipsizes the label inside it, so a constant 180 is not a maximum - it
+    // is the width, and at 2.0 the page's one offer read "Sync All Dri...".
+    for (final scale in [1.0, 1.3, 1.6, 2.0]) {
+      testWidgets('does not clip the button\'s label at ${scale}x',
+          (tester) async {
+        await pumpAt(tester, 1000, textScale: scale);
+
+        final label = find.text('Sync All Drives');
+        expect(label, findsOneWidget);
+
+        final rendered = tester.renderObject<RenderParagraph>(label);
+        expect(
+          rendered.didExceedMaxLines || rendered.size.width < 1,
+          isFalse,
+          reason: 'the label does not fit the width it was given',
+        );
+
+        // The painted text against the width it was allowed: an ellipsized
+        // label is one whose intrinsic width is wider than its box.
+        final intrinsic = rendered.getMaxIntrinsicWidth(double.infinity);
+        expect(
+          rendered.size.width,
+          greaterThanOrEqualTo(intrinsic - 0.5),
+          reason: '"Sync All Drives" is cut short at a text scale of $scale',
+        );
+
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('takes the drives list off columns before it clips them',
+        (tester) async {
+      // The breakpoint used to be pure pixels, so at a large text scale the
+      // page kept five columns and ellipsized the values inside them - and a
+      // count cut mid-digit still reads as a count.
+      const widest = driveListMaxContentWidth;
+
+      expect(driveListShowsColumns(widest, textScale: 1.0), isTrue,
+          reason: 'precondition: the widest list draws columns at 1.0');
+      expect(
+        driveListShowsColumns(widest, textScale: 2.0),
+        isFalse,
+        reason: 'at 2.0 five columns of text do not fit any width this page '
+            'allows, so the rows have to stack rather than truncate',
+      );
+      expect(
+        driveListShowsColumns(600, textScale: 1.0),
+        driveListShowsColumns(600 * 2, textScale: 2.0),
+        reason: 'the breakpoint is a measurement of text, so twice the text '
+            'in twice the width is the same decision',
+      );
     });
   });
 

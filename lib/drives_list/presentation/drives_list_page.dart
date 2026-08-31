@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/profile_card.dart';
@@ -23,13 +25,42 @@ const double _pagePadding = 16;
 const double _sectionGap = 24;
 const double _blockGap = 12;
 
-/// Wide enough for "Sync All Drives" and no wider.
+/// Wide enough for "Sync All Drives" and no wider, at a text scale of 1.
 ///
 /// The label measures 120px in Wavehaus at the button's size, plus its 20px of
 /// padding.
 /// Both primary actions on this page. A button that fills its column
 /// reads as an alert rather than an offer.
+///
+/// Never used raw - see [driveListSyncAllButtonWidth]. It is a measurement of
+/// text, and text is not a fixed number of pixels.
 const double _syncAllButtonWidth = 180;
+
+/// How much larger the reader has asked text to be, as a plain multiplier.
+///
+/// Taken at the size actually being drawn rather than at 1.0, because a
+/// [TextScaler] need not be linear: the platform ones clamp and curve, and
+/// scaling a measurement by the wrong end of that curve is how a measured
+/// width stops being a measurement.
+double driveListTextScale(BuildContext context, double fontSize) {
+  if (fontSize <= 0) return 1;
+
+  return MediaQuery.textScalerOf(context).scale(fontSize) / fontSize;
+}
+
+/// [_syncAllButtonWidth] at the reader's text scale.
+///
+/// [ArDriveButtonNew] applies `maxWidth` as a fixed `SizedBox` width and
+/// ellipsizes the label inside it, so a constant here is not a maximum - it is
+/// the width, and at 2.0 the page's one offer read "Sync All Dri...". The
+/// number above was measured at a text scale of 1, so that is the scale it has
+/// to be multiplied by.
+double driveListSyncAllButtonWidth(BuildContext context) {
+  final fontSize =
+      ArDriveTypographyNew.of(context).paragraphLarge().fontSize ?? 16;
+
+  return _syncAllButtonWidth * driveListTextScale(context, fontSize);
+}
 
 /// Where a login lands: the drives this wallet can open, before any of them is
 /// opened.
@@ -356,8 +387,9 @@ class _DrivesListUnavailable extends StatelessWidget {
           typography: typography,
           variant: ButtonVariant.primary,
           // Without a cap this fills its column - 420px of danger red on the
-          // screen whose message is that nothing has been lost.
-          maxWidth: _syncAllButtonWidth,
+          // screen whose message is that nothing has been lost. Scaled,
+          // because the cap is a measurement of the label inside it.
+          maxWidth: driveListSyncAllButtonWidth(context),
           onPressed: onTryAgain,
         ),
       ],
@@ -428,8 +460,17 @@ class _DrivesListLoadedView extends StatelessWidget {
           builder: (context, constraints) {
             // Decided once, here, for the header and every row - see
             // [driveListShowsColumns]. Measured on the width the list is
-            // actually given, which is why the cap is applied above it.
-            final showsColumns = driveListShowsColumns(constraints.maxWidth);
+            // actually given, which is why the cap is applied above it, and on
+            // the reader's text scale, because every one of the five columns
+            // is text.
+            final showsColumns = driveListShowsColumns(
+              constraints.maxWidth,
+              textScale: driveListTextScale(
+                context,
+                ArDriveTypographyNew.of(context).paragraphSmall().fontSize ??
+                    14,
+              ),
+            );
 
             // The whole page scrolls, not just the list inside it. A phone in
             // landscape - 568x264, which is also a portrait phone at a large
@@ -524,9 +565,11 @@ class _DrivesListLoadedView extends StatelessWidget {
 /// drawn in. Below it the title wraps and the two columns stop being a heading
 /// beside a button.
 ///
-/// The margin over the measurement is for a larger text scale - it carries the
-/// title to roughly 1.2x before it wraps - and the same test fails if that
-/// margin ever grows to the point where this has stopped being a measurement.
+/// A measurement at a text scale of 1, and multiplied by the reader's scale
+/// wherever it is used: the thing it measures is text. The small margin over
+/// the measurement is rounding, not headroom, and
+/// `drives_list_sync_prompt_test.dart` fails if it ever grows to the point
+/// where this has stopped being a measurement.
 const double driveListSyncPromptTextMinimum = 210;
 
 /// The narrowest the card may be and still put its button beside its text.
@@ -534,9 +577,17 @@ const double driveListSyncPromptTextMinimum = 210;
 /// Derived from the two things that have to fit and the space between them,
 /// on the width the card is actually given - which is why the padding it draws
 /// inside itself comes off first. Nothing here is picked by eye.
-bool driveListSyncPromptShowsColumns(double cardWidth) =>
-    cardWidth - _pagePadding * 2 >=
-    driveListSyncPromptTextMinimum + _pagePadding + _syncAllButtonWidth;
+///
+/// Both of the things that have to fit are text, so both grow with the
+/// reader's text scale and both are handed in already scaled. A breakpoint
+/// measured in pixels alone keeps two columns at 2.0 and clips whichever of
+/// them loses.
+bool driveListSyncPromptShowsColumns(
+  double cardWidth, {
+  required double textMinimum,
+  required double buttonWidth,
+}) =>
+    cardWidth - _pagePadding * 2 >= textMinimum + _pagePadding + buttonWidth;
 
 /// The one offer this page makes, and only on the one login where it helps.
 ///
@@ -549,6 +600,12 @@ bool driveListSyncPromptShowsColumns(double cardWidth) =>
 /// genuinely do not fit - and stacked is a fallback here, not the shape the
 /// card wants, because a paragraph with a full-width button under it reads as
 /// an alert rather than an offer.
+///
+/// While a sync is actually running it stops being an offer and becomes a
+/// report. The words change with it: a card still saying "their contents have
+/// not been fetched yet. Sync them all now" beside a strip counting what that
+/// very sync has found, above the button it names drawn as unavailable, is
+/// three surfaces on one screen with two of them wrong.
 class _SyncEverythingPrompt extends StatelessWidget {
   const _SyncEverythingPrompt({
     required this.isSyncing,
@@ -563,12 +620,24 @@ class _SyncEverythingPrompt extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
+    // A sync is running, so the card does not offer to start one. It used to
+    // say "their contents have not been fetched yet. Sync them all now" beside
+    // a strip reporting "Found 340 items so far..." and under a button it had
+    // just named and disabled - three surfaces on one screen, two of them
+    // wrong. The offer is only an offer while it can be taken.
+    final title = isSyncing
+        ? appLocalizationsOf(context).nothingSyncedYetSyncingTitle
+        : appLocalizationsOf(context).nothingSyncedYetTitle;
+    final description = isSyncing
+        ? appLocalizationsOf(context).nothingSyncedYetSyncingDescription
+        : appLocalizationsOf(context).nothingSyncedYetDescription;
+
     final words = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          appLocalizationsOf(context).nothingSyncedYetTitle,
+          title,
           style: typography.paragraphNormal(
             color: colorTokens.textHigh,
             fontWeight: ArFontWeight.semiBold,
@@ -576,7 +645,7 @@ class _SyncEverythingPrompt extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          appLocalizationsOf(context).nothingSyncedYetDescription,
+          description,
           style: typography.paragraphSmall(
             color: colorTokens.textLow,
           ),
@@ -584,33 +653,51 @@ class _SyncEverythingPrompt extends StatelessWidget {
       ],
     );
 
-    final button = ArDriveButtonNew(
-      text: appLocalizationsOf(context).syncAllDrives,
-      typography: typography,
-      variant: ButtonVariant.primary,
-      // A width, because without one the button is a SizedBox around a Stack
-      // that expands: it took the whole content column, and a slab of primary
-      // colour on the one screen whose message is "nothing is wrong yet" reads
-      // as an alarm. It is also half of what fixes the breakpoint above.
-      maxWidth: _syncAllButtonWidth,
-      // Nothing to start while one is already running. The rows say
-      // "Syncing..." for as long as it is. `isDisabled` as well as a null
-      // callback: ArDriveButtonNew picks its colours off the flag alone, so
-      // without it the button looks live and does nothing - the same
-      // present-and-inert failure the menu items are forbidden.
-      isDisabled: isSyncing,
-      onPressed: isSyncing ? null : onSyncAllDrives,
-    );
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: _pagePadding),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          // Both measurements scaled by what the reader asked for, then the
+          // button capped at the room the card actually has: a scaled width
+          // wider than the card is a fixed-width box overflowing its parent,
+          // which is the same clipped label one layer out.
+          final scale = driveListTextScale(
+            context,
+            typography.paragraphNormal().fontSize ?? 16,
+          );
+          final available = constraints.maxWidth - _pagePadding * 2;
+          final buttonWidth = math.min(
+            driveListSyncAllButtonWidth(context),
+            available,
+          );
+
           // Measured on the width this card is actually given, in the place
           // that has it. The card is the only thing that has to fit, so it is
           // the only width the decision is allowed to be made on.
-          final showsColumns =
-              driveListSyncPromptShowsColumns(constraints.maxWidth);
+          final showsColumns = driveListSyncPromptShowsColumns(
+            constraints.maxWidth,
+            textMinimum: driveListSyncPromptTextMinimum * scale,
+            buttonWidth: buttonWidth,
+          );
+
+          final button = ArDriveButtonNew(
+            text: appLocalizationsOf(context).syncAllDrives,
+            typography: typography,
+            variant: ButtonVariant.primary,
+            // A width, because without one the button is a SizedBox around a
+            // Stack that expands: it took the whole content column, and a slab
+            // of primary colour on the one screen whose message is "nothing is
+            // wrong yet" reads as an alarm. It is also half of what fixes the
+            // breakpoint above.
+            maxWidth: buttonWidth,
+            // Nothing to start while one is already running. The rows say
+            // "Syncing..." for as long as it is. `isDisabled` as well as a
+            // null callback: ArDriveButtonNew picks its colours off the flag
+            // alone, so without it the button looks live and does nothing -
+            // the same present-and-inert failure the menu items are forbidden.
+            isDisabled: isSyncing,
+            onPressed: isSyncing ? null : onSyncAllDrives,
+          );
 
           return Container(
             decoration: BoxDecoration(

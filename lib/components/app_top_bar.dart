@@ -15,11 +15,17 @@ import 'package:ardrive/sync/presentation/sync_elapsed_time.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_urls.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+/// The bar's own row, which is all of it. Nothing about a sync is laid out
+/// here: the indicator in the row is the whole of what a sync costs the
+/// chrome, and everything it has to say is behind a tap on it.
+const double _topBarRowHeight = 110;
 
 class AppTopBar extends StatelessWidget {
   const AppTopBar({super.key});
@@ -29,7 +35,7 @@ class AppTopBar extends StatelessWidget {
     final controller = TextEditingController();
 
     return SizedBox(
-      height: 110,
+      height: _topBarRowHeight,
       width: double.maxFinite,
       child: Padding(
         padding: const EdgeInsets.only(right: 17.0),
@@ -118,24 +124,16 @@ class GlobalHideToggleButton extends StatelessWidget {
 /// when a sync starts or stops.
 const double _syncIndicatorSize = 24;
 
-/// The row height [ArDriveDropdown] assumes for every item: it sizes its
-/// overlay as `items.length * height`, so an item that is taller than this has
-/// to be paid for with an explicit `maxHeight`.
-const double _dropdownRowHeight = 48;
+/// How wide an announcement is allowed to get before it wraps. On a phone this
+/// is most of the screen.
+const double _syncAnnouncementMaxWidth = 260;
 
-/// The height the status header asks for, and the reason [_SyncButtonMenu]
-/// hands the dropdown a `maxHeight` whenever it shows one. It is a minimum, not
-/// a cap: a larger text scale grows the header and the menu scrolls, rather
-/// than the header overflowing.
-const double _syncStatusHeaderHeight = 96;
-
-/// How wide the status header lets the menu grow. The dropdown wraps its items
-/// in an [IntrinsicWidth], so this is what sets the open menu's width while a
-/// sync runs.
-const double _syncStatusHeaderWidth = 260;
-
-/// What the sync indicator has to say, in the words the sync modal uses for the
-/// same thing.
+/// What the sync indicator has to say, in the words the sync summary uses for
+/// the same thing.
+///
+/// Read twice: by the tooltip, for a pointer that has somewhere to hover, and
+/// by [_SyncStatusHeader] at the top of the menu, for the tap that is the only
+/// way to ask this question on a phone.
 class _SyncStatus {
   const _SyncStatus({
     required this.title,
@@ -145,19 +143,23 @@ class _SyncStatus {
     this.detailMaxLines = 1,
   });
 
-  /// What is being synced - the modal's own title - or, for a sync that
-  /// failed, that it did.
+  /// What is being synced - which drive, by name, when the sync is for one -
+  /// or, for a sync that failed, was cancelled, or was started under a wallet
+  /// that has since changed, what happened.
   final String title;
 
-  /// The phase the sync names for itself, the percentage when it names none,
-  /// or how many drives a failed sync could not read.
+  /// What is happening inside that: the count of metadata reads while they are
+  /// in flight, the phase the sync names for itself otherwise, the percentage
+  /// when it names none, or what a sync that did not finish left behind.
   final String? detail;
 
-  /// Whether the sync has a start time worth counting from.
+  /// Whether the sync this describes is running, and so has a start time worth
+  /// counting from. `syncStartTime` holds the *last* sync's start, so a header
+  /// counting from it when nothing is running would report minutes.
   final bool showElapsed;
 
-  /// Whether this is a sync that failed rather than one that is running, so
-  /// the header reads as a problem instead of as progress.
+  /// Whether this is a problem rather than progress, so the indicator reads as
+  /// one.
   final bool isError;
 
   /// How much room [detail] gets. A running sync's phase is one short line; a
@@ -168,6 +170,23 @@ class _SyncStatus {
   String get asTooltip => detail == null ? title : '$title\n$detail';
 }
 
+/// The row height [ArDriveDropdown] assumes for every item: it sizes its
+/// overlay as `items.length * height`, so a header taller than one row has to
+/// be paid for with an explicit `maxHeight`.
+const double _dropdownRowHeight = 48;
+
+/// What the status header asks for at the default text scale, and the reason
+/// [_SyncButtonMenu] hands the dropdown a `maxHeight` whenever it shows one.
+///
+/// A minimum, not a cap: a larger text scale grows the header and the menu
+/// scrolls, rather than the header being cut off.
+const double _syncStatusHeaderMinHeight = 108;
+
+/// How wide the status header lets the menu grow. The dropdown wraps its items
+/// in an [IntrinsicWidth], so this is what sets the open menu's width while a
+/// sync runs - and it is inside the narrowest phone this app is built for.
+const double _syncStatusHeaderWidth = 260;
+
 /// What the top bar has to say about a sync that just ended, and for how long.
 class SyncAnnouncement {
   const SyncAnnouncement({
@@ -176,6 +195,7 @@ class SyncAnnouncement {
     this.lead,
     this.trailing,
     this.isError = false,
+    this.onDone,
   });
 
   /// Which announcement this is. A new identity restarts the few seconds it
@@ -198,66 +218,124 @@ class SyncAnnouncement {
   /// Whether this is a failure. It is drawn as one - a report nobody asked for
   /// must not be mistaken for a clean result.
   final bool isError;
+
+  /// Run once, when the announcement's time is up.
+  ///
+  /// This exists for exactly one state. [SyncCancelled] is a resting state the
+  /// cubit stays in until something else syncs, and two things wait on
+  /// [SyncIdle] to do their work - the explorer's refresh and the shared-file
+  /// handover. Its only way back to idle used to be the OK button on a modal
+  /// that no longer exists, so without this a cancelled sync would leave both
+  /// of them waiting for an emission that was never coming. It is the same
+  /// `clearCancelledState()` that button called, moved to the end of the
+  /// announcement that replaced it.
+  final VoidCallback? onDone;
 }
 
-/// The top bar's sync control: the resync menu, and - while a sync is running,
-/// or after one that failed - the only place a background sync reports itself.
+/// The top bar's sync control, and the whole of what a sync costs the chrome:
+/// the ring that turns while one runs, the menu behind it, and the place every
+/// way a sync can end reports itself.
 ///
-/// A sync the user asked for still gets the modal over the whole app. One that
-/// merely happened gets this: a ring that turns, and the phase, percentage and
-/// elapsed time inside the menu the ring already opens - a tap, not a hover, so
-/// the phone gets them too. A failure it reports here as well, rather than
-/// dropping a scrim over whatever the user had moved on to.
+/// Three levels, and only the first is ever on screen unasked. The ring is
+/// level nought - a sync is running, and that is all a working app needs to
+/// say. A tap opens level one: [_SyncStatusHeader], which names the drive, the
+/// phase or the count of metadata reads in flight, and how long this has been
+/// going on. The menu's last row opens level two, the sync history in the
+/// Troubleshooting modal, which is the record of what every recent sync did.
+///
+/// What *happened* is announced here too: a result, a partial failure, a
+/// failure to read the drive list at all, a sync that was cancelled, and a
+/// wallet that changed under a sync - each for a few seconds beside the
+/// indicator, and each left on the indicator itself afterwards so a report
+/// nobody was watching for is still reachable.
 class SyncButton extends StatelessWidget {
   const SyncButton({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<SyncCubit, SyncState>(
-      builder: (context, syncState) {
-        final syncCubit = context.read<SyncCubit>();
+    // Outermost and unconditional, so the shape below it never changes - see
+    // the note on the StreamBuilder. It is here for one string: the name of
+    // the drive a single-drive sync is walking.
+    return BlocBuilder<DrivesCubit, DrivesState>(
+      builder: (context, drivesState) => BlocBuilder<SyncCubit, SyncState>(
+        builder: (context, syncState) {
+          final syncCubit = context.read<SyncCubit>();
 
-        // One shape for every state, and that is the point. This slot used to
-        // hold three structurally different subtrees - the menu on its own
-        // when idle, a StreamBuilder above it while a sync ran, a flash above
-        // that just after one finished - so every transition changed the
-        // widget type at this position and took [ArDriveDropdown]'s element,
-        // and its open/closed flag, down with it. An open menu vanished the
-        // instant a sync started or ended, and a thumb already moving towards
-        // Resync landed on the page behind.
-        //
-        // The stream is subscribed to in every state rather than only while a
-        // sync runs. It is a broadcast controller the cubit already owns, so
-        // listening costs nothing and asks nobody for anything.
-        return StreamBuilder<SyncProgress>(
-          stream: syncCubit.syncProgressController.stream,
-          // The controller replays nothing, so a button mounted mid-sync would
-          // show an empty ring until the next event without this.
-          initialData: syncCubit.syncProgress,
-          builder: (context, snapshot) => _build(
-            context,
-            syncState,
-            snapshot.data,
-          ),
-        );
-      },
+          // One shape for every state, and that is the point. This slot used to
+          // hold three structurally different subtrees - the menu on its own
+          // when idle, a StreamBuilder above it while a sync ran, a flash above
+          // that just after one finished - so every transition changed the
+          // widget type at this position and took [ArDriveDropdown]'s element,
+          // and its open/closed flag, down with it. An open menu vanished the
+          // instant a sync started or ended, and a thumb already moving towards
+          // Resync landed on the page behind.
+          //
+          // The stream is subscribed to in every state rather than only while
+          // a sync runs. It is a broadcast controller the cubit already owns,
+          // so listening costs nothing and asks nobody for anything.
+          return StreamBuilder<SyncProgress>(
+            stream: syncCubit.syncProgressController.stream,
+            // The controller replays nothing, so a button mounted mid-sync
+            // would show an empty ring until the next event without this.
+            initialData: syncCubit.syncProgress,
+            builder: (context, snapshot) => _build(
+              context,
+              syncState,
+              snapshot.data,
+              _syncingDriveName(syncCubit, drivesState),
+            ),
+          );
+        },
+      ),
     );
+  }
+
+  /// The name of the drive a single-drive sync is walking, or null.
+  ///
+  /// Two halves, and neither knows the other's: [SyncCubit.syncingDriveId]
+  /// knows *which* drive from the first frame of the sync, and [DrivesCubit]
+  /// is the only thing that knows what it is called. [SyncProgress] carries a
+  /// name as well, but only once the repository has read the drive out of the
+  /// database - and it was never rendered anywhere, so a single-drive sync
+  /// reported itself as "Syncing Drive" and named nothing at all.
+  ///
+  /// Null for a sync of every drive, which has no one drive to name, and null
+  /// for a drive the list has not loaded yet - in which case the title falls
+  /// back to the unnamed wording rather than inventing one.
+  String? _syncingDriveName(SyncCubit syncCubit, DrivesState drivesState) {
+    final driveId = syncCubit.syncingDriveId;
+
+    if (driveId == null || drivesState is! DrivesLoadSuccess) {
+      return null;
+    }
+
+    for (final drive in [
+      ...drivesState.userDrives,
+      ...drivesState.sharedDrives,
+    ]) {
+      if (drive.id == driveId) {
+        return drive.name;
+      }
+    }
+
+    return null;
   }
 
   Widget _build(
     BuildContext context,
     SyncState syncState,
     SyncProgress? syncProgress,
+    String? syncingDriveName,
   ) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    // Only a sync nobody asked for reports its failure here. One the user
-    // asked for is holding a modal that says all of this already, with the
-    // same retry - see [SyncOverlay].
-    final errors = syncState is SyncCompleteWithErrors &&
-            syncState.trigger != SyncTrigger.userInitiated
-        ? syncState
-        : null;
+    // Every partial failure, whoever asked for the sync. It used to be only
+    // the ones nobody asked for, because a user-initiated sync was holding a
+    // modal that said the same thing with the same retry - and that modal is
+    // gone, so this is the only surface left. Filtering here now would leave a
+    // sync the user pressed a button for reporting its failures nowhere at
+    // all.
+    final errors = syncState is SyncCompleteWithErrors ? syncState : null;
 
     // A sync that could not be done at all, as against one that got through
     // some drives and not others. `syncMetadataOnly` is the only place this is
@@ -267,6 +345,17 @@ class SyncButton extends StatelessWidget {
     // snackbar that had already gone. `autoSync` is false in all three
     // flavours, so nothing was going to retry it either.
     final failure = syncState is SyncFailure ? syncState : null;
+
+    // A sync that was stopped part way. Only the debug failure panel can ask
+    // for this now - the modal that carried the Cancel button is gone - but
+    // the state is still reachable, and a state with no surface is the thing
+    // this pass exists to remove.
+    final cancelled = syncState is SyncCancelled ? syncState : null;
+
+    // The ArConnect wallet changed under the sync, so the user was signed out.
+    // This was emitted and rendered nowhere: the user was bounced to login
+    // with no explanation from the layer that noticed.
+    final walletMismatch = syncState is SyncWalletMismatch;
 
     final isSyncing = syncState is SyncInProgress;
 
@@ -281,7 +370,7 @@ class SyncButton extends StatelessWidget {
       );
       indicator = const _SyncProgressRing();
     } else if (isSyncing) {
-      status = _syncStatus(context, syncProgress);
+      status = _syncStatus(context, syncProgress, syncingDriveName);
       // A phase that cannot measure itself hands the ring no value, so it
       // sweeps as well as turns - the same honesty the modal's bar gets. The
       // rotation is its own repeating animation either way, so the ring never
@@ -312,13 +401,41 @@ class SyncButton extends StatelessWidget {
         detailMaxLines: 2,
       );
       indicator = ArDriveIcons.triangle(color: colorTokens.strokeRed);
+    } else if (walletMismatch) {
+      status = _SyncStatus(
+        title: appLocalizationsOf(context).syncWalletChanged,
+        detail: appLocalizationsOf(context).syncWalletChangedDetail,
+        isError: true,
+        detailMaxLines: 2,
+      );
+      indicator = ArDriveIcons.triangle(color: colorTokens.strokeRed);
+    } else if (cancelled != null) {
+      // Not drawn as a failure: nothing went wrong, the sync was stopped. The
+      // indicator stays the idle glyph - nothing is running and nothing is
+      // broken - and the words say what was left unfinished.
+      status = _SyncStatus(
+        title: appLocalizationsOf(context).syncCancelled,
+        detail: appLocalizationsOf(context).syncCancelledDrives(
+          cancelled.drivesCompleted,
+          cancelled.totalDrives,
+        ),
+        detailMaxLines: 2,
+      );
+      indicator = ArDriveIcons.refresh(color: colorTokens.textMid);
     } else {
       status = null;
       indicator = ArDriveIcons.refresh(color: colorTokens.textMid);
     }
 
     return SyncSummaryFlash(
-      announcement: _announcement(context, syncState, errors, failure),
+      announcement: _announcement(
+        context,
+        syncState,
+        errors,
+        failure,
+        cancelled,
+        walletMismatch,
+      ),
       child: _SyncButtonMenu(
         status: status,
         isSyncing: isSyncing,
@@ -335,6 +452,8 @@ class SyncButton extends StatelessWidget {
     SyncState syncState,
     SyncCompleteWithErrors? errors,
     SyncFailure? failure,
+    SyncCancelled? cancelled,
+    bool walletMismatch,
   ) {
     if (errors != null) {
       // Gated the same way a result is: SyncCompleteWithErrors stays the
@@ -384,6 +503,36 @@ class SyncButton extends StatelessWidget {
       );
     }
 
+    if (walletMismatch) {
+      return SyncAnnouncement(
+        // The state itself. It carries no timestamp and every instance is
+        // equal to every other, so bloc delivers it at most once anyway.
+        identity: syncState,
+        showFor: syncSummaryDuration,
+        lead: appLocalizationsOf(context).syncWalletChanged,
+        trailing: appLocalizationsOf(context).syncWalletChangedDetail,
+        isError: true,
+      );
+    }
+
+    if (cancelled != null) {
+      return SyncAnnouncement(
+        // The state, which carries the moment it was cancelled in its props,
+        // so a second cancellation is a second announcement.
+        identity: cancelled,
+        // Not counted from when it was cancelled, unlike the others: this
+        // announcement is what returns the cubit to idle, so it has to run to
+        // the end even if it was mounted late.
+        showFor: syncSummaryDuration,
+        lead: appLocalizationsOf(context).syncCancelled,
+        trailing: appLocalizationsOf(context).syncCancelledDrives(
+          cancelled.drivesCompleted,
+          cancelled.totalDrives,
+        ),
+        onDone: () => context.read<SyncCubit>().clearCancelledState(),
+      );
+    }
+
     if (syncState is SyncComplete &&
         syncState.trigger != SyncTrigger.userInitiated &&
         // A result that has already had its few seconds is not announced again
@@ -407,30 +556,81 @@ class SyncButton extends StatelessWidget {
     return null;
   }
 
-  /// Two lines: what sync is doing, and how far along it is. The phase names
-  /// itself when the sync has one to give; the percentage stands in when it
-  /// doesn't - the same pairing, and the same title, as the sync modal.
-  _SyncStatus _syncStatus(BuildContext context, SyncProgress? syncProgress) {
-    if (syncProgress == null) {
-      return _SyncStatus(
-        title: appLocalizationsOf(context).syncingAllDrives,
-        showElapsed: true,
+  /// What a running sync has to say: which sync it is, what it is doing inside
+  /// that, and - through [_SyncStatus.showElapsed] - how long it has been at
+  /// it.
+  _SyncStatus _syncStatus(
+    BuildContext context,
+    SyncProgress? syncProgress,
+    String? syncingDriveName,
+  ) {
+    return _SyncStatus(
+      title: _syncTitle(context, syncProgress, syncingDriveName),
+      detail: syncProgress == null ? null : _syncDetail(context, syncProgress),
+      showElapsed: true,
+    );
+  }
+
+  /// Which sync this is, by name where there is one.
+  String _syncTitle(
+    BuildContext context,
+    SyncProgress? syncProgress,
+    String? syncingDriveName,
+  ) {
+    // Either half is enough to know this is a sync of one drive: the cubit's
+    // drive id is set before the first progress event, and the progress flag
+    // survives after the id is released.
+    final isSingleDrive =
+        syncingDriveName != null || (syncProgress?.isSingleDriveSync ?? false);
+
+    if (!isSingleDrive) {
+      return appLocalizationsOf(context).syncingAllDrives;
+    }
+
+    final driveName = syncingDriveName ?? syncProgress?.driveName;
+
+    if (driveName == null || driveName.isEmpty) {
+      // The drive list has not loaded, so there is no name to give. Saying
+      // which drive is better than not saying; inventing one is worse than
+      // both.
+      return appLocalizationsOf(context).syncingSingleDrive;
+    }
+
+    return appLocalizationsOf(context).syncingDriveWithName(driveName);
+  }
+
+  /// What is happening inside that sync.
+  ///
+  /// The metadata fetch first, and ahead of the phase's own name, because it
+  /// is the only figure that moves during the phase it belongs to: every
+  /// revision's metadata is one request, a few at a time, and "Reading the
+  /// drive history..." sat unchanged over all of them. Then the phase, because
+  /// the sync names it. Then the percentage, which stands in only when the
+  /// sync has no phase to name and a number worth showing - an unmeasurable
+  /// phase always has a message, and a percentage that cannot move is what a
+  /// hang looks like.
+  String? _syncDetail(BuildContext context, SyncProgress syncProgress) {
+    // A total of zero is a phase with nothing of this kind to report, not a
+    // fetch of nothing: no total is ever invented here.
+    if (syncProgress.metadataFetchesTotal > 0) {
+      return appLocalizationsOf(context).syncReadingMetadata(
+        syncProgress.metadataFetchesCompleted,
+        syncProgress.metadataFetchesTotal,
       );
     }
 
-    return _SyncStatus(
-      title: syncProgress.isSingleDriveSync
-          ? appLocalizationsOf(context).syncingSingleDrive
-          : appLocalizationsOf(context).syncingAllDrives,
-      // The percentage stands in only when the sync has no phase to name and
-      // a number worth showing; an unmeasurable phase always has a message.
-      detail: syncProgress.statusMessage ??
-          (syncProgress.isIndeterminate
-              ? null
-              : appLocalizationsOf(context).syncProgressPercentage(
-                  (syncProgress.progress * 100).round().toString(),
-                )),
-      showElapsed: true,
+    final statusMessage = syncProgress.statusMessage;
+
+    if (statusMessage != null) {
+      return statusMessage;
+    }
+
+    if (syncProgress.isIndeterminate) {
+      return null;
+    }
+
+    return appLocalizationsOf(context).syncProgressPercentage(
+      (syncProgress.progress * 100).round().toString(),
     );
   }
 }
@@ -508,6 +708,10 @@ class _SyncSummaryFlashState extends State<SyncSummaryFlash> {
       if (mounted) {
         setState(() => _visible = false);
       }
+      // After the setState, and unconditionally: an announcement whose whole
+      // job is to release a resting state has to release it even if this
+      // widget has been rebuilt out from under the timer.
+      announcement.onDone?.call();
     });
   }
 
@@ -547,7 +751,7 @@ class _SyncSummaryFlashState extends State<SyncSummaryFlash> {
 /// in the red tokens when it is one, so a failure is never mistaken for a
 /// clean result.
 ///
-/// The pill is capped at [_syncStatusHeaderWidth], which on a phone is most of
+/// The pill is capped at [_syncAnnouncementMaxWidth], which on a phone is most of
 /// the screen, so [SyncAnnouncement.lead] is allowed two lines and then an
 /// ellipsis. [SyncAnnouncement.trailing] is not: it goes on its own line
 /// underneath, full length. On one line it was joined last, so a long drive
@@ -574,7 +778,7 @@ class _SyncSummaryPill extends StatelessWidget {
       // inset, and reads as misaligned rather than as a floating card.
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 8),
-        constraints: const BoxConstraints(maxWidth: _syncStatusHeaderWidth),
+        constraints: const BoxConstraints(maxWidth: _syncAnnouncementMaxWidth),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: colorTokens.containerL1,
@@ -609,13 +813,14 @@ class _SyncSummaryPill extends StatelessWidget {
 }
 
 /// The resync menu every state of [SyncButton] hangs off, so that a running
-/// sync never costs the user the actions.
+/// sync never costs the user the actions - and, above the actions, the answer
+/// to "what is it doing".
 ///
-/// While a sync runs the menu also carries a [_SyncStatusHeader], because the
-/// menu is the one surface a phone can reach: [SyncButton] is mounted in
-/// `MobileAppBar` too, where nothing hovers and a tooltip is never seen. After
-/// a background sync fails, the same header carries the failure and the menu
-/// carries the retry.
+/// This is level one. The header is not decoration and not a duplicate of
+/// something on screen: nothing else in the app says which sync is running,
+/// which drive it is for, what phase it is in or how long it has been going.
+/// It is a tap rather than a hover because a phone has neither a pointer nor a
+/// tooltip, and both breakpoints mount this same menu.
 class _SyncButtonMenu extends StatelessWidget {
   const _SyncButtonMenu({
     this.status,
@@ -625,14 +830,13 @@ class _SyncButtonMenu extends StatelessWidget {
     required this.child,
   });
 
-  /// The running sync, the failure it ended in, or null when neither.
+  /// The running sync, or how the last one ended - the header's lines, the
+  /// tooltip's, and how the menu knows whether it has anything to say at all.
   final _SyncStatus? status;
 
-  /// Whether a sync is running. `SyncCubit.startSync` turns a request away
-  /// while one is - a guard written for a world where a running sync scrimmed
-  /// the app, so nobody could ask. Now the menu is fully interactive, and an
+  /// Whether a sync is running. The cubit refuses a second one outright, so an
   /// item that looks normal, closes the menu, records a Plausible event and
-  /// drops the request is a lie. These say what they are instead.
+  /// drops the request would be a lie. These say what they are instead.
   final bool isSyncing;
 
   /// The drives a background sync failed on, when it did: the retry has to
@@ -712,7 +916,28 @@ class _SyncButtonMenu extends StatelessWidget {
             icon: ArDriveIcons.refresh(color: iconColor),
           ),
         ),
+      // One row, not a list. This menu sizes itself as `items.length * 48` and
+      // closes on any tap inside it, so it is the wrong container for a
+      // scrolling record - the row is a door to level two, which is the sync
+      // history in the Troubleshooting modal, beside the diagnostic logs a
+      // user with a problem is already there to send. Live during a sync as
+      // well: reading what the last few syncs did is exactly what somebody
+      // watching a slow one wants.
+      ArDriveDropdownItem(
+        onClick: () => openHelp(context),
+        content: ArDriveDropdownItemTile(
+          name: appLocalizationsOf(context).syncHistory,
+          icon: ArDriveIcons.info(color: iconColor),
+        ),
+      ),
     ];
+
+    // The dropdown would otherwise size itself as `items.length * 48` and cut
+    // the header off. Scaled with the user's text, because the header grows
+    // with it - past the viewport the overlay clamps this and the menu
+    // scrolls, which is the outcome we want rather than a header sliced in
+    // half.
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
 
     return HoverWidget(
       tooltip: status?.asTooltip ?? appLocalizationsOf(context).resyncTooltip,
@@ -725,11 +950,10 @@ class _SyncButtonMenu extends StatelessWidget {
           // pull it back rather than run the text off the left edge.
           shiftToWithinBound: AxisFlag(x: true),
         ),
-        // The dropdown would otherwise size itself as `items.length * 48` and
-        // cut the header off.
         maxHeight: status == null
             ? null
-            : _syncStatusHeaderHeight + items.length * _dropdownRowHeight,
+            : (_syncStatusHeaderMinHeight + items.length * _dropdownRowHeight) *
+                textScale,
         // A header rather than an item: it is there to be read, so it must not
         // light up like an action or close the menu when a thumb lands on it.
         header: status == null ? null : _SyncStatusHeader(status: status),
@@ -744,12 +968,18 @@ class _SyncButtonMenu extends StatelessWidget {
   }
 }
 
-/// The phase, the percentage and the elapsed time - or the failure - sitting
-/// above the resync actions in the menu the sync indicator opens.
+/// The key the status header hangs off, so a test can find it whatever it
+/// currently says.
+const Key syncStatusHeaderKey = Key('syncStatusHeader');
+
+/// Level one: which sync is running, which drive it is for, what it is doing
+/// and how long it has been doing it - or, when one has just gone wrong, what
+/// happened.
 ///
-/// This is the mobile half of the indicator. The ring says a sync is running;
-/// this says which one, how far it has got and how long it has been at it,
-/// without a pointer.
+/// It sits above the resync actions in the menu the sync indicator opens, and
+/// it is the only place in the app any of this is said. The ring alone says a
+/// sync is running; this says the rest, on a tap, without a pointer, on both
+/// breakpoints.
 class _SyncStatusHeader extends StatelessWidget {
   const _SyncStatusHeader({required this.status});
 
@@ -762,8 +992,9 @@ class _SyncStatusHeader extends StatelessWidget {
     final detail = status.detail;
 
     return Container(
+      key: syncStatusHeaderKey,
       width: _syncStatusHeaderWidth,
-      constraints: const BoxConstraints(minHeight: _syncStatusHeaderHeight),
+      constraints: const BoxConstraints(minHeight: _syncStatusHeaderMinHeight),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       decoration: BoxDecoration(
         border: Border(

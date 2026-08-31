@@ -80,6 +80,16 @@ class AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, drivesState) {
+          // The page, and nothing wrapped around it for the sake of a sync.
+          //
+          // A banner above every screen used to live here. It reported the
+          // running sync in full, permanently, to everyone - which is level-2
+          // detail forced on a user who has not asked a question. What a sync
+          // is doing is one tap away instead, on the top bar's indicator, and
+          // the record of what it did is one more tap after that. In a working
+          // app there is nothing to read, so there is nothing on screen.
+          final page = widget.page;
+
           Widget buildPage(scaffold) => Material(
                 child: BlocConsumer<SyncCubit, SyncState>(
                   listener: (context, syncState) async {
@@ -133,7 +143,7 @@ class AppShellState extends State<AppShell> {
                                   backgroundColor: ArDriveTheme.of(context)
                                       .themeData
                                       .backgroundColor,
-                                  body: widget.page,
+                                  body: page,
                                 ),
                               ),
                             ],
@@ -165,7 +175,7 @@ class AppShellState extends State<AppShell> {
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .backgroundColor,
-                                child: widget.page,
+                                child: page,
                               ),
                             ),
                           ],
@@ -284,6 +294,9 @@ class AppShellState extends State<AppShell> {
       setState(() => _showProfileOverlay = !_showProfileOverlay);
 }
 
+/// The bar's own row, which is all of it.
+const double _mobileAppBarRowHeight = 80;
+
 // TODO: add the gift icon
 class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   const MobileAppBar({
@@ -296,64 +309,71 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool showDrawerButton;
 
   @override
-  Size get preferredSize =>
-      const Size.fromHeight(80); // Set the height of the appbar
+  // Its own row and nothing else. Nothing about a sync is laid out here: a
+  // `Scaffold` sizes its app bar to a `preferredSize` a const widget cannot
+  // change, so anything that came and went with a sync could only live in this
+  // bar as a permanently reserved slot - an empty band on every screen for the
+  // whole of the time no sync is running, which is nearly all of it. The
+  // indicator in the row reports a sync in the space it already occupies.
+  Size get preferredSize => const Size.fromHeight(_mobileAppBarRowHeight);
 
   @override
   Widget build(BuildContext context) {
     final isLightMode = ArDriveTheme.of(context).themeData.name == 'light';
     return SafeArea(
       child: Container(
-        height: 80,
         color: ArDriveTheme.of(context).themeData.tableTheme.cellColor,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 7.0),
-              child: leading ??
-                  (showDrawerButton
-                      ? ArDriveIconButton(
-                          icon: ArDriveIcons.menu(
-                            size: defaultIconSize,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                          ),
-                          onPressed: () => Scaffold.of(context).openDrawer(),
-                        )
-                      : Container()),
-            ),
-            if (!showDrawerButton)
+        child: SizedBox(
+          height: _mobileAppBarRowHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
               Padding(
-                padding: const EdgeInsets.only(
-                  left: 24.0,
-                ),
-                child: ArDriveImage(
-                  image: AssetImage(
-                    isLightMode
-                        ? Resources.images.brand.blackLogo1
-                        : Resources.images.brand.whiteLogo1,
-                  ),
-                  width: 128,
-                  height: 28,
-                ),
+                padding: const EdgeInsets.only(left: 7.0),
+                child: leading ??
+                    (showDrawerButton
+                        ? ArDriveIconButton(
+                            icon: ArDriveIcons.menu(
+                              size: defaultIconSize,
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgDefault,
+                            ),
+                            onPressed: () => Scaffold.of(context).openDrawer(),
+                          )
+                        : Container()),
               ),
-            const Spacer(),
-            const GlobalHideToggleButton(),
-            const SizedBox(width: 8),
-            const SyncButton(),
-            const SizedBox(width: 8),
-            const HelpButtonTopBar(),
-            const SizedBox(
-              width: 24,
-            ),
-            const Padding(
-              padding: EdgeInsets.only(right: 12.0),
-              child: ProfileCard(),
-            ),
-          ],
+              if (!showDrawerButton)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 24.0,
+                  ),
+                  child: ArDriveImage(
+                    image: AssetImage(
+                      isLightMode
+                          ? Resources.images.brand.blackLogo1
+                          : Resources.images.brand.whiteLogo1,
+                    ),
+                    width: 128,
+                    height: 28,
+                  ),
+                ),
+              const Spacer(),
+              const GlobalHideToggleButton(),
+              const SizedBox(width: 8),
+              const SyncButton(),
+              const SizedBox(width: 8),
+              const HelpButtonTopBar(),
+              const SizedBox(
+                width: 24,
+              ),
+              const Padding(
+                padding: EdgeInsets.only(right: 12.0),
+                child: ProfileCard(),
+              ),
+            ],
+          ),
         ),
       ),
     );

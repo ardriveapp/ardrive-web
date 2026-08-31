@@ -77,13 +77,13 @@ void main() {
       syncCompleteSummaryParts(l10n, state);
 
   test('a sync that changed nothing says so', () {
-    expect(summaryOf(finished()), 'Up to date — nothing new');
+    expect(summaryOf(finished()), 'Up to date, nothing new');
   });
 
   test('a sync of one named drive that changed nothing names it', () {
     expect(
       summaryOf(finished(isSingleDriveSync: true, driveName: 'Photos')),
-      'Photos is up to date — nothing new',
+      'Photos is up to date, nothing new',
     );
   });
 
@@ -91,7 +91,7 @@ void main() {
       () {
     expect(
       summaryOf(finished(isSingleDriveSync: true)),
-      'Up to date — nothing new',
+      'Up to date, nothing new',
     );
   });
 

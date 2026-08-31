@@ -68,8 +68,8 @@ void main() {
 
       final summaries = await driveDao.driveContentSummaries();
 
-      expect(summaries['drive-a']!.itemCount, 2);
-      expect(summaries['drive-b']!.itemCount, 1);
+      expect(summaries['drive-a']!.fileCount, 2);
+      expect(summaries['drive-b']!.fileCount, 1);
     });
 
     test('sums the sizes of each drive separately', () async {
@@ -106,7 +106,7 @@ void main() {
 
       final summaries = await driveDao.driveContentSummaries();
 
-      expect(summaries['drive-a']!.itemCount, 2);
+      expect(summaries['drive-a']!.fileCount, 2);
       expect(summaries['drive-a']!.totalSize, 200);
     });
   });

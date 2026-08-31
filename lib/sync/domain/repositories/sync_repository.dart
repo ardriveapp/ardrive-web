@@ -387,6 +387,29 @@ class _SyncRepository implements SyncRepository {
   int get _syncedEntityCount =>
       _syncedEntityIdsByDrive.values.fold(0, (sum, ids) => sum + ids.length);
 
+  /// Entity metadata bodies this sync has asked the gateway for, and how many
+  /// of those have come back.
+  ///
+  /// One tally for the whole sync rather than one per drive: an all-drives
+  /// sync runs its drives concurrently, and a per-drive figure would be
+  /// several numbers taking turns in one line, each of them dropping when
+  /// another drive got a word in. Both of these only ever climb.
+  ///
+  /// The total is what has been asked for so far, never a guess at the size of
+  /// the drive: history arrives in chunks of
+  /// [kStreamTransactionChunkSize] and only a chunk that has arrived can be
+  /// counted. It rises as the walk finds more.
+  ///
+  /// In-memory only - reset at the start of each sync, exactly like
+  /// [_syncedEntityIdsByDrive].
+  int _metadataFetchesScheduled = 0;
+  int _metadataFetchesCompleted = 0;
+
+  void _resetMetadataFetchCounts() {
+    _metadataFetchesScheduled = 0;
+    _metadataFetchesCompleted = 0;
+  }
+
   void _recordSyncedEntities(String driveId, Iterable<String> entityIds) {
     if (entityIds.isEmpty) return;
     _syncedEntityIdsByDrive
@@ -453,6 +476,7 @@ class _SyncRepository implements SyncRepository {
     _folderIds.clear();
     _skippedEntityTxIdsByDrive.clear();
     _syncedEntityIdsByDrive.clear();
+    _resetMetadataFetchCounts();
 
     // Every emission of this sync, from the first to the last, goes out
     // through one sink, so the number it reports can only ever climb.
@@ -740,6 +764,20 @@ class _SyncRepository implements SyncRepository {
     // Track if sync was cancelled
     bool wasCancelled = false;
 
+    // The one thing that moves during the drive walk's longest stretch.
+    //
+    // Published from inside the fetch loop rather than from the `await for`
+    // below, because that loop only turns when a batch has been parsed and
+    // written - which is after the whole batch's HTTP round trips are done,
+    // and those round trips are nearly all of the phase.
+    void reportMetadataFetchProgress() {
+      syncProgress = syncProgress.copyWith(
+        metadataFetchesCompleted: _metadataFetchesCompleted,
+        metadataFetchesTotal: _metadataFetchesScheduled,
+      );
+      syncProgress = syncProgressController.add(syncProgress);
+    }
+
     // Start the async work but don't wait for it yet
     // Using Future.wait with eagerError: false to continue even if some drives fail
     Future.wait(
@@ -765,6 +803,7 @@ class _SyncRepository implements SyncRepository {
             prefetchedSnapshots: prefetchedSnapshots[drive.id],
             skipPendingTxFetch:
                 walletAddress != null && drive.ownerAddress != walletAddress,
+            onMetadataFetchProgress: reportMetadataFetchProgress,
           );
 
           double currentDriveProgress = 0;
@@ -872,6 +911,11 @@ class _SyncRepository implements SyncRepository {
         syncProgress = syncProgress.copyWith(
           progress: _progressDriveWalkEnd,
           statusMessage: 'Creating ghost folders...',
+          // Given back with the walk that owned it. Left set, "Reading n of n"
+          // would sit on top of every phase that follows - all of which have
+          // something of their own to say.
+          metadataFetchesCompleted: 0,
+          metadataFetchesTotal: 0,
         );
         syncProgress = syncProgressController.add(syncProgress);
 
@@ -1152,6 +1196,7 @@ class _SyncRepository implements SyncRepository {
     _folderIds.clear();
     _skippedEntityTxIdsByDrive.clear();
     _syncedEntityIdsByDrive.clear();
+    _resetMetadataFetchCounts();
 
     // Every emission of this sync, from the first to the last, goes out
     // through one sink, so the number it reports can only ever climb.
@@ -1212,6 +1257,16 @@ class _SyncRepository implements SyncRepository {
     // Store ghost folders for this drive only
     final driveGhostFolders = <String, GhostFolder>{};
 
+    // The one thing that moves while the drive's metadata is being fetched -
+    // see the identical closure on the all-drives path.
+    void reportMetadataFetchProgress() {
+      syncProgress = syncProgress.copyWith(
+        metadataFetchesCompleted: _metadataFetchesCompleted,
+        metadataFetchesTotal: _metadataFetchesScheduled,
+      );
+      syncProgress = syncProgressController.add(syncProgress);
+    }
+
     // Start the async work
     Future.microtask(() async {
       try {
@@ -1233,6 +1288,7 @@ class _SyncRepository implements SyncRepository {
           cancellationToken: token,
           skipPendingTxFetch:
               walletAddress != null && drive.ownerAddress != walletAddress,
+          onMetadataFetchProgress: reportMetadataFetchProgress,
         );
 
         // Whether the walk has yet produced a fraction that means something.
@@ -1284,6 +1340,10 @@ class _SyncRepository implements SyncRepository {
           progress: _progressDriveWalkEnd,
           statusMessage: null,
           isIndeterminate: false,
+          // Given back with the walk that owned it, for the same reason the
+          // sweeping bar is: nothing after this point is a metadata fetch.
+          metadataFetchesCompleted: 0,
+          metadataFetchesTotal: 0,
         );
         syncProgress = syncProgressController.add(syncProgress);
 
@@ -2192,6 +2252,7 @@ class _SyncRepository implements SyncRepository {
     SyncCancellationToken? cancellationToken,
     List<SnapshotEntityTransaction>? prefetchedSnapshots,
     bool skipPendingTxFetch = false,
+    void Function()? onMetadataFetchProgress,
   }) async* {
     final token = cancellationToken ?? SyncCancellationToken();
 
@@ -2375,6 +2436,7 @@ class _SyncRepository implements SyncRepository {
             transactionParseBatchSize: transactionParseBatchSize,
             snapshotDriveHistory: snapshotDriveHistory,
             ownerAddress: ownerAddress,
+            onMetadataFetchProgress: onMetadataFetchProgress,
           );
 
           totalTransactionsProcessed += transactionBuffer.length;
@@ -2414,6 +2476,7 @@ class _SyncRepository implements SyncRepository {
             transactionParseBatchSize: transactionParseBatchSize,
             snapshotDriveHistory: snapshotDriveHistory,
             ownerAddress: ownerAddress,
+            onMetadataFetchProgress: onMetadataFetchProgress,
           );
 
           totalTransactionsProcessed += transactionBuffer.length;
@@ -2549,6 +2612,7 @@ class _SyncRepository implements SyncRepository {
     required int transactionParseBatchSize,
     required SnapshotDriveHistory snapshotDriveHistory,
     required String ownerAddress,
+    void Function()? onMetadataFetchProgress,
   }) async {
     if (transactions.isEmpty) return;
 
@@ -2563,6 +2627,7 @@ class _SyncRepository implements SyncRepository {
       batchSize: transactionParseBatchSize,
       snapshotDriveHistory: snapshotDriveHistory,
       ownerAddress: ownerAddress,
+      onMetadataFetchProgress: onMetadataFetchProgress,
     )) {
       // Just consume the stream, progress is handled in main loop
     }
@@ -2580,6 +2645,14 @@ class _SyncRepository implements SyncRepository {
     required SnapshotDriveHistory snapshotDriveHistory,
     // required Map<FolderID, GhostFolder> ghostFolders,
     required String ownerAddress,
+
+    /// Called whenever [_metadataFetchesScheduled] or
+    /// [_metadataFetchesCompleted] moves, so the sync can republish them.
+    ///
+    /// Threaded down rather than read off a field the repository sets, because
+    /// only the sync that is running owns the sink these numbers go out on -
+    /// and `syncDriveById` walks a drive with no sink at all.
+    void Function()? onMetadataFetchProgress,
   }) async* {
     final numberOfDriveEntitiesToParse = transactions.length;
     var numberOfDriveEntitiesParsed = 0;
@@ -2649,6 +2722,13 @@ class _SyncRepository implements SyncRepository {
         list: transactions,
         batchSize: batchSize,
         endOfBatchCallback: (items) async* {
+          // Announced before the fetching starts, so the total the user is
+          // shown always includes the batch they are waiting on. Reported at
+          // once too: the batch's size is the only new fact at this instant,
+          // and it is the one that answers "why is this taking so long".
+          _metadataFetchesScheduled += items.length;
+          onMetadataFetchProgress?.call();
+
           final entityHistory =
               await _arweave.createDriveEntityHistoryFromTransactions(
             items,
@@ -2657,6 +2737,14 @@ class _SyncRepository implements SyncRepository {
             driveId: drive.id,
             ownerAddress: ownerAddress,
             currentBlockHeight: currentBlockHeight,
+            // The count of what is *done*, as each one finishes - not what has
+            // been started, and not one step per batch. This is the whole of
+            // what moves during the phase; everything else the sync publishes
+            // is frozen until the batch is over.
+            onEntityFetched: () {
+              _metadataFetchesCompleted++;
+              onMetadataFetchProgress?.call();
+            },
           );
 
           _recordSkippedEntities(drive.id, entityHistory.skippedTxIds);

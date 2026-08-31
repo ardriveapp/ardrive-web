@@ -5,12 +5,16 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-/// The narrowest a row may be and still be drawn as five columns.
+/// The narrowest a row may be and still be drawn as five columns, at a text
+/// scale of 1.
 ///
 /// Measured on the width a row actually has for its content - the page's
 /// width less the padding either side - because that is what the columns have
 /// to fit into. Chosen so the widest thing the "last synced" column ever says
 /// still fits: see [driveListSyncColumnMinimum].
+///
+/// A measurement of text, so it is only ever used multiplied by the reader's
+/// text scale - see [driveListShowsColumns].
 const double driveListColumnsFrom = 760;
 
 /// The width the "last synced" column is required to have wherever there are
@@ -20,9 +24,13 @@ const double driveListColumnsFrom = 760;
 /// it is the one fact this whole page exists to report - a breakpoint that
 /// draws five columns and then clips that sentence has chosen the layout over
 /// the content. That sentence measures 133px in Wavehaus at this size, taken
-/// off the font's own metrics; the margin above it is for a larger text
-/// scale. This is what fixes [driveListColumnsFrom] and [_syncFlex] rather
-/// than either being picked by eye.
+/// off the font's own metrics; the margin above it is rounding. This is what
+/// fixes [driveListColumnsFrom] and [_syncFlex] rather than either being
+/// picked by eye.
+///
+/// At a text scale of 1, like everything it is derived from. A larger scale is
+/// handled where the decision is made, by scaling the breakpoint - see
+/// [driveListShowsColumns] - rather than by leaving slack in a measurement.
 const double driveListSyncColumnMinimum = 150;
 
 /// How wide the list is allowed to grow.
@@ -65,9 +73,18 @@ const double driveListMenuGutter = driveListMenuTapTarget + 8;
 /// padding does: it is width the columns do not get, and a breakpoint that
 /// ignores it hands [driveListColumnsFrom] 56px less than it was measured
 /// for - which is how "Synced 59 minutes ago" starts clipping again.
-bool driveListShowsColumns(double contentWidth) =>
+///
+/// [textScale] is the other half of the same argument. All five columns are
+/// text and every one of them is a single ellipsized line, so at a large text
+/// scale the same pixel width holds proportionally less of each - and the
+/// layout that fitted at 1.0 goes on being chosen while it silently truncates
+/// the values inside it. A count cut mid-digit still reads as a count: "128456
+/// items" clipped to "12845..." is not a smaller number, it is a wrong one.
+/// Above roughly 1.55x this can no longer be satisfied at any width the page
+/// allows, and every row is the stacked card, which wraps instead of clipping.
+bool driveListShowsColumns(double contentWidth, {double textScale = 1}) =>
     contentWidth - driveListRowHorizontalPadding * 2 - driveListMenuGutter >=
-    driveListColumnsFrom;
+    driveListColumnsFrom * textScale;
 
 /// Stands in for a number we are deliberately not reporting.
 ///
@@ -89,7 +106,7 @@ const double _iconSize = 20;
 /// The share of a wide row each column gets.
 const int _nameFlex = 6;
 const int _syncFlex = 4;
-const int _itemsFlex = 2;
+const int _filesFlex = 2;
 const int _sizeFlex = 2;
 // One unit lighter than the name: a created date is a constant ~90px,
 // while a drive name is unbounded and is the field that identifies the
@@ -132,7 +149,8 @@ class DriveListHeader extends StatelessWidget {
           const SizedBox(width: _columnGap),
           heading(appLocalizationsOf(context).lastSynced, _syncFlex),
           const SizedBox(width: _columnGap),
-          heading(appLocalizationsOf(context).items, _itemsFlex, align: true),
+          heading(appLocalizationsOf(context).driveListFilesHeading, _filesFlex,
+              align: true),
           const SizedBox(width: _columnGap),
           heading(appLocalizationsOf(context).size, _sizeFlex, align: true),
           const SizedBox(width: _columnGap),
@@ -235,7 +253,7 @@ class DriveListRow extends StatelessWidget {
         const SizedBox(width: _columnGap),
         Expanded(flex: _syncFlex, child: _syncState(context)),
         const SizedBox(width: _columnGap),
-        Expanded(flex: _itemsFlex, child: _items(context, align: true)),
+        Expanded(flex: _filesFlex, child: _files(context, align: true)),
         const SizedBox(width: _columnGap),
         Expanded(flex: _sizeFlex, child: _size(context, align: true)),
         const SizedBox(width: _columnGap),
@@ -268,7 +286,7 @@ class DriveListRow extends StatelessWidget {
             // A withheld figure is a mark that means nothing without the
             // column heading above it, and there is no heading here. The row
             // already says "Never synced", which is the same fact in words.
-            if (drive.itemCount != null) _items(context, align: false),
+            if (drive.fileCount != null) _files(context, align: false),
             if (drive.totalSize != null) _size(context, align: false),
             _created(context),
           ],
@@ -336,15 +354,15 @@ class DriveListRow extends StatelessWidget {
     );
   }
 
-  Widget _items(BuildContext context, {required bool align}) {
-    final itemCount = drive.itemCount;
+  Widget _files(BuildContext context, {required bool align}) {
+    final fileCount = drive.fileCount;
 
     return _figure(
       context,
-      itemCount == null
+      fileCount == null
           ? driveListWithheldFigure
-          : appLocalizationsOf(context).driveItemCount(itemCount),
-      withheld: itemCount == null,
+          : appLocalizationsOf(context).driveFileCount(fileCount),
+      withheld: fileCount == null,
       align: align,
     );
   }

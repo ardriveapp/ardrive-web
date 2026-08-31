@@ -19,7 +19,7 @@ void main() {
     bool isPrivate = false,
     bool isSharedWithMe = false,
     bool hasBeenWalked = true,
-    int? itemCount = 3,
+    int? fileCount = 3,
     int? totalSize = 350,
     DateTime? lastSyncedAt,
     bool isSyncing = false,
@@ -31,7 +31,7 @@ void main() {
         isSharedWithMe: isSharedWithMe,
         dateCreated: DateTime(2024, 3, 4),
         hasBeenWalked: hasBeenWalked,
-        itemCount: hasBeenWalked ? itemCount : null,
+        fileCount: hasBeenWalked ? fileCount : null,
         totalSize: hasBeenWalked ? totalSize : null,
         lastSyncedAt: lastSyncedAt,
         isSyncing: isSyncing,
@@ -42,6 +42,7 @@ void main() {
     required double width,
     required bool showsColumns,
     bool dark = false,
+    bool withHeader = false,
     VoidCallback? onTap,
   }) {
     return ArDriveTheme(
@@ -60,10 +61,19 @@ void main() {
             alignment: Alignment.topLeft,
             child: SizedBox(
               width: width,
-              child: DriveListRow(
-                drive: item,
-                showsColumns: showsColumns,
-                onTap: onTap ?? () {},
+              // The headings share the row's flex constants, so a test about
+              // what a column is called has to render the pair the page
+              // renders.
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (withHeader) const DriveListHeader(),
+                  DriveListRow(
+                    drive: item,
+                    showsColumns: showsColumns,
+                    onTap: onTap ?? () {},
+                  ),
+                ],
               ),
             ),
           ),
@@ -84,6 +94,7 @@ void main() {
     required double width,
     bool? showsColumns,
     bool dark = false,
+    bool withHeader = false,
     VoidCallback? onTap,
   }) async {
     await tester.binding.setSurfaceSize(Size(width + 200, 900));
@@ -97,10 +108,46 @@ void main() {
         // it no longer works it out for itself.
         showsColumns: showsColumns ?? driveListShowsColumns(width),
         dark: dark,
+        withHeader: withHeader,
         onTap: onTap,
       ),
     );
   }
+
+  /// One word, one meaning, on surfaces the user sees together.
+  ///
+  /// This column counts file rows and nothing else, while the sync counts a
+  /// folder as an item and says so on the same screen - so a drive holding
+  /// three folders and two files reported "Found 5 items so far...", then "5
+  /// items changed", above a row reading "2 items". Three numbers, one word,
+  /// all correct under their own definition and irreconcilable side by side.
+  ///
+  /// The definition kept is the sync's, because a running count that ignores
+  /// folders sits at zero while a drive of folders streams in. The column
+  /// therefore says what it actually counts.
+  group('items and files are not the same word', () {
+    testWidgets('the column of file counts is headed "Files"', (tester) async {
+      await pumpRow(tester, drive(), width: 1200, withHeader: true);
+
+      expect(find.text('Files'), findsOneWidget);
+      expect(find.text('Items'), findsNothing,
+          reason: 'this column does not count folders, and the sync does');
+    });
+
+    testWidgets('and no row puts a files-only figure under the word "item"',
+        (tester) async {
+      for (final count in [0, 1, 3, 128456]) {
+        await pumpRow(tester, drive(fileCount: count), width: 1200);
+
+        expect(
+          find.textContaining('item'),
+          findsNothing,
+          reason: 'a file count called "$count items" is the number the sync '
+              'reports under the same word, and it is a different number',
+        );
+      }
+    });
+  });
 
   group('what the row says', () {
     testWidgets('a drive nothing has looked at reports no count and no size',
@@ -110,31 +157,31 @@ void main() {
       expect(find.text('Never synced'), findsOneWidget);
       // Two withheld figures - items and size - and not a single zero.
       expect(find.text(driveListWithheldFigure), findsNWidgets(2));
-      expect(find.text('No items'), findsNothing);
+      expect(find.text('No files'), findsNothing);
       expect(find.text('0 B'), findsNothing);
     });
 
     testWidgets('a walked drive reports both', (tester) async {
       await pumpRow(tester, drive(), width: 1200);
 
-      expect(find.text('3 items'), findsOneWidget);
+      expect(find.text('3 files'), findsOneWidget);
       expect(find.text('350 B'), findsOneWidget);
       expect(find.text(driveListWithheldFigure), findsNothing);
     });
 
-    testWidgets('one item is one item, not "1 items"', (tester) async {
-      await pumpRow(tester, drive(itemCount: 1), width: 1200);
+    testWidgets('one file is one file, not "1 files"', (tester) async {
+      await pumpRow(tester, drive(fileCount: 1), width: 1200);
 
-      expect(find.text('1 item'), findsOneWidget);
+      expect(find.text('1 file'), findsOneWidget);
     });
 
     testWidgets('a walked drive that is genuinely empty says so',
         (tester) async {
-      await pumpRow(tester, drive(itemCount: 0, totalSize: 0), width: 1200);
+      await pumpRow(tester, drive(fileCount: 0, totalSize: 0), width: 1200);
 
       // The difference between this and the row above is the whole point of
-      // the page: "No items" is a finding, the mark is an admission.
-      expect(find.text('No items'), findsOneWidget);
+      // the page: "No files" is a finding, the mark is an admission.
+      expect(find.text('No files'), findsOneWidget);
       expect(find.text(driveListWithheldFigure), findsNothing);
     });
 
@@ -230,7 +277,7 @@ void main() {
         (tester) async {
       await pumpRow(tester, drive(), width: 390, showsColumns: false);
 
-      expect(find.text('3 items'), findsOneWidget);
+      expect(find.text('3 files'), findsOneWidget);
       expect(find.text('350 B'), findsOneWidget);
     });
   });
@@ -247,7 +294,7 @@ void main() {
     /// different sizes centred in one row already have different tops.
     bool isStacked(WidgetTester tester) {
       final nameX = tester.getTopLeft(find.text('Photos')).dx;
-      final itemsX = tester.getTopLeft(find.text('3 items')).dx;
+      final itemsX = tester.getTopLeft(find.text('3 files')).dx;
 
       return itemsX < nameX;
     }
@@ -327,7 +374,7 @@ void main() {
           isPrivate: true,
           isSharedWithMe: true,
           lastSyncedAt: DateTime.now().subtract(const Duration(days: 3)),
-          itemCount: 123456,
+          fileCount: 123456,
           totalSize: 987654321,
         ),
         width: 320,

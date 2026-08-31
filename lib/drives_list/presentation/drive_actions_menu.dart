@@ -51,6 +51,12 @@ class DriveActionsMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The cubit refuses a second sync outright, so this item has to say so.
+    // `isDisabled` as well as a null callback: [ArDriveDropdownItemTile] picks
+    // its colours off the flag alone, and an item that looks live and does
+    // nothing is the present-and-inert failure this series keeps removing.
+    final isSyncing = context.watch<SyncCubit>().state is SyncInProgress;
+
     return ArDriveDropdown(
       // Without this the menu only ever opens downward, so on a phone the
       // rows a user scrolls to - the ones near the bottom - open their actions
@@ -64,17 +70,22 @@ class DriveActionsMenu extends StatelessWidget {
       ),
       items: [
         ArDriveDropdownItem(
-          onClick: () {
-            // Background, like every other sync this page starts: the user is
-            // reading a list, and a sync begun from it must not drop a scrim
-            // over it. The row says "Syncing..." for as long as it runs.
-            context.read<SyncCubit>().startSyncForDrive(
-                  driveId: drive.id,
-                  trigger: SyncTrigger.background,
-                );
-          },
+          // Nothing at all rather than a call that returns immediately.
+          onClick: isSyncing
+              ? null
+              : () {
+                  // Background, like every other sync this page starts: the
+                  // user is reading a list, and a sync begun from it must not
+                  // take the list away. The row says "Syncing..." while it
+                  // runs, and the strip says what it is doing.
+                  context.read<SyncCubit>().startSyncForDrive(
+                        driveId: drive.id,
+                        trigger: SyncTrigger.background,
+                      );
+                },
           content: ArDriveDropdownItemTile(
             name: appLocalizationsOf(context).syncThisDrive,
+            isDisabled: isSyncing,
             icon: ArDriveIcons.refresh(size: _menuIconSize),
           ),
         ),

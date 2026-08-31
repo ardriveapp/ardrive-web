@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/sync/domain/sync_run.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
@@ -27,6 +28,18 @@ abstract class UserPreferencesRepository {
   /// exact kind of confident wrong answer this series exists to remove.
   Future<void> saveDrivesLastSynced(Iterable<String> driveIds, {DateTime? at});
 
+  /// The syncs this device has finished, newest first, capped at
+  /// [syncHistoryLimit].
+  ///
+  /// Read on demand rather than held on [UserPreferences]: nothing on screen
+  /// depends on it, exactly one surface asks for it, and that surface is a
+  /// modal the user has to open.
+  Future<List<SyncRun>> loadSyncHistory();
+
+  /// Writes down a sync that has just ended, dropping the oldest run once
+  /// there are more than [syncHistoryLimit].
+  Future<void> recordSyncRun(SyncRun run);
+
   factory UserPreferencesRepository({
     LocalKeyValueStore? store,
     required ThemeDetector themeDetector,
@@ -47,6 +60,16 @@ abstract class UserPreferencesRepository {
 /// namespace shared with everything else the app persists, and a wallet with
 /// thirty drives should not leave thirty stray keys behind it.
 const _driveLastSyncedAtKey = 'driveLastSyncedAt';
+
+/// Where the recent syncs are kept, as a JSON array of [SyncRun], newest
+/// first.
+///
+/// The same store and the same shape as [_driveLastSyncedAtKey] above, and for
+/// the same reasons: it survives a reload, it goes when the user logs out, and
+/// it needs no database migration - which matters here, because this repo's
+/// migration fixtures stop at schema v19 and a `.drift` change would ship
+/// untested.
+const _syncHistoryKey = 'syncHistory';
 
 Map<String, DateTime> _decodeDriveLastSyncedAt(String? stored) {
   if (stored == null || stored.isEmpty) {
@@ -236,6 +259,55 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     );
   }
 
+  @override
+  Future<List<SyncRun>> loadSyncHistory() async {
+    final stored = (await _getStore()).getString(_syncHistoryKey);
+
+    if (stored == null || stored.isEmpty) {
+      return const [];
+    }
+
+    try {
+      final decoded = jsonDecode(stored);
+
+      if (decoded is! List) {
+        return const [];
+      }
+
+      // Unreadable entries are dropped one at a time rather than taking the
+      // list with them - see [SyncRun.tryFromJson].
+      final runs = <SyncRun>[];
+
+      for (final entry in decoded) {
+        final run = SyncRun.tryFromJson(entry);
+
+        if (run != null) {
+          runs.add(run);
+        }
+      }
+
+      return runs;
+    } catch (_) {
+      // Unreadable is the same as nothing recorded, which the panel already
+      // knows how to draw. It is not an error to show the user.
+      return const [];
+    }
+  }
+
+  @override
+  Future<void> recordSyncRun(SyncRun run) async {
+    final history = await loadSyncHistory();
+
+    // Newest first, and trimmed here rather than on the way out, so the stored
+    // list can never grow past the cap however many syncs a session runs.
+    final kept = [run, ...history].take(syncHistoryLimit).toList();
+
+    await (await _getStore()).putString(
+      _syncHistoryKey,
+      jsonEncode([for (final entry in kept) entry.toJson()]),
+    );
+  }
+
   Future<LocalKeyValueStore> _getStore() async {
     _store ??= await LocalKeyValueStore.getInstance();
 
@@ -251,6 +323,10 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     // is about to read as never synced whether this is cleared or not. Keeping
     // it would leave "Synced 2 hours ago" sitting over an empty drive.
     (await _getStore()).remove(_driveLastSyncedAtKey);
+    // Same argument, one step further: the history is a record of what this
+    // wallet's syncs did, and the next user to log in on this device has no
+    // business reading it.
+    (await _getStore()).remove(_syncHistoryKey);
     // Note: syncAllDrivesOnLogin is NOT cleared - it's a global preference
     // that should persist across sessions and logins
 

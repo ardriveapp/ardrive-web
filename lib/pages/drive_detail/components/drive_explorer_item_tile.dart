@@ -595,7 +595,7 @@ class _DriveExplorerItemTileTrailingState
             },
             content: _buildItem(
               item.contentType == 'text/markdown' ||
-                  item.contentType == 'text/x-markdown'
+                      item.contentType == 'text/x-markdown'
                   ? appLocalizationsOf(context).editNote
                   : appLocalizationsOf(context).rename,
               ArDriveIcons.editFilled(
@@ -694,7 +694,8 @@ Future<void> handleMarkdownFileEdit(
     final profileCubit = context.read<ProfileCubit>();
 
     // Get drive to check if it's private
-    final drive = await driveDao.driveById(driveId: fileItem.driveId).getSingle();
+    final drive =
+        await driveDao.driveById(driveId: fileItem.driveId).getSingle();
 
     if (!context.mounted) return;
 
@@ -743,7 +744,8 @@ Future<void> handleMarkdownFileEdit(
       }
 
       if (driveKey == null) {
-        throw Exception('Unable to access drive key. Please ensure you have access to this private drive.');
+        throw Exception(
+            'Unable to access drive key. Please ensure you have access to this private drive.');
       }
 
       // Derive file-specific key
@@ -772,7 +774,8 @@ Future<void> handleMarkdownFileEdit(
         logger.d('Successfully decrypted private file');
       } catch (e) {
         logger.e('Decryption failed', e);
-        throw Exception('Failed to decrypt file. The file may be corrupted or you may not have the correct permissions.');
+        throw Exception(
+            'Failed to decrypt file. The file may be corrupted or you may not have the correct permissions.');
       }
     }
 
@@ -842,7 +845,11 @@ class EntityActionsMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = _getItems(item, context, withInfo, isFileRevision);
+    // Watched, not read: the two drive-sync items below are drawn as
+    // unavailable while a sync runs, so this menu has to be rebuilt when one
+    // starts and when one stops.
+    final isSyncing = context.watch<SyncCubit>().state is SyncInProgress;
+    final items = _getItems(item, context, withInfo, isFileRevision, isSyncing);
     final double height = isMobile(context) ? 44 : 48;
     return ArDriveDropdown(
       height: height,
@@ -858,8 +865,12 @@ class EntityActionsMenu extends StatelessWidget {
     );
   }
 
-  List<ArDriveDropdownItem> _getItems(ArDriveDataTableItem item,
-      BuildContext context, bool withInfo, bool isFileRevision) {
+  List<ArDriveDropdownItem> _getItems(
+      ArDriveDataTableItem item,
+      BuildContext context,
+      bool withInfo,
+      bool isFileRevision,
+      bool isSyncing) {
     final isOwner = item.isOwner;
 
     if (item is FolderDataTableItem) {
@@ -977,16 +988,21 @@ class EntityActionsMenu extends StatelessWidget {
               ),
             ),
           ),
+        // `SyncCubit` refuses a second sync outright, so these two say so
+        // rather than closing the menu and dropping the request.
         if (drive != null)
           ArDriveDropdownItem(
-            onClick: () {
-              context.read<SyncCubit>().startSyncForDrive(
-                    driveId: drive!.id,
-                    deepSync: false,
-                  );
-            },
+            onClick: isSyncing
+                ? null
+                : () {
+                    context.read<SyncCubit>().startSyncForDrive(
+                          driveId: drive!.id,
+                          deepSync: false,
+                        );
+                  },
             content: ArDriveDropdownItemTile(
               name: appLocalizationsOf(context).syncThisDrive,
+              isDisabled: isSyncing,
               icon: ArDriveIcons.refresh(
                 size: defaultIconSize,
               ),
@@ -994,14 +1010,17 @@ class EntityActionsMenu extends StatelessWidget {
           ),
         if (drive != null)
           ArDriveDropdownItem(
-            onClick: () {
-              context.read<SyncCubit>().startSyncForDrive(
-                    driveId: drive!.id,
-                    deepSync: true,
-                  );
-            },
+            onClick: isSyncing
+                ? null
+                : () {
+                    context.read<SyncCubit>().startSyncForDrive(
+                          driveId: drive!.id,
+                          deepSync: true,
+                        );
+                  },
             content: ArDriveDropdownItemTile(
               name: appLocalizationsOf(context).deepSyncThisDrive,
+              isDisabled: isSyncing,
               icon: ArDriveIcons.cloudSync(
                 size: defaultIconSize,
               ),
@@ -1141,7 +1160,7 @@ class EntityActionsMenu extends StatelessWidget {
           },
           content: _buildItem(
             item.contentType == 'text/markdown' ||
-                item.contentType == 'text/x-markdown'
+                    item.contentType == 'text/x-markdown'
                 ? appLocalizationsOf(context).editNote
                 : appLocalizationsOf(context).rename,
             ArDriveIcons.editFilled(

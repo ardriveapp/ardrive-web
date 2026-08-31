@@ -28,7 +28,7 @@ void main() {
         isSharedWithMe: isSharedWithMe,
         dateCreated: DateTime(2024, 3, 4),
         hasBeenWalked: hasBeenWalked,
-        itemCount: hasBeenWalked ? 2 : null,
+        fileCount: hasBeenWalked ? 2 : null,
         totalSize: hasBeenWalked ? 100 : null,
         lastSyncedAt: hasBeenWalked ? DateTime.now() : null,
         isSyncing: false,
@@ -232,7 +232,7 @@ void main() {
     /// Which layout the rows are actually in, read off the geometry.
     bool rowsAreStacked(WidgetTester tester) {
       final nameX = tester.getTopLeft(find.text('Photos')).dx;
-      final itemsX = tester.getTopLeft(find.text('2 items')).dx;
+      final itemsX = tester.getTopLeft(find.text('2 files')).dx;
 
       return itemsX < nameX;
     }
