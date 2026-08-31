@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -99,6 +101,12 @@ class DriveStatePublishCost extends Equatable {
       ];
 }
 
+/// How long any single call in the estimate may take before it is abandoned.
+///
+/// Four legs at ten seconds each stays under the cubit's own 45-second
+/// deadline, which is what keeps that one a backstop.
+const kEstimateLegTimeout = Duration(seconds: 10);
+
 /// Prices an artifact with the same collaborators the snapshot dialog uses.
 ///
 /// Deliberately not a second implementation: [UploadCostEstimateCalculatorForAR],
@@ -112,6 +120,7 @@ class DriveStatePublishCostEstimator {
   final PstService _pst;
   final TurboBalanceRetriever _turboBalanceRetriever;
   final ConfigService _configService;
+  final Duration _legTimeout;
 
   DriveStatePublishCostEstimator({
     required ArweaveService arweave,
@@ -119,11 +128,39 @@ class DriveStatePublishCostEstimator {
     required PstService pst,
     required TurboBalanceRetriever turboBalanceRetriever,
     required ConfigService configService,
+    Duration legTimeout = kEstimateLegTimeout,
   })  : _arweave = arweave,
         _paymentService = paymentService,
         _pst = pst,
         _turboBalanceRetriever = turboBalanceRetriever,
-        _configService = configService;
+        _configService = configService,
+        _legTimeout = legTimeout;
+
+  /// Runs one leg of the estimate under its own deadline, and records how long
+  /// it took.
+  ///
+  /// Two problems, one guard. None of the calls below has a timeout of its own,
+  /// and several are guarded only against *errors* - a `try`/`catch` does
+  /// nothing for a future that never completes. And the legs are awaited in
+  /// sequence, so when one of them hangs the log says only that pricing began:
+  /// it never names which call is outstanding.
+  ///
+  /// The per-leg deadline also keeps the total under the caller's own, so that
+  /// one stays a backstop for something unforeseen rather than the thing that
+  /// always fires first with nothing to say.
+  Future<T> _leg<T>(String name, Future<T> Function() run) async {
+    final since = Stopwatch()..start();
+    try {
+      final value = await run().timeout(_legTimeout);
+      logger.d('[drive-state] priced $name in ${since.elapsedMilliseconds}ms');
+      return value;
+    } on TimeoutException {
+      logger.e(
+        '[drive-state] $name did not answer within ${_legTimeout.inSeconds}s',
+      );
+      rethrow;
+    }
+  }
 
   /// Prices [sizeInBytes] against [wallet]'s balances.
   ///
@@ -156,8 +193,10 @@ class DriveStatePublishCostEstimator {
       ),
     );
 
-    final costEstimateAr =
-        await arCalculator.calculateCost(totalSize: sizeInBytes);
+    final costEstimateAr = await _leg(
+      'the AR cost',
+      () => arCalculator.calculateCost(totalSize: sizeInBytes),
+    );
 
     // Turbo failing to quote is not fatal — AR still is a transport — so it
     // degrades to "Turbo is not on offer" rather than to a failed publish.
@@ -165,8 +204,10 @@ class DriveStatePublishCostEstimator {
     var costEstimateTurbo = UploadCostEstimate.zero();
     if (isTurboUploadPossible) {
       try {
-        costEstimateTurbo =
-            await turboCalculator.calculateCost(totalSize: sizeInBytes);
+        costEstimateTurbo = await _leg(
+          'the Turbo cost',
+          () => turboCalculator.calculateCost(totalSize: sizeInBytes),
+        );
       } catch (e) {
         logger.w(
           '[drive-state] Turbo could not price the artifact; AR remains '
@@ -182,7 +223,10 @@ class DriveStatePublishCostEstimator {
     // to returning one is not caught by it at all.
     BigInt turboBalance;
     try {
-      turboBalance = await _turboBalanceRetriever.getBalance(wallet);
+      turboBalance = await _leg(
+        'the Turbo balance',
+        () => _turboBalanceRetriever.getBalance(wallet),
+      );
     } catch (e) {
       logger.e('[drive-state] could not read the Turbo balance', e);
       turboBalance = BigInt.zero;
@@ -227,7 +271,10 @@ class DriveStatePublishCostEstimator {
 
     final TurboFreeAllowance allowance;
     try {
-      allowance = await _turboBalanceRetriever.getFreeAllowance(wallet);
+      allowance = await _leg(
+        'the Turbo free allowance',
+        () => _turboBalanceRetriever.getFreeAllowance(wallet),
+      );
     } catch (e) {
       logger.w(
         '[drive-state] Turbo could not report a free allowance; the artifact '

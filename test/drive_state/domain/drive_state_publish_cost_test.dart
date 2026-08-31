@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -91,19 +93,26 @@ void main() {
         .thenAnswer((_) async => const TurboFreeAllowance.unknown());
   });
 
-  DriveStatePublishCostEstimator estimator() => DriveStatePublishCostEstimator(
+  DriveStatePublishCostEstimator estimator({Duration? legTimeout}) =>
+      DriveStatePublishCostEstimator(
         arweave: arweave,
         paymentService: paymentService,
         pst: pst,
         turboBalanceRetriever: turboBalanceRetriever,
         configService: configService,
+        legTimeout: legTimeout ?? kEstimateLegTimeout,
       );
 
-  Future<DriveStatePublishCost> estimate() => estimator().estimate(
+  Future<DriveStatePublishCost> estimate({Duration? legTimeout}) =>
+      estimator(legTimeout: legTimeout).estimate(
         sizeInBytes: 1024,
         wallet: wallet,
         walletBalance: BigInt.from(1000000),
       );
+
+  /// A call that neither returns nor throws, which is the case a `try`/`catch`
+  /// cannot see.
+  Future<T> neverAnswers<T>() => Completer<T>().future;
 
   group('a Turbo failure costs the Turbo option, not the estimate', () {
     test('a free-allowance lookup that throws still returns a price', () async {
@@ -173,6 +182,43 @@ void main() {
           .thenThrow(Exception('every gateway refused'));
 
       expect(estimate(), throwsA(isA<Exception>()));
+    });
+  });
+
+  group('a leg that never answers is not a leg that hangs the feature', () {
+    // The failure this whole file is about has a second form, and it is the
+    // one that actually reached a user: a collaborator that never completes.
+    // Every guard here was written against *throwing*, and a `try`/`catch` is
+    // no guard at all against a future that simply stays pending - the await
+    // never returns, the estimate never resolves, and the modal says
+    // "Preparing" until the user gives up.
+    const short = Duration(milliseconds: 50);
+
+    test('a Turbo price that never answers still leaves AR on offer', () async {
+      when(() => paymentService.getPriceForBytes(
+            byteSize: any(named: 'byteSize'),
+          )).thenAnswer((_) => neverAnswers());
+
+      final cost = await estimate(legTimeout: short);
+
+      // Exactly the outcome a *throwing* Turbo gets. A hang must not be the
+      // one Turbo failure that takes the artifact with it.
+      expect(cost.isTurboUploadPossible, isFalse);
+      expect(cost.defaultMethod, UploadMethod.ar);
+      expect(cost.costEstimateAr.totalCost, greaterThan(BigInt.zero));
+    });
+
+    test('an AR price that never answers fails instead of waiting for ever',
+        () async {
+      when(() => arweave.getPrice(byteSize: any(named: 'byteSize')))
+          .thenAnswer((_) => neverAnswers());
+
+      // Fatal, like every other AR failure - but bounded, so the caller gets
+      // to say so rather than sitting behind a spinner with nothing to report.
+      await expectLater(
+        estimate(legTimeout: short),
+        throwsA(isA<TimeoutException>()),
+      );
     });
   });
 }

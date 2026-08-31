@@ -184,11 +184,21 @@ class ArweaveService {
     return blockHeight;
   }
 
+  /// How long one price request may take before the attempt is abandoned.
+  ///
+  /// Without this the retry loop below cannot do its job: `client.api.get` has
+  /// no deadline, so an attempt that hangs rather than fails hangs for ever and
+  /// the second and third attempts are never reached. The loop reads as if it
+  /// were resilient while being exactly as fragile as a single call.
+  static const _priceAttemptTimeout = Duration(seconds: 8);
+
   Future<BigInt> getPrice({required int byteSize}) async {
     const maxRetries = 3;
     for (var attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        final res = await client.api.get('price/$byteSize');
+        final res = await client.api
+            .get('price/$byteSize')
+            .timeout(_priceAttemptTimeout);
         if (res.statusCode == 200) {
           return BigInt.parse(res.body);
         }
