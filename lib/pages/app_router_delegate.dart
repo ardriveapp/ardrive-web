@@ -16,6 +16,7 @@ import 'package:ardrive/drive_explorer/dock/ardrive_dock.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_modal.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/pages/raw_transaction_view/raw_transaction_view_page.dart';
 import 'package:ardrive/services/services.dart';
@@ -76,6 +77,24 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// folder the link named and opening another drive's folder under this
   /// drive's name.
   String? _pendingFolderId;
+
+  /// The drive whose info panel should open once that drive has loaded.
+  ///
+  /// The drives list can only ask; it cannot open the panel itself. The panel
+  /// is `DriveDetailCubit.selectDataItem`, which begins `this.state as
+  /// DriveDetailLoadSuccess`, and the cubit the list page provides is built
+  /// against no drive at all - and is a different instance from the explorer's
+  /// in any case. So the request travels the way a folder link's does: held
+  /// here, honoured by the explorer's own cubit when it reports the drive
+  /// loaded, and cleared the moment it is.
+  ///
+  /// One shot, for the same reason [_pendingFolderId] is: navigating back into
+  /// the drive later must not reopen a panel nobody asked for again.
+  String? _pendingInfoDriveId;
+
+  /// The standing request, for tests. The explorer clears it as it honours it.
+  @visibleForTesting
+  String? get pendingInfoDriveId => _pendingInfoDriveId;
 
   /// Reconciles the folder in view with the drive that has just been selected.
   ///
@@ -358,6 +377,28 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                               driveFolderId =
                                   driveDetailCubitState.folderInView.folder.id;
 
+                              // The info the drives list asked for, now that
+                              // there is a loaded drive to ask. Cleared first,
+                              // so a rebuild cannot open it twice.
+                              if (_pendingInfoDriveId ==
+                                  driveDetailCubitState.currentDrive.id) {
+                                _pendingInfoDriveId = null;
+
+                                context.read<DriveDetailCubit>().selectDataItem(
+                                      DriveDataTableItemMapper.fromDrive(
+                                        driveDetailCubitState.currentDrive,
+                                        (_) => null,
+                                        0,
+                                        driveDetailCubitState.currentDrive
+                                                .ownerAddress ==
+                                            context
+                                                .read<ArDriveAuth>()
+                                                .currentUser
+                                                .walletAddress,
+                                      ),
+                                    );
+                              }
+
                               //Can be null at the root folder of the drive
                               notifyListeners();
                             } else if (driveDetailCubitState
@@ -539,6 +580,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// [DrivesListCubit.syncDriveIfNeverSynced], on every selection that reaches
   /// this - which is every selection a person made, from either surface.
   /// `drives_list_open_syncs_test.dart` holds the two together.
+  /// Asks for a drive's info panel to open once that drive has loaded.
+  ///
+  /// Separate from [openDriveFromList] so the drives list keeps one way in: a
+  /// row tap and an Info tap both go through the drives cubit's selection and
+  /// arrive here by the same road. Only the intent differs, and it is set
+  /// before the selection rather than threaded through it.
+  void requestDriveInfo(String driveId) {
+    _pendingInfoDriveId = driveId;
+  }
+
   @visibleForTesting
   void openDriveFromList(String driveId) {
     showingDrivesList = false;
@@ -547,6 +598,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveFolderId = null;
     _pendingFolderDriveId = null;
     _pendingFolderId = null;
+    // Not the info request: opening the drive is how it reaches somewhere it
+    // can be honoured. The explorer clears it once the drive has loaded.
 
     notifyListeners();
   }
@@ -638,6 +691,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveFolderId = null;
     _pendingFolderDriveId = null;
     _pendingFolderId = null;
+    _pendingInfoDriveId = null;
     sharedDriveKey = null;
     sharedRawDriveKey = null;
     sharedFileId = null;

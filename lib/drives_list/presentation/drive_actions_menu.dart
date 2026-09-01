@@ -1,3 +1,6 @@
+import 'package:ardrive/blocs/drives/drives_cubit.dart';
+import 'package:provider/provider.dart';
+import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/components/drive_detach_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/drive_share_dialog.dart';
@@ -25,12 +28,19 @@ const double _menuIconSize = 20;
 /// second dialog: the same dialogs open, from the same functions, against the
 /// same app-wide blocs.
 ///
-/// "Drive info" is deliberately not here. Its only implementation is
-/// `DriveDetailCubit.selectDataItem`, which opens the explorer's details
-/// panel and begins `this.state as DriveDetailLoadSuccess` - and the cubit
-/// this page provides is the one built against no drive at all, so calling it
-/// from here would throw rather than show anything. The row already carries
-/// what that panel would say about a drive.
+/// "Info" is the one item that cannot act from here. The panel is
+/// `DriveDetailCubit.selectDataItem`, which begins `this.state as
+/// DriveDetailLoadSuccess`, and the cubit this page provides is built against
+/// no drive at all - a different instance from the explorer's besides. Nor can
+/// the panel simply be shown in a dialog: it is a side panel, returning a
+/// `Flexible` around its own card for a full-height parent, and every attempt
+/// to host it in one overflows.
+///
+/// So Info asks rather than acts. It records the request on the router - the
+/// same one-shot mechanism a folder deep link uses - and opens the drive by
+/// the road every other tap takes. The explorer's own cubit opens the panel
+/// when it reports the drive loaded, which is where a side panel belongs and
+/// where its Activity and Snapshots tabs work.
 ///
 /// An action that does not apply is absent rather than disabled: renaming and
 /// hiding belong to the owner, detaching belongs to somebody else's drive, and
@@ -106,6 +116,19 @@ class DriveActionsMenu extends StatelessWidget {
               icon: ArDriveIcons.edit(size: _menuIconSize),
             ),
           ),
+        ArDriveDropdownItem(
+          onClick: () {
+            // Order matters: the request has to be standing before the
+            // selection reaches the explorer, or the drive loads with nothing
+            // asked of it.
+            context.read<AppRouterDelegate>().requestDriveInfo(drive.id);
+            context.read<DrivesCubit>().selectDrive(drive.id);
+          },
+          content: ArDriveDropdownItemTile(
+            name: appLocalizationsOf(context).moreInfo,
+            icon: ArDriveIcons.info(size: _menuIconSize),
+          ),
+        ),
         ArDriveDropdownItem(
           onClick: () => promptToShareDrive(context: context, drive: drive),
           content: ArDriveDropdownItemTile(

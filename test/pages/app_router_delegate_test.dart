@@ -215,4 +215,42 @@ void main() {
       expect(delegate.driveFolderId, folderId);
     });
   });
+
+  /// The drives list can ask for a drive's info panel but cannot open it: the
+  /// panel is `DriveDetailCubit.selectDataItem`, and the cubit that page
+  /// provides is built against no drive and is a different instance from the
+  /// explorer's. The request travels the way a folder deep link's does.
+  group('the info a drives list asked for', () {
+    test('survives the drive being opened', () async {
+      delegate.requestDriveInfo(driveId);
+      delegate.openDriveFromList(driveId);
+
+      expect(delegate.pendingInfoDriveId, driveId,
+          reason: 'opening the drive is how the request gets somewhere to be '
+              'honoured; it must not clear it on the way');
+    });
+
+    test('is not standing when nobody asked', () async {
+      delegate.openDriveFromList(driveId);
+
+      expect(delegate.pendingInfoDriveId, isNull);
+    });
+
+    test('is dropped on logout, like every other pending intent', () async {
+      delegate.requestDriveInfo(driveId);
+
+      delegate.clearState();
+
+      expect(delegate.pendingInfoDriveId, isNull,
+          reason: "the next session must not inherit the last one's request");
+    });
+
+    test('is replaced, not stacked, when a second drive is asked about',
+        () async {
+      delegate.requestDriveInfo(driveId);
+      delegate.requestDriveInfo('drive-2');
+
+      expect(delegate.pendingInfoDriveId, 'drive-2');
+    });
+  });
 }
