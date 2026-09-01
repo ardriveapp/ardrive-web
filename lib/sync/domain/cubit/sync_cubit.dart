@@ -169,24 +169,34 @@ class SyncCubit extends Cubit<SyncState> {
   /// broke on five - so a wait that BEGAN while the cubit was already sitting
   /// in `SyncCompleteWithErrors`, `SyncFailure` or `SyncCancelled` blocked on
   /// an emission that had already happened and was never coming again.
-  static bool _syncHasFinished(SyncState state) =>
+  /// Whether the sync that was running is over, however it ended.
+  ///
+  /// Public because waiting for `SyncIdle` is not the same question and was
+  /// getting the wrong answer: `SyncCompleteWithErrors` and `SyncFailure` are
+  /// rests, not way-points, and neither is a `SyncIdle`. A listener that waited
+  /// for one specifically - `SharingFileListener` did - waited forever the
+  /// moment a single drive failed.
+  ///
+  /// [SyncWalletMismatch] is terminal too: nothing follows it.
+  static bool syncHasFinished(SyncState state) =>
       state is SyncIdle ||
       state is SyncFailure ||
       state is SyncCancelled ||
       state is SyncCompleteWithErrors ||
+      state is SyncWalletMismatch ||
       state is SyncLoadingDrives;
 
   Future<void> waitCurrentSync() async {
-    if (_syncHasFinished(state)) return;
+    if (syncHasFinished(state)) return;
 
     await for (final state in stream) {
-      if (_syncHasFinished(state)) break;
+      if (syncHasFinished(state)) break;
     }
   }
 
   /// Whether the drive list itself has been refreshed.
   ///
-  /// A different question from [_syncHasFinished], and deliberately so.
+  /// A different question from [syncHasFinished], and deliberately so.
   /// `SyncLoadingDrives` counts as finished there because a folder open must
   /// not hang behind a metadata refresh - but that is exactly the state a
   /// login sync sits in while `updateUserDrives` is still running, so anything
@@ -383,7 +393,7 @@ class SyncCubit extends Cubit<SyncState> {
     final isTabFocused = _tabVisibility.isTabFocused();
     logger.i('[ArConnect SYNC] isTabFocused: $isTabFocused');
     if (isTabFocused && await _profileCubit.logoutIfWalletMismatch()) {
-      emit(SyncWalletMismatch());
+      _emitIfOpen(SyncWalletMismatch());
       return;
     }
   }
@@ -412,7 +422,7 @@ class SyncCubit extends Cubit<SyncState> {
     if (profile is ProfileLoggedIn) {
       // Emit SyncLoadingDrives for UI feedback (shows "Loading your drives...")
       // This is separate from SyncInProgress so it doesn't block waitCurrentSync()
-      emit(SyncLoadingDrives());
+      _emitIfOpen(SyncLoadingDrives());
       try {
         await _syncRepository.updateUserDrives(
           wallet: profile.user.wallet,
@@ -422,19 +432,37 @@ class SyncCubit extends Cubit<SyncState> {
         logger.d('Metadata-only sync completed successfully');
       } catch (e, stackTrace) {
         logger.e('Error fetching drive metadata', e, stackTrace);
-        // Say so. This used to be swallowed because a full sync ran alongside
-        // it and reported its own failure; now it is the only thing that runs
-        // on a default login, so a gateway that will not answer would leave an
-        // empty sidebar, no error, and nothing to explain it.
-        emit(SyncFailure(error: e, stackTrace: stackTrace));
+        _finishMetadataSync(SyncFailure(error: e, stackTrace: stackTrace));
         return;
       }
-      emit(SyncIdle());
+      _finishMetadataSync(SyncIdle());
+      return;
     } else {
       logger.d('Profile not logged in yet, skipping metadata sync');
       // Still emit SyncIdle so waitCurrentSync() doesn't hang
-      emit(SyncIdle());
+      _emitIfOpen(SyncIdle());
     }
+  }
+
+  /// Ends a metadata-only sync, but only if it is still the thing running.
+  ///
+  /// This runs under [SyncLoadingDrives], which no "is a sync running" test in
+  /// the app recognises - so while it waits on the network the drives page
+  /// still offers Sync All Drives, and [startSync]'s own re-entry guard, which
+  /// asks only for [SyncInProgress], lets that sync start. Emitting a terminal
+  /// state unconditionally then landed it on top of a full sync that was still
+  /// walking every drive: the ring went out, every row stopped saying it was
+  /// syncing, and everything waiting on [waitCurrentSync] was released against
+  /// a half-written database.
+  ///
+  /// So it only reports if nothing else has taken the state off it.
+  void _finishMetadataSync(SyncState state) {
+    if (this.state is! SyncLoadingDrives) {
+      logger.d('Metadata sync superseded; leaving the state alone');
+      return;
+    }
+
+    _emitIfOpen(state);
   }
 
   Future<bool> startSync({
@@ -893,6 +921,11 @@ class SyncCubit extends Cubit<SyncState> {
       return;
     }
 
+    // See [_recordSyncRun]: this lands after logout has cleared the store.
+    if (isClosed) {
+      return;
+    }
+
     try {
       await _userPreferencesRepository.saveDrivesLastSynced(syncedDriveIds);
     } catch (e, stackTrace) {
@@ -925,6 +958,17 @@ class SyncCubit extends Cubit<SyncState> {
     SyncTrigger trigger, {
     Object? error,
   }) async {
+    // Every caller fires this `unawaited`, and a sync cancelled by [close] only
+    // notices its token at the repository's next checkpoint - a network round
+    // trip away. Logging out clears this store (`UserPreferencesRepository`
+    // .clear, off `onAuthStateChanged(null)`), so without this guard the write
+    // reliably lands afterwards: it reads the emptied history and puts one
+    // entry back, carrying the previous wallet's drive name, error messages
+    // and timings. The next wallet to log in then reads a sync it never ran.
+    if (isClosed) {
+      return;
+    }
+
     try {
       await _userPreferencesRepository.recordSyncRun(
         SyncRun(
@@ -1023,9 +1067,16 @@ class SyncCubit extends Cubit<SyncState> {
       return;
     }
 
+    // And it stays there. It used to fall straight back to `SyncIdle` in the
+    // same turn, which made `driveListRefreshFailed` - defined as `state is
+    // SyncFailure` - false by the time anything read it. A drive list that
+    // could not be fetched then looked exactly like a wallet with no drives,
+    // and the app offered "Getting Started" and two create-a-drive buttons to
+    // someone whose drives simply had not loaded.
+    //
+    // Every waiter uses [syncHasFinished], which counts this as over.
     emit(SyncFailure(error: error, stackTrace: stackTrace));
 
-    emit(SyncIdle());
     super.onError(error, stackTrace);
   }
 

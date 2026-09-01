@@ -1895,11 +1895,23 @@ class _SyncRepository implements SyncRepository {
     required SecretKey cipherKey,
     bool forceRefresh = false,
   }) async {
-    // If an in-flight or completed future exists, await it (unless forced).
-    // This handles both concurrent calls (two callers before the first finishes)
-    // and serial calls (syncMetadataOnly then startSync seconds later).
+    // Two callers that overlap share one fetch. A caller that arrives after
+    // one has *finished* does not.
+    //
+    // It used to reuse a completed future as well, to spare a second query
+    // when `syncMetadataOnly` and `startSync` ran seconds apart. That cache
+    // hangs off this object, which `main.dart` provides above the auth gate,
+    // so it outlives the session - while logging out drops every local table
+    // (`deleteAllTables`). Logging back in then joined a fetch that had
+    // already happened, wrote nothing into the emptied drive table, and left
+    // the app stating as a fact that the user has no drives. Not only across
+    // wallets: the same wallet in the same tab was enough, and nothing short
+    // of a page reload recovered it.
+    //
+    // The full sync used to clear this on every login, which is what hid it
+    // until the default stopped running one.
     if (!forceRefresh && _userDrivesUpdateFuture != null) {
-      logger.d('Skipping updateUserDrives: reusing in-flight/completed result');
+      logger.d('Joining the drive-list fetch already in flight');
       return _userDrivesUpdateFuture!;
     }
 
@@ -1907,14 +1919,19 @@ class _SyncRepository implements SyncRepository {
       wallet: wallet,
       password: password,
       cipherKey: cipherKey,
-    ).catchError((e) {
-      // Clear the cached future on error so the next caller retries
-      _userDrivesUpdateFuture = null;
-      throw e;
-    });
+    );
 
     _userDrivesUpdateFuture = future;
-    return future;
+
+    try {
+      return await future;
+    } finally {
+      // Guarded on identity so a fetch that started while this one was
+      // settling is not thrown away with it.
+      if (identical(_userDrivesUpdateFuture, future)) {
+        _userDrivesUpdateFuture = null;
+      }
+    }
   }
 
   Future<void> _doUpdateUserDrives({

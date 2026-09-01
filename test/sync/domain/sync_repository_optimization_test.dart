@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
@@ -329,32 +330,89 @@ void main() {
   });
 
   group('Fix 2: updateUserDrives cache', () {
-    test('skips GQL call on repeat calls until cache is cleared', () async {
-      when(() => mockArweave.getUniqueUserDriveEntities(
-            any(),
-            any(),
-          )).thenAnswer((_) async => {});
+    test('two callers that overlap share one fetch', () async {
+      final gate = Completer<void>();
+      when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
+          .thenAnswer((_) async {
+        await gate.future;
+        return {};
+      });
       when(() => mockDriveDao.updateUserDrives(any(), any()))
           .thenAnswer((_) async {});
 
-      // First call should hit GQL
+      final first = syncRepository.updateUserDrives(
+        wallet: mockWallet,
+        password: 'pass',
+        cipherKey: SecretKey([1, 2, 3]),
+      );
+      final second = syncRepository.updateUserDrives(
+        wallet: mockWallet,
+        password: 'pass',
+        cipherKey: SecretKey([1, 2, 3]),
+      );
+
+      gate.complete();
+      await Future.wait([first, second]);
+
+      verify(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
+          .called(1);
+    });
+
+    test('a caller after one has finished fetches again', () async {
+      // The logout/login sequence, which is what this guards. Logging out
+      // drops every local table but not this repository, so reusing a
+      // *completed* fetch left the drive table empty and the app reporting
+      // "no drives" as a fact - for the same wallet in the same tab, with
+      // nothing short of a page reload to recover it.
+      when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
+          .thenAnswer((_) async => {});
+      when(() => mockDriveDao.updateUserDrives(any(), any()))
+          .thenAnswer((_) async {});
+
       await syncRepository.updateUserDrives(
         wallet: mockWallet,
         password: 'pass',
         cipherKey: SecretKey([1, 2, 3]),
       );
 
-      // Second call should be cached (up-to-date flag is set)
       await syncRepository.updateUserDrives(
         wallet: mockWallet,
         password: 'pass',
         cipherKey: SecretKey([1, 2, 3]),
       );
 
-      verify(() => mockArweave.getUniqueUserDriveEntities(
-            any(),
-            any(),
-          )).called(1);
+      verify(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
+          .called(2);
+    });
+
+    test('a failed fetch is not left behind for the next caller to join',
+        () async {
+      var calls = 0;
+      when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
+          .thenAnswer((_) async {
+        calls++;
+        if (calls == 1) throw Exception('gateway down');
+        return {};
+      });
+      when(() => mockDriveDao.updateUserDrives(any(), any()))
+          .thenAnswer((_) async {});
+
+      await expectLater(
+        syncRepository.updateUserDrives(
+          wallet: mockWallet,
+          password: 'pass',
+          cipherKey: SecretKey([1, 2, 3]),
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      await syncRepository.updateUserDrives(
+        wallet: mockWallet,
+        password: 'pass',
+        cipherKey: SecretKey([1, 2, 3]),
+      );
+
+      expect(calls, 2);
     });
 
     test('forceRefresh bypasses cache', () async {

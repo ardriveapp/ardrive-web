@@ -133,6 +133,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           return;
         }
 
+        // Or if the session ended during it. This sits behind
+        // `waitCurrentSync()`, which parks for the whole length of a running
+        // sync; a logout in that window drops every local table, so the drive
+        // really is gone by the time this resumes - and emitting into a closed
+        // cubit throws into the zone rather than reporting anything.
+        if (isClosed) {
+          return;
+        }
+
         // Check if drive exists
         if (drive == null) {
           emit(DriveDetailLoadNotFound());
@@ -157,14 +166,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       // Again, and without this the body would go on saying the drives could
       // not be loaded while the bar above it reported everything was fine.
       if (state is DriveDetailDrivesUnavailable &&
-          syncState is SyncIdle &&
+          SyncCubit.syncHasFinished(syncState) &&
           !_syncCubit.driveListRefreshFailed) {
         showEmptyDriveDetail();
         return;
       }
 
-      if (_initialLoadComplete &&
-          (syncState is SyncIdle || syncState is SyncCompleteWithErrors)) {
+      if (_initialLoadComplete && SyncCubit.syncHasFinished(syncState)) {
         _onSyncCompleted();
       }
     });
