@@ -264,7 +264,7 @@ void main() {
       );
       await openMenu(tester);
 
-      expect(find.text('Reading 340 of 2,180...'), findsOneWidget);
+      expect(find.text('Reading 340 files...'), findsOneWidget);
       expect(find.text('Reading the drive history...'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
@@ -285,7 +285,9 @@ void main() {
       );
       await openMenu(tester);
 
-      expect(find.text('Reading 0 of 3...'), findsOneWidget);
+      // Nothing has come back yet, so there is no count worth showing and
+      // the phase name stands on its own rather than reading "Reading 0".
+      expect(find.text('Reading 0 files...'), findsNothing);
 
       for (final done in [1, 2, 3]) {
         progressController.add(
@@ -296,7 +298,7 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 10));
 
-        expect(find.text('Reading $done of 3...'), findsOneWidget);
+        expect(find.text('Reading $done files...'), findsOneWidget);
       }
 
       await tester.pumpWidget(const SizedBox());
@@ -517,7 +519,7 @@ void main() {
         // scale inside a fixed row loses the bottom third of every glyph
         // without a word from the framework - no stripe, no exception.
         final count = tester.renderObject<RenderBox>(
-          find.text('Reading 12,345 of 12,345...'),
+          find.text('Reading 12,345 files...'),
         );
         expect(
           count.size.height,

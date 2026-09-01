@@ -610,13 +610,13 @@ class SyncButton extends StatelessWidget {
   /// phase always has a message, and a percentage that cannot move is what a
   /// hang looks like.
   String? _syncDetail(BuildContext context, SyncProgress syncProgress) {
-    // A total of zero is a phase with nothing of this kind to report, not a
-    // fetch of nothing: no total is ever invented here.
-    if (syncProgress.metadataFetchesTotal > 0) {
-      return appLocalizationsOf(context).syncReadingMetadata(
-        syncProgress.metadataFetchesCompleted,
-        syncProgress.metadataFetchesTotal,
-      );
+    // Zero is a phase with nothing of this kind to report, not a fetch of
+    // nothing. Only the count is shown: the total was "what has been asked
+    // for so far", which the count catches at every batch boundary, so the
+    // only figure that ever sat on screen long enough to read was "N of N".
+    if (syncProgress.metadataFetchesCompleted > 0) {
+      return appLocalizationsOf(context)
+          .syncReadingMetadata(syncProgress.metadataFetchesCompleted);
     }
 
     final statusMessage = syncProgress.statusMessage;

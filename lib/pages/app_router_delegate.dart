@@ -226,7 +226,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   isViewingSharedFile ||
                   isViewingRawTransaction;
 
-              if (!signingIn &&
+              // Never for somebody who is already signed in. Without that
+              // check this fired on *every* profile emission - a sync
+              // finishing, a drive being selected, anything that makes
+              // `ProfileCubit` republish - setting `signingIn` for a signed-in
+              // user, which the block below then cleared while taking
+              // `showingDrivesList` with it. The result was a user thrown back
+              // to the drives list at random moments, and a `showDrivesList`
+              // whose early return then found the flag already set and did
+              // nothing, so neither the nav entry nor the breadcrumb worked.
+              if (state is! ProfileLoggedIn &&
+                  !signingIn &&
                   !gettingStarted &&
                   (!showingAnonymousRoute || state is ProfileLoggingOut)) {
                 signingIn = true;
@@ -548,11 +558,34 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// not push a second identical history entry for the browser's back button
   /// to have to walk back through.
   void showDrivesList() {
-    if (showingDrivesList) {
+    // Already there, and demonstrably so: the flag alone was not proof. Every
+    // route below is checked *before* the drives list in `build`, so with any
+    // of them set the list is not what is on screen no matter what the flag
+    // says - and returning early on the flag then swallowed the request in
+    // silence, which is how both the nav entry and the breadcrumb came to do
+    // nothing at all.
+    final alreadyShowing = showingDrivesList &&
+        !signingIn &&
+        !gettingStarted &&
+        !isViewingSharedFile &&
+        !isViewingRawTransaction;
+
+    if (alreadyShowing) {
       return;
     }
 
+    // Asked for, so nothing outranks it.
     showingDrivesList = true;
+    signingIn = false;
+    gettingStarted = false;
+    sharedFileId = null;
+    sharedFileKey = null;
+    sharedRawFileKey = null;
+    sharedFileLinkPayload = null;
+    sharedFileKeyIsDamaged = false;
+    rawTransactionId = null;
+    rawTransactionName = null;
+    rawTransactionContentType = null;
 
     notifyListeners();
   }

@@ -78,13 +78,14 @@ class DriveActionsMenu extends StatelessWidget {
           onClick: isSyncing
               ? null
               : () {
-                  // Background, like every other sync this page starts: the
-                  // user is reading a list, and a sync begun from it must not
-                  // take the list away. The row says "Syncing..." while it
-                  // runs, and the strip says what it is doing.
+                  // Somebody pressed Sync, so it is theirs: the history has
+                  // to say Manual, and the result is theirs to be told about.
+                  // It ran as `background` to keep the old blocking modal off
+                  // the list - but that modal is gone, and the summary that
+                  // replaced it neither scrims nor takes a click, so the
+                  // reason no longer holds and the record was simply wrong.
                   context.read<SyncCubit>().startSyncForDrive(
                         driveId: drive.id,
-                        trigger: SyncTrigger.background,
                       );
                 },
           content: ArDriveDropdownItemTile(

@@ -352,11 +352,9 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
     final String? detail;
     if (progress == null) {
       detail = null;
-    } else if (progress.metadataFetchesTotal > 0) {
-      detail = appLocalizationsOf(context).syncReadingMetadata(
-        progress.metadataFetchesCompleted,
-        progress.metadataFetchesTotal,
-      );
+    } else if (progress.metadataFetchesCompleted > 0) {
+      detail = appLocalizationsOf(context)
+          .syncReadingMetadata(progress.metadataFetchesCompleted);
     } else if (progress.statusMessage != null) {
       detail = progress.statusMessage;
     } else if (progress.entitiesSynced > 0) {

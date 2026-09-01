@@ -117,8 +117,16 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         // No loading state to emit first: the cubit is constructed in
         // DriveDetailLoadInProgress, so the screen is already saying it is
         // working before this wait begins.
-        // Wait for any current sync to complete before checking drive state
-        await _syncCubit.waitCurrentSync();
+        // Wait only for a sync that could be writing *this* drive. Waiting
+        // for any sync at all meant syncing drive B made drive A - already
+        // walked, its rows untouched - unopenable until B finished.
+        if (SyncCubit.syncTouchesDrive(
+          state: _syncCubit.state,
+          syncingDriveId: _syncCubit.syncingDriveId,
+          driveId: driveId,
+        )) {
+          await _syncCubit.waitCurrentSync();
+        }
 
         // Abort if user switched drives during sync wait
         if (_driveId != driveId) {

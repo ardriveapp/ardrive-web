@@ -674,7 +674,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Reading 340 of 2,180...'), findsOneWidget);
+      expect(find.text('Reading 340 files...'), findsOneWidget);
       expect(find.text('Reading the drive history...'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
@@ -721,7 +721,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 1100));
 
         expect(tester.takeException(), isNull);
-        final finder = find.text('Reading 12,345 of 12,345...');
+        final finder = find.text('Reading 12,345 files...');
         expect(finder, findsOneWidget);
         expect(tester.getTopLeft(finder).dx, greaterThanOrEqualTo(0));
         expect(tester.getBottomRight(finder).dx, lessThanOrEqualTo(320.0));

@@ -33,7 +33,6 @@ import 'package:responsive_builder/responsive_builder.dart';
 /// Named so a test can find it in either of the two shapes it is drawn in -
 /// with its label on the drawer and the expanded rail, and as a bare icon on
 /// the collapsed one, where there is no text to look for.
-const Key sideBarDrivesListLinkKey = Key('sideBarDrivesListLink');
 
 class AppSideBar extends StatefulWidget {
   const AppSideBar({super.key});
@@ -97,10 +96,6 @@ class _AppSideBarState extends State<AppSideBar> {
                         ),
                       ],
                     ),
-                    const SizedBox(
-                      height: 16,
-                    ),
-                    _buildDrivesListLink(isMobile: true),
                     const SizedBox(
                       height: 16,
                     ),
@@ -203,19 +198,6 @@ class _AppSideBarState extends State<AppSideBar> {
                             const SizedBox(
                               height: 24,
                             ),
-                            // The destination, above the action. It sat
-                            // between the New button and the drive list,
-                            // indented to the accordion's uppercase headings
-                            // but written like neither them nor a button - so
-                            // it read as a fourth category rather than as the
-                            // place it opens. Here it is what it is: the
-                            // top-level nav entry, directly under the logo,
-                            // with the create action below it and the drives
-                            // it leads to below that.
-                            _buildDrivesListLink(isMobile: false),
-                            const SizedBox(
-                              height: 16,
-                            ),
                             _buildDriveActionsButton(
                               context,
                               false,
@@ -278,39 +260,6 @@ class _AppSideBarState extends State<AppSideBar> {
   /// The drive the user came from stays selected underneath it - see
   /// [AppRouterDelegate.showDrivesList] - so this is a round trip of one tap
   /// each way rather than a door that closes behind them.
-  Widget _buildDrivesListLink({required bool isMobile}) {
-    // Not offered to someone who cannot get there - see
-    // [AppRouterDelegate.canShowDrivesList]. An anonymous share-link viewer
-    // gets the explorer and this drawer, but no drives list behind them.
-    if (!AppRouterDelegate.canShowDrivesList(context.watch<ProfileCubit>().state)) {
-      return const SizedBox.shrink();
-    }
-
-    return _DrivesListLink(
-      key: sideBarDrivesListLinkKey,
-      // A collapsed desktop rail is 64px wide and shows no drive names either;
-      // the icon carries it there, with the label in a tooltip.
-      showLabel: isMobile || _isExpanded,
-      // The drive rows' own left edge, so the highlight this draws when it is
-      // the page in view lines up with the highlight they draw when they are.
-      // They are the same kind of thing: somewhere to go.
-      leftPadding: isMobile || _isExpanded ? 10 : 0,
-      // Lit the way a selected drive is lit, by the same tokens, because the
-      // question it answers is the same one: is this what I am looking at?
-      isActive: context.watch<AppRouterDelegate>().showingDrivesList,
-      // The drive rows do this too: on a phone the nav is a drawer over the
-      // page, and a drawer that stays open over what it just navigated to is
-      // covering the answer.
-      onTap: () {
-        if (Scaffold.maybeOf(context) != null) {
-          Scaffold.of(context).closeDrawer();
-        }
-
-        context.read<AppRouterDelegate>().showDrivesList();
-      },
-    );
-  }
-
   Widget _buildLogo(bool isMobile) {
     return SizedBox(
       height: 64,
@@ -510,89 +459,6 @@ class _AppSideBarState extends State<AppSideBar> {
 /// Not drawn as selected, ever. The drive the user came from keeps the
 /// selection underneath - that is what makes returning to it one tap - and two
 /// highlighted rows would be two claims about where they are.
-class _DrivesListLink extends StatelessWidget {
-  const _DrivesListLink({
-    super.key,
-    required this.showLabel,
-    required this.leftPadding,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  /// False on the collapsed desktop rail, which is 64px wide and shows no
-  /// drive names either. The label becomes the tooltip there.
-  final bool showLabel;
-
-  final double leftPadding;
-
-  /// Whether the drives list is the page on screen.
-  final bool isActive;
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final label = appLocalizationsOf(context).yourDrives;
-
-    return ArDriveClickArea(
-      // The words the page itself is titled with. One destination named one
-      // way, or the nav and the page it opens are two different places.
-      tooltip: label,
-      child: GestureDetector(
-        onTap: onTap,
-        // The whole row, not just the ink under the glyphs: a nav item that
-        // only answers on its text is a smaller target than it looks.
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          decoration: isActive
-              ? BoxDecoration(
-                  color: colorTokens.containerL1,
-                  borderRadius: BorderRadius.circular(4),
-                )
-              : null,
-          padding: EdgeInsets.only(
-            left: leftPadding,
-            right: 8,
-            // The drive rows' own vertical padding, so this sits in the same
-            // rhythm as the list it stands above.
-            top: 2,
-            bottom: 2,
-          ),
-          child: Row(
-            mainAxisAlignment:
-                showLabel ? MainAxisAlignment.start : MainAxisAlignment.center,
-            children: [
-              ArDriveIcons.bullertList(
-                size: 16,
-                color: isActive ? colorTokens.textHigh : colorTokens.textMid,
-              ),
-              if (showLabel) ...[
-                const SizedBox(width: 8),
-                // Wraps rather than ellipsizes, which is what the drive names
-                // below it do (they are an Expanded Text with no maxLines). At
-                // text scale 2.0 a single line clipped this to "Your D..."
-                // while every drive under it stayed readable - one nav, two
-                // rules, and the truncated one was the destination.
-                Flexible(
-                  child: Text(
-                    label,
-                    style: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
-                      color:
-                          isActive ? colorTokens.textHigh : colorTokens.textMid,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class DriveListTile extends StatelessWidget {
   final Drive drive;

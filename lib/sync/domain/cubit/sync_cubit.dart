@@ -65,6 +65,30 @@ class SyncCubit extends Cubit<SyncState> {
   /// print, and names are not identity.
   String? get syncingDriveId => _syncingDriveId;
 
+  /// Whether a sync in [state] for [syncingDriveId] could be writing
+  /// [driveId].
+  ///
+  /// A sync of one drive does not touch another, so a reader who wants a drive
+  /// that nothing is writing should not be made to wait for one that is. This
+  /// is what makes drive A openable while drive B syncs.
+  ///
+  /// An all-drives sync (`syncingDriveId == null`) is treated as touching
+  /// everything, which is the conservative answer and the true one.
+  ///
+  /// Static, and reading only what callers already hold, so it adds no surface
+  /// a test has to stub.
+  static bool syncTouchesDrive({
+    required SyncState state,
+    required String? syncingDriveId,
+    required String driveId,
+  }) {
+    if (!(state is SyncInProgress || state is SyncLoadingDrives)) {
+      return false;
+    }
+
+    return syncingDriveId == null || syncingDriveId == driveId;
+  }
+
   /// Exposed so every surface counting a wait counts from the same instant -
   /// see `SyncElapsedTime`.
   DateTime get syncStartTime => _initSync;

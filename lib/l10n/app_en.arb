@@ -3171,19 +3171,14 @@
       }
     }
   },
-  "syncReadingMetadata": "Reading {completed} of {total}...",
+  "syncReadingMetadata": "Reading {completed} files...",
   "@syncReadingMetadata": {
-    "description": "What a sync is doing during its longest phase: every file and folder revision's metadata is fetched from the gateway one request at a time, a few at a time. Both figures are real - the total is what has been asked for so far, and it rises as the drive's history arrives - and the first one advances on every request that comes back, which is the only thing that moves while this phase runs",
+    "description": "Shown while a drive’s history is being read, counting the entries that have come back. Deliberately has no total: the denominator was only ever \"what has been asked for so far\", which the count meets at every batch boundary, so \"N of N\" was all anyone ever saw.",
     "placeholders": {
       "completed": {
         "type": "int",
         "format": "decimalPattern",
         "example": "340"
-      },
-      "total": {
-        "type": "int",
-        "format": "decimalPattern",
-        "example": "2180"
       }
     }
   },
