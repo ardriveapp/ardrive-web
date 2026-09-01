@@ -66,7 +66,21 @@ class ArDriveDevTools {
   }
 }
 
-class ArDriveAppWithDevTools extends StatelessWidget {
+/// Hosts the whole app inside an [Overlay] so the dev tools window can be
+/// inserted above it through [overlayKey].
+///
+/// Stateful, and deliberately: `Overlay.initialEntries` is read exactly once,
+/// when the Overlay is created. A `StatelessWidget` rebuilding here produced a
+/// *new* `OverlayEntry` closing over the new app tree, and the Overlay ignored
+/// it - so `AppRouterDelegate.build()` ran, produced the right tree, and had it
+/// thrown away. The mounted tree then only re-evaluated when some bloc emitted,
+/// which is why navigation driven by a cubit worked and navigation driven by
+/// the router's own fields did not: `showDrivesList()` set its flag and
+/// notified, nothing rebuilt, and the user was dropped on the drives list
+/// minutes later when an unrelated sync happened to emit.
+///
+/// One entry is created once and told to rebuild when the app tree changes.
+class ArDriveAppWithDevTools extends StatefulWidget {
   const ArDriveAppWithDevTools({
     super.key,
     required this.widget,
@@ -75,14 +89,30 @@ class ArDriveAppWithDevTools extends StatelessWidget {
   final Widget widget;
 
   @override
+  State<ArDriveAppWithDevTools> createState() => _ArDriveAppWithDevToolsState();
+}
+
+class _ArDriveAppWithDevToolsState extends State<ArDriveAppWithDevTools> {
+  /// Reads `widget.widget` at build time rather than capturing it, so the entry
+  /// always renders the current tree once it is asked to rebuild.
+  late final OverlayEntry _appEntry = OverlayEntry(
+    builder: (_) => widget.widget,
+  );
+
+  @override
+  void didUpdateWidget(covariant ArDriveAppWithDevTools oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (!identical(oldWidget.widget, widget.widget)) {
+      _appEntry.markNeedsBuild();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Overlay(
       key: overlayKey,
-      initialEntries: [
-        OverlayEntry(
-          builder: (context) => widget,
-        )
-      ],
+      initialEntries: [_appEntry],
     );
   }
 }

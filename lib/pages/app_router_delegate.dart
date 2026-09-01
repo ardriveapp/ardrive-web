@@ -585,9 +585,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// it when nothing has walked it yet, but that decision is not made here and
   /// cannot be: it needs the drive's sync state, and this method has no
   /// context to read it from. It is made one step earlier, by
-  /// [DrivesListCubit.syncDriveIfNeverSynced], on every selection that reaches
-  /// this - which is every selection a person made, from either surface.
-  /// `drives_list_open_syncs_test.dart` holds the two together.
+  /// Opening never starts one: a tap is a request to look at something, not
+  /// to fetch it, and a drive with nothing local lands on the card that says
+  /// so and carries its own Sync button.
+  /// `drives_list_open_never_syncs_test.dart` holds that.
   /// Asks for a drive's info panel to open once that drive has loaded.
   ///
   /// Separate from [openDriveFromList] so the drives list keeps one way in: a

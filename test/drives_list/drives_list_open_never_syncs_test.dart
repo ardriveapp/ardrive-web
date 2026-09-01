@@ -129,114 +129,30 @@ void main() {
     return cubit;
   }
 
-  test('opening a drive nothing has walked fetches it', () async {
-    await addDrive('never-walked');
-
-    final cubit = await listing();
-    cubit.syncDriveIfNeverSynced('never-walked');
-    await cubit.close();
-
-    final captured = verify(
-      () => syncCubit.startSyncForDrive(
-        driveId: captureAny(named: 'driveId'),
-        deepSync: any(named: 'deepSync'),
-        trigger: captureAny(named: 'trigger'),
-      ),
-    ).captured;
-
-    expect(captured, ['never-walked', SyncTrigger.background],
-        reason: 'opening an unwalked drive must fetch that drive, in the '
-            'background - a scrim over the drive the user is walking into is '
-            'the thing the background trigger exists to avoid');
-  });
-
-  test('opening a drive that has been walked fetches nothing', () async {
-    await addDrive('walked', lastBlockHeight: 12345);
-
-    final cubit = await listing();
-    cubit.syncDriveIfNeverSynced('walked');
-    await cubit.close();
-
-    verifyNever(() => syncCubit.startSyncForDrive(
-          driveId: any(named: 'driveId'),
-          deepSync: any(named: 'deepSync'),
-          trigger: any(named: 'trigger'),
-        ));
-  });
-
-  test('a drive walked by a build that recorded only the time is left alone',
+  test('a drive that has never been walked is listed, and never fetched',
       () async {
-    await addDrive('walked-once');
-
-    final cubit = await listing(
-      lastSynced: {'walked-once': DateTime(2026, 8, 1)},
-    );
-    cubit.syncDriveIfNeverSynced('walked-once');
-    await cubit.close();
-
-    verifyNever(() => syncCubit.startSyncForDrive(
-          driveId: any(named: 'driveId'),
-          deepSync: any(named: 'deepSync'),
-          trigger: any(named: 'trigger'),
-        ));
-  });
-
-  test('a sync already walking every drive is the fetch', () async {
-    await addDrive('never-walked');
-
-    // An all-drives sync names no drive, and covers all of them.
-    when(() => syncCubit.syncingDriveId).thenReturn(null);
-
-    final cubit = await listing(
-      syncState: SyncInProgress(trigger: SyncTrigger.background),
-    );
-    cubit.syncDriveIfNeverSynced('never-walked');
-    await cubit.close();
-
-    verifyNever(() => syncCubit.startSyncForDrive(
-          driveId: any(named: 'driveId'),
-          deepSync: any(named: 'deepSync'),
-          trigger: any(named: 'trigger'),
-        ));
-  });
-
-  test('a sync walking a different drive does not stand in for this one',
-      () async {
-    await addDrive('never-walked');
-    await addDrive('other', lastBlockHeight: 9);
-
-    when(() => syncCubit.syncingDriveId).thenReturn('other');
-
-    final cubit = await listing(
-      syncState: SyncInProgress(trigger: SyncTrigger.background),
-    );
-    cubit.syncDriveIfNeverSynced('never-walked');
-    await cubit.close();
-
-    // The row's own `isSyncing` is false here, but so is it during an
-    // all-drives sync for every row - which is why the decision is made off
-    // the sync cubit rather than off the item a row was drawn with.
-    final captured = verify(
-      () => syncCubit.startSyncForDrive(
-        driveId: captureAny(named: 'driveId'),
-        deepSync: any(named: 'deepSync'),
-        trigger: captureAny(named: 'trigger'),
-      ),
-    ).captured;
-
-    expect(captured, ['never-walked', SyncTrigger.background]);
-  });
-
-  test('a drive the list does not hold starts nothing', () async {
+    // The whole point. Opening used to fetch on the way in, from either
+    // surface, so a tap in the left nav quietly began minutes of network work
+    // - the opposite of the sync-only-when-asked rule the rest of this stack
+    // follows. A tap is a request to look at something.
     await addDrive('never-walked');
 
     final cubit = await listing();
-    cubit.syncDriveIfNeverSynced('not-in-the-list');
-    await cubit.close();
+    addTearDown(cubit.close);
+
+    final state = cubit.state as DrivesListLoaded;
+    expect(state.drives.single.hasBeenWalked, isFalse,
+        reason: 'the fixture has to be a drive nothing has looked at');
 
     verifyNever(() => syncCubit.startSyncForDrive(
           driveId: any(named: 'driveId'),
           deepSync: any(named: 'deepSync'),
+          trigger: any(named: 'trigger'),
+        ));
+    verifyNever(() => syncCubit.startSync(
+          deepSync: any(named: 'deepSync'),
+          skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
+          driveIdsToRetry: any(named: 'driveIdsToRetry'),
           trigger: any(named: 'trigger'),
         ));
   });

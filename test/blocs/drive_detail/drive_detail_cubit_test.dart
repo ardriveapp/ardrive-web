@@ -305,15 +305,17 @@ void main() {
       await subscription.cancel();
 
       // With "sync drives on login" off this is the primary way a drive gets
-      // synced, so the flow has to feel right: the panel it was pressed from
-      // reports the sync itself. A userInitiated trigger would scrim the app
-      // and draw a modal carrying the same phase and progress twice.
+      // synced, and somebody pressed it - so the sync history has to say
+      // Manual. It ran as `background` to keep the old blocking modal off the
+      // panel that was reporting the same sync; that modal is gone, and the
+      // summary that replaced it neither scrims nor takes a click. All the
+      // trigger still decides is who the record says asked.
       final trigger = verify(() => syncCubit.startSyncForDrive(
             driveId: any(named: 'driveId'),
             deepSync: any(named: 'deepSync'),
             trigger: captureAny(named: 'trigger'),
           )).captured.last;
-      expect(trigger, SyncTrigger.background);
+      expect(trigger, SyncTrigger.userInitiated);
 
       expect(
         emitted.whereType<DriveDetailLoadUnsynced>(),

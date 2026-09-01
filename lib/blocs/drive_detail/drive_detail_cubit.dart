@@ -925,11 +925,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       _isExplicitSync = true;
       final bool synced;
       try {
-        // The panel this was pressed from reports the sync itself, so there is
-        // nothing for a modal to add - it would only cover the report with a
-        // copy of it and take the app away. See [DriveDetailSyncingCard].
+        // Pressed, so the history has to say Manual. The panel reports the
+        // sync itself while it runs; the summary at the end neither scrims nor
+        // takes a click, so nothing is covered twice.
         emit(DriveDetailLoadInProgress());
-        synced = await _syncCubit.startSync(trigger: SyncTrigger.background);
+        synced = await _syncCubit.startSync();
       } finally {
         _isExplicitSync = false;
       }
@@ -1000,7 +1000,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         synced = await _syncCubit.startSyncForDrive(
           driveId: driveId,
           deepSync: false,
-          trigger: SyncTrigger.background,
         );
       } finally {
         _isExplicitSync = false;

@@ -115,12 +115,14 @@ class _DrivesListView extends StatelessWidget {
   /// so the two cannot drift into doing different things - which is what they
   /// did when only the row knew how to open anything.
   void _openDrive(BuildContext context, String driveId) {
-    // A drive nothing has walked is fetched on the way in, and the explorer's
-    // panel reports it from there. One that has been walked opens with no
-    // request at all. Both answers are the cubit's, read at the moment of the
-    // tap - see [DrivesListCubit.syncDriveIfNeverSynced].
-    context.read<DrivesListCubit>().syncDriveIfNeverSynced(driveId);
-
+    // Opening a drive opens it. It never starts a sync, whether or not that
+    // drive has ever been walked: a tap in the nav is a request to look at
+    // something, not a request to fetch it, and a tap that quietly began
+    // minutes of network work was the opposite of the sync-only-when-asked
+    // rule the rest of this stack follows.
+    //
+    // A drive with nothing local lands on `DriveDetailUnsyncedCard`, which
+    // says so and carries its own Sync button.
     onOpenDrive(driveId);
   }
 

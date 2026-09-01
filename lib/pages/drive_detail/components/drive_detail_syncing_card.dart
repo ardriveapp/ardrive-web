@@ -390,16 +390,21 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
         ),
       ],
       const SizedBox(height: 24),
-      // Working, said the way every other sync surface says it. The bar below
-      // says how far, where there is a figure; this says nothing but that
-      // something is happening, which is all there is to say during a phase
-      // that cannot measure itself.
-      const SyncLoadingIndicator(size: 56),
-      const SizedBox(height: 20),
+      // One or the other, never both. Two indicators for one wait is two
+      // things to read where there is only one fact, and the pair looked like
+      // a bug rather than a design.
+      //
+      // The plates carry a phase that cannot measure itself; the bar carries
+      // one that can, and a real figure always beats motion.
+      if (_progressAtMount == null) ...[
+        const SyncLoadingIndicator(size: 56),
+        const SizedBox(height: 8),
+      ],
       // The modal's bar, not a second one: it already knows not to claim a
       // number during a phase that cannot measure itself, and not to rewind
       // when one ends.
-      ProgressBar(
+      if (_progressAtMount != null)
+        ProgressBar(
         // Keyed so the Column matches it by identity, not by position. When
         // the sync ends, subtitle, detail and the elapsed line all disappear
         // at once and the children list shrinks; an unkeyed bar would be

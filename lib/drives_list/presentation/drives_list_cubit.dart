@@ -250,72 +250,16 @@ class DrivesListCubit extends Cubit<DrivesListState> {
 
   /// Walks every drive, once, because the user asked.
   ///
-  /// [SyncTrigger.background] deliberately: this page is a list the user is
-  /// reading, and a sync started from it must not drop a scrim over it. The
-  /// top bar and each row report it instead.
+  /// [SyncTrigger.userInitiated], because that is who asked. It ran as
+  /// background to keep the old blocking modal off a list the user was
+  /// reading - but that modal is gone, the summary that replaced it neither
+  /// scrims nor takes a click, and the only thing the trigger still decides is
+  /// what the sync history records. Recording a pressed button as "Automatic"
+  /// was simply wrong.
   void syncAllDrives() {
-    unawaited(_syncCubit.startSync(trigger: SyncTrigger.background));
+    unawaited(_syncCubit.startSync());
   }
 
-  /// Starts a sync for one drive that has never been walked, because it is
-  /// being opened.
-  ///
-  /// Choosing a drive is the act that fetches it. Without this, opening a
-  /// never-synced drive landed on the "Drive Not Synced" card and waited for a
-  /// second, manual press - the list had already told the user the drive was
-  /// never synced, and then made them say so again.
-  ///
-  /// A drive that has already been walked is left alone: opening it must not
-  /// cost a network round trip.
-  ///
-  /// [SyncTrigger.background] deliberately. The user is on their way into a
-  /// drive, and a sync started on the way must not drop a scrim over where
-  /// they are going. The explorer's own panel reports it instead.
-  ///
-  /// Taken by id rather than as a [DriveListItem], and both questions answered
-  /// here rather than off the item: the item a row was drawn with is a
-  /// snapshot of a frame that may be several syncs old, and `isSyncing` on it
-  /// is true for every row while an all-drives sync runs. Deciding off the
-  /// rendered item is how a tap silently started nothing.
-  void syncDriveIfNeverSynced(String driveId) {
-    final state = this.state;
-
-    if (state is! DrivesListLoaded) {
-      return;
-    }
-
-    for (final drive in state.drives) {
-      if (drive.id != driveId) {
-        continue;
-      }
-
-      // Already walked: it opens straight to its contents, as it did before.
-      if (drive.hasBeenWalked) {
-        return;
-      }
-
-      // A sync already covering this drive is the fetch. Starting a second one
-      // would only queue behind it.
-      if (_syncIsCovering(driveId)) {
-        return;
-      }
-
-      // A sync running for a *different* drive is refused here - one at a
-      // time, no queue - and this call returns having started nothing. That
-      // is deliberate and it is not hidden: the panel the user lands on says
-      // that another drive is syncing and that this one was not started, so
-      // the offer to sync it is theirs to take when that one ends. See
-      // `DriveDetailUnsyncedCard`.
-      unawaited(
-        _syncCubit.startSyncForDrive(
-          driveId: driveId,
-          trigger: SyncTrigger.background,
-        ),
-      );
-
-      return;
-    }
-  }
 
   /// Whether a sync running right now already covers [driveId] - either this
   /// drive's own, or an all-drives sync, which covers every drive.

@@ -1,3 +1,5 @@
+import 'package:ardrive/components/progress_bar.dart';
+import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'dart:async';
 
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
@@ -289,7 +291,11 @@ void main() {
 
     expect(find.text('Loading your drives...'), findsOneWidget);
     expect(find.text('0% complete'), findsNothing);
-    expect(bar(tester).value, isNull);
+    // The plates, not a bar with nothing in it. One indicator per wait: two
+    // was two things to read where there is one fact, and a bar that cannot
+    // fill is the weaker of the pair.
+    expect(find.byType(SyncLoadingIndicator), findsOneWidget);
+    expect(find.byType(ProgressBar), findsNothing);
     // And no stopwatch: only a real sync sets a start time, so counting here
     // counts from whenever the cubit was built - "420s elapsed" under
     // "Loading your drives...". The top bar withholds it for the same reason.
@@ -311,7 +317,8 @@ void main() {
     expect(find.text('Opening Photos'), findsOneWidget);
     // Nothing to measure, so nothing is claimed - and no elapsed time, which
     // would be counted from a sync that ended long ago.
-    expect(bar(tester).value, isNull);
+    expect(find.byType(SyncLoadingIndicator), findsOneWidget);
+    expect(find.byType(ProgressBar), findsNothing);
     expect(find.textContaining('s elapsed'), findsNothing);
 
     await tester.pumpWidget(const SizedBox());
