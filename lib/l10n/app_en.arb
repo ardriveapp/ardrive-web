@@ -2839,6 +2839,26 @@
       }
     }
   },
+  "unlockingYourDrives": "Unlocking your private drives...",
+  "@unlockingYourDrives": {
+    "description": "Shown while private drives are being decrypted, after the drive list has been fetched."
+  },
+  "unlockingYourDrivesCount": "Unlocking your private drives... {done} of {total}",
+  "@unlockingYourDrivesCount": {
+    "description": "The same, once the number of private drives is known.",
+    "placeholders": {
+      "done": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "5"
+      }
+    }
+  },
   "syncingSingleDrive": "Syncing Drive",
   "@syncingSingleDrive": {
     "description": "Title shown when syncing a single drive"

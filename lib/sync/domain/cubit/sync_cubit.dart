@@ -462,6 +462,19 @@ class SyncCubit extends Cubit<SyncState> {
               );
             }
           },
+          // The second half of the same wait, and the half that actually takes
+          // the time on a wallet with private drives.
+          onDriveUnlocked: (unlocked, total) {
+            if (state is SyncLoadingDrives) {
+              _emitIfOpen(
+                SyncLoadingDrives(
+                  drivesRead: unlocked,
+                  drivesFound: total,
+                  phase: SyncLoadingDrivesPhase.unlocking,
+                ),
+              );
+            }
+          },
         );
         logger.d('Metadata-only sync completed successfully');
       } catch (e, stackTrace) {

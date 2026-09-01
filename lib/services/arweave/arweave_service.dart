@@ -1154,6 +1154,14 @@ class ArweaveService {
     /// listing is known, so a reader waiting on this learns the size of the
     /// job before any of it is done.
     void Function(int read, int found)? onDriveRead,
+
+    /// Called as each private drive is unlocked, with how many have been done
+    /// and how many there are. The work after the fetch is serial and, for a
+    /// private drive, expensive - a signature read over the network, a key
+    /// derivation against the wallet, then a decrypt - so a wallet with
+    /// several of them sits on a finished fetch count for a long time with
+    /// nothing said. Never fires when there are none.
+    void Function(int unlocked, int total)? onDriveUnlocked,
   }) async {
     try {
       final userAddress = await wallet.getAddress();
@@ -1213,6 +1221,23 @@ class ArweaveService {
       /// revision take its place and write stale metadata - worse than the
       /// drive simply being late.
       final handledDriveIds = <String?>{};
+
+      // Distinct private drives, which is what the loop below will actually
+      // unlock - `driveTxs` holds every revision, so counting rows would
+      // promise more work than there is.
+      final privateDriveIds = <String>{};
+      for (final tx in driveTxs) {
+        if (tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
+          final id = tx.getTag(EntityTag.driveId);
+          if (id != null) privateDriveIds.add(id);
+        }
+      }
+
+      var drivesUnlocked = 0;
+      if (privateDriveIds.isNotEmpty) {
+        onDriveUnlocked?.call(0, privateDriveIds.length);
+      }
+
       for (var i = 0; i < driveTxs.length; i++) {
         if (driveResponses[i] == null) continue;
         final driveTx = driveTxs[i];
@@ -1271,6 +1296,8 @@ class ArweaveService {
               driveID: driveTx.getTag(EntityTag.driveId)!,
               driveKey: driveKey,
             );
+
+            onDriveUnlocked?.call(++drivesUnlocked, privateDriveIds.length);
           }
         }
         try {

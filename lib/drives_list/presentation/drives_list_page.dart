@@ -1,4 +1,5 @@
 import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
+import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'dart:math' as math;
 
 import 'package:ardrive/app_shell.dart';
@@ -336,12 +337,7 @@ class _DrivesListLoading extends StatelessWidget {
     return _CentredMessage(
       children: [
         Text(
-          state != null && state!.hasCount
-              ? appLocalizationsOf(context).loadingYourDrivesCount(
-                  state!.drivesRead,
-                  state!.drivesFound,
-                )
-              : appLocalizationsOf(context).loadingYourDrives,
+          syncLoadingDrivesLabel(appLocalizationsOf(context), state?.syncState),
           style: typography.heading4(
             color: colorTokens.textHigh,
             fontWeight: ArFontWeight.bold,

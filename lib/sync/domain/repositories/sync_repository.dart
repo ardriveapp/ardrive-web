@@ -279,6 +279,9 @@ abstract class SyncRepository {
     /// Called as the drive listing is read, with how many have come back and
     /// how many there are. See [ArweaveService.getUniqueUserDriveEntities].
     void Function(int read, int found)? onDriveRead,
+
+    /// Called as each private drive is unlocked. See the same.
+    void Function(int unlocked, int total)? onDriveUnlocked,
   });
 
   Future<void> createGhosts({
@@ -1926,6 +1929,7 @@ class _SyncRepository implements SyncRepository {
     required SecretKey cipherKey,
     bool forceRefresh = false,
     void Function(int read, int found)? onDriveRead,
+    void Function(int unlocked, int total)? onDriveUnlocked,
   }) async {
     // Two callers that overlap share one fetch. A caller that arrives after
     // one has *finished* does not.
@@ -1952,6 +1956,7 @@ class _SyncRepository implements SyncRepository {
       password: password,
       cipherKey: cipherKey,
       onDriveRead: onDriveRead,
+      onDriveUnlocked: onDriveUnlocked,
     );
 
     _userDrivesUpdateFuture = future;
@@ -1972,6 +1977,7 @@ class _SyncRepository implements SyncRepository {
     required String password,
     required SecretKey cipherKey,
     void Function(int read, int found)? onDriveRead,
+    void Function(int unlocked, int total)? onDriveUnlocked,
   }) async {
     // This syncs in the latest info on drives owned by the user and will be overwritten
     // below when the full sync process is ran.
@@ -1982,6 +1988,7 @@ class _SyncRepository implements SyncRepository {
       wallet,
       password,
       onDriveRead: onDriveRead,
+      onDriveUnlocked: onDriveUnlocked,
     );
 
     await _driveDao.updateUserDrives(userDriveEntities, cipherKey);

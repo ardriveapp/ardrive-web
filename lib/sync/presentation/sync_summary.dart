@@ -124,12 +124,27 @@ String syncLoadingDrivesLabel(
   AppLocalizations localizations,
   SyncState? state,
 ) {
-  if (state is SyncLoadingDrives && state.hasCount) {
-    return localizations.loadingYourDrivesCount(
-      state.drivesRead,
-      state.drivesFound,
-    );
+  if (state is! SyncLoadingDrives) {
+    return localizations.loadingYourDrives;
   }
 
-  return localizations.loadingYourDrives;
+  // Two phases, said as two things. The fetch is pooled and quick; unlocking
+  // is serial and costs a signature read, a key derivation and a decrypt per
+  // private drive - so the fetch count would reach its total and sit there
+  // with nothing to explain the wait.
+  if (state.phase == SyncLoadingDrivesPhase.unlocking) {
+    return state.hasCount
+        ? localizations.unlockingYourDrivesCount(
+            state.drivesRead,
+            state.drivesFound,
+          )
+        : localizations.unlockingYourDrives;
+  }
+
+  return state.hasCount
+      ? localizations.loadingYourDrivesCount(
+          state.drivesRead,
+          state.drivesFound,
+        )
+      : localizations.loadingYourDrives;
 }

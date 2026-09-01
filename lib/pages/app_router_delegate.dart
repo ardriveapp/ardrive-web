@@ -271,9 +271,20 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
             builder: (context, state) {
               Widget? shell;
 
+              // What the page below is keyed by. A constant key meant the
+              // Navigator saw one page whose key never changed however the
+              // branch chain resolved, so it kept the route it already had and
+              // left the previous screen in place: `showDrivesList` set the
+              // flag, `currentConfiguration` reported `/drives`, the address
+              // bar changed - and the drive stayed on screen. Named inside
+              // each branch rather than derived afterwards, so it cannot drift
+              // out of step with the chain that assigns `shell`.
+              String shellKey = 'empty';
+
               final anonymouslyShowDriveDetail =
                   canAnonymouslyShowDriveDetail(state);
               if (isViewingSharedFile) {
+                shellKey = 'sharedFile';
                 shell = BlocProvider<SharedFileCubit>(
                   key: ValueKey(sharedFileId),
                   create: (_) => SharedFileCubit(
@@ -289,6 +300,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   child: const SharedFilePage(),
                 );
               } else if (isViewingRawTransaction) {
+                shellKey = 'rawTransaction';
                 // Keyed on the id for the same reason the shared file branch
                 // above is: moving between two `/view` links must rebuild the
                 // page rather than reuse its state.
@@ -299,10 +311,13 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   contentType: rawTransactionContentType,
                 );
               } else if (signingIn) {
+                shellKey = 'signIn';
                 shell = const LoginPage();
               } else if (gettingStarted) {
+                shellKey = 'getStarted';
                 shell = const LoginPage(gettingStarted: true);
               } else if (showingDrivesList && canShowDrivesList(state)) {
+                shellKey = 'drivesList';
                 // A separate subtree from the explorer's, deliberately. The
                 // explorer's `DriveDetailCubit` is created once and switched
                 // between drives afterwards; sharing one with this page would
@@ -321,6 +336,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 );
               } else if (state is ProfileLoggedIn ||
                   anonymouslyShowDriveDetail) {
+                shellKey = 'explorer';
                 driveId = driveId ?? rootPath;
 
                 shell = BlocListener<DrivesCubit, DrivesState>(
@@ -392,7 +408,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 key: navigatorKey,
                 pages: [
                   MaterialPage(
-                    key: const ValueKey('AppShell'),
+                    key: ValueKey(shellKey),
                     child: shell,
                   ),
                 ],

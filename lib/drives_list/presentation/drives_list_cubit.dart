@@ -73,13 +73,12 @@ class DrivesListCubit extends Cubit<DrivesListState> {
 
     final drivesState = _drivesCubit.state;
 
-    // How far the drive-list read has got, when that is what is running. Zero
-    // otherwise, and `hasCount` keeps "0 of 0" off the screen.
-    final loading = _syncCubit.state is SyncLoadingDrives
-        ? DrivesListLoading(
-            drivesRead: (_syncCubit.state as SyncLoadingDrives).drivesRead,
-            drivesFound: (_syncCubit.state as SyncLoadingDrives).drivesFound,
-          )
+    // The drive-list read this page is waiting on, when that is what is
+    // running. The whole state, because it has two phases with two different
+    // things to say and this is not the place to choose between them.
+    final loadingSync = _syncCubit.state;
+    final loading = loadingSync is SyncLoadingDrives
+        ? DrivesListLoading(syncState: loadingSync)
         : const DrivesListLoading();
 
     // Still looking. Never "you have none" - that is the whole point of the

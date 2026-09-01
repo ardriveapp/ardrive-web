@@ -31,8 +31,22 @@ class SyncIdle extends SyncState {}
 /// the drive transactions are listed first, so the total is known before a
 /// single one is fetched. Both are zero before the listing comes back, which
 /// is the one moment there is genuinely nothing to say.
+/// Which part of reading the drive list is running.
+///
+/// Two, because they cost differently and only one of them is parallel. The
+/// fetch is pooled and quick; unlocking is serial and, per private drive, a
+/// signature read, a key derivation against the wallet and a decrypt - so the
+/// count would reach its total and then appear to hang.
+enum SyncLoadingDrivesPhase { reading, unlocking }
+
 class SyncLoadingDrives extends SyncState {
-  SyncLoadingDrives({this.drivesRead = 0, this.drivesFound = 0});
+  SyncLoadingDrives({
+    this.drivesRead = 0,
+    this.drivesFound = 0,
+    this.phase = SyncLoadingDrivesPhase.reading,
+  });
+
+  final SyncLoadingDrivesPhase phase;
 
   /// Drives whose metadata has come back.
   final int drivesRead;
@@ -44,7 +58,7 @@ class SyncLoadingDrives extends SyncState {
   bool get hasCount => drivesFound > 0;
 
   @override
-  List<Object> get props => [drivesRead, drivesFound];
+  List<Object> get props => [drivesRead, drivesFound, phase];
 }
 
 class SyncInProgress extends SyncState {

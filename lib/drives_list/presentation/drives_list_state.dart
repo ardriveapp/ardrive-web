@@ -14,18 +14,23 @@ abstract class DrivesListState extends Equatable {
 
 /// We are still looking. Says so, and says nothing about what will be found.
 class DrivesListLoading extends DrivesListState {
-  const DrivesListLoading({this.drivesRead = 0, this.drivesFound = 0});
+  const DrivesListLoading({this.syncState});
 
-  /// How far the drive-list read has got, when it is the thing being waited
-  /// on. Carried on the state rather than read off `SyncCubit` at the widget,
-  /// because `DrivesListBody` draws what it is given and reaches for nothing.
-  final int drivesRead;
-  final int drivesFound;
-
-  bool get hasCount => drivesFound > 0;
+  /// The drive-list read this page is waiting on, when that is what is
+  /// running. Carried here rather than read off `SyncCubit` at the widget,
+  /// because `DrivesListBody` draws what it is given and reaches for nothing -
+  /// which is why its tests need no providers.
+  ///
+  /// The whole state and not just a count: there are two phases with two
+  /// different things to say, and the page is not the place to decide which.
+  final SyncLoadingDrives? syncState;
 
   @override
-  List<Object> get props => [drivesRead, drivesFound];
+  List<Object> get props => [
+        syncState?.drivesRead ?? -1,
+        syncState?.drivesFound ?? -1,
+        syncState?.phase ?? '',
+      ];
 }
 
 /// We looked, and this account genuinely has no drives yet.
