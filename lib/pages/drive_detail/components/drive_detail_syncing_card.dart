@@ -1,3 +1,4 @@
+import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'dart:async';
 
@@ -389,6 +390,12 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
         ),
       ],
       const SizedBox(height: 24),
+      // Working, said the way every other sync surface says it. The bar below
+      // says how far, where there is a figure; this says nothing but that
+      // something is happening, which is all there is to say during a phase
+      // that cannot measure itself.
+      const SyncLoadingIndicator(size: 56),
+      const SizedBox(height: 20),
       // The modal's bar, not a second one: it already knows not to claim a
       // number during a phase that cannot measure itself, and not to rewind
       // when one ends.

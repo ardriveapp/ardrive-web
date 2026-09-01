@@ -1,3 +1,4 @@
+import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'dart:math' as math;
 
 import 'package:ardrive/app_shell.dart';
@@ -349,11 +350,10 @@ class _DrivesListLoading extends StatelessWidget {
         ),
         const SizedBox(height: _sectionGap),
         // Nothing to measure, so nothing is claimed - it moves and says no
-        // more than that.
-        LinearProgressIndicator(
-          backgroundColor: colorTokens.containerL2,
-          color: colorTokens.buttonPrimaryDefault,
-        ),
+        // more than that. The same mark every other sync surface shows while
+        // it works; this used to be a red bar here and a white one in the
+        // explorer, for the same wait.
+        const SyncLoadingIndicator(),
       ],
     );
   }

@@ -68,7 +68,13 @@ class ProgressBar extends StatelessWidget {
               value: isIndeterminate ? null : animated,
               minHeight: _barHeight,
               backgroundColor: colorTokens.strokeHigh,
-              valueColor: AlwaysStoppedAnimation<Color>(colorTokens.textHigh),
+              // The same token the top bar's ring fills with. This drew in
+              // `textHigh` while the ring above it and the drives list drew in
+              // the accent, so one sync reported itself in two colours
+              // depending on which screen you were looking at.
+              valueColor: AlwaysStoppedAnimation<Color>(
+                colorTokens.buttonPrimaryDefault,
+              ),
             ),
           ),
         );
