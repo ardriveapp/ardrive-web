@@ -428,6 +428,16 @@ class SyncCubit extends Cubit<SyncState> {
           wallet: profile.user.wallet,
           password: profile.user.password,
           cipherKey: profile.user.cipherKey,
+          // Only while this is still the thing running - the same rule
+          // [_finishMetadataSync] applies to the terminal state, for the same
+          // reason: a full sync started underneath must not be painted over.
+          onDriveRead: (read, found) {
+            if (state is SyncLoadingDrives) {
+              _emitIfOpen(
+                SyncLoadingDrives(drivesRead: read, drivesFound: found),
+              );
+            }
+          },
         );
         logger.d('Metadata-only sync completed successfully');
       } catch (e, stackTrace) {

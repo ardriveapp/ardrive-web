@@ -83,7 +83,7 @@ void main() {
   group('loading', () {
     testWidgets('says it is still looking, and never that there are none',
         (tester) async {
-      await pumpBody(tester, DrivesListLoading());
+      await pumpBody(tester, const DrivesListLoading());
 
       expect(find.text('Loading your drives...'), findsOneWidget);
       expect(find.text('Getting Started'), findsNothing);
@@ -352,7 +352,7 @@ void main() {
       );
 
       for (final state in <DrivesListState>[
-        DrivesListLoading(),
+        const DrivesListLoading(),
         DrivesListUnavailable(),
         DrivesListLoaded(
           drives: [drive(id: 'a', name: 'Photos', hasBeenWalked: false)],

@@ -281,7 +281,9 @@ class DrivesListBody extends StatelessWidget {
 
     // Loading, and anything that has not yet resolved into one of the other
     // three. Never "you have none".
-    return const _DrivesListLoading();
+    return _DrivesListLoading(
+      state: state is DrivesListLoading ? state : null,
+    );
   }
 }
 
@@ -319,7 +321,11 @@ class _CentredMessage extends StatelessWidget {
 
 /// Still looking. It never says the user has none.
 class _DrivesListLoading extends StatelessWidget {
-  const _DrivesListLoading();
+  const _DrivesListLoading({this.state});
+
+  /// Carries how far the drive-list read has got, when there is a figure. Null
+  /// where the caller has none - this widget reaches for nothing itself.
+  final DrivesListLoading? state;
 
   @override
   Widget build(BuildContext context) {
@@ -329,7 +335,12 @@ class _DrivesListLoading extends StatelessWidget {
     return _CentredMessage(
       children: [
         Text(
-          appLocalizationsOf(context).loadingYourDrives,
+          state != null && state!.hasCount
+              ? appLocalizationsOf(context).loadingYourDrivesCount(
+                  state!.drivesRead,
+                  state!.drivesFound,
+                )
+              : appLocalizationsOf(context).loadingYourDrives,
           style: typography.heading4(
             color: colorTokens.textHigh,
             fontWeight: ArFontWeight.bold,

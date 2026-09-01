@@ -1,3 +1,4 @@
+import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'dart:async';
 
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
@@ -143,6 +144,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
                   isSyncing: isSyncing,
                   showElapsed: _hasElapsedWorthShowing(syncState),
                   isLoadingDrives: syncState is SyncLoadingDrives,
+                  syncState: syncState,
                   progress: reportsProgress ? snapshot.data : null,
                   driveName: _driveName(drivesState, snapshot.data),
                   syncCoversThisDrive: _coversSelectedDrive(
@@ -298,6 +300,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
     required bool isSyncing,
     required bool showElapsed,
     required bool isLoadingDrives,
+    required SyncState syncState,
     required bool syncCoversThisDrive,
     required SyncProgress? progress,
     required String? driveName,
@@ -312,7 +315,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
       // The same words the top bar uses for the same moment: the two report
       // one sync between them and must never name it differently.
       title = isLoadingDrives
-          ? appLocalizationsOf(context).loadingYourDrives
+          ? syncLoadingDrivesLabel(appLocalizationsOf(context), syncState)
           : progress != null && progress.isSingleDriveSync
               ? appLocalizationsOf(context).syncingSingleDrive
               : appLocalizationsOf(context).syncingAllDrives;

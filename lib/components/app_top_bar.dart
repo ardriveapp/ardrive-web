@@ -366,7 +366,7 @@ class SyncButton extends StatelessWidget {
       // Loading drive metadata reports no progress at all, so the ring has
       // nothing to fill and just turns.
       status = _SyncStatus(
-        title: appLocalizationsOf(context).loadingYourDrives,
+        title: syncLoadingDrivesLabel(appLocalizationsOf(context), syncState),
       );
       indicator = const _SyncProgressRing();
     } else if (isSyncing) {

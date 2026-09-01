@@ -64,7 +64,7 @@ void main() {
             tester,
             1000,
             DrivesListBody(
-              state: DrivesListLoading(),
+              state: const DrivesListLoading(),
               onOpenDrive: (_) {},
               onTryAgain: () {},
               onSyncAllDrives: () {},

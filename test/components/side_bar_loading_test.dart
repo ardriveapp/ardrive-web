@@ -140,12 +140,17 @@ void main() {
     });
   });
 
-  testWidgets('says it is still looking rather than showing nothing',
+  testWidgets('says nothing at all while the list is being read',
       (tester) async {
+    // The nav is where a reader looks for drives, not for a report on
+    // fetching them. The surface actually waiting on the read says so - the
+    // explorer's panel, the drives list, and the sync indicator, which is
+    // also where the count now appears.
     await tester.pumpWidget(wrap(DrivesLoadInProgress()));
     await tester.pump();
 
-    expect(find.text('Loading your drives...'), findsOneWidget);
+    expect(find.text('Loading your drives...'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
 
     await tester.pumpWidget(const SizedBox());
   });

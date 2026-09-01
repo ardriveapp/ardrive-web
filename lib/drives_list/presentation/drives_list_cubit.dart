@@ -31,7 +31,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         _syncCubit = syncCubit,
         _driveDao = driveDao,
         _userPreferencesRepository = userPreferencesRepository,
-        super(DrivesListLoading()) {
+        super(const DrivesListLoading()) {
     _subscription = Rx.combineLatest2<DrivesState, SyncState, void>(
       drivesCubit.stream.startWith(drivesCubit.state),
       syncCubit.stream.startWith(syncCubit.state),
@@ -73,10 +73,19 @@ class DrivesListCubit extends Cubit<DrivesListState> {
 
     final drivesState = _drivesCubit.state;
 
+    // How far the drive-list read has got, when that is what is running. Zero
+    // otherwise, and `hasCount` keeps "0 of 0" off the screen.
+    final loading = _syncCubit.state is SyncLoadingDrives
+        ? DrivesListLoading(
+            drivesRead: (_syncCubit.state as SyncLoadingDrives).drivesRead,
+            drivesFound: (_syncCubit.state as SyncLoadingDrives).drivesFound,
+          )
+        : const DrivesListLoading();
+
     // Still looking. Never "you have none" - that is the whole point of the
     // state beneath this one.
     if (drivesState is! DrivesLoadSuccess) {
-      emit(DrivesListLoading());
+      emit(loading);
       return;
     }
 
@@ -86,7 +95,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
       // difference has to be kept - not in the widget, and not in whichever
       // state happens to land first.
       if (_refreshesWeStarted > 0) {
-        emit(DrivesListLoading());
+        emit(loading);
         return;
       }
 
@@ -100,7 +109,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
           return;
         }
 
-        emit(DrivesListLoading());
+        emit(loading);
         return;
       }
 
@@ -226,7 +235,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     }
 
     _refreshesWeStarted++;
-    emit(DrivesListLoading());
+    emit(const DrivesListLoading());
 
     try {
       await _syncCubit.syncMetadataOnly();

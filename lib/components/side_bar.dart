@@ -123,9 +123,10 @@ class _AppSideBarState extends State<AppSideBar> {
                             ),
                           );
                         }
-                        if (state is DrivesLoadInProgress) {
-                          return const _DrivesStillLoading();
-                        }
+                        // Nothing while the list is being read. The nav is
+                        // where a reader looks for drives, not for a report on
+                        // fetching them - that belongs to the surface actually
+                        // waiting on it, and to the sync indicator.
                         return const SizedBox();
                       },
                     ),
@@ -239,11 +240,8 @@ class _AppSideBarState extends State<AppSideBar> {
                                           ),
                                         );
                                       }
-                                      if (state is DrivesLoadInProgress) {
-                                        return const _DrivesStillLoading(
-                                          leftPadding: 43,
-                                        );
-                                      }
+                                      // See the drawer above: the nav says
+                                      // nothing while the list is being read.
                                       return const SizedBox();
                                     },
                                   )
@@ -1082,39 +1080,3 @@ class _Accordion extends StatelessWidget {
 /// The nav used to render nothing here, which is indistinguishable from a
 /// wallet with no drives - and that is exactly what a returning user sees on a
 /// device the app has not read yet. It says which it is now.
-class _DrivesStillLoading extends StatelessWidget {
-  const _DrivesStillLoading({this.leftPadding = 0});
-
-  final double leftPadding;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return Padding(
-      padding: EdgeInsets.only(left: leftPadding, top: 8, bottom: 8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(colorTokens.textLow),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              appLocalizationsOf(context).loadingYourDrives,
-              style: typography.paragraphSmall(color: colorTokens.textLow),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

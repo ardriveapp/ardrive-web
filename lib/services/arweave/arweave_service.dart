@@ -1148,11 +1148,18 @@ class ArweaveService {
   /// Gets the unique drive entities for a particular user.
   Future<Map<DriveEntity, DriveKey?>> getUniqueUserDriveEntities(
     Wallet wallet,
-    String password,
-  ) async {
+    String password, {
+    /// Called as each drive's metadata comes back, with how many have arrived
+    /// and how many were listed. Fires once with `(0, total)` as soon as the
+    /// listing is known, so a reader waiting on this learns the size of the
+    /// job before any of it is done.
+    void Function(int read, int found)? onDriveRead,
+  }) async {
     try {
       final userAddress = await wallet.getAddress();
       final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
+
+      onDriveRead?.call(0, driveTxs.length);
 
       // Sync's drive-discovery phase, and its only caller is
       // `_SyncRepository.updateUserDrives`. It reads the configured gateway
@@ -1170,6 +1177,8 @@ class ArweaveService {
       // the metadata reads use.
       final driveResponses = List<Response?>.filled(driveTxs.length, null);
 
+      var drivesRead = 0;
+
       await runPooled(
         concurrency:
             _configService.config.maxConcurrentDataFetches.clamp(1, 100),
@@ -1182,6 +1191,7 @@ class ArweaveService {
             // A drive we cannot read is dropped from this pass, as before.
           }
         },
+        onItemDone: () => onDriveRead?.call(++drivesRead, driveTxs.length),
       );
 
       // Cache raw bytes for reuse by getLatestDriveEntityWithId (e.g., during

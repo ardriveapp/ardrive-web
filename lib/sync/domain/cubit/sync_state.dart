@@ -25,7 +25,27 @@ class SyncIdle extends SyncState {}
 /// Loading drive metadata only (not full sync).
 /// Used when syncAllDrivesOnLogin is disabled.
 /// This is a lightweight UI-only state that doesn't block waitCurrentSync().
-class SyncLoadingDrives extends SyncState {}
+/// The drive list itself is being read, before any drive's history is walked.
+///
+/// Carries how far that read has got. The count is real rather than a guess:
+/// the drive transactions are listed first, so the total is known before a
+/// single one is fetched. Both are zero before the listing comes back, which
+/// is the one moment there is genuinely nothing to say.
+class SyncLoadingDrives extends SyncState {
+  SyncLoadingDrives({this.drivesRead = 0, this.drivesFound = 0});
+
+  /// Drives whose metadata has come back.
+  final int drivesRead;
+
+  /// Drives the listing turned up, and so the number [drivesRead] climbs to.
+  final int drivesFound;
+
+  /// Whether there is a figure worth showing yet.
+  bool get hasCount => drivesFound > 0;
+
+  @override
+  List<Object> get props => [drivesRead, drivesFound];
+}
 
 class SyncInProgress extends SyncState {
   /// Who asked for this sync. Nothing blocks the app for either any more -

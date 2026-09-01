@@ -2827,6 +2827,18 @@
   "@loadingYourDrives": {
     "description": "Title shown when loading drive metadata on login"
   },
+  "loadingYourDrivesCount": "Loading your drives... {read} of {found}",
+  "@loadingYourDrivesCount": {
+    "description": "Shown while the drive list is being read, once the number of drives is known.",
+    "placeholders": {
+      "read": {
+        "type": "int"
+      },
+      "found": {
+        "type": "int"
+      }
+    }
+  },
   "syncingSingleDrive": "Syncing Drive",
   "@syncingSingleDrive": {
     "description": "Title shown when syncing a single drive"
