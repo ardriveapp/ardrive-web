@@ -396,14 +396,18 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
       //
       // The plates carry a phase that cannot measure itself; the bar carries
       // one that can, and a real figure always beats motion.
-      if (_progressAtMount == null) ...[
+      // Read from the state on screen now, not the one this panel mounted
+      // against. Locking the choice at mount meant a panel opened at 99% kept
+      // a dead bar after the sync ended, and one opened while the drive list
+      // was still loading kept the plates for the rest of the walk.
+      if (progress == null) ...[
         const SyncLoadingIndicator(size: 56),
         const SizedBox(height: 8),
       ],
       // The modal's bar, not a second one: it already knows not to claim a
       // number during a phase that cannot measure itself, and not to rewind
       // when one ends.
-      if (_progressAtMount != null)
+      if (progress != null)
         ProgressBar(
         // Keyed so the Column matches it by identity, not by position. When
         // the sync ends, subtitle, detail and the elapsed line all disappear

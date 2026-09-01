@@ -1167,7 +1167,20 @@ class ArweaveService {
       final userAddress = await wallet.getAddress();
       final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
 
-      onDriveRead?.call(0, driveTxs.length);
+      // Distinct drives, not transactions. `getUniqueUserDriveEntityTxs`
+      // dedupes per GQL page only, so a wallet whose drive entities span more
+      // than one page has more rows here than it has drives - and the count
+      // read "43 of 137" for twelve drives.
+      final distinctDriveIds = <String>{};
+      for (final tx in driveTxs) {
+        final id = tx.getTag(EntityTag.driveId);
+        if (id != null) distinctDriveIds.add(id);
+      }
+
+      final driveCount = distinctDriveIds.length;
+      final readDriveIds = <String>{};
+
+      onDriveRead?.call(0, driveCount);
 
       // Sync's drive-discovery phase, and its only caller is
       // `_SyncRepository.updateUserDrives`. It reads the configured gateway
@@ -1185,8 +1198,6 @@ class ArweaveService {
       // the metadata reads use.
       final driveResponses = List<Response?>.filled(driveTxs.length, null);
 
-      var drivesRead = 0;
-
       await runPooled(
         concurrency:
             _configService.config.maxConcurrentDataFetches.clamp(1, 100),
@@ -1198,8 +1209,15 @@ class ArweaveService {
           } catch (_) {
             // A drive we cannot read is dropped from this pass, as before.
           }
+
+          // Counted per drive, so a drive with several revisions on several
+          // pages advances the figure once.
+          final id = driveTxs[i].getTag(EntityTag.driveId);
+          if (id != null && readDriveIds.add(id)) {
+            onDriveRead?.call(readDriveIds.length, driveCount);
+          }
         },
-        onItemDone: () => onDriveRead?.call(++drivesRead, driveTxs.length),
+        onItemDone: null,
       );
 
       // Cache raw bytes for reuse by getLatestDriveEntityWithId (e.g., during
@@ -1233,7 +1251,8 @@ class ArweaveService {
         }
       }
 
-      var drivesUnlocked = 0;
+      final unlockedDriveIds = <String>{};
+
       if (privateDriveIds.isNotEmpty) {
         onDriveUnlocked?.call(0, privateDriveIds.length);
       }
@@ -1256,6 +1275,24 @@ class ArweaveService {
           driveKey = await _driveDao.getDriveKeyFromMemory(
             driveTx.getTag(EntityTag.driveId)!,
           );
+
+          // Settled, however it settles. Counting only the drives whose keys
+          // were derived here left the figure short of its total whenever a
+          // signature could not be read - and stuck at "0 of 5" for a whole
+          // second pass, because by then every key is already in memory and
+          // the branch below never runs.
+          void settled() {
+            if (unlockedDriveIds.add(driveTx.getTag(EntityTag.driveId)!)) {
+              onDriveUnlocked?.call(
+                unlockedDriveIds.length,
+                privateDriveIds.length,
+              );
+            }
+          }
+
+          if (driveKey != null) {
+            settled();
+          }
 
           if (driveKey == null) {
             final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
@@ -1281,6 +1318,7 @@ class ArweaveService {
                 // Claim the id so an older transaction for the same drive on
                 // a later page cannot quietly stand in for the newest one.
                 handledDriveIds.add(txDriveId);
+                settled();
                 continue;
               }
             }
@@ -1297,7 +1335,7 @@ class ArweaveService {
               driveKey: driveKey,
             );
 
-            onDriveUnlocked?.call(++drivesUnlocked, privateDriveIds.length);
+            settled();
           }
         }
         try {

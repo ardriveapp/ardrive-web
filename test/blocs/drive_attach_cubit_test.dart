@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -116,6 +117,7 @@ void main() {
         arweave: arweave,
         driveDao: driveDao,
         syncBloc: syncBloc,
+        activityCubit: ActivityCubit(),
         drivesBloc: drivesBloc,
         profileKey: profileKey,
       );
@@ -205,6 +207,7 @@ void main() {
           arweave: arweave,
           driveDao: driveDao,
           syncBloc: syncBloc,
+          activityCubit: ActivityCubit(),
           drivesBloc: drivesBloc,
           profileKey: profileKey,
           initialDriveId: validPrivateDriveId,

@@ -550,16 +550,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1200));
     expect(bar(tester).value, closeTo(0.99, 0.01));
 
-    // The sync ends; the panel stays up while the folder opens.
+    // The sync ends; the panel stays up while the folder opens. The bar goes
+    // with the sync rather than lingering: there is no longer a figure to
+    // show, and a bar left on screen with nothing feeding it was reading a
+    // stale 99% over "Opening Photos". It cannot rewind if it is not there.
     syncStates.add(SyncIdle());
     await tester.pump(const Duration(milliseconds: 10));
 
-    final after = bar(tester).value;
-    expect(
-      after == null || after >= 0.99,
-      isTrue,
-      reason: 'the bar fell back to $after after reading 0.99',
-    );
+    expect(find.byType(ProgressBar), findsNothing);
+    expect(find.byType(SyncLoadingIndicator), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
   });

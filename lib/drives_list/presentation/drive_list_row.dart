@@ -354,6 +354,29 @@ class DriveListRow extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
+    // A failure is drawn as one. The top bar reports "2 of 12 drives could not
+    // be synced" in red with a triangle and sends the reader here to find out
+    // which - and this said so in the same grey as "Synced 5 minutes ago", so
+    // the one row that needed finding looked like every row that did not.
+    // The same 14px triangle the sync history uses, so the two agree.
+    if (drive.lastSyncFailed) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ArDriveIcons.triangle(size: 14, color: colorTokens.strokeRed),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              formatDriveSyncState(context, drive),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.paragraphSmall(color: colorTokens.textRed),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Text(
       formatDriveSyncState(context, drive),
       maxLines: 1,

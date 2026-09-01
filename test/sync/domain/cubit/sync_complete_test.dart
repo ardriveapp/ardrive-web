@@ -311,7 +311,11 @@ void main() {
       expect(states.whereType<SyncComplete>(), isEmpty);
       expect(states.whereType<SyncFailure>(), isNotEmpty,
           reason: 'the failure is still reported as a failure');
-      expect(cubit.state, isA<SyncIdle>());
+      // And it rests there. Dropping SyncIdle on top in the same turn stopped
+      // the ring and returned the icon to idle, so a sync that failed outright
+      // looked exactly like one that succeeded - the top bar has a failure
+      // branch and was simply never given a state to render.
+      expect(cubit.state, isA<SyncFailure>());
       expect(cubit.state, isNot(isA<SyncComplete>()));
     });
 
@@ -335,7 +339,7 @@ void main() {
       );
 
       expect(results, isEmpty);
-      expect(cubit.state, isA<SyncIdle>());
+      expect(cubit.state, isA<SyncFailure>());
       expect(cubit.state, isNot(isA<SyncComplete>()));
 
       await cubit.close();

@@ -444,9 +444,21 @@ class SyncCubit extends Cubit<SyncState> {
     logger.d('Starting metadata-only sync');
     final profile = _profileCubit.state;
     if (profile is ProfileLoggedIn) {
-      // Emit SyncLoadingDrives for UI feedback (shows "Loading your drives...")
-      // This is separate from SyncInProgress so it doesn't block waitCurrentSync()
-      _emitIfOpen(SyncLoadingDrives());
+      // Only when nothing bigger is running. A full sync walking every drive
+      // outranks a drive-list refresh, and this used to paint over it: the top
+      // bar swapped "Syncing... 40%" for "Loading your drives...", every
+      // `waitCurrentSync` waiter was released against a half-written database
+      // because `SyncLoadingDrives` counts as finished, and `startSync`'s
+      // guard - which asks only for `SyncInProgress` - would let a second full
+      // sync start on top of the first.
+      //
+      // The terminal emit has had this rule since the last pass; the entry emit
+      // was simply never given it. Both ends now.
+      final runningSync = state is SyncInProgress;
+
+      if (!runningSync) {
+        _emitIfOpen(SyncLoadingDrives());
+      }
       try {
         await _syncRepository.updateUserDrives(
           wallet: profile.user.wallet,
@@ -456,7 +468,7 @@ class SyncCubit extends Cubit<SyncState> {
           // [_finishMetadataSync] applies to the terminal state, for the same
           // reason: a full sync started underneath must not be painted over.
           onDriveRead: (read, found) {
-            if (state is SyncLoadingDrives) {
+            if (!runningSync && state is SyncLoadingDrives) {
               _emitIfOpen(
                 SyncLoadingDrives(drivesRead: read, drivesFound: found),
               );
@@ -465,7 +477,7 @@ class SyncCubit extends Cubit<SyncState> {
           // The second half of the same wait, and the half that actually takes
           // the time on a wallet with private drives.
           onDriveUnlocked: (unlocked, total) {
-            if (state is SyncLoadingDrives) {
+            if (!runningSync && state is SyncLoadingDrives) {
               _emitIfOpen(
                 SyncLoadingDrives(
                   drivesRead: unlocked,
@@ -717,20 +729,28 @@ class SyncCubit extends Cubit<SyncState> {
     } else if (ranToCompletion) {
       _emitIfOpen(_syncComplete(trigger));
       unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
+    } else if (threw) {
+      // The failure stands. `onError` has already emitted `SyncFailure`, and
+      // this used to drop `SyncIdle` on top of it in the same turn - so the
+      // ring stopped, the icon went back to idle, and a sync that failed
+      // outright was indistinguishable from one that succeeded. The top bar
+      // has a failure branch; it was simply never given a state to render.
+      //
+      // `driveListRefreshFailed` reads this state too, which is what stops the
+      // explorer claiming the user has no drives after a failed refresh.
+      unawaited(_recordSyncRun(
+        SyncRunOutcome.failed,
+        trigger,
+        error: thrownError,
+      ));
     } else {
       // Nothing to report, so nothing is claimed - exactly what this path
       // emitted before results existed.
       _emitIfOpen(SyncIdle());
-      if (threw) {
-        unawaited(_recordSyncRun(
-          SyncRunOutcome.failed,
-          trigger,
-          error: thrownError,
-        ));
-      }
     }
 
-    return true;
+    // See the single-drive path below: whether a sync actually ran.
+    return !threw;
   }
 
   /// Syncs a single drive by its ID with optional deep sync.
@@ -937,18 +957,21 @@ class SyncCubit extends Cubit<SyncState> {
     } else if (ranToCompletion) {
       _emitIfOpen(_syncComplete(trigger));
       unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
+    } else if (threw) {
+      // The failure stands - see the same branch in [startSync].
+      unawaited(_recordSyncRun(
+        SyncRunOutcome.failed,
+        trigger,
+        error: thrownError,
+      ));
     } else {
       _emitIfOpen(SyncIdle());
-      if (threw) {
-        unawaited(_recordSyncRun(
-          SyncRunOutcome.failed,
-          trigger,
-          error: thrownError,
-        ));
-      }
     }
 
-    return true;
+    // What the contract says: whether a sync actually ran. A sync that threw
+    // before fetching anything did not, and returning true for it told
+    // `DriveAttachCubit` its drive was synced when nothing had been read.
+    return !threw;
   }
 
   /// Writes down that the drives this sync walked are current as of now.

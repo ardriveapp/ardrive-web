@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -25,6 +26,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
   final DriveDao _driveDao;
   final SyncCubit _syncBloc;
   final DrivesCubit _drivesBloc;
+  final ActivityCubit _activityCubit;
   final SecretKey? _profileKey;
 
   final driveNameController = TextEditingController();
@@ -46,10 +48,12 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     required DriveDao driveDao,
     required SyncCubit syncBloc,
     required DrivesCubit drivesBloc,
+    required ActivityCubit activityCubit,
   })  : _arweave = arweave,
         _driveDao = driveDao,
         _syncBloc = syncBloc,
         _drivesBloc = drivesBloc,
+        _activityCubit = activityCubit,
         _profileKey = profileKey,
         super(DriveAttachInitial()) {
     initializeForm(
@@ -190,13 +194,22 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       /// whether it actually ran. Between `waitCurrentSync` returning and this
       /// call another sync can take the slot - or the tab can lose focus, or
       /// an upload can be in progress - and the drive would be selected having
-      /// never been read, with nothing anywhere saying so. One retry after the
-      /// sync that beat us is enough to close that window.
+      /// never been read, with nothing anywhere saying so.
+      ///
+      /// The attach dialog itself is the reason this needs more than one try.
+      /// It runs through `performUninterruptableActivity`, which holds
+      /// `ActivityInProgress` until the dialog *route* finishes closing - 200ms
+      /// of transition after `Navigator.pop`. `startSyncForDrive` refuses
+      /// outright while that flag is up, and both attempts used to land inside
+      /// that window, so attaching a drive reliably synced nothing at all.
+      /// Waiting for the activity to end first is what makes the retry mean
+      /// something.
       unawaited(() async {
         try {
           var didSync = await _syncBloc.startSyncForDrive(driveId: driveId);
 
           if (!didSync) {
+            await _waitForActivityToFinish();
             await _syncBloc.waitCurrentSync();
             didSync = await _syncBloc.startSyncForDrive(driveId: driveId);
           }
@@ -362,4 +375,21 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     emit(DriveAttachFailure());
   }
+  /// Parks until nothing uninterruptible is running.
+  ///
+  /// Bounded, because a flag that never clears must not strand an attach: the
+  /// worst outcome of giving up is the "Drive Not Synced" card the explorer
+  /// already shows, with its own Sync button.
+  Future<void> _waitForActivityToFinish() async {
+    if (_activityCubit.state is! ActivityInProgress) return;
+
+    try {
+      await _activityCubit.stream
+          .firstWhere((state) => state is! ActivityInProgress)
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // Timed out or the cubit closed. Fall through and try anyway.
+    }
+  }
+
 }

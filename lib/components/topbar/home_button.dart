@@ -23,8 +23,6 @@ class HomeButtonTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
     // Only offered to somebody who can actually get there - the same rule the
     // router applies before it will draw the list at all.
     if (!AppRouterDelegate.canShowDrivesList(
@@ -38,15 +36,37 @@ class HomeButtonTopBar extends StatelessWidget {
       child: ArDriveClickArea(
         child: GestureDetector(
           onTap: () => context.read<AppRouterDelegate>().showDrivesList(),
-          // The design system's icon font has no house, so this is Material's
-          // until one is cut. Sized to the icons either side of it.
-          child: Icon(
-            Icons.home_outlined,
-            size: 24,
-            color: colorTokens.textMid,
+          // The target is the box, not the glyph. `HoverWidget`'s padding sits
+          // *outside* the detector and `ArDriveClickArea` adds none, so a
+          // 24px icon left a 24px target inside a 34px box that looked live
+          // and was not - a miss on a phone every time somebody aimed at the
+          // edge. `driveListMenuTapTarget` is the floor the drives list
+          // already holds itself to.
+          behavior: HitTestBehavior.opaque,
+          child: const SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              // The design system's icon font has no house, so this is
+              // Material's until one is cut.
+              child: _HomeGlyph(),
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HomeGlyph extends StatelessWidget {
+  const _HomeGlyph();
+
+  @override
+  Widget build(BuildContext context) {
+    return Icon(
+      Icons.home_outlined,
+      size: 24,
+      color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
     );
   }
 }
