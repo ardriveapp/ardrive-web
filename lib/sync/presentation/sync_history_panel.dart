@@ -2,6 +2,7 @@ import 'package:ardrive/sync/domain/sync_run.dart';
 import 'package:ardrive/sync/domain/sync_trigger.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,11 +14,13 @@ const Key syncHistoryPanelKey = Key('syncHistoryPanel');
 
 /// Level two: what the recent syncs actually did.
 ///
-/// It lives inside the Troubleshooting section of the support modal, which is
-/// already the surface for "something is wrong" and already carries the
-/// diagnostic logs a user with a problem is about to send. Nothing here is on
-/// screen unasked, and nothing here is asked for until the modal is opened -
-/// the read is a local one and costs no network request.
+/// It has its own modal rather than a section at the bottom of the Help one.
+/// That was the first home and it was the wrong one: Help is support email,
+/// Help Center, Discord and Docs, and the record ended up the sixth thing on a
+/// page about none of it - while the menu row labelled "Sync history" merely
+/// opened Help and left the reader to scroll. This is app state, not help
+/// content. Nothing here is on screen unasked, and nothing is read until the
+/// modal is opened - a local read, no network request.
 ///
 /// Deliberately not in the sync menu. That menu sizes its overlay as
 /// `items.length * 48` and closes on any tap inside it, so a list that scrolls
@@ -280,4 +283,49 @@ List<String> syncRunOutcomeLines(AppLocalizations localizations, SyncRun run) {
   }
 
   return lines;
+}
+
+/// Opens the record in a modal of its own.
+///
+/// Two doors reach it: the sync menu, where a reader watching a slow or failed
+/// sync already is, and the Troubleshooting section of Help, beside the logs
+/// they would send support.
+Future<void> showSyncHistoryModal(BuildContext context) {
+  return showArDriveDialog(
+    context,
+    content: ArDriveStandardModalNew(
+      hasCloseButton: true,
+      title: appLocalizationsOf(context).syncHistory,
+      // Bounded and scrolling: twenty runs with error text is taller than a
+      // phone, and the record is the thing being read rather than a preamble
+      // to a button.
+      scrollableContent: true,
+      content: SizedBox(
+        width: 384,
+        child: Builder(
+          builder: (context) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // What the record covers, and what it does not: it is this
+              // device's, it is capped, and logging out takes it. Said here
+              // because this modal is the record's own surface now.
+              Text(
+                appLocalizationsOf(context)
+                    .syncHistoryDescription(syncHistoryLimit),
+                style: ArDriveTypographyNew.of(context).paragraphSmall(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colorTokens
+                      .textMid,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const SyncHistoryPanel(),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }

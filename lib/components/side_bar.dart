@@ -14,7 +14,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config_service.dart';
-import 'package:ardrive/sync/domain/sync_run.dart';
 import 'package:ardrive/sync/presentation/sync_history_panel.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -691,10 +690,9 @@ Future<void> showSupportModal({
     content: ArDriveStandardModalNew(
       hasCloseButton: true,
       title: appLocalizationsOf(context).help,
-      // The modal now carries the sync history as well as the log export, so
-      // it is taller than the screen on a phone at a large text scale. Bounded
-      // and scrolling rather than clipped: the Download button at the bottom
-      // is the reason a user opened this, and it must stay reachable.
+      // Taller than the screen on a phone at a large text scale. Bounded and
+      // scrolling rather than clipped: the Download button at the bottom is
+      // the reason a user opened this, and it must stay reachable.
       scrollableContent: true,
       content: SizedBox(
         width: 384,
@@ -848,30 +846,38 @@ Future<void> showSupportModal({
                 color: colorTokens.textMid,
               ),
             ),
-            const SizedBox(height: 24),
-            // Level two of the sync report, here rather than anywhere else
-            // because this modal is already the surface for "something is
-            // wrong" and the logs a user would send support are one button
-            // below it. It is reachable from the sync indicator's menu too,
-            // which is where somebody watching a slow sync is looking.
-            Text(
-              appLocalizationsOf(context).syncHistory,
-              style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.bold,
-                color: colorTokens.textHigh,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              appLocalizationsOf(context).syncHistoryDescription(
-                syncHistoryLimit,
-              ),
-              style: typography.paragraphSmall(
-                color: colorTokens.textMid,
-              ),
-            ),
+            // A door to the sync record rather than the record itself: it
+            // has its own modal now. Embedded here it was the sixth section
+            // of a page about support email, Help Center, Discord and Docs,
+            // and a reader had to scroll past all of them to reach it.
             const SizedBox(height: 12),
-            const SyncHistoryPanel(),
+            ArDriveClickArea(
+              child: GestureDetector(
+                // Opened over Help rather than in place of it: popping and
+                // pushing in one frame loses the push, and a reader who came
+                // for the logs gets Help back when they close the record.
+                onTap: () => showSyncHistoryModal(context),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        appLocalizationsOf(context).syncHistory,
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLink,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    ArDriveIcons.arrowRightOutline(
+                      size: 14,
+                      color: colorTokens.textLink,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

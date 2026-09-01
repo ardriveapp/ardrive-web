@@ -14,8 +14,8 @@ import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/presentation/sync_elapsed_time.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
+import 'package:ardrive/sync/presentation/sync_history_panel.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/open_urls.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -924,7 +924,7 @@ class _SyncButtonMenu extends StatelessWidget {
       // well: reading what the last few syncs did is exactly what somebody
       // watching a slow one wants.
       ArDriveDropdownItem(
-        onClick: () => openHelp(context),
+        onClick: () => showSyncHistoryModal(context),
         content: ArDriveDropdownItemTile(
           name: appLocalizationsOf(context).syncHistory,
           icon: ArDriveIcons.info(color: iconColor),

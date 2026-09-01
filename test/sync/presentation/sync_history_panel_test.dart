@@ -355,40 +355,43 @@ void main() {
     }
   });
 
-  group('it lives in the Troubleshooting modal', () {
-    /// Opens the support modal the sidebar and the sync menu both open.
-    Future<void> openSupportModal(WidgetTester tester) async {
+  group('it has a modal of its own', () {
+    /// Opens the record the way the sync menu's "Sync history" row opens it.
+    Future<void> openHistoryModal(WidgetTester tester,
+        {double textScale = 1}) async {
       await tester.pumpWidget(host(
         Builder(
           builder: (context) => TextButton(
-            onPressed: () => showSupportModal(context: context),
+            onPressed: () => showSyncHistoryModal(context),
             child: const Text('open'),
           ),
         ),
+        textScale: textScale,
       ));
       await tester.pump();
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
     }
 
-    testWidgets('beside the logs a user with a problem would send',
+    testWidgets('titled as the thing it is, with the record inside',
         (tester) async {
       historyIs([run(itemsFound: 12)]);
 
-      await openSupportModal(tester);
+      await openHistoryModal(tester);
 
-      expect(find.text('Troubleshooting'), findsOneWidget);
-      expect(find.text('Sync history'), findsOneWidget);
+      expect(find.byType(SyncHistoryPanel), findsOneWidget);
       expect(find.text('All drives'), findsOneWidget);
       expect(find.text('12 new items'), findsOneWidget);
-      // The log export is still the modal's action, one button below.
-      expect(find.text('Download'), findsOneWidget);
+      // The record is the whole modal. Nothing from Help came with it - it is
+      // no longer the sixth section of a page about support links.
+      expect(find.text('Troubleshooting'), findsNothing);
+      expect(find.text('Download'), findsNothing);
     });
 
     testWidgets('and it says what the record covers', (tester) async {
       historyIs([run()]);
 
-      await openSupportModal(tester);
+      await openHistoryModal(tester);
 
       expect(
         find.text(
@@ -399,17 +402,26 @@ void main() {
       );
     });
 
-    testWidgets(
-        'a modal that has grown scrolls rather than clipping its action',
-        (tester) async {
-      // At 320 and text scale 2.0 this modal is taller than the screen, and
-      // the Download button at the bottom is the reason the user opened it.
+    testWidgets('a full record scrolls rather than clipping', (tester) async {
+      // Twenty runs at 320 and text scale 2.0 is far taller than the screen.
       tester.view.physicalSize = const Size(320, 640);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
       historyIs(
           [for (var i = 0; i < syncHistoryLimit; i++) run(itemsFound: i)]);
+
+      await openHistoryModal(tester, textScale: 2);
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(SyncHistoryPanel), findsOneWidget);
+    });
+  });
+
+  group('and Help points at it rather than carrying it', () {
+    testWidgets('the Troubleshooting section offers it as a link',
+        (tester) async {
+      historyIs([run(itemsFound: 12)]);
 
       await tester.pumpWidget(host(
         Builder(
@@ -418,14 +430,29 @@ void main() {
             child: const Text('open'),
           ),
         ),
-        textScale: 2,
       ));
       await tester.pump();
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
+      // The link, not the record: Help stays a page about getting help.
+      expect(find.text('Troubleshooting'), findsOneWidget);
+      expect(find.text('Sync history'), findsOneWidget);
+      expect(find.byType(SyncHistoryPanel), findsNothing);
+      expect(find.text('12 new items'), findsNothing);
+      // The log export is still the modal's own action.
+      expect(find.text('Download'), findsOneWidget);
+
+      // The modal scrolls, and the link sits below the fold on a default
+      // test viewport - tapping it where it is not would hit the page behind.
+      await tester.ensureVisible(find.text('Sync history'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sync history'));
+      await tester.pumpAndSettle();
+
+      // And following it lands on the record, drawn over Help.
       expect(find.byType(SyncHistoryPanel), findsOneWidget);
+      expect(find.text('12 new items'), findsOneWidget);
     });
   });
 }
