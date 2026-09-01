@@ -480,6 +480,13 @@ String formatDriveSyncState(
     return appLocalizationsOf(context).driveSyncingNow;
   }
 
+  // Ahead of the timestamp, because a drive that failed keeps whatever time it
+  // last succeeded at - and "Synced 2 days ago" on the one row that just
+  // failed is the least useful true thing this row could say.
+  if (drive.lastSyncFailed) {
+    return appLocalizationsOf(context).driveSyncFailed;
+  }
+
   final lastSyncedAt = drive.lastSyncedAt;
 
   if (lastSyncedAt == null) {

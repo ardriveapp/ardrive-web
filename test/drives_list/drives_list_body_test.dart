@@ -32,6 +32,7 @@ void main() {
         totalSize: hasBeenWalked ? 100 : null,
         lastSyncedAt: hasBeenWalked ? DateTime.now() : null,
         isSyncing: false,
+        lastSyncFailed: false,
       );
 
   var opened = <String>[];

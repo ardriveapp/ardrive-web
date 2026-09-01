@@ -19,6 +19,7 @@ class DriveListItem extends Equatable {
     required this.totalSize,
     required this.lastSyncedAt,
     required this.isSyncing,
+    required this.lastSyncFailed,
   });
 
   final String id;
@@ -66,6 +67,15 @@ class DriveListItem extends Equatable {
   /// Whether a sync covering this drive is running right now.
   final bool isSyncing;
 
+  /// Whether the most recent sync tried this drive and could not read it.
+  ///
+  /// Its own fact, because none of the others can stand in for it: a drive
+  /// that failed keeps whatever [lastSyncedAt] it had, so without this the row
+  /// reporting "1 of 5 drives failed" in the top bar looked exactly like the
+  /// four that succeeded - and a drive that failed on a first sync was
+  /// indistinguishable from one nobody had opened yet.
+  final bool lastSyncFailed;
+
   @override
   List<Object?> get props => [
         id,
@@ -78,5 +88,6 @@ class DriveListItem extends Equatable {
         totalSize,
         lastSyncedAt,
         isSyncing,
+        lastSyncFailed,
       ];
 }

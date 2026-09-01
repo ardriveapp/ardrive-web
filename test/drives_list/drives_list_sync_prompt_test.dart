@@ -62,6 +62,7 @@ void main() {
         totalSize: null,
         lastSyncedAt: null,
         isSyncing: isSyncing,
+        lastSyncFailed: false,
       );
 
   Widget host(Widget child) => ArDriveTheme(

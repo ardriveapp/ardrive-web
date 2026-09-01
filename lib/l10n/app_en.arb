@@ -699,6 +699,10 @@
   "@driveNeverSynced": {
     "description": "Sync state of a drive whose history has never been read on this device. Deliberately not \"Empty\" - nothing has looked"
   },
+  "driveSyncFailed": "Last sync failed",
+  "@driveSyncFailed": {
+    "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from 'Never synced', which means nobody has looked yet."
+  },
   "driveSyncingNow": "Syncing...",
   "@driveSyncingNow": {
     "description": "Sync state of a drive a sync is walking right now"
@@ -2538,7 +2542,7 @@
   "@sharedFileVersionsLooking": {
     "description": "Shown while the rest of a file's version history is being fetched"
   },
-  "sharedFileVersionsUnavailableShort": "Couldn\u2019t check for other versions.",
+  "sharedFileVersionsUnavailableShort": "Couldn’t check for other versions.",
   "@sharedFileVersionsUnavailableShort": {
     "description": "Shown when the version history could not be read; the version the recipient was sent is still listed and downloadable"
   },

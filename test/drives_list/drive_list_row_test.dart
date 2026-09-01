@@ -23,6 +23,7 @@ void main() {
     int? totalSize = 350,
     DateTime? lastSyncedAt,
     bool isSyncing = false,
+    bool lastSyncFailed = false,
   }) =>
       DriveListItem(
         id: 'drive-id',
@@ -35,6 +36,7 @@ void main() {
         totalSize: hasBeenWalked ? totalSize : null,
         lastSyncedAt: lastSyncedAt,
         isSyncing: isSyncing,
+        lastSyncFailed: lastSyncFailed,
       );
 
   Widget rowUnder(
@@ -219,6 +221,7 @@ void main() {
         tester,
         drive(
           isSyncing: true,
+          lastSyncFailed: false,
           lastSyncedAt: DateTime.now().subtract(const Duration(hours: 2)),
         ),
         width: 1200,
@@ -462,6 +465,54 @@ void main() {
       );
 
       expect(find.text('Shared with me'), findsOneWidget);
+    });
+  });
+
+  /// The top bar says "1 of 5 drives failed"; this list is where a reader goes
+  /// to find out which. Until now every row said either "Never synced" or a
+  /// stale timestamp, so the one drive that failed looked exactly like the
+  /// four that succeeded - and on a first sync, exactly like one nobody had
+  /// opened yet.
+  group('a drive that could not be read says so', () {
+    testWidgets('instead of the time it last succeeded at', (tester) async {
+      await pumpRow(
+        tester,
+        drive(
+          lastSyncedAt: DateTime.now().subtract(const Duration(days: 2)),
+          lastSyncFailed: true,
+        ),
+        width: 1200,
+      );
+
+      expect(find.text('Last sync failed'), findsOneWidget);
+      expect(find.textContaining('days ago'), findsNothing);
+    });
+
+    testWidgets('and is distinguishable from one nobody has opened',
+        (tester) async {
+      await pumpRow(tester, drive(hasBeenWalked: false), width: 1200);
+      expect(find.text('Never synced'), findsOneWidget);
+      expect(find.text('Last sync failed'), findsNothing);
+
+      await pumpRow(
+        tester,
+        drive(hasBeenWalked: false, lastSyncFailed: true),
+        width: 1200,
+      );
+      expect(find.text('Last sync failed'), findsOneWidget);
+      expect(find.text('Never synced'), findsNothing);
+    });
+
+    testWidgets('but a running sync still wins, since it is happening now',
+        (tester) async {
+      await pumpRow(
+        tester,
+        drive(isSyncing: true, lastSyncFailed: true),
+        width: 1200,
+      );
+
+      expect(find.text('Syncing...'), findsOneWidget);
+      expect(find.text('Last sync failed'), findsNothing);
     });
   });
 }

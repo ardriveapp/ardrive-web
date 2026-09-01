@@ -77,6 +77,7 @@ void main() {
         totalSize: null,
         lastSyncedAt: null,
         isSyncing: false,
+        lastSyncFailed: false,
       );
 
   Widget host(Widget child, {double textScale = 1}) => ArDriveTheme(

@@ -178,6 +178,13 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     final syncState = _syncCubit.state;
     final syncingDriveId = _syncCubit.syncingDriveId;
 
+    // The top bar says "1 of 5 drives failed" and the list is where a reader
+    // goes to find out which. The state has always carried the ids; nothing on
+    // this page read them.
+    final failedDriveIds = syncState is SyncCompleteWithErrors
+        ? syncState.failedDriveIds.toSet()
+        : const <String>{};
+
     final items = drives.map((drive) {
       final syncedAt = lastSyncedAt[drive.id];
 
@@ -201,6 +208,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         lastSyncedAt: syncedAt,
         isSyncing: syncState is SyncInProgress &&
             (syncingDriveId == null || syncingDriveId == drive.id),
+        lastSyncFailed: failedDriveIds.contains(drive.id),
       );
     }).toList();
 
