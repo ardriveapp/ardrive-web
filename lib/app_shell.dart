@@ -14,7 +14,6 @@ import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/presentation/sync_overlay.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
-import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/foundation.dart';
@@ -297,6 +296,12 @@ class AppShellState extends State<AppShell> {
 /// The bar's own row, which is all of it.
 const double _mobileAppBarRowHeight = 80;
 
+/// One size for every control in the mobile bar.
+const double _mobileAppBarIconSize = 24;
+
+/// Exposed so a test can hold every control in the bar to it.
+const double mobileAppBarIconSize = _mobileAppBarIconSize;
+
 // TODO: add the gift icon
 class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   const MobileAppBar({
@@ -334,7 +339,11 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                     (showDrawerButton
                         ? ArDriveIconButton(
                             icon: ArDriveIcons.menu(
-                              size: defaultIconSize,
+                              // The size every other control in this bar is:
+                              // the hide toggle, the sync indicator and the
+                              // way home all take ArDriveIcon's default, and
+                              // this was the only one at 20.
+                              size: _mobileAppBarIconSize,
                               color: ArDriveTheme.of(context)
                                   .themeData
                                   .colors

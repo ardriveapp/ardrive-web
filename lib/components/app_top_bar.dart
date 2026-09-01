@@ -124,6 +124,26 @@ class GlobalHideToggleButton extends StatelessWidget {
 /// when a sync starts or stops.
 const double _syncIndicatorSize = 24;
 
+/// Exposed so a test can compare it with [syncGlyphSizeWhileSyncing] - the
+/// pair is what the eye compares when a sync starts.
+const double syncIndicatorSize = _syncIndicatorSize;
+
+/// How far the ring is drawn inside its box, so its ink matches a glyph's.
+const double _syncRingInset = 2;
+
+/// The refresh glyph inside the ring.
+///
+/// Smaller than the indicator because the ring is drawn around it, but not by
+/// half: the same glyph is [_syncIndicatorSize] when nothing is running, and a
+/// control that halves when it becomes busy reads as a different control.
+const double _syncGlyphSize = 14;
+
+/// See [syncIndicatorSize].
+const double syncGlyphSizeWhileSyncing = _syncGlyphSize;
+
+/// See [syncIndicatorSize].
+const double syncRingInset = _syncRingInset;
+
 /// How wide an announcement is allowed to get before it wraps. On a phone this
 /// is most of the screen.
 const double _syncAnnouncementMaxWidth = 260;
@@ -1103,7 +1123,13 @@ class _SyncProgressRingState extends State<_SyncProgressRing>
     return Stack(
       alignment: Alignment.center,
       children: [
-        SizedBox.expand(
+        // Inset so the ring's ink lands where a glyph's ink lands. A 24px
+        // ring is drawn edge to edge, while a 24px icon carries its own
+        // padding and only draws about 20 - so at the same nominal size the
+        // ring reads visibly larger than the way home beside it. The box stays
+        // 24 either way, so nothing moves in the row.
+        Padding(
+          padding: const EdgeInsets.all(_syncRingInset),
           child: RotationTransition(
             key: syncIndicatorMotionKey,
             turns: _rotation,
@@ -1118,9 +1144,13 @@ class _SyncProgressRingState extends State<_SyncProgressRing>
           ),
         ),
         // The same token the idle icon uses, so the glyph does not change
-        // colour the instant a sync starts.
+        // colour the instant a sync starts - and near enough the same size,
+        // so it does not visibly shrink either. At half the indicator it went
+        // from 24 to 12 the moment a sync began, which read as the button
+        // changing rather than the ring appearing around it. This is as large
+        // as it goes inside a 2px ring with clearance either side.
         ArDriveIcons.refresh(
-          size: _syncIndicatorSize / 2,
+          size: _syncGlyphSize,
           color: colorTokens.textMid,
         ),
       ],
