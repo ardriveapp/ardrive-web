@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -13,6 +14,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 
 import '../test_utils/mocks.dart';
 
@@ -56,8 +58,14 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('en', '')],
-        home: MultiBlocProvider(
+        home: MultiProvider(
           providers: [
+            // The sidebar reads the router to know whether the drives list is
+            // the page in view, so it needs one to build at all - not only to
+            // navigate.
+            ListenableProvider<AppRouterDelegate>.value(
+              value: AppRouterDelegate(),
+            ),
             BlocProvider<DrivesCubit>.value(value: drivesCubit),
             BlocProvider<ProfileCubit>.value(value: profileCubit),
             BlocProvider<DriveDetailCubit>.value(value: driveDetailCubit),

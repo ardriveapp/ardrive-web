@@ -100,14 +100,14 @@ class _AppSideBarState extends State<AppSideBar> {
                     const SizedBox(
                       height: 16,
                     ),
+                    _buildDrivesListLink(isMobile: true),
+                    const SizedBox(
+                      height: 16,
+                    ),
                     _buildDriveActionsButton(
                       context,
                       true,
                     ),
-                    const SizedBox(
-                      height: 16,
-                    ),
-                    _buildDrivesListLink(isMobile: true),
                     const SizedBox(
                       height: 16,
                     ),
@@ -202,25 +202,23 @@ class _AppSideBarState extends State<AppSideBar> {
                             const SizedBox(
                               height: 24,
                             ),
+                            // The destination, above the action. It sat
+                            // between the New button and the drive list,
+                            // indented to the accordion's uppercase headings
+                            // but written like neither them nor a button - so
+                            // it read as a fourth category rather than as the
+                            // place it opens. Here it is what it is: the
+                            // top-level nav entry, directly under the logo,
+                            // with the create action below it and the drives
+                            // it leads to below that.
+                            _buildDrivesListLink(isMobile: false),
+                            const SizedBox(
+                              height: 16,
+                            ),
                             _buildDriveActionsButton(
                               context,
                               false,
                             ),
-                            // The way back to the drives list, drawn in the
-                            // gap that was already here rather than in room
-                            // taken from the drive list below it. This column
-                            // spent 56px on nothing between the New button
-                            // and the drives; 16 + the entry's own 25 + 16 is
-                            // 57 of it, so the list starts a pixel from where
-                            // it started before. At a larger text scale the
-                            // entry grows and the list moves down with it,
-                            // exactly as everything else in this column does.
-                            // `side_bar_drives_list_link_test.dart` measures
-                            // it.
-                            const SizedBox(
-                              height: 16,
-                            ),
-                            _buildDrivesListLink(isMobile: false),
                             const SizedBox(
                               height: 16,
                             ),
@@ -288,10 +286,13 @@ class _AppSideBarState extends State<AppSideBar> {
       // A collapsed desktop rail is 64px wide and shows no drive names either;
       // the icon carries it there, with the label in a tooltip.
       showLabel: isMobile || _isExpanded,
-      // The left edge the accordion's own section headings sit on, so this
-      // reads as their peer rather than as a row inside one of them. The
-      // drawer has no such gutter and the collapsed rail centres its icon.
-      leftPadding: isMobile || !_isExpanded ? 0 : 43,
+      // The drive rows' own left edge, so the highlight this draws when it is
+      // the page in view lines up with the highlight they draw when they are.
+      // They are the same kind of thing: somewhere to go.
+      leftPadding: isMobile || _isExpanded ? 10 : 0,
+      // Lit the way a selected drive is lit, by the same tokens, because the
+      // question it answers is the same one: is this what I am looking at?
+      isActive: context.watch<AppRouterDelegate>().showingDrivesList,
       // The drive rows do this too: on a phone the nav is a drawer over the
       // page, and a drawer that stays open over what it just navigated to is
       // covering the answer.
@@ -509,6 +510,7 @@ class _DrivesListLink extends StatelessWidget {
     super.key,
     required this.showLabel,
     required this.leftPadding,
+    required this.isActive,
     required this.onTap,
   });
 
@@ -517,6 +519,9 @@ class _DrivesListLink extends StatelessWidget {
   final bool showLabel;
 
   final double leftPadding;
+
+  /// Whether the drives list is the page on screen.
+  final bool isActive;
 
   final VoidCallback onTap;
 
@@ -535,7 +540,13 @@ class _DrivesListLink extends StatelessWidget {
         // The whole row, not just the ink under the glyphs: a nav item that
         // only answers on its text is a smaller target than it looks.
         behavior: HitTestBehavior.opaque,
-        child: Padding(
+        child: Container(
+          decoration: isActive
+              ? BoxDecoration(
+                  color: colorTokens.containerL1,
+                  borderRadius: BorderRadius.circular(4),
+                )
+              : null,
           padding: EdgeInsets.only(
             left: leftPadding,
             right: 8,
@@ -550,7 +561,7 @@ class _DrivesListLink extends StatelessWidget {
             children: [
               ArDriveIcons.bullertList(
                 size: 16,
-                color: colorTokens.textMid,
+                color: isActive ? colorTokens.textHigh : colorTokens.textMid,
               ),
               if (showLabel) ...[
                 const SizedBox(width: 8),
@@ -564,7 +575,8 @@ class _DrivesListLink extends StatelessWidget {
                     label,
                     style: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
-                      color: colorTokens.textMid,
+                      color:
+                          isActive ? colorTokens.textHigh : colorTokens.textMid,
                     ),
                   ),
                 ),

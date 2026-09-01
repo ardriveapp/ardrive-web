@@ -151,6 +151,86 @@ void main() {
 
   final link = find.byKey(sideBarDrivesListLinkKey);
 
+  /// The shell as the router actually builds it on a phone: each page owns its
+  /// own `Scaffold` and its own drawer, and which page is built is read off
+  /// the delegate every time it notifies. The drive detail page and the drives
+  /// list page are two different subtrees, so the tap has to survive the one
+  /// it was made in being torn down.
+  Widget shell(WidgetTester tester, {required Size size}) {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    return ArDriveTheme(
+      themeData: lightTheme(),
+      child: MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [Locale('en', '')],
+        home: Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(size: size),
+            child: MultiProvider(
+              providers: [
+                ListenableProvider<AppRouterDelegate>.value(value: delegate),
+              ],
+              child: MultiBlocProvider(
+                providers: [
+                  BlocProvider<DrivesCubit>.value(value: drivesCubit),
+                  BlocProvider<ProfileCubit>.value(value: profileCubit),
+                  BlocProvider<DriveDetailCubit>.value(value: driveDetailCubit),
+                  BlocProvider<GlobalHideBloc>.value(value: hideBloc),
+                ],
+                child: AnimatedBuilder(
+                  animation: delegate,
+                  builder: (context, _) => delegate.showingDrivesList
+                      ? const Scaffold(
+                          key: ValueKey('list'),
+                          drawer: AppSideBar(),
+                          body: Center(child: Text('the drives list')),
+                        )
+                      : const Scaffold(
+                          key: ValueKey('explorer'),
+                          drawer: AppSideBar(),
+                          body: Center(child: Text('a drive')),
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  group('the way back out of a drive, on a phone', () {
+    testWidgets('the tap lands even though it tears down its own drawer',
+        (tester) async {
+      await insideADrive();
+      await tester.pumpWidget(shell(tester, size: phone));
+      await tester.pumpAndSettle();
+
+      expect(find.text('a drive'), findsOneWidget);
+
+      await openDrawer(tester);
+      expect(link, findsOneWidget);
+
+      await tester.tap(link);
+      await tester.pumpAndSettle();
+
+      // The page behind actually changed - not merely the delegate's flag.
+      expect(find.text('the drives list'), findsOneWidget);
+      expect(find.text('a drive'), findsNothing);
+
+      // And the drawer is not left open over the answer.
+      expect(link, findsNothing);
+    });
+  });
+
   group('a desktop', () {
     testWidgets('offers the way back, above the drives', (tester) async {
       await insideADrive();
@@ -175,25 +255,46 @@ void main() {
       expect(find.text('Documents'), findsOneWidget);
     });
 
-    testWidgets('is drawn in the gap that was already there', (tester) async {
-      // This column used to spend 56px on nothing between the New button and
-      // the drive list. The entry is drawn in that gap - 16 above, its own
-      // 25, 16 below - so the list starts a pixel from where it started
-      // before, rather than in room taken away from it.
-      const theGapItReplaced = 56.0;
-
+    testWidgets('is the first entry, above the action and the drives',
+        (tester) async {
+      // Order carries the meaning here: the destination, then the thing that
+      // creates one, then the drives themselves. It used to sit between the
+      // New button and the list, indented to the accordion's headings, which
+      // read as a fourth category rather than as somewhere to go.
       await insideADrive();
       await tester.pumpWidget(host(tester, size: desktop));
       await tester.pumpAndSettle();
 
-      final newButtonBottom = tester.getBottomLeft(find.byType(NewButton)).dy;
-      final driveListTop = tester.getTopLeft(find.byType(ArDriveAccordion)).dy;
+      final entry = tester.getTopLeft(link).dy;
+      final newButton = tester.getTopLeft(find.byType(NewButton)).dy;
+      final drives = tester.getTopLeft(find.byType(ArDriveAccordion)).dy;
 
-      expect(
-        driveListTop - newButtonBottom,
-        closeTo(theGapItReplaced, 1),
-        reason: 'the drive list moved by more than the gap could absorb',
-      );
+      expect(entry, lessThan(newButton),
+          reason: 'the destination comes before the action');
+      expect(newButton, lessThan(drives));
+    });
+
+    testWidgets('lights up when the drives list is what is on screen',
+        (tester) async {
+      await insideADrive();
+      await tester.pumpWidget(host(tester, size: desktop));
+      await tester.pumpAndSettle();
+
+      BoxDecoration? decorationOf() => tester
+          .widget<Container>(
+            find.descendant(of: link, matching: find.byType(Container)).first,
+          )
+          .decoration as BoxDecoration?;
+
+      expect(decorationOf(), isNull,
+          reason: 'a drive is open, so this is not the page in view');
+
+      delegate.showDrivesList();
+      await tester.pumpAndSettle();
+
+      expect(decorationOf()?.color,
+          lightTheme().colorTokens.containerL1,
+          reason: 'lit by the same token a selected drive is lit by');
     });
 
     testWidgets('routes to the drives list, keeping the drive selected',

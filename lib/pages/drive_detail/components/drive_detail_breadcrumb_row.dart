@@ -106,6 +106,21 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     } else {
       segments.addAll(
         [
+          // The drive is not the top of the tree - the list of drives is, and
+          // until now nothing in the explorer said so. A file manager puts the
+          // way up at the head of the trail, which is where a reader looks for
+          // it; the sidebar's entry is the other door to the same place.
+          GestureDetector(
+            onTap: () => context.read<AppRouterDelegate>().showDrivesList(),
+            child: HoverText(
+              text: appLocalizationsOf(context).yourDrives,
+              style: segmentStyle(_pathSegments.length).copyWith(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+              ),
+            ),
+          ),
+          buildSeparator(true),
           GestureDetector(
             onTap: () => context
                 .read<DriveDetailCubit>()

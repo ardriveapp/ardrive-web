@@ -33,6 +33,7 @@ import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_detail_syncing_card.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
