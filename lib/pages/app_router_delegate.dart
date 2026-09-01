@@ -457,7 +457,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 key: navigatorKey,
                 pages: [
                   MaterialPage(
-                    key: ValueKey(shellKey),
+                    // One page, one key. Keying this by which shell is on
+                    // screen made the Navigator *replace* the route on every
+                    // move between the drives list and a drive - tearing down
+                    // the sidebar and the top bar along with the body, which
+                    // reads as the whole page reloading rather than the middle
+                    // of it changing.
+                    //
+                    // It was added when the router's rebuilt tree was being
+                    // discarded, before that turned out to be
+                    // `Overlay.initialEntries` in `ArDriveAppWithDevTools`.
+                    // With the real cause fixed the route updates its child on
+                    // its own, so the key goes back to being a constant.
+                    key: const ValueKey('AppShell'),
                     child: shell,
                   ),
                 ],
