@@ -4,7 +4,7 @@ import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/components/profile_card.dart';
-import 'package:ardrive/components/topbar/help_button.dart';
+import 'package:ardrive/components/topbar/home_button.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/search/search_modal.dart';
@@ -65,7 +65,7 @@ class AppTopBar extends StatelessWidget {
             const SizedBox(width: 8),
             const SyncButton(),
             const SizedBox(width: 8),
-            const HelpButtonTopBar(),
+            const HomeButtonTopBar(),
             const SizedBox(width: 24),
             const ProfileCard(),
           ],

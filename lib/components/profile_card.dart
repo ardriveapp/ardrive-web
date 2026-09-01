@@ -28,6 +28,7 @@ import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_urls.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -382,7 +383,21 @@ class _ProfileCardState extends State<ProfileCard> {
                 ),
               ],
             ),
-            // Logout — always at the very bottom
+            // Help, then logout — the two things that are about the account
+            // rather than about a drive. Help moved here from the top bar,
+            // whose slot the way home now holds: that slot is the only one
+            // present on both breakpoints, and the drives list had no door at
+            // all on a phone once the sidebar entry came out.
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            _ProfileMenuRow(
+              label: appLocalizationsOf(context).help,
+              icon: ArDriveIcons.question(size: 21),
+              onTap: () {
+                _showProfileCard = false;
+                setState(() {});
+                openHelp(context);
+              },
+            ),
             const Divider(height: 1, indent: 16, endIndent: 16),
             _LogoutButton(
               onLogout: () {
@@ -842,6 +857,65 @@ class _ProfileCardState extends State<ProfileCard> {
           _showProfileCard = !_showProfileCard;
         });
       },
+    );
+  }
+}
+
+/// A row in the account menu, drawn exactly as the logout row below it is.
+///
+/// Pulled out so Help and Log Out cannot drift apart: they sit together, and a
+/// second hand-built row would have been one hover colour away from looking
+/// like a different kind of thing.
+class _ProfileMenuRow extends StatefulWidget {
+  const _ProfileMenuRow({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final Widget icon;
+  final VoidCallback onTap;
+
+  @override
+  State<_ProfileMenuRow> createState() => _ProfileMenuRowState();
+}
+
+class _ProfileMenuRowState extends State<_ProfileMenuRow> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return MouseRegion(
+      onExit: (_) => setState(() => _isHovering = false),
+      onHover: (_) => setState(() => _isHovering = true),
+      child: InkWell(
+        onTap: widget.onTap,
+        child: Container(
+          color: _isHovering
+              ? ArDriveTheme.of(context).themeData.colors.themeGbMuted
+              : Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
+            child: Row(
+              children: [
+                Text(
+                  widget.label,
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textMid,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+                const Spacer(),
+                widget.icon,
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

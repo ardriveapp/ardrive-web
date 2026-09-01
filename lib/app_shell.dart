@@ -5,7 +5,7 @@ import 'package:ardrive/components/migrate_private_drives_modal.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/sync_failure_test_panel.dart';
-import 'package:ardrive/components/topbar/help_button.dart';
+import 'package:ardrive/components/topbar/home_button.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
@@ -364,7 +364,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
               const SizedBox(width: 8),
               const SyncButton(),
               const SizedBox(width: 8),
-              const HelpButtonTopBar(),
+              const HomeButtonTopBar(),
               const SizedBox(
                 width: 24,
               ),

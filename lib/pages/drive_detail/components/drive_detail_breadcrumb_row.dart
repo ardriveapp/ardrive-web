@@ -115,11 +115,16 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
           // has no drives list to reach, so they are not offered one.
           if (AppRouterDelegate.canShowDrivesList(
               context.watch<ProfileCubit>().state)) ...[
-            GestureDetector(
-              onTap: () => context.read<AppRouterDelegate>().showDrivesList(),
-              child: HoverText(
-                text: appLocalizationsOf(context).yourDrives,
-                style: segmentStyle(_pathSegments.length).copyWith(
+            // The same house the top bar shows, so the two doors to the same
+            // place read as one thing rather than two.
+            ArDriveClickArea(
+              tooltip: appLocalizationsOf(context).yourDrives,
+              child: GestureDetector(
+                onTap: () =>
+                    context.read<AppRouterDelegate>().showDrivesList(),
+                child: Icon(
+                  Icons.home_outlined,
+                  size: 18,
                   color: ArDriveTheme.of(context)
                       .themeData
                       .colors

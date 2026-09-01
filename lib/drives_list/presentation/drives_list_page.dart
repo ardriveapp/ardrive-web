@@ -4,7 +4,7 @@ import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
-import 'package:ardrive/components/topbar/help_button.dart';
+import 'package:ardrive/components/topbar/home_button.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_actions_menu.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
@@ -213,7 +213,7 @@ class _DrivesListChrome extends StatelessWidget {
                   children: [
                     SyncButton(),
                     SizedBox(width: 8),
-                    HelpButtonTopBar(),
+                    HomeButtonTopBar(),
                     SizedBox(width: 8),
                     ProfileCard(),
                   ],
