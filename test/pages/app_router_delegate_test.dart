@@ -154,7 +154,13 @@ void main() {
       expect(delegate.driveFolderId, folderId);
     });
 
-    test('tells the router, once, and not twice for the same tap', () async {
+    test('tells the router every time it is asked', () async {
+      // No early return. There is no condition this method can test that
+      // proves the list is on screen, and every version of that guess ended
+      // with Home dead for the rest of the session: the flag read true, the
+      // request was dropped in silence, and the address bar insisted
+      // `/drives` over a drive. One repeated history entry is the cheaper
+      // failure by a wide margin.
       var notifications = 0;
       delegate.addListener(() => notifications++);
 
@@ -166,26 +172,33 @@ void main() {
       expect(notifications, 1, reason: 'the router has to be told');
 
       delegate.showDrivesList();
-      expect(notifications, 1,
-          reason: 'a second identical history entry is one more press of the '
-              "browser's back button for nothing");
+      expect(notifications, 2,
+          reason: 'a second tap must not be swallowed on the strength of a '
+              'flag that is not proof of what is on screen');
+
+      expect(delegate.showingDrivesList, isTrue);
+      expect(delegate.currentConfiguration.drivesList, isTrue);
     });
 
-    test('a link still wins over it', () async {
-      // Deep links are permanent public API. Arriving at one from the list
-      // resolves it exactly as arriving at it from anywhere else does.
+    test('and clears every route that outranks the list', () async {
+      // All of these are checked before the drives list in `build`, so any one
+      // of them left set would render something else while the flag says
+      // otherwise - which is the state Home could never get out of.
+      await delegate.setNewRoutePath(
+        AppRoutePath.driveDetail(driveId: driveId),
+      );
+      delegate.signingIn = true;
+      delegate.gettingStarted = true;
+
       delegate.showDrivesList();
 
-      await delegate.setNewRoutePath(
-        AppRoutePath.folderDetail(driveId: driveId, driveFolderId: folderId),
-      );
-      delegate.onDriveSelected(driveId);
-
-      expect(delegate.showingDrivesList, isFalse);
-      expect(delegate.driveId, driveId);
-      expect(delegate.driveFolderId, folderId);
-      expect(addressBar(delegate), '/drives/$driveId/folders/$folderId');
+      expect(delegate.signingIn, isFalse);
+      expect(delegate.gettingStarted, isFalse);
+      expect(delegate.isViewingSharedFile, isFalse);
+      expect(delegate.isViewingRawTransaction, isFalse);
+      expect(delegate.showingDrivesList, isTrue);
     });
+
   });
 
   group('ordinary navigation', () {

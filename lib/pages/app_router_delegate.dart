@@ -445,6 +445,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
               shell ??= const SizedBox();
 
+              // Which branch won, and the state that decided it. When Home
+              // appears not to work this line is the difference between
+              // knowing and guessing.
+              logger.d(
+                'router: shell=$shellKey profile=${state.runtimeType} '
+                'showingDrivesList=$showingDrivesList driveId=$driveId',
+              );
+
               final navigator = Navigator(
                 key: navigatorKey,
                 pages: [
@@ -627,21 +635,20 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// not push a second identical history entry for the browser's back button
   /// to have to walk back through.
   void showDrivesList() {
-    // Already there, and demonstrably so: the flag alone was not proof. Every
-    // route below is checked *before* the drives list in `build`, so with any
-    // of them set the list is not what is on screen no matter what the flag
-    // says - and returning early on the flag then swallowed the request in
-    // silence, which is how both the nav entry and the breadcrumb came to do
-    // nothing at all.
-    final alreadyShowing = showingDrivesList &&
-        !signingIn &&
-        !gettingStarted &&
-        !isViewingSharedFile &&
-        !isViewingRawTransaction;
-
-    if (alreadyShowing) {
-      return;
-    }
+    // No early return. There is no condition this method can test that proves
+    // the drives list is what the user is looking at, and every version of
+    // that guess has ended the same way: the flag reads true, the request is
+    // dropped in silence, and Home is dead for the rest of the session with
+    // the address bar insisting `/drives` over a drive.
+    //
+    // The cost of always honouring it is at worst one repeated history entry.
+    // The cost of guessing wrong is a navigation control that does nothing.
+    logger.d(
+      'showDrivesList: was showingDrivesList=$showingDrivesList '
+      'signingIn=$signingIn gettingStarted=$gettingStarted '
+      'driveId=$driveId sharedFileId=$sharedFileId '
+      'rawTransactionId=$rawTransactionId',
+    );
 
     // Asked for, so nothing outranks it.
     showingDrivesList = true;
