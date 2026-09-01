@@ -261,17 +261,6 @@ class DrivesListCubit extends Cubit<DrivesListState> {
   }
 
 
-  /// Whether a sync running right now already covers [driveId] - either this
-  /// drive's own, or an all-drives sync, which covers every drive.
-  bool _syncIsCovering(String driveId) {
-    if (_syncCubit.state is! SyncInProgress) {
-      return false;
-    }
-
-    final syncingDriveId = _syncCubit.syncingDriveId;
-
-    return syncingDriveId == null || syncingDriveId == driveId;
-  }
 
   @override
   Future<void> close() {
