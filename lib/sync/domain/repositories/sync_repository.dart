@@ -411,11 +411,35 @@ class _SyncRepository implements SyncRepository {
     _metadataFetchesCompleted = 0;
   }
 
+  /// Entities written by the transaction currently open, not yet counted.
+  ///
+  /// The tally is what the user is shown as "N items changed" and what goes
+  /// into the sync history, so it may only count what actually landed. These
+  /// are recorded from inside `runTransaction`, before the commit - so a
+  /// transaction that rolled back used to leave its rows counted anyway, and
+  /// the sync reported changes the database never took.
+  final Map<String, Set<String>> _pendingSyncedEntityIdsByDrive = {};
+
   void _recordSyncedEntities(String driveId, Iterable<String> entityIds) {
     if (entityIds.isEmpty) return;
-    _syncedEntityIdsByDrive
+    _pendingSyncedEntityIdsByDrive
         .putIfAbsent(driveId, () => <String>{})
         .addAll(entityIds);
+  }
+
+  /// Promotes what the just-committed transaction wrote into the tally.
+  void _commitSyncedEntities() {
+    for (final entry in _pendingSyncedEntityIdsByDrive.entries) {
+      _syncedEntityIdsByDrive
+          .putIfAbsent(entry.key, () => <String>{})
+          .addAll(entry.value);
+    }
+    _pendingSyncedEntityIdsByDrive.clear();
+  }
+
+  /// Throws away what a transaction that did not commit had staged.
+  void _discardPendingSyncedEntities() {
+    _pendingSyncedEntityIdsByDrive.clear();
   }
 
   void _logSkippedEntities() {
@@ -477,6 +501,7 @@ class _SyncRepository implements SyncRepository {
     _folderIds.clear();
     _skippedEntityTxIdsByDrive.clear();
     _syncedEntityIdsByDrive.clear();
+    _pendingSyncedEntityIdsByDrive.clear();
     _resetMetadataFetchCounts();
 
     // Every emission of this sync, from the first to the last, goes out
@@ -1197,6 +1222,7 @@ class _SyncRepository implements SyncRepository {
     _folderIds.clear();
     _skippedEntityTxIdsByDrive.clear();
     _syncedEntityIdsByDrive.clear();
+    _pendingSyncedEntityIdsByDrive.clear();
     _resetMetadataFetchCounts();
 
     // Every emission of this sync, from the first to the last, goes out
@@ -2794,6 +2820,10 @@ class _SyncRepository implements SyncRepository {
             ));
           }
 
+          // The tally only counts what committed - see
+          // [_pendingSyncedEntityIdsByDrive].
+          var committed = false;
+          try {
           await _driveDao.runTransaction(() async {
             final latestDriveRevision = await _addNewDriveEntityRevisions(
               newEntities: newEntities.whereType<DriveEntity>(),
@@ -2866,6 +2896,14 @@ class _SyncRepository implements SyncRepository {
             latestFolderRevisions.clear();
             latestFileRevisions.clear();
           });
+            committed = true;
+          } finally {
+            if (committed) {
+              _commitSyncedEntities();
+            } else {
+              _discardPendingSyncedEntities();
+            }
+          }
           yield driveEntityParseProgress();
         });
 
