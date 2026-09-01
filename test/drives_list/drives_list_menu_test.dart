@@ -79,7 +79,7 @@ void main() {
         isSyncing: false,
       );
 
-  Widget host(Widget child) => ArDriveTheme(
+  Widget host(Widget child, {double textScale = 1}) => ArDriveTheme(
         themeData: lightTheme(),
         child: MaterialApp(
           localizationsDelegates: const [
@@ -92,11 +92,17 @@ void main() {
           // ArDriveDropdown puts its items in a portal; without one the menu
           // renders but can never open, and every assertion below about what
           // it offers would pass by finding nothing.
-          home: Portal(
-            child: Scaffold(
-              body: BlocProvider<SyncCubit>.value(
-                value: syncCubit,
-                child: child,
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: TextScaler.linear(textScale)),
+              child: Portal(
+                child: Scaffold(
+                  body: BlocProvider<SyncCubit>.value(
+                    value: syncCubit,
+                    child: child,
+                  ),
+                ),
               ),
             ),
           ),
@@ -319,5 +325,49 @@ void main() {
           reason: 'the heading and the column under it are laid out in '
               'different widths');
     });
+  });
+
+  /// The button lives at the trailing edge of a row, and the menu is wider
+  /// than the room to its left on a phone. `ArDriveDropdown` was discarding
+  /// the anchor whenever `calculateVerticalAlignment` was also supplied - so
+  /// this menu, which supplies both, was re-anchored to its button's
+  /// bottom-*left* with no shifting, and opened 51px off the screen with every
+  /// item's leading icon outside the viewport.
+  group('the menu opens inside the screen it is on', () {
+    for (final scale in [1.0, 1.3, 2.0]) {
+      testWidgets('320px at ${scale}x, anchored at the trailing edge',
+          (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        await tester.binding.setSurfaceSize(const Size(320, 640));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          host(
+            Align(
+              alignment: Alignment.topRight,
+              child: DriveActionsMenu(drive: drive(), isOwner: true),
+            ),
+            textScale: scale,
+          ),
+        );
+
+        await tester.tap(find.byType(DriveActionsMenu));
+        await tester.pumpAndSettle();
+
+        final tiles = find.byType(ArDriveDropdownItemTile);
+        expect(tiles, findsWidgets);
+
+        for (var i = 0; i < tiles.evaluate().length; i++) {
+          final left = tester.getTopLeft(tiles.at(i)).dx;
+          expect(
+            left,
+            greaterThanOrEqualTo(0),
+            reason: 'menu item $i starts ${-left}px off the left edge',
+          );
+        }
+      });
+    }
   });
 }

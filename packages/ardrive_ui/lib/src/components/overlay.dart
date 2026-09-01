@@ -86,10 +86,28 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
         alignment =
             widget.calculateVerticalAlignment!.call(y > screenHeight / 2);
 
-        _anchor = Aligned(
-          follower: alignment,
-          target: Alignment.bottomLeft,
-        );
+        // Only the follower is the calculation's to decide. Everything else
+        // belongs to the caller and used to be discarded with it: a menu that
+        // asked to hang from its button's bottom-*right*, and to be shifted
+        // back inside the screen, got neither - it was re-anchored to
+        // bottom-left with no shifting, and on a 320px phone it opened 51px
+        // off the left edge with every item's icon outside the viewport.
+        final base = widget.anchor;
+
+        _anchor = base is Aligned
+            ? Aligned(
+                follower: alignment,
+                target: base.target,
+                offset: base.offset,
+                widthFactor: base.widthFactor,
+                heightFactor: base.heightFactor,
+                shiftToWithinBound: base.shiftToWithinBound,
+                backup: base.backup,
+              )
+            : Aligned(
+                follower: alignment,
+                target: Alignment.bottomLeft,
+              );
       }
     });
 

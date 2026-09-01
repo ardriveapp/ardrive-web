@@ -405,6 +405,7 @@ class _SyncRepository implements SyncRepository {
   int _metadataFetchesScheduled = 0;
   int _metadataFetchesCompleted = 0;
 
+
   void _resetMetadataFetchCounts() {
     _metadataFetchesScheduled = 0;
     _metadataFetchesCompleted = 0;
@@ -2635,6 +2636,19 @@ class _SyncRepository implements SyncRepository {
 
     logger.d('Processing chunk of ${transactions.length} transactions');
 
+    // What this chunk will ask for, announced before it asks for any of it.
+    //
+    // The total used to grow one batch at a time, from inside the batch loop -
+    // and every batch's fetches finished before the next batch was scheduled,
+    // so the two numbers met at every boundary and the only value that ever
+    // sat on screen long enough to read was "N of N". A denominator that is
+    // always the numerator tells the reader nothing.
+    //
+    // This is still a figure the sync actually has rather than a guess at the
+    // drive's size: it is the length of the history chunk in hand.
+    _metadataFetchesScheduled += transactions.length;
+    onMetadataFetchProgress?.call();
+
     await for (final _ in _parseDriveTransactionsIntoDatabaseEntities(
       transactions: transactions,
       drive: drive,
@@ -2739,13 +2753,6 @@ class _SyncRepository implements SyncRepository {
         list: transactions,
         batchSize: batchSize,
         endOfBatchCallback: (items) async* {
-          // Announced before the fetching starts, so the total the user is
-          // shown always includes the batch they are waiting on. Reported at
-          // once too: the batch's size is the only new fact at this instant,
-          // and it is the one that answers "why is this taking so long".
-          _metadataFetchesScheduled += items.length;
-          onMetadataFetchProgress?.call();
-
           final entityHistory =
               await _arweave.createDriveEntityHistoryFromTransactions(
             items,

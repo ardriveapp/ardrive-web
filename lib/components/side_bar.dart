@@ -281,6 +281,13 @@ class _AppSideBarState extends State<AppSideBar> {
   /// [AppRouterDelegate.showDrivesList] - so this is a round trip of one tap
   /// each way rather than a door that closes behind them.
   Widget _buildDrivesListLink({required bool isMobile}) {
+    // Not offered to someone who cannot get there - see
+    // [AppRouterDelegate.canShowDrivesList]. An anonymous share-link viewer
+    // gets the explorer and this drawer, but no drives list behind them.
+    if (!AppRouterDelegate.canShowDrivesList(context.watch<ProfileCubit>().state)) {
+      return const SizedBox.shrink();
+    }
+
     return _DrivesListLink(
       key: sideBarDrivesListLinkKey,
       // A collapsed desktop rail is 64px wide and shows no drive names either;

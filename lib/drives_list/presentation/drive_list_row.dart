@@ -319,21 +319,33 @@ class DriveListRow extends StatelessWidget {
                 ),
         ),
         const SizedBox(width: _badgeGap),
+        // The name and the badge together, allowed to become two lines.
+        //
+        // The badge was a rigid child of this row, so the name - the only
+        // thing that says *which* drive this is - was the one that gave: at
+        // 320px it collapsed to zero width and vanished while the badge ran
+        // off the screen, from about 1.1x text scale. Ordinary browser zoom,
+        // not an accessibility extreme. `_stacked()` already wraps the figures
+        // below for the same reason; this row never got the same treatment.
         Flexible(
-          child: Text(
-            drive.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: typography.paragraphNormal(
-              color: colorTokens.textHigh,
-              fontWeight: ArFontWeight.semiBold,
-            ),
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: _badgeGap,
+            runSpacing: 2,
+            children: [
+              Text(
+                drive.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: typography.paragraphNormal(
+                  color: colorTokens.textHigh,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+              if (drive.isSharedWithMe) _SharedMarker(),
+            ],
           ),
         ),
-        if (drive.isSharedWithMe) ...[
-          const SizedBox(width: _badgeGap),
-          _SharedMarker(),
-        ],
       ],
     );
   }

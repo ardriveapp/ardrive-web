@@ -185,12 +185,35 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       await _syncBloc.waitCurrentSync();
 
       /// Then, sync only the newly attached drive and select it.
-      unawaited(_syncBloc
-          .startSyncForDrive(driveId: driveId)
-          .then((value) => _drivesBloc.selectDrive(driveId))
-          .catchError((e) {
-        logger.e('Error syncing attached drive $driveId', e);
-      }));
+      ///
+      /// `startSyncForDrive` refuses rather than queues now, and returns
+      /// whether it actually ran. Between `waitCurrentSync` returning and this
+      /// call another sync can take the slot - or the tab can lose focus, or
+      /// an upload can be in progress - and the drive would be selected having
+      /// never been read, with nothing anywhere saying so. One retry after the
+      /// sync that beat us is enough to close that window.
+      unawaited(() async {
+        try {
+          var didSync = await _syncBloc.startSyncForDrive(driveId: driveId);
+
+          if (!didSync) {
+            await _syncBloc.waitCurrentSync();
+            didSync = await _syncBloc.startSyncForDrive(driveId: driveId);
+          }
+
+          if (!didSync) {
+            logger.w(
+              'Attached drive $driveId was not synced; the explorer will '
+              'offer to sync it.',
+            );
+          }
+
+          _drivesBloc.selectDrive(driveId);
+        } catch (e) {
+          logger.e('Error syncing attached drive $driveId', e);
+          _drivesBloc.selectDrive(driveId);
+        }
+      }());
 
       PlausibleEventTracker.trackAttachDrive(
         drivePrivacy: drivePrivacy,

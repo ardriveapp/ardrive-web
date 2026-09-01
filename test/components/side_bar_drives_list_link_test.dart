@@ -16,7 +16,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
-import '../test_utils/mocks.dart';
+import '../test_utils/utils.dart';
 
 class _MockGlobalHideBloc extends MockBloc<GlobalHideEvent, GlobalHideState>
     implements GlobalHideBloc {}
@@ -59,8 +59,11 @@ void main() {
     hideBloc = _MockGlobalHideBloc();
     delegate = AppRouterDelegate();
 
+    // The sidebar reads the profile to decide whether the drives list is
+    // somewhere this viewer can go, so the default here has to be a viewer who
+    // can - which is what the shell holding this sidebar normally means.
     whenListen(profileCubit, const Stream<ProfileState>.empty(),
-        initialState: ProfileCheckingAvailability());
+        initialState: ProfileLoggedIn(user: getTestUser(), useTurbo: false));
     whenListen(driveDetailCubit, const Stream<DriveDetailState>.empty(),
         initialState: DriveDetailLoadInProgress());
     whenListen(hideBloc, const Stream<GlobalHideState>.empty(),
@@ -427,5 +430,49 @@ void main() {
       isFalse,
       reason: 'the nav entry clipped its own label',
     );
+  });
+
+  /// The explorer renders for a logged-out viewer opening a share link, and
+  /// the drives list does not. The shell offered the way there anyway: the tap
+  /// flipped a flag nothing read, the address bar started claiming `/drives`,
+  /// the entry lit up as the page in view, and every later tap was a hard
+  /// no-op because `showDrivesList` returns early on the flag it just set.
+  group('a viewer with no profile is not offered a list they cannot reach',
+      () {
+    testWidgets('the entry is absent on a phone', (tester) async {
+      whenListen(profileCubit, const Stream<ProfileState>.empty(),
+          initialState: ProfilePromptAdd());
+
+      await insideADrive();
+      await tester.pumpWidget(host(tester, size: phone));
+      await tester.pumpAndSettle();
+      await openDrawer(tester);
+
+      expect(link, findsNothing);
+      expect(find.text('Your Drives'), findsNothing);
+    });
+
+    testWidgets('and absent on a desktop', (tester) async {
+      whenListen(profileCubit, const Stream<ProfileState>.empty(),
+          initialState: ProfilePromptAdd());
+
+      await insideADrive();
+      await tester.pumpWidget(host(tester, size: desktop));
+      await tester.pumpAndSettle();
+
+      expect(link, findsNothing);
+    });
+
+    testWidgets('while a signed-in viewer still gets it', (tester) async {
+      whenListen(profileCubit, const Stream<ProfileState>.empty(),
+          initialState:
+              ProfileLoggedIn(user: getTestUser(), useTurbo: false));
+
+      await insideADrive();
+      await tester.pumpWidget(host(tester, size: desktop));
+      await tester.pumpAndSettle();
+
+      expect(link, findsOneWidget);
+    });
   });
 }

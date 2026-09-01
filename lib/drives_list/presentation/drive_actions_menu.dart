@@ -67,6 +67,10 @@ class DriveActionsMenu extends StatelessWidget {
       anchor: const Aligned(
         follower: Alignment.topRight,
         target: Alignment.bottomRight,
+        // The button is at the row's trailing edge and the menu is wider than
+        // the room left of it on a phone, so without this it opens past the
+        // screen's left edge and takes every item's icon with it.
+        shiftToWithinBound: AxisFlag(x: true),
       ),
       items: [
         ArDriveDropdownItem(

@@ -43,6 +43,7 @@ void main() {
     required bool showsColumns,
     bool dark = false,
     bool withHeader = false,
+    double textScale = 1,
     VoidCallback? onTap,
   }) {
     return ArDriveTheme(
@@ -56,7 +57,11 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [Locale('en', '')],
-        home: Scaffold(
+        home: Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(textScale)),
+            child: Scaffold(
           body: Align(
             alignment: Alignment.topLeft,
             child: SizedBox(
@@ -78,6 +83,8 @@ void main() {
             ),
           ),
         ),
+          ),
+        ),
       ),
     );
   }
@@ -95,6 +102,7 @@ void main() {
     bool? showsColumns,
     bool dark = false,
     bool withHeader = false,
+    double textScale = 1,
     VoidCallback? onTap,
   }) async {
     await tester.binding.setSurfaceSize(Size(width + 200, 900));
@@ -109,6 +117,7 @@ void main() {
         showsColumns: showsColumns ?? driveListShowsColumns(width),
         dark: dark,
         withHeader: withHeader,
+        textScale: textScale,
         onTap: onTap,
       ),
     );
@@ -404,6 +413,55 @@ void main() {
       await pumpRow(tester, drive(), width: 1200, dark: true);
 
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  /// The name is what says *which* drive this is. It is the last thing that
+  /// may be given up for room, and it was the first: the "Shared with me"
+  /// badge was a rigid child of the same row, so at 320px the name collapsed
+  /// to zero width and disappeared while the badge ran off the screen. Onset
+  /// was around 1.1x - ordinary browser zoom.
+  ///
+  /// This harness had no text-scale knob at all until this was found, which is
+  /// why its own "320px does not overflow with every marker" case passed: it
+  /// only ever ran at 1.0.
+  group('a shared drive keeps its name at every text scale', () {
+    for (final scale in [1.0, 1.1, 1.3, 2.0]) {
+      for (final dark in [false, true]) {
+        testWidgets(
+            '320px at ${scale}x in the ${dark ? 'dark' : 'light'} theme',
+            (tester) async {
+          await pumpRow(
+            tester,
+            drive(name: 'Family Photos Archive', isSharedWithMe: true),
+            width: 320,
+            textScale: scale,
+            dark: dark,
+          );
+
+          expect(tester.takeException(), isNull,
+              reason: 'the row overflowed at ${scale}x');
+
+          final name = find.text('Family Photos Archive');
+          expect(name, findsOneWidget);
+          expect(
+            tester.getSize(name).width,
+            greaterThan(0),
+            reason: 'the drive name was squeezed out of its own row',
+          );
+        });
+      }
+    }
+
+    testWidgets('and the badge is still shown, not dropped', (tester) async {
+      await pumpRow(
+        tester,
+        drive(name: 'Family Photos Archive', isSharedWithMe: true),
+        width: 320,
+        textScale: 2,
+      );
+
+      expect(find.text('Shared with me'), findsOneWidget);
     });
   });
 }

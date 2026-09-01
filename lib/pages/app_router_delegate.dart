@@ -127,6 +127,22 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
       profileState is ProfileUnavailable && tryingToViewDrive;
+
+  /// Whether the drives list is somewhere this viewer can actually go.
+  ///
+  /// The explorer renders for a logged-out viewer as well - that is what
+  /// [canAnonymouslyShowDriveDetail] is for - but the drives list does not,
+  /// and the shell around the explorer offered the way there regardless. A
+  /// recipient opening a share link with no profile got a nav entry and a
+  /// breadcrumb root that flipped a flag nothing read: the screen never
+  /// changed, the address bar started claiming `/drives`, the entry lit up as
+  /// though it were the page in view, and every later tap was a hard no-op
+  /// because [showDrivesList] returns early on the flag it just set.
+  ///
+  /// Read by the branch that renders the list and by every control that offers
+  /// it, so the two cannot disagree.
+  static bool canShowDrivesList(ProfileState profileState) =>
+      profileState is ProfileLoggedIn;
   bool get tryingToViewDrive => driveId != null;
   bool get tryingToViewSharedPrivateDrive => sharedDriveKey != null;
   bool get isViewingSharedFile => sharedFileId != null;
@@ -276,7 +292,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 shell = const LoginPage();
               } else if (gettingStarted) {
                 shell = const LoginPage(gettingStarted: true);
-              } else if (showingDrivesList && state is ProfileLoggedIn) {
+              } else if (showingDrivesList && canShowDrivesList(state)) {
                 // A separate subtree from the explorer's, deliberately. The
                 // explorer's `DriveDetailCubit` is created once and switched
                 // between drives afterwards; sharing one with this page would

@@ -110,17 +110,25 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
           // until now nothing in the explorer said so. A file manager puts the
           // way up at the head of the trail, which is where a reader looks for
           // it; the sidebar's entry is the other door to the same place.
-          GestureDetector(
-            onTap: () => context.read<AppRouterDelegate>().showDrivesList(),
-            child: HoverText(
-              text: appLocalizationsOf(context).yourDrives,
-              style: segmentStyle(_pathSegments.length).copyWith(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+          //
+          // Both doors are gated the same way: an anonymous share-link viewer
+          // has no drives list to reach, so they are not offered one.
+          if (AppRouterDelegate.canShowDrivesList(
+              context.watch<ProfileCubit>().state)) ...[
+            GestureDetector(
+              onTap: () => context.read<AppRouterDelegate>().showDrivesList(),
+              child: HoverText(
+                text: appLocalizationsOf(context).yourDrives,
+                style: segmentStyle(_pathSegments.length).copyWith(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentDisabled,
+                ),
               ),
             ),
-          ),
-          buildSeparator(true),
+            buildSeparator(true),
+          ],
           GestureDetector(
             onTap: () => context
                 .read<DriveDetailCubit>()
