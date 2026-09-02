@@ -795,11 +795,11 @@
   "@nothingSyncedYetSyncingTitle": {
     "description": "Replaces nothingSyncedYetTitle while a sync is actually running, so the card does not offer work that is already under way beside a strip reporting it"
   },
-  "nothingSyncedYetSyncingDescription": "The contents of these drives are being fetched now. Each row will say what it holds as it arrives.",
+  "nothingSyncedYetSyncingDescription": "Each row will say what it holds as it arrives.",
   "@nothingSyncedYetSyncingDescription": {
     "description": "Replaces nothingSyncedYetDescription while a sync is running. It also explains the disabled button beside it"
   },
-  "nothingSyncedYetDescription": "Your drives are listed, but their contents have not been fetched yet. Sync them all now, or open one to fetch just that drive.",
+  "nothingSyncedYetDescription": "Their contents have not been fetched yet.",
   "@nothingSyncedYetDescription": {
     "description": "Says what the drives list can and cannot show before anything has been synced, and offers the two ways out"
   },

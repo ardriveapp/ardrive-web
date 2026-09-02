@@ -484,8 +484,7 @@ void main() {
 
       expect(
         find.text(
-          'Your drives are listed, but their contents have not been fetched '
-          'yet. Sync them all now, or open one to fetch just that drive.',
+          'Their contents have not been fetched yet.',
         ),
         findsOneWidget,
       );
