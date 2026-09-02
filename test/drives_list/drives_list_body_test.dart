@@ -1,3 +1,4 @@
+import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
@@ -405,6 +406,44 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+  });
+
+  /// A scope that filters to nothing is not an empty account. The wallet has
+  /// drives, just none of this kind - and the action that would fill the scope
+  /// belongs on the screen that says it is empty. Shared is the sharp case:
+  /// attaching is the only way a drive gets there.
+  group('a scope with nothing in it', () {
+    testWidgets('says so, without claiming the account is empty',
+        (tester) async {
+      await pumpBody(
+        tester,
+        const DrivesListLoaded(drives: [], scope: DriveScope.private),
+      );
+
+      expect(find.text('No private drives yet'), findsOneWidget);
+      expect(find.text('Getting Started'), findsNothing,
+          reason: 'that is the account with no drives at all, not this');
+    });
+
+    testWidgets('and Shared offers the one thing that fills it',
+        (tester) async {
+      await pumpBody(
+        tester,
+        const DrivesListLoaded(drives: [], scope: DriveScope.sharedWithMe),
+      );
+
+      expect(find.text('No drives shared with you'), findsOneWidget);
+      expect(find.text('Attach Drive'), findsOneWidget);
+    });
+
+    testWidgets('while the others do not offer attaching', (tester) async {
+      await pumpBody(
+        tester,
+        const DrivesListLoaded(drives: [], scope: DriveScope.public),
+      );
+
+      expect(find.text('Attach Drive'), findsNothing);
     });
   });
 }

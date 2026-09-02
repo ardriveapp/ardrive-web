@@ -498,13 +498,15 @@ class _ArDriveDataTableState<T extends IndexedItem>
                   itemBuilder: (context, index) {
                     return ArDriveClickArea(
                       key: ValueKey(_currentPage[index]),
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 5),
-                        child: _buildRowSpacing(
-                          _columns,
-                          widget.buildRow(_currentPage[index]).row,
-                          _currentPage[index],
-                          index,
+                      child: _HoverableRow(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 5),
+                          child: _buildRowSpacing(
+                            _columns,
+                            widget.buildRow(_currentPage[index]).row,
+                            _currentPage[index],
+                            index,
+                          ),
                         ),
                       ),
                     );
@@ -1147,5 +1149,38 @@ class MultiSelectBox<T> {
 
   void clear() {
     selectedItems.clear();
+  }
+}
+
+/// Paints a table row's hover state.
+///
+/// Rows here are clickable and did not look it: the table hands row building to
+/// its caller, so nothing owned the hover and no caller drew one. Every table in
+/// the app was affected, which is why this belongs here rather than in any one
+/// of them.
+class _HoverableRow extends StatefulWidget {
+  const _HoverableRow({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_HoverableRow> createState() => _HoverableRowState();
+}
+
+class _HoverableRowState extends State<_HoverableRow> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: ColoredBox(
+        color: _isHovering
+            ? ArDriveTheme.of(context).themeData.colorTokens.containerL1
+            : Colors.transparent,
+        child: widget.child,
+      ),
+    );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:ardrive/drives_list/presentation/drive_scope_empty.dart';
 import 'package:ardrive/drives_list/presentation/drives_sync_menu.dart';
 import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
@@ -291,6 +292,13 @@ class DrivesListBody extends StatelessWidget {
       return const _DrivesListEmpty();
     }
 
+    // A scope that filters to nothing is not an empty account: the wallet has
+    // drives, just none of this kind. `DrivesListEmpty` above is the account
+    // with none at all, and says something quite different.
+    if (state is DrivesListLoaded && state.drives.isEmpty) {
+      return DriveScopeEmpty(scope: state.scope);
+    }
+
     if (state is DrivesListLoaded) {
       return _DrivesListLoadedView(
         state: state,
@@ -440,7 +448,9 @@ class _DrivesListEmpty extends StatelessWidget {
         children: [
           Text(
             'Getting Started',
-            style: typography.heading2(
+            // heading4, like every other state of this page. At heading2 an
+            // empty state was larger than the page's own title.
+            style: typography.heading4(
               color: colorTokens.textHigh,
               fontWeight: ArFontWeight.semiBold,
             ),

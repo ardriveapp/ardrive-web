@@ -3633,5 +3633,33 @@
   "zippingYourFiles": "Zipping your file(s)...",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"
+  },
+  "noDrivesInScope": "Nothing here yet",
+  "@noDrivesInScope": {
+    "description": "Empty state headline for a drives-list scope that holds nothing."
+  },
+  "noPublicDrives": "No public drives yet",
+  "@noPublicDrives": {
+    "description": "Empty state for the Public scope."
+  },
+  "noPrivateDrives": "No private drives yet",
+  "@noPrivateDrives": {
+    "description": "Empty state for the Private scope."
+  },
+  "noSharedDrives": "No drives shared with you",
+  "@noSharedDrives": {
+    "description": "Empty state for the Shared with me scope."
+  },
+  "noSharedDrivesDescription": "A drive someone shares with you appears here once you attach it.",
+  "@noSharedDrivesDescription": {
+    "description": "Says how a drive gets into the Shared scope, since attaching is the only way."
+  },
+  "noPublicDrivesDescription": "A public drive can be read by anyone with its link.",
+  "@noPublicDrivesDescription": {
+    "description": "Says what a public drive is, for somebody who has none."
+  },
+  "noPrivateDrivesDescription": "A private drive is encrypted, and only you can read it.",
+  "@noPrivateDrivesDescription": {
+    "description": "Says what a private drive is, for somebody who has none."
   }
 }
