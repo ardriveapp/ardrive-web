@@ -29,8 +29,7 @@ class DrivesSyncMenu extends StatelessWidget {
       builder: (context, syncState) {
         final isSyncing =
             syncState is SyncInProgress || syncState is SyncLoadingDrives;
-        final errors =
-            syncState is SyncCompleteWithErrors ? syncState : null;
+        final errors = syncState is SyncCompleteWithErrors ? syncState : null;
         final nothingWalked = _nothingHasEverBeenWalked(context);
 
         return ArDriveDropdown(
@@ -118,9 +117,8 @@ class DrivesSyncMenu extends StatelessWidget {
                       ? appLocalizationsOf(context).syncAllDrives
                       : appLocalizationsOf(context).sync,
                   style: ArDriveTypographyNew.of(context).paragraphNormal(
-                    color: isSyncing
-                        ? colorTokens.textLow
-                        : colorTokens.textHigh,
+                    color:
+                        isSyncing ? colorTokens.textLow : colorTokens.textHigh,
                     fontWeight: ArFontWeight.semiBold,
                   ),
                 ),

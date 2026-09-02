@@ -240,7 +240,17 @@ class _AppSideBarState extends State<AppSideBar> {
   /// many public drives the wallet had, off screen on any real account. Inside
   /// a drive the list is the switcher, duplicates nothing, and stays as it was.
   Widget _buildDriveNav({required bool isMobile}) {
-    final showsScopes = context.watch<AppRouterDelegate>().showingDrivesList;
+    // The router's own predicate, not the raw flag. `showingDrivesList` is a
+    // request; whether it is honoured also depends on the profile, and for a
+    // logged-out viewer following a share link it is not - the explorer shell
+    // is built instead, and `DrivesListCubit` is never provided. Reading the
+    // flag alone had this nav render scopes, and the All Drives row watch a
+    // cubit that did not exist, which threw and left the whole sidebar grey.
+    final canGoToDrivesList = AppRouterDelegate.canShowDrivesList(
+      context.watch<ProfileCubit>().state,
+    );
+    final showsScopes = context.watch<AppRouterDelegate>().showingDrivesList &&
+        canGoToDrivesList;
     final showLabels = isMobile || _isExpanded;
 
     // The one row that never moves.
@@ -250,10 +260,14 @@ class _AppSideBarState extends State<AppSideBar> {
     // convention rather than an affordance: no label, no hint, and the person
     // who built the app did not find it. This row is labelled, it is where a
     // reader is already looking, and it is in the same place on every screen.
-    final home = _AllDrivesRow(
-      showLabel: showLabels,
-      isOnDrivesList: showsScopes,
-    );
+    // Offered only to somebody who has a drives list to go to - the same rule
+    // the logo uses, and for the same reason.
+    final home = canGoToDrivesList
+        ? _AllDrivesRow(
+            showLabel: showLabels,
+            isOnDrivesList: showsScopes,
+          )
+        : const SizedBox.shrink();
 
     if (showsScopes) {
       return Column(
@@ -1053,8 +1067,13 @@ class _AllDrivesRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scopeIsAll = isOnDrivesList &&
-        context.watch<DrivesListCubit>().scope == DriveScope.all;
+    // `watch` only where the cubit is actually provided. The drives list page
+    // provides it; every other shell does not, and reading it there throws
+    // during build - which takes the entire sidebar down with it rather than
+    // just this row.
+    final drivesList =
+        isOnDrivesList ? context.watch<DrivesListCubit?>() : null;
+    final scopeIsAll = drivesList?.scope == DriveScope.all;
 
     return DriveNavRow(
       icon: DriveScopeRail.iconFor(DriveScope.all),
@@ -1066,8 +1085,10 @@ class _AllDrivesRow extends StatelessWidget {
           Scaffold.of(context).closeDrawer();
         }
 
-        if (isOnDrivesList) {
-          context.read<DrivesListCubit>().showScope(DriveScope.all);
+        final cubit = context.read<DrivesListCubit?>();
+
+        if (isOnDrivesList && cubit != null) {
+          cubit.showScope(DriveScope.all);
           return;
         }
 

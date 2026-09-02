@@ -254,22 +254,46 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
           // indistinguishable from a press that did not register. Now it says
           // what it is doing while it does it.
           ArDriveButtonNew(
-              text: widget.checkingPassword
-                  ? appLocalizationsOf(context).loginCheckingPassword
-                  : 'Continue',
-              icon: widget.checkingPassword
-                  ? SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          ArDriveTheme.of(context)
-                              .themeData
-                              .colorTokens
-                              .textLow,
+              text: 'Continue',
+              // The spinner and the label as one centred group, rather than a
+              // spinner pinned to the left edge with the label centred in what
+              // is left of the button.
+              customContent: widget.checkingPassword
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              ArDriveTheme.of(context)
+                                  .themeData
+                                  .colorTokens
+                                  .textLow,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 10),
+                        // Flexible so a narrow button ellipsises the label
+                        // rather than overflowing the row, and in the button's
+                        // own text style so the busy state is the same weight
+                        // and size as the label it replaces.
+                        Flexible(
+                          child: Text(
+                            appLocalizationsOf(context).loginCheckingPassword,
+                            overflow: TextOverflow.ellipsis,
+                            style: typography.paragraphLarge(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colorTokens
+                                  .textLow,
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                          ),
+                        ),
+                      ],
                     )
                   : null,
               typography: typography,

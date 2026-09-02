@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
+import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -181,6 +182,9 @@ class DrivesListCubit extends Cubit<DrivesListState> {
 
     // One list, sorted as a whole. Shared drives are marked in place rather
     // than pushed into a second section nobody scrolls to.
+    // Assembled in name order and re-sorted below once the rows carry the
+    // figures the other columns order by - file counts and sizes are not on
+    // the drive record, so nothing but name can be sorted at this point.
     final drives = [...drivesState.userDrives, ...drivesState.sharedDrives]
       ..sort((a, b) => compareAlphabeticallyAndNatural(a.name, b.name));
 
@@ -225,10 +229,55 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     // Counted over everything, filtered to one scope. A scope reading zero is
     // exactly the fact a reader wants before clicking it, so the counts cannot
     // come from the filtered list.
+    final shown = items.where(_scope.matches).toList()
+      ..sort(_sort.comparator(ascending: _sortAscending));
+
     emit(DrivesListLoaded(
-      drives: items.where(_scope.matches).toList(),
+      drives: shown,
       scope: _scope,
       counts: DriveScopeCounts.of(items),
+      sort: _sort,
+      sortAscending: _sortAscending,
+    ));
+  }
+
+  /// Which column the list is ordered by, and which way.
+  DriveListSort _sort = DriveListSort.name;
+  bool _sortAscending = true;
+
+  /// Orders the list by [sort].
+  ///
+  /// Asking for the column that is already ordering reverses it, which is what
+  /// a second click on a table heading does everywhere. Moving to a different
+  /// column starts ascending - except the three that can be unknown, where
+  /// descending first is the useful answer: the largest drive, the one with
+  /// most files, the one synced most recently. Nobody opens a table of sizes
+  /// to find the smallest.
+  void sortBy(DriveListSort sort) {
+    if (_sort == sort) {
+      _sortAscending = !_sortAscending;
+    } else {
+      _sort = sort;
+      _sortAscending = sort == DriveListSort.name;
+    }
+
+    // Reordered in place rather than through `_refresh`, which emits a loading
+    // state and re-reads the summaries: neither the drives nor their figures
+    // changed, and flashing "Loading your drives..." because somebody clicked
+    // a column heading would be a lie about what is happening.
+    final current = state;
+
+    if (current is! DrivesListLoaded) {
+      return;
+    }
+
+    emit(DrivesListLoaded(
+      drives: [...current.drives]
+        ..sort(_sort.comparator(ascending: _sortAscending)),
+      scope: current.scope,
+      counts: current.counts,
+      sort: _sort,
+      sortAscending: _sortAscending,
     ));
   }
 
@@ -286,8 +335,6 @@ class DrivesListCubit extends Cubit<DrivesListState> {
   void syncAllDrives() {
     unawaited(_syncCubit.startSync());
   }
-
-
 
   @override
   Future<void> close() {

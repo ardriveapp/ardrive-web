@@ -45,6 +45,8 @@ class DrivesListLoaded extends DrivesListState {
     required this.drives,
     this.scope = DriveScope.all,
     this.counts = const DriveScopeCounts({}),
+    this.sort = DriveListSort.name,
+    this.sortAscending = true,
   });
 
   /// The drives this scope shows, already filtered.
@@ -56,6 +58,12 @@ class DrivesListLoaded extends DrivesListState {
   /// What every scope would show, so the sidebar can put a count beside each
   /// one without holding its own copy of the list.
   final DriveScopeCounts counts;
+
+  /// Which column [drives] is ordered by, so the header can mark it.
+  final DriveListSort sort;
+
+  /// Which way that column is ordered.
+  final bool sortAscending;
 
   /// Whether nothing here has ever been walked.
   ///
@@ -70,5 +78,5 @@ class DrivesListLoaded extends DrivesListState {
   bool get isSyncing => drives.any((drive) => drive.isSyncing);
 
   @override
-  List<Object?> get props => [drives, scope, counts];
+  List<Object?> get props => [drives, scope, counts, sort, sortAscending];
 }

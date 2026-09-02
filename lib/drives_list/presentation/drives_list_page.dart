@@ -1,3 +1,4 @@
+import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_empty.dart';
 import 'package:ardrive/drives_list/presentation/drives_sync_menu.dart';
 import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
@@ -201,6 +202,7 @@ class _DrivesListChrome extends StatelessWidget {
               context.read<DrivesCubit>().selectDrive(drive.id),
           onTryAgain: cubit.retryLoadingDrives,
           onSyncAllDrives: cubit.syncAllDrives,
+          onSort: cubit.sortBy,
           buildMenu: (drive) => _menuFor(drivesState, drive),
           syncMenu: const DrivesSyncMenu(),
         );
@@ -260,6 +262,7 @@ class DrivesListBody extends StatelessWidget {
     required this.onOpenDrive,
     required this.onTryAgain,
     required this.onSyncAllDrives,
+    this.onSort,
     this.buildMenu,
     this.syncMenu,
   });
@@ -268,6 +271,10 @@ class DrivesListBody extends StatelessWidget {
   final void Function(DriveListItem drive) onOpenDrive;
   final VoidCallback onTryAgain;
   final VoidCallback onSyncAllDrives;
+
+  /// Called with the column whose heading was pressed. Optional so the tests
+  /// that only draw the four states need not supply one.
+  final void Function(DriveListSort column)? onSort;
 
   /// Builds the actions menu for one row, or returns null for a row that has
   /// none.
@@ -310,6 +317,7 @@ class DrivesListBody extends StatelessWidget {
         onSyncAllDrives: onSyncAllDrives,
         buildMenu: buildMenu,
         syncMenu: syncMenu,
+        onSort: onSort,
       );
     }
 
@@ -484,11 +492,13 @@ class _DrivesListLoadedView extends StatelessWidget {
     required this.onSyncAllDrives,
     required this.buildMenu,
     required this.syncMenu,
+    this.onSort,
   });
 
   final DrivesListLoaded state;
   final void Function(DriveListItem drive) onOpenDrive;
   final VoidCallback onSyncAllDrives;
+  final void Function(DriveListSort column)? onSort;
   final Widget? Function(DriveListItem drive)? buildMenu;
 
   /// The drive-wide sync actions, passed in rather than reached for.
@@ -574,7 +584,13 @@ class _DrivesListLoadedView extends StatelessWidget {
                           const SliverToBoxAdapter(
                             child: SizedBox(height: _panelPadding),
                           ),
-                          const SliverToBoxAdapter(child: DriveListHeader()),
+                          SliverToBoxAdapter(
+                            child: DriveListHeader(
+                              sort: state.sort,
+                              sortAscending: state.sortAscending,
+                              onSort: onSort,
+                            ),
+                          ),
                           _rows(state, showsColumns),
                           const SliverToBoxAdapter(
                             child: SizedBox(height: _panelPadding),

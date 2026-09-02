@@ -19,8 +19,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/mocks.dart';
 
-class _MockProfileNameBloc
-    extends MockBloc<ProfileNameEvent, ProfileNameState>
+class _MockProfileNameBloc extends MockBloc<ProfileNameEvent, ProfileNameState>
     implements ProfileNameBloc {}
 
 /// The drive-wide sync actions, on the page about drives.
@@ -156,8 +155,8 @@ void main() {
   });
 
   group('while a sync runs', () {
-    setUp(() => when(() => syncCubit.state).thenReturn(
-        SyncInProgress(trigger: SyncTrigger.userInitiated)));
+    setUp(() => when(() => syncCubit.state)
+        .thenReturn(SyncInProgress(trigger: SyncTrigger.userInitiated)));
 
     testWidgets('the actions are disabled rather than silently dropped',
         (tester) async {

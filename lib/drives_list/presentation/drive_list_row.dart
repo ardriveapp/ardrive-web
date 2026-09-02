@@ -1,4 +1,5 @@
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
+import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -118,30 +119,88 @@ const int _createdFlex = 3;
 /// It shares the row's flex constants rather than repeating them: a heading
 /// that drifts out of line with the column under it is worse than no heading.
 class DriveListHeader extends StatelessWidget {
-  const DriveListHeader({super.key});
+  const DriveListHeader({
+    super.key,
+    this.sort,
+    this.sortAscending = true,
+    this.onSort,
+  });
+
+  /// Which column is ordering the list, if this header is sortable.
+  final DriveListSort? sort;
+
+  /// Which way that column is ordered.
+  final bool sortAscending;
+
+  /// Called with the column whose heading was pressed. A header with no
+  /// handler draws as plain text and takes no taps, which is what the tests
+  /// that only care about layout get.
+  final void Function(DriveListSort column)? onSort;
 
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    Widget heading(String text, int flex, {bool align = false}) => Expanded(
-          flex: flex,
-          child: Text(
-            text,
-            textAlign: align ? TextAlign.end : TextAlign.start,
-            overflow: TextOverflow.ellipsis,
-            // The explorer's column headings exactly: paragraphNormal in
-            // textMid, semi-bold. This list had them a step smaller and a
-            // shade fainter than its own row text, which is the pairing that
-            // made the two tables read as different components rather than
-            // the same one twice.
-            style: typography.paragraphNormal(
-              color: colorTokens.textMid,
-              fontWeight: ArFontWeight.semiBold,
+    Widget heading(String text, int flex, {DriveListSort? column}) {
+      final isSorted = column != null && column == sort;
+
+      final label = Text(
+        text,
+        overflow: TextOverflow.ellipsis,
+        // The explorer's column headings exactly: paragraphNormal in
+        // textMid, semi-bold. This list had them a step smaller and a
+        // shade fainter than its own row text, which is the pairing that
+        // made the two tables read as different components rather than
+        // the same one twice.
+        style: typography.paragraphNormal(
+          // The ordering column names itself by weight and colour as well as
+          // by the arrow, so which one is sorting survives a glance.
+          color: isSorted ? colorTokens.textHigh : colorTokens.textMid,
+          fontWeight: ArFontWeight.semiBold,
+        ),
+      );
+
+      // The arrow occupies its slot whether or not it is drawn, so pressing a
+      // heading does not shuffle the others sideways.
+      final content = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(child: label),
+          SizedBox(
+            width: 18,
+            child: isSorted
+                ? Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Icon(
+                      sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                      size: 14,
+                      color: colorTokens.textHigh,
+                    ),
+                  )
+                : null,
+          ),
+        ],
+      );
+
+      if (column == null || onSort == null) {
+        return Expanded(flex: flex, child: content);
+      }
+
+      return Expanded(
+        flex: flex,
+        child: ArDriveClickArea(
+          child: Semantics(
+            button: true,
+            label: text,
+            child: InkWell(
+              onTap: () => onSort!(column),
+              child: content,
             ),
           ),
-        );
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -150,16 +209,20 @@ class DriveListHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          heading(appLocalizationsOf(context).name, _nameFlex),
+          heading(appLocalizationsOf(context).name, _nameFlex,
+              column: DriveListSort.name),
           const SizedBox(width: _columnGap),
-          heading(appLocalizationsOf(context).lastSynced, _syncFlex),
+          heading(appLocalizationsOf(context).lastSynced, _syncFlex,
+              column: DriveListSort.lastSynced),
           const SizedBox(width: _columnGap),
           heading(appLocalizationsOf(context).driveListFilesHeading, _filesFlex,
-              align: true),
+              column: DriveListSort.files),
           const SizedBox(width: _columnGap),
-          heading(appLocalizationsOf(context).size, _sizeFlex, align: true),
+          heading(appLocalizationsOf(context).size, _sizeFlex,
+              column: DriveListSort.size),
           const SizedBox(width: _columnGap),
-          heading(appLocalizationsOf(context).dateCreated, _createdFlex),
+          heading(appLocalizationsOf(context).dateCreated, _createdFlex,
+              column: DriveListSort.created),
           // The rows' menu gutter, so the headings sit over their own columns.
           const SizedBox(width: driveListMenuGutter),
         ],
@@ -273,9 +336,9 @@ class DriveListRow extends StatelessWidget {
         const SizedBox(width: _columnGap),
         Expanded(flex: _syncFlex, child: _syncState(context)),
         const SizedBox(width: _columnGap),
-        Expanded(flex: _filesFlex, child: _files(context, align: true)),
+        Expanded(flex: _filesFlex, child: _files(context)),
         const SizedBox(width: _columnGap),
-        Expanded(flex: _sizeFlex, child: _size(context, align: true)),
+        Expanded(flex: _sizeFlex, child: _size(context)),
         const SizedBox(width: _columnGap),
         Expanded(flex: _createdFlex, child: _created(context)),
       ],
@@ -306,8 +369,8 @@ class DriveListRow extends StatelessWidget {
             // A withheld figure is a mark that means nothing without the
             // column heading above it, and there is no heading here. The row
             // already says "Never synced", which is the same fact in words.
-            if (drive.fileCount != null) _files(context, align: false),
-            if (drive.totalSize != null) _size(context, align: false),
+            if (drive.fileCount != null) _files(context),
+            if (drive.totalSize != null) _size(context),
             _created(context),
           ],
         ),
@@ -409,7 +472,7 @@ class DriveListRow extends StatelessWidget {
     );
   }
 
-  Widget _files(BuildContext context, {required bool align}) {
+  Widget _files(BuildContext context) {
     final fileCount = drive.fileCount;
 
     return _figure(
@@ -418,11 +481,10 @@ class DriveListRow extends StatelessWidget {
           ? driveListWithheldFigure
           : appLocalizationsOf(context).driveFileCount(fileCount),
       withheld: fileCount == null,
-      align: align,
     );
   }
 
-  Widget _size(BuildContext context, {required bool align}) {
+  Widget _size(BuildContext context) {
     final totalSize = drive.totalSize;
 
     return _figure(
@@ -432,7 +494,6 @@ class DriveListRow extends StatelessWidget {
       // saying nothing, because it looks like an answer.
       totalSize == null ? driveListWithheldFigure : filesize(totalSize),
       withheld: totalSize == null,
-      align: align,
     );
   }
 
@@ -456,17 +517,18 @@ class DriveListRow extends StatelessWidget {
     BuildContext context,
     String text, {
     required bool withheld,
-    required bool align,
   }) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     final label = Text(
       text,
-      // Right-aligned in the tabular layout so the digits line up down the
-      // column; left-aligned when the row is stacked and there is no column
-      // to line up with.
-      textAlign: align ? TextAlign.end : TextAlign.start,
+      // Left, like every other cell in this table and every cell in the
+      // explorer's. Right-aligning these two lined their digits up, but it
+      // also pushed Size hard against Date Created - a right-aligned column
+      // ending where a left-aligned one begins, with only the column gap
+      // between them - and made the pair read as shoved to one side.
+      textAlign: TextAlign.start,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: typography

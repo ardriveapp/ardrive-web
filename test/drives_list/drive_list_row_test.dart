@@ -66,27 +66,27 @@ void main() {
             data: MediaQuery.of(context)
                 .copyWith(textScaler: TextScaler.linear(textScale)),
             child: Scaffold(
-          body: Align(
-            alignment: Alignment.topLeft,
-            child: SizedBox(
-              width: width,
-              // The headings share the row's flex constants, so a test about
-              // what a column is called has to render the pair the page
-              // renders.
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (withHeader) const DriveListHeader(),
-                  DriveListRow(
-                    drive: item,
-                    showsColumns: showsColumns,
-                    onTap: onTap ?? () {},
+              body: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: width,
+                  // The headings share the row's flex constants, so a test about
+                  // what a column is called has to render the pair the page
+                  // renders.
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (withHeader) const DriveListHeader(),
+                      DriveListRow(
+                        drive: item,
+                        showsColumns: showsColumns,
+                        onTap: onTap ?? () {},
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
           ),
         ),
       ),

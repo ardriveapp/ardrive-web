@@ -27,7 +27,8 @@ class DriveScopeRail extends StatelessWidget {
     return BlocBuilder<DrivesListCubit, DrivesListState>(
       builder: (context, state) {
         final counts = state is DrivesListLoaded ? state.counts : null;
-        final current = state is DrivesListLoaded ? state.scope : DriveScope.all;
+        final current =
+            state is DrivesListLoaded ? state.scope : DriveScope.all;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -162,9 +163,11 @@ class DriveNavRow extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       '$count',
-                      style: typography.paragraphSmall(
+                      style: typography
+                          .paragraphSmall(
                         color: colorTokens.textLow,
-                      ).copyWith(
+                      )
+                          .copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
