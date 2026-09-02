@@ -1589,6 +1589,10 @@
   "@logIn": {
     "description": "The action of logging in. Imperative form"
   },
+  "loginCheckingPassword": "Checking your password...",
+  "@loginCheckingPassword": {
+    "description": "Shown on the Continue button while the entered password is being proved against one of the wallet's private drives, which takes several network round trips"
+  },
   "loginFailed": "Login failed",
   "@loginFailed": {
     "description": "Text for when the user tried to login with wrong credentials"
