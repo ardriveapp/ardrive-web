@@ -41,9 +41,21 @@ class DrivesListUnavailable extends DrivesListState {}
 
 /// The list.
 class DrivesListLoaded extends DrivesListState {
-  const DrivesListLoaded({required this.drives});
+  const DrivesListLoaded({
+    required this.drives,
+    this.scope = DriveScope.all,
+    this.counts = const DriveScopeCounts({}),
+  });
 
+  /// The drives this scope shows, already filtered.
   final List<DriveListItem> drives;
+
+  /// Which scope produced [drives].
+  final DriveScope scope;
+
+  /// What every scope would show, so the sidebar can put a count beside each
+  /// one without holding its own copy of the list.
+  final DriveScopeCounts counts;
 
   /// Whether nothing here has ever been walked.
   ///
@@ -58,5 +70,5 @@ class DrivesListLoaded extends DrivesListState {
   bool get isSyncing => drives.any((drive) => drive.isSyncing);
 
   @override
-  List<Object?> get props => [drives];
+  List<Object?> get props => [drives, scope, counts];
 }

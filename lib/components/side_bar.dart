@@ -1,3 +1,4 @@
+import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
@@ -106,25 +107,7 @@ class _AppSideBarState extends State<AppSideBar> {
                     const SizedBox(
                       height: 16,
                     ),
-                    BlocBuilder<DrivesCubit, DrivesState>(
-                      builder: (context, state) {
-                        if (state is DrivesLoadSuccess &&
-                            (state.userDrives.isNotEmpty ||
-                                state.sharedDrives.isNotEmpty)) {
-                          return Flexible(
-                            child: _Accordion(
-                              state: state,
-                              isMobile: true,
-                            ),
-                          );
-                        }
-                        // Nothing while the list is being read. The nav is
-                        // where a reader looks for drives, not for a report on
-                        // fetching them - that belongs to the surface actually
-                        // waiting on it, and to the sync indicator.
-                        return const SizedBox();
-                      },
-                    ),
+                    _buildDriveNav(isMobile: true),
                   ],
                 ),
               ),
@@ -205,29 +188,7 @@ class _AppSideBarState extends State<AppSideBar> {
                             const SizedBox(
                               height: 16,
                             ),
-                            _isExpanded
-                                ? BlocBuilder<DrivesCubit, DrivesState>(
-                                    builder: (context, state) {
-                                      if (state is DrivesLoadSuccess &&
-                                          (state.userDrives.isNotEmpty ||
-                                              state.sharedDrives.isNotEmpty)) {
-                                        return Flexible(
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(
-                                                left: 43.0),
-                                            child: _Accordion(
-                                              isMobile: false,
-                                              state: state,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      // See the drawer above: the nav says
-                                      // nothing while the list is being read.
-                                      return const SizedBox();
-                                    },
-                                  )
-                                : const SizedBox(),
+                            _buildDriveNav(isMobile: false),
                           ],
                         ),
                       ),
@@ -260,7 +221,82 @@ class _AppSideBarState extends State<AppSideBar> {
   /// The drive the user came from stays selected underneath it - see
   /// [AppRouterDelegate.showDrivesList] - so this is a round trip of one tap
   /// each way rather than a door that closes behind them.
+  /// What the nav shows: scopes while the drives list is the page, the drives
+  /// themselves everywhere else.
+  ///
+  /// The two never both apply. On the drives list the table already lists every
+  /// drive with columns to explain itself, so listing them again on the left
+  /// was the same answer twice - and it pushed Private and Shared below however
+  /// many public drives the wallet had, off screen on any real account. Inside
+  /// a drive the list is the switcher, duplicates nothing, and stays as it was.
+  Widget _buildDriveNav({required bool isMobile}) {
+    final showsScopes = context.watch<AppRouterDelegate>().showingDrivesList;
+
+    if (showsScopes) {
+      return DriveScopeRail(showLabels: isMobile || _isExpanded);
+    }
+
+    // The collapsed rail is 64px wide and has never shown drive names.
+    if (!isMobile && !_isExpanded) {
+      return const SizedBox();
+    }
+
+    return BlocBuilder<DrivesCubit, DrivesState>(
+      builder: (context, state) {
+        if (state is DrivesLoadSuccess &&
+            (state.userDrives.isNotEmpty || state.sharedDrives.isNotEmpty)) {
+          final accordion = _Accordion(state: state, isMobile: isMobile);
+
+          return Flexible(
+            child: isMobile
+                ? accordion
+                : Padding(
+                    padding: const EdgeInsets.only(left: 43.0),
+                    child: accordion,
+                  ),
+          );
+        }
+
+        // Nothing while the list is being read. The nav is where a reader looks
+        // for drives, not for a report on fetching them.
+        return const SizedBox();
+      },
+    );
+  }
+
   Widget _buildLogo(bool isMobile) {
+    // The way home, which is what a logo is on the web and what this one was
+    // not: it sat inert at the top of the nav while a house was added beside
+    // the wallet address, in the cluster that is about the account rather than
+    // about where you are.
+    //
+    // Only for somebody who has a drives list to go to - the same predicate the
+    // router uses before it will draw one.
+    final goesHome = AppRouterDelegate.canShowDrivesList(
+      context.watch<ProfileCubit>().state,
+    );
+
+    if (!goesHome) {
+      return _logoImage(isMobile);
+    }
+
+    return ArDriveClickArea(
+      tooltip: appLocalizationsOf(context).allDrivesScope,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (Scaffold.maybeOf(context) != null) {
+            Scaffold.of(context).closeDrawer();
+          }
+
+          context.read<AppRouterDelegate>().showDrivesList();
+        },
+        child: _logoImage(isMobile),
+      ),
+    );
+  }
+
+  Widget _logoImage(bool isMobile) {
     return SizedBox(
       height: 64,
       child: AnimatedSwitcher(

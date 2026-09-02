@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
+import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
@@ -209,6 +210,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         name: drive.name,
         isPrivate: drive.privacy == DrivePrivacyTag.private,
         isSharedWithMe: sharedDriveIds.contains(drive.id),
+        isHidden: drive.isHidden,
         dateCreated: drive.dateCreated,
         hasBeenWalked: hasBeenWalked,
         fileCount: hasBeenWalked ? summary.fileCount : null,
@@ -220,7 +222,32 @@ class DrivesListCubit extends Cubit<DrivesListState> {
       );
     }).toList();
 
-    emit(DrivesListLoaded(drives: items));
+    // Counted over everything, filtered to one scope. A scope reading zero is
+    // exactly the fact a reader wants before clicking it, so the counts cannot
+    // come from the filtered list.
+    emit(DrivesListLoaded(
+      drives: items.where(_scope.matches).toList(),
+      scope: _scope,
+      counts: DriveScopeCounts.of(items),
+    ));
+  }
+
+  /// Which drives the list is showing. See [DriveScope].
+  DriveScope _scope = DriveScope.all;
+
+  DriveScope get scope => _scope;
+
+  /// Narrows the list, from the sidebar.
+  ///
+  /// The scope is this cubit's rather than the page's because the sidebar sets
+  /// it and the table reads it, and they are on opposite sides of the shell.
+  void showScope(DriveScope scope) {
+    if (_scope == scope) {
+      return;
+    }
+
+    _scope = scope;
+    _refresh();
   }
 
   /// Runs the drive-list refresh again after one failed.

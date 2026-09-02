@@ -1425,6 +1425,14 @@
   "@hide": {
     "description": "Hide"
   },
+  "hiddenDrives": "Hidden",
+  "@hiddenDrives": {
+    "description": "Sidebar scope for drives the user has hidden."
+  },
+  "allDrivesScope": "All drives",
+  "@allDrivesScope": {
+    "description": "Sidebar scope showing every drive that is not hidden."
+  },
   "hidingFile": "Hiding file",
   "@hidingFile": {
     "description": "Hiding file"

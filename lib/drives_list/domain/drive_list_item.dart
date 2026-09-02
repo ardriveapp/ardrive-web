@@ -13,6 +13,7 @@ class DriveListItem extends Equatable {
     required this.name,
     required this.isPrivate,
     required this.isSharedWithMe,
+    required this.isHidden,
     required this.dateCreated,
     required this.hasBeenWalked,
     required this.fileCount,
@@ -35,6 +36,13 @@ class DriveListItem extends Equatable {
   /// the smaller group below the fold, and the smaller group here is the one
   /// with the surprising behaviour.
   final bool isSharedWithMe;
+
+  /// Whether the user has hidden this drive.
+  ///
+  /// The sidebar has always dimmed and filtered these; the list showed them
+  /// unmarked beside everything else while its own menu offered "Unhide" on a
+  /// row that looked like every other row.
+  final bool isHidden;
 
   final DateTime dateCreated;
 
@@ -82,6 +90,7 @@ class DriveListItem extends Equatable {
         name,
         isPrivate,
         isSharedWithMe,
+        isHidden,
         dateCreated,
         hasBeenWalked,
         fileCount,

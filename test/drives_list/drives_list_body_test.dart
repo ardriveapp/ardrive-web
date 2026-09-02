@@ -26,6 +26,7 @@ void main() {
         name: name,
         isPrivate: false,
         isSharedWithMe: isSharedWithMe,
+        isHidden: false,
         dateCreated: DateTime(2024, 3, 4),
         hasBeenWalked: hasBeenWalked,
         fileCount: hasBeenWalked ? 2 : null,

@@ -56,6 +56,7 @@ void main() {
         name: id,
         isPrivate: false,
         isSharedWithMe: false,
+        isHidden: false,
         dateCreated: DateTime(2026, 3, 4),
         hasBeenWalked: false,
         fileCount: null,

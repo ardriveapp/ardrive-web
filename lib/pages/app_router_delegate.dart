@@ -349,8 +349,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 // the sidebar does not change here.
                 shell = BlocProvider(
                   create: (context) => _driveDetailCubit(context, rootPath),
-                  child: AppShell(
-                    page: DrivesListPage(onOpenDrive: openDriveFromList),
+                  // Above the shell, so the sidebar can read the same cubit the
+                  // table does: the sidebar sets which drives are shown and the
+                  // table shows them, and they sit on opposite sides of this
+                  // boundary.
+                  child: DrivesListPage.provide(
+                    child: AppShell(
+                      page: DrivesListPage(onOpenDrive: openDriveFromList),
+                    ),
                   ),
                 );
               } else if (state is ProfileLoggedIn ||

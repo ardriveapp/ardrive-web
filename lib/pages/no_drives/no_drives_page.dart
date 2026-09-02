@@ -4,7 +4,6 @@ import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/profile_card.dart';
-import 'package:ardrive/components/topbar/home_button.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
@@ -67,7 +66,6 @@ class NoDrivesPage extends StatelessWidget {
               children: [
                 SyncButton(),
                 SizedBox(width: 8),
-                HomeButtonTopBar(),
                 SizedBox(width: 8),
                 ProfileCard(),
               ],

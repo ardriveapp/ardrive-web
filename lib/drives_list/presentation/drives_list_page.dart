@@ -6,7 +6,6 @@ import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
-import 'package:ardrive/components/topbar/home_button.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_actions_menu.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
@@ -90,8 +89,12 @@ class DrivesListPage extends StatelessWidget {
   /// has no row for yet.
   final void Function(String driveId) onOpenDrive;
 
-  @override
-  Widget build(BuildContext context) {
+  /// The cubit this page reads is provided by the router, above the shell.
+  ///
+  /// It used to be created here, below `AppShell` - so the sidebar, which is
+  /// inside the shell, could not see it. The sidebar now sets the scope this
+  /// page filters by, and the two are on opposite sides of that boundary.
+  static Widget provide({required Widget child}) {
     return BlocProvider<DrivesListCubit>(
       create: (context) => DrivesListCubit(
         drivesCubit: context.read<DrivesCubit>(),
@@ -99,8 +102,13 @@ class DrivesListPage extends StatelessWidget {
         driveDao: context.read<DriveDao>(),
         userPreferencesRepository: context.read<UserPreferencesRepository>(),
       ),
-      child: _DrivesListView(onOpenDrive: onOpenDrive),
+      child: child,
     );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _DrivesListView(onOpenDrive: onOpenDrive);
   }
 }
 
@@ -217,7 +225,6 @@ class _DrivesListChrome extends StatelessWidget {
                   children: [
                     SyncButton(),
                     SizedBox(width: 8),
-                    HomeButtonTopBar(),
                     SizedBox(width: 8),
                     ProfileCard(),
                   ],
