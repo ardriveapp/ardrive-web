@@ -546,10 +546,18 @@ void main() {
 
     await tester.pumpWidget(host(textScale: 2));
     await tester.pump();
+    // There is a menu only while there is something to report, so this needs a
+    // running sync to have anything to measure.
+    await startSyncing(
+      tester,
+      reporting: SyncProgress.initial().copyWith(
+        statusMessage: 'Reading the drive history...',
+      ),
+    );
     await openMenu(tester);
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Sync history'), findsOneWidget);
+    expect(find.text('All drives'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
   });
@@ -714,85 +722,31 @@ void main() {
       await openMenu(tester);
 
       expect(find.byKey(syncStatusHeaderKey), findsNothing);
-      expect(find.text('Sync history'), findsOneWidget);
+      // The record moved to the drives list; what is left here is the way
+      // to the page that carries it.
+      expect(find.text('All drives'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('SyncIdle offers the actions and the record, and says nothing',
+    testWidgets('SyncIdle draws nothing at all, so there is nothing to say',
         (tester) async {
       await tester.pumpWidget(host());
       await tester.pump();
-      await openMenu(tester);
-
+      // The indicator is absent until there is something to report, and the
+      // actions it used to carry live on the drives list - see
+      // `test/drives_list/drives_sync_menu_test.dart`.
       expect(find.byKey(syncStatusHeaderKey), findsNothing);
-      expect(find.text('Resync'), findsOneWidget);
-      expect(find.text('Deep Resync'), findsOneWidget);
-      expect(find.text('Sync history'), findsOneWidget);
+      expect(find.byType(ArDriveDropdown), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });
   });
 
-  group('level 2 is reachable from the indicator', () {
-    testWidgets('and its label is readable on the narrowest phone at 2.0x',
-        (tester) async {
-      // The only door to level 2. A fixed 48px row squeezed the label instead
-      // of growing with it, so at 320px and text scale 2.0 the entry read as a
-      // cut-off word - the one row a user in trouble is looking for.
-      tester.view.physicalSize = const Size(320, 640);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+  // The record moved to the drives list with the rest of the sync actions, and
+  // `test/drives_list/drives_sync_menu_test.dart` covers it there. This
+  // indicator reports; it no longer carries controls.
 
-      await tester.pumpWidget(host(textScale: 2));
-      await tester.pump();
-      await openMenu(tester);
-
-      final label = tester.renderObject(find.text('Sync history'));
-      expect(
-        (label as dynamic).didExceedMaxLines,
-        isFalse,
-        reason: 'the way into the history was truncated',
-      );
-
-      await tester.pumpWidget(const SizedBox());
-    });
-
-    testWidgets('the menu carries one row, not a list', (tester) async {
-      // The dropdown sizes its overlay as `items.length * 48` and closes on
-      // any tap inside it, so it is the wrong container for a scrolling
-      // record. One row, which opens the modal that holds it.
-      await tester.pumpWidget(host());
-      await tester.pump();
-      await openMenu(tester);
-
-      expect(find.text('Sync history'), findsOneWidget);
-
-      await tester.pumpWidget(const SizedBox());
-    });
-
-    testWidgets('and it is still reachable while a sync is running',
-        (tester) async {
-      // Resync and Deep Resync are drawn unavailable during a sync; reading
-      // what the last few syncs did is not a thing a running sync can refuse,
-      // and it is exactly what somebody watching a slow one wants.
-      await tester.pumpWidget(host());
-      await tester.pump();
-      await startSyncing(tester);
-      await openMenu(tester);
-
-      final row = tester.widget<ArDriveDropdownItem>(
-        find.ancestor(
-          of: find.text('Sync history'),
-          matching: find.byType(ArDriveDropdownItem),
-        ),
-      );
-
-      expect(row.onClick, isNotNull);
-
-      await tester.pumpWidget(const SizedBox());
-    });
-  });
 }
 
 /// A drive row as `DrivesCubit` hands them over, with only the two fields the

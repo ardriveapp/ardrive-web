@@ -33,25 +33,31 @@ class DriveScopeRail extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
+            // `all` is not here: the sidebar draws it above this rail, on
+            // every screen, so the top of the nav never changes as the reader
+            // moves between the list and a drive.
             for (final scope in DriveScope.values)
-              // A scope nobody has anything in is not offered. Hidden is the
-              // one worth suppressing: most wallets have none, and an empty
-              // row invites a click that shows an empty table.
-              if (scope != DriveScope.hidden || (counts?[scope] ?? 0) > 0)
-                _ScopeRow(
-                  scope: scope,
-                  label: _label(context, scope),
-                  count: counts?[scope],
-                  isCurrent: scope == current,
-                  showLabel: showLabels,
-                ),
+              if (scope != DriveScope.all)
+                // A scope nobody has anything in is not offered. Hidden is the
+                // one worth suppressing: most wallets have none, and an empty
+                // row invites a click that shows an empty table.
+                if (scope != DriveScope.hidden || (counts?[scope] ?? 0) > 0)
+                  DriveNavRow(
+                    icon: iconFor(scope),
+                    label: labelFor(context, scope),
+                    count: counts?[scope],
+                    isCurrent: scope == current,
+                    showLabel: showLabels,
+                    onTap: () =>
+                        context.read<DrivesListCubit>().showScope(scope),
+                  ),
           ],
         );
       },
     );
   }
 
-  static String _label(BuildContext context, DriveScope scope) {
+  static String labelFor(BuildContext context, DriveScope scope) {
     final l = appLocalizationsOf(context);
 
     switch (scope) {
@@ -68,7 +74,7 @@ class DriveScopeRail extends StatelessWidget {
     }
   }
 
-  static IconData _icon(DriveScope scope) {
+  static IconData iconFor(DriveScope scope) {
     switch (scope) {
       case DriveScope.all:
         return Icons.home_outlined;
@@ -84,17 +90,25 @@ class DriveScopeRail extends StatelessWidget {
   }
 }
 
-class _ScopeRow extends StatelessWidget {
-  const _ScopeRow({
-    required this.scope,
+/// One row of the nav, wherever it appears.
+///
+/// Shared so the permanent "All drives" anchor the sidebar draws above this
+/// rail is the same object as the scopes below it - the row a reader relies on
+/// to get home must not be a lookalike that drifts.
+class DriveNavRow extends StatelessWidget {
+  const DriveNavRow({
+    super.key,
+    required this.icon,
     required this.label,
-    required this.count,
-    required this.isCurrent,
-    required this.showLabel,
+    required this.onTap,
+    this.count,
+    this.isCurrent = false,
+    this.showLabel = true,
   });
 
-  final DriveScope scope;
+  final IconData icon;
   final String label;
+  final VoidCallback onTap;
   final int? count;
   final bool isCurrent;
   final bool showLabel;
@@ -113,7 +127,7 @@ class _ScopeRow extends StatelessWidget {
       child: ArDriveClickArea(
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () => context.read<DrivesListCubit>().showScope(scope),
+          onTap: onTap,
           child: Container(
             decoration: isCurrent
                 ? BoxDecoration(
@@ -127,7 +141,7 @@ class _ScopeRow extends StatelessWidget {
                   ? MainAxisAlignment.start
                   : MainAxisAlignment.center,
               children: [
-                Icon(DriveScopeRail._icon(scope), size: 18, color: color),
+                Icon(icon, size: 18, color: color),
                 if (showLabel) ...[
                   const SizedBox(width: 10),
                   // Wraps rather than ellipsizes, like the drive names that

@@ -1,3 +1,5 @@
+import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
+import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
 // ignore_for_file: use_build_context_synchronously
 
@@ -231,9 +233,35 @@ class _AppSideBarState extends State<AppSideBar> {
   /// a drive the list is the switcher, duplicates nothing, and stays as it was.
   Widget _buildDriveNav({required bool isMobile}) {
     final showsScopes = context.watch<AppRouterDelegate>().showingDrivesList;
+    final showLabels = isMobile || _isExpanded;
+
+    // The one row that never moves.
+    //
+    // The nav used to swap wholesale between the two screens, so nothing stayed
+    // put to orient against - and the only way home was the logo, which is a
+    // convention rather than an affordance: no label, no hint, and the person
+    // who built the app did not find it. This row is labelled, it is where a
+    // reader is already looking, and it is in the same place on every screen.
+    final home = _AllDrivesRow(
+      showLabel: showLabels,
+      isOnDrivesList: showsScopes,
+    );
 
     if (showsScopes) {
-      return DriveScopeRail(showLabels: isMobile || _isExpanded);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          home,
+          const SizedBox(height: 6),
+          Divider(
+            height: 1,
+            color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
+          ),
+          const SizedBox(height: 6),
+          DriveScopeRail(showLabels: showLabels),
+        ],
+      );
     }
 
     // The collapsed rail is 64px wide and has never shown drive names.
@@ -241,26 +269,40 @@ class _AppSideBarState extends State<AppSideBar> {
       return const SizedBox();
     }
 
-    return BlocBuilder<DrivesCubit, DrivesState>(
-      builder: (context, state) {
-        if (state is DrivesLoadSuccess &&
-            (state.userDrives.isNotEmpty || state.sharedDrives.isNotEmpty)) {
-          final accordion = _Accordion(state: state, isMobile: isMobile);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        home,
+        const SizedBox(height: 6),
+        Divider(
+          height: 1,
+          color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
+        ),
+        const SizedBox(height: 6),
+        BlocBuilder<DrivesCubit, DrivesState>(
+          builder: (context, state) {
+            if (state is DrivesLoadSuccess &&
+                (state.userDrives.isNotEmpty ||
+                    state.sharedDrives.isNotEmpty)) {
+              final accordion = _Accordion(state: state, isMobile: isMobile);
 
-          return Flexible(
-            child: isMobile
-                ? accordion
-                : Padding(
-                    padding: const EdgeInsets.only(left: 43.0),
-                    child: accordion,
-                  ),
-          );
-        }
+              return Flexible(
+                child: isMobile
+                    ? accordion
+                    : Padding(
+                        padding: const EdgeInsets.only(left: 43.0),
+                        child: accordion,
+                      ),
+              );
+            }
 
-        // Nothing while the list is being read. The nav is where a reader looks
-        // for drives, not for a report on fetching them.
-        return const SizedBox();
-      },
+            // Nothing while the list is being read. The nav is where a reader
+            // looks for drives, not for a report on fetching them.
+            return const SizedBox();
+          },
+        ),
+      ],
     );
   }
 
@@ -982,3 +1024,47 @@ class _Accordion extends StatelessWidget {
 /// The nav used to render nothing here, which is indistinguishable from a
 /// wallet with no drives - and that is exactly what a returning user sees on a
 /// device the app has not read yet. It says which it is now.
+
+/// The way back to every drive, in the same place on every screen.
+///
+/// On the drives list it is the widest scope; inside a drive it is the way out.
+/// One row either way, because to a reader they are the same thing - "show me
+/// all of my drives" - and drawing them differently would be an implementation
+/// detail leaking into the nav.
+class _AllDrivesRow extends StatelessWidget {
+  const _AllDrivesRow({
+    required this.showLabel,
+    required this.isOnDrivesList,
+  });
+
+  final bool showLabel;
+
+  /// Whether the drives list is already the page, which decides whether this
+  /// row narrows the table or navigates to it.
+  final bool isOnDrivesList;
+
+  @override
+  Widget build(BuildContext context) {
+    final scopeIsAll = isOnDrivesList &&
+        context.watch<DrivesListCubit>().scope == DriveScope.all;
+
+    return DriveNavRow(
+      icon: DriveScopeRail.iconFor(DriveScope.all),
+      label: appLocalizationsOf(context).allDrivesScope,
+      showLabel: showLabel,
+      isCurrent: scopeIsAll,
+      onTap: () {
+        if (Scaffold.maybeOf(context) != null) {
+          Scaffold.of(context).closeDrawer();
+        }
+
+        if (isOnDrivesList) {
+          context.read<DrivesListCubit>().showScope(DriveScope.all);
+          return;
+        }
+
+        context.read<AppRouterDelegate>().showDrivesList();
+      },
+    );
+  }
+}

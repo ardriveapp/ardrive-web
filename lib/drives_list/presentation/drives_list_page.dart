@@ -1,3 +1,4 @@
+import 'package:ardrive/drives_list/presentation/drives_sync_menu.dart';
 import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'dart:math' as math;
@@ -196,6 +197,7 @@ class _DrivesListChrome extends StatelessWidget {
           onTryAgain: cubit.retryLoadingDrives,
           onSyncAllDrives: cubit.syncAllDrives,
           buildMenu: (drive) => _menuFor(drivesState, drive),
+          syncMenu: const DrivesSyncMenu(),
         );
 
         // The chrome follows the app shell's own desktop/mobile split, because
@@ -254,6 +256,7 @@ class DrivesListBody extends StatelessWidget {
     required this.onTryAgain,
     required this.onSyncAllDrives,
     this.buildMenu,
+    this.syncMenu,
   });
 
   final DrivesListState state;
@@ -268,6 +271,13 @@ class DrivesListBody extends StatelessWidget {
   /// needs the drive record and three app-wide blocs, and this widget exists
   /// so all four answers can be rendered without standing any of that up.
   final Widget? Function(DriveListItem drive)? buildMenu;
+
+  /// The drive-wide sync actions, passed in rather than reached for.
+  ///
+  /// This widget draws what it is given - which is why its tests need no
+  /// providers - and the menu needs `SyncCubit` and `DrivesCubit`. Same rule
+  /// as [buildMenu].
+  final Widget? syncMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -287,6 +297,7 @@ class DrivesListBody extends StatelessWidget {
         onOpenDrive: onOpenDrive,
         onSyncAllDrives: onSyncAllDrives,
         buildMenu: buildMenu,
+        syncMenu: syncMenu,
       );
     }
 
@@ -458,12 +469,20 @@ class _DrivesListLoadedView extends StatelessWidget {
     required this.onOpenDrive,
     required this.onSyncAllDrives,
     required this.buildMenu,
+    required this.syncMenu,
   });
 
   final DrivesListLoaded state;
   final void Function(DriveListItem drive) onOpenDrive;
   final VoidCallback onSyncAllDrives;
   final Widget? Function(DriveListItem drive)? buildMenu;
+
+  /// The drive-wide sync actions, passed in rather than reached for.
+  ///
+  /// This widget draws what it is given - which is why its tests need no
+  /// providers - and the menu needs `SyncCubit` and `DrivesCubit`. Same rule
+  /// as [buildMenu].
+  final Widget? syncMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -558,12 +577,27 @@ class _DrivesListLoadedView extends StatelessWidget {
           // paragraph to explain a list of drives was the wrong heading. What
           // is worth saying about an unfetched account is said once, by the
           // card below, and withdrawn as soon as it stops applying.
-          Text(
-            appLocalizationsOf(context).yourDrives,
-            style: typography.heading3(
-              color: colorTokens.textHigh,
-              fontWeight: ArFontWeight.bold,
-            ),
+          // The heading and the drive-wide actions on one line. The actions
+          // were behind the top bar's indicator, which is now present only when
+          // there is something to report - so they needed a home that always
+          // is, and they act on the drives this page lists.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  appLocalizationsOf(context).yourDrives,
+                  style: typography.heading3(
+                    color: colorTokens.textHigh,
+                    fontWeight: ArFontWeight.bold,
+                  ),
+                ),
+              ),
+              if (syncMenu != null) ...[
+                const SizedBox(width: 16),
+                syncMenu!,
+              ],
+            ],
           ),
         ],
       ),

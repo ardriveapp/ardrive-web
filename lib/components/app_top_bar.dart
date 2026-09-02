@@ -1,3 +1,4 @@
+import 'package:ardrive/pages/app_router_delegate.dart';
 import 'dart:async';
 
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
@@ -12,11 +13,7 @@ import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/presentation/sync_elapsed_time.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
-import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
-import 'package:ardrive/sync/presentation/sync_history_panel.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
-import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -125,6 +122,12 @@ const double _syncIndicatorSize = 24;
 /// Exposed so a test can compare it with [syncGlyphSizeWhileSyncing] - the
 /// pair is what the eye compares when a sync starts.
 const double syncIndicatorSize = _syncIndicatorSize;
+
+/// The button's outer size, which is the indicator plus the hover padding
+/// wrapped around it. The placeholder that holds the slot while there is
+/// nothing to report has to match this and not the indicator, or the bar still
+/// moves - just by less.
+const double _syncButtonOuterSize = 34;
 
 /// How far the ring is drawn inside its box, so its ink matches a glyph's.
 const double _syncRingInset = 2;
@@ -445,15 +448,36 @@ class SyncButton extends StatelessWidget {
       indicator = ArDriveIcons.refresh(color: colorTokens.textMid);
     }
 
+    final announcement = _announcement(
+      context,
+      syncState,
+      errors,
+      failure,
+      cancelled,
+      walletMismatch,
+    );
+
+    // Present only when there is something to report. A control that is idle
+    // almost always is ambient noise in the one corner that should be quiet,
+    // and every other level of this report already follows the rule: say
+    // nothing when there is nothing to say. The actions moved to the drives
+    // list, where the drives they act on are.
+    //
+    // `status` is null exactly when nothing is running and nothing is waiting
+    // to be read, so it is the same question this has always answered.
+    if (status == null && announcement == null) {
+      // The slot is held, not collapsed. Removing the widget entirely moved
+      // everything beside it the instant a sync began - and the control whose
+      // job is to report calmly must not shove the account card sideways to do
+      // it. Nothing is drawn; the space stays.
+      return const SizedBox(
+        width: _syncButtonOuterSize,
+        height: _syncButtonOuterSize,
+      );
+    }
+
     return SyncSummaryFlash(
-      announcement: _announcement(
-        context,
-        syncState,
-        errors,
-        failure,
-        cancelled,
-        walletMismatch,
-      ),
+      announcement: announcement,
       child: _SyncButtonMenu(
         status: status,
         isSyncing: isSyncing,
@@ -871,81 +895,19 @@ class _SyncButtonMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = this.status;
-    final failedDriveIds = this.failedDriveIds;
     final iconColor = ArDriveTheme.of(context).themeData.colors.themeFgDefault;
 
+    // Status, then the one way to act on it. The sync actions live on the
+    // drives list now - Sync all, Deep resync and the record are all
+    // drive-wide, and that is the page about drives. This indicator only
+    // appears when there is something to report, so a menu of controls behind
+    // it would be a second place to do what that page already does.
     final items = [
       ArDriveDropdownItem(
-        // Nothing at all rather than a call that returns immediately: an event
-        // must not be recorded for a sync that never starts.
-        onClick: isSyncing
-            ? null
-            : () {
-                context.read<SyncCubit>().startSync(deepSync: false);
-                context.read<ProfileNameBloc>().add(RefreshProfileName());
-                PlausibleEventTracker.trackResync(type: ResyncType.resync);
-              },
+        onClick: () => context.read<AppRouterDelegate>().showDrivesList(),
         content: ArDriveDropdownItemTile(
-          name: appLocalizationsOf(context).resync,
-          isDisabled: isSyncing,
-          icon: ArDriveIcons.refresh(color: iconColor),
-        ),
-      ),
-      ArDriveDropdownItem(
-        onClick: isSyncing
-            ? null
-            : () {
-                context.read<SyncCubit>().startSync(deepSync: true);
-                context.read<ProfileNameBloc>().add(RefreshProfileName());
-                PlausibleEventTracker.trackResync(type: ResyncType.deepResync);
-              },
-        content: ArDriveDropdownItemTile(
-          name: appLocalizationsOf(context).deepResync,
-          isDisabled: isSyncing,
-          icon: ArDriveIcons.cloudSync(color: iconColor),
-        ),
-      ),
-      if (failedDriveIds != null && failedDriveIds.isNotEmpty)
-        ArDriveDropdownItem(
-          onClick: isSyncing
-              ? null
-              : () {
-                  final syncCubit = context.read<SyncCubit>();
-                  syncCubit.clearErrorState();
-                  syncCubit.retryFailedDrives(failedDriveIds);
-                },
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).retryFailedDrives,
-            isDisabled: isSyncing,
-            icon: ArDriveIcons.cloudSync(color: iconColor),
-          ),
-        ),
-      if (refreshFailed)
-        ArDriveDropdownItem(
-          // `syncMetadataOnly` and nothing more: it is the request that
-          // failed, and it leaves the user's syncAllDrivesOnLogin preference
-          // alone. Resync, one row up, is still there for a full one.
-          onClick: isSyncing
-              ? null
-              : () => context.read<SyncCubit>().syncMetadataOnly(),
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).tryAgain,
-            isDisabled: isSyncing,
-            icon: ArDriveIcons.refresh(color: iconColor),
-          ),
-        ),
-      // One row, not a list. This menu sizes itself as `items.length * 48` and
-      // closes on any tap inside it, so it is the wrong container for a
-      // scrolling record - the row is a door to level two, which is the sync
-      // history in the Troubleshooting modal, beside the diagnostic logs a
-      // user with a problem is already there to send. Live during a sync as
-      // well: reading what the last few syncs did is exactly what somebody
-      // watching a slow one wants.
-      ArDriveDropdownItem(
-        onClick: () => showSyncHistoryModal(context),
-        content: ArDriveDropdownItemTile(
-          name: appLocalizationsOf(context).syncHistory,
-          icon: ArDriveIcons.info(color: iconColor),
+          name: appLocalizationsOf(context).allDrivesScope,
+          icon: ArDriveIcons.arrowRightOutline(color: iconColor),
         ),
       ),
     ];
