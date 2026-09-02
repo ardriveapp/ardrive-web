@@ -89,7 +89,14 @@ class DriveExplorerItemTile extends TableRowWidget {
                   style: _driveExplorerItemTileTextStyle(
                       isHidden, typography, colorTokens)),
             ),
-            Text(license, style: ArDriveTypography.body.captionRegular()),
+            // The step the drives list uses for a row's secondary text, and
+            // the one every other cell in this row already uses a sibling of.
+            // This was the last cell here still on the old typography API, so
+            // the two tables' rows now read from the same scale.
+            Text(
+              license,
+              style: typography.paragraphSmall(color: colorTokens.textMid),
+            ),
           ],
         );
 }
