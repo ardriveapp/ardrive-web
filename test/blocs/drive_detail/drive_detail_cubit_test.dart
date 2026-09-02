@@ -468,9 +468,16 @@ void main() {
           reason: 'precondition: the first drive is on screen');
 
       // A sync that is running and has not finished. Deliberately never
-      // completed: the point is what the app does *during* it.
+      // completed: the point is what the app does *during* it. An all-drives
+      // background sync, which is the one that really does cover this drive -
+      // stubbing only waitCurrentSync left the cubit in SyncIdle, so the test
+      // described a sync that was not running.
       final syncing = Completer<void>();
+      addTearDown(() => syncing.complete());
       when(() => syncCubit.waitCurrentSync()).thenAnswer((_) => syncing.future);
+      whenListen(syncCubit, syncStates.stream,
+          initialState: SyncInProgress(trigger: SyncTrigger.background));
+      when(() => syncCubit.syncingDriveId).thenReturn(null);
 
       unawaited(cubit.changeDrive(otherDriveId));
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -499,6 +506,12 @@ void main() {
 
       final syncing = Completer<void>();
       when(() => syncCubit.waitCurrentSync()).thenAnswer((_) => syncing.future);
+      // A sync that really is writing this drive. Without this the cubit is
+      // in SyncIdle, nothing is gated, and the test passes without ever
+      // reaching the wait it exists to protect.
+      whenListen(syncCubit, syncStates.stream,
+          initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
+      when(() => syncCubit.syncingDriveId).thenReturn(otherDriveId);
 
       unawaited(cubit.changeDrive(otherDriveId));
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -512,6 +525,47 @@ void main() {
       final state = cubit.state;
       expect(state, isA<DriveDetailLoadSuccess>());
       expect((state as DriveDetailLoadSuccess).currentDrive.id, otherDriveId);
+    });
+
+    /// The bug this pair of tests missed for a whole stack: the gate existed
+    /// only on the cubit's *first* load. Every drive opened after that goes
+    /// through openFolder, which waited for any sync at all - so syncing one
+    /// drive pinned every other drive on "loading" for the length of it, and
+    /// the panel said "Another drive is syncing" while it happened.
+    test('a single-drive sync of another drive does not hold this one shut',
+        () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-1');
+      await insertOtherDrive();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      // Running, and deliberately never completed - if the drive only opens
+      // when this finishes, it never opens.
+      final syncing = Completer<void>();
+      addTearDown(() => syncing.complete());
+      when(() => syncCubit.waitCurrentSync()).thenAnswer((_) => syncing.future);
+      whenListen(syncCubit, syncStates.stream,
+          initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
+      // ...for a drive that is not the one being opened.
+      when(() => syncCubit.syncingDriveId).thenReturn('a-third-drive-id');
+
+      unawaited(cubit.changeDrive(otherDriveId));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      final state = cubit.state;
+      expect(
+        state,
+        isA<DriveDetailLoadSuccess>(),
+        reason: 'nothing is writing this drive, so nothing should keep the '
+            'reader out of it',
+      );
+      expect((state as DriveDetailLoadSuccess).currentDrive.id, otherDriveId);
+      verifyNever(() => syncCubit.waitCurrentSync());
     });
   });
 

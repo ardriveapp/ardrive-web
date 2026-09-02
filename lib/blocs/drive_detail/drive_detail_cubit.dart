@@ -341,7 +341,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // now has too.
     if (drive == null) {
       emit(DriveDetailLoadInProgress());
-      await _syncCubit.waitCurrentSync();
+      // Same gate as openFolder. A single-drive sync of another drive cannot
+      // discover this one - only a drive-list refresh does that, and
+      // syncTouchesDrive already treats one as covering everything - so
+      // waiting for it would just postpone the same answer.
+      if (SyncCubit.syncTouchesDrive(
+        state: _syncCubit.state,
+        syncingDriveId: _syncCubit.syncingDriveId,
+        driveId: driveId,
+      )) {
+        await _syncCubit.waitCurrentSync();
+      }
       drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
     }
 
@@ -399,8 +409,19 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // click before it starts waiting.
     emit(DriveDetailLoadInProgress());
 
-    /// always wait for the current sync to finish before opening a new folder
-    await _syncCubit.waitCurrentSync();
+    // Wait only for a sync that could be writing *this* drive - the same rule
+    // the initial load applies, and it has to be applied here too or it only
+    // ever holds for the very first drive opened in a session. Every later
+    // navigation goes through openFolder, so a blanket wait here meant a
+    // single-drive sync of B pinned drive A on "loading" until B finished,
+    // however long that took and however untouched A's rows were.
+    if (SyncCubit.syncTouchesDrive(
+      state: _syncCubit.state,
+      syncingDriveId: _syncCubit.syncingDriveId,
+      driveId: otherDriveId ?? _driveId,
+    )) {
+      await _syncCubit.waitCurrentSync();
+    }
 
     // A newer openFolder claimed the generation while this one waited - it
     // owns the subscription and the state now, so this one stops here rather
@@ -444,12 +465,22 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             return;
           }
 
-          // Left alone deliberately. This fires on every drift tick, so
-          // emitting a loading state here would blank the file list the user
-          // is browsing over and over for the length of a background sync.
-          // Holding the folder that is already on screen until the database
-          // settles is the honest thing for a redraw nobody asked for.
-          await _syncCubit.waitCurrentSync();
+          // Held, but only for a sync that could be writing *this* drive.
+          // This fires on every drift tick, so emitting a loading state here
+          // would blank the file list the user is browsing over and over for
+          // the length of a background sync; holding the folder already on
+          // screen until the database settles is the honest thing for a
+          // redraw nobody asked for. What it must not do is hold the *first*
+          // emission for a drive nothing is writing - that is the other half
+          // of the same bug openFolder had, and gating openFolder alone left
+          // the drive on "loading" here instead.
+          if (SyncCubit.syncTouchesDrive(
+            state: _syncCubit.state,
+            syncingDriveId: _syncCubit.syncingDriveId,
+            driveId: driveId,
+          )) {
+            await _syncCubit.waitCurrentSync();
+          }
 
           if (drive == null) {
             emit(DriveDetailLoadNotFound());

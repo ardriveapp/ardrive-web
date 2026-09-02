@@ -158,7 +158,13 @@ class _AppSideBarState extends State<AppSideBar> {
           child: SingleChildScrollView(
             controller: _scrollController,
             child: Container(
-              height: constraints.maxHeight,
+              // A minimum, not a fixed height. Pinned to exactly the viewport
+              // the scroll view had nothing longer than itself to scroll, so
+              // an expanded scope with a long drive list simply overflowed and
+              // clipped - the private drives were unreachable without first
+              // collapsing the public ones. IntrinsicHeight keeps the Expanded
+              // below working, so a short sidebar still pushes its footer down.
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
               decoration: BoxDecoration(
                 border: Border(
                   right: BorderSide(
@@ -167,43 +173,45 @@ class _AppSideBarState extends State<AppSideBar> {
                   ),
                 ),
               ),
-              child: AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                child: SizedBox(
-                  width: _isExpanded ? 240 : 64,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          children: [
-                            const SizedBox(
-                              height: 24,
-                            ),
-                            _buildLogo(false),
-                            const SizedBox(
-                              height: 24,
-                            ),
-                            _buildDriveActionsButton(
-                              context,
-                              false,
-                            ),
-                            const SizedBox(
-                              height: 16,
-                            ),
-                            _buildDriveNav(isMobile: false),
-                          ],
+              child: IntrinsicHeight(
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  child: SizedBox(
+                    width: _isExpanded ? 240 : 64,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              const SizedBox(
+                                height: 24,
+                              ),
+                              _buildLogo(false),
+                              const SizedBox(
+                                height: 24,
+                              ),
+                              _buildDriveActionsButton(
+                                context,
+                                false,
+                              ),
+                              const SizedBox(
+                                height: 16,
+                              ),
+                              _buildDriveNav(isMobile: false),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(
-                        height: 16,
-                      ),
-                      _isExpanded
-                          ? const SizedBox(
-                              height: 16,
-                            )
-                          : const Spacer(),
-                      _buildSideBarBottom(),
-                    ],
+                        const SizedBox(
+                          height: 16,
+                        ),
+                        _isExpanded
+                            ? const SizedBox(
+                                height: 16,
+                              )
+                            : const Spacer(),
+                        _buildSideBarBottom(),
+                      ],
+                    ),
                   ),
                 ),
               ),

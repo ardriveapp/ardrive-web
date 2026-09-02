@@ -197,54 +197,55 @@ class DriveListRow extends StatelessWidget {
     return _HoverHighlight(
       colour: colorTokens.containerL1,
       child: Container(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: colorTokens.strokeLow),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: colorTokens.strokeLow),
+          ),
         ),
-      ),
-      // The menu sits beside the row's content rather than inside it, so the
-      // tap that opens the drive and the tap that opens the menu are two
-      // targets rather than one on top of the other - and so the menu's own
-      // height is bounded by the row instead of setting it. A phone's row is
-      // the stacked card, which is taller than the target either way.
-      child: Row(
-        children: [
-          Expanded(
-            child: ArDriveClickArea(
-              child: Semantics(
-                button: true,
-                label: drive.name,
-                child: InkWell(
-                  onTap: onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: driveListRowHorizontalPadding,
-                      vertical: _rowVerticalPadding,
+        // The menu sits beside the row's content rather than inside it, so the
+        // tap that opens the drive and the tap that opens the menu are two
+        // targets rather than one on top of the other - and so the menu's own
+        // height is bounded by the row instead of setting it. A phone's row is
+        // the stacked card, which is taller than the target either way.
+        child: Row(
+          children: [
+            Expanded(
+              child: ArDriveClickArea(
+                child: Semantics(
+                  button: true,
+                  label: drive.name,
+                  child: InkWell(
+                    onTap: onTap,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: driveListRowHorizontalPadding,
+                        vertical: _rowVerticalPadding,
+                      ),
+                      child:
+                          showsColumns ? _columns(context) : _stacked(context),
                     ),
-                    child: showsColumns ? _columns(context) : _stacked(context),
                   ),
                 ),
               ),
             ),
-          ),
-          SizedBox(
-            width: driveListMenuGutter,
-            // `heightFactor: 1` so the gutter is as tall as the menu and no
-            // taller. A plain Center fills whatever height it is offered, and
-            // in any box with a bounded height - which is most of them outside
-            // a sliver - that made the gutter set the row's height instead of
-            // fitting inside it.
-            child: menu == null
-                ? null
-                : Align(
-                    alignment: Alignment.center,
-                    heightFactor: 1,
-                    child: menu,
-                  ),
-          ),
-        ],
+            SizedBox(
+              width: driveListMenuGutter,
+              // `heightFactor: 1` so the gutter is as tall as the menu and no
+              // taller. A plain Center fills whatever height it is offered, and
+              // in any box with a bounded height - which is most of them outside
+              // a sliver - that made the gutter set the row's height instead of
+              // fitting inside it.
+              child: menu == null
+                  ? null
+                  : Align(
+                      alignment: Alignment.center,
+                      heightFactor: 1,
+                      child: menu,
+                    ),
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
