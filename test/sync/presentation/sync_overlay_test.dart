@@ -8,7 +8,6 @@ import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/presentation/sync_overlay.dart';
-import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -146,27 +145,14 @@ void main() {
     });
   });
 
-  testWidgets('the sync the user asked for still ends on what it found',
+  testWidgets('a sync the user asked for is not painted over the app either',
       (tester) async {
-    await tester.pumpWidget(
-      wrap(
-        SyncComplete(
-          entitiesSynced: 0,
-          completedAt: DateTime.now(),
-          sequence: 1,
-          trigger: SyncTrigger.userInitiated,
-        ),
-      ),
-    );
-    await tester.pump();
-
-    expect(find.text('Sync Complete'), findsOneWidget);
-    expect(find.text('Up to date, nothing new'), findsOneWidget);
-
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('the summary sees itself out', (tester) async {
+    // It used to be: a result the user pressed for got a card in the middle of
+    // the screen - full width on a phone, over the page they were reading -
+    // while the same result from a background sync got a small pill anchored
+    // under the control that had been turning. Two designs for one sentence,
+    // with the trigger choosing between them, and failures never split that
+    // way at all. Every outcome reports at the indicator now.
     await tester.pumpWidget(
       wrap(
         SyncComplete(
@@ -179,13 +165,11 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('12 items changed'), findsOneWidget);
-
-    // Nobody clicks anything here: the summary is gone a few seconds later.
-    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
-
+    expect(find.text('Sync Complete'), findsNothing);
     expect(find.text('12 items changed'), findsNothing);
     expect(find.byType(ArDriveStandardModalNew), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
   });
 
   testWidgets('a finished background sync is not painted over the app',

@@ -473,10 +473,11 @@ void main() {
     expect(find.byType(ArDriveIcon), findsNothing);
   });
 
-  testWidgets('a sync the user asked for is left to its own modal',
-      (tester) async {
-    // It has been holding a modal the whole time; the result belongs there,
-    // and saying it twice would be twice as much to dismiss.
+  testWidgets('a sync the user asked for reports here too', (tester) async {
+    // It used to be left to a card in the middle of the screen while a
+    // background sync reported here. Two designs for one sentence, chosen by
+    // who asked - and failures never split that way. Every outcome reports at
+    // the indicator now, anchored under the control that was turning.
     await tester.pumpWidget(wrap());
     await tester.pump();
 
@@ -488,11 +489,11 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 10));
 
+    expect(find.text('12 items changed'), findsOneWidget);
+
+    // And it sees itself out, like every other announcement here.
+    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
     expect(find.text('12 items changed'), findsNothing);
-    // The button is back to its idle self.
-    // Nothing is drawn at all: the result is old and no sync is running, so
-    // there is nothing to report and the indicator is absent.
-    expect(find.byType(ArDriveIcon), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 

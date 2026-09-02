@@ -194,7 +194,9 @@ class DriveListRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return Container(
+    return _HoverHighlight(
+      colour: colorTokens.containerL1,
+      child: Container(
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: colorTokens.strokeLow),
@@ -242,6 +244,7 @@ class DriveListRow extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -540,4 +543,36 @@ String formatDriveSyncState(
 
   return appLocalizationsOf(context)
       .driveSyncedOnDate(DateFormat.yMMMd().format(lastSyncedAt));
+}
+
+/// Paints a row's hover state.
+///
+/// A row that opens a drive when clicked should look like one. The row uses an
+/// `InkWell` for its tap, and an InkWell's hover needs a `Material` ancestor
+/// that a table built out of Containers does not provide - so nothing ever
+/// painted. This owns the state so the row itself can stay stateless.
+class _HoverHighlight extends StatefulWidget {
+  const _HoverHighlight({required this.colour, required this.child});
+
+  final Color colour;
+  final Widget child;
+
+  @override
+  State<_HoverHighlight> createState() => _HoverHighlightState();
+}
+
+class _HoverHighlightState extends State<_HoverHighlight> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: ColoredBox(
+        color: _isHovering ? widget.colour : Colors.transparent,
+        child: widget.child,
+      ),
+    );
+  }
 }

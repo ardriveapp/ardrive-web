@@ -575,8 +575,13 @@ class SyncButton extends StatelessWidget {
       );
     }
 
+    // Every outcome reports here, whoever asked for it. A sync the user pressed
+    // used to get a card in the middle of the screen instead - full width on a
+    // phone, 226px tall, over the page they were reading - while the same
+    // result from a background sync got this pill, anchored under the control
+    // that was turning. Two designs for one sentence, and the trigger decided
+    // which. Failures never split that way: they have always come here.
     if (syncState is SyncComplete &&
-        syncState.trigger != SyncTrigger.userInitiated &&
         // A result that has already had its few seconds is not announced again
         // because the bar was rebuilt - see [syncSummaryIsFresh].
         syncSummaryIsFresh(syncState)) {

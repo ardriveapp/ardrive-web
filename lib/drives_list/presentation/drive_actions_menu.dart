@@ -1,3 +1,6 @@
+import 'package:ardrive/download/multiple_file_download_modal.dart';
+import 'package:ardrive/components/csv_export_dialog.dart';
+import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:provider/provider.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -134,6 +137,48 @@ class DriveActionsMenu extends StatelessWidget {
           content: ArDriveDropdownItemTile(
             name: appLocalizationsOf(context).shareDrive,
             icon: ArDriveIcons.share(size: _menuIconSize),
+          ),
+        ),
+        // The rest of what a drive's own menu offers. Every one of these is
+        // drive-wide, so a reader who can do it from inside the drive should be
+        // able to do it from the list of drives - and having to open a drive to
+        // act on it is the thing this page exists to remove.
+        if (isOwner)
+          ArDriveDropdownItem(
+            onClick: () => promptToCreateSnapshot(context, drive),
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).createSnapshot,
+              icon: ArDriveIcons.iconCreateSnapshot(size: _menuIconSize),
+            ),
+          ),
+        ArDriveDropdownItem(
+          onClick: () => promptToExportCSVData(
+            context: context,
+            driveId: drive.id,
+          ),
+          content: ArDriveDropdownItemTile(
+            name: appLocalizationsOf(context).exportDriveContents,
+            icon: ArDriveIcons.download(size: _menuIconSize),
+          ),
+        ),
+        ArDriveDropdownItem(
+          onClick: () {
+            final item = DriveDataTableItemMapper.fromDrive(
+              drive,
+              (_) => null,
+              0,
+              isOwner,
+            );
+
+            promptToDownloadMultipleFiles(
+              context,
+              selectedItems: [item],
+              zipName: item.name,
+            );
+          },
+          content: ArDriveDropdownItemTile(
+            name: appLocalizationsOf(context).download,
+            icon: ArDriveIcons.arrowDownload(size: _menuIconSize),
           ),
         ),
         if (isOwner)
