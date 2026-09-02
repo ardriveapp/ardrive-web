@@ -28,6 +28,10 @@ const double _pagePadding = 16;
 const double _sectionGap = 24;
 const double _blockGap = 12;
 
+/// The panel's own top and bottom padding, matching the vertical rhythm
+/// `ArDriveDataTable` leaves above its header and below its last row.
+const double _panelPadding = 8;
+
 /// Wide enough for "Sync All Drives" and no wider, at a text scale of 1.
 ///
 /// The label measures 120px in Wavehaus at the button's size, plus its 20px of
@@ -537,24 +541,49 @@ class _DrivesListLoadedView extends StatelessWidget {
                       ),
                     ),
                   const SliverToBoxAdapter(child: SizedBox(height: _blockGap)),
+                  // The panel every other table in the app sits in.
+                  //
+                  // `ArDriveDataTable` wraps its header and rows in an
+                  // `ArDriveCard` on `tableTheme.backgroundColor`; this list
+                  // drew its rows straight onto the page ground, which is the
+                  // single biggest reason it read as a different component.
+                  // Built from slivers rather than a box so the rows stay
+                  // lazily built and the whole page keeps scrolling as one -
+                  // a height-bounded container here would be the sidebar's
+                  // bug over again, with nothing longer than the viewport to
+                  // scroll.
+                  //
+                  // Columns only. On a phone the row is a stacked block with
+                  // its own rule beneath it, and the explorer's phone view
+                  // has no panel behind its tiles either.
                   if (showsColumns)
-                    const SliverToBoxAdapter(child: DriveListHeader()),
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final drive = state.drives[index];
-
-                        return DriveListRow(
-                          key: ValueKey(drive.id),
-                          drive: drive,
-                          showsColumns: showsColumns,
-                          onTap: () => onOpenDrive(drive),
-                          menu: buildMenu?.call(drive),
-                        );
-                      },
-                      childCount: state.drives.length,
-                    ),
-                  ),
+                    DecoratedSliver(
+                      decoration: BoxDecoration(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .tableTheme
+                            .backgroundColor,
+                        borderRadius:
+                            BorderRadius.circular(cardDefaultBorderRadius),
+                      ),
+                      sliver: SliverMainAxisGroup(
+                        slivers: [
+                          // The card's own top and bottom padding, so the
+                          // header and the last row are not flush against the
+                          // panel's edge.
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: _panelPadding),
+                          ),
+                          const SliverToBoxAdapter(child: DriveListHeader()),
+                          _rows(state, showsColumns),
+                          const SliverToBoxAdapter(
+                            child: SizedBox(height: _panelPadding),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    _rows(state, showsColumns),
                   const SliverToBoxAdapter(
                     child: SizedBox(height: _sectionGap),
                   ),
@@ -563,6 +592,29 @@ class _DrivesListLoadedView extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+
+  /// The drive rows, built once and used by both layouts.
+  ///
+  /// Lazy either way: the panel above wraps this sliver rather than replacing
+  /// it with a column of pre-built rows.
+  Widget _rows(DrivesListLoaded state, bool showsColumns) {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final drive = state.drives[index];
+
+          return DriveListRow(
+            key: ValueKey(drive.id),
+            drive: drive,
+            showsColumns: showsColumns,
+            onTap: () => onOpenDrive(drive),
+            menu: buildMenu?.call(drive),
+          );
+        },
+        childCount: state.drives.length,
       ),
     );
   }

@@ -82,6 +82,89 @@ void main() {
     );
   }
 
+  /// The chrome that makes this list read as the same component as every
+  /// other table in the app, rather than as a spreadsheet parked on the page.
+  ///
+  /// `ArDriveDataTable` - the explorer, the move and hide dialogs, the licence
+  /// form, the shared-file view - puts its header and rows in an `ArDriveCard`
+  /// on `tableTheme.backgroundColor` and draws no line between rows. This list
+  /// did neither, which is what made it look like a different product.
+  group('the table chrome matches the rest of the app', () {
+    final twoDrives = DrivesListLoaded(
+      drives: [
+        drive(id: 'a', name: 'Photos'),
+        drive(id: 'b', name: 'Work'),
+      ],
+    );
+
+    Finder panelWithTableGround(WidgetTester tester) {
+      final ground = lightTheme().tableTheme.backgroundColor;
+
+      return find.byWidgetPredicate((widget) {
+        if (widget is! DecoratedSliver) return false;
+        final decoration = widget.decoration;
+        return decoration is BoxDecoration && decoration.color == ground;
+      });
+    }
+
+    testWidgets('the columns layout sits on the shared table ground',
+        (tester) async {
+      await pumpBody(tester, twoDrives);
+
+      expect(
+        panelWithTableGround(tester),
+        findsOneWidget,
+        reason: 'the header and rows belong in the same panel every other '
+            'table uses, not straight on the page ground',
+      );
+    });
+
+    testWidgets('rows inside the panel draw no rule between them',
+        (tester) async {
+      await pumpBody(tester, twoDrives);
+
+      final rows = tester.widgetList<DriveListRow>(find.byType(DriveListRow));
+      expect(rows, hasLength(2), reason: 'precondition: both drives drawn');
+
+      for (final row in rows) {
+        expect(row.showsColumns, isTrue,
+            reason: 'precondition: this is the columns layout');
+      }
+
+      // The explorer separates rows with the panel ground and hover alone.
+      final borders = tester
+          .widgetList<Container>(
+        find.descendant(
+          of: find.byType(DriveListRow),
+          matching: find.byType(Container),
+        ),
+      )
+          .where((c) {
+        final decoration = c.decoration;
+        return decoration is BoxDecoration && decoration.border != null;
+      });
+
+      expect(borders, isEmpty,
+          reason: 'a hairline under every row is what made this read as a '
+              'spreadsheet rather than a panel');
+    });
+
+    testWidgets('a phone gets no panel, and keeps its rules', (tester) async {
+      await pumpBody(tester, twoDrives, width: 320, height: 640);
+
+      final rows = tester.widgetList<DriveListRow>(find.byType(DriveListRow));
+      expect(rows.every((row) => !row.showsColumns), isTrue,
+          reason: 'precondition: this is the stacked layout');
+
+      expect(
+        panelWithTableGround(tester),
+        findsNothing,
+        reason: 'the stacked row is its own block and the explorer draws no '
+            'panel behind its phone tiles either',
+      );
+    });
+  });
+
   group('loading', () {
     testWidgets('says it is still looking, and never that there are none',
         (tester) async {

@@ -64,9 +64,15 @@ order of weight:
 The goal is that the two *look* like one system. That does not require them to
 *be* one widget — it requires them to read their chrome from one place.
 
-## Tier 1 — close the visible gap
+## Tier 1 — close the visible gap  ✅ done
 
 Purely presentational. No behaviour changes, no structural changes.
+
+**Shipped:** the panel (steps 1 and 2) and the header typography. Row metrics
+(step 3) measured as a ~3px difference and were left alone rather than churned;
+the selected-row state (step 4) was dropped from this tier, because the drives
+list has nothing to select - a click leaves the page. It belongs with the
+"where am I" problem in `NAV_AND_SYNC_CRITIQUE.md`, not here.
 
 1. **Give the drives table the panel.** Wrap the header + rows region in
    `ArDriveCard` with `tableTheme.backgroundColor` and
@@ -130,6 +136,53 @@ drives list has none of them:
 
 So this is not a model swap. It is: **take the drives list's chrome and its
 responsive strategy, keep the explorer's data machinery.**
+
+### Performance: close to a wash, and not the reason to do it
+
+Worth settling before someone proposes this work on speed grounds, because
+that premise is wrong.
+
+**Both tables are already lazy.** `ArDriveDataTable` builds rows with
+`ListView.builder` over `_currentPage`; the drives list uses
+`SliverChildBuilderDelegate`. Neither materialises a row that is not on
+screen. Pagination is therefore *not* buying rendering performance today - it
+is a UX and scoping choice sitting on top of a list that was already lazy.
+Memory is unchanged too: `_cachedRows` holds every row either way, and
+pagination only `sublist`s a window of it for display.
+
+What actually moves:
+
+- **Marginally better, both platforms:** one scrollable instead of two. The
+  explorer's list is an inner `ListView` inside an `Expanded` inside a
+  `ConstrainedBox(maxHeight: screen height)`, itself within the page. Slivers
+  collapse that to a single viewport - and retire a construct from the same
+  family as the sidebar scroll bug.
+- **The real mobile risk: `IntrinsicHeight`.** It costs a layout pass
+  proportional to its children. Harmless in a sidebar of twenty items; a
+  genuine regression on a phone scrolling a folder of thousands. **The merged
+  responsive row must not use it** - size the stacked layout naturally or with
+  explicit heights. If step 2 goes wrong, this is how, and it will only show
+  on mobile.
+
+Net: desktop unchanged to marginally better; mobile unchanged if done right
+and meaningfully worse if `IntrinsicHeight` creeps in.
+
+**So justify this work as maintainability - one rendering path instead of two -
+never as speed.**
+
+### What it costs
+
+- **Blast radius.** Eleven surfaces render through this widget, with far less
+  test cover than the drives list has.
+- **Losing pagination loses real affordances**: the page control, a meaningful
+  scrollbar, and any sense of position in ten thousand files. Infinite scroll
+  is not straightforwardly better here.
+- **The mobile view is not purely duplicated chrome.** It carries its own
+  search field and tile widget; merging means finding each a home, not
+  deleting a copy.
+- **Multi-select is the hard part.** Load-bearing for bulk download, move and
+  hide, and it interacts with row layout. A stacked mobile row with
+  multi-select is an unanswered design question.
 
 ### Sequencing, by blast radius
 

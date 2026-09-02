@@ -131,8 +131,13 @@ class DriveListHeader extends StatelessWidget {
             text,
             textAlign: align ? TextAlign.end : TextAlign.start,
             overflow: TextOverflow.ellipsis,
-            style: typography.paragraphSmall(
-              color: colorTokens.textLow,
+            // The explorer's column headings exactly: paragraphNormal in
+            // textMid, semi-bold. This list had them a step smaller and a
+            // shade fainter than its own row text, which is the pairing that
+            // made the two tables read as different components rather than
+            // the same one twice.
+            style: typography.paragraphNormal(
+              color: colorTokens.textMid,
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
@@ -197,11 +202,22 @@ class DriveListRow extends StatelessWidget {
     return _HoverHighlight(
       colour: colorTokens.containerL1,
       child: Container(
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: colorTokens.strokeLow),
-          ),
-        ),
+        // A hairline under every row is what made this read as a spreadsheet
+        // where every other table reads as a panel: the explorer separates its
+        // rows with the card ground and hover alone, and draws no lines at
+        // all. Inside the panel this list now sits in, the same holds here.
+        //
+        // The stacked layout keeps its lines. There the row is a block of
+        // wrapped text rather than a line of cells, and without a rule between
+        // them two drives run together - which is why the explorer's own phone
+        // view separates its tiles too, by a gap rather than by nothing.
+        decoration: showsColumns
+            ? null
+            : BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: colorTokens.strokeLow),
+                ),
+              ),
         // The menu sits beside the row's content rather than inside it, so the
         // tap that opens the drive and the tap that opens the menu are two
         // targets rather than one on top of the other - and so the menu's own
