@@ -103,6 +103,51 @@ happened to be sitting next to.
 This is the step that makes the alignment permanent, and it is the one worth
 doing properly.
 
+## The other direction: bringing the drives list's model to `ArDriveDataTable`
+
+The more interesting question, and a better one than porting. It is worth
+doing, but "our better model" needs to be said precisely, because the drives
+list is better mainly where it is *narrower*.
+
+**Portable, and genuinely better:**
+
+- **One widget for both widths.** `showsColumns` switches columns to a stacked
+  card. `ArDriveDataTable` renders one layout at every width, so the explorer
+  carries a separate `_mobileView` with its own `ArDriveItemListTile` and
+  `ListView.separated`. Collapsing that is the real prize — it deletes a whole
+  duplicate rendering path rather than tidying one.
+- **Sliver-based whole-page scroll.** `SliverChildBuilderDelegate` is already
+  lazy, so this is not only a scrolling change: it could replace pagination
+  outright rather than sitting beside it.
+
+**Not better — simply absent.** The explorer depends on all of these and the
+drives list has none of them:
+
+- Pagination at 100 per page. Fine to omit for a wallet's ~20 drives; not for a
+  folder with ten thousand files.
+- Multi-select — load-bearing for bulk download, move and hide.
+- Column visibility and sort.
+
+So this is not a model swap. It is: **take the drives list's chrome and its
+responsive strategy, keep the explorer's data machinery.**
+
+### Sequencing, by blast radius
+
+`ArDriveDataTable` renders eleven surfaces. That governs the order.
+
+1. **Extract the shared chrome** (Tier 2 above). Additive, no behaviour change,
+   both tables benefit at once. Worth doing regardless of what follows.
+2. **Collapse the explorer's mobile path** into one responsive widget. Its own
+   PR — that path is not purely duplicated chrome, it carries its own search
+   field and tile widget, and each needs a home in the merged design.
+3. **Lazy slivers instead of pagination.** A UX decision before it is a code
+   change: decide whether infinite scroll is wanted in a file explorer at all.
+   Do not let it ride along with step 2.
+
+Step 1 is safe because it changes nothing that renders. Steps 2 and 3 change
+what eleven surfaces do, which is the reason they are separate PRs and not a
+single "modernise the table" branch.
+
 ## Tier 3 — not now
 
 Full port of the drives list onto `ArDriveDataTable`, once that widget has a
