@@ -628,6 +628,63 @@ void main() {
     });
   });
 
+  /// A tick that was never drawn must not count as drawn.
+  ///
+  /// The folder subscription skips a redraw while an upload is running, so the
+  /// file list does not churn under somebody watching a progress bar. The
+  /// change-detection added for sync then has to be careful *where* it records
+  /// what is on screen: recorded before that guard, the tick carrying the
+  /// newly uploaded file was marked as drawn and then dropped, and any later
+  /// tick carrying the same contents was skipped as a no-op. The file never
+  /// arrived.
+  ///
+  /// Reproducing it needs a second tick that carries the *same* folder - which
+  /// is what a change to the drive row gives, since the subscription combines
+  /// the drive and its contents and re-emits when either moves.
+  group('a redraw dropped for an upload', () {
+    test('does not make a later identical tick look like a no-op', () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(cubit.state, isA<DriveDetailLoadSuccess>(),
+          reason: 'precondition: the folder is on screen');
+
+      // An upload runs, and writes a folder into the one on screen. The tick
+      // carrying it is dropped rather than drawn.
+      when(() => activityTracker.isUploading).thenReturn(true);
+      await insertSubfolder('arrived-during-upload');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.subfolders,
+        isEmpty,
+        reason: 'precondition: the upload guard dropped that redraw',
+      );
+
+      // The upload ends, and something touches the drive row - a sync
+      // advancing its watermark, say. The folder itself is unchanged, so this
+      // tick carries exactly the contents the dropped one did.
+      when(() => activityTracker.isUploading).thenReturn(false);
+      await (db.update(db.drives)..where((d) => d.id.equals(driveId)))
+          .write(const DrivesCompanion(lastBlockHeight: Value(200)));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess)
+            .folderInView
+            .subfolders
+            .map((f) => f.name),
+        contains('arrived-during-upload'),
+        reason: 'nothing else is going to change this folder, so a tick '
+            'skipped as unchanged is the file never appearing',
+      );
+    });
+  });
+
   /// What an empty local database means, which is three different things.
   ///
   /// The app used to render all three as one: "Getting Started", two

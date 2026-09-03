@@ -587,8 +587,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             _lastFolderRedraw = now;
           }
 
-          _lastFolderContents = folderContents;
-
           if (drive == null) {
             emit(DriveDetailLoadNotFound());
             return;
@@ -597,6 +595,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           if (_activityTracker.isUploading) {
             return;
           }
+
+          // Recorded here, past every early return above it, because it means
+          // "this is what the reader is looking at" - and a tick dropped by
+          // one of those returns was never drawn.
+          //
+          // Recording it earlier was a real bug and the upload path was where
+          // it bit: an upload writes the new file, the tick carrying it is
+          // dropped by the guard just above, and the next identical tick then
+          // matched what had been recorded and was skipped as a no-op. The
+          // file did not appear until something else changed the folder.
+          _lastFolderContents = folderContents;
 
           final state = this.state is DriveDetailLoadSuccess
               ? this.state as DriveDetailLoadSuccess
