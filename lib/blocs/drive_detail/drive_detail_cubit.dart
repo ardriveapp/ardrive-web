@@ -1004,6 +1004,21 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   void refreshDriveDataTable() async {
     _refreshSelectedItem = true;
 
+    // Something the reader did wrote to the drive, so something may now be
+    // waiting to be mined.
+    //
+    // An upload is not the only thing that leaves a pending transaction:
+    // creating a drive or a folder, renaming one, moving files, assigning a
+    // licence and taking a snapshot all write revisions the same way. Starting
+    // the watch only from the upload form would confirm uploads and leave
+    // every other write unconfirmed until the next login, which is the gap
+    // this exists to close. This is the one seam nearly all of them already
+    // pass through.
+    //
+    // Costs a single local read when nothing is pending, and stops - see
+    // [SyncCubit.watchForPendingConfirmations].
+    _syncCubit.watchForPendingConfirmations();
+
     if (_droppedFolderRedraw) {
       await _refreshAfterDroppedRedraws();
       return;

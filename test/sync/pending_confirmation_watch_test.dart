@@ -196,7 +196,8 @@ void main() {
       cubit.watchForPendingConfirmations();
       cubit.watchForPendingConfirmations();
       cubit.watchForPendingConfirmations();
-      async.elapse(const Duration(minutes: 10));
+      // Comfortably past one interval, so a second timer would have shown.
+      async.elapse(const Duration(minutes: 20));
       async.flushMicrotasks();
     });
 

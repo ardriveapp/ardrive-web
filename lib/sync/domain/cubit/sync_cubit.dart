@@ -427,10 +427,12 @@ class SyncCubit extends Cubit<SyncState> {
 
   /// How long to leave between checks while an upload is waiting to be mined.
   ///
-  /// An Arweave block is a couple of minutes and a transaction wants a few of
-  /// them, so anything much shorter is asking a question whose answer cannot
-  /// have changed - and asking it of a gateway that rate limits.
-  static const _pendingConfirmationInterval = Duration(minutes: 3);
+  /// An Arweave block is a couple of minutes and a transaction wants several
+  /// of them, so a short interval mostly asks a question whose answer cannot
+  /// have changed yet - of a gateway that rate limits. Fifteen minutes still
+  /// confirms an upload inside the window somebody would call "a while", and
+  /// costs four checks an hour rather than twenty.
+  static const _pendingConfirmationInterval = Duration(minutes: 15);
 
   Timer? _pendingConfirmationWatch;
 
