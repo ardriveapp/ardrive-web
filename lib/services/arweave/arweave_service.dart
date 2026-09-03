@@ -44,6 +44,25 @@ const byteCountPerChunk = 262144; // 256 KiB
 const defaultMaxRetries = 8;
 const kMaxNumberOfTransactionsPerPage = 100;
 
+/// How many transaction ids may go into one GraphQL query's `ids` argument.
+///
+/// Nine, because that is what the fallback endpoint accepts, and every query
+/// that chunks ids can end up there: `GraphQLRetry` falls back to Goldsky on a
+/// 429 or a 5xx, and Goldsky answers a longer list with
+/// `Too many ids in 'ids' argument: N provided, maximum 9 allowed`.
+///
+/// So a hundred was not merely wrong when Goldsky is configured as the primary
+/// endpoint. It made the fallback decorative for these queries on *every*
+/// configuration: the sync hits a rate limit on the primary, switches to the
+/// endpoint that exists to rescue it, and is refused for the shape of the
+/// request rather than for anything the endpoint could not answer.
+///
+/// The cost of the smaller batch is small where it is paid. Statuses are only
+/// asked for transactions not already known to be confirmed, so the list is
+/// short in an ordinary sync - the report that found this was 31 ids, which is
+/// four requests rather than one.
+const int maxGraphQLIdsPerQuery = 9;
+
 class ArweaveService {
   Arweave client;
   final ArDriveCrypto _crypto;
@@ -613,10 +632,9 @@ class ArweaveService {
     Iterable<String> licenseAssertionTxIds, {
     String? owner,
   }) async* {
-    const chunkSize = 100;
+    const chunkSize = maxGraphQLIdsPerQuery;
     final chunks = licenseAssertionTxIds.slices(chunkSize);
     for (final chunk in chunks) {
-      // Get a page of 100 transactions
       final licenseAssertionsQuery = await graphQLRetry.execute(
         LicenseAssertionsQuery(
           variables: LicenseAssertionsArguments(
@@ -639,10 +657,9 @@ class ArweaveService {
     Iterable<String> licenseComposedTxIds, {
     String? owner,
   }) async* {
-    const chunkSize = 100;
+    const chunkSize = maxGraphQLIdsPerQuery;
     final chunks = licenseComposedTxIds.slices(chunkSize);
     for (final chunk in chunks) {
-      // Get a page of 100 transactions
       final licenseComposedQuery = await graphQLRetry.execute(
         LicenseComposedQuery(
           variables: LicenseComposedArguments(
@@ -1710,7 +1727,6 @@ class ArweaveService {
     }
 
     while (true) {
-      // Get a page of 100 transactions
       final allFileEntitiesQuery = await graphQLRetry.execute(
         AllFileEntitiesWithIdQuery(
           variables: AllFileEntitiesWithIdArguments(
@@ -1874,7 +1890,7 @@ class ArweaveService {
     // [owner] is provided, the query is scoped to that owner so the gateway can
     // prune its search space.
     Future<void> queryConfirmations(List<String?> ids, {String? owner}) async {
-      const chunkSize = 100;
+      const chunkSize = maxGraphQLIdsPerQuery;
       // Cap how many chunk queries hit the gateway at once so a large page
       // doesn't fan out into a burst of concurrent GraphQL retries (and a
       // potential rate-limit storm), matching the throttling used by the other

@@ -53,6 +53,12 @@ dependencies:
   ardrive_logger:
     path: ./packages/ardrive_logger
   artemis: ^7.0.0-beta.13
+  # Imported directly by `GraphQLRetry`, which reads the HTTP status off the
+  # exception artemis's transport throws rather than out of its toString.
+  # Already resolved as a transitive dependency of artemis; declared because
+  # it is used.
+  gql_http_link: ^0.4.5
+  gql_link: ^0.5.1
   pst:
     path: ./packages/pst
   arweave:

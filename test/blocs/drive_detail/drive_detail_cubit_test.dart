@@ -642,6 +642,55 @@ void main() {
   /// is what a change to the drive row gives, since the subscription combines
   /// the drive and its contents and re-emits when either moves.
   group('a redraw dropped for an upload', () {
+    /// The report that found this: "I uploaded a file, it worked, and I do not
+    /// see it in the drive view."
+    ///
+    /// An upload writes its file while `isUploading` is up, so the tick
+    /// carrying it is refused by the guard in the subscription - and nothing
+    /// writes that folder again afterwards, so no later tick carries it
+    /// either. The upload form then calls `refreshDriveDataTable`, which
+    /// re-emitted the state it already had with a new key: the same rows,
+    /// rebuilt. The file was uploaded and was not on screen, and nothing short
+    /// of leaving the folder and coming back would show it.
+    test('is settled by the refresh the upload form calls', () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(cubit.state, isA<DriveDetailLoadSuccess>(),
+          reason: 'precondition: the folder is on screen');
+
+      // The upload runs and writes into the folder being viewed.
+      when(() => activityTracker.isUploading).thenReturn(true);
+      await insertSubfolder('uploaded-during');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.subfolders,
+        isEmpty,
+        reason: 'precondition: the upload guard refused that redraw',
+      );
+
+      // The upload finishes exactly as the form does it, and nothing else
+      // touches the database afterwards.
+      when(() => activityTracker.isUploading).thenReturn(false);
+      cubit.refreshDriveDataTable();
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess)
+            .folderInView
+            .subfolders
+            .map((f) => f.name),
+        contains('uploaded-during'),
+        reason: 'the uploaded file has to be on screen when the upload ends, '
+            'without the reader navigating away and back',
+      );
+    });
+
     test('does not make a later identical tick look like a no-op', () async {
       await insertDrive(lastBlockHeight: 100);
       await insertRootFolderRevision();

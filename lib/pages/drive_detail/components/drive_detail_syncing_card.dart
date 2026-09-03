@@ -169,6 +169,14 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
   /// The card the explorer's other full-panel states use on a wide screen, so
   /// the frame does not change shape when this becomes a folder listing, an
   /// unsynced drive, or the report that the drive list could not be read.
+  ///
+  /// On `tableTheme.backgroundColor`, which is what the tables and the unsynced
+  /// card already sit on. This used `containerL1` and the comment above was
+  /// therefore untrue: at `#0d0d0d` against a `#010905` page it lifted off the
+  /// background by twelve steps out of 255, so the panel read as no panel at
+  /// all - a card nobody can see is a card that is not there. The shared
+  /// ground is `#121212`, which is the difference between a black screen with
+  /// words on it and a surface holding them.
   Widget _frame(BuildContext context, Widget content) {
     return ScreenTypeLayout.builder(
       mobile: (context) => content,
@@ -179,7 +187,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
           child: ArDriveCard(
             width: double.infinity,
             backgroundColor:
-                ArDriveTheme.of(context).themeData.colorTokens.containerL1,
+                ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
             content: content,
           ),
         ),

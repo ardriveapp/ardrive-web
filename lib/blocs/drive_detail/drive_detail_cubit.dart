@@ -593,6 +593,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           }
 
           if (_activityTracker.isUploading) {
+            // Dropped, and owed back. An upload writes its file while this
+            // flag is up, so the tick carrying it is the one refused here -
+            // and nothing else is going to write that folder afterwards, so
+            // no later tick will carry it either. Remembering the debt is what
+            // lets the refresh at the end of the upload settle it.
+            _droppedFolderRedraw = true;
             return;
           }
 
@@ -984,8 +990,24 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     );
   }
 
+  /// Redraws the table, re-reading the folder first if anything was missed.
+  ///
+  /// The re-read is the half this did not do, and an upload is where that
+  /// showed: the file is written while `isUploading` is up, the tick carrying
+  /// it is refused by the guard in the subscription, and nothing writes that
+  /// folder again afterwards - so there is no later tick to carry it. This
+  /// then re-emitted the state it already had with a new key, which rebuilds
+  /// the same rows. The file was uploaded, and was not on screen.
+  ///
+  /// Only when something was actually dropped, so the callers that use this
+  /// for a cosmetic rebuild after a rename or a hide still pay nothing.
   void refreshDriveDataTable() async {
     _refreshSelectedItem = true;
+
+    if (_droppedFolderRedraw) {
+      await _refreshAfterDroppedRedraws();
+      return;
+    }
 
     if (state is DriveDetailLoadSuccess) {
       await Future.delayed(const Duration(milliseconds: 100));
