@@ -16,3 +16,10 @@ reporter: expanded
 tags:
   broken:
     skip: 'This tests do not work as expected. Please re-implement them and tag them accordingly'
+  measurement:
+    skip: >-
+      Measurements, not assertions: they build a drive at production scale and
+      weigh the result, which costs about a minute and asserts almost nothing.
+      They are the source of the sizing figures quoted in docs/, so they are
+      kept runnable and skipped by default. Run one with:
+      flutter test <path> --run-skipped --tags=measurement
