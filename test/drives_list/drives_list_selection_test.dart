@@ -18,6 +18,7 @@ void main() {
     String id, {
     bool lastSyncFailed = false,
     bool isSyncing = false,
+    bool hasBeenWalked = true,
   }) =>
       DriveListItem(
         id: id,
@@ -26,10 +27,10 @@ void main() {
         isSharedWithMe: false,
         isHidden: false,
         dateCreated: DateTime(2024),
-        hasBeenWalked: true,
-        fileCount: 1,
-        totalSize: 1,
-        lastSyncedAt: DateTime(2024),
+        hasBeenWalked: hasBeenWalked,
+        fileCount: hasBeenWalked ? 1 : null,
+        totalSize: hasBeenWalked ? 1 : null,
+        lastSyncedAt: hasBeenWalked ? DateTime(2024) : null,
         isSyncing: isSyncing,
         lastSyncFailed: lastSyncFailed,
       );
@@ -196,6 +197,69 @@ void main() {
       await pump(tester, twoDrives);
 
       expect(find.textContaining('could not be read'), findsNothing);
+    });
+  });
+
+  /// The two things the first version of this got wrong, both visible in a
+  /// screenshot: the column headings vanished, and two red buttons offering
+  /// different scopes sat a hundred pixels apart.
+  group('a selection does not cost the table its headings', () {
+    final oneTicked = DrivesListLoaded(
+      drives: [drive('a'), drive('b')],
+      scope: DriveScope.all,
+      selected: const {'a'},
+    );
+
+    testWidgets('the columns are still labelled while selecting',
+        (tester) async {
+      await pump(tester, oneTicked);
+
+      for (final heading in ['Name', 'Last synced', 'Files', 'Size']) {
+        expect(
+          find.text(heading),
+          findsOneWidget,
+          reason: '"$heading" is what makes a column of dashes readable',
+        );
+      }
+    });
+
+    testWidgets('and only one action is offered at a time', (tester) async {
+      await pump(
+        tester,
+        DrivesListLoaded(
+          drives: [
+            drive('a', hasBeenWalked: false),
+            drive('b', hasBeenWalked: false),
+          ],
+          scope: DriveScope.all,
+          selected: const {'a'},
+        ),
+      );
+
+      expect(find.text('Sync selected'), findsOneWidget);
+      expect(
+        find.text('Sync All Drives'),
+        findsNothing,
+        reason: 'the reader has just said which drives they meant, so the '
+            'offer to sync every one of them is withdrawn rather than left to '
+            'compete with the one they asked for',
+      );
+    });
+
+    testWidgets('and it comes back when nothing is ticked', (tester) async {
+      await pump(
+        tester,
+        DrivesListLoaded(
+          drives: [
+            drive('a', hasBeenWalked: false),
+            drive('b', hasBeenWalked: false),
+          ],
+          scope: DriveScope.all,
+        ),
+      );
+
+      expect(find.text('Sync All Drives'), findsWidgets);
+      expect(find.text('Sync selected'), findsNothing);
     });
   });
 }

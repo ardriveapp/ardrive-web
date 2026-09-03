@@ -193,6 +193,64 @@ void main() {
     });
   }
 
+  /// Which drives a run over a chosen few reports itself as covering.
+  ///
+  /// Reported from the browser: ticking one drive and pressing Sync selected
+  /// made every row say "Syncing". The scope was set from the ids the caller
+  /// asked for and then cleared two lines later, immediately before the state
+  /// was emitted - so from the moment it started, a run over one drive was
+  /// indistinguishable from a run over all of them, and the gate held every
+  /// drive shut on top of it. The clear was meant for `_syncingDriveId`, which
+  /// answers a different question: which *single* drive owns this run.
+  group('a run over a chosen few', () {
+    test('reports the drives it covers, not all of them', () async {
+      anAllDrivesSyncThatRunsUntilCancelled();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await settled();
+
+      unawaited(cubit.syncDrives(['drive-a', 'drive-b']));
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      expect(
+        cubit.syncingDriveIds,
+        {'drive-a', 'drive-b'},
+        reason: 'every surface that tells a drive in the run from one beside '
+            'it reads this',
+      );
+      expect(
+        cubit.syncingDriveId,
+        isNull,
+        reason: 'no single drive owns a run over several - that is the field '
+            'whose clearing wiped the scope',
+      );
+    });
+
+    test('and lets go of it when the run is over', () async {
+      anAllDrivesSyncThatRunsUntilCancelled();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await settled();
+
+      final sync = cubit.syncDrives(['drive-a']);
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      expect(cubit.syncingDriveIds, isNotNull);
+
+      cubit.cancelSync();
+      nextCheckpoint.complete();
+      await sync;
+      await settled();
+
+      expect(
+        cubit.syncingDriveIds,
+        isNull,
+        reason: 'a scope left behind would quietly narrow every sync after it',
+      );
+    });
+  });
+
   group('closing the cubit stops the sync', () {
     /// Pressing Stop, as against logging out.
     ///

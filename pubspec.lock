@@ -603,7 +603,7 @@ packages:
     source: hosted
     version: "0.6.0"
   fake_async:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: fake_async
       sha256: "511392330127add0b769b75a987850d136345d9227c6b94c96a04cf4a391bf78"
@@ -1127,7 +1127,7 @@ packages:
     source: hosted
     version: "2.0.3+1"
   gql_exec:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: gql_exec
       sha256: "0d1fdb2e4154efbfc1dcf3f35ec36d19c8428ff0d560eb4c45b354f8f871dc50"

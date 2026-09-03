@@ -414,10 +414,83 @@ class SyncCubit extends Cubit<SyncState> {
 
     logger.i('Syncing on login: transactions are still pending');
 
-    startSync(
+    await startSync(
       skipTabVisibilityCheck: true,
       trigger: SyncTrigger.background,
     );
+
+    // One sync is not enough to confirm an upload. A transaction takes several
+    // blocks to mine, so the sync that runs the moment a login notices
+    // something pending will usually find it still pending.
+    watchForPendingConfirmations();
+  }
+
+  /// How long to leave between checks while an upload is waiting to be mined.
+  ///
+  /// An Arweave block is a couple of minutes and a transaction wants a few of
+  /// them, so anything much shorter is asking a question whose answer cannot
+  /// have changed - and asking it of a gateway that rate limits.
+  static const _pendingConfirmationInterval = Duration(minutes: 3);
+
+  Timer? _pendingConfirmationWatch;
+
+  /// Syncs until nothing is waiting to be mined, and then stops.
+  ///
+  /// The gap this closes: an upload writes its file locally and shows it
+  /// immediately, and nothing afterwards ever confirmed it. `autoSync` ships
+  /// `false` in all three flavours, so the periodic sync it gates never runs -
+  /// the comment in the upload form promising that "background periodic sync
+  /// will update lastBlockHeight naturally" describes a timer no shipped
+  /// configuration starts. So a file sat unconfirmed until the reader either
+  /// pressed sync or logged in again.
+  ///
+  /// Deliberately not a periodic sync with a pending check bolted on: it is a
+  /// pending check that syncs. With nothing pending it costs one local
+  /// database read and stops, so an app with no outstanding uploads is exactly
+  /// as quiet as it is today. That is the whole difference between this and
+  /// the `autoSync` flag, which is off precisely because it is unconditional.
+  void watchForPendingConfirmations() {
+    if (isClosed || _pendingConfirmationWatch != null) {
+      return;
+    }
+
+    _pendingConfirmationWatch =
+        Timer(_pendingConfirmationInterval, _confirmPendingTransactions);
+  }
+
+  Future<void> _confirmPendingTransactions() async {
+    _pendingConfirmationWatch = null;
+
+    if (isClosed) {
+      return;
+    }
+
+    bool stillPending;
+
+    try {
+      stillPending = await _syncRepository.hasPendingTransactions();
+    } catch (e, stackTrace) {
+      // A local read that failed is not a reason to keep asking. The next
+      // upload, or the next login, starts this again.
+      logger.e('Could not check for pending transactions', e, stackTrace);
+      return;
+    }
+
+    if (isClosed || !stillPending) {
+      logger.d('Nothing pending: the confirmation watch stops here');
+      return;
+    }
+
+    // Refused outright if a sync is already running, which is the standing
+    // rule and exactly right here: that sync will confirm them anyway.
+    await startSync(trigger: SyncTrigger.background);
+
+    if (isClosed) {
+      return;
+    }
+
+    // Round again. The check above is what ends this, not a counter.
+    watchForPendingConfirmations();
   }
 
   void restartSyncOnFocus() {
@@ -632,9 +705,13 @@ class SyncCubit extends Cubit<SyncState> {
 
       _initSync = DateTime.now();
 
-      // Every drive is covered, so no single drive owns this one.
+      // No *single* drive owns this run - which is a different question from
+      // which drives it covers. `_runDriveIds` is set above from the ids the
+      // caller asked for and must not be cleared here: doing so made a run
+      // over four drives indistinguishable from a run over all of them the
+      // instant it started, so every row said "Syncing" and the gate held
+      // every drive shut.
       _syncingDriveId = null;
-      _runDriveIds = null;
 
       _emitIfOpen(SyncInProgress(trigger: trigger));
       // Emit initial progress AFTER SyncInProgress so the indicator is
@@ -756,6 +833,11 @@ class SyncCubit extends Cubit<SyncState> {
         _currentSyncToken?.dispose();
         _currentSyncToken = null;
       }
+
+      // Released on every path out. A run over a chosen few that left this set
+      // behind would scope the *next* run to the same few - so syncing four
+      // drives once would quietly narrow every sync after it.
+      _runDriveIds = null;
     }
     _lastSync = DateTime.now();
 
@@ -1260,6 +1342,11 @@ class SyncCubit extends Cubit<SyncState> {
   @override
   Future<void> close() async {
     logger.i('Closing SyncCubit instance');
+
+    // A timer that fires after a logout would sync the previous wallet's
+    // drives into a database that has just been emptied.
+    _pendingConfirmationWatch?.cancel();
+    _pendingConfirmationWatch = null;
 
     // First, so the sync begins unwinding while the subscriptions below are
     // being torn down rather than after.

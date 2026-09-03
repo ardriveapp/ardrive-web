@@ -573,7 +573,11 @@ class _DrivesListLoadedView extends StatelessWidget {
               child: CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(child: _heading(context)),
-                  if (state.nothingHasEverBeenSynced)
+                  // Withdrawn while a selection exists. Two red buttons a
+                  // hundred pixels apart, offering different scopes, is the
+                  // reader having to work out which one they meant - and they
+                  // have just said which, by ticking rows.
+                  if (state.nothingHasEverBeenSynced && state.selected.isEmpty)
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.only(top: _blockGap),
@@ -634,12 +638,15 @@ class _DrivesListLoadedView extends StatelessWidget {
                           const SliverToBoxAdapter(
                             child: SizedBox(height: _panelPadding),
                           ),
-                          // While anything is ticked the heading row *is*
-                          // the selection bar, the way every table that has
-                          // both does it. A second bar above the panel cost a
-                          // block of vertical space on the one screen whose
-                          // job is to list drives, and repeated the column
-                          // headings underneath it for no reason.
+                          // Above the headings, never instead of them.
+                          //
+                          // Replacing them is what a mail client does, and it
+                          // works there because those rows describe
+                          // themselves. These read "Never synced", a dash, a
+                          // dash and a date: four terse columns with no labels
+                          // stop being a table. So the strip takes a line of
+                          // its own while a selection exists, and the headings
+                          // stay where they are.
                           if (state.selected.isNotEmpty &&
                               onSyncSelected != null)
                             SliverToBoxAdapter(
@@ -648,24 +655,23 @@ class _DrivesListLoadedView extends StatelessWidget {
                                 onSyncSelected: onSyncSelected!,
                                 onClear: onClearSelection,
                               ),
-                            )
-                          else
-                            SliverToBoxAdapter(
-                              child: DriveListHeader(
-                                sort: state.sort,
-                                sortAscending: state.sortAscending,
-                                onSort: onSort,
-                                // Offered only where there is room for a column
-                                // of checkboxes, and only when something can be
-                                // done with a selection.
-                                allSelected: onToggleSelectAll == null
-                                    ? null
-                                    : state.drives.isNotEmpty &&
-                                        state.drives.every((drive) =>
-                                            state.selected.contains(drive.id)),
-                                onToggleSelectAll: onToggleSelectAll,
-                              ),
                             ),
+                          SliverToBoxAdapter(
+                            child: DriveListHeader(
+                              sort: state.sort,
+                              sortAscending: state.sortAscending,
+                              onSort: onSort,
+                              // Offered only where there is room for a column
+                              // of checkboxes, and only when something can be
+                              // done with a selection.
+                              allSelected: onToggleSelectAll == null
+                                  ? null
+                                  : state.drives.isNotEmpty &&
+                                      state.drives.every((drive) =>
+                                          state.selected.contains(drive.id)),
+                              onToggleSelectAll: onToggleSelectAll,
+                            ),
+                          ),
                           _rows(state, showsColumns),
                           const SliverToBoxAdapter(
                             child: SizedBox(height: _panelPadding),
@@ -939,9 +945,11 @@ class _SyncEverythingPrompt extends StatelessWidget {
 
 /// What the reader can do with the drives they have ticked.
 ///
-/// Drawn in the heading row's place rather than above it, which is where a
-/// table that offers selection puts this - so choosing drives costs no
-/// vertical space and the columns are not labelled twice.
+/// A line of its own above the column headings, not instead of them: this
+/// table's cells are "Never synced", a dash, a dash and a date, and four terse
+/// columns with no labels stop being a table. It is drawn as a tinted band
+/// rather than another card, so it reads as part of the table it belongs to
+/// rather than a second panel stacked on the first.
 class _SelectionBar extends StatelessWidget {
   const _SelectionBar({
     required this.count,
@@ -958,12 +966,14 @@ class _SelectionBar extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return Padding(
-      // The heading row's own padding, so the count sits where "Name" sat and
-      // the row beneath does not shift when a tick is made.
+    return Container(
+      // A step up from the panel it sits on, which is how a band says it is a
+      // state rather than a row - no border, no shadow, nothing that competes
+      // with the rows below it.
+      color: colorTokens.containerL2,
       padding: const EdgeInsets.symmetric(
         horizontal: driveListRowHorizontalPadding,
-        vertical: 4,
+        vertical: 8,
       ),
       child: Row(
         children: [
@@ -979,8 +989,9 @@ class _SelectionBar extends StatelessWidget {
           ),
           const Spacer(),
           if (onClear != null) ...[
-            // Text only. Two bordered buttons side by side read as equal
-            // choices, and these are not: one acts, the other undoes.
+            // Text, not a second button. Two bordered controls side by side
+            // read as equal choices and these are not: one acts, the other
+            // undoes.
             ArDriveClickArea(
               child: InkWell(
                 onTap: onClear,
@@ -1000,7 +1011,7 @@ class _SelectionBar extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
           ],
           ArDriveButtonNew(
             text: appLocalizationsOf(context).driveListSyncSelected,
