@@ -190,7 +190,11 @@ class ArweaveService {
   /// no deadline, so an attempt that hangs rather than fails hangs for ever and
   /// the second and third attempts are never reached. The loop reads as if it
   /// were resilient while being exactly as fragile as a single call.
-  static const _priceAttemptTimeout = Duration(seconds: 8);
+  ///
+  /// Six seconds so the three bounded calls behind one AR cost estimate - this,
+  /// the community tip and the AR/USD rate - still fit inside that estimate's
+  /// own 20-second budget.
+  static const _priceAttemptTimeout = Duration(seconds: 6);
 
   Future<BigInt> getPrice({required int byteSize}) async {
     const maxRetries = 3;

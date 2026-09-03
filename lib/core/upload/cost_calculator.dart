@@ -150,15 +150,40 @@ abstract class ConvertForUSD<T> {
 }
 
 class ConvertArToUSD implements ConvertForUSD<double> {
-  final ArweaveService arweave;
+  /// How long to wait for the AR/USD rate before giving up on it.
+  ///
+  /// The rate comes from CoinGecko through `ArDriveHTTP(retries: 3)`, and
+  /// neither the request nor the retries have a deadline of their own.
+  static const kUsdRateTimeout = Duration(seconds: 6);
 
-  ConvertArToUSD({required this.arweave});
+  final ArweaveService arweave;
+  final Duration _usdRateTimeout;
+
+  ConvertArToUSD({
+    required this.arweave,
+    Duration usdRateTimeout = kUsdRateTimeout,
+  }) : _usdRateTimeout = usdRateTimeout;
 
   @override
   Future<double?> convertForUSD(
     double arCost,
   ) async {
-    final arUsdConversionRate = await arweave.getArUsdConversionRateOrNull();
+    final double? arUsdConversionRate;
+    try {
+      arUsdConversionRate =
+          await arweave.getArUsdConversionRateOrNull().timeout(_usdRateTimeout);
+    } on TimeoutException {
+      // `getArUsdConversionRateOrNull` already answers "no rate available" with
+      // null, and its `catch` covers a request that fails. It cannot cover one
+      // that never returns, which is the same gap the community tip had: the
+      // USD figure is a convenience beside a price quoted in AR, so waiting on
+      // it indefinitely trades the whole estimate for a nicety.
+      logger.e(
+        'The AR/USD rate did not arrive within ${_usdRateTimeout.inSeconds}s. '
+        'Pricing without a USD figure.',
+      );
+      return null;
+    }
 
     if (arUsdConversionRate == null) {
       return null;
