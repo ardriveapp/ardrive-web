@@ -107,12 +107,25 @@ class DriveStateImportStats {
     required this.mergeDuration,
   });
 
+  /// Rows written for entities: folders and files. The drive is not among
+  /// them. It exists before the import starts, so it is merged rather than
+  /// inserted — see `overwriteDriveMetadata`, which decides between the local
+  /// row and the payload's — and a merge is not a write.
   int get entitiesImported => foldersWritten + filesWritten;
+
+  /// What `Entity-Count` promised: folders, files, and the one drive.
+  ///
+  /// Reported beside [entitiesImported] because the two differ by exactly the
+  /// drive row, and a line that showed only the smaller number next to a UI
+  /// showing the larger one read as a lost entity every time somebody looked
+  /// at it. The count check refuses an import whose payload disagrees with
+  /// this tag, so a genuine loss cannot reach this line at all.
+  int get entitiesCarried => entitiesImported + 1;
 
   /// The `detail` clause for [DriveStateOutcomeReporter.report].
   @override
-  String toString() => 'imported=$entitiesImported '
-      '(folders=$foldersWritten files=$filesWritten '
+  String toString() => 'imported=$entitiesImported of $entitiesCarried '
+      'entities (folders=$foldersWritten files=$filesWritten drive=1 '
       'kept-local=$rowsKeptLocallyNewer '
       'materialised-folders=$foldersMaterialised) '
       'revisions=$revisionsWritten licenses=$licensesWritten '
