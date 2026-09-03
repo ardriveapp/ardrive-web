@@ -230,7 +230,9 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         isSyncing: syncState is SyncInProgress &&
             (syncingDriveId == null || syncingDriveId == drive.id) &&
             (runDriveIds == null || runDriveIds.contains(drive.id)) &&
-            !completedDriveIds.contains(drive.id),
+            // Same rule as the gate: a single-drive sync says so until it is
+            // over, because its walk finishing is not the run finishing.
+            (syncingDriveId != null || !completedDriveIds.contains(drive.id)),
         lastSyncFailed: failedDriveIds.contains(drive.id),
       );
     }).toList();
@@ -445,22 +447,27 @@ class DrivesListCubit extends Cubit<DrivesListState> {
   /// One run over four drives, not four runs: the engine has always walked an
   /// arbitrary subset concurrently. With nothing ticked this is a full sync,
   /// so the control behind it never has to be disabled.
-  void syncSelectedDrives() {
+  void syncSelectedDrives({bool deep = false}) {
     if (_selected.isEmpty) {
-      syncAllDrives();
+      unawaited(_syncCubit.startSync(deepSync: deep));
       return;
     }
 
-    unawaited(_syncSelected(_selected.toList()));
+    unawaited(_syncSelected(_selected.toList(), deep: deep));
   }
 
-  Future<void> _syncSelected(List<String> chosen) async {
+  /// Whether anything is ticked, so a control can say which it will act on.
+  bool get hasSelection => _selected.isNotEmpty;
+
+  int get selectionCount => _selected.length;
+
+  Future<void> _syncSelected(List<String> chosen, {bool deep = false}) async {
     // Only a run that actually started may take the selection away. A sync is
     // refused outright while another is going - one at a time, never queued -
     // and clearing first meant a press during a sync silently threw the ticks
     // away and did nothing with them. The reader would then have to find and
     // re-tick the same four drives to try again.
-    final started = await _syncCubit.syncDrives(chosen);
+    final started = await _syncCubit.syncDrives(chosen, deep: deep);
 
     if (isClosed || !started) {
       return;

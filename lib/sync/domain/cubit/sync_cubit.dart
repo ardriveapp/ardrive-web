@@ -117,10 +117,22 @@ class SyncCubit extends Cubit<SyncState> {
       return false;
     }
 
-    // Not for SyncLoadingDrives: that phase writes the drives table itself,
-    // and a drive read in a previous run tells us nothing about whether this
-    // one is about to rewrite the row.
-    if (state is SyncInProgress && completedDriveIds.contains(driveId)) {
+    // Only for a run covering more than one drive.
+    //
+    // The point of releasing early is that a ten-drive run should not hold the
+    // drive it finished first. A single-drive sync has nothing to hold but the
+    // drive it was asked for, and it appends that drive to the completed list
+    // after its walk while the phases that follow are still running - so
+    // releasing there would have the row go quiet, and the panel open, while
+    // the sync the reader started is still going. Nothing is gained and the
+    // report contradicts itself.
+    //
+    // Not for SyncLoadingDrives either: that phase writes the drives table
+    // itself, and a drive read in a previous run tells us nothing about
+    // whether this one is about to rewrite the row.
+    if (state is SyncInProgress &&
+        syncingDriveId == null &&
+        completedDriveIds.contains(driveId)) {
       return false;
     }
 
@@ -1183,14 +1195,19 @@ class SyncCubit extends Cubit<SyncState> {
   /// only thing missing was a way to say which. One run, not several: the
   /// standing rule that a second sync is refused rather than queued is
   /// unchanged, and four drives in one run is one run.
-  Future<bool> syncDrives(List<String> driveIds) async {
+  Future<bool> syncDrives(List<String> driveIds, {bool deep = false}) async {
     if (driveIds.isEmpty) {
       return false;
     }
 
-    logger.i('Syncing ${driveIds.length} chosen drives');
+    logger.i('Syncing ${driveIds.length} chosen drives, deep: $deep');
 
-    return startSync(onlyDriveIds: driveIds);
+    // Deep composes with the subset because the two are independent: deep
+    // decides *how* a drive is walked - from block one, ignoring snapshots -
+    // and the subset decides *which* drives are walked at all. Neither changes
+    // the completion bookkeeping, so everything built on syncedDriveIds holds
+    // for a deep run too.
+    return startSync(onlyDriveIds: driveIds, deepSync: deep);
   }
 
   /// Get the current sync progress

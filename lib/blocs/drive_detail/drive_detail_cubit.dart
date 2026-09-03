@@ -64,6 +64,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   /// Whether a redraw was dropped by the throttle and not yet made good.
   bool _droppedFolderRedraw = false;
+
+  /// What was last drawn, so a tick that changes nothing can be recognised.
+  FolderWithContents? _lastFolderContents;
   bool _isExplicitSync = false;
 
   /// Bumped by every [openFolder]. Cancelling `_folderSubscription` does not
@@ -448,6 +451,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // opened.
     _lastFolderRedraw = null;
     _droppedFolderRedraw = false;
+    _lastFolderContents = null;
 
     if (isClosed) {
       return;
@@ -529,6 +533,24 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             return;
           }
 
+          // Most ticks carry nothing new, so the cheapest question first.
+          //
+          // Drift re-runs a watched query when the *tables* it reads change,
+          // not when its own result does. A sync writing folder X therefore
+          // re-emits folder Y - the one on screen - with contents identical to
+          // what is already drawn, once per batch for the length of the run.
+          // Those redraws are pure waste: they parse the same rows, rebuild
+          // the same breadcrumb and emit the same list.
+          //
+          // FolderWithContents is Equatable, so this is exact rather than a
+          // heuristic: skip only when nothing a reader could see has changed.
+          // Unlike the interval below it, this never delays anything - a tick
+          // that carries a real change is never the one dropped here.
+          if (_lastFolderContents == folderContents &&
+              this.state is DriveDetailLoadSuccess) {
+            return;
+          }
+
           // Coalesced, not held.
           //
           // This used to await the whole sync, which is why a drive being
@@ -564,6 +586,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
             _lastFolderRedraw = now;
           }
+
+          _lastFolderContents = folderContents;
 
           if (drive == null) {
             emit(DriveDetailLoadNotFound());

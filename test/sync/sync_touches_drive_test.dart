@@ -43,6 +43,18 @@ void main() {
     test('and no other', () {
       expect(touches(running, syncingDriveId: 'B'), isFalse);
     });
+
+    /// Its walk finishing is not the run finishing - ghost folders and the
+    /// transaction statuses come after it. Releasing there would open the
+    /// panel and quiet the row while the sync the reader pressed for is still
+    /// going, which is a report contradicting itself for no gain: there is no
+    /// other drive waiting on this one.
+    test('holds it until the run is over, not until its walk is', () {
+      expect(
+        touches(running, syncingDriveId: 'A', completed: ['A']),
+        isTrue,
+      );
+    });
   });
 
   group('an all-drives sync', () {

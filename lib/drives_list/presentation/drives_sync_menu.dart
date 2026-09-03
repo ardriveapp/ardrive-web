@@ -1,3 +1,4 @@
+import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -32,6 +33,17 @@ class DrivesSyncMenu extends StatelessWidget {
         final errors = syncState is SyncCompleteWithErrors ? syncState : null;
         final nothingWalked = _nothingHasEverBeenWalked(context);
 
+        // How many drives are ticked, so both actions can say which set they
+        // will run over. Watched rather than read: ticking a drive has to
+        // relabel these the moment it happens.
+        //
+        // Nullable because selection belongs to the drives list and this menu
+        // does not: it needs SyncCubit to do its job and should not acquire a
+        // second hard dependency for a label. Without one it behaves exactly
+        // as it did before selection existed.
+        final drivesList = context.watch<DrivesListCubit?>();
+        final selection = drivesList?.selectionCount ?? 0;
+
         return ArDriveDropdown(
           anchor: const Aligned(
             follower: Alignment.topRight,
@@ -46,7 +58,14 @@ class DrivesSyncMenu extends StatelessWidget {
               onClick: isSyncing
                   ? null
                   : () {
-                      context.read<SyncCubit>().startSync(deepSync: false);
+                      // Acts on the ticked drives when there are any. A
+                      // control that quietly ignored a selection the reader
+                      // had just made would be the worst of both.
+                      if (drivesList != null) {
+                        drivesList.syncSelectedDrives(deep: false);
+                      } else {
+                        context.read<SyncCubit>().startSync(deepSync: false);
+                      }
                       context.read<ProfileNameBloc>().add(RefreshProfileName());
                       PlausibleEventTracker.trackResync(
                           type: ResyncType.resync);
@@ -54,9 +73,13 @@ class DrivesSyncMenu extends StatelessWidget {
               content: ArDriveDropdownItemTile(
                 // "Resync" is wrong before anything has ever synced. The word
                 // promises a repeat of something that has not happened.
-                name: nothingWalked
-                    ? appLocalizationsOf(context).syncAllDrives
-                    : appLocalizationsOf(context).resync,
+                name: selection > 0
+                    ? appLocalizationsOf(context)
+                        .driveListSyncSelectedCount(selection)
+                    // "Resync" is wrong before anything has ever synced.
+                    : nothingWalked
+                        ? appLocalizationsOf(context).syncAllDrives
+                        : appLocalizationsOf(context).resync,
                 icon: ArDriveIcons.refresh(color: iconColor),
                 isDisabled: isSyncing,
               ),
@@ -65,12 +88,19 @@ class DrivesSyncMenu extends StatelessWidget {
               onClick: isSyncing
                   ? null
                   : () {
-                      context.read<SyncCubit>().startSync(deepSync: true);
+                      if (drivesList != null) {
+                        drivesList.syncSelectedDrives(deep: true);
+                      } else {
+                        context.read<SyncCubit>().startSync(deepSync: true);
+                      }
                       PlausibleEventTracker.trackResync(
                           type: ResyncType.deepResync);
                     },
               content: ArDriveDropdownItemTile(
-                name: appLocalizationsOf(context).deepResync,
+                name: selection > 0
+                    ? appLocalizationsOf(context)
+                        .driveListDeepResyncSelectedCount(selection)
+                    : appLocalizationsOf(context).deepResync,
                 icon: ArDriveIcons.cloudSync(color: iconColor),
                 isDisabled: isSyncing,
               ),

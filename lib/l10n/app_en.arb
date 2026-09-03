@@ -1600,6 +1600,16 @@
     "description": "Button that syncs only the ticked drives, in one run"
   },
   "driveListClearSelection": "Clear",
+  "driveListSyncSelectedCount": "Sync {count} selected",
+  "@driveListSyncSelectedCount": {
+    "description": "Menu item that syncs only the ticked drives",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "driveListDeepResyncSelectedCount": "Deep resync {count} selected",
+  "@driveListDeepResyncSelectedCount": {
+    "description": "Menu item that deep-resyncs only the ticked drives",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
   "driveListSomeCouldNotBeRead": "{failed} of {total} drives could not be read",
   "@driveListSomeCouldNotBeRead": {
     "description": "Summary on the drives list after a sync that failed on some drives but not others",
