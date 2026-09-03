@@ -144,6 +144,91 @@ void main() {
     });
   });
 
+  /// The same property, nested the way `AppShell` actually nests it.
+  ///
+  /// The case above hands the sidebar a Scaffold body - a clean bounded box it
+  /// will never see in the app. The real one is a Row inside a Flexible inside
+  /// a Column inside a Stack, and the constraints that reach the sidebar
+  /// through that are what decide whether it can scroll. A fix that works in
+  /// the simpler tree and not this one is not a fix, which is how earlier
+  /// attempts looked right and failed in the browser.
+  testWidgets('scrolls when nested the way the app shell nests it',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 700);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    whenListen(
+      drivesCubit,
+      const Stream<DrivesState>.empty(),
+      initialState: withDrives(
+        [for (var i = 0; i < 40; i++) publicDrive('drive-$i')],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ArDriveTheme(
+        themeData: lightTheme(),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('en', '')],
+          home: MultiProvider(
+            providers: [
+              ListenableProvider<AppRouterDelegate>.value(
+                value: AppRouterDelegate(),
+              ),
+              BlocProvider<DrivesCubit>.value(value: drivesCubit),
+              BlocProvider<ProfileCubit>.value(value: profileCubit),
+              BlocProvider<DriveDetailCubit>.value(value: driveDetailCubit),
+              BlocProvider<GlobalHideBloc>.value(value: hideBloc),
+            ],
+            child: Material(
+              child: Stack(
+                children: [
+                  Column(
+                    children: [
+                      Flexible(
+                        child: Row(
+                          children: [
+                            const AppSideBar(),
+                            Expanded(child: Container()),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final extents = tester
+        .widgetList<Scrollable>(find.byType(Scrollable))
+        .map((s) => s.controller?.hasClients == true
+            ? s.controller!.position.maxScrollExtent
+            : null)
+        .whereType<double>()
+        .toList();
+
+    expect(extents, isNotEmpty,
+        reason: 'the nav must have a scroll view with a live controller');
+    expect(
+      extents.any((e) => e > 0),
+      isTrue,
+      reason: 'forty drives in a 700px window, nested as the shell nests it, '
+          'must leave something below the fold',
+    );
+  });
+
   /// A drive tap has to reach whatever is on screen.
   ///
   /// On the drives list the selected drive is not what is drawn - the list is -

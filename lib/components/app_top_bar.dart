@@ -476,14 +476,19 @@ class SyncButton extends StatelessWidget {
       );
     }
 
-    return SyncSummaryFlash(
-      announcement: announcement,
-      child: _SyncButtonMenu(
-        status: status,
-        isSyncing: isSyncing,
-        failedDriveIds: errors?.failedDriveIds,
-        refreshFailed: failure != null,
-        child: indicator,
+    return _ExpiresWhenStale(
+      // Only a result expires on the clock. A sync that is running, or an
+      // error waiting to be read, leaves this null and nothing is scheduled.
+      after: status == null ? announcement?.showFor : null,
+      child: SyncSummaryFlash(
+        announcement: announcement,
+        child: _SyncButtonMenu(
+          status: status,
+          isSyncing: isSyncing,
+          failedDriveIds: errors?.failedDriveIds,
+          refreshFailed: failure != null,
+          child: indicator,
+        ),
       ),
     );
   }
@@ -1121,4 +1126,78 @@ class _SyncProgressRingState extends State<_SyncProgressRing>
       ],
     );
   }
+}
+
+/// Rebuilds its parent's decision once a result's few seconds are up.
+///
+/// The announcement is a pure function of the sync state and the clock, and
+/// the clock was the half nothing watched. When a result went stale the bar
+/// was not rebuilt, so the slot went on drawing a control for a sync that had
+/// finished - until something unrelated rebuilt it. Clicking another drive
+/// did, which is exactly how it was reported: the icon only went away when the
+/// user clicked a different drive.
+///
+/// The pill inside already hid itself on its own timer. What it could not do
+/// is collapse the slot, because whether the slot is drawn at all is decided
+/// above it.
+class _ExpiresWhenStale extends StatefulWidget {
+  const _ExpiresWhenStale({required this.after, required this.child});
+
+  /// How long what is being drawn is still entitled to. Null when nothing is
+  /// on a clock, which is every state except a fresh result.
+  final Duration? after;
+
+  final Widget child;
+
+  @override
+  State<_ExpiresWhenStale> createState() => _ExpiresWhenStaleState();
+}
+
+class _ExpiresWhenStaleState extends State<_ExpiresWhenStale> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _schedule();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ExpiresWhenStale oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // A new result while one is still showing gets its own full window, and a
+    // sync starting again cancels the old timer rather than firing under it.
+    if (oldWidget.after != widget.after) {
+      _schedule();
+    }
+  }
+
+  void _schedule() {
+    _timer?.cancel();
+    _timer = null;
+
+    final after = widget.after;
+
+    if (after == null || after <= Duration.zero) {
+      return;
+    }
+
+    // One rebuild, at the moment the result stops being fresh. The parent then
+    // asks the same question again and gets the other answer.
+    _timer = Timer(after, () {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

@@ -407,7 +407,21 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // The wait itself stays: a folder must not be opened against a
     // half-written database. What changes is that the app says it heard the
     // click before it starts waiting.
-    emit(DriveDetailLoadInProgress());
+    //
+    // Except when the drive is already on screen. Navigating a folder inside a
+    // drive that is syncing threw the reader out of the drive entirely and
+    // onto the full-panel "this drive is syncing" card - they lost the folder
+    // they were reading to acknowledge a click on the folder beside it. The
+    // drive they are looking at stays up instead, and the new folder replaces
+    // it when there is one to show. The sync is already reported by the ring
+    // in the top bar, so nothing goes unsaid.
+    final showingThisDriveAlready = state is DriveDetailLoadSuccess &&
+        (state as DriveDetailLoadSuccess).currentDrive.id ==
+            (otherDriveId ?? _driveId);
+
+    if (!showingThisDriveAlready) {
+      emit(DriveDetailLoadInProgress());
+    }
 
     // Wait only for a sync that could be writing *this* drive - the same rule
     // the initial load applies, and it has to be applied here too or it only
