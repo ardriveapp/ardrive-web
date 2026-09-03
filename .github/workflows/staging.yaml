@@ -27,6 +27,9 @@ jobs:
     # clock. The one thing that must not happen over a red test run is the
     # deploy, and that is now its own job below.
     runs-on: ubuntu-latest
+    # The repository default is write. This job only reads the source.
+    permissions:
+      contents: read
     steps:
       # Checkout
       - uses: actions/checkout@v3
@@ -63,6 +66,10 @@ jobs:
     # the only step whose cost is not paid purely in CI minutes.
     needs: [pre-build, build-web]
     runs-on: ubuntu-latest
+    # This deploy pushes the built app to the gh-pages branch, so it needs to
+    # write the repository contents. It needs nothing else.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
         with:

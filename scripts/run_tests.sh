@@ -8,17 +8,30 @@
 # and test runner start-up, twelve times over, in sequence.
 #
 # The app's own suite deliberately stays outside the pool. `flutter test`
-# already spreads it across cores, and some of its bloc tests wait on real
-# debounce timers, so they start failing when other test processes compete for
-# the CPU. Running it alone costs a little wall clock and buys a stable signal.
+# already runs its suites concurrently, so it uses the cores it is given;
+# putting it in the pool adds contention without adding parallelism.
+#
+# Note that the app suite has at least one pre-existing flaky test that does not
+# depend on this script: prompt_to_snapshot_bloc_test.dart waits 250ms for a
+# 200ms debounce, and loses the race under load. Keeping the suite out of the
+# pool does not fix it.
 #
 # `TEST_JOBS` sets the width of the pool. `TEST_JOBS=1` restores the old
-# strictly-sequential behaviour, which is worth reaching for when interleaved
-# output makes a failure hard to read.
+# strictly-sequential behaviour.
 
 set -euo pipefail
 
 JOBS="${TEST_JOBS:-3}"
+
+# `xargs -P 0` means "as many processes as possible", which is the opposite of a
+# bounded pool, so a bad value must not reach it.
+case "$JOBS" in
+  '' | *[!0-9]*) echo "TEST_JOBS must be a positive integer, got '$JOBS'" >&2; exit 1 ;;
+esac
+if [ "$JOBS" -lt 1 ]; then
+  echo "TEST_JOBS must be at least 1, got '$JOBS'" >&2
+  exit 1
+fi
 
 packages=()
 for dir in packages/*; do
@@ -45,9 +58,10 @@ LOG_DIR="$(mktemp -d)"
 trap 'rm -rf "$LOG_DIR"' EXIT
 export LOG_DIR
 
-# Each package's output is buffered and printed in one piece, so that packages
-# running side by side cannot interleave halfway through a suite and leave the
-# log unreadable.
+# A worker writes only to its own files. Nothing goes to the shared stdout while
+# the pool is running: `cat` of a multi-kilobyte log is many writes, not one, so
+# two workers printing at once would interleave mid-suite whatever order they
+# started in. The logs are replayed below instead, in a fixed order.
 run_package() {
   local dir="$1"
   local name status=0
@@ -55,16 +69,27 @@ run_package() {
 
   (cd "$dir" && flutter analyze && flutter test) >"$LOG_DIR/$name.log" 2>&1 || status=$?
 
-  echo "===== $name (exit $status) ====="
-  cat "$LOG_DIR/$name.log"
+  echo "$status" >"$LOG_DIR/$name.status"
   return $status
 }
 export -f run_package
 
 echo "Running ${#packages[@]} packages, $JOBS at a time"
 
-# xargs exits non-zero when any invocation does, and `set -e` turns that into a
-# failed step - so one broken package still fails the build.
-printf '%s\n' "${packages[@]}" | xargs -P "$JOBS" -I{} bash -c 'run_package "$@"' _ {}
+# xargs exits non-zero when any invocation does. The failure is held rather than
+# thrown, so that every package's log still gets printed before the script ends.
+pool_status=0
+printf '%s\n' "${packages[@]}" | xargs -P "$JOBS" -I{} bash -c 'run_package "$@"' _ {} || pool_status=$?
+
+for dir in "${packages[@]}"; do
+  name="$(basename "$dir")"
+  echo "===== $name (exit $(cat "$LOG_DIR/$name.status" 2>/dev/null || echo '?')) ====="
+  cat "$LOG_DIR/$name.log" 2>/dev/null || echo '(no output - the package did not run)'
+done
+
+if [ "$pool_status" -ne 0 ]; then
+  echo "At least one package failed. Look for a non-zero exit in the headers above."
+  exit "$pool_status"
+fi
 
 echo "The app and all ${#packages[@]} packages passed"
