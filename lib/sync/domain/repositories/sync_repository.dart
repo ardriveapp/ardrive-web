@@ -663,6 +663,12 @@ class _SyncRepository implements SyncRepository {
             skippedDriveCount: skipped,
           );
         }
+      } on SyncCancelledException {
+        // A stop is not a probe failure. Without this the reader's cancel was
+        // swallowed here and the sync carried on into the walk - the phase
+        // this catch exists for is a best-effort optimisation, and being
+        // tolerant of its failure must not make it tolerant of being stopped.
+        rethrow;
       } catch (e) {
         logger.w('Drive activity probe failed, syncing all drives: $e');
         drivesToSync = drives;
@@ -778,6 +784,10 @@ class _SyncRepository implements SyncRepository {
             '${prefetchedSnapshots.values.expand((v) => v).length} '
             'for $withSnapshots of ${prefetchedSnapshots.length} drive(s); '
             'the rest are known to have none and will not be re-queried');
+      } on SyncCancelledException {
+        // Same again: failing to prefetch snapshots is recoverable, being
+        // stopped is not something to recover from.
+        rethrow;
       } catch (e) {
         logger.w('Snapshot prefetch failed, will fetch per-drive: $e');
         prefetchedSnapshots.clear();
@@ -2497,6 +2507,7 @@ class _SyncRepository implements SyncRepository {
             snapshotDriveHistory: snapshotDriveHistory,
             ownerAddress: ownerAddress,
             onMetadataFetchProgress: onMetadataFetchProgress,
+            cancellationToken: token,
           );
 
           totalTransactionsProcessed += transactionBuffer.length;
@@ -2537,6 +2548,7 @@ class _SyncRepository implements SyncRepository {
             snapshotDriveHistory: snapshotDriveHistory,
             ownerAddress: ownerAddress,
             onMetadataFetchProgress: onMetadataFetchProgress,
+            cancellationToken: token,
           );
 
           totalTransactionsProcessed += transactionBuffer.length;
@@ -2672,6 +2684,10 @@ class _SyncRepository implements SyncRepository {
     required int transactionParseBatchSize,
     required SnapshotDriveHistory snapshotDriveHistory,
     required String ownerAddress,
+
+    /// Read between the batches inside this chunk, so a stop is noticed
+    /// without waiting for the whole chunk to finish.
+    SyncCancellationToken? cancellationToken,
     void Function()? onMetadataFetchProgress,
   }) async {
     if (transactions.isEmpty) return;
@@ -2702,7 +2718,17 @@ class _SyncRepository implements SyncRepository {
       ownerAddress: ownerAddress,
       onMetadataFetchProgress: onMetadataFetchProgress,
     )) {
-      // Just consume the stream, progress is handled in main loop
+      // Progress is handled in the main loop; what this consumes it for is the
+      // chance to stop.
+      //
+      // The walk checks the token once per transaction *arriving*, which is
+      // fine - but a chunk already handed to this method used to run to the
+      // end whatever the reader asked for, and a chunk is up to
+      // `transactionParseBatchSize` metadata fetches. On a slow gateway that
+      // is the whole of the delay between pressing stop and stopping. This
+      // stream yields once per batch inside the chunk, so asking here moves
+      // the worst case from a chunk to a batch.
+      cancellationToken?.checkCancellation();
     }
   }
 
