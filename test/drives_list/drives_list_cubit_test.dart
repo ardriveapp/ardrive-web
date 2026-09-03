@@ -47,6 +47,11 @@ void main() {
 
     when(() => syncCubit.driveListRefreshFailed).thenReturn(false);
     when(() => syncCubit.syncingDriveId).thenReturn(null);
+    // The run's own scope and what it has finished, read by every surface
+    // that tells a drive in the run from one beside it. Null scope is
+    // "every drive"; nothing finished yet.
+    when(() => syncCubit.syncingDriveIds).thenReturn(null);
+    when(() => syncCubit.completedDriveIds).thenReturn(const []);
     when(() => preferences.currentPreferences).thenReturn(prefs());
   });
 
@@ -116,6 +121,25 @@ void main() {
     await cubit.close();
 
     return state;
+  }
+
+  /// Like [settle], but hands back the live cubit so selection - which is
+  /// several calls, not one - can actually be exercised.
+  Future<DrivesListCubit> settleLive(
+    DrivesState drivesState, {
+    SyncState syncState = const _Idle(),
+  }) async {
+    whenListen(drivesCubit, const Stream<DrivesState>.empty(),
+        initialState: drivesState);
+    whenListen(syncCubit, const Stream<SyncState>.empty(),
+        initialState: syncState);
+
+    final cubit = buildCubit();
+    addTearDown(cubit.close);
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    return cubit;
   }
 
   DrivesLoadSuccess loaded(List<Drive> userDrives,
@@ -449,6 +473,91 @@ void main() {
               as DrivesListLoaded;
 
       expect(state.nothingHasEverBeenSynced, isFalse);
+    });
+  });
+
+  /// Choosing drives to sync, and the one way a selection must never be lost.
+  group('selecting drives to sync', () {
+    setUp(() {
+      when(() => syncCubit.syncDrives(any())).thenAnswer((_) async => true);
+    });
+
+    test('ticks accumulate and reach the sync as one run', () async {
+      await addDrive('a');
+      await addDrive('b');
+      final cubit = await settleLive(loaded(await drivesNamed(['a', 'b'])));
+
+      cubit.toggleSelected('a');
+      cubit.toggleSelected('b');
+
+      expect((cubit.state as DrivesListLoaded).selected, {'a', 'b'});
+
+      cubit.syncSelectedDrives();
+      await Future<void>.delayed(Duration.zero);
+
+      final captured = verify(() => syncCubit.syncDrives(captureAny()))
+          .captured
+          .single as List<String>;
+      expect(captured, containsAll(<String>['a', 'b']));
+      expect(captured, hasLength(2),
+          reason: 'four drives chosen is one run over four, not four runs');
+    });
+
+    test('a second tick unticks', () async {
+      await addDrive('a');
+      final cubit = await settleLive(loaded(await drivesNamed(['a'])));
+
+      cubit.toggleSelected('a');
+      cubit.toggleSelected('a');
+
+      expect((cubit.state as DrivesListLoaded).selected, isEmpty);
+    });
+
+    test('nothing ticked syncs everything, rather than nothing', () async {
+      when(() => syncCubit.startSync()).thenAnswer((_) async => true);
+
+      await addDrive('a');
+      final cubit = await settleLive(loaded(await drivesNamed(['a'])));
+
+      cubit.syncSelectedDrives();
+      await Future<void>.delayed(Duration.zero);
+
+      verifyNever(() => syncCubit.syncDrives(any()));
+      verify(() => syncCubit.startSync()).called(1);
+    });
+
+    test('a run that started takes the selection away', () async {
+      await addDrive('a');
+      final cubit = await settleLive(loaded(await drivesNamed(['a'])));
+
+      cubit.toggleSelected('a');
+      cubit.syncSelectedDrives();
+      await Future<void>.delayed(Duration.zero);
+
+      expect((cubit.state as DrivesListLoaded).selected, isEmpty);
+    });
+
+    /// A sync is refused outright while another is running - one at a time,
+    /// never queued. Clearing anyway would make the reader find and re-tick
+    /// the same drives to try again.
+    test('a run that was refused leaves it alone', () async {
+      when(() => syncCubit.syncDrives(any())).thenAnswer((_) async => false);
+
+      await addDrive('a');
+      await addDrive('b');
+      final cubit = await settleLive(loaded(await drivesNamed(['a', 'b'])));
+
+      cubit.toggleSelected('a');
+      cubit.toggleSelected('b');
+      cubit.syncSelectedDrives();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        (cubit.state as DrivesListLoaded).selected,
+        {'a', 'b'},
+        reason: 'the press did nothing, so it must not also cost the reader '
+            'the selection they made',
+      );
     });
   });
 }

@@ -28,6 +28,18 @@ part 'drive_detail_state.dart';
 /// Sentinel used by copyWith to distinguish "not provided" from "explicitly null".
 const _driveDetailAbsent = Object();
 
+/// How often a folder may redraw while a sync is writing its drive.
+///
+/// A starting point, not a measured optimum. Each redraw parses the folder's
+/// rows and rebuilds its breadcrumb, so the cost scales with folder size while
+/// the tick rate scales with how fast revisions land - two things that are
+/// worst at the same time, on a big drive's first walk.
+///
+/// To tune it: watch redraws per second on a drive with thousands of revisions
+/// and raise this until the list stops feeling busy without feeling stale. The
+/// floor is set by how long a redraw takes, not by taste.
+const Duration _folderRedrawInterval = Duration(milliseconds: 500);
+
 class DriveDetailCubit extends Cubit<DriveDetailState> {
   String _driveId;
 
@@ -46,6 +58,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   StreamSubscription? _folderSubscription;
   StreamSubscription? _syncSubscription;
   bool _initialLoadComplete = false;
+
+  /// When this folder last redrew while a sync was writing its drive.
+  DateTime? _lastFolderRedraw;
+
+  /// Whether a redraw was dropped by the throttle and not yet made good.
+  bool _droppedFolderRedraw = false;
   bool _isExplicitSync = false;
 
   /// Bumped by every [openFolder]. Cancelling `_folderSubscription` does not
@@ -123,6 +141,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         if (SyncCubit.syncTouchesDrive(
           state: _syncCubit.state,
           syncingDriveId: _syncCubit.syncingDriveId,
+          completedDriveIds: _syncCubit.completedDriveIds,
+          runDriveIds: _syncCubit.syncingDriveIds,
           driveId: driveId,
         )) {
           await _syncCubit.waitCurrentSync();
@@ -167,8 +187,37 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // (registered by _listenForSyncCompletion, above)
   }
 
+  /// Redraws once more if the throttle dropped the last tick of a run.
+  ///
+  /// The throttle is safe to drop ticks precisely because another is coming.
+  /// The one tick that has nothing behind it is the last one of a sync, and
+  /// dropping that leaves the folder one batch short of what was written with
+  /// nothing else due to correct it. So a run that ends having dropped
+  /// anything re-reads the folder, once.
+  Future<void> _refreshAfterDroppedRedraws() async {
+    if (!_droppedFolderRedraw) {
+      return;
+    }
+
+    _droppedFolderRedraw = false;
+
+    final current = state;
+
+    if (isClosed || current is! DriveDetailLoadSuccess) {
+      return;
+    }
+
+    // The folder that is open, re-read. Not a loading state: the reader is
+    // looking at this list and nothing about it is being replaced.
+    openFolder(folderId: current.folderInView.folder.id);
+  }
+
   void _listenForSyncCompletion() {
     _syncSubscription = _syncCubit.stream.listen((syncState) {
+      if (SyncCubit.syncHasFinished(syncState)) {
+        _refreshAfterDroppedRedraws();
+      }
+
       // A drive list that has since been read means the failure screen is out
       // of date, wherever the retry came from. The top bar has its own Try
       // Again, and without this the body would go on saying the drives could
@@ -348,6 +397,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       if (SyncCubit.syncTouchesDrive(
         state: _syncCubit.state,
         syncingDriveId: _syncCubit.syncingDriveId,
+        completedDriveIds: _syncCubit.completedDriveIds,
+        runDriveIds: _syncCubit.syncingDriveIds,
         driveId: driveId,
       )) {
         await _syncCubit.waitCurrentSync();
@@ -392,21 +443,23 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // previous folder is stale from here on even when the drive is unchanged.
     final loadGeneration = ++_folderLoadGeneration;
 
+    // A new folder redraws immediately whatever the last one did: the throttle
+    // exists to stop a folder flickering as it fills, not to delay one being
+    // opened.
+    _lastFolderRedraw = null;
+    _droppedFolderRedraw = false;
+
     if (isClosed) {
       return;
     }
 
-    // Before the wait, not after it. `changeDrive` has already cancelled the
-    // folder subscription and moved `_driveId` by the time it gets here, so
-    // until this emits, the screen still shows the drive the user just left.
-    // While a sync scrimmed the whole app that was unreachable; now that a
-    // background sync leaves the app usable, a click on a drive - or a
-    // double-click on a folder - would sit there doing nothing at all for as
-    // long as the sync ran, which on a large wallet is minutes.
+    // `changeDrive` has already cancelled the folder subscription and moved
+    // `_driveId` by the time it gets here, so until this emits, the screen
+    // still shows the drive the user just left. Saying so is what makes a
+    // click on a drive feel answered.
     //
-    // The wait itself stays: a folder must not be opened against a
-    // half-written database. What changes is that the app says it heard the
-    // click before it starts waiting.
+    // There is no wait behind it any more - see below - so this is a moment,
+    // not a screen anybody sits on.
     //
     // Except when the drive is already on screen. Navigating a folder inside a
     // drive that is syncing threw the reader out of the drive entirely and
@@ -423,19 +476,16 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       emit(DriveDetailLoadInProgress());
     }
 
-    // Wait only for a sync that could be writing *this* drive - the same rule
-    // the initial load applies, and it has to be applied here too or it only
-    // ever holds for the very first drive opened in a session. Every later
-    // navigation goes through openFolder, so a blanket wait here meant a
-    // single-drive sync of B pinned drive A on "loading" until B finished,
-    // however long that took and however untouched A's rows were.
-    if (SyncCubit.syncTouchesDrive(
-      state: _syncCubit.state,
-      syncingDriveId: _syncCubit.syncingDriveId,
-      driveId: otherDriveId ?? _driveId,
-    )) {
-      await _syncCubit.waitCurrentSync();
-    }
+    // No wait. A folder is read from committed transactions, so what comes
+    // back mid-sync is consistent - it is simply less than the folder will
+    // eventually hold, and the subscription above fills the rest in as it
+    // lands. Waiting here bought nothing a reader wanted and cost them the
+    // drive for the length of the run.
+    //
+    // The one wait that stays is `changeDrive`'s, and it is a different
+    // question: there the drive is not in the local database at all, and only
+    // a sync will produce it. Waiting for a row that might arrive is worth
+    // doing; waiting to read rows that are already there is not.
 
     // A newer openFolder claimed the generation while this one waited - it
     // owns the subscription and the state now, so this one stops here rather
@@ -479,21 +529,40 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             return;
           }
 
-          // Held, but only for a sync that could be writing *this* drive.
-          // This fires on every drift tick, so emitting a loading state here
-          // would blank the file list the user is browsing over and over for
-          // the length of a background sync; holding the folder already on
-          // screen until the database settles is the honest thing for a
-          // redraw nobody asked for. What it must not do is hold the *first*
-          // emission for a drive nothing is writing - that is the other half
-          // of the same bug openFolder had, and gating openFolder alone left
-          // the drive on "loading" here instead.
+          // Coalesced, not held.
+          //
+          // This used to await the whole sync, which is why a drive being
+          // synced could not be read: the folder on screen went as stale as
+          // the run was long. The reason for the hold was churn, not
+          // correctness - every batch commits in its own transaction, so a
+          // read mid-sync gets consistent data, just less of it than it will
+          // eventually have. So the fix is to redraw *less often*, not to stop
+          // redrawing: the folder fills in while the sync runs.
+          //
+          // The first tick after a folder opens is never dropped, so opening a
+          // drive mid-sync is immediate. After that, at most one redraw per
+          // [_folderRedrawInterval] for as long as a sync is writing this
+          // drive; once nothing is, every tick lands as before.
           if (SyncCubit.syncTouchesDrive(
             state: _syncCubit.state,
             syncingDriveId: _syncCubit.syncingDriveId,
+            completedDriveIds: _syncCubit.completedDriveIds,
+            runDriveIds: _syncCubit.syncingDriveIds,
             driveId: driveId,
           )) {
-            await _syncCubit.waitCurrentSync();
+            final last = _lastFolderRedraw;
+            final now = DateTime.now();
+
+            if (last != null && now.difference(last) < _folderRedrawInterval) {
+              // Dropped, and remembered as dropped. A run that ends on a
+              // dropped tick would otherwise leave the folder one batch short
+              // of what was written, with nothing else coming to correct it -
+              // see [_refreshAfterDroppedRedraws].
+              _droppedFolderRedraw = true;
+              return;
+            }
+
+            _lastFolderRedraw = now;
           }
 
           if (drive == null) {

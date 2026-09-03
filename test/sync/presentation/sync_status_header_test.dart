@@ -67,6 +67,11 @@ void main() {
     when(() => syncCubit.syncProgress).thenReturn(SyncProgress.initial());
     when(() => syncCubit.syncStartTime).thenReturn(DateTime.now());
     when(() => syncCubit.syncingDriveId).thenReturn(null);
+    // The run's own scope and what it has finished, read by every surface
+    // that tells a drive in the run from one beside it. Null scope is
+    // "every drive"; nothing finished yet.
+    when(() => syncCubit.syncingDriveIds).thenReturn(null);
+    when(() => syncCubit.completedDriveIds).thenReturn(const []);
     when(() => syncCubit.clearCancelledState()).thenReturn(null);
   });
 
@@ -746,7 +751,6 @@ void main() {
   // The record moved to the drives list with the rest of the sync actions, and
   // `test/drives_list/drives_sync_menu_test.dart` covers it there. This
   // indicator reports; it no longer carries controls.
-
 }
 
 /// A drive row as `DrivesCubit` hands them over, with only the two fields the

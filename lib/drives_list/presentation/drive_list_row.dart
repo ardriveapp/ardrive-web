@@ -124,6 +124,8 @@ class DriveListHeader extends StatelessWidget {
     this.sort,
     this.sortAscending = true,
     this.onSort,
+    this.allSelected,
+    this.onToggleSelectAll,
   });
 
   /// Which column is ordering the list, if this header is sortable.
@@ -136,6 +138,12 @@ class DriveListHeader extends StatelessWidget {
   /// handler draws as plain text and takes no taps, which is what the tests
   /// that only care about layout get.
   final void Function(DriveListSort column)? onSort;
+
+  /// Whether every drive on screen is ticked, some are, or none - null when
+  /// the list is not offering selection.
+  final bool? allSelected;
+
+  final VoidCallback? onToggleSelectAll;
 
   @override
   Widget build(BuildContext context) {
@@ -209,6 +217,17 @@ class DriveListHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
+          if (allSelected != null)
+            Padding(
+              padding: const EdgeInsets.only(
+                left: driveListRowHorizontalPadding,
+              ),
+              child: ArDriveCheckBox(
+                key: ValueKey('select-all-$allSelected'),
+                checked: allSelected!,
+                onChange: (_) => onToggleSelectAll?.call(),
+              ),
+            ),
           heading(appLocalizationsOf(context).name, _nameFlex,
               column: DriveListSort.name),
           const SizedBox(width: _columnGap),
@@ -239,6 +258,8 @@ class DriveListRow extends StatelessWidget {
     required this.onTap,
     required this.showsColumns,
     this.menu,
+    this.selected,
+    this.onSelectedChanged,
   });
 
   final DriveListItem drive;
@@ -257,6 +278,13 @@ class DriveListRow extends StatelessWidget {
   /// above these rows is drawn from the same answer, and the two disagreeing
   /// is a table header over a column of cards.
   final bool showsColumns;
+
+  /// Whether this drive is ticked, or null when the list is not offering
+  /// selection at all - which is how the checkbox disappears entirely rather
+  /// than being drawn disabled.
+  final bool? selected;
+
+  final void Function(String driveId)? onSelectedChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -288,6 +316,20 @@ class DriveListRow extends StatelessWidget {
         // the stacked card, which is taller than the target either way.
         child: Row(
           children: [
+            if (selected != null && showsColumns)
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: driveListRowHorizontalPadding,
+                ),
+                child: ArDriveCheckBox(
+                  key: ValueKey('select-${drive.id}-$selected'),
+                  checked: selected!,
+                  // Its own target, beside the row's content rather than
+                  // inside it, so ticking a drive is never mistaken for
+                  // opening one.
+                  onChange: (_) => onSelectedChanged?.call(drive.id),
+                ),
+              ),
             Expanded(
               child: ArDriveClickArea(
                 child: Semantics(

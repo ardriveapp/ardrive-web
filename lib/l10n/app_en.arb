@@ -1590,6 +1590,36 @@
     "description": "The action of logging in. Imperative form"
   },
   "loginCheckingPassword": "Checking your password...",
+  "driveListSelectedCount": "{count, plural, =1{1 drive selected} other{{count} drives selected}}",
+  "@driveListSelectedCount": {
+    "description": "How many drives the reader has ticked on the drives list",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "driveListSyncSelected": "Sync selected",
+  "@driveListSyncSelected": {
+    "description": "Button that syncs only the ticked drives, in one run"
+  },
+  "driveListClearSelection": "Clear",
+  "driveListSomeCouldNotBeRead": "{failed} of {total} drives could not be read",
+  "@driveListSomeCouldNotBeRead": {
+    "description": "Summary on the drives list after a sync that failed on some drives but not others",
+    "placeholders": {
+      "failed": { "type": "num", "format": "compact" },
+      "total": { "type": "num", "format": "compact" }
+    }
+  },
+  "driveListSomeCouldNotBeReadDetail": "The rest are up to date. Nothing was lost - a drive that could not be reached keeps whatever was read last time.",
+  "@driveListSomeCouldNotBeReadDetail": {
+    "description": "Reassurance under the partial-failure summary"
+  },
+  "driveListSyncThoseThatFailed": "{count, plural, =1{Sync that drive} other{Sync those {count}}}",
+  "@driveListSyncThoseThatFailed": {
+    "description": "Button that re-syncs only the drives that failed",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "@driveListClearSelection": {
+    "description": "Button that unticks every selected drive"
+  },
   "@loginCheckingPassword": {
     "description": "Shown on the Continue button while the entered password is being proved against one of the wallet's private drives, which takes several network round trips"
   },

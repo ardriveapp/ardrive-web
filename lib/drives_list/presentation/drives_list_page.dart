@@ -203,6 +203,11 @@ class _DrivesListChrome extends StatelessWidget {
           onTryAgain: cubit.retryLoadingDrives,
           onSyncAllDrives: cubit.syncAllDrives,
           onSort: cubit.sortBy,
+          onToggleSelected: cubit.toggleSelected,
+          onToggleSelectAll: cubit.toggleSelectAll,
+          onSyncSelected: cubit.syncSelectedDrives,
+          onClearSelection: cubit.clearSelection,
+          onRetryFailed: cubit.retryFailedDrives,
           buildMenu: (drive) => _menuFor(drivesState, drive),
           syncMenu: const DrivesSyncMenu(),
         );
@@ -263,6 +268,11 @@ class DrivesListBody extends StatelessWidget {
     required this.onTryAgain,
     required this.onSyncAllDrives,
     this.onSort,
+    this.onToggleSelected,
+    this.onToggleSelectAll,
+    this.onSyncSelected,
+    this.onClearSelection,
+    this.onRetryFailed,
     this.buildMenu,
     this.syncMenu,
   });
@@ -275,6 +285,14 @@ class DrivesListBody extends StatelessWidget {
   /// Called with the column whose heading was pressed. Optional so the tests
   /// that only draw the four states need not supply one.
   final void Function(DriveListSort column)? onSort;
+
+  /// Selection, threaded the same way [onSort] is - the page draws what it is
+  /// given so its tests need no providers.
+  final void Function(String driveId)? onToggleSelected;
+  final VoidCallback? onToggleSelectAll;
+  final VoidCallback? onSyncSelected;
+  final VoidCallback? onClearSelection;
+  final VoidCallback? onRetryFailed;
 
   /// Builds the actions menu for one row, or returns null for a row that has
   /// none.
@@ -318,6 +336,11 @@ class DrivesListBody extends StatelessWidget {
         buildMenu: buildMenu,
         syncMenu: syncMenu,
         onSort: onSort,
+        onToggleSelected: onToggleSelected,
+        onToggleSelectAll: onToggleSelectAll,
+        onSyncSelected: onSyncSelected,
+        onClearSelection: onClearSelection,
+        onRetryFailed: onRetryFailed,
       );
     }
 
@@ -493,12 +516,22 @@ class _DrivesListLoadedView extends StatelessWidget {
     required this.buildMenu,
     required this.syncMenu,
     this.onSort,
+    this.onToggleSelected,
+    this.onToggleSelectAll,
+    this.onSyncSelected,
+    this.onClearSelection,
+    this.onRetryFailed,
   });
 
   final DrivesListLoaded state;
   final void Function(DriveListItem drive) onOpenDrive;
   final VoidCallback onSyncAllDrives;
   final void Function(DriveListSort column)? onSort;
+  final void Function(String driveId)? onToggleSelected;
+  final VoidCallback? onToggleSelectAll;
+  final VoidCallback? onSyncSelected;
+  final VoidCallback? onClearSelection;
+  final VoidCallback? onRetryFailed;
   final Widget? Function(DriveListItem drive)? buildMenu;
 
   /// The drive-wide sync actions, passed in rather than reached for.
@@ -551,6 +584,37 @@ class _DrivesListLoadedView extends StatelessWidget {
                       ),
                     ),
                   const SliverToBoxAdapter(child: SizedBox(height: _blockGap)),
+                  // A partial failure, said once and fixable in one press.
+                  // Above the selection bar because it is the more urgent of
+                  // the two, and below the sync prompt because a wallet that
+                  // has never synced has no failures to report yet.
+                  if (state.failedDriveIds.isNotEmpty &&
+                      !state.isSyncing &&
+                      onRetryFailed != null)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: _blockGap),
+                        child: _PartialFailureBanner(
+                          failed: state.failedDriveIds.length,
+                          total: state.drives.length,
+                          onRetry: onRetryFailed!,
+                        ),
+                      ),
+                    ),
+                  // Present only while something is ticked. A bar that is
+                  // always there, with a count of zero and a disabled button,
+                  // is a control explaining that it cannot be used.
+                  if (state.selected.isNotEmpty && onSyncSelected != null)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: _blockGap),
+                        child: _SelectionBar(
+                          count: state.selected.length,
+                          onSyncSelected: onSyncSelected!,
+                          onClear: onClearSelection,
+                        ),
+                      ),
+                    ),
                   // The panel every other table in the app sits in.
                   //
                   // `ArDriveDataTable` wraps its header and rows in an
@@ -589,6 +653,15 @@ class _DrivesListLoadedView extends StatelessWidget {
                               sort: state.sort,
                               sortAscending: state.sortAscending,
                               onSort: onSort,
+                              // Offered only where there is room for a column
+                              // of checkboxes, and only when something can be
+                              // done with a selection.
+                              allSelected: onToggleSelectAll == null
+                                  ? null
+                                  : state.drives.isNotEmpty &&
+                                      state.drives.every((drive) =>
+                                          state.selected.contains(drive.id)),
+                              onToggleSelectAll: onToggleSelectAll,
                             ),
                           ),
                           _rows(state, showsColumns),
@@ -628,6 +701,10 @@ class _DrivesListLoadedView extends StatelessWidget {
             showsColumns: showsColumns,
             onTap: () => onOpenDrive(drive),
             menu: buildMenu?.call(drive),
+            selected: onToggleSelected == null
+                ? null
+                : state.selected.contains(drive.id),
+            onSelectedChanged: onToggleSelected,
           );
         },
         childCount: state.drives.length,
@@ -853,6 +930,169 @@ class _SyncEverythingPrompt extends StatelessWidget {
                   ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// What the reader can do with the drives they have ticked.
+///
+/// Appears with the first tick and goes with the last, so the page is not
+/// carrying a disabled control around for the whole time nobody is selecting
+/// anything.
+class _SelectionBar extends StatelessWidget {
+  const _SelectionBar({
+    required this.count,
+    required this.onSyncSelected,
+    required this.onClear,
+  });
+
+  final int count;
+  final VoidCallback onSyncSelected;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: _pagePadding),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+          borderRadius: BorderRadius.circular(cardDefaultBorderRadius),
+        ),
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          alignment: WrapAlignment.spaceBetween,
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            Text(
+              appLocalizationsOf(context).driveListSelectedCount(count),
+              style: typography.paragraphNormal(
+                color: colorTokens.textHigh,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              children: [
+                if (onClear != null)
+                  ArDriveButtonNew(
+                    text: appLocalizationsOf(context).driveListClearSelection,
+                    typography: typography,
+                    variant: ButtonVariant.secondary,
+                    maxHeight: 36,
+                    onPressed: onClear,
+                  ),
+                ArDriveButtonNew(
+                  text: appLocalizationsOf(context).driveListSyncSelected,
+                  typography: typography,
+                  variant: ButtonVariant.primary,
+                  maxHeight: 36,
+                  onPressed: onSyncSelected,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A sync that read some drives and not others, and the one press that fixes
+/// it.
+///
+/// The failure was already on each row and in the sync menu; what was missing
+/// was the sentence that adds them up and the button that acts on exactly that
+/// set. A reader should not have to count red triangles to find out how bad it
+/// was, nor open a menu to retry what broke.
+class _PartialFailureBanner extends StatelessWidget {
+  const _PartialFailureBanner({
+    required this.failed,
+    required this.total,
+    required this.onRetry,
+  });
+
+  final int failed;
+  final int total;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: _pagePadding),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+          borderRadius: BorderRadius.circular(cardDefaultBorderRadius),
+          border: Border.all(color: colorTokens.strokeRed),
+        ),
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          alignment: WrapAlignment.spaceBetween,
+          spacing: 16,
+          runSpacing: 12,
+          children: [
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ArDriveIcons.triangle(
+                        size: 16,
+                        color: colorTokens.strokeRed,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          appLocalizationsOf(context)
+                              .driveListSomeCouldNotBeRead(failed, total),
+                          style: typography.paragraphNormal(
+                            color: colorTokens.textHigh,
+                            fontWeight: ArFontWeight.semiBold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // Says what is still true as well as what went wrong: a
+                  // drive that could not be reached is not a drive that lost
+                  // anything, and a reader looking at red needs telling.
+                  Text(
+                    appLocalizationsOf(context)
+                        .driveListSomeCouldNotBeReadDetail,
+                    style: typography.paragraphSmall(
+                      color: colorTokens.textLow,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ArDriveButtonNew(
+              text: appLocalizationsOf(context)
+                  .driveListSyncThoseThatFailed(failed),
+              typography: typography,
+              variant: ButtonVariant.primary,
+              maxHeight: 36,
+              onPressed: onRetry,
+            ),
+          ],
+        ),
       ),
     );
   }

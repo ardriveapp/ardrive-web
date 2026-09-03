@@ -146,6 +146,9 @@ void main() {
             )
             .watchSingleOrNull());
 
+    // The gate reads this alongside syncingDriveId; an empty list is "nothing
+    // has finished walking yet", which is true of every state these tests set.
+    when(() => syncCubit.completedDriveIds).thenReturn(const []);
     when(() => syncCubit.waitCurrentSync()).thenAnswer((_) async {});
     whenListen(syncCubit, syncStates.stream, initialState: SyncIdle());
 
@@ -467,33 +470,43 @@ void main() {
       expect(cubit.state, isA<DriveDetailLoadSuccess>(),
           reason: 'precondition: the first drive is on screen');
 
-      // A sync that is running and has not finished. Deliberately never
-      // completed: the point is what the app does *during* it. An all-drives
-      // background sync, which is the one that really does cover this drive -
-      // stubbing only waitCurrentSync left the cubit in SyncIdle, so the test
-      // described a sync that was not running.
+      // A sync that is running and never finishes. The point is what the app
+      // does *during* it - an all-drives background sync, which is the one
+      // that really does cover this drive.
       final syncing = Completer<void>();
       addTearDown(() => syncing.complete());
       when(() => syncCubit.waitCurrentSync()).thenAnswer((_) => syncing.future);
       whenListen(syncCubit, syncStates.stream,
           initialState: SyncInProgress(trigger: SyncTrigger.background));
       when(() => syncCubit.syncingDriveId).thenReturn(null);
+      // The run's own scope and what it has finished, read by every surface
+      // that tells a drive in the run from one beside it. Null scope is
+      // "every drive"; nothing finished yet.
+      when(() => syncCubit.syncingDriveIds).thenReturn(null);
+      when(() => syncCubit.completedDriveIds).thenReturn(const []);
 
       unawaited(cubit.changeDrive(otherDriveId));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
 
+      final state = cubit.state;
       expect(
-        cubit.state,
-        isA<DriveDetailLoadInProgress>(),
-        reason: 'the click has to be answered before the wait, not after it - '
-            'otherwise the drive the user left stays on screen, with nothing '
-            'to say the app heard them, for the whole sync',
+        state,
+        isA<DriveDetailLoadSuccess>(),
+        reason: 'the drive opens during the sync rather than after it - the '
+            'sync here never finishes, so waiting for it would mean never '
+            'opening at all',
       );
+      expect((state as DriveDetailLoadSuccess).currentDrive.id, otherDriveId);
+      verifyNever(() => syncCubit.waitCurrentSync());
     });
 
-    /// The wait itself is not the bug and must survive: a folder opened
-    /// against a half-written database is the reason it is there.
-    test('the folder still waits for the sync before it is read', () async {
+    /// The wait this replaced was there to keep a folder from being read
+    /// against a half-written database. It was not needed for that: every
+    /// batch commits in its own transaction, so a read mid-sync gets
+    /// consistent data - just less of it than the folder will eventually hold,
+    /// with the subscription filling the rest in as it lands.
+    test('a folder is read during the sync of its own drive, not after it',
+        () async {
       await insertDrive(lastBlockHeight: 100);
       await insertRootFolderRevision();
       await insertSubfolder('subfolder-1');
@@ -504,26 +517,24 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
+      // A sync of the very drive being opened, which never finishes.
       final syncing = Completer<void>();
+      addTearDown(() => syncing.complete());
       when(() => syncCubit.waitCurrentSync()).thenAnswer((_) => syncing.future);
-      // A sync that really is writing this drive. Without this the cubit is
-      // in SyncIdle, nothing is gated, and the test passes without ever
-      // reaching the wait it exists to protect.
       whenListen(syncCubit, syncStates.stream,
           initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
       when(() => syncCubit.syncingDriveId).thenReturn(otherDriveId);
 
       unawaited(cubit.changeDrive(otherDriveId));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      expect(cubit.state, isA<DriveDetailLoadInProgress>(),
-          reason: 'precondition: the click was answered');
-
-      syncing.complete();
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
 
       final state = cubit.state;
-      expect(state, isA<DriveDetailLoadSuccess>());
+      expect(
+        state,
+        isA<DriveDetailLoadSuccess>(),
+        reason: 'the drive being synced is the one a reader most wants to '
+            'watch fill in',
+      );
       expect((state as DriveDetailLoadSuccess).currentDrive.id, otherDriveId);
     });
 
@@ -815,7 +826,7 @@ void main() {
             deepSync: any(named: 'deepSync'),
             trigger: any(named: 'trigger'),
             skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
-            driveIdsToRetry: any(named: 'driveIdsToRetry'),
+            onlyDriveIds: any(named: 'onlyDriveIds'),
           )).thenAnswer((_) async => false);
       when(() => syncCubit.state).thenReturn(SyncIdle());
 
@@ -995,7 +1006,7 @@ void main() {
             deepSync: any(named: 'deepSync'),
             trigger: any(named: 'trigger'),
             skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
-            driveIdsToRetry: any(named: 'driveIdsToRetry'),
+            onlyDriveIds: any(named: 'onlyDriveIds'),
           )).thenAnswer((_) async {
         when(() => syncCubit.state).thenReturn(SyncCompleteWithErrors(
           failedDrives: 1,

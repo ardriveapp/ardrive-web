@@ -260,7 +260,7 @@ abstract class SyncRepository {
     String? password,
     SecretKey? cipherKey,
     SyncCancellationToken? cancellationToken,
-    List<String>? driveIdsToRetry,
+    List<String>? onlyDriveIds,
 
     /// This was required because the usage of the `PromptToSnapshotBloc` in the
     /// `SyncCubit` and the `PromptToSnapshotBloc` is not available in the `SyncRepository`
@@ -412,7 +412,6 @@ class _SyncRepository implements SyncRepository {
   int _metadataFetchesScheduled = 0;
   int _metadataFetchesCompleted = 0;
 
-
   void _resetMetadataFetchCounts() {
     _metadataFetchesScheduled = 0;
     _metadataFetchesCompleted = 0;
@@ -499,7 +498,7 @@ class _SyncRepository implements SyncRepository {
     SecretKey? cipherKey,
     SyncCancellationToken? cancellationToken,
     Function(String driveId, int txCount)? txFechedCallback,
-    List<String>? driveIdsToRetry,
+    List<String>? onlyDriveIds,
   }) async* {
     final token = cancellationToken ?? SyncCancellationToken();
 
@@ -536,10 +535,12 @@ class _SyncRepository implements SyncRepository {
     // Sync the contents of each drive attached in the app.
     var drives = await _driveDao.allDrives().map((d) => d).get();
 
-    // If retrying specific drives, filter to only those
-    if (driveIdsToRetry != null && driveIdsToRetry.isNotEmpty) {
-      final retrySet = driveIdsToRetry.toSet();
-      drives = drives.where((d) => retrySet.contains(d.id)).toList();
+    // Narrowed to the drives asked for. Named for what it does rather
+    // than for its first caller: retrying the failures and syncing a chosen
+    // few are the same operation over a different set.
+    if (onlyDriveIds != null && onlyDriveIds.isNotEmpty) {
+      final only = onlyDriveIds.toSet();
+      drives = drives.where((d) => only.contains(d.id)).toList();
     }
 
     if (drives.isEmpty) {
@@ -2839,78 +2840,79 @@ class _SyncRepository implements SyncRepository {
           // [_pendingSyncedEntityIdsByDrive].
           var committed = false;
           try {
-          await _driveDao.runTransaction(() async {
-            final latestDriveRevision = await _addNewDriveEntityRevisions(
-              newEntities: newEntities.whereType<DriveEntity>(),
-            );
-            final latestFolderRevisions = await _addNewFolderEntityRevisions(
-              driveId: drive.id,
-              newEntities: newEntities.whereType<FolderEntity>(),
-              latestRevisionsCache: latestFolderRevisionsCache,
-            );
-            final latestFileRevisions = await _addNewFileEntityRevisions(
-              driveId: drive.id,
-              newEntities: newEntities.whereType<FileEntity>(),
-              latestRevisionsCache: latestFileRevisionsCache,
-            );
+            await _driveDao.runTransaction(() async {
+              final latestDriveRevision = await _addNewDriveEntityRevisions(
+                newEntities: newEntities.whereType<DriveEntity>(),
+              );
+              final latestFolderRevisions = await _addNewFolderEntityRevisions(
+                driveId: drive.id,
+                newEntities: newEntities.whereType<FolderEntity>(),
+                latestRevisionsCache: latestFolderRevisionsCache,
+              );
+              final latestFileRevisions = await _addNewFileEntityRevisions(
+                driveId: drive.id,
+                newEntities: newEntities.whereType<FileEntity>(),
+                latestRevisionsCache: latestFileRevisionsCache,
+              );
 
-            for (final entity in latestFileRevisions) {
-              if (!_folderIds.contains(entity.parentFolderId.value)) {
-                _ghostFolders.putIfAbsent(
-                  entity.parentFolderId.value,
-                  () => GhostFolder(
-                    driveId: drive.id,
-                    folderId: entity.parentFolderId.value,
-                    isHidden: false,
-                  ),
-                );
+              for (final entity in latestFileRevisions) {
+                if (!_folderIds.contains(entity.parentFolderId.value)) {
+                  _ghostFolders.putIfAbsent(
+                    entity.parentFolderId.value,
+                    () => GhostFolder(
+                      driveId: drive.id,
+                      folderId: entity.parentFolderId.value,
+                      isHidden: false,
+                    ),
+                  );
+                }
               }
-            }
 
-            // Check and handle cases where there's no more revisions
-            final updatedDrive = latestDriveRevision != null
-                ? await _computeRefreshedDriveFromRevision(
-                    driveDao: _driveDao,
-                    latestRevision: latestDriveRevision,
-                  )
-                : null;
+              // Check and handle cases where there's no more revisions
+              final updatedDrive = latestDriveRevision != null
+                  ? await _computeRefreshedDriveFromRevision(
+                      driveDao: _driveDao,
+                      latestRevision: latestDriveRevision,
+                    )
+                  : null;
 
-            final updatedFoldersById =
-                await _computeRefreshedFolderEntriesFromRevisions(
-              driveDao: _driveDao,
-              driveId: drive.id,
-              revisionsByFolderId: latestFolderRevisions,
-              oldestRevisionsCache: oldestFolderRevisionsCache,
-            );
-            final updatedFilesById =
-                await _computeRefreshedFileEntriesFromRevisions(
-              driveDao: _driveDao,
-              driveId: drive.id,
-              revisionsByFileId: latestFileRevisions,
-              oldestRevisionsCache: oldestFileRevisionsCache,
-            );
+              final updatedFoldersById =
+                  await _computeRefreshedFolderEntriesFromRevisions(
+                driveDao: _driveDao,
+                driveId: drive.id,
+                revisionsByFolderId: latestFolderRevisions,
+                oldestRevisionsCache: oldestFolderRevisionsCache,
+              );
+              final updatedFilesById =
+                  await _computeRefreshedFileEntriesFromRevisions(
+                driveDao: _driveDao,
+                driveId: drive.id,
+                revisionsByFileId: latestFileRevisions,
+                oldestRevisionsCache: oldestFileRevisionsCache,
+              );
 
-            numberOfDriveEntitiesParsed += newEntities.length;
+              numberOfDriveEntitiesParsed += newEntities.length;
 
-            numberOfDriveEntitiesParsed -=
-                updatedFoldersById.length + updatedFilesById.length;
+              numberOfDriveEntitiesParsed -=
+                  updatedFoldersById.length + updatedFilesById.length;
 
-            // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
-            if (updatedDrive != null) {
-              await _driveDao.updateDrive(updatedDrive);
-            }
+              // Update the drive model, making sure to not overwrite the existing keys defined on the drive.
+              if (updatedDrive != null) {
+                await _driveDao.updateDrive(updatedDrive);
+              }
 
-            // Update the folder and file entries before generating their new paths.
-            await _driveDao
-                .updateFolderEntries(updatedFoldersById.values.toList());
-            await _driveDao.updateFileEntries(updatedFilesById.values.toList());
+              // Update the folder and file entries before generating their new paths.
+              await _driveDao
+                  .updateFolderEntries(updatedFoldersById.values.toList());
+              await _driveDao
+                  .updateFileEntries(updatedFilesById.values.toList());
 
-            numberOfDriveEntitiesParsed +=
-                updatedFoldersById.length + updatedFilesById.length;
+              numberOfDriveEntitiesParsed +=
+                  updatedFoldersById.length + updatedFilesById.length;
 
-            latestFolderRevisions.clear();
-            latestFileRevisions.clear();
-          });
+              latestFolderRevisions.clear();
+              latestFileRevisions.clear();
+            });
             committed = true;
           } finally {
             if (committed) {

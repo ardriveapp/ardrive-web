@@ -190,6 +190,8 @@ class DrivesListCubit extends Cubit<DrivesListState> {
 
     final syncState = _syncCubit.state;
     final syncingDriveId = _syncCubit.syncingDriveId;
+    final runDriveIds = _syncCubit.syncingDriveIds;
+    final completedDriveIds = _syncCubit.completedDriveIds.toSet();
 
     // The top bar says "1 of 5 drives failed" and the list is where a reader
     // goes to find out which. The state has always carried the ids; nothing on
@@ -220,8 +222,15 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         fileCount: hasBeenWalked ? summary.fileCount : null,
         totalSize: hasBeenWalked ? summary.totalSize : null,
         lastSyncedAt: syncedAt,
+        // Says "Syncing..." only of a drive this run actually covers, and
+        // stops saying it once the drive has been walked. A four-of-ten run
+        // used to light up all ten rows, because a subset run carries no
+        // single drive id - and a row that finished went on claiming to be
+        // busy until the whole run did.
         isSyncing: syncState is SyncInProgress &&
-            (syncingDriveId == null || syncingDriveId == drive.id),
+            (syncingDriveId == null || syncingDriveId == drive.id) &&
+            (runDriveIds == null || runDriveIds.contains(drive.id)) &&
+            !completedDriveIds.contains(drive.id),
         lastSyncFailed: failedDriveIds.contains(drive.id),
       );
     }).toList();
@@ -232,12 +241,18 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     final shown = items.where(_scope.matches).toList()
       ..sort(_sort.comparator(ascending: _sortAscending));
 
+    // A drive that has been detached or hidden since the tick was made is no
+    // longer selectable, and must not be carried into a sync as though it
+    // were.
+    _selected.retainAll(shown.map((drive) => drive.id).toSet());
+
     emit(DrivesListLoaded(
       drives: shown,
       scope: _scope,
       counts: DriveScopeCounts.of(items),
       sort: _sort,
       sortAscending: _sortAscending,
+      selected: Set.unmodifiable(_selected),
     ));
   }
 
@@ -296,6 +311,9 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     }
 
     _scope = scope;
+    // Ticks in a scope that is no longer on screen cannot be reviewed or taken
+    // back, so they do not survive the change.
+    _selected.clear();
     _refresh();
   }
 
@@ -334,6 +352,121 @@ class DrivesListCubit extends Cubit<DrivesListState> {
   /// was simply wrong.
   void syncAllDrives() {
     unawaited(_syncCubit.startSync());
+  }
+
+  /// Which drives the reader has ticked, if any.
+  ///
+  /// Empty is not "none selected and therefore none" - it is "no selection",
+  /// and the controls read it that way: with nothing ticked the action is
+  /// still Sync All Drives.
+  final Set<String> _selected = {};
+
+  /// Ticks or unticks one drive.
+  void toggleSelected(String driveId) {
+    if (!_selected.remove(driveId)) {
+      _selected.add(driveId);
+    }
+
+    _emitSelection();
+  }
+
+  /// Ticks every drive in the scope on screen, or clears them if all are
+  /// already ticked - the behaviour of a header checkbox everywhere.
+  void toggleSelectAll() {
+    final current = state;
+
+    if (current is! DrivesListLoaded) {
+      return;
+    }
+
+    final shown = current.drives.map((drive) => drive.id).toSet();
+
+    if (shown.every(_selected.contains)) {
+      _selected.removeAll(shown);
+    } else {
+      _selected.addAll(shown);
+    }
+
+    _emitSelection();
+  }
+
+  /// Drops the selection - after a sync starts, and whenever the scope changes
+  /// under it, since a tick the reader can no longer see is a tick they cannot
+  /// take back.
+  void clearSelection() {
+    if (_selected.isEmpty) {
+      return;
+    }
+
+    _selected.clear();
+    _emitSelection();
+  }
+
+  void _emitSelection() {
+    final current = state;
+
+    if (current is! DrivesListLoaded) {
+      return;
+    }
+
+    emit(DrivesListLoaded(
+      drives: current.drives,
+      scope: current.scope,
+      counts: current.counts,
+      sort: current.sort,
+      sortAscending: current.sortAscending,
+      selected: Set.unmodifiable(_selected),
+    ));
+  }
+
+  /// Re-reads only the drives the last sync could not read.
+  ///
+  /// The same one-run subset walk a selection uses. Offered on the page rather
+  /// than only inside a menu because a partial failure is the moment a reader
+  /// most needs one button that fixes exactly the thing that broke.
+  void retryFailedDrives() {
+    final current = state;
+
+    if (current is! DrivesListLoaded) {
+      return;
+    }
+
+    final failed = current.failedDriveIds;
+
+    if (failed.isEmpty) {
+      return;
+    }
+
+    unawaited(_syncCubit.syncDrives(failed));
+  }
+
+  /// Syncs the ticked drives in one run, then drops the selection.
+  ///
+  /// One run over four drives, not four runs: the engine has always walked an
+  /// arbitrary subset concurrently. With nothing ticked this is a full sync,
+  /// so the control behind it never has to be disabled.
+  void syncSelectedDrives() {
+    if (_selected.isEmpty) {
+      syncAllDrives();
+      return;
+    }
+
+    unawaited(_syncSelected(_selected.toList()));
+  }
+
+  Future<void> _syncSelected(List<String> chosen) async {
+    // Only a run that actually started may take the selection away. A sync is
+    // refused outright while another is going - one at a time, never queued -
+    // and clearing first meant a press during a sync silently threw the ticks
+    // away and did nothing with them. The reader would then have to find and
+    // re-tick the same four drives to try again.
+    final started = await _syncCubit.syncDrives(chosen);
+
+    if (isClosed || !started) {
+      return;
+    }
+
+    clearSelection();
   }
 
   @override

@@ -65,6 +65,24 @@ class SyncCubit extends Cubit<SyncState> {
   /// print, and names are not identity.
   String? get syncingDriveId => _syncingDriveId;
 
+  /// Which drives this run covers at all, or null when it covers every one.
+  ///
+  /// A run over a chosen few is still `syncingDriveId == null` - that field
+  /// answers "is this a single-drive sync", not "what is in scope" - so
+  /// without this a four-of-ten run reads as an all-drives sync on every
+  /// surface: ten rows saying "Syncing...", and six drives held shut for a run
+  /// that was never going to touch them.
+  Set<String>? _runDriveIds;
+
+  Set<String>? get syncingDriveIds => _runDriveIds;
+
+  /// The drives this run has finished walking, in the order they finished.
+  ///
+  /// Appended per drive on the success path only - a drive that failed is not
+  /// in here - and live, so a surface can act on it while the run continues.
+  /// Reset with the progress at the start of every run.
+  List<String> get completedDriveIds => _syncProgress.syncedDriveIds;
+
   /// Whether a sync in [state] for [syncingDriveId] could be writing
   /// [driveId].
   ///
@@ -72,8 +90,19 @@ class SyncCubit extends Cubit<SyncState> {
   /// that nothing is writing should not be made to wait for one that is. This
   /// is what makes drive A openable while drive B syncs.
   ///
-  /// An all-drives sync (`syncingDriveId == null`) is treated as touching
-  /// everything, which is the conservative answer and the true one.
+  /// An all-drives sync (`syncingDriveId == null`) covers every drive it has
+  /// not yet finished. [completedDriveIds] is how it says which those are: a
+  /// drive whose history has been walked to the end is no longer being written
+  /// by this run, so a ten-drive sync stops holding the first drive shut for
+  /// the nine that follow it.
+  ///
+  /// **"Walked" is not "nothing will touch this again."** Two phases run after
+  /// every drive's walk: `createGhosts` writes the ghost folders accumulated
+  /// across all drives, and transaction statuses are resolved at the end. Both
+  /// are additive row writes that reach a reader through the Drift stream, so
+  /// what a reader sees is rows appearing - never a half-written folder - but
+  /// this predicate must not be read as a promise that the drive is finished
+  /// with. It says only that its history is read.
   ///
   /// Static, and reading only what callers already hold, so it adds no surface
   /// a test has to stub.
@@ -81,8 +110,22 @@ class SyncCubit extends Cubit<SyncState> {
     required SyncState state,
     required String? syncingDriveId,
     required String driveId,
+    Iterable<String> completedDriveIds = const [],
+    Set<String>? runDriveIds,
   }) {
     if (!(state is SyncInProgress || state is SyncLoadingDrives)) {
+      return false;
+    }
+
+    // Not for SyncLoadingDrives: that phase writes the drives table itself,
+    // and a drive read in a previous run tells us nothing about whether this
+    // one is about to rewrite the row.
+    if (state is SyncInProgress && completedDriveIds.contains(driveId)) {
+      return false;
+    }
+
+    // A run over a chosen few does not touch the rest, however it was started.
+    if (runDriveIds != null && !runDriveIds.contains(driveId)) {
       return false;
     }
 
@@ -527,7 +570,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<bool> startSync({
     bool deepSync = false,
     bool skipTabVisibilityCheck = false,
-    List<String>? driveIdsToRetry,
+    List<String>? onlyDriveIds,
     SyncTrigger trigger = SyncTrigger.userInitiated,
   }) async {
     logger.i('Starting Sync');
@@ -538,6 +581,12 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     _syncProgress = SyncProgress.initial();
+
+    // What this run covers, for every surface that has to tell a drive in the
+    // run from one merely sitting beside it. Null means all of them.
+    _runDriveIds = (onlyDriveIds != null && onlyDriveIds.isNotEmpty)
+        ? onlyDriveIds.toSet()
+        : null;
 
     /// Whether this sync actually ran to the end, for a logged-in profile.
     ///
@@ -573,6 +622,7 @@ class SyncCubit extends Cubit<SyncState> {
 
       // Every drive is covered, so no single drive owns this one.
       _syncingDriveId = null;
+      _runDriveIds = null;
 
       _emitIfOpen(SyncInProgress(trigger: trigger));
       // Emit initial progress AFTER SyncInProgress so the indicator is
@@ -640,7 +690,7 @@ class SyncCubit extends Cubit<SyncState> {
           password: password,
           cipherKey: cipherKey,
           syncDeep: deepSync,
-          driveIdsToRetry: driveIdsToRetry,
+          onlyDriveIds: onlyDriveIds,
           cancellationToken: _currentSyncToken,
           txFechedCallback: (driveId, txCount) {
             _promptToSnapshotBloc.add(
@@ -927,6 +977,7 @@ class SyncCubit extends Cubit<SyncState> {
       // Released on every path out, cancellation included: nothing is running
       // for this drive any more.
       _syncingDriveId = null;
+      _runDriveIds = null;
     }
 
     _lastSync = DateTime.now();
@@ -1122,7 +1173,24 @@ class SyncCubit extends Cubit<SyncState> {
     if (driveIds.isEmpty) return;
 
     logger.i('Retrying ${driveIds.length} failed drives');
-    await startSync(driveIdsToRetry: driveIds);
+    await startSync(onlyDriveIds: driveIds);
+  }
+
+  /// Sync a chosen few drives, in one run.
+  ///
+  /// The same operation as retrying failures over a different set - the engine
+  /// has always been able to walk an arbitrary subset concurrently, and the
+  /// only thing missing was a way to say which. One run, not several: the
+  /// standing rule that a second sync is refused rather than queued is
+  /// unchanged, and four drives in one run is one run.
+  Future<bool> syncDrives(List<String> driveIds) async {
+    if (driveIds.isEmpty) {
+      return false;
+    }
+
+    logger.i('Syncing ${driveIds.length} chosen drives');
+
+    return startSync(onlyDriveIds: driveIds);
   }
 
   /// Get the current sync progress

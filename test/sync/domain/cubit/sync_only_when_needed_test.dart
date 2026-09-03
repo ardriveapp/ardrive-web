@@ -99,7 +99,7 @@ void main() {
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
           syncDeep: any(named: 'syncDeep'),
-          driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          onlyDriveIds: any(named: 'onlyDriveIds'),
           cancellationToken: any(named: 'cancellationToken'),
           txFechedCallback: any(named: 'txFechedCallback'),
         )).thenAnswer((_) => Stream.value(SyncProgress.emptySyncCompleted()));
@@ -188,7 +188,7 @@ void main() {
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
           syncDeep: any(named: 'syncDeep'),
-          driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          onlyDriveIds: any(named: 'onlyDriveIds'),
           cancellationToken: any(named: 'cancellationToken'),
           txFechedCallback: any(named: 'txFechedCallback'),
         ));
@@ -220,7 +220,7 @@ void main() {
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
           syncDeep: any(named: 'syncDeep'),
-          driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          onlyDriveIds: any(named: 'onlyDriveIds'),
           cancellationToken: any(named: 'cancellationToken'),
           txFechedCallback: any(named: 'txFechedCallback'),
         )).called(1);
@@ -244,7 +244,7 @@ void main() {
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
           syncDeep: any(named: 'syncDeep'),
-          driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          onlyDriveIds: any(named: 'onlyDriveIds'),
           cancellationToken: any(named: 'cancellationToken'),
           txFechedCallback: any(named: 'txFechedCallback'),
         )).called(1);
@@ -273,7 +273,7 @@ void main() {
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
           syncDeep: any(named: 'syncDeep'),
-          driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          onlyDriveIds: any(named: 'onlyDriveIds'),
           cancellationToken: any(named: 'cancellationToken'),
           txFechedCallback: any(named: 'txFechedCallback'),
         ));
@@ -307,7 +307,7 @@ void main() {
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
           syncDeep: any(named: 'syncDeep'),
-          driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          onlyDriveIds: any(named: 'onlyDriveIds'),
           cancellationToken: any(named: 'cancellationToken'),
           txFechedCallback: any(named: 'txFechedCallback'),
         ));
