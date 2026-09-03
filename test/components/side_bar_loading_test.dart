@@ -97,6 +97,53 @@ void main() {
         canCreateNewDrive: true,
       );
 
+  /// The nav has to scroll when it holds more drives than the window.
+  ///
+  /// Two earlier fixes did not, and both failed the same way. A scroll view
+  /// hands its child an unbounded height; this column is full of Expanded,
+  /// Spacer and - until this was fixed - a Flexible drive list, none of which
+  /// can exceed a height they are being asked to fill. The content came out
+  /// exactly as tall as the viewport however many drives there were, so there
+  /// was nothing to scroll and the list below the fold was unreachable except
+  /// by collapsing a section.
+  ///
+  /// This asserts the property that was missing rather than the widget tree
+  /// that provides it: with far more drives than fit, the scrollable's extent
+  /// must exceed its viewport.
+  group('a drive list taller than the window', () {
+    testWidgets('can actually be scrolled', (tester) async {
+      tester.view.physicalSize = const Size(1200, 700);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        wrap(
+            withDrives([for (var i = 0; i < 40; i++) publicDrive('drive-$i')])),
+      );
+      await tester.pumpAndSettle();
+
+      final scrollables = find.byType(Scrollable);
+      expect(scrollables, findsWidgets,
+          reason: 'precondition: the nav has a scroll view at all');
+
+      // The one that actually holds the drives, whichever it is.
+      final positions = tester
+          .widgetList<Scrollable>(scrollables)
+          .map((s) =>
+              s.controller?.hasClients == true ? s.controller!.position : null)
+          .whereType<ScrollPosition>()
+          .toList();
+
+      expect(
+        positions.any((p) => p.maxScrollExtent > 0),
+        isTrue,
+        reason: 'forty drives in a 700px window must leave something below '
+            'the fold to scroll to - an extent of zero is the bug: the '
+            'content was made exactly as tall as the viewport',
+      );
+    });
+  });
+
   /// A drive tap has to reach whatever is on screen.
   ///
   /// On the drives list the selected drive is not what is drawn - the list is -

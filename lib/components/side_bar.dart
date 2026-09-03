@@ -153,67 +153,56 @@ class _AppSideBarState extends State<AppSideBar> {
   Widget _desktopView() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return ArDriveScrollBar(
-          controller: _scrollController,
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            child: Container(
-              // A minimum, not a fixed height. Pinned to exactly the viewport
-              // the scroll view had nothing longer than itself to scroll, so
-              // an expanded scope with a long drive list simply overflowed and
-              // clipped - the private drives were unreachable without first
-              // collapsing the public ones. IntrinsicHeight keeps the Expanded
-              // below working, so a short sidebar still pushes its footer down.
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              decoration: BoxDecoration(
-                border: Border(
-                  right: BorderSide(
-                    color: ArDriveTheme.of(context).themeData.colors.shadow,
-                    width: 1,
-                  ),
-                ),
+        return Container(
+          // Exactly the viewport, and the scrolling happens inside it.
+          //
+          // Two earlier attempts made the whole column the scrollable and both
+          // failed, for the same reason: a scroll view hands its child an
+          // unbounded height, and this column is full of Expanded, Spacer and
+          // a Flexible drive list, none of which can exceed a height they are
+          // being asked to fill. The content therefore came out exactly as
+          // tall as the viewport however many drives there were, so there was
+          // never anything to scroll and a long list simply clipped.
+          //
+          // The header and the footer are pinned, which is what a sidebar
+          // should do anyway - the way home and the account do not scroll away
+          // from under the pointer - and the drive list between them gets a
+          // real bounded box with a scroll view inside it.
+          height: constraints.maxHeight,
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(
+                color: ArDriveTheme.of(context).themeData.colors.shadow,
+                width: 1,
               ),
-              child: IntrinsicHeight(
-                child: AnimatedSize(
-                  duration: const Duration(milliseconds: 300),
-                  child: SizedBox(
-                    width: _isExpanded ? 240 : 64,
-                    child: Column(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            children: [
-                              const SizedBox(
-                                height: 24,
-                              ),
-                              _buildLogo(false),
-                              const SizedBox(
-                                height: 24,
-                              ),
-                              _buildDriveActionsButton(
-                                context,
-                                false,
-                              ),
-                              const SizedBox(
-                                height: 16,
-                              ),
-                              _buildDriveNav(isMobile: false),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(
-                          height: 16,
-                        ),
-                        _isExpanded
-                            ? const SizedBox(
-                                height: 16,
-                              )
-                            : const Spacer(),
-                        _buildSideBarBottom(),
-                      ],
+            ),
+          ),
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            child: SizedBox(
+              width: _isExpanded ? 240 : 64,
+              child: Column(
+                children: [
+                  const SizedBox(height: 24),
+                  _buildLogo(false),
+                  const SizedBox(height: 24),
+                  _buildDriveActionsButton(context, false),
+                  const SizedBox(height: 16),
+                  // The only part that scrolls, and the only part that needs
+                  // to: a wallet can have any number of drives, and everything
+                  // above and below this is a fixed number of rows.
+                  Expanded(
+                    child: ArDriveScrollBar(
+                      controller: _scrollController,
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        child: _buildDriveNav(isMobile: false),
+                      ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  _buildSideBarBottom(),
+                ],
               ),
             ),
           ),
@@ -309,14 +298,15 @@ class _AppSideBarState extends State<AppSideBar> {
                     state.sharedDrives.isNotEmpty)) {
               final accordion = _Accordion(state: state, isMobile: isMobile);
 
-              return Flexible(
-                child: isMobile
-                    ? accordion
-                    : Padding(
-                        padding: const EdgeInsets.only(left: 43.0),
-                        child: accordion,
-                      ),
-              );
+              // Not Flexible any more: inside the sidebar's scroll view this
+              // has no bounded height to take a share of, and asking for one
+              // is what kept the list exactly as tall as the window.
+              return isMobile
+                  ? accordion
+                  : Padding(
+                      padding: const EdgeInsets.only(left: 43.0),
+                      child: accordion,
+                    );
             }
 
             // Nothing while the list is being read. The nav is where a reader

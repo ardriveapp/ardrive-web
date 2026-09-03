@@ -200,13 +200,15 @@ class EmailAttachmentList extends StatelessWidget {
       textContent = utf8.decode(attachment.data!, allowMalformed: true);
     } catch (e) {
       // If UTF-8 decoding fails, show error
-      textContent = 'Error: Unable to decode text content. File may be corrupted or in an unsupported encoding.';
+      textContent =
+          'Error: Unable to decode text content. File may be corrupted or in an unsupported encoding.';
     }
 
     // Limit text preview to avoid performance issues with very large files
     const maxPreviewLength = 1024 * 1024; // 1MB of text
     if (textContent.length > maxPreviewLength) {
-      textContent = '${textContent.substring(0, maxPreviewLength)}\n\n... (File truncated. Download to view full content)';
+      textContent =
+          '${textContent.substring(0, maxPreviewLength)}\n\n... (File truncated. Download to view full content)';
     }
 
     final typography = ArDriveTypographyNew.of(context);
@@ -227,9 +229,9 @@ class EmailAttachmentList extends StatelessWidget {
                   child: SelectableText(
                     textContent,
                     style: typography.paragraphSmall().copyWith(
-                      fontFamily: 'Courier New',
-                      height: 1.5,
-                    ),
+                          fontFamily: 'Courier New',
+                          height: 1.5,
+                        ),
                   ),
                 ),
               ),

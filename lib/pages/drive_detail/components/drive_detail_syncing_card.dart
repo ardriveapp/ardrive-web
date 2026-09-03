@@ -409,16 +409,16 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
       // when one ends.
       if (progress != null)
         ProgressBar(
-        // Keyed so the Column matches it by identity, not by position. When
-        // the sync ends, subtitle, detail and the elapsed line all disappear
-        // at once and the children list shrinks; an unkeyed bar would be
-        // matched against a different widget, destroyed, and remounted at its
-        // mount-time seed - a bar animating backwards from 99%, which is the
-        // exact thing the sink beneath it exists to prevent.
-        key: const ValueKey('driveDetailSyncProgress'),
-        percentage: _progress,
-        initialPercentage: _initialProgress,
-      ),
+          // Keyed so the Column matches it by identity, not by position. When
+          // the sync ends, subtitle, detail and the elapsed line all disappear
+          // at once and the children list shrinks; an unkeyed bar would be
+          // matched against a different widget, destroyed, and remounted at its
+          // mount-time seed - a bar animating backwards from 99%, which is the
+          // exact thing the sink beneath it exists to prevent.
+          key: const ValueKey('driveDetailSyncProgress'),
+          percentage: _progress,
+          initialPercentage: _initialProgress,
+        ),
       if (detail != null) ...[
         const SizedBox(height: 12),
         Text(

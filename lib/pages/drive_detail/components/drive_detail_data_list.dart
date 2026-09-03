@@ -123,7 +123,10 @@ Widget _buildDataListContent(
           // a silent no-op - see [MultiSelectPausedNotice], which is given the
           // same condition so the two cannot drift apart.
           lockMultiSelect: MultiSelectPausedNotice.locksMultiSelect(
-                  context.watch<SyncCubit>().state) ||
+                context.watch<SyncCubit>().state,
+                syncingDriveId: context.watch<SyncCubit>().syncingDriveId,
+                driveId: folder.driveId,
+              ) ||
               !context.watch<ActivityTracker>().isMultiSelectEnabled,
           rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
           maxItemsPerPage: 100,
@@ -241,7 +244,7 @@ Widget _buildDataListContent(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Draws nothing unless a sync is holding multi-select shut.
-            const MultiSelectPausedNotice(),
+            MultiSelectPausedNotice(driveId: folder.driveId),
             Expanded(child: table),
           ],
         );

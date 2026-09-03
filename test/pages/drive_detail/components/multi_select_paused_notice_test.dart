@@ -37,7 +37,7 @@ void main() {
           home: Scaffold(
             body: BlocProvider<SyncCubit>.value(
               value: syncCubit,
-              child: const MultiSelectPausedNotice(),
+              child: const MultiSelectPausedNotice(driveId: 'drive-on-screen'),
             ),
           ),
         ),
@@ -82,25 +82,52 @@ void main() {
   });
 
   test('the notice and the lock read the same condition', () {
+    bool locks(SyncState state, {String? syncingDriveId}) =>
+        MultiSelectPausedNotice.locksMultiSelect(
+          state,
+          syncingDriveId: syncingDriveId,
+          driveId: 'drive-on-screen',
+        );
+
     // The data table is locked with this exact predicate. Deriving the two
     // separately is how the notice goes quiet while the lock stays on.
     expect(
-      MultiSelectPausedNotice.locksMultiSelect(
-        SyncInProgress(trigger: SyncTrigger.background),
-      ),
+      locks(SyncInProgress(trigger: SyncTrigger.background)),
       isTrue,
+      reason: 'an all-drives sync writes this drive too',
     );
     expect(
-      MultiSelectPausedNotice.locksMultiSelect(
-        SyncInProgress(trigger: SyncTrigger.userInitiated),
-      ),
+      locks(SyncInProgress(trigger: SyncTrigger.userInitiated)),
       isTrue,
     );
-    expect(MultiSelectPausedNotice.locksMultiSelect(SyncIdle()), isFalse);
+    expect(locks(SyncIdle()), isFalse);
     expect(
-      MultiSelectPausedNotice.locksMultiSelect(SyncLoadingDrives()),
+      locks(SyncLoadingDrives()),
       isFalse,
       reason: 'loading the drives list rewrites no rows in the open folder',
+    );
+  });
+
+  /// The limitation this removes: syncing one drive used to disable selection
+  /// in every other one, including drives that sync was never going to write.
+  test('only a sync that could write this drive holds its selection', () {
+    bool locks(String? syncingDriveId) =>
+        MultiSelectPausedNotice.locksMultiSelect(
+          SyncInProgress(trigger: SyncTrigger.userInitiated),
+          syncingDriveId: syncingDriveId,
+          driveId: 'drive-on-screen',
+        );
+
+    expect(
+      locks('a-different-drive'),
+      isFalse,
+      reason: 'nothing is rewriting the rows the reader is selecting',
+    );
+    expect(locks('drive-on-screen'), isTrue);
+    expect(
+      locks(null),
+      isTrue,
+      reason: 'an all-drives sync really is writing every drive',
     );
   });
 
