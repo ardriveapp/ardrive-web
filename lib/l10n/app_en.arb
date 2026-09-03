@@ -1601,6 +1601,14 @@
   },
   "driveListClearSelection": "Clear",
   "syncStopRunning": "Stop syncing",
+  "detachDriveNeedsLinkAgain": "You will need its share link to add it back.",
+  "@detachDriveNeedsLinkAgain": {
+    "description": "The asymmetry that makes detaching a shared drive different from detaching your own: an owned drive is rediscovered by the next drive-list refresh, a shared one never is"
+  },
+  "detachDriveStopsSync": "The sync running on it will be stopped first.",
+  "@detachDriveStopsSync": {
+    "description": "Shown only while a sync is walking the drive being detached, so the reader knows the two do not race"
+  },
   "@syncStopRunning": {
     "description": "Menu item that stops the sync currently running"
   },
@@ -1622,7 +1630,7 @@
       "total": { "type": "num", "format": "compact" }
     }
   },
-  "driveListSomeCouldNotBeReadDetail": "The rest are up to date. Nothing was lost - a drive that could not be reached keeps whatever was read last time.",
+  "driveListSomeCouldNotBeReadDetail": "The rest are up to date. A drive that could not be reached keeps whatever was read last time.",
   "@driveListSomeCouldNotBeReadDetail": {
     "description": "Reassurance under the partial-failure summary"
   },
