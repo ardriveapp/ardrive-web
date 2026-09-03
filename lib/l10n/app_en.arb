@@ -1600,6 +1600,10 @@
     "description": "Button that syncs only the ticked drives, in one run"
   },
   "driveListClearSelection": "Clear",
+  "syncStopRunning": "Stop syncing",
+  "@syncStopRunning": {
+    "description": "Menu item that stops the sync currently running"
+  },
   "driveListSyncSelectedCount": "Sync {count} selected",
   "@driveListSyncSelectedCount": {
     "description": "Menu item that syncs only the ticked drives",

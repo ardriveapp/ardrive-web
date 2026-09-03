@@ -47,6 +47,14 @@ const double driveListMaxContentWidth = 1200;
 /// made on the width the row will actually lay out in.
 const double driveListRowHorizontalPadding = 16;
 
+/// The width of the selection column, header and rows alike.
+///
+/// One constant for both so the ticks line up down the table - the usual
+/// failure is a header drawn inside the table's own padding and rows drawn
+/// outside it, which offsets the two by exactly that padding. Wide enough to
+/// hold the box and the gap a checkbox needs from what it labels.
+const double driveListCheckboxColumn = 40;
+
 /// How big the per-row actions menu's tap target is.
 ///
 /// The touch minimum, and no larger: a row that draws columns is 48px tall -
@@ -218,14 +226,15 @@ class DriveListHeader extends StatelessWidget {
       child: Row(
         children: [
           if (allSelected != null)
-            Padding(
-              padding: const EdgeInsets.only(
-                left: driveListRowHorizontalPadding,
-              ),
-              child: ArDriveCheckBox(
-                key: ValueKey('select-all-$allSelected'),
-                checked: allSelected!,
-                onChange: (_) => onToggleSelectAll?.call(),
+            SizedBox(
+              width: driveListCheckboxColumn,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ArDriveCheckBox(
+                  key: ValueKey('select-all-$allSelected'),
+                  checked: allSelected!,
+                  onChange: (_) => onToggleSelectAll?.call(),
+                ),
               ),
             ),
           heading(appLocalizationsOf(context).name, _nameFlex,
@@ -321,13 +330,19 @@ class DriveListRow extends StatelessWidget {
                 padding: const EdgeInsets.only(
                   left: driveListRowHorizontalPadding,
                 ),
-                child: ArDriveCheckBox(
-                  key: ValueKey('select-${drive.id}-$selected'),
-                  checked: selected!,
-                  // Its own target, beside the row's content rather than
-                  // inside it, so ticking a drive is never mistaken for
-                  // opening one.
-                  onChange: (_) => onSelectedChanged?.call(drive.id),
+                child: SizedBox(
+                  width: driveListCheckboxColumn,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    // Its own target, beside the row's content rather than
+                    // inside it, so ticking a drive is never mistaken for
+                    // opening one.
+                    child: ArDriveCheckBox(
+                      key: ValueKey('select-${drive.id}-$selected'),
+                      checked: selected!,
+                      onChange: (_) => onSelectedChanged?.call(drive.id),
+                    ),
+                  ),
                 ),
               ),
             Expanded(
@@ -338,9 +353,16 @@ class DriveListRow extends StatelessWidget {
                   child: InkWell(
                     onTap: onTap,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: driveListRowHorizontalPadding,
-                        vertical: _rowVerticalPadding,
+                      // The checkbox column already supplies the gutter on
+                      // its side, so the name would otherwise be indented one
+                      // padding further than the heading above it.
+                      padding: EdgeInsets.only(
+                        left: selected != null && showsColumns
+                            ? 0
+                            : driveListRowHorizontalPadding,
+                        right: driveListRowHorizontalPadding,
+                        top: _rowVerticalPadding,
+                        bottom: _rowVerticalPadding,
                       ),
                       child:
                           showsColumns ? _columns(context) : _stacked(context),

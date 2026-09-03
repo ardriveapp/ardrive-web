@@ -266,6 +266,31 @@ class DrivesCubit extends Cubit<DrivesState> {
   }
 
   Future<void> detachDrive(DriveID driveId) async {
+    // Stop a sync that is writing this drive before deleting its rows.
+    //
+    // Detaching used to delete the drive out from under a running sync, which
+    // then went on walking a drive that no longer existed - writing revisions
+    // against a deleted row, or throwing part way and reporting the drive as
+    // failed. The one-second wait below was the only thing between the two,
+    // and a wait is not a guarantee.
+    //
+    // This is also the case a reader most wants it for: a shared drive turns
+    // out to hold a million transactions, and the way out is to stop it and
+    // get rid of it. Stopping first makes that safe rather than lucky.
+    if (SyncCubit.syncTouchesDrive(
+      state: _syncCubit.state,
+      syncingDriveId: _syncCubit.syncingDriveId,
+      completedDriveIds: _syncCubit.completedDriveIds,
+      runDriveIds: _syncCubit.syncingDriveIds,
+      driveId: driveId,
+    )) {
+      _syncCubit.cancelSync();
+
+      // The repository notices at its next checkpoint, so this waits for the
+      // run to actually unwind rather than for the request to be made.
+      await _syncCubit.waitCurrentSync();
+    }
+
     _resetDriveSelection(driveId);
     await Future.delayed(const Duration(seconds: 1));
     await _driveDao.deleteDriveById(driveId: driveId);

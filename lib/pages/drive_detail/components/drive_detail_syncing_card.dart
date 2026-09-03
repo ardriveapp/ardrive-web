@@ -433,6 +433,21 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
         const SizedBox(height: 4),
         const SyncElapsedTime(),
       ],
+      // The way out, on the screen a reader is actually sitting on while they
+      // decide the wait is not worth it. The top bar carries the same action;
+      // this is where somebody staring at a drive that will not open looks
+      // first, and a drive with a million transactions is exactly the case.
+      if (isSyncing) ...[
+        const SizedBox(height: 16),
+        ArDriveButtonNew(
+          text: appLocalizationsOf(context).syncStopRunning,
+          typography: typography,
+          variant: ButtonVariant.secondary,
+          maxHeight: 36,
+          maxWidth: 180,
+          onPressed: () => context.read<SyncCubit>().cancelSync(),
+        ),
+      ],
     ]);
   }
 }

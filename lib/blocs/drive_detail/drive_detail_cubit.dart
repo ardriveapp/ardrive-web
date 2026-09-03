@@ -678,6 +678,30 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             }
 
             if (rootFolderRevision == null) {
+              // Unless a sync is writing this drive right now, in which case
+              // the root revision has simply not landed *yet*.
+              //
+              // Reading no longer waits for the sync - which is the point -
+              // so this branch is now reached mid-walk, where it used not to
+              // be. Saying "Drive Not Synced" then is wrong twice over: it
+              // contradicts the ring still turning in the top bar, and it
+              // offers a Sync Now that the cubit will refuse because a sync is
+              // already running. Left on the loading panel, the drive opens by
+              // itself the moment its root revision is written.
+              if (SyncCubit.syncTouchesDrive(
+                state: _syncCubit.state,
+                syncingDriveId: _syncCubit.syncingDriveId,
+                completedDriveIds: _syncCubit.completedDriveIds,
+                runDriveIds: _syncCubit.syncingDriveIds,
+                driveId: driveId,
+              )) {
+                if (this.state is! DriveDetailLoadSuccess) {
+                  emit(DriveDetailLoadInProgress());
+                }
+
+                return;
+              }
+
               emit(DriveDetailLoadUnsynced(drive: drive));
               return;
             }

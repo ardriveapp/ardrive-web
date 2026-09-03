@@ -187,6 +187,54 @@ void main() {
       },
     );
 
+    /// A drive whose root revision has not arrived *yet* is not a drive that
+    /// has never been synced.
+    ///
+    /// Reading no longer waits for the sync, which is the point - but it means
+    /// this branch is now reached mid-walk, where the wait used to keep it
+    /// away. Saying "Drive Not Synced" then contradicts the ring still turning
+    /// in the top bar, and offers a Sync Now the cubit refuses because a sync
+    /// is already running. Reported from the browser: the panel flipped to
+    /// Drive Not Synced part way through a sync, with both buttons greyed, and
+    /// came right when the sync finished.
+    blocTest<DriveDetailCubit, DriveDetailState>(
+      'waits rather than claiming "not synced" while that drive is syncing',
+      setUp: () async {
+        await insertDrive(lastBlockHeight: 0);
+
+        whenListen(syncCubit, syncStates.stream,
+            initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
+        when(() => syncCubit.syncingDriveId).thenReturn(driveId);
+      },
+      build: buildCubit,
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(
+          cubit.state,
+          isNot(isA<DriveDetailLoadUnsynced>()),
+          reason: 'the root revision has not landed yet, which is not the same '
+              'as never landing',
+        );
+      },
+    );
+
+    /// And the claim is still made when nothing is running, because then it is
+    /// true and the offer to sync is one the cubit will honour.
+    blocTest<DriveDetailCubit, DriveDetailState>(
+      'and says it plainly once no sync is running',
+      setUp: () async {
+        await insertDrive(lastBlockHeight: 0);
+
+        whenListen(syncCubit, syncStates.stream, initialState: SyncIdle());
+        when(() => syncCubit.syncingDriveId).thenReturn(null);
+      },
+      build: buildCubit,
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(cubit.state, isA<DriveDetailLoadUnsynced>());
+      },
+    );
+
     /// The mirror case, and the reason `lastBlockHeight` cannot be the signal:
     /// a drive created in-app writes a root revision but never advances its
     /// watermark, so gating on the watermark would tell someone who just made

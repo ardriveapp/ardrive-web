@@ -601,20 +601,6 @@ class _DrivesListLoadedView extends StatelessWidget {
                         ),
                       ),
                     ),
-                  // Present only while something is ticked. A bar that is
-                  // always there, with a count of zero and a disabled button,
-                  // is a control explaining that it cannot be used.
-                  if (state.selected.isNotEmpty && onSyncSelected != null)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: _blockGap),
-                        child: _SelectionBar(
-                          count: state.selected.length,
-                          onSyncSelected: onSyncSelected!,
-                          onClear: onClearSelection,
-                        ),
-                      ),
-                    ),
                   // The panel every other table in the app sits in.
                   //
                   // `ArDriveDataTable` wraps its header and rows in an
@@ -648,22 +634,38 @@ class _DrivesListLoadedView extends StatelessWidget {
                           const SliverToBoxAdapter(
                             child: SizedBox(height: _panelPadding),
                           ),
-                          SliverToBoxAdapter(
-                            child: DriveListHeader(
-                              sort: state.sort,
-                              sortAscending: state.sortAscending,
-                              onSort: onSort,
-                              // Offered only where there is room for a column
-                              // of checkboxes, and only when something can be
-                              // done with a selection.
-                              allSelected: onToggleSelectAll == null
-                                  ? null
-                                  : state.drives.isNotEmpty &&
-                                      state.drives.every((drive) =>
-                                          state.selected.contains(drive.id)),
-                              onToggleSelectAll: onToggleSelectAll,
+                          // While anything is ticked the heading row *is*
+                          // the selection bar, the way every table that has
+                          // both does it. A second bar above the panel cost a
+                          // block of vertical space on the one screen whose
+                          // job is to list drives, and repeated the column
+                          // headings underneath it for no reason.
+                          if (state.selected.isNotEmpty &&
+                              onSyncSelected != null)
+                            SliverToBoxAdapter(
+                              child: _SelectionBar(
+                                count: state.selected.length,
+                                onSyncSelected: onSyncSelected!,
+                                onClear: onClearSelection,
+                              ),
+                            )
+                          else
+                            SliverToBoxAdapter(
+                              child: DriveListHeader(
+                                sort: state.sort,
+                                sortAscending: state.sortAscending,
+                                onSort: onSort,
+                                // Offered only where there is room for a column
+                                // of checkboxes, and only when something can be
+                                // done with a selection.
+                                allSelected: onToggleSelectAll == null
+                                    ? null
+                                    : state.drives.isNotEmpty &&
+                                        state.drives.every((drive) =>
+                                            state.selected.contains(drive.id)),
+                                onToggleSelectAll: onToggleSelectAll,
+                              ),
                             ),
-                          ),
                           _rows(state, showsColumns),
                           const SliverToBoxAdapter(
                             child: SizedBox(height: _panelPadding),
@@ -937,9 +939,9 @@ class _SyncEverythingPrompt extends StatelessWidget {
 
 /// What the reader can do with the drives they have ticked.
 ///
-/// Appears with the first tick and goes with the last, so the page is not
-/// carrying a disabled control around for the whole time nobody is selecting
-/// anything.
+/// Drawn in the heading row's place rather than above it, which is where a
+/// table that offers selection puts this - so choosing drives costs no
+/// vertical space and the columns are not labelled twice.
 class _SelectionBar extends StatelessWidget {
   const _SelectionBar({
     required this.count,
@@ -957,49 +959,60 @@ class _SelectionBar extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: _pagePadding),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-          borderRadius: BorderRadius.circular(cardDefaultBorderRadius),
-        ),
-        child: Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          alignment: WrapAlignment.spaceBetween,
-          spacing: 12,
-          runSpacing: 8,
-          children: [
-            Text(
+      // The heading row's own padding, so the count sits where "Name" sat and
+      // the row beneath does not shift when a tick is made.
+      padding: const EdgeInsets.symmetric(
+        horizontal: driveListRowHorizontalPadding,
+        vertical: 4,
+      ),
+      child: Row(
+        children: [
+          Flexible(
+            child: Text(
               appLocalizationsOf(context).driveListSelectedCount(count),
+              overflow: TextOverflow.ellipsis,
               style: typography.paragraphNormal(
                 color: colorTokens.textHigh,
                 fontWeight: ArFontWeight.semiBold,
               ),
             ),
-            Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              children: [
-                if (onClear != null)
-                  ArDriveButtonNew(
-                    text: appLocalizationsOf(context).driveListClearSelection,
-                    typography: typography,
-                    variant: ButtonVariant.secondary,
-                    maxHeight: 36,
-                    onPressed: onClear,
+          ),
+          const Spacer(),
+          if (onClear != null) ...[
+            // Text only. Two bordered buttons side by side read as equal
+            // choices, and these are not: one acts, the other undoes.
+            ArDriveClickArea(
+              child: InkWell(
+                onTap: onClear,
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
                   ),
-                ArDriveButtonNew(
-                  text: appLocalizationsOf(context).driveListSyncSelected,
-                  typography: typography,
-                  variant: ButtonVariant.primary,
-                  maxHeight: 36,
-                  onPressed: onSyncSelected,
+                  child: Text(
+                    appLocalizationsOf(context).driveListClearSelection,
+                    style: typography.paragraphNormal(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
+                  ),
                 ),
-              ],
+              ),
             ),
+            const SizedBox(width: 4),
           ],
-        ),
+          ArDriveButtonNew(
+            text: appLocalizationsOf(context).driveListSyncSelected,
+            typography: typography,
+            variant: ButtonVariant.primary,
+            maxHeight: 32,
+            // Sized to its label rather than to whatever room is left, which
+            // is what stretched it across the panel.
+            maxWidth: 148,
+            onPressed: onSyncSelected,
+          ),
+        ],
       ),
     );
   }
