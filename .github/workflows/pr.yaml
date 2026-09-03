@@ -18,7 +18,10 @@ jobs:
     uses: ./.github/workflows/test.yml
 
   build-web:
-    needs: pre-build
+    # Deliberately no `needs:`. This job shares nothing with the test job but a
+    # checkout, so making it wait only added the tests' runtime to the wall
+    # clock. The one thing that must not happen over a red test run is the
+    # deploy, and that is now its own job below.
     runs-on: ubuntu-latest
     steps:
       # Checkout
@@ -49,6 +52,31 @@ jobs:
         run: |
           sed -i 's/main.dart.js/main.dart.js?version='"$GITHUB_SHA"'/' build/web/index.html
           sed -i 's/flutter_service_worker.js/flutter_service_worker.js?version='"$GITHUB_SHA"'/' build/web/index.html
+
+      - name: Upload the built web app
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+          retention-days: 1
+
+  deploy-web:
+    # The only job that waits for the tests, because publishing a preview is
+    # the only step whose cost is not paid purely in CI minutes.
+    needs: [pre-build, build-web]
+    runs-on: ubuntu-latest
+    steps:
+      # `firebase.json` decides what is served and with which headers, so the
+      # deploy needs the repo as well as the build output.
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Download the built web app
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: build/web
 
       # Disribute to Firebase
       - uses: FirebaseExtended/action-hosting-deploy@v0
