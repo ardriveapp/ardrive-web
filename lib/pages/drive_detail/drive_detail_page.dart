@@ -39,7 +39,7 @@ import 'package:ardrive/pages/drive_detail/components/drive_detail_syncing_card.
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/file_icon.dart';
-import 'package:ardrive/pages/drive_detail/components/multi_select_paused_notice.dart';
+import 'package:ardrive/pages/drive_detail/components/syncing_drive_notice.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/unpreviewable_content.dart';
 import 'package:ardrive/pages/drive_detail/components/document_preview_widget.dart';
@@ -1120,6 +1120,14 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               ),
             ],
           ),
+        ),
+        // The same warning the wide table carries. A phone reads a
+        // half-walked drive exactly as a desktop does, and this is the
+        // surface with the least room to work out for itself that a short
+        // list is short because a sync is still running.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SyncingDriveNotice(driveId: state.currentDrive.id),
         ),
         Expanded(
           child: (hasSubfolders || hasFiles)

@@ -120,9 +120,9 @@ Widget _buildDataListContent(
               '${folder.id}-${forceRebuildKey.toString()}${columns.length}-${hideState.toString()}'),
           initialPage: selectedPage,
           // The sync half of this lock is stated out loud rather than left as
-          // a silent no-op - see [MultiSelectPausedNotice], which is given the
+          // a silent no-op - see [SyncingDriveNotice], which is given the
           // same condition so the two cannot drift apart.
-          lockMultiSelect: MultiSelectPausedNotice.locksMultiSelect(
+          lockMultiSelect: SyncingDriveNotice.locksMultiSelect(
                 context.watch<SyncCubit>().state,
                 syncingDriveId: context.watch<SyncCubit>().syncingDriveId,
                 driveId: folder.driveId,
@@ -244,7 +244,7 @@ Widget _buildDataListContent(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Draws nothing unless a sync is holding multi-select shut.
-            MultiSelectPausedNotice(driveId: folder.driveId),
+            SyncingDriveNotice(driveId: folder.driveId),
             Expanded(child: table),
           ],
         );

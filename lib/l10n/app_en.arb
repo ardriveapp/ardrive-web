@@ -3086,9 +3086,9 @@
       }
     }
   },
-  "multiSelectPausedWhileSyncing": "Selecting several items is paused while syncing",
-  "@multiSelectPausedWhileSyncing": {
-    "description": "Why ctrl-click and ctrl-A do nothing in the file list while a sync is rewriting rows"
+  "syncStillReadingThisDrive": "Still reading this drive, so more items may appear. Selecting several is paused until it finishes.",
+  "@syncStillReadingThisDrive": {
+    "description": "Shown above the file list while a sync is walking the open drive. Leads with the fact that the list is incomplete - a reader who can now browse a drive mid-sync would otherwise take a short list for the whole of it - and explains the paused selection in the same breath, since both hold for exactly as long."
   },
   "syncElapsedTime": "{seconds}s elapsed",
   "@syncElapsedTime": {

@@ -17,8 +17,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 ///
 /// One quiet line above the list, and no dialog: nothing is wrong and nothing
 /// is being asked, the app is briefly not offering something it usually does.
-class MultiSelectPausedNotice extends StatelessWidget {
-  const MultiSelectPausedNotice({super.key, required this.driveId});
+/// What is true of the file list while a sync is walking this drive.
+///
+/// Two facts, and they hold for exactly the same span, so they are said once:
+/// the list is still filling, and selecting several items is paused.
+///
+/// The first used to be unsayable because it was unreachable - a drive being
+/// synced could not be opened at all, so there was no partial list to warn
+/// about. Now that one can be read as it fills, a reader looking at four files
+/// has no way to tell four from four-so-far unless this says so, and a file
+/// list that quietly understates itself is the worst thing this surface could
+/// do.
+class SyncingDriveNotice extends StatelessWidget {
+  const SyncingDriveNotice({super.key, required this.driveId});
 
   /// The drive on screen, so the notice appears only when the sync running is
   /// one that actually holds this drive's selection shut.
@@ -76,7 +87,7 @@ class MultiSelectPausedNotice extends StatelessWidget {
           const SizedBox(width: 8),
           Flexible(
             child: Text(
-              appLocalizationsOf(context).multiSelectPausedWhileSyncing,
+              appLocalizationsOf(context).syncStillReadingThisDrive,
               style: typography.paragraphSmall(color: colorTokens.textLow),
             ),
           ),
