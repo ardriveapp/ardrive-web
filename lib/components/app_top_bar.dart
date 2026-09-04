@@ -8,6 +8,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
@@ -108,19 +109,165 @@ class GlobalHideToggleButton extends StatelessWidget {
   }
 }
 
+/// The size [ArDriveIcon] renders at by default, and so the size of the slot
+/// every state of [SyncButton] has to fit into for the top bar to hold still
+/// when a sync starts or stops.
+const double _syncIndicatorSize = 24;
+
+/// The row height [ArDriveDropdown] assumes for every item: it sizes its
+/// overlay as `items.length * height`, so an item that is taller than this has
+/// to be paid for with an explicit `maxHeight`.
+const double _dropdownRowHeight = 48;
+
+/// The height the status header asks for, and the reason [_SyncButtonMenu]
+/// hands the dropdown a `maxHeight` whenever it shows one. It is a minimum, not
+/// a cap: a larger text scale grows the header and the menu scrolls, rather
+/// than the header overflowing.
+const double _syncStatusHeaderHeight = 96;
+
+/// How wide the status header lets the menu grow. The dropdown wraps its items
+/// in an [IntrinsicWidth], so this is what sets the open menu's width while a
+/// sync runs.
+const double _syncStatusHeaderWidth = 260;
+
+/// What the sync is doing, in the words the sync modal uses for the same thing.
+class _SyncStatus {
+  const _SyncStatus({
+    required this.title,
+    this.detail,
+    this.showElapsed = false,
+  });
+
+  /// What is being synced - the modal's own title.
+  final String title;
+
+  /// The phase the sync names for itself, or the percentage when it names none.
+  final String? detail;
+
+  /// Whether the sync has a start time worth counting from.
+  final bool showElapsed;
+
+  /// The same two lines, for a pointer that has somewhere to hover.
+  String get asTooltip => detail == null ? title : '$title\n$detail';
+}
+
+/// The top bar's sync control: the resync menu, and - while a sync is running -
+/// the only place a background sync reports itself.
+///
+/// A sync the user asked for still gets the modal over the whole app. One that
+/// merely happened gets this: a ring that turns, and the phase, percentage and
+/// elapsed time inside the menu the ring already opens - a tap, not a hover, so
+/// the phone gets them too.
 class SyncButton extends StatelessWidget {
   const SyncButton({super.key});
 
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return BlocBuilder<SyncCubit, SyncState>(
+      builder: (context, syncState) {
+        if (syncState is SyncLoadingDrives) {
+          // Loading drive metadata reports no progress at all, so the ring has
+          // nothing to fill and just turns.
+          return _SyncButtonMenu(
+            status: _SyncStatus(
+              title: appLocalizationsOf(context).loadingYourDrives,
+            ),
+            child: const _SyncProgressRing(),
+          );
+        }
+
+        if (syncState is! SyncInProgress) {
+          return _SyncButtonMenu(
+            child: ArDriveIcons.refresh(color: colorTokens.textMid),
+          );
+        }
+
+        final syncCubit = context.read<SyncCubit>();
+
+        return StreamBuilder<SyncProgress>(
+          stream: syncCubit.syncProgressController.stream,
+          // The controller is a broadcast stream that replays nothing, so a
+          // button mounted mid-sync would show an empty ring until the next
+          // event without this.
+          initialData: syncCubit.syncProgress,
+          builder: (context, snapshot) {
+            final syncProgress = snapshot.data;
+
+            return _SyncButtonMenu(
+              status: _syncStatus(context, syncProgress),
+              child: _SyncProgressRing(progress: syncProgress?.progress),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Two lines: what sync is doing, and how far along it is. The phase names
+  /// itself when the sync has one to give; the percentage stands in when it
+  /// doesn't - the same pairing, and the same title, as the sync modal.
+  _SyncStatus _syncStatus(BuildContext context, SyncProgress? syncProgress) {
+    if (syncProgress == null) {
+      return _SyncStatus(
+        title: appLocalizationsOf(context).syncingAllDrives,
+        showElapsed: true,
+      );
+    }
+
+    return _SyncStatus(
+      title: syncProgress.isSingleDriveSync
+          ? appLocalizationsOf(context).syncingSingleDrive
+          : appLocalizationsOf(context).syncingAllDrives,
+      detail: syncProgress.statusMessage ??
+          appLocalizationsOf(context).syncProgressPercentage(
+            (syncProgress.progress * 100).round().toString(),
+          ),
+      showElapsed: true,
+    );
+  }
+}
+
+/// The resync menu every state of [SyncButton] hangs off, so that a running
+/// sync never costs the user the actions.
+///
+/// While a sync runs the menu also carries a [_SyncStatusHeader], because the
+/// menu is the one surface a phone can reach: [SyncButton] is mounted in
+/// `MobileAppBar` too, where nothing hovers and a tooltip is never seen.
+class _SyncButtonMenu extends StatelessWidget {
+  const _SyncButtonMenu({
+    this.status,
+    required this.child,
+  });
+
+  /// The running sync, or null when none is.
+  final _SyncStatus? status;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = this.status;
+
     return HoverWidget(
-      tooltip: appLocalizationsOf(context).resyncTooltip,
+      tooltip: status?.asTooltip ?? appLocalizationsOf(context).resyncTooltip,
       child: ArDriveDropdown(
         anchor: const Aligned(
           follower: Alignment.topRight,
           target: Alignment.bottomRight,
+          // The menu hangs off the top bar's trailing edge, so on a narrow
+          // phone it is wider than the room left of the button. Let the portal
+          // pull it back rather than run the text off the left edge.
+          shiftToWithinBound: AxisFlag(x: true),
         ),
+        // The dropdown would otherwise size itself as `items.length * 48` and
+        // cut the header off.
+        maxHeight: status == null
+            ? null
+            : _syncStatusHeaderHeight + 2 * _dropdownRowHeight,
+        // A header rather than an item: it is there to be read, so it must not
+        // light up like an action or close the menu when a thumb lands on it.
+        header: status == null ? null : _SyncStatusHeader(status: status),
         items: [
           ArDriveDropdownItem(
             onClick: () {
@@ -149,8 +296,186 @@ class SyncButton extends StatelessWidget {
             ),
           ),
         ],
-        child: ArDriveIcons.refresh(color: colorTokens.textMid),
+        child: SizedBox(
+          width: _syncIndicatorSize,
+          height: _syncIndicatorSize,
+          child: child,
+        ),
       ),
+    );
+  }
+}
+
+/// The phase, the percentage and the elapsed time, sitting above the resync
+/// actions in the menu the sync indicator opens.
+///
+/// This is the mobile half of the indicator. The ring says a sync is running;
+/// this says which one, how far it has got and how long it has been at it,
+/// without a pointer.
+class _SyncStatusHeader extends StatelessWidget {
+  const _SyncStatusHeader({required this.status});
+
+  final _SyncStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final detail = status.detail;
+
+    return Container(
+      width: _syncStatusHeaderWidth,
+      constraints: const BoxConstraints(minHeight: _syncStatusHeaderHeight),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: colorTokens.strokeLow),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            status.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textHigh,
+            ),
+          ),
+          if (detail != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                detail,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: typography.paragraphSmall(
+                  color: colorTokens.textMid,
+                ),
+              ),
+            ),
+          if (status.showElapsed)
+            const Padding(
+              padding: EdgeInsets.only(top: 4),
+              child: _SyncElapsedTime(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Seconds since the running sync started, counted where a phone can read it.
+class _SyncElapsedTime extends StatefulWidget {
+  const _SyncElapsedTime();
+
+  @override
+  State<_SyncElapsedTime> createState() => _SyncElapsedTimeState();
+}
+
+class _SyncElapsedTimeState extends State<_SyncElapsedTime> {
+  // Held in a field, not built in `build`: progress events rebuild this header
+  // often, and a stream rebuilt each time restarts its timer before it fires,
+  // so the counter would tick to the sync's cadence instead of the clock's.
+  final Stream<int> _ticks =
+      Stream.periodic(const Duration(seconds: 1), (i) => i);
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return StreamBuilder<int>(
+      stream: _ticks,
+      builder: (context, _) {
+        final elapsed =
+            DateTime.now().difference(context.read<SyncCubit>().syncStartTime);
+
+        return Text(
+          appLocalizationsOf(context).syncElapsedTime(
+            elapsed.inSeconds.toString(),
+          ),
+          style: typography.paragraphSmall(color: colorTokens.textLow),
+        );
+      },
+    );
+  }
+}
+
+/// The key the ring's continuous rotation hangs off, so a test can prove the
+/// indicator is still moving.
+const Key syncIndicatorMotionKey = Key('syncIndicatorMotion');
+
+/// A turning ring with the refresh glyph inside it, filling the slot the idle
+/// icon leaves behind.
+///
+/// [progress] fills the ring once the sync reports any - but the ring turns
+/// either way. Sync progress plateaus for long stretches, and an arc that has
+/// not moved in a minute reads as a hang, so the arc keeps rotating whatever
+/// its length is doing.
+class _SyncProgressRing extends StatefulWidget {
+  const _SyncProgressRing({this.progress});
+
+  final double? progress;
+
+  @override
+  State<_SyncProgressRing> createState() => _SyncProgressRingState();
+}
+
+class _SyncProgressRingState extends State<_SyncProgressRing>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _rotation;
+
+  @override
+  void initState() {
+    super.initState();
+    // Built here rather than lazily on first use, so dispose() never has to
+    // create a ticker on a widget that is already coming down.
+    _rotation = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _rotation.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final progress = widget.progress;
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        SizedBox.expand(
+          child: RotationTransition(
+            key: syncIndicatorMotionKey,
+            turns: _rotation,
+            child: CircularProgressIndicator(
+              value: progress != null && progress > 0 ? progress : null,
+              strokeWidth: 2,
+              backgroundColor: colorTokens.strokeHigh,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                colorTokens.buttonPrimaryDefault,
+              ),
+            ),
+          ),
+        ),
+        // The same token the idle icon uses, so the glyph does not change
+        // colour the instant a sync starts.
+        ArDriveIcons.refresh(
+          size: _syncIndicatorSize / 2,
+          color: colorTokens.textMid,
+        ),
+      ],
     );
   }
 }

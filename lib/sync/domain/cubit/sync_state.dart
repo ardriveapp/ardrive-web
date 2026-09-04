@@ -13,7 +13,16 @@ class SyncIdle extends SyncState {}
 /// This is a lightweight UI-only state that doesn't block waitCurrentSync().
 class SyncLoadingDrives extends SyncState {}
 
-class SyncInProgress extends SyncState {}
+class SyncInProgress extends SyncState {
+  /// Who asked for this sync. The shell only blocks the app for a sync the
+  /// user asked for; see [SyncOverlay].
+  final SyncTrigger trigger;
+
+  SyncInProgress({this.trigger = SyncTrigger.userInitiated});
+
+  @override
+  List<Object> get props => [trigger];
+}
 
 class SyncFailure extends SyncState {
   final Object? error;
@@ -31,14 +40,22 @@ class SyncCancelled extends SyncState {
   final int totalDrives;
   final DateTime cancelledAt;
 
+  /// Who asked for the sync that was cancelled. Cancelling is only reachable
+  /// from the modal, which only a user-initiated sync gets, so this is
+  /// [SyncTrigger.userInitiated] in practice - but it follows the sync it came
+  /// from rather than assuming.
+  final SyncTrigger trigger;
+
   SyncCancelled({
     required this.drivesCompleted,
     required this.totalDrives,
     required this.cancelledAt,
+    this.trigger = SyncTrigger.userInitiated,
   });
 
   @override
-  List<Object> get props => [drivesCompleted, totalDrives, cancelledAt];
+  List<Object> get props =>
+      [drivesCompleted, totalDrives, cancelledAt, trigger];
 }
 
 class SyncCompleteWithErrors extends SyncState {
