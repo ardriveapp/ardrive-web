@@ -47,6 +47,7 @@ class DrivesListLoaded extends DrivesListState {
     this.counts = const DriveScopeCounts({}),
     this.sort = DriveListSort.name,
     this.sortAscending = true,
+    this.selected = const {},
   });
 
   /// The drives this scope shows, already filtered.
@@ -65,6 +66,12 @@ class DrivesListLoaded extends DrivesListState {
   /// Which way that column is ordered.
   final bool sortAscending;
 
+  /// The drives the reader has ticked, if any.
+  ///
+  /// Empty means no selection rather than an empty one, and the controls read
+  /// it that way: with nothing ticked, the action is still Sync All Drives.
+  final Set<String> selected;
+
   /// Whether nothing here has ever been walked.
   ///
   /// With sync-on-login off this is the state a first login lands in, and it
@@ -74,9 +81,20 @@ class DrivesListLoaded extends DrivesListState {
   bool get nothingHasEverBeenSynced =>
       drives.isNotEmpty && drives.every((drive) => !drive.hasBeenWalked);
 
+  /// The drives the last sync could not read.
+  ///
+  /// Read off the rows rather than off a sync state, so it survives the sync
+  /// state moving on - the failure is a property of the drive until something
+  /// reads it successfully, not of the run that noticed.
+  List<String> get failedDriveIds => [
+        for (final drive in drives)
+          if (drive.lastSyncFailed) drive.id,
+      ];
+
   /// Whether a sync is running over these drives right now.
   bool get isSyncing => drives.any((drive) => drive.isSyncing);
 
   @override
-  List<Object?> get props => [drives, scope, counts, sort, sortAscending];
+  List<Object?> get props =>
+      [drives, scope, counts, sort, sortAscending, selected];
 }

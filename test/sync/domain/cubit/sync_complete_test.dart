@@ -54,7 +54,7 @@ void main() {
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
           syncDeep: any(named: 'syncDeep'),
-          driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          onlyDriveIds: any(named: 'onlyDriveIds'),
           cancellationToken: any(named: 'cancellationToken'),
           txFechedCallback: any(named: 'txFechedCallback'),
         )).thenAnswer((_) => Stream.value(progress));

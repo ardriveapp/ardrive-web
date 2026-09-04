@@ -777,4 +777,25 @@ void main() {
 
     await tester.pumpWidget(const SizedBox());
   });
+
+  /// The panel has to look like a panel.
+  ///
+  /// It used `containerL1`, which in the dark theme is `#0d0d0d` against a
+  /// `#010905` page: twelve steps out of 255, so the card read as bare
+  /// background with words floating on it. The tables and the unsynced card
+  /// were already on `tableTheme.backgroundColor`, so this was the odd one out
+  /// as well as the invisible one.
+  testWidgets('sits on the same ground as every other panel', (tester) async {
+    final theme = lightTheme();
+
+    // The card is only drawn on a wide screen; a phone gets the bare content.
+    await pumpSyncing(tester, size: desktopSize, theme: theme);
+    final card = tester.widgetList<ArDriveCard>(find.byType(ArDriveCard));
+
+    expect(
+      card.map((c) => c.backgroundColor),
+      contains(theme.tableTheme.backgroundColor),
+      reason: 'one panel ground across the app, not one per surface',
+    );
+  });
 }

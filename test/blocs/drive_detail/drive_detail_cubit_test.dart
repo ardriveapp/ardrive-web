@@ -146,6 +146,9 @@ void main() {
             )
             .watchSingleOrNull());
 
+    // The gate reads this alongside syncingDriveId; an empty list is "nothing
+    // has finished walking yet", which is true of every state these tests set.
+    when(() => syncCubit.completedDriveIds).thenReturn(const []);
     when(() => syncCubit.waitCurrentSync()).thenAnswer((_) async {});
     whenListen(syncCubit, syncStates.stream, initialState: SyncIdle());
 
@@ -177,6 +180,94 @@ void main() {
     blocTest<DriveDetailCubit, DriveDetailState>(
       'says "not synced" for a drive whose root metadata never arrived',
       setUp: () => insertDrive(lastBlockHeight: 0),
+      build: buildCubit,
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(cubit.state, isA<DriveDetailLoadUnsynced>());
+      },
+    );
+
+    /// A drive whose root revision has not arrived *yet* is not a drive that
+    /// has never been synced.
+    ///
+    /// Reading no longer waits for the sync, which is the point - but it means
+    /// this branch is now reached mid-walk, where the wait used to keep it
+    /// away. Saying "Drive Not Synced" then contradicts the ring still turning
+    /// in the top bar, and offers a Sync Now the cubit refuses because a sync
+    /// is already running. Reported from the browser: the panel flipped to
+    /// Drive Not Synced part way through a sync, with both buttons greyed, and
+    /// came right when the sync finished.
+    blocTest<DriveDetailCubit, DriveDetailState>(
+      'waits rather than claiming "not synced" while that drive is syncing',
+      setUp: () async {
+        await insertDrive(lastBlockHeight: 0);
+
+        whenListen(syncCubit, syncStates.stream,
+            initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
+        when(() => syncCubit.syncingDriveId).thenReturn(driveId);
+      },
+      build: buildCubit,
+      wait: const Duration(milliseconds: 100),
+      verify: (cubit) {
+        expect(
+          cubit.state,
+          isNot(isA<DriveDetailLoadUnsynced>()),
+          reason: 'the root revision has not landed yet, which is not the same '
+              'as never landing',
+        );
+      },
+    );
+
+    /// A wait needs something that can end it.
+    ///
+    /// The panel waits rather than saying "Drive Not Synced" while a sync is
+    /// walking that drive, and the tick that writes the root revision is what
+    /// ends the wait. A run that fails, is cancelled, or fails on this drive
+    /// in particular writes nothing - so no tick comes, and the panel sat on
+    /// "Opening..." until the reader navigated away and back. Before reading
+    /// stopped waiting for the sync this could not happen: the check always
+    /// ran after the sync had settled.
+    blocTest<DriveDetailCubit, DriveDetailState>(
+      'a sync that ends without writing the drive does not strand the panel',
+      setUp: () async {
+        await insertDrive(lastBlockHeight: 0);
+
+        whenListen(syncCubit, syncStates.stream,
+            initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
+        when(() => syncCubit.syncingDriveId).thenReturn(driveId);
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(cubit.state, isA<DriveDetailLoadInProgress>(),
+            reason: 'precondition: waiting for a revision that may still come');
+
+        // The sync ends having written nothing for this drive.
+        when(() => syncCubit.syncingDriveId).thenReturn(null);
+        syncStates.add(SyncFailure());
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      },
+      verify: (cubit) {
+        expect(
+          cubit.state,
+          isA<DriveDetailLoadUnsynced>(),
+          reason: 'the revision is not coming, so the panel has to say so and '
+              'offer a way out rather than spin for ever',
+        );
+      },
+    );
+
+    /// And the claim is still made when nothing is running, because then it is
+    /// true and the offer to sync is one the cubit will honour.
+    blocTest<DriveDetailCubit, DriveDetailState>(
+      'and says it plainly once no sync is running',
+      setUp: () async {
+        await insertDrive(lastBlockHeight: 0);
+
+        whenListen(syncCubit, syncStates.stream, initialState: SyncIdle());
+        when(() => syncCubit.syncingDriveId).thenReturn(null);
+      },
       build: buildCubit,
       wait: const Duration(milliseconds: 100),
       verify: (cubit) {
@@ -467,33 +558,43 @@ void main() {
       expect(cubit.state, isA<DriveDetailLoadSuccess>(),
           reason: 'precondition: the first drive is on screen');
 
-      // A sync that is running and has not finished. Deliberately never
-      // completed: the point is what the app does *during* it. An all-drives
-      // background sync, which is the one that really does cover this drive -
-      // stubbing only waitCurrentSync left the cubit in SyncIdle, so the test
-      // described a sync that was not running.
+      // A sync that is running and never finishes. The point is what the app
+      // does *during* it - an all-drives background sync, which is the one
+      // that really does cover this drive.
       final syncing = Completer<void>();
       addTearDown(() => syncing.complete());
       when(() => syncCubit.waitCurrentSync()).thenAnswer((_) => syncing.future);
       whenListen(syncCubit, syncStates.stream,
           initialState: SyncInProgress(trigger: SyncTrigger.background));
       when(() => syncCubit.syncingDriveId).thenReturn(null);
+      // The run's own scope and what it has finished, read by every surface
+      // that tells a drive in the run from one beside it. Null scope is
+      // "every drive"; nothing finished yet.
+      when(() => syncCubit.syncingDriveIds).thenReturn(null);
+      when(() => syncCubit.completedDriveIds).thenReturn(const []);
 
       unawaited(cubit.changeDrive(otherDriveId));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
 
+      final state = cubit.state;
       expect(
-        cubit.state,
-        isA<DriveDetailLoadInProgress>(),
-        reason: 'the click has to be answered before the wait, not after it - '
-            'otherwise the drive the user left stays on screen, with nothing '
-            'to say the app heard them, for the whole sync',
+        state,
+        isA<DriveDetailLoadSuccess>(),
+        reason: 'the drive opens during the sync rather than after it - the '
+            'sync here never finishes, so waiting for it would mean never '
+            'opening at all',
       );
+      expect((state as DriveDetailLoadSuccess).currentDrive.id, otherDriveId);
+      verifyNever(() => syncCubit.waitCurrentSync());
     });
 
-    /// The wait itself is not the bug and must survive: a folder opened
-    /// against a half-written database is the reason it is there.
-    test('the folder still waits for the sync before it is read', () async {
+    /// The wait this replaced was there to keep a folder from being read
+    /// against a half-written database. It was not needed for that: every
+    /// batch commits in its own transaction, so a read mid-sync gets
+    /// consistent data - just less of it than the folder will eventually hold,
+    /// with the subscription filling the rest in as it lands.
+    test('a folder is read during the sync of its own drive, not after it',
+        () async {
       await insertDrive(lastBlockHeight: 100);
       await insertRootFolderRevision();
       await insertSubfolder('subfolder-1');
@@ -504,26 +605,24 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
+      // A sync of the very drive being opened, which never finishes.
       final syncing = Completer<void>();
+      addTearDown(() => syncing.complete());
       when(() => syncCubit.waitCurrentSync()).thenAnswer((_) => syncing.future);
-      // A sync that really is writing this drive. Without this the cubit is
-      // in SyncIdle, nothing is gated, and the test passes without ever
-      // reaching the wait it exists to protect.
       whenListen(syncCubit, syncStates.stream,
           initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
       when(() => syncCubit.syncingDriveId).thenReturn(otherDriveId);
 
       unawaited(cubit.changeDrive(otherDriveId));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      expect(cubit.state, isA<DriveDetailLoadInProgress>(),
-          reason: 'precondition: the click was answered');
-
-      syncing.complete();
-      await Future<void>.delayed(const Duration(milliseconds: 200));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
 
       final state = cubit.state;
-      expect(state, isA<DriveDetailLoadSuccess>());
+      expect(
+        state,
+        isA<DriveDetailLoadSuccess>(),
+        reason: 'the drive being synced is the one a reader most wants to '
+            'watch fill in',
+      );
       expect((state as DriveDetailLoadSuccess).currentDrive.id, otherDriveId);
     });
 
@@ -566,6 +665,112 @@ void main() {
       );
       expect((state as DriveDetailLoadSuccess).currentDrive.id, otherDriveId);
       verifyNever(() => syncCubit.waitCurrentSync());
+    });
+  });
+
+  /// A tick that was never drawn must not count as drawn.
+  ///
+  /// The folder subscription skips a redraw while an upload is running, so the
+  /// file list does not churn under somebody watching a progress bar. The
+  /// change-detection added for sync then has to be careful *where* it records
+  /// what is on screen: recorded before that guard, the tick carrying the
+  /// newly uploaded file was marked as drawn and then dropped, and any later
+  /// tick carrying the same contents was skipped as a no-op. The file never
+  /// arrived.
+  ///
+  /// Reproducing it needs a second tick that carries the *same* folder - which
+  /// is what a change to the drive row gives, since the subscription combines
+  /// the drive and its contents and re-emits when either moves.
+  group('a redraw dropped for an upload', () {
+    /// The report that found this: "I uploaded a file, it worked, and I do not
+    /// see it in the drive view."
+    ///
+    /// An upload writes its file while `isUploading` is up, so the tick
+    /// carrying it is refused by the guard in the subscription - and nothing
+    /// writes that folder again afterwards, so no later tick carries it
+    /// either. The upload form then calls `refreshDriveDataTable`, which
+    /// re-emitted the state it already had with a new key: the same rows,
+    /// rebuilt. The file was uploaded and was not on screen, and nothing short
+    /// of leaving the folder and coming back would show it.
+    test('is settled by the refresh the upload form calls', () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(cubit.state, isA<DriveDetailLoadSuccess>(),
+          reason: 'precondition: the folder is on screen');
+
+      // The upload runs and writes into the folder being viewed.
+      when(() => activityTracker.isUploading).thenReturn(true);
+      await insertSubfolder('uploaded-during');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.subfolders,
+        isEmpty,
+        reason: 'precondition: the upload guard refused that redraw',
+      );
+
+      // The upload finishes exactly as the form does it, and nothing else
+      // touches the database afterwards.
+      when(() => activityTracker.isUploading).thenReturn(false);
+      cubit.refreshDriveDataTable();
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess)
+            .folderInView
+            .subfolders
+            .map((f) => f.name),
+        contains('uploaded-during'),
+        reason: 'the uploaded file has to be on screen when the upload ends, '
+            'without the reader navigating away and back',
+      );
+    });
+
+    test('does not make a later identical tick look like a no-op', () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(cubit.state, isA<DriveDetailLoadSuccess>(),
+          reason: 'precondition: the folder is on screen');
+
+      // An upload runs, and writes a folder into the one on screen. The tick
+      // carrying it is dropped rather than drawn.
+      when(() => activityTracker.isUploading).thenReturn(true);
+      await insertSubfolder('arrived-during-upload');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.subfolders,
+        isEmpty,
+        reason: 'precondition: the upload guard dropped that redraw',
+      );
+
+      // The upload ends, and something touches the drive row - a sync
+      // advancing its watermark, say. The folder itself is unchanged, so this
+      // tick carries exactly the contents the dropped one did.
+      when(() => activityTracker.isUploading).thenReturn(false);
+      await (db.update(db.drives)..where((d) => d.id.equals(driveId)))
+          .write(const DrivesCompanion(lastBlockHeight: Value(200)));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess)
+            .folderInView
+            .subfolders
+            .map((f) => f.name),
+        contains('arrived-during-upload'),
+        reason: 'nothing else is going to change this folder, so a tick '
+            'skipped as unchanged is the file never appearing',
+      );
     });
   });
 
@@ -815,7 +1020,7 @@ void main() {
             deepSync: any(named: 'deepSync'),
             trigger: any(named: 'trigger'),
             skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
-            driveIdsToRetry: any(named: 'driveIdsToRetry'),
+            onlyDriveIds: any(named: 'onlyDriveIds'),
           )).thenAnswer((_) async => false);
       when(() => syncCubit.state).thenReturn(SyncIdle());
 
@@ -995,7 +1200,7 @@ void main() {
             deepSync: any(named: 'deepSync'),
             trigger: any(named: 'trigger'),
             skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
-            driveIdsToRetry: any(named: 'driveIdsToRetry'),
+            onlyDriveIds: any(named: 'onlyDriveIds'),
           )).thenAnswer((_) async {
         when(() => syncCubit.state).thenReturn(SyncCompleteWithErrors(
           failedDrives: 1,

@@ -148,6 +148,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
                   syncState: syncState,
                   progress: reportsProgress ? snapshot.data : null,
                   driveName: _driveName(drivesState, snapshot.data),
+                  canBeStopped: syncState is SyncInProgress,
                   syncCoversThisDrive: _coversSelectedDrive(
                     drivesState,
                     syncState,
@@ -169,6 +170,14 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
   /// The card the explorer's other full-panel states use on a wide screen, so
   /// the frame does not change shape when this becomes a folder listing, an
   /// unsynced drive, or the report that the drive list could not be read.
+  ///
+  /// On `tableTheme.backgroundColor`, which is what the tables and the unsynced
+  /// card already sit on. This used `containerL1` and the comment above was
+  /// therefore untrue: at `#0d0d0d` against a `#010905` page it lifted off the
+  /// background by twelve steps out of 255, so the panel read as no panel at
+  /// all - a card nobody can see is a card that is not there. The shared
+  /// ground is `#121212`, which is the difference between a black screen with
+  /// words on it and a surface holding them.
   Widget _frame(BuildContext context, Widget content) {
     return ScreenTypeLayout.builder(
       mobile: (context) => content,
@@ -179,7 +188,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
           child: ArDriveCard(
             width: double.infinity,
             backgroundColor:
-                ArDriveTheme.of(context).themeData.colorTokens.containerL1,
+                ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
             content: content,
           ),
         ),
@@ -303,6 +312,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
     required bool isLoadingDrives,
     required SyncState syncState,
     required bool syncCoversThisDrive,
+    required bool canBeStopped,
     required SyncProgress? progress,
     required String? driveName,
   }) {
@@ -432,6 +442,28 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
       if (showElapsed) ...[
         const SizedBox(height: 4),
         const SyncElapsedTime(),
+      ],
+      // The way out, on the screen a reader is actually sitting on while they
+      // decide the wait is not worth it. The top bar carries the same action;
+      // this is where somebody staring at a drive that will not open looks
+      // first, and a drive with a million transactions is exactly the case.
+      // Only while there is a sync that stopping can actually stop.
+      //
+      // `isSyncing` also covers SyncLoadingDrives, and `cancelSync` does
+      // nothing in that state - it cancels the token a running sync holds, and
+      // the drive-list refresh holds none. Offering the button there gave a
+      // reader a control that acknowledged the press and changed nothing,
+      // which is worse than not offering it.
+      if (canBeStopped) ...[
+        const SizedBox(height: 16),
+        ArDriveButtonNew(
+          text: appLocalizationsOf(context).syncStopRunning,
+          typography: typography,
+          variant: ButtonVariant.secondary,
+          maxHeight: 36,
+          maxWidth: 180,
+          onPressed: () => context.read<SyncCubit>().cancelSync(),
+        ),
       ],
     ]);
   }

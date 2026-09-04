@@ -65,6 +65,24 @@ class SyncCubit extends Cubit<SyncState> {
   /// print, and names are not identity.
   String? get syncingDriveId => _syncingDriveId;
 
+  /// Which drives this run covers at all, or null when it covers every one.
+  ///
+  /// A run over a chosen few is still `syncingDriveId == null` - that field
+  /// answers "is this a single-drive sync", not "what is in scope" - so
+  /// without this a four-of-ten run reads as an all-drives sync on every
+  /// surface: ten rows saying "Syncing...", and six drives held shut for a run
+  /// that was never going to touch them.
+  Set<String>? _runDriveIds;
+
+  Set<String>? get syncingDriveIds => _runDriveIds;
+
+  /// The drives this run has finished walking, in the order they finished.
+  ///
+  /// Appended per drive on the success path only - a drive that failed is not
+  /// in here - and live, so a surface can act on it while the run continues.
+  /// Reset with the progress at the start of every run.
+  List<String> get completedDriveIds => _syncProgress.syncedDriveIds;
+
   /// Whether a sync in [state] for [syncingDriveId] could be writing
   /// [driveId].
   ///
@@ -72,8 +90,19 @@ class SyncCubit extends Cubit<SyncState> {
   /// that nothing is writing should not be made to wait for one that is. This
   /// is what makes drive A openable while drive B syncs.
   ///
-  /// An all-drives sync (`syncingDriveId == null`) is treated as touching
-  /// everything, which is the conservative answer and the true one.
+  /// An all-drives sync (`syncingDriveId == null`) covers every drive it has
+  /// not yet finished. [completedDriveIds] is how it says which those are: a
+  /// drive whose history has been walked to the end is no longer being written
+  /// by this run, so a ten-drive sync stops holding the first drive shut for
+  /// the nine that follow it.
+  ///
+  /// **"Walked" is not "nothing will touch this again."** Two phases run after
+  /// every drive's walk: `createGhosts` writes the ghost folders accumulated
+  /// across all drives, and transaction statuses are resolved at the end. Both
+  /// are additive row writes that reach a reader through the Drift stream, so
+  /// what a reader sees is rows appearing - never a half-written folder - but
+  /// this predicate must not be read as a promise that the drive is finished
+  /// with. It says only that its history is read.
   ///
   /// Static, and reading only what callers already hold, so it adds no surface
   /// a test has to stub.
@@ -81,8 +110,34 @@ class SyncCubit extends Cubit<SyncState> {
     required SyncState state,
     required String? syncingDriveId,
     required String driveId,
+    Iterable<String> completedDriveIds = const [],
+    Set<String>? runDriveIds,
   }) {
     if (!(state is SyncInProgress || state is SyncLoadingDrives)) {
+      return false;
+    }
+
+    // Only for a run covering more than one drive.
+    //
+    // The point of releasing early is that a ten-drive run should not hold the
+    // drive it finished first. A single-drive sync has nothing to hold but the
+    // drive it was asked for, and it appends that drive to the completed list
+    // after its walk while the phases that follow are still running - so
+    // releasing there would have the row go quiet, and the panel open, while
+    // the sync the reader started is still going. Nothing is gained and the
+    // report contradicts itself.
+    //
+    // Not for SyncLoadingDrives either: that phase writes the drives table
+    // itself, and a drive read in a previous run tells us nothing about
+    // whether this one is about to rewrite the row.
+    if (state is SyncInProgress &&
+        syncingDriveId == null &&
+        completedDriveIds.contains(driveId)) {
+      return false;
+    }
+
+    // A run over a chosen few does not touch the rest, however it was started.
+    if (runDriveIds != null && !runDriveIds.contains(driveId)) {
       return false;
     }
 
@@ -359,10 +414,85 @@ class SyncCubit extends Cubit<SyncState> {
 
     logger.i('Syncing on login: transactions are still pending');
 
-    startSync(
+    await startSync(
       skipTabVisibilityCheck: true,
       trigger: SyncTrigger.background,
     );
+
+    // One sync is not enough to confirm an upload. A transaction takes several
+    // blocks to mine, so the sync that runs the moment a login notices
+    // something pending will usually find it still pending.
+    watchForPendingConfirmations();
+  }
+
+  /// How long to leave between checks while an upload is waiting to be mined.
+  ///
+  /// An Arweave block is a couple of minutes and a transaction wants several
+  /// of them, so a short interval mostly asks a question whose answer cannot
+  /// have changed yet - of a gateway that rate limits. Fifteen minutes still
+  /// confirms an upload inside the window somebody would call "a while", and
+  /// costs four checks an hour rather than twenty.
+  static const _pendingConfirmationInterval = Duration(minutes: 15);
+
+  Timer? _pendingConfirmationWatch;
+
+  /// Syncs until nothing is waiting to be mined, and then stops.
+  ///
+  /// The gap this closes: an upload writes its file locally and shows it
+  /// immediately, and nothing afterwards ever confirmed it. `autoSync` ships
+  /// `false` in all three flavours, so the periodic sync it gates never runs -
+  /// the comment in the upload form promising that "background periodic sync
+  /// will update lastBlockHeight naturally" describes a timer no shipped
+  /// configuration starts. So a file sat unconfirmed until the reader either
+  /// pressed sync or logged in again.
+  ///
+  /// Deliberately not a periodic sync with a pending check bolted on: it is a
+  /// pending check that syncs. With nothing pending it costs one local
+  /// database read and stops, so an app with no outstanding uploads is exactly
+  /// as quiet as it is today. That is the whole difference between this and
+  /// the `autoSync` flag, which is off precisely because it is unconditional.
+  void watchForPendingConfirmations() {
+    if (isClosed || _pendingConfirmationWatch != null) {
+      return;
+    }
+
+    _pendingConfirmationWatch =
+        Timer(_pendingConfirmationInterval, _confirmPendingTransactions);
+  }
+
+  Future<void> _confirmPendingTransactions() async {
+    _pendingConfirmationWatch = null;
+
+    if (isClosed) {
+      return;
+    }
+
+    bool stillPending;
+
+    try {
+      stillPending = await _syncRepository.hasPendingTransactions();
+    } catch (e, stackTrace) {
+      // A local read that failed is not a reason to keep asking. The next
+      // upload, or the next login, starts this again.
+      logger.e('Could not check for pending transactions', e, stackTrace);
+      return;
+    }
+
+    if (isClosed || !stillPending) {
+      logger.d('Nothing pending: the confirmation watch stops here');
+      return;
+    }
+
+    // Refused outright if a sync is already running, which is the standing
+    // rule and exactly right here: that sync will confirm them anyway.
+    await startSync(trigger: SyncTrigger.background);
+
+    if (isClosed) {
+      return;
+    }
+
+    // Round again. The check above is what ends this, not a counter.
+    watchForPendingConfirmations();
   }
 
   void restartSyncOnFocus() {
@@ -527,7 +657,7 @@ class SyncCubit extends Cubit<SyncState> {
   Future<bool> startSync({
     bool deepSync = false,
     bool skipTabVisibilityCheck = false,
-    List<String>? driveIdsToRetry,
+    List<String>? onlyDriveIds,
     SyncTrigger trigger = SyncTrigger.userInitiated,
   }) async {
     logger.i('Starting Sync');
@@ -538,6 +668,12 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     _syncProgress = SyncProgress.initial();
+
+    // What this run covers, for every surface that has to tell a drive in the
+    // run from one merely sitting beside it. Null means all of them.
+    _runDriveIds = (onlyDriveIds != null && onlyDriveIds.isNotEmpty)
+        ? onlyDriveIds.toSet()
+        : null;
 
     /// Whether this sync actually ran to the end, for a logged-in profile.
     ///
@@ -571,7 +707,12 @@ class SyncCubit extends Cubit<SyncState> {
 
       _initSync = DateTime.now();
 
-      // Every drive is covered, so no single drive owns this one.
+      // No *single* drive owns this run - which is a different question from
+      // which drives it covers. `_runDriveIds` is set above from the ids the
+      // caller asked for and must not be cleared here: doing so made a run
+      // over four drives indistinguishable from a run over all of them the
+      // instant it started, so every row said "Syncing" and the gate held
+      // every drive shut.
       _syncingDriveId = null;
 
       _emitIfOpen(SyncInProgress(trigger: trigger));
@@ -640,7 +781,7 @@ class SyncCubit extends Cubit<SyncState> {
           password: password,
           cipherKey: cipherKey,
           syncDeep: deepSync,
-          driveIdsToRetry: driveIdsToRetry,
+          onlyDriveIds: onlyDriveIds,
           cancellationToken: _currentSyncToken,
           txFechedCallback: (driveId, txCount) {
             _promptToSnapshotBloc.add(
@@ -694,6 +835,11 @@ class SyncCubit extends Cubit<SyncState> {
         _currentSyncToken?.dispose();
         _currentSyncToken = null;
       }
+
+      // Released on every path out. A run over a chosen few that left this set
+      // behind would scope the *next* run to the same few - so syncing four
+      // drives once would quietly narrow every sync after it.
+      _runDriveIds = null;
     }
     _lastSync = DateTime.now();
 
@@ -927,6 +1073,7 @@ class SyncCubit extends Cubit<SyncState> {
       // Released on every path out, cancellation included: nothing is running
       // for this drive any more.
       _syncingDriveId = null;
+      _runDriveIds = null;
     }
 
     _lastSync = DateTime.now();
@@ -1122,7 +1269,29 @@ class SyncCubit extends Cubit<SyncState> {
     if (driveIds.isEmpty) return;
 
     logger.i('Retrying ${driveIds.length} failed drives');
-    await startSync(driveIdsToRetry: driveIds);
+    await startSync(onlyDriveIds: driveIds);
+  }
+
+  /// Sync a chosen few drives, in one run.
+  ///
+  /// The same operation as retrying failures over a different set - the engine
+  /// has always been able to walk an arbitrary subset concurrently, and the
+  /// only thing missing was a way to say which. One run, not several: the
+  /// standing rule that a second sync is refused rather than queued is
+  /// unchanged, and four drives in one run is one run.
+  Future<bool> syncDrives(List<String> driveIds, {bool deep = false}) async {
+    if (driveIds.isEmpty) {
+      return false;
+    }
+
+    logger.i('Syncing ${driveIds.length} chosen drives, deep: $deep');
+
+    // Deep composes with the subset because the two are independent: deep
+    // decides *how* a drive is walked - from block one, ignoring snapshots -
+    // and the subset decides *which* drives are walked at all. Neither changes
+    // the completion bookkeeping, so everything built on syncedDriveIds holds
+    // for a deep run too.
+    return startSync(onlyDriveIds: driveIds, deepSync: deep);
   }
 
   /// Get the current sync progress
@@ -1175,6 +1344,11 @@ class SyncCubit extends Cubit<SyncState> {
   @override
   Future<void> close() async {
     logger.i('Closing SyncCubit instance');
+
+    // A timer that fires after a logout would sync the previous wallet's
+    // drives into a database that has just been emptied.
+    _pendingConfirmationWatch?.cancel();
+    _pendingConfirmationWatch = null;
 
     // First, so the sync begins unwinding while the subscriptions below are
     // being torn down rather than after.

@@ -60,6 +60,11 @@ void main() {
     // Null is "no single-drive sync is running", which is every case but the
     // ones that say otherwise.
     when(() => syncCubit.syncingDriveId).thenReturn(null);
+    // The run's own scope and what it has finished, read by every surface
+    // that tells a drive in the run from one beside it. Null scope is
+    // "every drive"; nothing finished yet.
+    when(() => syncCubit.syncingDriveIds).thenReturn(null);
+    when(() => syncCubit.completedDriveIds).thenReturn(const []);
     when(() => syncCubit.clearErrorState()).thenReturn(null);
     when(() => syncCubit.retryFailedDrives(any())).thenAnswer((_) async {});
     when(() => syncCubit.syncMetadataOnly()).thenAnswer((_) async {});
@@ -564,12 +569,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   }
 
-
   // The groups that tested Resync, Deep Resync, Retry and the record moved with
   // them: those actions now live on the drives list, and
   // `test/drives_list/drives_sync_menu_test.dart` covers them there. What is
   // left here is what this button still does - report, and get out of the way.
-
 
   group('a background sync that failed', () {
     testWidgets('says so at the top bar rather than over the app',
@@ -636,7 +639,6 @@ void main() {
       // the way to the page that carries it.
       expect(find.text('Retry Failed'), findsNothing);
       expect(find.text('All drives'), findsOneWidget);
-
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -709,7 +711,6 @@ void main() {
 
       expect(find.text('All drives'), findsOneWidget);
 
-
       await tester.pumpWidget(const SizedBox());
     });
 
@@ -765,7 +766,6 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
   });
-
 
   /// The two states the app used to emit and render nowhere at all.
   group('states that had no surface', () {

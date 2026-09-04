@@ -183,7 +183,7 @@ void main() {
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
           syncDeep: any(named: 'syncDeep'),
-          driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          onlyDriveIds: any(named: 'onlyDriveIds'),
           cancellationToken: any(named: 'cancellationToken'),
           txFechedCallback: any(named: 'txFechedCallback'),
         )).thenAnswer((invocation) {
@@ -193,7 +193,165 @@ void main() {
     });
   }
 
+  /// Which drives a run over a chosen few reports itself as covering.
+  ///
+  /// Reported from the browser: ticking one drive and pressing Sync selected
+  /// made every row say "Syncing". The scope was set from the ids the caller
+  /// asked for and then cleared two lines later, immediately before the state
+  /// was emitted - so from the moment it started, a run over one drive was
+  /// indistinguishable from a run over all of them, and the gate held every
+  /// drive shut on top of it. The clear was meant for `_syncingDriveId`, which
+  /// answers a different question: which *single* drive owns this run.
+  group('a run over a chosen few', () {
+    test('reports the drives it covers, not all of them', () async {
+      anAllDrivesSyncThatRunsUntilCancelled();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await settled();
+
+      unawaited(cubit.syncDrives(['drive-a', 'drive-b']));
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      expect(
+        cubit.syncingDriveIds,
+        {'drive-a', 'drive-b'},
+        reason: 'every surface that tells a drive in the run from one beside '
+            'it reads this',
+      );
+      expect(
+        cubit.syncingDriveId,
+        isNull,
+        reason: 'no single drive owns a run over several - that is the field '
+            'whose clearing wiped the scope',
+      );
+    });
+
+    test('and lets go of it when the run is over', () async {
+      anAllDrivesSyncThatRunsUntilCancelled();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await settled();
+
+      final sync = cubit.syncDrives(['drive-a']);
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      expect(cubit.syncingDriveIds, isNotNull);
+
+      cubit.cancelSync();
+      nextCheckpoint.complete();
+      await sync;
+      await settled();
+
+      expect(
+        cubit.syncingDriveIds,
+        isNull,
+        reason: 'a scope left behind would quietly narrow every sync after it',
+      );
+    });
+  });
+
   group('closing the cubit stops the sync', () {
+    /// Pressing Stop, as against logging out.
+    ///
+    /// Reported as never having worked, and the report is worth taking
+    /// seriously: for most of this app's life the only control that called
+    /// `cancelSync` was a modal that no longer exists, so nothing was
+    /// exercising the path a user actually takes. These four assert the whole
+    /// of it - the token is cancelled, the run unwinds, the outcome is
+    /// reported, and the app is left able to sync again.
+    test('pressing stop cancels the token the repository was given', () async {
+      aSingleDriveSyncThatRunsUntilCancelled();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await settled();
+
+      unawaited(cubit.startSyncForDrive(driveId: 'drive-a'));
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      expect(cubit.state, isA<SyncInProgress>(),
+          reason: 'precondition: a sync is running');
+      expect(issuedToken!.isCancelled, isFalse);
+
+      cubit.cancelSync();
+
+      expect(issuedToken!.isCancelled, isTrue);
+    });
+
+    test('and the run really does unwind rather than carry on', () async {
+      aSingleDriveSyncThatRunsUntilCancelled();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await settled();
+
+      final sync = cubit.startSyncForDrive(driveId: 'drive-a');
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      cubit.cancelSync();
+      // The repository notices at its next checkpoint, exactly as the real one
+      // does - the token is read between progress events, not mid-request.
+      nextCheckpoint.complete();
+
+      await sync.timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => fail('the sync went on after it was cancelled'),
+      );
+    });
+
+    test('and says so, rather than going quiet', () async {
+      aSingleDriveSyncThatRunsUntilCancelled();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await settled();
+
+      final sync = cubit.startSyncForDrive(driveId: 'drive-a');
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      cubit.cancelSync();
+      nextCheckpoint.complete();
+      await sync;
+      await settled();
+
+      expect(
+        cubit.state,
+        isA<SyncCancelled>(),
+        reason: 'a stop the app does not report is indistinguishable from a '
+            'stop that did not happen, which is how this was described',
+      );
+    });
+
+    /// The half that makes a cancel worth pressing: it has to leave the app
+    /// able to sync again. A run that is stopped but never releases the slot
+    /// refuses every sync afterwards, which reads exactly like a cancel that
+    /// did nothing.
+    test('and leaves the app able to start another sync', () async {
+      aSingleDriveSyncThatRunsUntilCancelled();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await settled();
+
+      final first = cubit.startSyncForDrive(driveId: 'drive-a');
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      cubit.cancelSync();
+      nextCheckpoint.complete();
+      await first;
+      await settled();
+
+      // A second run is accepted, which it would not be if the first had left
+      // SyncInProgress standing or held the token.
+      unawaited(cubit.startSyncForDrive(driveId: 'drive-a'));
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+
+      expect(cubit.state, isA<SyncInProgress>());
+      expect(issuedToken!.isCancelled, isFalse,
+          reason: 'the second run must get a token of its own');
+    });
+
     test('the running sync is cancelled, not abandoned', () async {
       aSingleDriveSyncThatRunsUntilCancelled();
 

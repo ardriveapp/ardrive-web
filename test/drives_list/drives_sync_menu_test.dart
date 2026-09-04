@@ -75,7 +75,7 @@ void main() {
     when(() => syncCubit.startSync(
           deepSync: any(named: 'deepSync'),
           skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
-          driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          onlyDriveIds: any(named: 'onlyDriveIds'),
           trigger: any(named: 'trigger'),
         )).thenAnswer((_) async => true);
 

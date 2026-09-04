@@ -47,6 +47,11 @@ void main() {
 
     when(() => syncCubit.driveListRefreshFailed).thenReturn(false);
     when(() => syncCubit.syncingDriveId).thenReturn(null);
+    // The run's own scope and what it has finished, read by every surface
+    // that tells a drive in the run from one beside it. Null scope is
+    // "every drive"; nothing finished yet.
+    when(() => syncCubit.syncingDriveIds).thenReturn(null);
+    when(() => syncCubit.completedDriveIds).thenReturn(const []);
     when(() => preferences.currentPreferences).thenReturn(prefs());
   });
 
@@ -116,6 +121,25 @@ void main() {
     await cubit.close();
 
     return state;
+  }
+
+  /// Like [settle], but hands back the live cubit so selection - which is
+  /// several calls, not one - can actually be exercised.
+  Future<DrivesListCubit> settleLive(
+    DrivesState drivesState, {
+    SyncState syncState = const _Idle(),
+  }) async {
+    whenListen(drivesCubit, const Stream<DrivesState>.empty(),
+        initialState: drivesState);
+    whenListen(syncCubit, const Stream<SyncState>.empty(),
+        initialState: syncState);
+
+    final cubit = buildCubit();
+    addTearDown(cubit.close);
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+
+    return cubit;
   }
 
   DrivesLoadSuccess loaded(List<Drive> userDrives,
@@ -449,6 +473,129 @@ void main() {
               as DrivesListLoaded;
 
       expect(state.nothingHasEverBeenSynced, isFalse);
+    });
+  });
+
+  /// Choosing drives to sync, and the one way a selection must never be lost.
+  group('selecting drives to sync', () {
+    setUp(() {
+      when(() => syncCubit.syncDrives(any())).thenAnswer((_) async => true);
+    });
+
+    test('ticks accumulate and reach the sync as one run', () async {
+      await addDrive('a');
+      await addDrive('b');
+      final cubit = await settleLive(loaded(await drivesNamed(['a', 'b'])));
+
+      cubit.toggleSelected('a');
+      cubit.toggleSelected('b');
+
+      expect((cubit.state as DrivesListLoaded).selected, {'a', 'b'});
+
+      cubit.syncSelectedDrives();
+      await Future<void>.delayed(Duration.zero);
+
+      final captured = verify(() => syncCubit.syncDrives(captureAny()))
+          .captured
+          .single as List<String>;
+      expect(captured, containsAll(<String>['a', 'b']));
+      expect(captured, hasLength(2),
+          reason: 'four drives chosen is one run over four, not four runs');
+    });
+
+    test('a second tick unticks', () async {
+      await addDrive('a');
+      final cubit = await settleLive(loaded(await drivesNamed(['a'])));
+
+      cubit.toggleSelected('a');
+      cubit.toggleSelected('a');
+
+      expect((cubit.state as DrivesListLoaded).selected, isEmpty);
+    });
+
+    test('nothing ticked syncs everything, rather than nothing', () async {
+      when(() => syncCubit.startSync()).thenAnswer((_) async => true);
+
+      await addDrive('a');
+      final cubit = await settleLive(loaded(await drivesNamed(['a'])));
+
+      cubit.syncSelectedDrives();
+      await Future<void>.delayed(Duration.zero);
+
+      verifyNever(() => syncCubit.syncDrives(any()));
+      verify(() => syncCubit.startSync()).called(1);
+    });
+
+    test('a run that started takes the selection away', () async {
+      await addDrive('a');
+      final cubit = await settleLive(loaded(await drivesNamed(['a'])));
+
+      cubit.toggleSelected('a');
+      cubit.syncSelectedDrives();
+      await Future<void>.delayed(Duration.zero);
+
+      expect((cubit.state as DrivesListLoaded).selected, isEmpty);
+    });
+
+    /// A sync is refused outright while another is running - one at a time,
+    /// never queued. Clearing anyway would make the reader find and re-tick
+    /// the same drives to try again.
+    test('a run that was refused leaves it alone', () async {
+      when(() => syncCubit.syncDrives(any())).thenAnswer((_) async => false);
+
+      await addDrive('a');
+      await addDrive('b');
+      final cubit = await settleLive(loaded(await drivesNamed(['a', 'b'])));
+
+      cubit.toggleSelected('a');
+      cubit.toggleSelected('b');
+      cubit.syncSelectedDrives();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        (cubit.state as DrivesListLoaded).selected,
+        {'a', 'b'},
+        reason: 'the press did nothing, so it must not also cost the reader '
+            'the selection they made',
+      );
+    });
+  });
+
+  /// What the row shows when the figures could not be read at all.
+  ///
+  /// Reported as drives showing a different total between sessions. The
+  /// arithmetic is sound - one row per file, `PRIMARY KEY (id, driveId)`, and
+  /// `size INTEGER NOT NULL` - but the failure path collapsed two different
+  /// answers into one. A drive missing from a summary map that *was* read has
+  /// no files and is 0; a drive whose figures could not be read is unknown and
+  /// is a dash. Passing an empty map for a read that failed made every walked
+  /// drive report itself as empty, which is the confident wrong answer this
+  /// whole series exists to remove - and it looks exactly like a total that
+  /// changed between sessions.
+  group('when the per-drive figures cannot be read', () {
+    test('a walked drive says it does not know, not that it is empty',
+        () async {
+      // Walked, or the figures would be withheld for that reason instead and
+      // the assertion below would hold whatever the failure path did.
+      await addDrive('drive-a', lastBlockHeight: 100);
+
+      // The real query, made to fail the way a real one would: the table it
+      // reads is not there.
+      await db.customStatement('DROP TABLE file_entries');
+
+      final state = await settle(loaded(await drivesNamed(['drive-a'])));
+
+      expect(state, isA<DrivesListLoaded>());
+
+      final drive = (state as DrivesListLoaded).drives.single;
+
+      expect(
+        drive.fileCount,
+        isNull,
+        reason: '0 files is a claim, and nothing here is in a position to '
+            'make it',
+      );
+      expect(drive.totalSize, isNull);
     });
   });
 }

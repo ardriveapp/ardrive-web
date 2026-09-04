@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:ardrive/pages/drive_detail/components/multi_select_paused_notice.dart';
+import 'package:ardrive/pages/drive_detail/components/syncing_drive_notice.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -37,13 +37,14 @@ void main() {
           home: Scaffold(
             body: BlocProvider<SyncCubit>.value(
               value: syncCubit,
-              child: const MultiSelectPausedNotice(driveId: 'drive-on-screen'),
+              child: const SyncingDriveNotice(driveId: 'drive-on-screen'),
             ),
           ),
         ),
       );
 
-  const line = 'Selecting several items is paused while syncing';
+  const line =
+      'Still reading this drive, so more items may appear. Selecting several is paused until it finishes.';
 
   testWidgets('a running sync says why several items cannot be selected',
       (tester) async {
@@ -78,12 +79,12 @@ void main() {
 
     expect(find.text(line), findsNothing);
     // And it leaves nothing behind in the layout it was sharing.
-    expect(tester.getSize(find.byType(MultiSelectPausedNotice)), Size.zero);
+    expect(tester.getSize(find.byType(SyncingDriveNotice)), Size.zero);
   });
 
   test('the notice and the lock read the same condition', () {
     bool locks(SyncState state, {String? syncingDriveId}) =>
-        MultiSelectPausedNotice.locksMultiSelect(
+        SyncingDriveNotice.locksMultiSelect(
           state,
           syncingDriveId: syncingDriveId,
           driveId: 'drive-on-screen',
@@ -111,8 +112,7 @@ void main() {
   /// The limitation this removes: syncing one drive used to disable selection
   /// in every other one, including drives that sync was never going to write.
   test('only a sync that could write this drive holds its selection', () {
-    bool locks(String? syncingDriveId) =>
-        MultiSelectPausedNotice.locksMultiSelect(
+    bool locks(String? syncingDriveId) => SyncingDriveNotice.locksMultiSelect(
           SyncInProgress(trigger: SyncTrigger.userInitiated),
           syncingDriveId: syncingDriveId,
           driveId: 'drive-on-screen',
@@ -151,5 +151,59 @@ void main() {
     expect(light, lightTheme().colorTokens.textLow);
     expect(dark, ArDriveColorTokens.darkMode().textLow);
     expect(light, isNot(dark));
+  });
+
+  /// The fact this notice exists for, kept honest by name.
+  ///
+  /// A reader can now open a drive while it is being walked - which is the
+  /// point - and a list that is four files long during a sync is four *so
+  /// far*. Nothing else on the screen says so: the ring in the top bar reports
+  /// that a sync is running, not that this list is short because of it.
+  testWidgets('says the list is still filling, not only that selection is off',
+      (tester) async {
+    await tester.pumpWidget(wrap());
+    stateController.add(SyncInProgress(trigger: SyncTrigger.background));
+    await tester.pump();
+
+    final text = tester.widget<Text>(find.byType(Text)).data!;
+
+    expect(
+      text.toLowerCase(),
+      contains('more items may appear'),
+      reason: 'a reader who cannot tell four from four-so-far will read a '
+          'half-walked drive as a drive that lost files',
+    );
+  });
+
+  /// A run over a chosen few does not write the drives it was not given.
+  ///
+  /// `syncingDriveId` is null for a subset run exactly as it is for an
+  /// all-drives one, so reading it alone told thirteen drives they were being
+  /// rewritten while four were. The rows had this fixed; the notice that says
+  /// so in words did not.
+  test('a subset run leaves the drives it does not cover alone', () {
+    bool locks(String driveId, {Set<String>? run}) =>
+        SyncingDriveNotice.locksMultiSelect(
+          SyncInProgress(trigger: SyncTrigger.userInitiated),
+          syncingDriveId: null,
+          syncingDriveIds: run,
+          driveId: driveId,
+        );
+
+    expect(
+      locks('in-the-run', run: {'in-the-run', 'also-in-it'}),
+      isTrue,
+    );
+    expect(
+      locks('not-in-the-run', run: {'in-the-run', 'also-in-it'}),
+      isFalse,
+      reason: 'nothing is rewriting this drive, so nothing should tell its '
+          'reader that the list is filling or that selection is paused',
+    );
+    expect(
+      locks('any-drive'),
+      isTrue,
+      reason: 'no scope at all is still an all-drives run',
+    );
   });
 }

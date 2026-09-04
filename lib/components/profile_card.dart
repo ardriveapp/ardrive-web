@@ -52,6 +52,9 @@ class _ProfileCardState extends State<ProfileCard> {
   bool _showProfileCard = false;
   Future<_AccountStats>? _accountStatsFuture;
 
+  /// Whose statistics [_accountStatsFuture] holds.
+  String? _accountStatsForWallet;
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileCubit, ProfileState>(
@@ -424,7 +427,20 @@ class _ProfileCardState extends State<ProfileCard> {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final driveDao = context.read<DriveDao>();
-    _accountStatsFuture ??= _getAccountStats(driveDao);
+
+    // Whose drives these are. A drive somebody else shared is not this
+    // account's storage - it is somebody else's, readable here.
+    final walletAddress = context.read<ArDriveAuth>().currentUser.walletAddress;
+
+    // Keyed to the wallet, not merely computed once. This card stays mounted
+    // while the profile changes between logged-in and logged-out, so a plain
+    // `??=` let a second account read the first one's drive count, file count
+    // and size.
+    if (_accountStatsFuture == null ||
+        _accountStatsForWallet != walletAddress) {
+      _accountStatsForWallet = walletAddress;
+      _accountStatsFuture = _getAccountStats(driveDao, walletAddress);
+    }
 
     return FutureBuilder<_AccountStats>(
       future: _accountStatsFuture,
@@ -447,19 +463,69 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
-  Future<_AccountStats> _getAccountStats(DriveDao driveDao) async {
-    final drives = await driveDao.allDrives().get();
+  /// What this account holds locally, counted the way the drives list counts
+  /// it.
+  ///
+  /// This used `filesInDriveWithRevisionTransactions`, once per drive, and
+  /// added up the rows it returned. That query inner-joins each file to the
+  /// metadata and data transactions of its latest revision, so **a file whose
+  /// transaction rows have not synced yet is not in the result at all** - it is
+  /// dropped from the count and its bytes from the total. As a sync fills those
+  /// rows in, the same drive reports a larger total than it did before, which
+  /// is what a reader sees as "the same drive, a different number of GB in each
+  /// session".
+  ///
+  /// [DriveDao.driveContentSummaries] asks the question this line is actually
+  /// asking: how many files are in the local tables, and how big are they. One
+  /// aggregate query for every drive rather than one query per drive returning
+  /// every row, summed in SQL rather than in Dart - and, being the same source
+  /// the drives list reads, it cannot disagree with the per-drive figures shown
+  /// there.
+  ///
+  /// Both numbers still describe this device rather than Arweave: a drive that
+  /// has not been walked contributes nothing, because nothing about it is
+  /// known.
+  Future<_AccountStats> _getAccountStats(
+    DriveDao driveDao,
+    String walletAddress,
+  ) async {
+    // Only the drives this wallet owns, and only the ones it is showing.
+    //
+    // A drive shared with the account is somebody else's storage, readable
+    // here - counting it made this line describe what the reader can see
+    // rather than what they are keeping, and a shared drive of a million files
+    // would have dwarfed their own.
+    //
+    // A hidden drive is left out because every other surface leaves it out:
+    // `allDrives()` is a plain `SELECT * FROM drives`, while the sidebar's
+    // scopes all exclude hidden drives, so this line could say seventeen
+    // drives beside an All drives that listed fifteen.
+    //
+    // Hidden *files* inside a drive still count, and the show-hidden toggle
+    // does not change these numbers. Hiding is a view preference: it frees
+    // nothing, and a figure for what somebody is keeping must not fall because
+    // they flipped a switch that changed nothing about what is stored.
+    final drives = (await driveDao.allDrives().get())
+        .where(
+            (drive) => drive.ownerAddress == walletAddress && !drive.isHidden)
+        .toList();
+
+    final summaries = await driveDao.driveContentSummaries();
+
     var fileCount = 0;
     var totalSize = 0;
+
     for (final drive in drives) {
-      final files = await driveDao
-          .filesInDriveWithRevisionTransactions(driveId: drive.id)
-          .get();
-      fileCount += files.length;
-      for (final file in files) {
-        totalSize += file.size;
+      final summary = summaries[drive.id];
+
+      if (summary == null) {
+        continue;
       }
+
+      fileCount += summary.fileCount;
+      totalSize += summary.totalSize;
     }
+
     return _AccountStats(
       driveCount: drives.length,
       fileCount: fileCount,

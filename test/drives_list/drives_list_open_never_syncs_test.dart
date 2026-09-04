@@ -67,6 +67,11 @@ void main() {
 
     when(() => syncCubit.driveListRefreshFailed).thenReturn(false);
     when(() => syncCubit.syncingDriveId).thenReturn(null);
+    // The run's own scope and what it has finished, read by every surface
+    // that tells a drive in the run from one beside it. Null scope is
+    // "every drive"; nothing finished yet.
+    when(() => syncCubit.syncingDriveIds).thenReturn(null);
+    when(() => syncCubit.completedDriveIds).thenReturn(const []);
     when(() => preferences.currentPreferences).thenReturn(prefs());
     when(() => syncCubit.startSyncForDrive(
           driveId: any(named: 'driveId'),
@@ -152,7 +157,7 @@ void main() {
     verifyNever(() => syncCubit.startSync(
           deepSync: any(named: 'deepSync'),
           skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
-          driveIdsToRetry: any(named: 'driveIdsToRetry'),
+          onlyDriveIds: any(named: 'onlyDriveIds'),
           trigger: any(named: 'trigger'),
         ));
   });

@@ -913,6 +913,24 @@ class _SyncButtonMenu extends StatelessWidget {
     // appears when there is something to report, so a menu of controls behind
     // it would be a second place to do what that page already does.
     final items = [
+      // The way out of a sync that is going to take longer than the reader is
+      // willing to wait.
+      //
+      // The engine has always been able to stop one - both entry points carry
+      // a cancellation token and both report SyncCancelled - but the only
+      // control that asked for it was the blocking modal, and that went when
+      // sync stopped taking the app away. So a drive with a million
+      // transactions could be started and not stopped, which is the one case
+      // the feature exists for. This is where a running sync is already
+      // reported, so it is where the way to stop it belongs.
+      if (isSyncing)
+        ArDriveDropdownItem(
+          onClick: () => context.read<SyncCubit>().cancelSync(),
+          content: ArDriveDropdownItemTile(
+            name: appLocalizationsOf(context).syncStopRunning,
+            icon: ArDriveIcons.x(color: iconColor),
+          ),
+        ),
       ArDriveDropdownItem(
         onClick: () => context.read<AppRouterDelegate>().showDrivesList(),
         content: ArDriveDropdownItemTile(
