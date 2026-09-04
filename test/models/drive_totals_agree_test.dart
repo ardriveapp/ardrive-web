@@ -124,7 +124,7 @@ void main() {
     expect(
       totalSize,
       1000,
-      reason: "the shared drive's bytes belong to whoever owns it",
+      reason: 'the shared drive\'s bytes belong to whoever owns it',
     );
   });
 

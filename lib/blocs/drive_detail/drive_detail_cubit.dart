@@ -67,6 +67,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   /// What was last drawn, so a tick that changes nothing can be recognised.
   FolderWithContents? _lastFolderContents;
+
+  /// The drive whose root revision this screen is waiting on, if any.
+  ///
+  /// Only a sync writing that drive can end the wait, so a sync that ends
+  /// without doing it has to be noticed - see [_recoverIfStillWaiting].
+  String? _awaitingRootRevisionFor;
   bool _isExplicitSync = false;
 
   /// Bumped by every [openFolder]. Cancelling `_folderSubscription` does not
@@ -190,6 +196,41 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // (registered by _listenForSyncCompletion, above)
   }
 
+  /// Ends a wait for a root revision that is never going to arrive.
+  ///
+  /// The panel waits rather than claiming "Drive Not Synced" while a sync is
+  /// walking that drive, because the revision has probably not landed *yet*.
+  /// The wait is ended by the tick that writes it - and a run that fails, is
+  /// cancelled, or fails on this drive in particular writes nothing at all, so
+  /// no tick comes and the panel sits on "Opening..." for good.
+  ///
+  /// So a run reaching any terminal state re-reads the folder once. If the
+  /// revision did arrive, this draws it; if it did not, the same branch now
+  /// finds no sync in progress and says "Drive Not Synced", which is true and
+  /// offers a way out.
+  Future<void> _recoverIfStillWaiting() async {
+    final waitingFor = _awaitingRootRevisionFor;
+
+    if (waitingFor == null || isClosed) {
+      return;
+    }
+
+    _awaitingRootRevisionFor = null;
+
+    if (waitingFor != _driveId || state is! DriveDetailLoadInProgress) {
+      return;
+    }
+
+    final drive =
+        await _driveDao.driveById(driveId: waitingFor).getSingleOrNull();
+
+    if (isClosed || drive == null || waitingFor != _driveId) {
+      return;
+    }
+
+    openFolder(folderId: drive.rootFolderId, otherDriveId: waitingFor);
+  }
+
   /// Redraws once more if the throttle dropped the last tick of a run.
   ///
   /// The throttle is safe to drop ticks precisely because another is coming.
@@ -218,6 +259,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   void _listenForSyncCompletion() {
     _syncSubscription = _syncCubit.stream.listen((syncState) {
       if (SyncCubit.syncHasFinished(syncState)) {
+        _recoverIfStillWaiting();
         _refreshAfterDroppedRedraws();
       }
 
@@ -711,11 +753,24 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 driveId: driveId,
               )) {
                 if (this.state is! DriveDetailLoadSuccess) {
+                  // Remembered, because waiting here is only safe if something
+                  // is going to end the wait. The tick that would resolve this
+                  // arrives only if the sync writes a row for this drive - and
+                  // a sync that fails, is cancelled, or fails on this drive
+                  // specifically writes nothing, so the stream never fires
+                  // again and the panel says "Opening..." until the reader
+                  // navigates away and back.
+                  //
+                  // Before reading stopped waiting for the sync this could not
+                  // happen: the check always ran after the sync had settled.
+                  _awaitingRootRevisionFor = driveId;
                   emit(DriveDetailLoadInProgress());
                 }
 
                 return;
               }
+
+              _awaitingRootRevisionFor = null;
 
               emit(DriveDetailLoadUnsynced(drive: drive));
               return;

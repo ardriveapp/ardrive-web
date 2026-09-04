@@ -52,6 +52,9 @@ class _ProfileCardState extends State<ProfileCard> {
   bool _showProfileCard = false;
   Future<_AccountStats>? _accountStatsFuture;
 
+  /// Whose statistics [_accountStatsFuture] holds.
+  String? _accountStatsForWallet;
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileCubit, ProfileState>(
@@ -429,7 +432,15 @@ class _ProfileCardState extends State<ProfileCard> {
     // account's storage - it is somebody else's, readable here.
     final walletAddress = context.read<ArDriveAuth>().currentUser.walletAddress;
 
-    _accountStatsFuture ??= _getAccountStats(driveDao, walletAddress);
+    // Keyed to the wallet, not merely computed once. This card stays mounted
+    // while the profile changes between logged-in and logged-out, so a plain
+    // `??=` let a second account read the first one's drive count, file count
+    // and size.
+    if (_accountStatsFuture == null ||
+        _accountStatsForWallet != walletAddress) {
+      _accountStatsForWallet = walletAddress;
+      _accountStatsFuture = _getAccountStats(driveDao, walletAddress);
+    }
 
     return FutureBuilder<_AccountStats>(
       future: _accountStatsFuture,

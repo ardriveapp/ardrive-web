@@ -61,15 +61,30 @@ class SyncingDriveNotice extends StatelessWidget {
     SyncState state, {
     required String? syncingDriveId,
     required String driveId,
-  }) =>
-      state is SyncInProgress &&
-      (syncingDriveId == null || syncingDriveId == driveId);
+    Set<String>? syncingDriveIds,
+  }) {
+    if (state is! SyncInProgress) {
+      return false;
+    }
+
+    // A run over a chosen few also has no single drive id, so a null
+    // `syncingDriveId` means "every drive" only when the run has no scope
+    // either. Without this, syncing four drives told the other thirteen they
+    // were being written - the same mistake the rows made, in the one place
+    // that says so in words.
+    if (syncingDriveIds != null) {
+      return syncingDriveIds.contains(driveId);
+    }
+
+    return syncingDriveId == null || syncingDriveId == driveId;
+  }
 
   @override
   Widget build(BuildContext context) {
     if (!locksMultiSelect(
       context.watch<SyncCubit>().state,
       syncingDriveId: context.watch<SyncCubit>().syncingDriveId,
+      syncingDriveIds: context.watch<SyncCubit>().syncingDriveIds,
       driveId: driveId,
     )) {
       return const SizedBox.shrink();

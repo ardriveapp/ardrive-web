@@ -174,4 +174,36 @@ void main() {
           'half-walked drive as a drive that lost files',
     );
   });
+
+  /// A run over a chosen few does not write the drives it was not given.
+  ///
+  /// `syncingDriveId` is null for a subset run exactly as it is for an
+  /// all-drives one, so reading it alone told thirteen drives they were being
+  /// rewritten while four were. The rows had this fixed; the notice that says
+  /// so in words did not.
+  test('a subset run leaves the drives it does not cover alone', () {
+    bool locks(String driveId, {Set<String>? run}) =>
+        SyncingDriveNotice.locksMultiSelect(
+          SyncInProgress(trigger: SyncTrigger.userInitiated),
+          syncingDriveId: null,
+          syncingDriveIds: run,
+          driveId: driveId,
+        );
+
+    expect(
+      locks('in-the-run', run: {'in-the-run', 'also-in-it'}),
+      isTrue,
+    );
+    expect(
+      locks('not-in-the-run', run: {'in-the-run', 'also-in-it'}),
+      isFalse,
+      reason: 'nothing is rewriting this drive, so nothing should tell its '
+          'reader that the list is filling or that selection is paused',
+    );
+    expect(
+      locks('any-drive'),
+      isTrue,
+      reason: 'no scope at all is still an all-drives run',
+    );
+  });
 }

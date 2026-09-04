@@ -148,6 +148,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
                   syncState: syncState,
                   progress: reportsProgress ? snapshot.data : null,
                   driveName: _driveName(drivesState, snapshot.data),
+                  canBeStopped: syncState is SyncInProgress,
                   syncCoversThisDrive: _coversSelectedDrive(
                     drivesState,
                     syncState,
@@ -311,6 +312,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
     required bool isLoadingDrives,
     required SyncState syncState,
     required bool syncCoversThisDrive,
+    required bool canBeStopped,
     required SyncProgress? progress,
     required String? driveName,
   }) {
@@ -445,7 +447,14 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
       // decide the wait is not worth it. The top bar carries the same action;
       // this is where somebody staring at a drive that will not open looks
       // first, and a drive with a million transactions is exactly the case.
-      if (isSyncing) ...[
+      // Only while there is a sync that stopping can actually stop.
+      //
+      // `isSyncing` also covers SyncLoadingDrives, and `cancelSync` does
+      // nothing in that state - it cancels the token a running sync holds, and
+      // the drive-list refresh holds none. Offering the button there gave a
+      // reader a control that acknowledged the press and changed nothing,
+      // which is worse than not offering it.
+      if (canBeStopped) ...[
         const SizedBox(height: 16),
         ArDriveButtonNew(
           text: appLocalizationsOf(context).syncStopRunning,

@@ -218,6 +218,46 @@ void main() {
       },
     );
 
+    /// A wait needs something that can end it.
+    ///
+    /// The panel waits rather than saying "Drive Not Synced" while a sync is
+    /// walking that drive, and the tick that writes the root revision is what
+    /// ends the wait. A run that fails, is cancelled, or fails on this drive
+    /// in particular writes nothing - so no tick comes, and the panel sat on
+    /// "Opening..." until the reader navigated away and back. Before reading
+    /// stopped waiting for the sync this could not happen: the check always
+    /// ran after the sync had settled.
+    blocTest<DriveDetailCubit, DriveDetailState>(
+      'a sync that ends without writing the drive does not strand the panel',
+      setUp: () async {
+        await insertDrive(lastBlockHeight: 0);
+
+        whenListen(syncCubit, syncStates.stream,
+            initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
+        when(() => syncCubit.syncingDriveId).thenReturn(driveId);
+      },
+      build: buildCubit,
+      act: (cubit) async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(cubit.state, isA<DriveDetailLoadInProgress>(),
+            reason: 'precondition: waiting for a revision that may still come');
+
+        // The sync ends having written nothing for this drive.
+        when(() => syncCubit.syncingDriveId).thenReturn(null);
+        syncStates.add(SyncFailure());
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      },
+      verify: (cubit) {
+        expect(
+          cubit.state,
+          isA<DriveDetailLoadUnsynced>(),
+          reason: 'the revision is not coming, so the panel has to say so and '
+              'offer a way out rather than spin for ever',
+        );
+      },
+    );
+
     /// And the claim is still made when nothing is running, because then it is
     /// true and the offer to sync is one the cubit will honour.
     blocTest<DriveDetailCubit, DriveDetailState>(

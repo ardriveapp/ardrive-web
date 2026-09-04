@@ -125,6 +125,7 @@ Widget _buildDataListContent(
           lockMultiSelect: SyncingDriveNotice.locksMultiSelect(
                 context.watch<SyncCubit>().state,
                 syncingDriveId: context.watch<SyncCubit>().syncingDriveId,
+                syncingDriveIds: context.watch<SyncCubit>().syncingDriveIds,
                 driveId: folder.driveId,
               ) ||
               !context.watch<ActivityTracker>().isMultiSelectEnabled,
