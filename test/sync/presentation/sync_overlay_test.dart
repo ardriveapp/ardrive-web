@@ -6,6 +6,7 @@ import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/presentation/sync_overlay.dart';
+import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -156,6 +157,113 @@ void main() {
 
     expect(find.byType(SyncScrim), findsNothing);
     expect(find.byType(ProgressDialog), findsNothing);
+  });
+
+  testWidgets('a finished sync never holds the app', (tester) async {
+    // Whoever asked for it. The summary is drawn without a scrim and leaves on
+    // its own, so a sync that used to end in silence never starts costing a
+    // click to get rid of.
+    for (final trigger in SyncTrigger.values) {
+      expect(
+        SyncOverlay.blocksTheApp(
+          SyncComplete(
+            entitiesSynced: 0,
+            completedAt: DateTime.now(),
+            sequence: 1,
+            trigger: trigger,
+          ),
+        ),
+        isFalse,
+        reason: 'a $trigger sync that finished must not block the app',
+      );
+    }
+  });
+
+  testWidgets('the modal the user waited on ends on what the sync found',
+      (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        SyncComplete(
+          entitiesSynced: 0,
+          completedAt: DateTime.now(),
+          sequence: 1,
+          trigger: SyncTrigger.userInitiated,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Sync Complete'), findsOneWidget);
+    expect(find.text('Up to date — nothing new'), findsOneWidget);
+    // The wait is over, so the app underneath is free again.
+    expect(find.byType(SyncScrim), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the summary sees itself out', (tester) async {
+    await tester.pumpWidget(
+      wrap(
+        SyncComplete(
+          entitiesSynced: 12,
+          completedAt: DateTime.now(),
+          sequence: 1,
+          trigger: SyncTrigger.userInitiated,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('12 items changed'), findsOneWidget);
+
+    // Nobody clicks anything here: the modal is gone a few seconds later.
+    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+
+    expect(find.text('12 items changed'), findsNothing);
+    expect(find.byType(ArDriveStandardModalNew), findsNothing);
+  });
+
+  testWidgets('a finished background sync is not painted over the app',
+      (tester) async {
+    // It reports at the top bar's indicator, where it was running - the app
+    // was never interrupted for it and must not be interrupted by its result.
+    await tester.pumpWidget(
+      wrap(
+        SyncComplete(
+          entitiesSynced: 12,
+          completedAt: DateTime.now(),
+          sequence: 1,
+          trigger: SyncTrigger.background,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(SyncScrim), findsNothing);
+    expect(find.byType(ArDriveStandardModalNew), findsNothing);
+    expect(find.text('12 items changed'), findsNothing);
+  });
+
+  testWidgets('a result from an hour ago is not announced again',
+      (tester) async {
+    // SyncComplete is still the cubit's state long after the sync. The shell
+    // builds this stack separately in its desktop and mobile branches, so
+    // crossing the breakpoint builds a fresh one - which used to pop a "Sync
+    // Complete" modal for a sync that finished an hour earlier.
+    await tester.pumpWidget(
+      wrap(
+        SyncComplete(
+          entitiesSynced: 12,
+          completedAt: DateTime.now().subtract(const Duration(hours: 1)),
+          sequence: 1,
+          trigger: SyncTrigger.userInitiated,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Sync Complete'), findsNothing);
+    expect(find.text('12 items changed'), findsNothing);
   });
 
   testWidgets('the modal counts whole percent', (tester) async {

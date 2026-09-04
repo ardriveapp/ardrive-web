@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
+import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -45,10 +47,10 @@ void main() {
     await progressController.close();
   });
 
-  Widget host(Widget body) {
+  Widget host(Widget body, {ArDriveThemeData? theme}) {
     return Portal(
       child: ArDriveTheme(
-        themeData: lightTheme(),
+        themeData: theme ?? lightTheme(),
         child: MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -68,7 +70,8 @@ void main() {
     );
   }
 
-  Widget wrap() => host(const Row(children: [SyncButton()]));
+  Widget wrap({ArDriveThemeData? theme}) =>
+      host(const Row(children: [SyncButton()]), theme: theme);
 
   /// The button as `MobileAppBar` places it: against the trailing edge, with
   /// the rest of the bar's chrome to its right.
@@ -98,6 +101,28 @@ void main() {
       await tester.pump(const Duration(milliseconds: 10));
     }
   }
+
+  /// A finished sync, as the cubit reports it. [sequence] is what tells two
+  /// results apart - see [SyncComplete.sequence] - so each call gets its own.
+  var nextSequence = 0;
+  SyncComplete finished({
+    int entitiesSynced = 0,
+    int skippedEntityCount = 0,
+    bool isSingleDriveSync = false,
+    String? driveName,
+    SyncTrigger trigger = SyncTrigger.background,
+    DateTime? completedAt,
+    int? sequence,
+  }) =>
+      SyncComplete(
+        entitiesSynced: entitiesSynced,
+        skippedEntityCount: skippedEntityCount,
+        isSingleDriveSync: isSingleDriveSync,
+        driveName: driveName,
+        trigger: trigger,
+        completedAt: completedAt ?? DateTime.now(),
+        sequence: sequence ?? ++nextSequence,
+      );
 
   testWidgets('an idle sync leaves the plain refresh icon alone',
       (tester) async {
@@ -299,6 +324,217 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(tester.getSize(find.byType(SyncButton)), idleSize);
+  });
+
+  testWidgets('a finished background sync says what it found', (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    await startSyncing(tester);
+    stateController.add(finished(entitiesSynced: 12));
+    await tester.pump(const Duration(milliseconds: 10));
+
+    // Beside the indicator that was turning for it - no hover, no click.
+    expect(find.text('12 items changed'), findsOneWidget);
+    // And the sync is over, so the ring is gone.
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a sync that changed nothing still says so', (tester) async {
+    // The case the whole summary exists for: told nothing changed, the user
+    // learns the next one is safe to ignore.
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    stateController.add(finished());
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(find.text('Up to date — nothing new'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('the result takes itself away', (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    stateController.add(finished());
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(find.text('Up to date — nothing new'), findsOneWidget);
+
+    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+
+    expect(find.text('Up to date — nothing new'), findsNothing);
+  });
+
+  testWidgets('a second result that reads the same is shown again',
+      (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    stateController.add(finished());
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+
+    expect(find.text('Up to date — nothing new'), findsNothing);
+
+    // Two zero-change syncs read identically, and land in the same
+    // millisecond when nothing does any I/O between them. The second one is
+    // still a result, and reporting the first must not have used the summary
+    // up - so they are told apart by sequence, not by a timestamp.
+    stateController.add(finished());
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(find.text('Up to date — nothing new'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('results never stack up', (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    stateController.add(finished());
+    await tester.pump(const Duration(milliseconds: 10));
+    stateController.add(finished());
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(find.text('Up to date — nothing new'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('reporting a result does not move the top bar', (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    final idleSize = tester.getSize(find.byType(SyncButton));
+
+    stateController.add(finished(entitiesSynced: 12));
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(find.text('12 items changed'), findsOneWidget);
+    expect(tester.getSize(find.byType(SyncButton)), idleSize);
+
+    // And nothing moves back when it leaves either.
+    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+
+    expect(tester.getSize(find.byType(SyncButton)), idleSize);
+  });
+
+  testWidgets(
+      'what could not be read survives a long drive name on a narrow phone',
+      (tester) async {
+    // The pill is capped at the status header's width and the arrival clause
+    // is allowed to ellipsize. Joined into one string the unreadable clause
+    // came last, so a long drive name pushed it past the cap and the ellipsis
+    // ate the one clause that says this sync has holes in it - inverting the
+    // rule the summary exists to state.
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(wrapNarrow(trailingChrome: 120));
+    await tester.pump();
+
+    stateController.add(finished(
+      entitiesSynced: 12,
+      skippedEntityCount: 3,
+      isSingleDriveSync: true,
+      driveName: 'Family Photos And Videos Nineteen Ninety Nine To Today',
+    ));
+    await tester.pump(const Duration(milliseconds: 10));
+
+    const unreadable = '3 updates could not be read';
+    expect(find.text(unreadable), findsOneWidget);
+
+    // Rendered, not merely present: the clause has to fit the lines it was
+    // given, and start on screen.
+    final paragraph =
+        tester.renderObject<RenderParagraph>(find.text(unreadable));
+    expect(
+      paragraph.didExceedMaxLines,
+      isFalse,
+      reason: 'the unreadable count must never be the part that gets cut',
+    );
+    expect(
+        tester.getTopLeft(find.text(unreadable)).dx, greaterThanOrEqualTo(0));
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('a result from an hour ago is not flashed again', (tester) async {
+    // SyncComplete is still the cubit's state long after the sync. The shell
+    // builds the top bar afresh when the layout crosses its breakpoint, which
+    // used to pop the summary for a sync that finished an hour earlier.
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    stateController.add(finished(
+      entitiesSynced: 12,
+      completedAt: DateTime.now().subtract(const Duration(hours: 1)),
+    ));
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(find.text('12 items changed'), findsNothing);
+    // And the button is its idle self, not a flash with nothing in it.
+    expect(find.byType(ArDriveIcon), findsOneWidget);
+  });
+
+  testWidgets('a sync the user asked for is left to its own modal',
+      (tester) async {
+    // It has been holding a modal the whole time; the result belongs there,
+    // and saying it twice would be twice as much to dismiss.
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    stateController.add(
+      finished(
+        entitiesSynced: 12,
+        trigger: SyncTrigger.userInitiated,
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 10));
+
+    expect(find.text('12 items changed'), findsNothing);
+    // The button is back to its idle self.
+    expect(find.byType(ArDriveIcon), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('the summary is drawn in the theme it lands in', (tester) async {
+    Future<Color> pillColourUnder(ArDriveThemeData theme) async {
+      await tester.pumpWidget(wrap(theme: theme));
+      await tester.pump();
+
+      stateController.add(finished());
+      await tester.pump(const Duration(milliseconds: 10));
+
+      final pill = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.text('Up to date — nothing new'),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      await tester.pumpWidget(const SizedBox());
+
+      return (pill.decoration! as BoxDecoration).color!;
+    }
+
+    final light = await pillColourUnder(lightTheme());
+    final dark = await pillColourUnder(
+      ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode()),
+    );
+
+    expect(light, lightTheme().colorTokens.containerL1);
+    expect(dark, ArDriveColorTokens.darkMode().containerL1);
+    // Which is the point: a colour written into the widget would be the same
+    // one in both, and unreadable in one of them.
+    expect(light, isNot(dark));
   });
 
   testWidgets('the resync menu survives a running sync', (tester) async {

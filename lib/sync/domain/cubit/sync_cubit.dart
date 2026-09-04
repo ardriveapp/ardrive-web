@@ -86,6 +86,23 @@ class SyncCubit extends Cubit<SyncState> {
     _lastSyncSkippedEntityTxIdsByDrive = progress.skippedEntityTxIdsByDrive;
   }
 
+  /// What the sync that just finished found, read straight off the progress it
+  /// already reported. Nothing here is recounted: the repository owns these
+  /// numbers, this only carries them out to the two surfaces that say so.
+  /// Counts the results this cubit has reported, so each one is a state of its
+  /// own. See [SyncComplete.sequence] for why a timestamp will not do.
+  int _completedSyncCount = 0;
+
+  SyncComplete _syncComplete(SyncTrigger trigger) => SyncComplete(
+        entitiesSynced: _syncProgress.entitiesSynced,
+        skippedEntityCount: _syncProgress.skippedEntityCount,
+        isSingleDriveSync: _syncProgress.isSingleDriveSync,
+        driveName: _syncProgress.driveName,
+        trigger: trigger,
+        completedAt: DateTime.now(),
+        sequence: ++_completedSyncCount,
+      );
+
   SyncCubit({
     required ProfileCubit profileCubit,
     required ActivityCubit activityCubit,
@@ -286,6 +303,17 @@ class SyncCubit extends Cubit<SyncState> {
 
     _syncProgress = SyncProgress.initial();
 
+    /// Whether this sync actually ran to the end, for a logged-in profile.
+    ///
+    /// The catch below reports the error and falls through to the block that
+    /// decides what to emit, and a sync that threw before any drive query ran
+    /// - `updateUserDrives()` failing, say - records no `failedQueries`. Left
+    /// to itself that block reads "no errors, nothing synced" and announces
+    /// "Up to date - nothing new" beside the snackbar saying the sync failed.
+    /// A sync with no logged-in profile behind it reaches the same place with
+    /// the same nothing to report.
+    var ranToCompletion = false;
+
     // Create a new cancellation token for this sync
     _currentSyncToken?.dispose(); // Clean up any previous token
     _currentSyncToken = SyncCancellationToken();
@@ -379,6 +407,8 @@ class SyncCubit extends Cubit<SyncState> {
         syncProgressController.add(_syncProgress);
       }
 
+      ranToCompletion = profile is ProfileLoggedIn;
+
       // Only refresh balance if drives were actually synced (skip after no-op)
       if (profile is ProfileLoggedIn && _syncProgress.drivesSynced > 0) {
         _profileCubit.refreshBalance();
@@ -437,7 +467,11 @@ class SyncCubit extends Cubit<SyncState> {
         skippedEntityCount: _syncProgress.skippedEntityCount,
         skippedEntityTxIdsByDrive: _syncProgress.skippedEntityTxIdsByDrive,
       ));
+    } else if (ranToCompletion) {
+      emit(_syncComplete(trigger));
     } else {
+      // Nothing to report, so nothing is claimed - exactly what this path
+      // emitted before results existed.
       emit(SyncIdle());
     }
   }
@@ -467,6 +501,10 @@ class SyncCubit extends Cubit<SyncState> {
       isSingleDriveSync: true,
       drivesCount: 1,
     );
+
+    /// See [startSync]: the single-drive path falls through to the same
+    /// decision after the same catch, and must make the same non-claim.
+    var ranToCompletion = false;
 
     // Create a new cancellation token for this sync
     _currentSyncToken?.dispose();
@@ -538,6 +576,8 @@ class SyncCubit extends Cubit<SyncState> {
         syncProgressController.add(_syncProgress);
       }
 
+      ranToCompletion = profile is ProfileLoggedIn;
+
       // Only refresh balance if drives were actually synced
       if (profile is ProfileLoggedIn && _syncProgress.drivesSynced > 0) {
         _profileCubit.refreshBalance();
@@ -589,6 +629,8 @@ class SyncCubit extends Cubit<SyncState> {
         skippedEntityCount: _syncProgress.skippedEntityCount,
         skippedEntityTxIdsByDrive: _syncProgress.skippedEntityTxIdsByDrive,
       ));
+    } else if (ranToCompletion) {
+      emit(_syncComplete(trigger));
     } else {
       emit(SyncIdle());
     }
