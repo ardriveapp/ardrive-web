@@ -1,39 +1,70 @@
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:flutter/material.dart';
-import 'package:percent_indicator/linear_percent_indicator.dart';
 
-class ProgressBar extends StatefulWidget {
+/// The bar the sync modal fills.
+///
+/// One widget type fills this slot in both phases, and that is the whole
+/// design. The bar used to return a [LinearProgressIndicator] while a phase
+/// could not measure itself and a `LinearPercentIndicator` when it could - two
+/// types in one position, so `Widget.canUpdate` failed on the swap, Flutter
+/// unmounted the element and percent_indicator built a fresh
+/// `Tween(begin: 0.0, end: percent)` in `initState` and animated it. Leaving
+/// the unmeasurable phase at 97% therefore emptied the bar and refilled it over
+/// a full second, which is exactly the backwards-moving bar the sync's
+/// monotonic progress exists to prevent, reintroduced one layer up. It fired
+/// for anyone with pending transactions - anyone who had uploaded recently.
+///
+/// [LinearProgressIndicator] already draws both: it is indeterminate exactly
+/// when its `value` is null. Same distinction, no swap, and the element - with
+/// whatever its fill is currently doing - survives the transition.
+class ProgressBar extends StatelessWidget {
   const ProgressBar({super.key, required this.percentage});
 
   final Stream<LinearProgress> percentage;
 
   @override
-  State<ProgressBar> createState() => _ProgressBarState();
-}
-
-class _ProgressBarState extends State<ProgressBar> {
-  late double _percentage;
-
-  @override
   Widget build(BuildContext context) {
     return StreamBuilder<LinearProgress>(
-      stream: widget.percentage,
+      stream: percentage,
       builder: (context, snapshot) {
-        _percentage = snapshot.hasData
-            ? ((snapshot.data!.progress * 100)).roundToDouble() / 100
-            : 0;
+        final progress = snapshot.data;
 
-        return LinearPercentIndicator(
-          animation: true,
-          animateFromLastPercent: true,
-          lineHeight: 10.0,
-          barRadius: const Radius.circular(5),
-          backgroundColor: const Color(0xffFAFAFA),
-          animationDuration: 1000,
-          percent: _percentage,
-          progressColor: const Color(0xff3C3C3C),
+        // A phase that cannot know its own length gets a bar that does not
+        // claim to - see [LinearProgress.isIndeterminate]. The alternative is
+        // a number sitting perfectly still for up to half a minute, which is
+        // what a hung app looks like.
+        final isIndeterminate = progress?.isIndeterminate ?? false;
+        final value = progress == null
+            ? 0.0
+            : ((progress.progress * 100).roundToDouble() / 100).clamp(0.0, 1.0);
+
+        return ClipRRect(
+          borderRadius: const BorderRadius.all(_barRadius),
+          // percent_indicator animated between values for free; a plain
+          // indicator jumps. [TweenAnimationBuilder] restarts from wherever the
+          // fill currently is rather than from zero, so a new value is walked
+          // to and never rewound to the start of the bar.
+          child: TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0, end: value),
+            duration: _barAnimation,
+            builder: (context, animated, _) => LinearProgressIndicator(
+              value: isIndeterminate ? null : animated,
+              minHeight: _barHeight,
+              backgroundColor: _barTrack,
+              valueColor: const AlwaysStoppedAnimation<Color>(_barFill),
+            ),
+          ),
         );
       },
     );
   }
 }
+
+const _barTrack = Color(0xffFAFAFA);
+const _barFill = Color(0xff3C3C3C);
+const _barHeight = 10.0;
+const _barRadius = Radius.circular(5);
+
+/// How long the fill takes to travel between two values - percent_indicator's
+/// `animationDuration`, kept so the bar still moves at the speed it did.
+const Duration _barAnimation = Duration(milliseconds: 1000);

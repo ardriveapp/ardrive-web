@@ -108,6 +108,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       });
     } else {
       Future.microtask(() async {
+        // No loading state to emit first: the cubit is constructed in
+        // DriveDetailLoadInProgress, so the screen is already saying it is
+        // working before this wait begins.
         // Wait for any current sync to complete before checking drive state
         await _syncCubit.waitCurrentSync();
 
@@ -208,6 +211,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   void showEmptyDriveDetail() async {
+    // Nothing to announce before this wait either. This runs when there is no
+    // drive to show, from a state that is already DriveDetailLoadInProgress,
+    // and all it can do afterwards is narrow that to "empty" - so emitting a
+    // loading state here would claim work that is not happening.
     await _syncCubit.waitCurrentSync();
 
     // Check if state has already changed (e.g., drives were loaded during sync)
@@ -227,7 +234,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // First check current drive state before waiting for sync
     var drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
 
-    // If drive doesn't exist locally at all, wait for sync to discover it
+    // If drive doesn't exist locally at all, wait for sync to discover it.
+    // This one already emits before it waits, which is the shape openFolder
+    // now has too.
     if (drive == null) {
       emit(DriveDetailLoadInProgress());
       await _syncCubit.waitCurrentSync();
@@ -271,15 +280,37 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // previous folder is stale from here on even when the drive is unchanged.
     final loadGeneration = ++_folderLoadGeneration;
 
+    if (isClosed) {
+      return;
+    }
+
+    // Before the wait, not after it. `changeDrive` has already cancelled the
+    // folder subscription and moved `_driveId` by the time it gets here, so
+    // until this emits, the screen still shows the drive the user just left.
+    // While a sync scrimmed the whole app that was unreachable; now that a
+    // background sync leaves the app usable, a click on a drive - or a
+    // double-click on a folder - would sit there doing nothing at all for as
+    // long as the sync ran, which on a large wallet is minutes.
+    //
+    // The wait itself stays: a folder must not be opened against a
+    // half-written database. What changes is that the app says it heard the
+    // click before it starts waiting.
+    emit(DriveDetailLoadInProgress());
+
     /// always wait for the current sync to finish before opening a new folder
     await _syncCubit.waitCurrentSync();
+
+    // A newer openFolder claimed the generation while this one waited - it
+    // owns the subscription and the state now, so this one stops here rather
+    // than mounting a second listener for a folder nobody is looking at.
+    if (isClosed || loadGeneration != _folderLoadGeneration) {
+      return;
+    }
 
     try {
       _allImagesOfCurrentFolder = null;
 
       String driveId = otherDriveId ?? _driveId;
-
-      emit(DriveDetailLoadInProgress());
 
       await _folderSubscription?.cancel();
 
@@ -311,6 +342,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             return;
           }
 
+          // Left alone deliberately. This fires on every drift tick, so
+          // emitting a loading state here would blank the file list the user
+          // is browsing over and over for the length of a background sync.
+          // Holding the folder that is already on screen until the database
+          // settles is the honest thing for a redraw nobody asked for.
           await _syncCubit.waitCurrentSync();
 
           if (drive == null) {
@@ -370,8 +406,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             }
           }
 
-          final driveIsEmpty = folderContents.files.isEmpty &&
-              folderContents.subfolders.isEmpty;
+          final driveIsEmpty =
+              folderContents.files.isEmpty && folderContents.subfolders.isEmpty;
 
           // A drive that renders with nothing in it is ambiguous: it may be
           // genuinely empty, or its contents may simply never have synced.
@@ -649,7 +685,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   Future<void> launchPreview(TxID dataTxId) => openUrl(
-      url: '${_configService.config.arweaveGatewayForDataRequest.url}/$dataTxId');
+      url:
+          '${_configService.config.arweaveGatewayForDataRequest.url}/$dataTxId');
 
   void sortFolder({
     DriveOrder contentOrderBy = DriveOrder.name,
@@ -911,8 +948,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// [DriveInitialLoading] was a dead end: no retry, no action, and nothing
   /// that re-triggers it.
   Future<void> _handleFolderNotFound(String driveId) async {
-    final drive =
-        await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+    final drive = await _driveDao.driveById(driveId: driveId).getSingleOrNull();
     // The drive can be switched out from under this query. Emitting after that
     // would put the previous drive's state on the new drive's screen.
     if (isClosed || _driveId != driveId) return;

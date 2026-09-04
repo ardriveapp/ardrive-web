@@ -1,5 +1,10 @@
 abstract class LinearProgress {
   double get progress;
+
+  /// Whether [progress] is a real measurement right now, or a number standing
+  /// in for work whose length nothing here can know. A bar reading an
+  /// indeterminate progress should animate rather than draw [progress].
+  bool get isIndeterminate => false;
 }
 
 /// Sentinel used by copyWith to distinguish "not provided" from "explicitly null".
@@ -23,6 +28,7 @@ class SyncProgress extends LinearProgress {
     this.skippedEntityTxIdsByDrive = const {},
     this.firstTimeSyncDriveCount = 0,
     this.skippedDriveCount = 0,
+    this.isIndeterminate = false,
   });
 
   factory SyncProgress.initial() {
@@ -75,7 +81,8 @@ class SyncProgress extends LinearProgress {
 
   // Fields for distinguishing sync type
   final bool isSingleDriveSync; // true if syncing a single drive
-  final String? driveName; // name of the drive being synced (for single drive sync)
+  final String?
+      driveName; // name of the drive being synced (for single drive sync)
 
   /// Number of entities left out of this sync because their metadata could not
   /// be read from the configured gateway.
@@ -96,6 +103,19 @@ class SyncProgress extends LinearProgress {
   /// sync. Zero for a deep sync, and zero when the probe could not answer -
   /// in both of those cases nothing was skipped.
   final int skippedDriveCount;
+
+  /// True while the sync is inside a phase whose length it cannot know and
+  /// whose progress it cannot measure - today, the gateway round trip that
+  /// asks which pending transactions confirmed. That phase reports one step
+  /// per 5000 pending transactions, which for almost every user is one step,
+  /// landing only when the gateway answers.
+  ///
+  /// No weighting makes a determinate bar move through that honestly, so it
+  /// does not pretend to: [progress] holds where the phase began and the UI
+  /// draws an indeterminate bar instead. Cleared as soon as the gateway is
+  /// done with, however that went.
+  @override
+  final bool isIndeterminate;
 
   /// Flat list of every skipped transaction id, drive association discarded.
   List<String> get skippedEntityTxIds =>
@@ -125,6 +145,7 @@ class SyncProgress extends LinearProgress {
     Map<String, List<String>>? skippedEntityTxIdsByDrive,
     int? firstTimeSyncDriveCount,
     int? skippedDriveCount,
+    bool? isIndeterminate,
   }) {
     return SyncProgress(
       numberOfEntities: numberOfEntities ?? this.numberOfEntities,
@@ -141,14 +162,14 @@ class SyncProgress extends LinearProgress {
           ? this.statusMessage
           : statusMessage as String?,
       isSingleDriveSync: isSingleDriveSync ?? this.isSingleDriveSync,
-      driveName:
-          driveName == _absent ? this.driveName : driveName as String?,
+      driveName: driveName == _absent ? this.driveName : driveName as String?,
       skippedEntityCount: skippedEntityCount ?? this.skippedEntityCount,
       skippedEntityTxIdsByDrive:
           skippedEntityTxIdsByDrive ?? this.skippedEntityTxIdsByDrive,
       firstTimeSyncDriveCount:
           firstTimeSyncDriveCount ?? this.firstTimeSyncDriveCount,
       skippedDriveCount: skippedDriveCount ?? this.skippedDriveCount,
+      isIndeterminate: isIndeterminate ?? this.isIndeterminate,
     );
   }
 }

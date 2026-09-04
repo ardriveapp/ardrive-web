@@ -69,6 +69,25 @@ class SyncCompleteWithErrors extends SyncState {
   final int skippedEntityCount;
   final Map<String, List<String>> skippedEntityTxIdsByDrive;
 
+  /// Who asked for the sync that failed, like every other terminal state.
+  ///
+  /// It was the only one without a trigger, so [SyncOverlay.blocksTheApp]
+  /// returned true for it unconditionally: a login sync that paints nothing
+  /// while it runs would still drop a scrim and a modal over whatever the user
+  /// was doing the moment one drive out of five came back empty. A sync nobody
+  /// asked for reports its failure where it ran - the top bar - and a sync the
+  /// user asked for keeps the modal it was already holding.
+  final SyncTrigger trigger;
+
+  /// When the sync that failed finished.
+  ///
+  /// Deliberately NOT in [props]: it exists so a surface can tell how long ago
+  /// this happened, not to make two otherwise-identical failures distinct. A
+  /// background failure is announced at the top bar for a few seconds, and
+  /// this state stays current until the next sync runs - so without it, every
+  /// rebuild of the top bar replayed the announcement from the beginning.
+  final DateTime completedAt;
+
   SyncCompleteWithErrors({
     required this.failedDrives,
     required this.totalDrives,
@@ -76,7 +95,9 @@ class SyncCompleteWithErrors extends SyncState {
     required this.errorMessages,
     this.skippedEntityCount = 0,
     this.skippedEntityTxIdsByDrive = const {},
-  });
+    this.trigger = SyncTrigger.userInitiated,
+    DateTime? completedAt,
+  }) : completedAt = completedAt ?? DateTime.now();
 
   @override
   List<Object> get props => [
@@ -86,6 +107,7 @@ class SyncCompleteWithErrors extends SyncState {
         errorMessages,
         skippedEntityCount,
         skippedEntityTxIdsByDrive,
+        trigger,
       ];
 }
 

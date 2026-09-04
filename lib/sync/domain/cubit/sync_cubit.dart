@@ -132,17 +132,25 @@ class SyncCubit extends Cubit<SyncState> {
 
   /// Waits for the current sync to finish.
   /// SyncLoadingDrives is treated as non-blocking (metadata-only loading).
+  /// Whether a sync has finished, by whatever route it got there.
+  ///
+  /// The entry guard and the loop in [waitCurrentSync] have to agree on this.
+  /// They did not: the guard let through every state but two, while the loop
+  /// broke on five - so a wait that BEGAN while the cubit was already sitting
+  /// in `SyncCompleteWithErrors`, `SyncFailure` or `SyncCancelled` blocked on
+  /// an emission that had already happened and was never coming again.
+  static bool _syncHasFinished(SyncState state) =>
+      state is SyncIdle ||
+      state is SyncFailure ||
+      state is SyncCancelled ||
+      state is SyncCompleteWithErrors ||
+      state is SyncLoadingDrives;
+
   Future<void> waitCurrentSync() async {
-    if (state is! SyncIdle && state is! SyncLoadingDrives) {
-      await for (var state in stream) {
-        if (state is SyncIdle ||
-            state is SyncFailure ||
-            state is SyncCancelled ||
-            state is SyncCompleteWithErrors ||
-            state is SyncLoadingDrives) {
-          break;
-        }
-      }
+    if (_syncHasFinished(state)) return;
+
+    await for (final state in stream) {
+      if (_syncHasFinished(state)) break;
     }
   }
 
@@ -466,6 +474,7 @@ class SyncCubit extends Cubit<SyncState> {
         errorMessages: _syncProgress.errorMessages,
         skippedEntityCount: _syncProgress.skippedEntityCount,
         skippedEntityTxIdsByDrive: _syncProgress.skippedEntityTxIdsByDrive,
+        trigger: trigger,
       ));
     } else if (ranToCompletion) {
       emit(_syncComplete(trigger));
@@ -628,6 +637,7 @@ class SyncCubit extends Cubit<SyncState> {
         errorMessages: _syncProgress.errorMessages,
         skippedEntityCount: _syncProgress.skippedEntityCount,
         skippedEntityTxIdsByDrive: _syncProgress.skippedEntityTxIdsByDrive,
+        trigger: trigger,
       ));
     } else if (ranToCompletion) {
       emit(_syncComplete(trigger));

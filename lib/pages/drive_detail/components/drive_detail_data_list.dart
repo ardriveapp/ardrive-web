@@ -115,11 +115,15 @@ Widget _buildDataListContent(
           return emptyState;
         }
 
-        return ArDriveDataTable<ArDriveDataTableItem>(
+        final table = ArDriveDataTable<ArDriveDataTableItem>(
           key: ValueKey(
               '${folder.id}-${forceRebuildKey.toString()}${columns.length}-${hideState.toString()}'),
           initialPage: selectedPage,
-          lockMultiSelect: context.watch<SyncCubit>().state is SyncInProgress ||
+          // The sync half of this lock is stated out loud rather than left as
+          // a silent no-op - see [MultiSelectPausedNotice], which is given the
+          // same condition so the two cannot drift apart.
+          lockMultiSelect: MultiSelectPausedNotice.locksMultiSelect(
+                  context.watch<SyncCubit>().state) ||
               !context.watch<ActivityTracker>().isMultiSelectEnabled,
           rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
           maxItemsPerPage: 100,
@@ -231,6 +235,15 @@ Widget _buildDataListContent(
           },
           rows: filteredItems,
           selectedRow: selectedItem,
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Draws nothing unless a sync is holding multi-select shut.
+            const MultiSelectPausedNotice(),
+            Expanded(child: table),
+          ],
         );
       },
     );

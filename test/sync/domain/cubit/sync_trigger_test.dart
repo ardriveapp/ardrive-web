@@ -179,4 +179,51 @@ void main() {
 
     expect(triggers, [SyncTrigger.userInitiated]);
   });
+  group('waiting for a sync that has already finished', () {
+    // The entry guard and the loop have to agree on what "finished" means.
+    // They did not: the guard let every state but two through, so a wait that
+    // BEGAN in one of the terminal states blocked on an emission that had
+    // already happened. openFolder() awaits this, so the symptom was a folder
+    // that never opened for the rest of the session.
+    for (final terminal in <SyncState Function()>[
+      () => SyncCompleteWithErrors(
+            failedDrives: 1,
+            totalDrives: 2,
+            failedDriveIds: const ['drive-a'],
+            errorMessages: const {'drive-a': 'boom'},
+            trigger: SyncTrigger.background,
+          ),
+      () => SyncFailure(error: 'boom', stackTrace: StackTrace.empty),
+      () => SyncCancelled(
+            drivesCompleted: 1,
+            totalDrives: 2,
+            cancelledAt: DateTime(2026),
+            trigger: SyncTrigger.background,
+          ),
+    ]) {
+      final state = terminal();
+
+      test('returns straight away in ${state.runtimeType}', () async {
+        final cubit = buildCubit(syncAllDrivesOnLogin: false);
+        addTearDown(cubit.close);
+
+        // Let the login path finish first. Its own emission would otherwise
+        // break the wait's loop and hide the bug: the point here is that
+        // NOTHING more is coming after the terminal state.
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        cubit.emit(state);
+
+        // No further emission is coming, so a wait that does not check the
+        // state it starts in never returns.
+        await cubit.waitCurrentSync().timeout(
+              const Duration(seconds: 2),
+              onTimeout: () => fail(
+                'waitCurrentSync hung in ${state.runtimeType}: a folder opened '
+                'from here would spin forever',
+              ),
+            );
+      });
+    }
+  });
 }
