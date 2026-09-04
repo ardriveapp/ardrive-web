@@ -67,7 +67,7 @@ void main() {
             lastSelectedDriveId: null,
             showHiddenFiles: false,
             userHasHiddenDrive: false,
-            syncAllDrivesOnLogin: true,
+            syncAllDrivesOnLogin: false,
           ));
     });
 
@@ -87,7 +87,7 @@ void main() {
             lastSelectedDriveId: null,
             showHiddenFiles: false,
             userHasHiddenDrive: false,
-            syncAllDrivesOnLogin: true,
+            syncAllDrivesOnLogin: false,
           ));
     });
 
@@ -145,7 +145,7 @@ void main() {
             lastSelectedDriveId: 'drive_id',
             showHiddenFiles: false,
             userHasHiddenDrive: false,
-            syncAllDrivesOnLogin: true,
+            syncAllDrivesOnLogin: false,
           ));
     });
 
@@ -183,7 +183,48 @@ void main() {
       verify(() => mockStore.putBool('userHasHiddenDrive', true)).called(1);
     });
 
-    test('should save sync all drives on login preference to storage', () async {
+    group('the shipped default for syncing every drive on login', () {
+      // A login should not walk every drive's whole history unasked. The
+      // default moved to false; a stored value stays an explicit choice.
+      test('is not to sync, before any storage is involved at all', () {
+        const preferences = UserPreferences(
+          currentTheme: ArDriveThemes.light,
+          lastSelectedDriveId: null,
+        );
+
+        expect(preferences.syncAllDrivesOnLogin, false);
+      });
+
+      test('is not to sync when the user never touched the toggle', () async {
+        when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+        when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+        when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+        when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+        // Nothing stored: the case every existing user who never opened
+        // settings, and every new user, lands in.
+        when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
+
+        final result = await repository.load();
+
+        expect(result.syncAllDrivesOnLogin, false);
+      });
+
+      test('is still to sync for a user who opted in', () async {
+        when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+        when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+        when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+        when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+        when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(true);
+
+        final result = await repository.load();
+
+        // An explicit yes is not quietly downgraded by the new default.
+        expect(result.syncAllDrivesOnLogin, true);
+      });
+    });
+
+    test('should save sync all drives on login preference to storage',
+        () async {
       // Setup initial load
       when(() => mockStore.getString('currentTheme')).thenReturn('dark');
       when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
@@ -200,7 +241,8 @@ void main() {
       verify(() => mockStore.putBool('syncAllDrivesOnLogin', false)).called(1);
     });
 
-    test('should clear preferences but preserve syncAllDrivesOnLogin', () async {
+    test('should clear preferences but preserve syncAllDrivesOnLogin',
+        () async {
       // Setup initial load
       when(() => mockStore.getString('currentTheme')).thenReturn('dark');
       when(() => mockStore.getString('lastSelectedDriveId'))

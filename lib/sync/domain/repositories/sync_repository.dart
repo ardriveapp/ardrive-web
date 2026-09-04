@@ -283,6 +283,19 @@ abstract class SyncRepository {
   Future<int> numberOfFilesInWallet();
   Future<int> numberOfFoldersInWallet();
 
+  /// Whether any transaction this wallet made is still unresolved - neither
+  /// confirmed nor failed.
+  ///
+  /// A local database read against the status index and nothing else: this
+  /// makes no network request. It is the signal that there is real work a sync
+  /// would do, since resolving these is exactly what a sync does.
+  ///
+  /// Self-limiting, so a caller cannot be made to sync forever by it:
+  /// `_updateTransactionStatuses` resolves a transaction to `confirmed` at
+  /// [kRequiredTxConfirmationCount], or to `failed` once the gateway no longer
+  /// knows it and it is past [kRequiredTxConfirmationPendingThreshold].
+  Future<bool> hasPendingTransactions();
+
   factory SyncRepository({
     required ArweaveService arweave,
     required DriveDao driveDao,
@@ -2848,6 +2861,12 @@ class _SyncRepository implements SyncRepository {
   @override
   Future<int> numberOfFoldersInWallet() {
     return _driveDao.numberOfFolders();
+  }
+
+  @override
+  @override
+  Future<bool> hasPendingTransactions() {
+    return _driveDao.hasPendingTransactions();
   }
 }
 

@@ -822,7 +822,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
       _isExplicitSync = true;
       try {
-        await _syncCubit.startSync();
+        // The panel this was pressed from reports the sync itself, so there is
+        // nothing for a modal to add - it would only cover the report with a
+        // copy of it and take the app away. See [DriveDetailSyncingCard].
+        emit(DriveDetailLoadInProgress());
+        await _syncCubit.startSync(trigger: SyncTrigger.background);
       } finally {
         _isExplicitSync = false;
       }
@@ -861,9 +865,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       _isExplicitSync = true;
       try {
         emit(DriveDetailLoadInProgress());
+        // Background, not because nobody asked - they pressed Sync Now - but
+        // because the panel they pressed it from already shows the phase, the
+        // progress and the elapsed time. A modal over it is the same report
+        // twice, and takes away the app while it does it.
         await _syncCubit.startSyncForDrive(
           driveId: driveId,
           deepSync: false,
+          trigger: SyncTrigger.background,
         );
       } finally {
         _isExplicitSync = false;

@@ -287,17 +287,15 @@ class _ProfileCardState extends State<ProfileCard> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: StreamBuilder<UserPreferences>(
-                        stream: context
-                            .read<UserPreferencesRepository>()
-                            .watch(),
+                        stream:
+                            context.read<UserPreferencesRepository>().watch(),
                         builder: (context, snapshot) {
                           final repo =
                               context.read<UserPreferencesRepository>();
-                          final syncAllDrivesOnLogin =
-                              snapshot.data?.syncAllDrivesOnLogin ??
-                                  repo.currentPreferences
-                                      ?.syncAllDrivesOnLogin ??
-                                  true;
+                          final syncAllDrivesOnLogin = snapshot
+                                  .data?.syncAllDrivesOnLogin ??
+                              repo.currentPreferences?.syncAllDrivesOnLogin ??
+                              false;
                           return ArDriveToggleSwitch(
                             alignRight: true,
                             value: syncAllDrivesOnLogin,
@@ -384,22 +382,25 @@ class _ProfileCardState extends State<ProfileCard> {
                 ),
               ],
             ),
-          // Logout — always at the very bottom
-          const Divider(height: 1, indent: 16, endIndent: 16),
-          _LogoutButton(
-            onLogout: () {
-              _showProfileCard = false;
-              setState(() {});
-            },
-          ),
-          if (isMobile)
-            Expanded(
-              child: Container(
-                color: ArDriveTheme.of(context).themeData.dropdownTheme.backgroundColor,
-              ),
+            // Logout — always at the very bottom
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            _LogoutButton(
+              onLogout: () {
+                _showProfileCard = false;
+                setState(() {});
+              },
             ),
-        ],
-      ),
+            if (isMobile)
+              Expanded(
+                child: Container(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .dropdownTheme
+                      .backgroundColor,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -436,8 +437,9 @@ class _ProfileCardState extends State<ProfileCard> {
     var fileCount = 0;
     var totalSize = 0;
     for (final drive in drives) {
-      final files =
-          await driveDao.filesInDriveWithRevisionTransactions(driveId: drive.id).get();
+      final files = await driveDao
+          .filesInDriveWithRevisionTransactions(driveId: drive.id)
+          .get();
       fileCount += files.length;
       for (final file in files) {
         totalSize += file.size;
@@ -528,8 +530,7 @@ class _ProfileCardState extends State<ProfileCard> {
         child: _WalletAddressLine(
           label: 'AR',
           address: arweaveAddress,
-          explorerUrl:
-              'https://viewblock.io/arweave/address/$arweaveAddress',
+          explorerUrl: 'https://viewblock.io/arweave/address/$arweaveAddress',
         ),
       ),
       if (state.user.profileType != ProfileType.arConnect &&
@@ -635,9 +636,7 @@ class _ProfileCardState extends State<ProfileCard> {
                               onSuccess: () {
                                 // Refresh AR balance (in case user paid with AR)
                                 if (context.mounted) {
-                                  context
-                                      .read<ProfileCubit>()
-                                      .refreshBalance();
+                                  context.read<ProfileCubit>().refreshBalance();
                                 }
                               },
                             );
@@ -1153,9 +1152,7 @@ class ProfileCardHeader extends StatelessWidget {
                         ),
                         Flexible(
                           child: Text(
-                            isExpanded
-                                ? walletAddress
-                                : truncatedWalletAddress,
+                            isExpanded ? walletAddress : truncatedWalletAddress,
                             overflow: TextOverflow.ellipsis,
                             softWrap: true,
                             maxLines: 1,

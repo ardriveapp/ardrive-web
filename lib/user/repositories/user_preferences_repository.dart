@@ -79,8 +79,11 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
         _themeDetector.getOSDefaultTheme().name;
     final lastSelectedDriveId = _store!.getString('lastSelectedDriveId');
     final showHiddenFiles = _store!.getBool('showHiddenFiles') ?? false;
+    // Nothing stored means the user never touched the toggle, and the shipped
+    // default is not to sync on login. A stored value - either way - is an
+    // explicit choice and is honoured as it stands.
     final syncAllDrivesOnLogin =
-        _store!.getBool('syncAllDrivesOnLogin') ?? true;
+        _store!.getBool('syncAllDrivesOnLogin') ?? false;
 
     _currentUserPreferences = UserPreferences(
       currentTheme: _parseThemeFromLocalStorage(currentTheme),
