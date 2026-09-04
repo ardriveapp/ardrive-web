@@ -560,6 +560,44 @@ void main() {
       );
     });
   });
+
+  /// What the row shows when the figures could not be read at all.
+  ///
+  /// Reported as drives showing a different total between sessions. The
+  /// arithmetic is sound - one row per file, `PRIMARY KEY (id, driveId)`, and
+  /// `size INTEGER NOT NULL` - but the failure path collapsed two different
+  /// answers into one. A drive missing from a summary map that *was* read has
+  /// no files and is 0; a drive whose figures could not be read is unknown and
+  /// is a dash. Passing an empty map for a read that failed made every walked
+  /// drive report itself as empty, which is the confident wrong answer this
+  /// whole series exists to remove - and it looks exactly like a total that
+  /// changed between sessions.
+  group('when the per-drive figures cannot be read', () {
+    test('a walked drive says it does not know, not that it is empty',
+        () async {
+      // Walked, or the figures would be withheld for that reason instead and
+      // the assertion below would hold whatever the failure path did.
+      await addDrive('drive-a', lastBlockHeight: 100);
+
+      // The real query, made to fail the way a real one would: the table it
+      // reads is not there.
+      await db.customStatement('DROP TABLE file_entries');
+
+      final state = await settle(loaded(await drivesNamed(['drive-a'])));
+
+      expect(state, isA<DrivesListLoaded>());
+
+      final drive = (state as DrivesListLoaded).drives.single;
+
+      expect(
+        drive.fileCount,
+        isNull,
+        reason: '0 files is a claim, and nothing here is in a position to '
+            'make it',
+      );
+      expect(drive.totalSize, isNull);
+    });
+  });
 }
 
 /// A sync doing nothing, which is what every test here starts from.

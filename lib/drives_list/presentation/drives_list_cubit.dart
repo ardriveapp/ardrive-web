@@ -136,7 +136,12 @@ class DrivesListCubit extends Cubit<DrivesListState> {
       // The drives themselves are in hand; only the per-drive numbers are not.
       // Draw the list without them rather than losing the page over a count.
       logger.e('Could not read the per-drive content summaries', e, stackTrace);
-      _emitDrives(drivesState, const {}, const {}, sequence);
+      // Null, not an empty map. An empty map is a true answer - "every drive
+      // was read and none of them has any files" - and passing one for a read
+      // that failed made every walked drive report 0 files and 0 B. A figure
+      // nobody could produce is exactly the confident wrong answer the dash
+      // exists to avoid.
+      _emitDrives(drivesState, null, const {}, sequence);
       return;
     }
 
@@ -170,7 +175,15 @@ class DrivesListCubit extends Cubit<DrivesListState> {
 
   void _emitDrives(
     DrivesLoadSuccess drivesState,
-    Map<String, DriveContentSummary> summaries,
+
+    /// What each drive holds locally, or null when that could not be read.
+    ///
+    /// The two are different answers and the row shows different things for
+    /// them: a drive missing from a map that *was* read has no files, and is
+    /// 0; a drive whose figures could not be read at all is unknown, and is a
+    /// dash. Collapsing them is how a failed local query turned into every
+    /// drive reporting itself as empty.
+    Map<String, DriveContentSummary>? summaries,
     Map<String, DateTime> lastSyncedAt,
     int sequence,
   ) {
@@ -209,7 +222,11 @@ class DrivesListCubit extends Cubit<DrivesListState> {
       final hasBeenWalked =
           (drive.lastBlockHeight ?? 0) > 0 || syncedAt != null;
 
-      final summary = summaries[drive.id] ?? DriveContentSummary.empty;
+      // Unknown when the read failed; empty when it succeeded and this drive
+      // simply has nothing in it.
+      final summary = summaries == null
+          ? null
+          : summaries[drive.id] ?? DriveContentSummary.empty;
 
       return DriveListItem(
         id: drive.id,
@@ -219,8 +236,8 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         isHidden: drive.isHidden,
         dateCreated: drive.dateCreated,
         hasBeenWalked: hasBeenWalked,
-        fileCount: hasBeenWalked ? summary.fileCount : null,
-        totalSize: hasBeenWalked ? summary.totalSize : null,
+        fileCount: hasBeenWalked ? summary?.fileCount : null,
+        totalSize: hasBeenWalked ? summary?.totalSize : null,
         lastSyncedAt: syncedAt,
         // Says "Syncing..." only of a drive this run actually covers, and
         // stops saying it once the drive has been walked. A four-of-ten run
