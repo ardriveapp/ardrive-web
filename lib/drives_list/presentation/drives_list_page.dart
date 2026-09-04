@@ -365,14 +365,38 @@ class _CentredMessage extends StatelessWidget {
         return SingleChildScrollView(
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(_sectionGap),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: children,
+            child: Padding(
+              // The page's own margin, so this panel stops where the table's
+              // panel stops rather than running into the window edge.
+              padding: const EdgeInsets.fromLTRB(
+                _pagePadding,
+                _blockGap,
+                _pagePadding,
+                _sectionGap,
+              ),
+              child: Container(
+                // The ground every other full-panel state sits on. These two -
+                // the drives loading, and the drive list that could not be
+                // read - were drawn straight onto the page, so the words
+                // floated on black while the same states in the explorer had a
+                // card behind them.
+                decoration: BoxDecoration(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .tableTheme
+                      .backgroundColor,
+                  borderRadius: BorderRadius.circular(cardDefaultBorderRadius),
+                ),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(_sectionGap),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: children,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -975,6 +999,10 @@ class _SelectionBar extends StatelessWidget {
         horizontal: driveListRowHorizontalPadding,
         vertical: 8,
       ),
+      // The count and what to do about it, together. Right-aligning the
+      // actions put eight hundred pixels between "3 drives selected" and the
+      // button that acts on those three, which reads as two unrelated things
+      // sharing a line rather than one sentence.
       child: Row(
         children: [
           Flexible(
@@ -987,11 +1015,22 @@ class _SelectionBar extends StatelessWidget {
               ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(width: 16),
+          ArDriveButtonNew(
+            text: appLocalizationsOf(context).driveListSyncSelected,
+            typography: typography,
+            variant: ButtonVariant.primary,
+            maxHeight: 32,
+            // Sized to its label rather than to whatever room is left, which
+            // is what stretched it across the panel.
+            maxWidth: 148,
+            onPressed: onSyncSelected,
+          ),
           if (onClear != null) ...[
-            // Text, not a second button. Two bordered controls side by side
-            // read as equal choices and these are not: one acts, the other
-            // undoes.
+            const SizedBox(width: 4),
+            // Text, not a second button, and after the action rather than
+            // before it: two bordered controls side by side read as equal
+            // choices and these are not - one acts, the other undoes.
             ArDriveClickArea(
               child: InkWell(
                 onTap: onClear,
@@ -1011,18 +1050,8 @@ class _SelectionBar extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
           ],
-          ArDriveButtonNew(
-            text: appLocalizationsOf(context).driveListSyncSelected,
-            typography: typography,
-            variant: ButtonVariant.primary,
-            maxHeight: 32,
-            // Sized to its label rather than to whatever room is left, which
-            // is what stretched it across the panel.
-            maxWidth: 148,
-            onPressed: onSyncSelected,
-          ),
+          const Spacer(),
         ],
       ),
     );

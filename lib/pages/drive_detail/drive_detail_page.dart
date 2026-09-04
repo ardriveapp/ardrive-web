@@ -205,7 +205,16 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                         desktop: (context) => const Column(
                           children: [
                             AppTopBar(),
-                            Expanded(child: DriveDetailSyncingCard()),
+                            // The margin the unsynced card already has. Without
+                            // it this panel ran to the window's right edge
+                            // while every other full-panel state stopped short
+                            // of it.
+                            Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.only(right: 16),
+                                child: DriveDetailSyncingCard(),
+                              ),
+                            ),
                           ],
                         ),
                       );
@@ -228,8 +237,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                           children: [
                             AppTopBar(),
                             Expanded(
-                              child:
-                                  DriveDetailSyncingCard.driveListUnavailable(),
+                              child: Padding(
+                                padding: EdgeInsets.only(right: 16),
+                                child: DriveDetailSyncingCard
+                                    .driveListUnavailable(),
+                              ),
                             ),
                           ],
                         ),

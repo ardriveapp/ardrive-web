@@ -478,12 +478,25 @@ class _ProfileCardState extends State<ProfileCard> {
     DriveDao driveDao,
     String walletAddress,
   ) async {
-    // Only the drives this wallet owns. A drive shared with the account is
-    // somebody else's storage, readable here - counting it made this line
-    // describe what the reader can see rather than what they are keeping, and
-    // a shared drive of a million files would have dwarfed their own.
+    // Only the drives this wallet owns, and only the ones it is showing.
+    //
+    // A drive shared with the account is somebody else's storage, readable
+    // here - counting it made this line describe what the reader can see
+    // rather than what they are keeping, and a shared drive of a million files
+    // would have dwarfed their own.
+    //
+    // A hidden drive is left out because every other surface leaves it out:
+    // `allDrives()` is a plain `SELECT * FROM drives`, while the sidebar's
+    // scopes all exclude hidden drives, so this line could say seventeen
+    // drives beside an All drives that listed fifteen.
+    //
+    // Hidden *files* inside a drive still count, and the show-hidden toggle
+    // does not change these numbers. Hiding is a view preference: it frees
+    // nothing, and a figure for what somebody is keeping must not fall because
+    // they flipped a switch that changed nothing about what is stored.
     final drives = (await driveDao.allDrives().get())
-        .where((drive) => drive.ownerAddress == walletAddress)
+        .where(
+            (drive) => drive.ownerAddress == walletAddress && !drive.isHidden)
         .toList();
 
     final summaries = await driveDao.driveContentSummaries();

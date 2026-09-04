@@ -1,4 +1,5 @@
 import 'package:ardrive/models/models.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,7 +19,11 @@ void main() {
   setUp(() => db = Database(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  Future<void> addDrive(String id, {String owner = 'me'}) =>
+  Future<void> addDrive(
+    String id, {
+    String owner = 'me',
+    bool isHidden = false,
+  }) =>
       db.into(db.drives).insert(
             DrivesCompanion.insert(
               id: id,
@@ -26,6 +31,7 @@ void main() {
               ownerAddress: owner,
               name: id,
               privacy: DrivePrivacyTag.public,
+              isHidden: Value(isHidden),
             ),
           );
 
@@ -34,6 +40,7 @@ void main() {
     String fileId, {
     required int size,
     bool withTransactions = true,
+    bool isHidden = false,
   }) async {
     await db.into(db.fileEntries).insert(
           FileEntriesCompanion.insert(
@@ -45,6 +52,7 @@ void main() {
             size: size,
             lastModifiedDate: DateTime(2024),
             dataTxId: '$fileId-data',
+            isHidden: Value(isHidden),
           ),
         );
   }
@@ -117,6 +125,55 @@ void main() {
       totalSize,
       1000,
       reason: "the shared drive's bytes belong to whoever owns it",
+    );
+  });
+
+  /// A hidden drive is left out, because every other surface leaves it out.
+  ///
+  /// `allDrives()` is a plain `SELECT * FROM drives`, while every scope in the
+  /// sidebar excludes hidden drives - so this line could say seventeen drives
+  /// beside an All drives that listed fifteen.
+  test('a hidden drive is not in the account line either', () async {
+    await addDrive('shown');
+    await addDrive('tucked-away', isHidden: true);
+    await addFile('shown', 'file-1', size: 1000);
+    await addFile('tucked-away', 'file-2', size: 500);
+
+    final drives = await db.driveDao.allDrives().get();
+    final summaries = await db.driveDao.driveContentSummaries();
+
+    // The filter the account line applies.
+    final counted = drives
+        .where((drive) => drive.ownerAddress == 'me' && !drive.isHidden)
+        .toList();
+
+    var totalSize = 0;
+    for (final drive in counted) {
+      totalSize += summaries[drive.id]?.totalSize ?? 0;
+    }
+
+    expect(counted.map((d) => d.id), ['shown']);
+    expect(totalSize, 1000);
+  });
+
+  /// But a hidden *file* still counts, and the show-hidden toggle does not
+  /// move these numbers.
+  ///
+  /// Hiding is a view preference written as a revision: it frees nothing. A
+  /// figure for what somebody is keeping must not fall because they flipped a
+  /// switch that changed nothing about what is stored.
+  test('a hidden file inside a shown drive still counts', () async {
+    await addDrive('shown');
+    await addFile('shown', 'visible', size: 1000);
+    await addFile('shown', 'hidden-one', size: 500, isHidden: true);
+
+    final summaries = await db.driveDao.driveContentSummaries();
+
+    expect(summaries['shown']?.fileCount, 2);
+    expect(
+      summaries['shown']?.totalSize,
+      1500,
+      reason: 'the bytes are still stored and still paid for',
     );
   });
 }
