@@ -180,7 +180,28 @@ class DrivesCubit extends Cubit<DrivesState> {
   Future<void> _waitForDriveListRefresh() =>
       _driveListRefreshWait ??= _syncCubit.waitForDriveListRefresh();
 
+  /// Drives the user has just asked for, by id.
+  ///
+  /// [selectDrive] is only ever called because somebody chose a drive - the
+  /// sidebar, the search results, a drive that has just been created or
+  /// attached. The automatic selection this cubit makes for itself does not go
+  /// through it, which is what makes this a stream of intent rather than of
+  /// state.
+  ///
+  /// It exists because on the drives list the selected drive is not what is on
+  /// screen: the list is. Selecting a drive there changes nothing visible, so
+  /// the sidebar - the most obvious navigation control on the first screen a
+  /// login sees - did nothing at all. A surface that navigates listens here.
+  Stream<String> get driveSelections => _driveSelections.stream;
+
+  final StreamController<String> _driveSelections =
+      StreamController<String>.broadcast();
+
   void selectDrive(String driveId) {
+    if (!_driveSelections.isClosed) {
+      _driveSelections.add(driveId);
+    }
+
     final profileIsLoggedIn = _profileCubit.state is ProfileLoggedIn;
     final canCreateNewDrive = profileIsLoggedIn;
     final DrivesState state;
@@ -253,6 +274,7 @@ class DrivesCubit extends Cubit<DrivesState> {
   @override
   Future<void> close() {
     _drivesSubscription.cancel();
+    _driveSelections.close();
     return super.close();
   }
 }

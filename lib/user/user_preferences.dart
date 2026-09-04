@@ -19,12 +19,22 @@ class UserPreferences extends Equatable {
   /// either way, and still syncs when a transaction is left unresolved.
   final bool syncAllDrivesOnLogin;
 
+  /// When each drive was last walked to the end, by drive id.
+  ///
+  /// It lives here rather than in a `drives` column because it is a fact about
+  /// this device, not about the drive: two browsers signed into one wallet have
+  /// two different answers and both are right. A drive absent from the map has
+  /// never been synced on this device, which is a different thing from a drive
+  /// that was synced and found to be empty - the drives list says so.
+  final Map<String, DateTime> driveLastSyncedAt;
+
   const UserPreferences({
     required this.currentTheme,
     required this.lastSelectedDriveId,
     this.showHiddenFiles = false,
     this.userHasHiddenDrive = false,
     this.syncAllDrivesOnLogin = false,
+    this.driveLastSyncedAt = const {},
   });
 
   @override
@@ -34,6 +44,7 @@ class UserPreferences extends Equatable {
         showHiddenFiles,
         userHasHiddenDrive,
         syncAllDrivesOnLogin,
+        driveLastSyncedAt,
       ];
 
   UserPreferences copyWith({
@@ -42,6 +53,7 @@ class UserPreferences extends Equatable {
     bool? showHiddenFiles,
     bool? userHasHiddenDrive,
     bool? syncAllDrivesOnLogin,
+    Map<String, DateTime>? driveLastSyncedAt,
   }) {
     return UserPreferences(
       currentTheme: currentTheme ?? this.currentTheme,
@@ -51,6 +63,7 @@ class UserPreferences extends Equatable {
       showHiddenFiles: showHiddenFiles ?? this.showHiddenFiles,
       userHasHiddenDrive: userHasHiddenDrive ?? this.userHasHiddenDrive,
       syncAllDrivesOnLogin: syncAllDrivesOnLogin ?? this.syncAllDrivesOnLogin,
+      driveLastSyncedAt: driveLastSyncedAt ?? this.driveLastSyncedAt,
     );
   }
 }

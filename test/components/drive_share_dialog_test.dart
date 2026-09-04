@@ -30,8 +30,7 @@ void main() {
         name: 'My Drive',
         ownerAddress: 'owner',
         rootFolderId: 'root',
-        privacy:
-            isPrivate ? DrivePrivacyTag.private : DrivePrivacyTag.public,
+        privacy: isPrivate ? DrivePrivacyTag.private : DrivePrivacyTag.public,
         isHidden: false,
         dateCreated: DateTime.utc(2026, 1, 1),
         lastUpdated: DateTime.utc(2026, 1, 1),
@@ -71,10 +70,11 @@ void main() {
   }
 
   /// The value shown in a field, whether or not it is masked.
-  String fieldText(WidgetTester tester, int index) =>
-      tester.widgetList<EditableText>(find.byType(EditableText)).toList()[index]
-          .controller
-          .text;
+  String fieldText(WidgetTester tester, int index) => tester
+      .widgetList<EditableText>(find.byType(EditableText))
+      .toList()[index]
+      .controller
+      .text;
 
   setUp(() => cubit = MockDriveShareCubit());
 
@@ -87,8 +87,8 @@ void main() {
         tester,
         DriveShareLoadSuccess(
           drive: drive(isPrivate: false),
-          driveShareLink:
-              Uri.parse('https://app.ardrive.io/#/drives/$driveId?name=My+Drive'),
+          driveShareLink: Uri.parse(
+              'https://app.ardrive.io/#/drives/$driveId?name=My+Drive'),
         ),
       );
 
@@ -108,8 +108,7 @@ void main() {
         tester,
         DriveShareLoadSuccess(
           drive: drive(isPrivate: true),
-          driveShareLink:
-              Uri.parse('https://app.ardrive.io/#/drives/$driveId'),
+          driveShareLink: Uri.parse('https://app.ardrive.io/#/drives/$driveId'),
           driveKeyBase64: driveKeyBase64,
         ),
       );
@@ -171,8 +170,16 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(
-        find.textContaining('couldn’t create a share link'),
+        find.textContaining('access key could not be read on this device'),
         findsOneWidget,
+        reason: 'the work is entirely local - a drive key read out of the '
+            'database - so the message may not send the user to check their '
+            'connection',
+      );
+      expect(
+        find.textContaining('connection'),
+        findsNothing,
+        reason: 'nothing here touches the network',
       );
       expect(find.text('Try Again'), findsOneWidget);
     });

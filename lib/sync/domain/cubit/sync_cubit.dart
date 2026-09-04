@@ -12,6 +12,8 @@ import 'package:ardrive/sync/domain/ghost_folder.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/sync/domain/sync_cancellation_token.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
+import 'package:ardrive/sync/domain/sync_run.dart';
+import 'package:ardrive/sync/domain/sync_trigger.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -21,23 +23,16 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+/// Re-exported so every surface that already imports this cubit keeps seeing
+/// [SyncTrigger] - it moved to its own file because the persisted sync history
+/// records it and must not depend on the cubit.
+export 'package:ardrive/sync/domain/sync_trigger.dart';
+
 part 'sync_state.dart';
 
 // TODO: PE-2782: Abstract auto-generated GQL types
 typedef DriveHistoryTransaction
     = DriveEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
-
-/// Who asked for a sync.
-///
-/// A [userInitiated] sync is one the user pressed a button for, so it is
-/// allowed to hold the whole app while it runs. A [background] sync is one that
-/// merely happened - the sync on login is the only one in production - and has
-/// to stay out of the way: the app remains usable and the top bar's indicator
-/// is the only place it reports itself.
-enum SyncTrigger {
-  background,
-  userInitiated,
-}
 
 /// The [SyncCubit] periodically syncs the user's owned and attached drives and their contents.
 /// It also checks the status of unconfirmed transactions made by revisions.
@@ -59,11 +54,70 @@ class SyncCubit extends Cubit<SyncState> {
   DateTime? _lastSync;
   DateTime _initSync = DateTime.now();
 
-  /// Exposed for the sync modal to display elapsed time.
+  String? _syncingDriveId;
+
+  /// The single drive a running sync covers, or null.
+  ///
+  /// Null means two different things and the state says which: no sync is
+  /// running, or the running sync covers every drive. A surface that lists
+  /// drives needs this to say "Syncing..." on the row it is true of instead of
+  /// on all of them - [SyncProgress] carries a drive *name* for the modal to
+  /// print, and names are not identity.
+  String? get syncingDriveId => _syncingDriveId;
+
+  /// Whether a sync in [state] for [syncingDriveId] could be writing
+  /// [driveId].
+  ///
+  /// A sync of one drive does not touch another, so a reader who wants a drive
+  /// that nothing is writing should not be made to wait for one that is. This
+  /// is what makes drive A openable while drive B syncs.
+  ///
+  /// An all-drives sync (`syncingDriveId == null`) is treated as touching
+  /// everything, which is the conservative answer and the true one.
+  ///
+  /// Static, and reading only what callers already hold, so it adds no surface
+  /// a test has to stub.
+  static bool syncTouchesDrive({
+    required SyncState state,
+    required String? syncingDriveId,
+    required String driveId,
+  }) {
+    if (!(state is SyncInProgress || state is SyncLoadingDrives)) {
+      return false;
+    }
+
+    return syncingDriveId == null || syncingDriveId == driveId;
+  }
+
+  /// Exposed so every surface counting a wait counts from the same instant -
+  /// see `SyncElapsedTime`.
   DateTime get syncStartTime => _initSync;
 
   SyncProgress _syncProgress = SyncProgress.initial();
   SyncCancellationToken? _currentSyncToken;
+
+  /// Publishes the current progress, if there is still anything to publish to.
+  ///
+  /// [close] cancels the running sync and closes this controller, but the sync
+  /// itself unwinds afterwards - the repository only notices the cancellation
+  /// at its next checkpoint, which can be a network round trip away. Adding to
+  /// a closed controller throws, and that throw would surface as an unhandled
+  /// asynchronous error from a cubit nothing owns any more.
+  void _publishProgress() {
+    if (syncProgressController.isClosed) return;
+
+    syncProgressController.add(_syncProgress);
+  }
+
+  /// Emits, if this cubit is still open.
+  ///
+  /// Same reason as [_publishProgress]: a sync unwinding after [close] still
+  /// runs its own terminal-state code, and `emit` on a closed cubit throws.
+  void _emitIfOpen(SyncState state) {
+    if (isClosed) return;
+
+    emit(state);
+  }
 
   Map<String, List<String>> _lastSyncSkippedEntityTxIdsByDrive = const {};
 
@@ -139,24 +193,34 @@ class SyncCubit extends Cubit<SyncState> {
   /// broke on five - so a wait that BEGAN while the cubit was already sitting
   /// in `SyncCompleteWithErrors`, `SyncFailure` or `SyncCancelled` blocked on
   /// an emission that had already happened and was never coming again.
-  static bool _syncHasFinished(SyncState state) =>
+  /// Whether the sync that was running is over, however it ended.
+  ///
+  /// Public because waiting for `SyncIdle` is not the same question and was
+  /// getting the wrong answer: `SyncCompleteWithErrors` and `SyncFailure` are
+  /// rests, not way-points, and neither is a `SyncIdle`. A listener that waited
+  /// for one specifically - `SharingFileListener` did - waited forever the
+  /// moment a single drive failed.
+  ///
+  /// [SyncWalletMismatch] is terminal too: nothing follows it.
+  static bool syncHasFinished(SyncState state) =>
       state is SyncIdle ||
       state is SyncFailure ||
       state is SyncCancelled ||
       state is SyncCompleteWithErrors ||
+      state is SyncWalletMismatch ||
       state is SyncLoadingDrives;
 
   Future<void> waitCurrentSync() async {
-    if (_syncHasFinished(state)) return;
+    if (syncHasFinished(state)) return;
 
     await for (final state in stream) {
-      if (_syncHasFinished(state)) break;
+      if (syncHasFinished(state)) break;
     }
   }
 
   /// Whether the drive list itself has been refreshed.
   ///
-  /// A different question from [_syncHasFinished], and deliberately so.
+  /// A different question from [syncHasFinished], and deliberately so.
   /// `SyncLoadingDrives` counts as finished there because a folder open must
   /// not hang behind a metadata refresh - but that is exactly the state a
   /// login sync sits in while `updateUserDrives` is still running, so anything
@@ -353,7 +417,7 @@ class SyncCubit extends Cubit<SyncState> {
     final isTabFocused = _tabVisibility.isTabFocused();
     logger.i('[ArConnect SYNC] isTabFocused: $isTabFocused');
     if (isTabFocused && await _profileCubit.logoutIfWalletMismatch()) {
-      emit(SyncWalletMismatch());
+      _emitIfOpen(SyncWalletMismatch());
       return;
     }
   }
@@ -380,34 +444,87 @@ class SyncCubit extends Cubit<SyncState> {
     logger.d('Starting metadata-only sync');
     final profile = _profileCubit.state;
     if (profile is ProfileLoggedIn) {
-      // Emit SyncLoadingDrives for UI feedback (shows "Loading your drives...")
-      // This is separate from SyncInProgress so it doesn't block waitCurrentSync()
-      emit(SyncLoadingDrives());
+      // Only when nothing bigger is running. A full sync walking every drive
+      // outranks a drive-list refresh, and this used to paint over it: the top
+      // bar swapped "Syncing... 40%" for "Loading your drives...", every
+      // `waitCurrentSync` waiter was released against a half-written database
+      // because `SyncLoadingDrives` counts as finished, and `startSync`'s
+      // guard - which asks only for `SyncInProgress` - would let a second full
+      // sync start on top of the first.
+      //
+      // The terminal emit has had this rule since the last pass; the entry emit
+      // was simply never given it. Both ends now.
+      final runningSync = state is SyncInProgress;
+
+      if (!runningSync) {
+        _emitIfOpen(SyncLoadingDrives());
+      }
       try {
         await _syncRepository.updateUserDrives(
           wallet: profile.user.wallet,
           password: profile.user.password,
           cipherKey: profile.user.cipherKey,
+          // Only while this is still the thing running - the same rule
+          // [_finishMetadataSync] applies to the terminal state, for the same
+          // reason: a full sync started underneath must not be painted over.
+          onDriveRead: (read, found) {
+            if (!runningSync && state is SyncLoadingDrives) {
+              _emitIfOpen(
+                SyncLoadingDrives(drivesRead: read, drivesFound: found),
+              );
+            }
+          },
+          // The second half of the same wait, and the half that actually takes
+          // the time on a wallet with private drives.
+          onDriveUnlocked: (unlocked, total) {
+            if (!runningSync && state is SyncLoadingDrives) {
+              _emitIfOpen(
+                SyncLoadingDrives(
+                  drivesRead: unlocked,
+                  drivesFound: total,
+                  phase: SyncLoadingDrivesPhase.unlocking,
+                ),
+              );
+            }
+          },
         );
         logger.d('Metadata-only sync completed successfully');
       } catch (e, stackTrace) {
         logger.e('Error fetching drive metadata', e, stackTrace);
-        // Say so. This used to be swallowed because a full sync ran alongside
-        // it and reported its own failure; now it is the only thing that runs
-        // on a default login, so a gateway that will not answer would leave an
-        // empty sidebar, no error, and nothing to explain it.
-        emit(SyncFailure(error: e, stackTrace: stackTrace));
+        _finishMetadataSync(SyncFailure(error: e, stackTrace: stackTrace));
         return;
       }
-      emit(SyncIdle());
+      _finishMetadataSync(SyncIdle());
+      return;
     } else {
       logger.d('Profile not logged in yet, skipping metadata sync');
       // Still emit SyncIdle so waitCurrentSync() doesn't hang
-      emit(SyncIdle());
+      _emitIfOpen(SyncIdle());
     }
   }
 
-  Future<void> startSync({
+  /// Ends a metadata-only sync, but only if it is still the thing running.
+  ///
+  /// This runs under [SyncLoadingDrives], which no "is a sync running" test in
+  /// the app recognises - so while it waits on the network the drives page
+  /// still offers Sync All Drives, and [startSync]'s own re-entry guard, which
+  /// asks only for [SyncInProgress], lets that sync start. Emitting a terminal
+  /// state unconditionally then landed it on top of a full sync that was still
+  /// walking every drive: the ring went out, every row stopped saying it was
+  /// syncing, and everything waiting on [waitCurrentSync] was released against
+  /// a half-written database.
+  ///
+  /// So it only reports if nothing else has taken the state off it.
+  void _finishMetadataSync(SyncState state) {
+    if (this.state is! SyncLoadingDrives) {
+      logger.d('Metadata sync superseded; leaving the state alone');
+      return;
+    }
+
+    _emitIfOpen(state);
+  }
+
+  Future<bool> startSync({
     bool deepSync = false,
     bool skipTabVisibilityCheck = false,
     List<String>? driveIdsToRetry,
@@ -417,7 +534,7 @@ class SyncCubit extends Cubit<SyncState> {
 
     if (state is SyncInProgress) {
       logger.d('Sync state is SyncInProgress, aborting sync...');
-      return;
+      return false;
     }
 
     _syncProgress = SyncProgress.initial();
@@ -433,6 +550,15 @@ class SyncCubit extends Cubit<SyncState> {
     /// the same nothing to report.
     var ranToCompletion = false;
 
+    /// Whether this sync ended in the catch below. See [_recordSyncRun].
+    var threw = false;
+
+    /// What it threw. `_syncProgress.errorMessages` only carries per-drive
+    /// failures, so a sync that died before it reached any drive has none -
+    /// and the history entry a user opens Troubleshooting to read would carry
+    /// no reason at all, which is the one entry the feature exists for.
+    Object? thrownError;
+
     // Create a new cancellation token for this sync
     _currentSyncToken?.dispose(); // Clean up any previous token
     _currentSyncToken = SyncCancellationToken();
@@ -445,10 +571,13 @@ class SyncCubit extends Cubit<SyncState> {
 
       _initSync = DateTime.now();
 
-      emit(SyncInProgress(trigger: trigger));
-      // Emit initial progress AFTER SyncInProgress so the modal is already
-      // listening to the stream when we emit
-      syncProgressController.add(_syncProgress);
+      // Every drive is covered, so no single drive owns this one.
+      _syncingDriveId = null;
+
+      _emitIfOpen(SyncInProgress(trigger: trigger));
+      // Emit initial progress AFTER SyncInProgress so the indicator is
+      // already listening to the stream when we emit
+      _publishProgress();
 
       // Only sync in drives owned by the user if they're logged in.
       logger.d('Checking if user is logged in...');
@@ -473,14 +602,14 @@ class SyncCubit extends Cubit<SyncState> {
             !skipTabVisibilityCheck &&
             !_tabVisibility.isTabFocused()) {
           logger.d('Tab hidden for ArConnect user, skipping sync...');
-          emit(SyncIdle());
-          return;
+          _emitIfOpen(SyncIdle());
+          return false;
         }
 
         if (_activityCubit.state is ActivityInProgress) {
           logger.d('Uninterruptible activity in progress, skipping sync...');
-          emit(SyncIdle());
-          return;
+          _emitIfOpen(SyncIdle());
+          return false;
         }
 
         // Update user drives to discover all drives owned by the user.
@@ -489,7 +618,7 @@ class SyncCubit extends Cubit<SyncState> {
         _syncProgress = _syncProgress.copyWith(
           statusMessage: 'Discovering your drives...',
         );
-        syncProgressController.add(_syncProgress);
+        _publishProgress();
 
         await _syncRepository.updateUserDrives(
           wallet: wallet,
@@ -501,7 +630,7 @@ class SyncCubit extends Cubit<SyncState> {
         _syncProgress = _syncProgress.copyWith(
           statusMessage: null,
         );
-        syncProgressController.add(_syncProgress);
+        _publishProgress();
       }
 
       _promptToSnapshotBloc.add(const SyncRunning(isRunning: true));
@@ -523,7 +652,7 @@ class SyncCubit extends Cubit<SyncState> {
             );
           })) {
         _syncProgress = syncProgress;
-        syncProgressController.add(_syncProgress);
+        _publishProgress();
       }
 
       ranToCompletion = profile is ProfileLoggedIn;
@@ -541,16 +670,23 @@ class SyncCubit extends Cubit<SyncState> {
         _currentSyncToken?.dispose();
         _currentSyncToken = null;
 
-        emit(SyncCancelled(
+        _emitIfOpen(SyncCancelled(
           drivesCompleted: _syncProgress.drivesSynced,
           totalDrives: _syncProgress.drivesCount,
           cancelledAt: DateTime.now(),
           trigger: trigger,
         ));
+        unawaited(_recordSyncRun(SyncRunOutcome.cancelled, trigger));
         _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
-        return; // Exit early for cancellation
+        return false; // Exit early for cancellation - nothing may be reported
       }
       logger.e('Error syncing drives', err, stackTrace);
+      // Noted, not handled: `addError` below is still the whole of what
+      // happens to this error. The flag only decides which outcome the history
+      // entry carries, so a sync that threw is written down as a sync that
+      // failed rather than falling through as one that quietly did nothing.
+      threw = true;
+      thrownError = err;
       addError(err);
     } finally {
       // Clean up the cancellation token (for non-cancellation cases)
@@ -575,10 +711,12 @@ class SyncCubit extends Cubit<SyncState> {
 
     _captureSkippedEntities(_syncProgress);
 
+    unawaited(_recordDrivesSynced());
+
     // Check if sync completed with errors (only for non-cancelled syncs)
     if (_syncProgress.hasErrors) {
       logger.w('Sync completed with ${_syncProgress.failedQueries} errors');
-      emit(SyncCompleteWithErrors(
+      _emitIfOpen(SyncCompleteWithErrors(
         failedDrives: _syncProgress.failedQueries,
         totalDrives: _syncProgress.drivesCount,
         failedDriveIds: _syncProgress.failedDriveIds,
@@ -587,33 +725,66 @@ class SyncCubit extends Cubit<SyncState> {
         skippedEntityTxIdsByDrive: _syncProgress.skippedEntityTxIdsByDrive,
         trigger: trigger,
       ));
+      unawaited(_recordSyncRun(SyncRunOutcome.completedWithErrors, trigger));
     } else if (ranToCompletion) {
-      emit(_syncComplete(trigger));
+      _emitIfOpen(_syncComplete(trigger));
+      unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
+    } else if (threw) {
+      // The failure stands. `onError` has already emitted `SyncFailure`, and
+      // this used to drop `SyncIdle` on top of it in the same turn - so the
+      // ring stopped, the icon went back to idle, and a sync that failed
+      // outright was indistinguishable from one that succeeded. The top bar
+      // has a failure branch; it was simply never given a state to render.
+      //
+      // `driveListRefreshFailed` reads this state too, which is what stops the
+      // explorer claiming the user has no drives after a failed refresh.
+      unawaited(_recordSyncRun(
+        SyncRunOutcome.failed,
+        trigger,
+        error: thrownError,
+      ));
     } else {
       // Nothing to report, so nothing is claimed - exactly what this path
       // emitted before results existed.
-      emit(SyncIdle());
+      _emitIfOpen(SyncIdle());
     }
+
+    // See the single-drive path below: whether a sync actually ran.
+    return !threw;
   }
 
   /// Syncs a single drive by its ID with optional deep sync.
   /// Similar to startSync but only syncs the specified drive.
-  Future<void> startSyncForDrive({
+  ///
+  /// Returns whether a sync actually ran for this drive. False means nothing
+  /// was fetched and nothing was written - the request was refused because a
+  /// sync was already running, or the tab was hidden, or an uninterruptible
+  /// activity was in the way. It is returned rather than left to the caller to
+  /// infer from the state, because a caller that infers gets it wrong the same
+  /// way every time: it reads the drive afterwards, finds it as empty as it
+  /// was, and reports that the sync looked and found nothing - see
+  /// `DriveDetailCubit.syncCurrentDrive`.
+  Future<bool> startSyncForDrive({
     required String driveId,
     bool deepSync = false,
     SyncTrigger trigger = SyncTrigger.userInitiated,
   }) async {
     logger.i('Starting Sync for drive: $driveId, deepSync: $deepSync');
 
+    // One sync at a time, and no queue behind it. This used to await the
+    // running sync and then re-check, so a second request either waited
+    // invisibly for minutes or was silently discarded depending on what else
+    // had started meanwhile - and from the outside those are indistinguishable.
+    //
+    // The refusal is here rather than at the call sites because this is the
+    // one door all of them go through. It is not the whole answer, though: a
+    // refusal nobody can see is the same silence in a different place, so
+    // every affordance that reaches this is drawn as unavailable while a sync
+    // runs - see `_SyncButtonMenu`, `DriveActionsMenu` and the drive detail
+    // menus.
     if (state is SyncInProgress) {
-      logger.d('Waiting for current sync to finish before single drive sync');
-      await waitCurrentSync();
-      // Re-check: another caller may have started syncing while we waited
-      if (state is SyncInProgress) {
-        logger.d(
-            'Another sync started while waiting, aborting single drive sync');
-        return;
-      }
+      logger.d('A sync is already running; refusing single drive sync');
+      return false;
     }
 
     // Mark as single drive sync from the start so the UI shows the right title
@@ -625,6 +796,15 @@ class SyncCubit extends Cubit<SyncState> {
     /// See [startSync]: the single-drive path falls through to the same
     /// decision after the same catch, and must make the same non-claim.
     var ranToCompletion = false;
+
+    /// Whether this sync ended in the catch below. See [_recordSyncRun].
+    var threw = false;
+
+    /// What it threw. `_syncProgress.errorMessages` only carries per-drive
+    /// failures, so a sync that died before it reached any drive has none -
+    /// and the history entry a user opens Troubleshooting to read would carry
+    /// no reason at all, which is the one entry the feature exists for.
+    Object? thrownError;
 
     // Create a new cancellation token for this sync
     _currentSyncToken?.dispose();
@@ -638,10 +818,14 @@ class SyncCubit extends Cubit<SyncState> {
 
       _initSync = DateTime.now();
 
-      emit(SyncInProgress(trigger: trigger));
-      // Emit initial progress AFTER SyncInProgress so the modal is already
-      // listening to the stream when we emit
-      syncProgressController.add(_syncProgress);
+      // Which drive this sync is for, so a surface listing drives can say
+      // "Syncing..." on that row alone.
+      _syncingDriveId = driveId;
+
+      _emitIfOpen(SyncInProgress(trigger: trigger));
+      // Emit initial progress AFTER SyncInProgress so the indicator is
+      // already listening to the stream when we emit
+      _publishProgress();
 
       if (profile is ProfileLoggedIn) {
         wallet = profile.user.wallet;
@@ -654,15 +838,17 @@ class SyncCubit extends Cubit<SyncState> {
         if (isArConnect && !_tabVisibility.isTabFocused()) {
           logger.d(
               'Tab hidden for ArConnect user, skipping single drive sync...');
-          emit(SyncIdle());
-          return;
+          _emitIfOpen(SyncIdle());
+          // Skipped, not run: nothing was fetched, so there is no result for
+          // anyone to report.
+          return false;
         }
 
         if (_activityCubit.state is ActivityInProgress) {
           logger.d(
               'Uninterruptible activity in progress, skipping single drive sync...');
-          emit(SyncIdle());
-          return;
+          _emitIfOpen(SyncIdle());
+          return false;
         }
 
         // Load drive keys so private drives can be decrypted
@@ -693,7 +879,7 @@ class SyncCubit extends Cubit<SyncState> {
         },
       )) {
         _syncProgress = syncProgress;
-        syncProgressController.add(_syncProgress);
+        _publishProgress();
       }
 
       ranToCompletion = profile is ProfileLoggedIn;
@@ -710,22 +896,37 @@ class SyncCubit extends Cubit<SyncState> {
         _currentSyncToken?.dispose();
         _currentSyncToken = null;
 
-        emit(SyncCancelled(
+        _emitIfOpen(SyncCancelled(
           drivesCompleted: _syncProgress.drivesSynced,
           totalDrives: _syncProgress.drivesCount,
           cancelledAt: DateTime.now(),
           trigger: trigger,
         ));
         _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
-        return;
+        // False, exactly as [startSync] answers the same question. The two
+        // used to disagree, and a caller that believed this one emitted a
+        // loading state, took `true` for "a sync ran", and then found the
+        // state was `SyncCancelled` and returned without emitting anything -
+        // leaving the explorer on "Opening Drive X" with a sweeping bar that
+        // nothing ever cleared. A cancelled sync started nothing the caller
+        // may report, whichever door it came through.
+        unawaited(_recordSyncRun(SyncRunOutcome.cancelled, trigger));
+        return false;
       }
       logger.e('Error syncing single drive', err, stackTrace);
+      // Noted, not handled - see the same line in [startSync].
+      threw = true;
+      thrownError = err;
       addError(err);
     } finally {
       if (_currentSyncToken != null) {
         _currentSyncToken?.dispose();
         _currentSyncToken = null;
       }
+
+      // Released on every path out, cancellation included: nothing is running
+      // for this drive any more.
+      _syncingDriveId = null;
     }
 
     _lastSync = DateTime.now();
@@ -738,10 +939,12 @@ class SyncCubit extends Cubit<SyncState> {
 
     _captureSkippedEntities(_syncProgress);
 
+    unawaited(_recordDrivesSynced());
+
     // Check if sync completed with errors
     if (_syncProgress.hasErrors) {
       logger.w('Single drive sync completed with errors');
-      emit(SyncCompleteWithErrors(
+      _emitIfOpen(SyncCompleteWithErrors(
         failedDrives: _syncProgress.failedQueries,
         totalDrives: _syncProgress.drivesCount,
         failedDriveIds: _syncProgress.failedDriveIds,
@@ -750,10 +953,118 @@ class SyncCubit extends Cubit<SyncState> {
         skippedEntityTxIdsByDrive: _syncProgress.skippedEntityTxIdsByDrive,
         trigger: trigger,
       ));
+      unawaited(_recordSyncRun(SyncRunOutcome.completedWithErrors, trigger));
     } else if (ranToCompletion) {
-      emit(_syncComplete(trigger));
+      _emitIfOpen(_syncComplete(trigger));
+      unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
+    } else if (threw) {
+      // The failure stands - see the same branch in [startSync].
+      unawaited(_recordSyncRun(
+        SyncRunOutcome.failed,
+        trigger,
+        error: thrownError,
+      ));
     } else {
-      emit(SyncIdle());
+      _emitIfOpen(SyncIdle());
+    }
+
+    // What the contract says: whether a sync actually ran. A sync that threw
+    // before fetching anything did not, and returning true for it told
+    // `DriveAttachCubit` its drive was synced when nothing had been read.
+    return !threw;
+  }
+
+  /// Writes down that the drives this sync walked are current as of now.
+  ///
+  /// Per drive rather than one global timestamp, because "when did we last
+  /// look at this drive" is the only question the drives list can answer
+  /// honestly: a single-drive sync leaves every other drive exactly as stale
+  /// as it was.
+  ///
+  /// Fire and forget, and never allowed to take a finished sync down with it.
+  /// The sync has already succeeded by the time this runs; a preferences write
+  /// that fails is worth a log line and nothing more.
+  Future<void> _recordDrivesSynced() async {
+    final syncedDriveIds = _syncProgress.syncedDriveIds;
+
+    if (syncedDriveIds.isEmpty) {
+      return;
+    }
+
+    // See [_recordSyncRun]: this lands after logout has cleared the store.
+    if (isClosed) {
+      return;
+    }
+
+    try {
+      await _userPreferencesRepository.saveDrivesLastSynced(syncedDriveIds);
+    } catch (e, stackTrace) {
+      logger.e(
+        'Could not record when these drives were last synced',
+        e,
+        stackTrace,
+      );
+    }
+  }
+
+  /// Writes down what this sync did, for the user to read later.
+  ///
+  /// Everything here is read off the progress the sync already reported and
+  /// the start time it was already counting from: nothing is recounted, no
+  /// drive is queried, and no network request is made. It is the same
+  /// fire-and-forget contract as [_recordDrivesSynced] - a sync that has
+  /// already finished must not be taken down by a preferences write that
+  /// failed.
+  ///
+  /// A sync that was refused before it started - a hidden tab, an
+  /// uninterruptible upload, a second request while one was already running -
+  /// is deliberately not recorded. Nothing was fetched, so there is nothing to
+  /// say about it, and a history full of runs that never happened is a history
+  /// nobody can read. `syncMetadataOnly` is not recorded either: it refreshes
+  /// the drive list and syncs no drive, and it reports its own failure on the
+  /// indicator.
+  Future<void> _recordSyncRun(
+    SyncRunOutcome outcome,
+    SyncTrigger trigger, {
+    Object? error,
+  }) async {
+    // Every caller fires this `unawaited`, and a sync cancelled by [close] only
+    // notices its token at the repository's next checkpoint - a network round
+    // trip away. Logging out clears this store (`UserPreferencesRepository`
+    // .clear, off `onAuthStateChanged(null)`), so without this guard the write
+    // reliably lands afterwards: it reads the emptied history and puts one
+    // entry back, carrying the previous wallet's drive name, error messages
+    // and timings. The next wallet to log in then reads a sync it never ran.
+    if (isClosed) {
+      return;
+    }
+
+    try {
+      await _userPreferencesRepository.recordSyncRun(
+        SyncRun(
+          startedAt: _initSync,
+          took: DateTime.now().difference(_initSync),
+          trigger: trigger,
+          // Named only when this sync was for one drive. The all-drives case
+          // has no drive to name, and the trigger already says what it was.
+          driveName:
+              _syncProgress.isSingleDriveSync ? _syncProgress.driveName : null,
+          outcome: outcome,
+          itemsFound: _syncProgress.entitiesSynced,
+          skippedEntityCount: _syncProgress.skippedEntityCount,
+          failedDrives: _syncProgress.failedQueries,
+          totalDrives: _syncProgress.drivesCount,
+          // A sync that threw before reaching a drive has no per-drive
+          // messages, so its own error is what there is to report.
+          errorMessages: _syncProgress.errorMessages.isNotEmpty
+              ? _syncProgress.errorMessages
+              : error != null
+                  ? {'': error.toString()}
+                  : const <String, String>{},
+        ),
+      );
+    } catch (e, stackTrace) {
+      logger.e('Could not record what this sync did', e, stackTrace);
     }
   }
 
@@ -811,7 +1122,7 @@ class SyncCubit extends Cubit<SyncState> {
     if (driveIds.isEmpty) return;
 
     logger.i('Retrying ${driveIds.length} failed drives');
-    return startSync(driveIdsToRetry: driveIds);
+    await startSync(driveIdsToRetry: driveIds);
   }
 
   /// Get the current sync progress
@@ -826,15 +1137,51 @@ class SyncCubit extends Cubit<SyncState> {
       return;
     }
 
+    // And it stays there. It used to fall straight back to `SyncIdle` in the
+    // same turn, which made `driveListRefreshFailed` - defined as `state is
+    // SyncFailure` - false by the time anything read it. A drive list that
+    // could not be fetched then looked exactly like a wallet with no drives,
+    // and the app offered "Getting Started" and two create-a-drive buttons to
+    // someone whose drives simply had not loaded.
+    //
+    // Every waiter uses [syncHasFinished], which counts this as over.
     emit(SyncFailure(error: error, stackTrace: stackTrace));
 
-    emit(SyncIdle());
     super.onError(error, stackTrace);
   }
 
+  /// Shuts the cubit down, and the sync with it.
+  ///
+  /// The running sync is cancelled here, not merely abandoned. This cubit is
+  /// created per session and closed on logout, and `ArDriveAuth.logout()`
+  /// empties every table *before* the close reaches here - so a sync left
+  /// running spends the following minutes writing the previous wallet's drives
+  /// and revisions back into the database the logout just cleared, where
+  /// `DrivesCubit` watches an unfiltered `allDrives()` and shows them to
+  /// whoever logs in next.
+  ///
+  /// It was unreachable until this stack: a running sync used to hold a
+  /// full-screen scrim over the app, Log Out included. The scrim is gone by
+  /// design - a sync reports on the top bar's indicator without taking the
+  /// app - so every control is live mid-sync and this is now an ordinary thing
+  /// to do.
+  ///
+  /// The sync does not stop the instant this returns: the repository notices
+  /// the cancellation at its next checkpoint. That is why the emits and the
+  /// progress publishes are guarded rather than trusted - see [_emitIfOpen]
+  /// and [_publishProgress] - and why the repository clears its own per-sync
+  /// state at the *start* of every sync rather than at the end, so a straggler
+  /// cannot leave its counts behind for the next session's sync to report.
   @override
   Future<void> close() async {
     logger.i('Closing SyncCubit instance');
+
+    // First, so the sync begins unwinding while the subscriptions below are
+    // being torn down rather than after.
+    _currentSyncToken?.cancel();
+    _currentSyncToken?.dispose();
+    _currentSyncToken = null;
+
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
     await _restartOnFocusStreamSubscription?.cancel();
@@ -844,6 +1191,11 @@ class SyncCubit extends Cubit<SyncState> {
     _arconnectSyncSub = null;
     _restartOnFocusStreamSubscription = null;
     _restartArConnectOnFocusStreamSubscription = null;
+
+    // Closed with the cubit that owns it. It is a broadcast controller with no
+    // listeners left once the top bar is gone, and leaving it open leaks it
+    // along with everything a straggling sync adds to it.
+    await syncProgressController.close();
 
     await super.close();
 

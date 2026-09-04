@@ -2,11 +2,12 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/progress_dialog.dart';
+import 'package:ardrive/services/config/app_config.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/presentation/sync_overlay.dart';
-import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -74,31 +75,6 @@ void main() {
     );
   }
 
-  testWidgets('a sync nobody asked for paints nothing over the app',
-      (tester) async {
-    await tester.pumpWidget(
-      wrap(SyncInProgress(trigger: SyncTrigger.background)),
-    );
-    await tester.pump();
-
-    expect(find.byType(SyncScrim), findsNothing);
-    expect(find.byType(ProgressDialog), findsNothing);
-  });
-
-  testWidgets('a sync the user asked for still holds the whole app',
-      (tester) async {
-    await tester.pumpWidget(
-      wrap(SyncInProgress(trigger: SyncTrigger.userInitiated)),
-    );
-    await tester.pump();
-
-    expect(find.byType(SyncScrim), findsOneWidget);
-    expect(find.byType(ProgressDialog), findsOneWidget);
-
-    // Dispose the tree while the modal's own periodic timers are still ours.
-    await tester.pumpWidget(const SizedBox());
-  });
-
   SyncCompleteWithErrors failed({
     SyncTrigger trigger = SyncTrigger.userInitiated,
   }) =>
@@ -110,128 +86,73 @@ void main() {
         trigger: trigger,
       );
 
-  testWidgets('a failure the user waited for keeps its modal', (tester) async {
-    // They are looking at the sync; the answer belongs where the question was
-    // asked, retry and all.
-    await tester.pumpWidget(wrap(failed()));
-    await tester.pump();
-
-    expect(find.byType(SyncScrim), findsOneWidget);
-    expect(find.text('Retry Failed'), findsOneWidget);
-  });
-
-  testWidgets('a failure nobody asked for does not take the screen',
-      (tester) async {
-    // The login sync paints nothing while it runs, so the user is in the
-    // middle of something else. One drive out of several failing used to drop
-    // a full-screen scrim and "Sync Incomplete - Errors Detected" over it -
-    // SyncCompleteWithErrors was the only terminal state with no trigger to
-    // honour. It reports at the top bar's sync button instead.
-    await tester.pumpWidget(wrap(failed(trigger: SyncTrigger.background)));
-    await tester.pump();
-
-    expect(find.byType(SyncScrim), findsNothing);
-    expect(find.byType(ArDriveStandardModalNew), findsNothing);
-    expect(find.text('Sync Incomplete - Errors Detected'), findsNothing);
-  });
-
-  testWidgets('every terminal state follows the sync it came from',
-      (tester) async {
+  group('nothing a sync does holds the app any more', () {
+    // The modal a user-initiated sync used to hold was a title, a phase line,
+    // a bar and a percentage - what SyncStrip carries, under the app bar, on
+    // both breakpoints - with no action of its own. What was left of it was a
+    // scrim over a copy of what was already on screen.
     for (final trigger in SyncTrigger.values) {
-      expect(
-        SyncOverlay.blocksTheApp(failed(trigger: trigger)),
-        trigger == SyncTrigger.userInitiated,
-        reason: 'a $trigger sync that failed must block exactly as much as a '
-            '$trigger sync that is running',
-      );
-    }
-  });
+      testWidgets('a $trigger sync that is running paints nothing over the app',
+          (tester) async {
+        await tester.pumpWidget(wrap(SyncInProgress(trigger: trigger)));
+        await tester.pump();
 
-  testWidgets('cancelling follows the sync it came from', (tester) async {
-    await tester.pumpWidget(
-      wrap(
-        SyncCancelled(
-          drivesCompleted: 1,
-          totalDrives: 3,
-          cancelledAt: DateTime.now(),
-          trigger: SyncTrigger.background,
-        ),
-      ),
-    );
-    await tester.pump();
+        expect(find.byType(ProgressDialog), findsNothing);
+        expect(find.byType(ArDriveStandardModalNew), findsNothing);
+        expect(find.text('Cancel'), findsNothing);
+      });
 
-    expect(find.byType(SyncScrim), findsNothing);
+      testWidgets('a $trigger sync that failed paints nothing over the app',
+          (tester) async {
+        // It reports at the top bar, where the indicator was already turning -
+        // for both triggers now, since the modal that used to carry the
+        // user-initiated one is gone.
+        await tester.pumpWidget(wrap(failed(trigger: trigger)));
+        await tester.pump();
 
-    await tester.pumpWidget(
-      wrap(
-        SyncCancelled(
-          drivesCompleted: 1,
-          totalDrives: 3,
-          cancelledAt: DateTime.now(),
-          trigger: SyncTrigger.userInitiated,
-        ),
-      ),
-    );
-    await tester.pump();
+        expect(find.byType(ArDriveStandardModalNew), findsNothing);
+        expect(find.text('Sync Incomplete - Errors Detected'), findsNothing);
+        expect(find.text('Retry Failed'), findsNothing);
+      });
 
-    expect(find.byType(SyncScrim), findsOneWidget);
-  });
-
-  testWidgets('loading drive metadata paints nothing over the app',
-      (tester) async {
-    // The cubit's initial state, and the metadata-only login path: two more
-    // syncs nobody asked for, over a drives list the local database already
-    // has.
-    await tester.pumpWidget(wrap(SyncLoadingDrives()));
-    await tester.pump();
-
-    expect(find.byType(SyncScrim), findsNothing);
-    expect(find.byType(ProgressDialog), findsNothing);
-  });
-
-  testWidgets('a finished sync never holds the app', (tester) async {
-    // Whoever asked for it. The summary is drawn without a scrim and leaves on
-    // its own, so a sync that used to end in silence never starts costing a
-    // click to get rid of.
-    for (final trigger in SyncTrigger.values) {
-      expect(
-        SyncOverlay.blocksTheApp(
-          SyncComplete(
-            entitiesSynced: 0,
-            completedAt: DateTime.now(),
-            sequence: 1,
-            trigger: trigger,
+      testWidgets(
+          'a $trigger sync that was cancelled paints nothing over '
+          'the app', (tester) async {
+        await tester.pumpWidget(
+          wrap(
+            SyncCancelled(
+              drivesCompleted: 1,
+              totalDrives: 3,
+              cancelledAt: DateTime.now(),
+              trigger: trigger,
+            ),
           ),
-        ),
-        isFalse,
-        reason: 'a $trigger sync that finished must not block the app',
-      );
+        );
+        await tester.pump();
+
+        expect(find.byType(ArDriveStandardModalNew), findsNothing);
+        expect(find.text('Sync Cancelled'), findsNothing);
+      });
     }
+
+    testWidgets('loading drive metadata paints nothing over the app',
+        (tester) async {
+      await tester.pumpWidget(wrap(SyncLoadingDrives()));
+      await tester.pump();
+
+      expect(find.byType(ProgressDialog), findsNothing);
+      expect(find.byType(ArDriveStandardModalNew), findsNothing);
+    });
   });
 
-  testWidgets('the modal the user waited on ends on what the sync found',
+  testWidgets('a sync the user asked for is not painted over the app either',
       (tester) async {
-    await tester.pumpWidget(
-      wrap(
-        SyncComplete(
-          entitiesSynced: 0,
-          completedAt: DateTime.now(),
-          sequence: 1,
-          trigger: SyncTrigger.userInitiated,
-        ),
-      ),
-    );
-    await tester.pump();
-
-    expect(find.text('Sync Complete'), findsOneWidget);
-    expect(find.text('Up to date — nothing new'), findsOneWidget);
-    // The wait is over, so the app underneath is free again.
-    expect(find.byType(SyncScrim), findsNothing);
-
-    await tester.pumpWidget(const SizedBox());
-  });
-
-  testWidgets('the summary sees itself out', (tester) async {
+    // It used to be: a result the user pressed for got a card in the middle of
+    // the screen - full width on a phone, over the page they were reading -
+    // while the same result from a background sync got a small pill anchored
+    // under the control that had been turning. Two designs for one sentence,
+    // with the trigger choosing between them, and failures never split that
+    // way at all. Every outcome reports at the indicator now.
     await tester.pumpWidget(
       wrap(
         SyncComplete(
@@ -244,13 +165,11 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('12 items changed'), findsOneWidget);
-
-    // Nobody clicks anything here: the modal is gone a few seconds later.
-    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
-
+    expect(find.text('Sync Complete'), findsNothing);
     expect(find.text('12 items changed'), findsNothing);
     expect(find.byType(ArDriveStandardModalNew), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
   });
 
   testWidgets('a finished background sync is not painted over the app',
@@ -269,7 +188,6 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(SyncScrim), findsNothing);
     expect(find.byType(ArDriveStandardModalNew), findsNothing);
     expect(find.text('12 items changed'), findsNothing);
   });
@@ -296,18 +214,59 @@ void main() {
     expect(find.text('12 items changed'), findsNothing);
   });
 
-  testWidgets('the modal counts whole percent', (tester) async {
-    when(() => syncCubit.syncProgress).thenReturn(
-      SyncProgress.initial().copyWith(progress: 0.42),
-    );
+  group('the gateway a debug build is talking to', () {
+    // The only reason this widget draws anything at all while a sync runs. It
+    // used to hang off the blocking modal, so removing that would have taken a
+    // dev affordance with it - and handing it every sync instead would leave
+    // it sitting at the bottom of the window for the whole of every login in
+    // dev and staging, which is every session.
+    setUp(() {
+      when(() => configService.flavor).thenReturn(Flavor.development);
+      when(() => configService.config).thenReturn(
+        AppConfig(
+          allowedDataItemSizeForTurbo: 0,
+          stripePublishableKey: '',
+          arweaveGatewayForDataRequest: const SelectedGateway(
+            label: 'test gateway',
+            url: 'https://example.test',
+          ),
+        ),
+      );
+    });
 
-    await tester.pumpWidget(
-      wrap(SyncInProgress(trigger: SyncTrigger.userInitiated)),
-    );
-    await tester.pump();
+    testWidgets('is named for a sync the user asked for', (tester) async {
+      await tester.pumpWidget(
+        wrap(SyncInProgress(trigger: SyncTrigger.userInitiated)),
+      );
+      await tester.pump();
 
-    expect(find.text('42% complete'), findsOneWidget);
+      expect(
+        find.text('Using gateway: https://example.test'),
+        findsOneWidget,
+      );
+    });
 
-    await tester.pumpWidget(const SizedBox());
+    testWidgets('stays out of the way of a sync nobody asked for',
+        (tester) async {
+      // As far as the modal it hung off ever reached. The sync on login is a
+      // background sync, and it runs on every session.
+      await tester.pumpWidget(
+        wrap(SyncInProgress(trigger: SyncTrigger.background)),
+      );
+      await tester.pump();
+
+      expect(find.textContaining('Using gateway:'), findsNothing);
+    });
+
+    testWidgets('and never appears in production', (tester) async {
+      when(() => configService.flavor).thenReturn(Flavor.production);
+
+      await tester.pumpWidget(
+        wrap(SyncInProgress(trigger: SyncTrigger.userInitiated)),
+      );
+      await tester.pump();
+
+      expect(find.textContaining('Using gateway:'), findsNothing);
+    });
   });
 }

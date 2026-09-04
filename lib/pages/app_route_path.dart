@@ -10,6 +10,14 @@ class AppRoutePath {
 
   final bool getStarted;
 
+  /// Whether the app is showing the list of the user's drives - `/drives`.
+  ///
+  /// The landing route of a login that has no link to honour. It is separate
+  /// from [driveId] rather than "driveId == null" because the two are not
+  /// opposites: a drive can be selected in the sidebar while the list is what
+  /// is on screen, and only this says which of them the address bar means.
+  final bool drivesList;
+
   final String? driveId;
   final String? driveName;
   final String? driveFolderId;
@@ -64,6 +72,7 @@ class AppRoutePath {
   const AppRoutePath({
     this.signingIn = false,
     this.getStarted = false,
+    this.drivesList = false,
     this.driveId,
     this.driveName,
     this.driveFolderId,
@@ -83,6 +92,9 @@ class AppRoutePath {
   factory AppRoutePath.signIn() => const AppRoutePath(signingIn: true);
 
   factory AppRoutePath.getStarted() => const AppRoutePath(getStarted: true);
+
+  /// Creates a route that points at the list of the user's drives.
+  factory AppRoutePath.drivesList() => const AppRoutePath(drivesList: true);
 
   /// Creates a route that points to a particular drive.
   factory AppRoutePath.driveDetail({

@@ -20,6 +20,7 @@ class SyncProgress extends LinearProgress {
     required this.numberOfDrivesAtGetMetadataPhase,
     this.failedQueries = 0,
     this.failedDriveIds = const [],
+    this.syncedDriveIds = const [],
     this.errorMessages = const {},
     this.statusMessage,
     this.isSingleDriveSync = false,
@@ -29,6 +30,8 @@ class SyncProgress extends LinearProgress {
     this.firstTimeSyncDriveCount = 0,
     this.skippedDriveCount = 0,
     this.isIndeterminate = false,
+    this.metadataFetchesCompleted = 0,
+    this.metadataFetchesTotal = 0,
   });
 
   factory SyncProgress.initial() {
@@ -76,6 +79,14 @@ class SyncProgress extends LinearProgress {
   // New fields for tracking failures
   final int failedQueries;
   final List<String> failedDriveIds;
+
+  /// The drives this sync walked all the way to the end.
+  ///
+  /// Kept as ids rather than a count because it is the only thing that can
+  /// answer "when was *this* drive last synced": the count says how many
+  /// finished, never which. Failures are not in here - a drive that could not
+  /// be read was not synced.
+  final List<String> syncedDriveIds;
   final Map<String, String> errorMessages; // driveId -> error message
   final String? statusMessage; // Status message for post-sync operations
 
@@ -103,6 +114,28 @@ class SyncProgress extends LinearProgress {
   /// sync. Zero for a deep sync, and zero when the probe could not answer -
   /// in both of those cases nothing was skipped.
   final int skippedDriveCount;
+
+  /// Entity metadata bodies this sync has finished with, and how many it has
+  /// asked for, counted across the whole sync rather than per drive or per
+  /// batch.
+  ///
+  /// This is the one number that moves during the longest phase of a sync.
+  /// Every file and folder revision's metadata is a separate HTTP round trip,
+  /// run `maxConcurrentDataFetches` at a time, and nothing else the sync
+  /// reports advances while those are in flight: `progress` is read off block
+  /// heights the walk has not reached yet, and [entitiesSynced] only moves
+  /// when a whole batch's fetches are done and its revisions are written. A
+  /// drive with three thousand revisions therefore sat on one unchanging line
+  /// for minutes.
+  ///
+  /// Both climb and neither is ever republished lower. [metadataFetchesTotal]
+  /// is what has been asked for so far, not a prediction of the drive's size:
+  /// history arrives in chunks, so it grows as the walk finds more, and it is
+  /// never a figure the sync does not yet have. Zero on both means there is no
+  /// fetch to report - before the first batch, and after the walk is over -
+  /// and the surfaces fall back to what they said before this existed.
+  final int metadataFetchesCompleted;
+  final int metadataFetchesTotal;
 
   /// True while the sync is inside a phase whose length it cannot know and
   /// whose progress it cannot measure - today, the gateway round trip that
@@ -137,6 +170,7 @@ class SyncProgress extends LinearProgress {
     int? numberOfDrivesAtGetMetadataPhase,
     int? failedQueries,
     List<String>? failedDriveIds,
+    List<String>? syncedDriveIds,
     Map<String, String>? errorMessages,
     Object? statusMessage = _absent,
     bool? isSingleDriveSync,
@@ -146,6 +180,8 @@ class SyncProgress extends LinearProgress {
     int? firstTimeSyncDriveCount,
     int? skippedDriveCount,
     bool? isIndeterminate,
+    int? metadataFetchesCompleted,
+    int? metadataFetchesTotal,
   }) {
     return SyncProgress(
       numberOfEntities: numberOfEntities ?? this.numberOfEntities,
@@ -157,6 +193,7 @@ class SyncProgress extends LinearProgress {
           this.numberOfDrivesAtGetMetadataPhase,
       failedQueries: failedQueries ?? this.failedQueries,
       failedDriveIds: failedDriveIds ?? this.failedDriveIds,
+      syncedDriveIds: syncedDriveIds ?? this.syncedDriveIds,
       errorMessages: errorMessages ?? this.errorMessages,
       statusMessage: statusMessage == _absent
           ? this.statusMessage
@@ -170,6 +207,9 @@ class SyncProgress extends LinearProgress {
           firstTimeSyncDriveCount ?? this.firstTimeSyncDriveCount,
       skippedDriveCount: skippedDriveCount ?? this.skippedDriveCount,
       isIndeterminate: isIndeterminate ?? this.isIndeterminate,
+      metadataFetchesCompleted:
+          metadataFetchesCompleted ?? this.metadataFetchesCompleted,
+      metadataFetchesTotal: metadataFetchesTotal ?? this.metadataFetchesTotal,
     );
   }
 }

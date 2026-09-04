@@ -91,6 +91,8 @@ void main() {
           wallet: any(named: 'wallet'),
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
+          onDriveRead: any(named: 'onDriveRead'),
+          onDriveUnlocked: any(named: 'onDriveUnlocked'),
         )).thenAnswer((_) async {});
     when(() => syncRepository.syncAllDrives(
           wallet: any(named: 'wallet'),
@@ -199,6 +201,8 @@ void main() {
           wallet: any(named: 'wallet'),
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
+          onDriveRead: any(named: 'onDriveRead'),
+          onDriveUnlocked: any(named: 'onDriveUnlocked'),
         )).called(1);
   });
 
@@ -279,6 +283,8 @@ void main() {
           wallet: any(named: 'wallet'),
           password: any(named: 'password'),
           cipherKey: any(named: 'cipherKey'),
+          onDriveRead: any(named: 'onDriveRead'),
+          onDriveUnlocked: any(named: 'onDriveUnlocked'),
         )).called(1);
   });
   test('one drive left unsynced does not drag the wallet through a sync',
@@ -324,6 +330,8 @@ void main() {
             wallet: any(named: 'wallet'),
             password: any(named: 'password'),
             cipherKey: any(named: 'cipherKey'),
+            onDriveRead: any(named: 'onDriveRead'),
+            onDriveUnlocked: any(named: 'onDriveUnlocked'),
           )).thenAnswer((_) async {
         if (!started.isCompleted) started.complete();
         await finish.future;
@@ -381,6 +389,8 @@ void main() {
             wallet: any(named: 'wallet'),
             password: any(named: 'password'),
             cipherKey: any(named: 'cipherKey'),
+            onDriveRead: any(named: 'onDriveRead'),
+            onDriveUnlocked: any(named: 'onDriveUnlocked'),
           )).thenAnswer((_) async => throw Exception('the gateway said no'));
 
       final cubit = buildCubit(syncAllDrivesOnLogin: false);

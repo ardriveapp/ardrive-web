@@ -110,6 +110,7 @@ void main() {
           driveId: any(named: 'driveId'),
           ownerAddress: any(named: 'ownerAddress'),
           currentBlockHeight: any(named: 'currentBlockHeight'),
+          onEntityFetched: any(named: 'onEntityFetched'),
         )).thenAnswer((_) async {
       final block = BlockEntities(10)..entities = [...entities];
       return DriveEntityHistory(10, [block]);
@@ -240,6 +241,43 @@ void main() {
 
     expect(second.entitiesSynced, 0);
     expect(await db.select(db.fileRevisions).get(), hasLength(1));
+  });
+
+  test("a sync's counts do not survive into the next session's sync", () async {
+    // `SyncRepository` is an app-level singleton, above the auth gate, so the
+    // instance that served the previous wallet serves the next login too. Its
+    // per-sync counters are cleared at the *start* of every sync for exactly
+    // that reason - not at the end, which a sync that is cancelled, fails, or
+    // is abandoned by a closing cubit never reaches. Without that, the next
+    // session's "N items synced" counts another wallet's entities.
+    await insertDrive();
+    gatewayReturns([
+      folder(rootFolderId),
+      file('file-a'),
+      file('file-b'),
+    ]);
+
+    expect((await syncToCompletion()).entitiesSynced, 3,
+        reason: 'precondition: the first session synced three entities');
+
+    // Logout, as `ArDriveAuth.logout()` performs it: every table emptied,
+    // while this repository - and anything a straggling sync left in it -
+    // stays exactly where it was.
+    await db.delete(db.fileRevisions).go();
+    await db.delete(db.folderRevisions).go();
+    await db.delete(db.fileEntries).go();
+    await db.delete(db.folderEntries).go();
+    await db.delete(db.drives).go();
+
+    await insertDrive();
+    gatewayReturns([]);
+
+    expect(
+      (await syncToCompletion()).entitiesSynced,
+      0,
+      reason: 'the new session synced nothing, so it may not be told it '
+          "synced the previous wallet's three entities",
+    );
   });
 
   test('a sync counts only what it wrote, not what came before it', () async {

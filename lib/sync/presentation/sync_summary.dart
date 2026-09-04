@@ -111,3 +111,40 @@ SyncSummary syncCompleteSummaryParts(
 /// The whole summary on one line, for a surface that has the room.
 String syncCompleteSummary(AppLocalizations l10n, SyncComplete state) =>
     syncCompleteSummaryParts(l10n, state).oneLine;
+
+/// What every surface calls the moment the drive list is being read.
+///
+/// One function because three surfaces say it - the top bar's menu, the
+/// explorer's panel and the drives list itself - and they report one sync
+/// between them, so they must never name it differently.
+///
+/// The count only appears once there is one. Before the listing comes back
+/// both figures are zero, and "0 of 0" is worse than saying nothing.
+String syncLoadingDrivesLabel(
+  AppLocalizations localizations,
+  SyncState? state,
+) {
+  if (state is! SyncLoadingDrives) {
+    return localizations.loadingYourDrives;
+  }
+
+  // Two phases, said as two things. The fetch is pooled and quick; unlocking
+  // is serial and costs a signature read, a key derivation and a decrypt per
+  // private drive - so the fetch count would reach its total and sit there
+  // with nothing to explain the wait.
+  if (state.phase == SyncLoadingDrivesPhase.unlocking) {
+    return state.hasCount
+        ? localizations.unlockingYourDrivesCount(
+            state.drivesRead,
+            state.drivesFound,
+          )
+        : localizations.unlockingYourDrives;
+  }
+
+  return state.hasCount
+      ? localizations.loadingYourDrivesCount(
+          state.drivesRead,
+          state.drivesFound,
+        )
+      : localizations.loadingYourDrives;
+}

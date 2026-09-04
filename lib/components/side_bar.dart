@@ -1,3 +1,6 @@
+import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
+import 'package:ardrive/drives_list/domain/drive_scope.dart';
+import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
@@ -11,8 +14,10 @@ import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/sync/presentation/sync_history_panel.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -25,6 +30,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+
+/// The nav's way back to the drives list.
+///
+/// Named so a test can find it in either of the two shapes it is drawn in -
+/// with its label on the drawer and the expanded rail, and as a bare icon on
+/// the collapsed one, where there is no text to look for.
 
 class AppSideBar extends StatefulWidget {
   const AppSideBar({super.key});
@@ -98,24 +109,7 @@ class _AppSideBarState extends State<AppSideBar> {
                     const SizedBox(
                       height: 16,
                     ),
-                    BlocBuilder<DrivesCubit, DrivesState>(
-                      builder: (context, state) {
-                        if (state is DrivesLoadSuccess &&
-                            (state.userDrives.isNotEmpty ||
-                                state.sharedDrives.isNotEmpty)) {
-                          return Flexible(
-                            child: _Accordion(
-                              state: state,
-                              isMobile: true,
-                            ),
-                          );
-                        }
-                        if (state is DrivesLoadInProgress) {
-                          return const _DrivesStillLoading();
-                        }
-                        return const SizedBox();
-                      },
-                    ),
+                    _buildDriveNav(isMobile: true),
                   ],
                 ),
               ),
@@ -159,84 +153,56 @@ class _AppSideBarState extends State<AppSideBar> {
   Widget _desktopView() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        return ArDriveScrollBar(
-          controller: _scrollController,
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            child: Container(
-              height: constraints.maxHeight,
-              decoration: BoxDecoration(
-                border: Border(
-                  right: BorderSide(
-                    color: ArDriveTheme.of(context).themeData.colors.shadow,
-                    width: 1,
-                  ),
-                ),
+        return Container(
+          // Exactly the viewport, and the scrolling happens inside it.
+          //
+          // Two earlier attempts made the whole column the scrollable and both
+          // failed, for the same reason: a scroll view hands its child an
+          // unbounded height, and this column is full of Expanded, Spacer and
+          // a Flexible drive list, none of which can exceed a height they are
+          // being asked to fill. The content therefore came out exactly as
+          // tall as the viewport however many drives there were, so there was
+          // never anything to scroll and a long list simply clipped.
+          //
+          // The header and the footer are pinned, which is what a sidebar
+          // should do anyway - the way home and the account do not scroll away
+          // from under the pointer - and the drive list between them gets a
+          // real bounded box with a scroll view inside it.
+          height: constraints.maxHeight,
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(
+                color: ArDriveTheme.of(context).themeData.colors.shadow,
+                width: 1,
               ),
-              child: AnimatedSize(
-                duration: const Duration(milliseconds: 300),
-                child: SizedBox(
-                  width: _isExpanded ? 240 : 64,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          children: [
-                            const SizedBox(
-                              height: 24,
-                            ),
-                            _buildLogo(false),
-                            const SizedBox(
-                              height: 24,
-                            ),
-                            _buildDriveActionsButton(
-                              context,
-                              false,
-                            ),
-                            const SizedBox(
-                              height: 56,
-                            ),
-                            _isExpanded
-                                ? BlocBuilder<DrivesCubit, DrivesState>(
-                                    builder: (context, state) {
-                                      if (state is DrivesLoadSuccess &&
-                                          (state.userDrives.isNotEmpty ||
-                                              state.sharedDrives.isNotEmpty)) {
-                                        return Flexible(
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(
-                                                left: 43.0),
-                                            child: _Accordion(
-                                              isMobile: false,
-                                              state: state,
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      if (state is DrivesLoadInProgress) {
-                                        return const _DrivesStillLoading(
-                                          leftPadding: 43,
-                                        );
-                                      }
-                                      return const SizedBox();
-                                    },
-                                  )
-                                : const SizedBox(),
-                          ],
-                        ),
+            ),
+          ),
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            child: SizedBox(
+              width: _isExpanded ? 240 : 64,
+              child: Column(
+                children: [
+                  const SizedBox(height: 24),
+                  _buildLogo(false),
+                  const SizedBox(height: 24),
+                  _buildDriveActionsButton(context, false),
+                  const SizedBox(height: 16),
+                  // The only part that scrolls, and the only part that needs
+                  // to: a wallet can have any number of drives, and everything
+                  // above and below this is a fixed number of rows.
+                  Expanded(
+                    child: ArDriveScrollBar(
+                      controller: _scrollController,
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        child: _buildDriveNav(isMobile: false),
                       ),
-                      const SizedBox(
-                        height: 16,
-                      ),
-                      _isExpanded
-                          ? const SizedBox(
-                              height: 16,
-                            )
-                          : const Spacer(),
-                      _buildSideBarBottom(),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  _buildSideBarBottom(),
+                ],
               ),
             ),
           ),
@@ -245,7 +211,146 @@ class _AppSideBarState extends State<AppSideBar> {
     );
   }
 
+  /// The way back to the list of drives.
+  ///
+  /// Above the drive list because it is navigation and that is what this
+  /// column is for, and because the list of everything is where every file
+  /// manager puts it: over the things it contains, not beside them.
+  ///
+  /// The drive the user came from stays selected underneath it - see
+  /// [AppRouterDelegate.showDrivesList] - so this is a round trip of one tap
+  /// each way rather than a door that closes behind them.
+  /// What the nav shows: scopes while the drives list is the page, the drives
+  /// themselves everywhere else.
+  ///
+  /// The two never both apply. On the drives list the table already lists every
+  /// drive with columns to explain itself, so listing them again on the left
+  /// was the same answer twice - and it pushed Private and Shared below however
+  /// many public drives the wallet had, off screen on any real account. Inside
+  /// a drive the list is the switcher, duplicates nothing, and stays as it was.
+  Widget _buildDriveNav({required bool isMobile}) {
+    // The router's own predicate, not the raw flag. `showingDrivesList` is a
+    // request; whether it is honoured also depends on the profile, and for a
+    // logged-out viewer following a share link it is not - the explorer shell
+    // is built instead, and `DrivesListCubit` is never provided. Reading the
+    // flag alone had this nav render scopes, and the All Drives row watch a
+    // cubit that did not exist, which threw and left the whole sidebar grey.
+    final canGoToDrivesList = AppRouterDelegate.canShowDrivesList(
+      context.watch<ProfileCubit>().state,
+    );
+    final showsScopes = context.watch<AppRouterDelegate>().showingDrivesList &&
+        canGoToDrivesList;
+    final showLabels = isMobile || _isExpanded;
+
+    // The one row that never moves.
+    //
+    // The nav used to swap wholesale between the two screens, so nothing stayed
+    // put to orient against - and the only way home was the logo, which is a
+    // convention rather than an affordance: no label, no hint, and the person
+    // who built the app did not find it. This row is labelled, it is where a
+    // reader is already looking, and it is in the same place on every screen.
+    // Offered only to somebody who has a drives list to go to - the same rule
+    // the logo uses, and for the same reason.
+    final home = canGoToDrivesList
+        ? _AllDrivesRow(
+            showLabel: showLabels,
+            isOnDrivesList: showsScopes,
+          )
+        : const SizedBox.shrink();
+
+    if (showsScopes) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          home,
+          const SizedBox(height: 6),
+          Divider(
+            height: 1,
+            color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
+          ),
+          const SizedBox(height: 6),
+          DriveScopeRail(showLabels: showLabels),
+        ],
+      );
+    }
+
+    // The collapsed rail is 64px wide and has never shown drive names.
+    if (!isMobile && !_isExpanded) {
+      return const SizedBox();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        home,
+        const SizedBox(height: 6),
+        Divider(
+          height: 1,
+          color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
+        ),
+        const SizedBox(height: 6),
+        BlocBuilder<DrivesCubit, DrivesState>(
+          builder: (context, state) {
+            if (state is DrivesLoadSuccess &&
+                (state.userDrives.isNotEmpty ||
+                    state.sharedDrives.isNotEmpty)) {
+              final accordion = _Accordion(state: state, isMobile: isMobile);
+
+              // Not Flexible any more: inside the sidebar's scroll view this
+              // has no bounded height to take a share of, and asking for one
+              // is what kept the list exactly as tall as the window.
+              return isMobile
+                  ? accordion
+                  : Padding(
+                      padding: const EdgeInsets.only(left: 43.0),
+                      child: accordion,
+                    );
+            }
+
+            // Nothing while the list is being read. The nav is where a reader
+            // looks for drives, not for a report on fetching them.
+            return const SizedBox();
+          },
+        ),
+      ],
+    );
+  }
+
   Widget _buildLogo(bool isMobile) {
+    // The way home, which is what a logo is on the web and what this one was
+    // not: it sat inert at the top of the nav while a house was added beside
+    // the wallet address, in the cluster that is about the account rather than
+    // about where you are.
+    //
+    // Only for somebody who has a drives list to go to - the same predicate the
+    // router uses before it will draw one.
+    final goesHome = AppRouterDelegate.canShowDrivesList(
+      context.watch<ProfileCubit>().state,
+    );
+
+    if (!goesHome) {
+      return _logoImage(isMobile);
+    }
+
+    return ArDriveClickArea(
+      tooltip: appLocalizationsOf(context).allDrivesScope,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          if (Scaffold.maybeOf(context) != null) {
+            Scaffold.of(context).closeDrawer();
+          }
+
+          context.read<AppRouterDelegate>().showDrivesList();
+        },
+        child: _logoImage(isMobile),
+      ),
+    );
+  }
+
+  Widget _logoImage(bool isMobile) {
     return SizedBox(
       height: 64,
       child: AnimatedSwitcher(
@@ -432,6 +537,19 @@ class _AppSideBarState extends State<AppSideBar> {
   }
 }
 
+/// The way back to the list of drives, in the nav, above the drives.
+///
+/// `showingDrivesList` used to be set in exactly one place - on login - so a
+/// user who opened a drive could not get back to the list without the
+/// browser's back button or typing the address. This is the way back, and it
+/// is a route rather than a re-render: the address bar reads `/drives`
+/// afterwards, so a bookmark and the browser's own history agree with what is
+/// on screen.
+///
+/// Not drawn as selected, ever. The drive the user came from keeps the
+/// selection underneath - that is what makes returning to it one tap - and two
+/// highlighted rows would be two claims about where they are.
+
 class DriveListTile extends StatelessWidget {
   final Drive drive;
   final bool hasAlert;
@@ -545,6 +663,10 @@ Future<void> showSupportModal({
     content: ArDriveStandardModalNew(
       hasCloseButton: true,
       title: appLocalizationsOf(context).help,
+      // Taller than the screen on a phone at a large text scale. Bounded and
+      // scrolling rather than clipped: the Download button at the bottom is
+      // the reason a user opened this, and it must stay reachable.
+      scrollableContent: true,
       content: SizedBox(
         width: 384,
         child: Column(
@@ -601,11 +723,16 @@ Future<void> showSupportModal({
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      appLocalizationsOf(context).helpCenter,
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textLink,
-                        fontWeight: ArFontWeight.semiBold,
+                    // Flexible: at 320px and text scale 2.0 these labels are
+                    // wider than the modal that holds them, and a Row with
+                    // nothing that can give overflows by the difference.
+                    Flexible(
+                      child: Text(
+                        appLocalizationsOf(context).helpCenter,
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLink,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -626,11 +753,16 @@ Future<void> showSupportModal({
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      appLocalizationsOf(context).discord,
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textLink,
-                        fontWeight: ArFontWeight.semiBold,
+                    // Flexible: at 320px and text scale 2.0 these labels are
+                    // wider than the modal that holds them, and a Row with
+                    // nothing that can give overflows by the difference.
+                    Flexible(
+                      child: Text(
+                        appLocalizationsOf(context).discord,
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLink,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -651,11 +783,16 @@ Future<void> showSupportModal({
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      appLocalizationsOf(context).developerDocs,
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textLink,
-                        fontWeight: ArFontWeight.semiBold,
+                    // Flexible: at 320px and text scale 2.0 these labels are
+                    // wider than the modal that holds them, and a Row with
+                    // nothing that can give overflows by the difference.
+                    Flexible(
+                      child: Text(
+                        appLocalizationsOf(context).developerDocs,
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLink,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -680,6 +817,38 @@ Future<void> showSupportModal({
               appLocalizationsOf(context).troubleshootingDescription,
               style: typography.paragraphSmall(
                 color: colorTokens.textMid,
+              ),
+            ),
+            // A door to the sync record rather than the record itself: it
+            // has its own modal now. Embedded here it was the sixth section
+            // of a page about support email, Help Center, Discord and Docs,
+            // and a reader had to scroll past all of them to reach it.
+            const SizedBox(height: 12),
+            ArDriveClickArea(
+              child: GestureDetector(
+                // Opened over Help rather than in place of it: popping and
+                // pushing in one frame loses the push, and a reader who came
+                // for the logs gets Help back when they close the record.
+                onTap: () => showSyncHistoryModal(context),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        appLocalizationsOf(context).syncHistory,
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLink,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    ArDriveIcons.arrowRightOutline(
+                      size: 14,
+                      color: colorTokens.textLink,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -774,8 +943,13 @@ class _Accordion extends StatelessWidget {
                           if (state.selectedDriveId == d.id) {
                             // opens the root folder
                             context.read<DriveDetailCubit>().openFolder();
-                            return;
                           }
+
+                          // Selecting an already-selected drive changes no
+                          // state, and used to return here. That left the tap
+                          // silent on the drives list, where the selected
+                          // drive is not what is on screen - the list is, and
+                          // it opens a drive when one is chosen.
                           context.read<DrivesCubit>().selectDrive(d.id);
                         },
                         isSelected: state.selectedDriveId == d.id,
@@ -862,39 +1036,54 @@ class _Accordion extends StatelessWidget {
 /// The nav used to render nothing here, which is indistinguishable from a
 /// wallet with no drives - and that is exactly what a returning user sees on a
 /// device the app has not read yet. It says which it is now.
-class _DrivesStillLoading extends StatelessWidget {
-  const _DrivesStillLoading({this.leftPadding = 0});
 
-  final double leftPadding;
+/// The way back to every drive, in the same place on every screen.
+///
+/// On the drives list it is the widest scope; inside a drive it is the way out.
+/// One row either way, because to a reader they are the same thing - "show me
+/// all of my drives" - and drawing them differently would be an implementation
+/// detail leaking into the nav.
+class _AllDrivesRow extends StatelessWidget {
+  const _AllDrivesRow({
+    required this.showLabel,
+    required this.isOnDrivesList,
+  });
+
+  final bool showLabel;
+
+  /// Whether the drives list is already the page, which decides whether this
+  /// row narrows the table or navigates to it.
+  final bool isOnDrivesList;
 
   @override
   Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    // `watch` only where the cubit is actually provided. The drives list page
+    // provides it; every other shell does not, and reading it there throws
+    // during build - which takes the entire sidebar down with it rather than
+    // just this row.
+    final drivesList =
+        isOnDrivesList ? context.watch<DrivesListCubit?>() : null;
+    final scopeIsAll = drivesList?.scope == DriveScope.all;
 
-    return Padding(
-      padding: EdgeInsets.only(left: leftPadding, top: 8, bottom: 8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 12,
-            height: 12,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(colorTokens.textLow),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Flexible(
-            child: Text(
-              appLocalizationsOf(context).loadingYourDrives,
-              style: typography.paragraphSmall(color: colorTokens.textLow),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
+    return DriveNavRow(
+      icon: DriveScopeRail.iconFor(DriveScope.all),
+      label: appLocalizationsOf(context).allDrivesScope,
+      showLabel: showLabel,
+      isCurrent: scopeIsAll,
+      onTap: () {
+        if (Scaffold.maybeOf(context) != null) {
+          Scaffold.of(context).closeDrawer();
+        }
+
+        final cubit = context.read<DrivesListCubit?>();
+
+        if (isOnDrivesList && cubit != null) {
+          cubit.showScope(DriveScope.all);
+          return;
+        }
+
+        context.read<AppRouterDelegate>().showDrivesList();
+      },
     );
   }
 }

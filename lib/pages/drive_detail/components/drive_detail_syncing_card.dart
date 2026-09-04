@@ -1,3 +1,5 @@
+import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
+import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'dart:async';
 
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
@@ -143,8 +145,14 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
                   isSyncing: isSyncing,
                   showElapsed: _hasElapsedWorthShowing(syncState),
                   isLoadingDrives: syncState is SyncLoadingDrives,
+                  syncState: syncState,
                   progress: reportsProgress ? snapshot.data : null,
                   driveName: _driveName(drivesState, snapshot.data),
+                  syncCoversThisDrive: _coversSelectedDrive(
+                    drivesState,
+                    syncState,
+                    context.read<SyncCubit>().syncingDriveId,
+                  ),
                 );
 
                 return _frame(context, content);
@@ -247,6 +255,24 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
   /// it. The drive they selected is the one that will open, so it wins; a
   /// single-drive sync names its own drive and stands in when there is no
   /// selection to read yet.
+  /// Whether the sync that is running is one this drive will be opened by.
+  ///
+  /// A single-drive sync of another drive finishes without touching this one,
+  /// so promising that this drive "will open when the sync finishes" is a
+  /// promise the sync cannot keep - and the wait it describes is not the wait
+  /// the user is in.
+  bool _coversSelectedDrive(
+    DrivesState drivesState,
+    SyncState syncState,
+    String? syncingDriveId,
+  ) {
+    if (syncState is! SyncInProgress) return false;
+    // An all-drives sync covers everything.
+    if (syncingDriveId == null) return true;
+    if (drivesState is! DrivesLoadSuccess) return false;
+    return drivesState.selectedDriveId == syncingDriveId;
+  }
+
   String? _driveName(DrivesState drivesState, SyncProgress? progress) {
     if (drivesState is DrivesLoadSuccess) {
       final selectedDriveId = drivesState.selectedDriveId;
@@ -275,6 +301,8 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
     required bool isSyncing,
     required bool showElapsed,
     required bool isLoadingDrives,
+    required SyncState syncState,
+    required bool syncCoversThisDrive,
     required SyncProgress? progress,
     required String? driveName,
   }) {
@@ -288,16 +316,21 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
       // The same words the top bar uses for the same moment: the two report
       // one sync between them and must never name it differently.
       title = isLoadingDrives
-          ? appLocalizationsOf(context).loadingYourDrives
+          ? syncLoadingDrivesLabel(appLocalizationsOf(context), syncState)
           : progress != null && progress.isSingleDriveSync
               ? appLocalizationsOf(context).syncingSingleDrive
               : appLocalizationsOf(context).syncingAllDrives;
       // Says what the wait is for as well as what it is: this folder opens on
       // its own when the sync is done, and nothing has to be clicked again.
+      // Only when the running sync is one that will open it - a single-drive
+      // sync of a different drive finishes without touching this one, and
+      // saying otherwise promises something that will not happen.
       subtitle = driveName == null
           ? null
-          : appLocalizationsOf(context)
-              .driveWillOpenWhenSyncFinishes(driveName);
+          : syncCoversThisDrive
+              ? appLocalizationsOf(context)
+                  .driveWillOpenWhenSyncFinishes(driveName)
+              : appLocalizationsOf(context).anotherDriveIsSyncingFirst;
     } else {
       title = driveName == null
           ? appLocalizationsOf(context).openingDrive
@@ -305,20 +338,36 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
       subtitle = null;
     }
 
-    // The phase names itself whenever the sync has one to give. The percentage
-    // stands in only when it does not *and* the number means something: an
-    // unmeasurable phase must not leave a figure sitting still on screen, which
-    // is the one thing this panel exists to stop.
+    // The metadata fetch first, ahead of the phase's own name: it is the only
+    // one of these that moves during the phase it belongs to. Every revision's
+    // metadata is a separate request, a few at a time, and the panel held one
+    // unchanging line across all of them. A total of zero means there is no
+    // such fetch to report - never a total this panel made up.
+    //
+    // Then the phase names itself whenever the sync has one to give. Otherwise
+    // the count of what has been found stands in - it needs no total, so it is
+    // honest from the first batch, and it can only rise. The percentage is the
+    // last resort, and only while it means something: an unmeasurable phase
+    // must never leave a figure sitting still on screen, which is the one
+    // thing this panel exists to stop.
     final String? detail;
     if (progress == null) {
       detail = null;
+    } else if (progress.metadataFetchesCompleted > 0) {
+      detail = appLocalizationsOf(context)
+          .syncReadingMetadata(progress.metadataFetchesCompleted);
+    } else if (progress.statusMessage != null) {
+      detail = progress.statusMessage;
+    } else if (progress.entitiesSynced > 0) {
+      detail = appLocalizationsOf(context).syncFoundSoFar(
+        progress.entitiesSynced,
+      );
+    } else if (progress.isIndeterminate) {
+      detail = null;
     } else {
-      detail = progress.statusMessage ??
-          (progress.isIndeterminate
-              ? null
-              : appLocalizationsOf(context).syncProgressPercentage(
-                  (progress.progress * 100).round().toString(),
-                ));
+      detail = appLocalizationsOf(context).syncProgressPercentage(
+        (progress.progress * 100).round().toString(),
+      );
     }
 
     return _panel([
@@ -341,20 +390,35 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
         ),
       ],
       const SizedBox(height: 24),
+      // One or the other, never both. Two indicators for one wait is two
+      // things to read where there is only one fact, and the pair looked like
+      // a bug rather than a design.
+      //
+      // The plates carry a phase that cannot measure itself; the bar carries
+      // one that can, and a real figure always beats motion.
+      // Read from the state on screen now, not the one this panel mounted
+      // against. Locking the choice at mount meant a panel opened at 99% kept
+      // a dead bar after the sync ended, and one opened while the drive list
+      // was still loading kept the plates for the rest of the walk.
+      if (progress == null) ...[
+        const SyncLoadingIndicator(size: 56),
+        const SizedBox(height: 8),
+      ],
       // The modal's bar, not a second one: it already knows not to claim a
       // number during a phase that cannot measure itself, and not to rewind
       // when one ends.
-      ProgressBar(
-        // Keyed so the Column matches it by identity, not by position. When
-        // the sync ends, subtitle, detail and the elapsed line all disappear
-        // at once and the children list shrinks; an unkeyed bar would be
-        // matched against a different widget, destroyed, and remounted at its
-        // mount-time seed - a bar animating backwards from 99%, which is the
-        // exact thing the sink beneath it exists to prevent.
-        key: const ValueKey('driveDetailSyncProgress'),
-        percentage: _progress,
-        initialPercentage: _initialProgress,
-      ),
+      if (progress != null)
+        ProgressBar(
+          // Keyed so the Column matches it by identity, not by position. When
+          // the sync ends, subtitle, detail and the elapsed line all disappear
+          // at once and the children list shrinks; an unkeyed bar would be
+          // matched against a different widget, destroyed, and remounted at its
+          // mount-time seed - a bar animating backwards from 99%, which is the
+          // exact thing the sink beneath it exists to prevent.
+          key: const ValueKey('driveDetailSyncProgress'),
+          percentage: _progress,
+          initialPercentage: _initialProgress,
+        ),
       if (detail != null) ...[
         const SizedBox(height: 12),
         Text(

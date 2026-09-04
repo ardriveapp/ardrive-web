@@ -4,6 +4,20 @@ part of 'sync_cubit.dart';
 abstract class SyncState extends Equatable {
   @override
   List<Object> get props => [];
+
+  /// Whether this is a sync that ran to the end and succeeded.
+  ///
+  /// Asked instead of listing the ways a sync can go wrong. A surface that
+  /// reports what a sync "found" reads the database afterwards, and the
+  /// database looks exactly the same after a sync that failed, was cancelled,
+  /// or was never allowed to start - so every one of those, described as a
+  /// result, becomes a reassuring sentence about a network read that did not
+  /// happen. Enumerating the bad states put that decision one forgotten
+  /// `is` away from coming back: [SyncCompleteWithErrors] was added later and
+  /// fell straight through a guard that named only cancellation and failure.
+  ///
+  /// False here, so a state added tomorrow is not a success until it says so.
+  bool get isSuccessfulCompletion => false;
 }
 
 class SyncIdle extends SyncState {}
@@ -11,11 +25,48 @@ class SyncIdle extends SyncState {}
 /// Loading drive metadata only (not full sync).
 /// Used when syncAllDrivesOnLogin is disabled.
 /// This is a lightweight UI-only state that doesn't block waitCurrentSync().
-class SyncLoadingDrives extends SyncState {}
+/// The drive list itself is being read, before any drive's history is walked.
+///
+/// Carries how far that read has got. The count is real rather than a guess:
+/// the drive transactions are listed first, so the total is known before a
+/// single one is fetched. Both are zero before the listing comes back, which
+/// is the one moment there is genuinely nothing to say.
+/// Which part of reading the drive list is running.
+///
+/// Two, because they cost differently and only one of them is parallel. The
+/// fetch is pooled and quick; unlocking is serial and, per private drive, a
+/// signature read, a key derivation against the wallet and a decrypt - so the
+/// count would reach its total and then appear to hang.
+enum SyncLoadingDrivesPhase { reading, unlocking }
+
+class SyncLoadingDrives extends SyncState {
+  SyncLoadingDrives({
+    this.drivesRead = 0,
+    this.drivesFound = 0,
+    this.phase = SyncLoadingDrivesPhase.reading,
+  });
+
+  final SyncLoadingDrivesPhase phase;
+
+  /// Drives whose metadata has come back.
+  final int drivesRead;
+
+  /// Drives the listing turned up, and so the number [drivesRead] climbs to.
+  final int drivesFound;
+
+  /// Whether there is a figure worth showing yet.
+  bool get hasCount => drivesFound > 0;
+
+  @override
+  List<Object> get props => [drivesRead, drivesFound, phase];
+}
 
 class SyncInProgress extends SyncState {
-  /// Who asked for this sync. The shell only blocks the app for a sync the
-  /// user asked for; see [SyncOverlay].
+  /// Who asked for this sync. Nothing blocks the app for either any more -
+  /// both turn the same ring on the top bar, and a tap on it says which sync
+  /// this is and how far it has got - but it still decides where the *result*
+  /// is announced: the shell's summary for a sync the user pressed a button
+  /// for, the top bar's pill for one that merely happened.
   final SyncTrigger trigger;
 
   SyncInProgress({this.trigger = SyncTrigger.userInitiated});
@@ -45,8 +96,15 @@ class SyncFailure extends SyncState {
       : failedAt = failedAt ?? DateTime.now();
 }
 
-class SyncEmpty extends SyncState {}
-
+/// The ArConnect wallet the session was signed in with is no longer the one
+/// the extension is offering, so the user has been signed out.
+///
+/// Reported at the top bar's [SyncButton]. It was emitted and rendered
+/// nowhere: the sync layer noticed the wallet had changed, bounced the user to
+/// login and never said why.
+///
+/// (A `SyncEmpty` state sat beside this one, emitted by nothing and rendered
+/// by nothing. It is gone.)
 class SyncWalletMismatch extends SyncState {}
 
 class SyncCancelled extends SyncState {
@@ -54,10 +112,10 @@ class SyncCancelled extends SyncState {
   final int totalDrives;
   final DateTime cancelledAt;
 
-  /// Who asked for the sync that was cancelled. Cancelling is only reachable
-  /// from the modal, which only a user-initiated sync gets, so this is
-  /// [SyncTrigger.userInitiated] in practice - but it follows the sync it came
-  /// from rather than assuming.
+  /// Who asked for the sync that was cancelled. Nothing user-facing can ask
+  /// for a cancellation any more - the modal that carried the Cancel button is
+  /// gone, and only the debug failure panel calls `cancelSync` - but the
+  /// trigger still follows the sync it came from rather than assuming.
   final SyncTrigger trigger;
 
   SyncCancelled({
@@ -85,12 +143,9 @@ class SyncCompleteWithErrors extends SyncState {
 
   /// Who asked for the sync that failed, like every other terminal state.
   ///
-  /// It was the only one without a trigger, so [SyncOverlay.blocksTheApp]
-  /// returned true for it unconditionally: a login sync that paints nothing
-  /// while it runs would still drop a scrim and a modal over whatever the user
-  /// was doing the moment one drive out of five came back empty. A sync nobody
-  /// asked for reports its failure where it ran - the top bar - and a sync the
-  /// user asked for keeps the modal it was already holding.
+  /// Nothing reads it for this state any more: every partial failure, whoever
+  /// asked, reports at the top bar. It is kept because the state is still
+  /// carried around by callers that distinguish the two.
   final SyncTrigger trigger;
 
   /// When the sync that failed finished.
@@ -138,6 +193,11 @@ class SyncCompleteWithErrors extends SyncState {
 /// away before it started - a hidden tab, an upload in progress - still emits a
 /// plain [SyncIdle], because it has nothing to report.
 class SyncComplete extends SyncIdle {
+  /// The one state a result may be reported from. See
+  /// [SyncState.isSuccessfulCompletion].
+  @override
+  bool get isSuccessfulCompletion => true;
+
   SyncComplete({
     required this.entitiesSynced,
     required this.sequence,
@@ -148,7 +208,13 @@ class SyncComplete extends SyncIdle {
     this.trigger = SyncTrigger.userInitiated,
   });
 
-  /// File and folder revisions this sync wrote, straight off [SyncProgress].
+  /// Items this sync wrote, straight off [SyncProgress].
+  ///
+  /// An item is a file **or** a folder - that is the definition every surface
+  /// that says "item" uses. The drives list once put a files-only figure under
+  /// the same word, so a drive of three folders and two files reported "Found
+  /// 5 items", "5 items changed" and "2 items" on one page; that column says
+  /// "files" now, and means it. See `DriveContentSummary.fileCount`.
   ///
   /// Deliberately not accompanied by a count of drives. `drivesSynced` counts
   /// drives *walked*, failures included, so "12 new items across 3 drives"
@@ -169,8 +235,8 @@ class SyncComplete extends SyncIdle {
   final String? driveName;
 
   /// Who asked for the sync that produced this. It decides which surface
-  /// reports it: the top bar for a sync nobody asked for, the modal it is
-  /// already showing for one the user did.
+  /// reports it: the top bar's pill for a sync nobody asked for, the shell's
+  /// self-dismissing summary for one the user pressed a button for.
   final SyncTrigger trigger;
 
   /// When it finished, so a surface can refuse to announce a result that has

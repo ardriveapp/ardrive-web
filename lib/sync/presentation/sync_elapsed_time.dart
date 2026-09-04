@@ -8,11 +8,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Seconds since the running sync started.
 ///
-/// Shown wherever a background sync reports itself - the top bar's status
-/// header and the explorer panel a drive click lands on - because a wait that
-/// counts is a wait that is working, and one that does not is a hang. Both read
-/// [SyncCubit.syncStartTime], so they can never disagree about how long this
-/// has been going on.
+/// Shown wherever a running sync reports itself - the status header inside the
+/// sync indicator's menu, and the explorer panel a drive click lands on -
+/// because a wait that counts is a wait that is working, and one that does not
+/// is a hang. Both read [SyncCubit.syncStartTime], so they can never disagree
+/// about how long this has been going on.
 ///
 /// Only mount this while a sync is actually running: `syncStartTime` keeps the
 /// last sync's start, so an idle surface counting from it would report minutes.
@@ -45,7 +45,12 @@ class _SyncElapsedTimeState extends State<SyncElapsedTime> {
           appLocalizationsOf(context).syncElapsedTime(
             elapsed.inSeconds.toString(),
           ),
-          style: typography.paragraphSmall(color: colorTokens.textLow),
+          // `textMid`, not `textLow`. The quieter token is #7d7d7d, and the
+          // darkest surface this is drawn on is #191919: 4.27:1, under WCAG
+          // AA's 4.5:1 for body text. This is the only place elapsed time is
+          // reported, so it is not decoration that can afford to be faint - it
+          // is the line that says a long wait is still moving.
+          style: typography.paragraphSmall(color: colorTokens.textMid),
         );
       },
     );

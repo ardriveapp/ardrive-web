@@ -262,6 +262,75 @@ void main() {
     });
   });
 
+  /// Choosing a drive has to reach a surface that is not the explorer.
+  ///
+  /// On the drives list the selected drive is not what is on screen - the list
+  /// is - so a sidebar tap changed a field nothing was drawing. The selection
+  /// is announced so a page that navigates can hear it, and only selections a
+  /// person made are announced: the pick this cubit makes for itself when the
+  /// list first loads does not go through [DrivesCubit.selectDrive].
+  group('announcing a chosen drive', () {
+    test('a selection is announced', () async {
+      await insertDrive('drive-a');
+      await insertDrive('drive-b');
+
+      final cubit = buildCubit();
+      await pumpEventQueue();
+
+      final announced = <String>[];
+      final subscription = cubit.driveSelections.listen(announced.add);
+
+      cubit.selectDrive('drive-b');
+      await pumpEventQueue();
+
+      expect(announced, ['drive-b']);
+
+      await subscription.cancel();
+      await cubit.close();
+    });
+
+    test('choosing the drive that is already selected is still a choice',
+        () async {
+      await insertDrive('drive-a');
+
+      final cubit = buildCubit();
+      await pumpEventQueue();
+
+      // It selects one on its own as the list loads, and re-selecting it emits
+      // no new state - which is exactly why the tap needs saying out loud.
+      expect((cubit.state as DrivesLoadSuccess).selectedDriveId, 'drive-a');
+
+      final announced = <String>[];
+      final subscription = cubit.driveSelections.listen(announced.add);
+
+      cubit.selectDrive('drive-a');
+      await pumpEventQueue();
+
+      expect(announced, ['drive-a']);
+
+      await subscription.cancel();
+      await cubit.close();
+    });
+
+    test('the drive it picks for itself is not announced', () async {
+      await insertDrive('drive-a');
+
+      final cubit = buildCubit();
+
+      final announced = <String>[];
+      final subscription = cubit.driveSelections.listen(announced.add);
+
+      await pumpEventQueue();
+
+      // A page that navigated on this would close itself before it was read.
+      expect((cubit.state as DrivesLoadSuccess).selectedDriveId, 'drive-a');
+      expect(announced, isEmpty);
+
+      await subscription.cancel();
+      await cubit.close();
+    });
+  });
+
   group('a returning user whose drives are already local', () {
     /// The common case, and the one that must not regress into a wait.
     test('never waits on the drive list refresh', () async {
