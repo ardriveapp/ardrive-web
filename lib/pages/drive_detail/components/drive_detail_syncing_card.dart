@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/progress_bar.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -38,8 +39,24 @@ const double _syncingContentMaxWidth = 420;
 /// the same slot for a drive that has *not* been synced: that one is a decision
 /// the user has to make and is drawn as one, with headline type and two action
 /// cards. This is a wait, and asks for nothing.
+///
+/// It has a second job, in the same frame: the drive list could not be read at
+/// all - `DriveDetailDrivesUnavailable`. That is the third thing an empty
+/// local database can mean, and until now the app rendered it as the second
+/// ("Getting Started", two create-a-drive buttons). It belongs here rather
+/// than in a screen of its own because it is the same sentence at the end of
+/// the same wait, in the same panel, and it must not offer to create a drive
+/// or claim the user has none.
 class DriveDetailSyncingCard extends StatefulWidget {
-  const DriveDetailSyncingCard({super.key});
+  const DriveDetailSyncingCard({super.key}) : driveListUnavailable = false;
+
+  /// The drive list could not be loaded: no progress, no phase, no elapsed
+  /// time - nothing is running - just what happened and a way to try again.
+  const DriveDetailSyncingCard.driveListUnavailable({super.key})
+      : driveListUnavailable = true;
+
+  /// Which of the panel's two jobs this is.
+  final bool driveListUnavailable;
 
   @override
   State<DriveDetailSyncingCard> createState() => _DriveDetailSyncingCardState();
@@ -106,6 +123,10 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.driveListUnavailable) {
+      return _frame(context, _unavailableContent(context));
+    }
+
     return BlocBuilder<SyncCubit, SyncState>(
       builder: (context, syncState) {
         final isSyncing = _isSyncing(syncState);
@@ -126,32 +147,100 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
                   driveName: _driveName(drivesState, snapshot.data),
                 );
 
-                return ScreenTypeLayout.builder(
-                  mobile: (context) => content,
-                  // The card the explorer's other full-panel states use on a
-                  // wide screen, so the frame does not change shape when this
-                  // becomes a folder listing or an unsynced drive.
-                  desktop: (context) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.8,
-                      child: ArDriveCard(
-                        width: double.infinity,
-                        backgroundColor: ArDriveTheme.of(context)
-                            .themeData
-                            .colorTokens
-                            .containerL1,
-                        content: content,
-                      ),
-                    ),
-                  ),
-                );
+                return _frame(context, content);
               },
             );
           },
         );
       },
     );
+  }
+
+  /// The shape every state of this panel is drawn in.
+  ///
+  /// The card the explorer's other full-panel states use on a wide screen, so
+  /// the frame does not change shape when this becomes a folder listing, an
+  /// unsynced drive, or the report that the drive list could not be read.
+  Widget _frame(BuildContext context, Widget content) {
+    return ScreenTypeLayout.builder(
+      mobile: (context) => content,
+      desktop: (context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: ArDriveCard(
+            width: double.infinity,
+            backgroundColor:
+                ArDriveTheme.of(context).themeData.colorTokens.containerL1,
+            content: content,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The centred, width-capped, scrollable column both states lay themselves
+  /// out in, so a 320px phone and a large text scale scroll rather than
+  /// overflow.
+  Widget _panel(List<Widget> children) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: _syncingContentMaxWidth,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: children,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// What the panel says when the drive list could not be read.
+  ///
+  /// Three things it deliberately does not do: claim the user has no drives,
+  /// offer to create one, and show a bar. Nothing is running, so there is
+  /// nothing to fill.
+  Widget _unavailableContent(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return _panel([
+      Text(
+        appLocalizationsOf(context).driveListUnavailable,
+        style: typography.heading4(fontWeight: ArFontWeight.bold),
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 8),
+      Text(
+        appLocalizationsOf(context).driveListUnavailableDescription,
+        style: typography.paragraphLarge(
+          color: colorTokens.textLow,
+          fontWeight: ArFontWeight.semiBold,
+        ),
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 24),
+      ArDriveButtonNew(
+        text: appLocalizationsOf(context).tryAgain,
+        typography: typography,
+        variant: ButtonVariant.primary,
+        onPressed: () => context.read<DriveDetailCubit>().retryLoadingDrives(),
+      ),
+    ]);
   }
 
   /// The drive the user is waiting for, when anything on screen already knows
@@ -232,80 +321,55 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
                 ));
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Center(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: _syncingContentMaxWidth,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        title,
-                        style: typography.heading4(
-                          fontWeight: ArFontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (subtitle != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          subtitle,
-                          style: typography.paragraphLarge(
-                            color: colorTokens.textLow,
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      // The modal's bar, not a second one: it already knows
-                      // not to claim a number during a phase that cannot
-                      // measure itself, and not to rewind when one ends.
-                      ProgressBar(
-                        // Keyed so the Column matches it by identity, not by
-                        // position. When the sync ends, subtitle, detail and
-                        // the elapsed line all disappear at once and the
-                        // children list shrinks; an unkeyed bar would be
-                        // matched against a different widget, destroyed, and
-                        // remounted at its mount-time seed - a bar animating
-                        // backwards from 99%, which is the exact thing the
-                        // sink beneath it exists to prevent.
-                        key: const ValueKey('driveDetailSyncProgress'),
-                        percentage: _progress,
-                        initialPercentage: _initialProgress,
-                      ),
-                      if (detail != null) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          detail,
-                          style: typography.paragraphNormal(
-                            color: colorTokens.textMid,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                      if (showElapsed) ...[
-                        const SizedBox(height: 4),
-                        const SyncElapsedTime(),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
+    return _panel([
+      Text(
+        title,
+        style: typography.heading4(
+          fontWeight: ArFontWeight.bold,
+        ),
+        textAlign: TextAlign.center,
+      ),
+      if (subtitle != null) ...[
+        const SizedBox(height: 8),
+        Text(
+          subtitle,
+          style: typography.paragraphLarge(
+            color: colorTokens.textLow,
+            fontWeight: ArFontWeight.semiBold,
           ),
-        );
-      },
-    );
+          textAlign: TextAlign.center,
+        ),
+      ],
+      const SizedBox(height: 24),
+      // The modal's bar, not a second one: it already knows not to claim a
+      // number during a phase that cannot measure itself, and not to rewind
+      // when one ends.
+      ProgressBar(
+        // Keyed so the Column matches it by identity, not by position. When
+        // the sync ends, subtitle, detail and the elapsed line all disappear
+        // at once and the children list shrinks; an unkeyed bar would be
+        // matched against a different widget, destroyed, and remounted at its
+        // mount-time seed - a bar animating backwards from 99%, which is the
+        // exact thing the sink beneath it exists to prevent.
+        key: const ValueKey('driveDetailSyncProgress'),
+        percentage: _progress,
+        initialPercentage: _initialProgress,
+      ),
+      if (detail != null) ...[
+        const SizedBox(height: 12),
+        Text(
+          detail,
+          style: typography.paragraphNormal(
+            color: colorTokens.textMid,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+      if (showElapsed) ...[
+        const SizedBox(height: 4),
+        const SyncElapsedTime(),
+      ],
+    ]);
   }
 }
 

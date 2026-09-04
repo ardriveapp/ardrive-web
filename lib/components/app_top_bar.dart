@@ -259,6 +259,15 @@ class SyncButton extends StatelessWidget {
         ? syncState
         : null;
 
+    // A sync that could not be done at all, as against one that got through
+    // some drives and not others. `syncMetadataOnly` is the only place this is
+    // terminal, and it is the whole of a default login - so without a branch
+    // for it the button fell through to the idle refresh icon and the app
+    // looked fully synced while showing nothing, permanently, with only a
+    // snackbar that had already gone. `autoSync` is false in all three
+    // flavours, so nothing was going to retry it either.
+    final failure = syncState is SyncFailure ? syncState : null;
+
     final isSyncing = syncState is SyncInProgress;
 
     final _SyncStatus? status;
@@ -293,17 +302,28 @@ class SyncButton extends StatelessWidget {
         detailMaxLines: 2,
       );
       indicator = ArDriveIcons.triangle(color: colorTokens.strokeRed);
+    } else if (failure != null) {
+      // The same surface, the same tokens and the same red triangle a partial
+      // failure gets: two ways of failing, reported one way.
+      status = _SyncStatus(
+        title: appLocalizationsOf(context).syncFailed,
+        detail: appLocalizationsOf(context).syncFailedDetail,
+        isError: true,
+        detailMaxLines: 2,
+      );
+      indicator = ArDriveIcons.triangle(color: colorTokens.strokeRed);
     } else {
       status = null;
       indicator = ArDriveIcons.refresh(color: colorTokens.textMid);
     }
 
     return SyncSummaryFlash(
-      announcement: _announcement(context, syncState, errors),
+      announcement: _announcement(context, syncState, errors, failure),
       child: _SyncButtonMenu(
         status: status,
         isSyncing: isSyncing,
         failedDriveIds: errors?.failedDriveIds,
+        refreshFailed: failure != null,
         child: indicator,
       ),
     );
@@ -314,6 +334,7 @@ class SyncButton extends StatelessWidget {
     BuildContext context,
     SyncState syncState,
     SyncCompleteWithErrors? errors,
+    SyncFailure? failure,
   ) {
     if (errors != null) {
       // Gated the same way a result is: SyncCompleteWithErrors stays the
@@ -336,6 +357,29 @@ class SyncButton extends StatelessWidget {
           errors.failedDrives,
           errors.totalDrives,
         ),
+        isError: true,
+      );
+    }
+
+    if (failure != null) {
+      // Gated off the moment of the failure, exactly like a partial one: the
+      // state stays current until something refreshes the drive list, so an
+      // announcement counted from build time would replay on every rebuild for
+      // the rest of the session. The indicator and the menu are what carry it
+      // after the few seconds are up.
+      final remaining = syncSummaryRemainingSince(failure.failedAt);
+      if (remaining == Duration.zero) {
+        return null;
+      }
+
+      return SyncAnnouncement(
+        // The timestamp, not the state: SyncFailure has no props, so every
+        // failure is equal to every other one and using the state itself would
+        // silence a second failure after an intervening SyncIdle.
+        identity: failure.failedAt,
+        showFor: remaining,
+        lead: appLocalizationsOf(context).syncFailed,
+        trailing: appLocalizationsOf(context).syncFailedDetail,
         isError: true,
       );
     }
@@ -577,6 +621,7 @@ class _SyncButtonMenu extends StatelessWidget {
     this.status,
     this.isSyncing = false,
     this.failedDriveIds,
+    this.refreshFailed = false,
     required this.child,
   });
 
@@ -593,6 +638,11 @@ class _SyncButtonMenu extends StatelessWidget {
   /// The drives a background sync failed on, when it did: the retry has to
   /// outlive the few seconds the announcement gets.
   final List<String>? failedDriveIds;
+
+  /// Whether the drive-list refresh itself failed, so the menu carries a way
+  /// to run it again. There are no failed drive ids to retry in this case -
+  /// the sync never got as far as a drive.
+  final bool refreshFailed;
 
   final Widget child;
 
@@ -646,6 +696,20 @@ class _SyncButtonMenu extends StatelessWidget {
             name: appLocalizationsOf(context).retryFailedDrives,
             isDisabled: isSyncing,
             icon: ArDriveIcons.cloudSync(color: iconColor),
+          ),
+        ),
+      if (refreshFailed)
+        ArDriveDropdownItem(
+          // `syncMetadataOnly` and nothing more: it is the request that
+          // failed, and it leaves the user's syncAllDrivesOnLogin preference
+          // alone. Resync, one row up, is still there for a full one.
+          onClick: isSyncing
+              ? null
+              : () => context.read<SyncCubit>().syncMetadataOnly(),
+          content: ArDriveDropdownItemTile(
+            name: appLocalizationsOf(context).tryAgain,
+            isDisabled: isSyncing,
+            icon: ArDriveIcons.refresh(color: iconColor),
           ),
         ),
     ];

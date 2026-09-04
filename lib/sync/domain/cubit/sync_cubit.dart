@@ -154,15 +154,63 @@ class SyncCubit extends Cubit<SyncState> {
     }
   }
 
+  /// Whether the drive list itself has been refreshed.
+  ///
+  /// A different question from [_syncHasFinished], and deliberately so.
+  /// `SyncLoadingDrives` counts as finished there because a folder open must
+  /// not hang behind a metadata refresh - but that is exactly the state a
+  /// login sync sits in while `updateUserDrives` is still running, so anything
+  /// asking "does this user have drives?" gets its answer from an empty table
+  /// nobody has filled in yet. `SyncInProgress` blocks too: a full sync
+  /// refreshes the list on its way through, so a wait that returned during one
+  /// would be reading the same half-written table.
+  static bool _driveListRefreshHasFinished(SyncState state) =>
+      state is! SyncLoadingDrives && state is! SyncInProgress;
+
+  /// Waits for the drive list to have actually been looked at.
+  ///
+  /// For the one caller that needs it: the screen that would otherwise tell a
+  /// user with drives that they have none. Everything else still waits on
+  /// [waitCurrentSync], which stays non-blocking during a metadata refresh.
+  Future<void> waitForDriveListRefresh() async {
+    if (_driveListRefreshHasFinished(state)) return;
+
+    await for (final state in stream) {
+      if (_driveListRefreshHasFinished(state)) break;
+    }
+  }
+
+  /// Whether the last thing this cubit did to the drive list failed.
+  ///
+  /// [SyncFailure] is the only terminal failure state - `onError` emits it and
+  /// then `SyncIdle` in the same turn - so it means precisely "the drive-list
+  /// refresh could not be done", which is what the explorer needs to know
+  /// before it claims the user has no drives.
+  bool get driveListRefreshFailed => state is SyncFailure;
+
   void createSyncStream() async {
     logger.d('Creating sync stream to periodically call sync automatically');
 
     // Note: Initial state is already SyncLoadingDrives (set in constructor)
     // to prevent race conditions with waitCurrentSync()
 
-    // Check if syncAllDrivesOnLogin preference is enabled before initial sync
-    final preferences = await _userPreferencesRepository.load();
-    if (preferences.syncAllDrivesOnLogin) {
+    // Check if syncAllDrivesOnLogin preference is enabled before initial sync.
+    //
+    // A local read that throws must not strand the app: the cubit starts in
+    // SyncLoadingDrives, and anything waiting on the drive-list refresh waits
+    // on leaving that state - so a throw here would pin the explorer on
+    // "Loading your drives..." with nothing to end it. Falling back to the
+    // shipped default keeps the login moving.
+    bool syncAllDrivesOnLogin;
+    try {
+      syncAllDrivesOnLogin =
+          (await _userPreferencesRepository.load()).syncAllDrivesOnLogin;
+    } catch (e, stackTrace) {
+      logger.e('Could not read preferences on login', e, stackTrace);
+      syncAllDrivesOnLogin = false;
+    }
+
+    if (syncAllDrivesOnLogin) {
       // Start initial sync immediately without waiting for async operations.
       // Skip tab visibility check for initial sync because the user just logged in
       // (which requires wallet interaction, proving they're active). The wallet popup

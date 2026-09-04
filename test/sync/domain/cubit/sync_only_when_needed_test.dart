@@ -306,4 +306,96 @@ void main() {
           txFechedCallback: any(named: 'txFechedCallback'),
         ));
   });
+
+  /// The login path refreshes the drive list, and something has to be able to
+  /// ask whether that has happened. [SyncCubit.waitCurrentSync] cannot: it
+  /// treats `SyncLoadingDrives` as finished on purpose, so that opening a
+  /// folder does not hang behind a metadata refresh - which is exactly why an
+  /// empty local database used to be reported as "this user has no drives"
+  /// before anyone had looked.
+  group('waiting for the drive list itself', () {
+    /// Holds `updateUserDrives` open so a test can ask both questions while
+    /// the refresh is genuinely still running.
+    ({Completer<void> started, Completer<void> finish}) blockTheRefresh() {
+      final started = Completer<void>();
+      final finish = Completer<void>();
+
+      when(() => syncRepository.updateUserDrives(
+            wallet: any(named: 'wallet'),
+            password: any(named: 'password'),
+            cipherKey: any(named: 'cipherKey'),
+          )).thenAnswer((_) async {
+        if (!started.isCompleted) started.complete();
+        await finish.future;
+      });
+
+      return (started: started, finish: finish);
+    }
+
+    test('the drive-list wait covers the refresh waitCurrentSync lets through',
+        () async {
+      nothingIsPending();
+      final refresh = blockTheRefresh();
+
+      final cubit = buildCubit(syncAllDrivesOnLogin: false);
+      addTearDown(cubit.close);
+
+      await refresh.started.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => fail('the login never refreshed the drive list'),
+      );
+
+      expect(cubit.state, isA<SyncLoadingDrives>(),
+          reason: 'precondition: the drive list is being read right now');
+
+      // Deliberately non-blocking, and left that way: a folder open must not
+      // wait on a metadata refresh. This is the hole the empty screen fell
+      // through, not a bug to fix here.
+      await cubit.waitCurrentSync().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () =>
+                fail('waitCurrentSync must stay non-blocking during a refresh'),
+          );
+
+      var driveListWasRead = false;
+      unawaited(
+        cubit.waitForDriveListRefresh().then((_) => driveListWasRead = true),
+      );
+      await pumpEventQueue(times: 100);
+
+      expect(driveListWasRead, isFalse,
+          reason: 'nothing has read the drive list yet, so nothing may claim '
+              'to know what is in it');
+
+      refresh.finish.complete();
+      await pumpEventQueue(times: 100);
+
+      expect(driveListWasRead, isTrue);
+      expect(cubit.driveListRefreshFailed, isFalse);
+    });
+
+    test('a refresh that could not be done says so, and keeps saying it',
+        () async {
+      nothingIsPending();
+      when(() => syncRepository.updateUserDrives(
+            wallet: any(named: 'wallet'),
+            password: any(named: 'password'),
+            cipherKey: any(named: 'cipherKey'),
+          )).thenAnswer((_) async => throw Exception('the gateway said no'));
+
+      final cubit = buildCubit(syncAllDrivesOnLogin: false);
+      addTearDown(cubit.close);
+
+      await cubit.waitForDriveListRefresh().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => fail('the drive-list wait never returned'),
+          );
+
+      // Terminal, unlike the SyncFailure `onError` emits and immediately
+      // replaces - which is what makes it worth reporting at all.
+      await pumpEventQueue(times: 100);
+      expect(cubit.state, isA<SyncFailure>());
+      expect(cubit.driveListRefreshFailed, isTrue);
+    });
+  });
 }

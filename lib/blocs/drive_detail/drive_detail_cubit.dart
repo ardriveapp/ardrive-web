@@ -86,7 +86,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         _driveRepository = driveRepository,
         _driveId = driveId,
         super(DriveDetailLoadInProgress()) {
+    _listenForSyncCompletion();
+
     if (driveId.isEmpty) {
+      // No drive to open, but this cubit still shows the drive-list screens -
+      // "loading", "none" and "could not be loaded" - so it has to keep
+      // hearing about syncs. The subscription used to be registered below
+      // this return, which meant a login at the root URL never heard one.
       return;
     }
 
@@ -141,8 +147,22 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       });
     }
 
-    // Listen for sync completion to auto-refresh if we're in an unsynced/loading state
+    // (registered by _listenForSyncCompletion, above)
+  }
+
+  void _listenForSyncCompletion() {
     _syncSubscription = _syncCubit.stream.listen((syncState) {
+      // A drive list that has since been read means the failure screen is out
+      // of date, wherever the retry came from. The top bar has its own Try
+      // Again, and without this the body would go on saying the drives could
+      // not be loaded while the bar above it reported everything was fine.
+      if (state is DriveDetailDrivesUnavailable &&
+          syncState is SyncIdle &&
+          !_syncCubit.driveListRefreshFailed) {
+        showEmptyDriveDetail();
+        return;
+      }
+
       if (_initialLoadComplete &&
           (syncState is SyncIdle || syncState is SyncCompleteWithErrors)) {
         _onSyncCompleted();
@@ -210,12 +230,32 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
   }
 
-  void showEmptyDriveDetail() async {
+  /// Decides which of the three things an empty drive list means.
+  ///
+  /// It used to mean one: "Getting Started", two create-a-drive buttons and an
+  /// empty sidebar, shown on EVERY login with an empty local database for the
+  /// whole length of the drive-list fetch - because `DrivesCubit` reports the
+  /// empty table the instant Drift reads it, and the wait here did not cover
+  /// the fetch. [SyncCubit.waitCurrentSync] treats `SyncLoadingDrives` as
+  /// finished on purpose, so folder opens do not hang behind a refresh, and
+  /// that is precisely the state a metadata-only login sits in.
+  ///
+  /// So this waits on the drive list specifically - see
+  /// [SyncCubit.waitForDriveListRefresh] - and then separates the three:
+  /// still looking (the caller's [DriveDetailLoadInProgress] stands, and the
+  /// explorer says the drives are loading), looked and found nothing
+  /// ([DriveDetailLoadEmpty]), and could not look at all
+  /// ([DriveDetailDrivesUnavailable]).
+  Future<void> showEmptyDriveDetail() async {
     // Nothing to announce before this wait either. This runs when there is no
     // drive to show, from a state that is already DriveDetailLoadInProgress,
     // and all it can do afterwards is narrow that to "empty" - so emitting a
     // loading state here would claim work that is not happening.
-    await _syncCubit.waitCurrentSync();
+    await _syncCubit.waitForDriveListRefresh();
+
+    if (isClosed) {
+      return;
+    }
 
     // Check if state has already changed (e.g., drives were loaded during sync)
     // Don't overwrite a more specific state with the empty state.
@@ -227,7 +267,53 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       return;
     }
 
+    // We asked and could not find out. Saying "you have no drives" here is the
+    // one answer that is certainly wrong.
+    if (_syncCubit.driveListRefreshFailed) {
+      emit(DriveDetailDrivesUnavailable());
+      return;
+    }
+
+    // And check, rather than infer. The login path only reaches here when
+    // DrivesCubit already said the list was empty, but `retryLoadingDrives`
+    // reaches it after a refresh that may well have found drives - and
+    // claiming emptiness there would show "Getting Started" to a user who has
+    // just been told their drives could not be loaded, which is the exact
+    // thing this whole change exists to stop.
+    final drives = await _driveDao.allDrives().get();
+    if (isClosed) return;
+
+    if (drives.isNotEmpty) {
+      // Somebody else owns the next state: DrivesCubit will select one and the
+      // page listener opens it.
+      return;
+    }
+
     emit(DriveDetailLoadEmpty());
+  }
+
+  /// Runs the drive-list refresh again after one failed, for the screen that
+  /// told the user it had.
+  ///
+  /// [SyncCubit.syncMetadataOnly] and nothing more: it is the same request
+  /// that failed, it is what the login path runs, and it leaves the user's
+  /// syncAllDrivesOnLogin preference alone. The explorer goes back to saying
+  /// the drives are loading while it runs, and lands on whichever of the three
+  /// answers is true afterwards.
+  Future<void> retryLoadingDrives() async {
+    if (state is! DriveDetailDrivesUnavailable) {
+      return;
+    }
+
+    emit(DriveDetailLoadInProgress());
+
+    await _syncCubit.syncMetadataOnly();
+
+    if (isClosed) {
+      return;
+    }
+
+    await showEmptyDriveDetail();
   }
 
   Future<void> changeDrive(String driveId) async {
@@ -850,7 +936,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       if (hasRootFolderMetadata) {
         openFolder(folderId: rootFolderId, otherDriveId: driveId);
       } else {
-        emit(DriveDetailLoadUnsynced(drive: drive));
+        // Same as syncCurrentDrive: a sync has looked, so the card says so
+        // rather than repeating itself.
+        emit(DriveDetailLoadUnsynced(drive: drive, syncFoundNothing: true));
       }
     }
   }
@@ -911,8 +999,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       if (isClosed || _driveId != driveId) return;
 
       if (!hasRootFolderMetadata) {
-        // Sync reported success but the drive's root metadata never arrived
-        emit(DriveDetailLoadUnsynced(drive: drive));
+        // The sync ran, finished, and the drive's root metadata still is not
+        // there. Re-emitting the plain unsynced card would put the user back
+        // on the screen they just pressed Sync Now on, with nothing to say the
+        // press did anything - so the card is told a sync has already looked.
+        emit(DriveDetailLoadUnsynced(drive: drive, syncFoundNothing: true));
         return;
       }
 

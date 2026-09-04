@@ -208,6 +208,31 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                           ],
                         ),
                       );
+                    } else if (driveDetailState
+                        is DriveDetailDrivesUnavailable) {
+                      // The same chrome and the same panel as the wait above,
+                      // because it is the end of that wait - only the words
+                      // change. Notably NOT NoDrivesPage: we do not know that
+                      // the user has no drives, so we do not say so and do not
+                      // put two create-a-drive buttons where the answer should
+                      // be.
+                      return ScreenTypeLayout.builder(
+                        mobile: (context) => const Scaffold(
+                          drawerScrimColor: Colors.transparent,
+                          drawer: AppSideBar(),
+                          appBar: MobileAppBar(),
+                          body: DriveDetailSyncingCard.driveListUnavailable(),
+                        ),
+                        desktop: (context) => const Column(
+                          children: [
+                            AppTopBar(),
+                            Expanded(
+                              child:
+                                  DriveDetailSyncingCard.driveListUnavailable(),
+                            ),
+                          ],
+                        ),
+                      );
                     } else if (driveDetailState is DriveInitialLoading) {
                       return ArDriveDevToolsShortcuts(
                         customShortcuts: [
@@ -304,6 +329,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               body: _UnsyncedDriveMobileView(
                                 drive: driveDetailState.drive,
                                 isOwner: isOwner,
+                                syncFoundNothing:
+                                    driveDetailState.syncFoundNothing,
                               ),
                             );
                           },
@@ -330,6 +357,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             Expanded(
                                               child: DriveDetailUnsyncedCard(
                                                 drive: driveDetailState.drive,
+                                                syncFoundNothing:
+                                                    driveDetailState
+                                                        .syncFoundNothing,
                                               ),
                                             ),
                                           ],

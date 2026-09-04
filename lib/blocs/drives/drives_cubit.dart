@@ -6,7 +6,9 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:drift/drift.dart';
@@ -24,6 +26,7 @@ class DrivesCubit extends Cubit<DrivesState> {
   final DriveDao _driveDao;
   final ArDriveAuth _auth;
   final UserPreferencesRepository _userPreferencesRepository;
+  final SyncCubit _syncCubit;
 
   late StreamSubscription _drivesSubscription;
   String? initialSelectedDriveId;
@@ -35,11 +38,13 @@ class DrivesCubit extends Cubit<DrivesState> {
     required DriveDao driveDao,
     required ActivityTracker activityTracker,
     required UserPreferencesRepository userPreferencesRepository,
+    required SyncCubit syncCubit,
   })  : _profileCubit = profileCubit,
         _promptToSnapshotBloc = promptToSnapshotBloc,
         _driveDao = driveDao,
         _auth = auth,
         _userPreferencesRepository = userPreferencesRepository,
+        _syncCubit = syncCubit,
         super(DrivesLoadInProgress()) {
     _auth.onAuthStateChanged().listen((user) {
       if (user == null) {
@@ -66,6 +71,43 @@ class DrivesCubit extends Cubit<DrivesState> {
       if (profileState is ProfileLoggingIn) {
         emit(DrivesLoadInProgress());
         return;
+      }
+
+      // An empty table is not the same as an empty account.
+      //
+      // Drift answers the instant it is asked, and on a login with an empty
+      // local database that answer lands long before `updateUserDrives` has
+      // said whether the user owns anything. Emitting it as
+      // `DrivesLoadSuccess` told the sidebar, the router and the explorer that
+      // the user has no drives - as a fact, not as a guess - for the whole
+      // length of the fetch. So when the table is empty, wait until the drive
+      // list has actually been looked at before answering.
+      //
+      // Only when it is empty. A returning user whose drives are already local
+      // gets the same immediate answer they always did, and never waits.
+      if (drives.isEmpty) {
+        try {
+          await _waitForDriveListRefresh();
+        } catch (e, stackTrace) {
+          // A wait that could not be completed is no reason to say nothing at
+          // all: fall through and answer with what the table holds, which is
+          // what this listener did before the wait existed.
+          logger.e('Could not wait for the drive list refresh', e, stackTrace);
+        }
+
+        if (isClosed) {
+          return;
+        }
+
+        // The refresh may have written the drives it found. If it did, the
+        // watch above has already re-fired with them and that firing owns the
+        // answer - this one is holding a snapshot that is now stale, and would
+        // report "none found" over the top of it.
+        final drivesAfterRefresh = await _driveDao.allDrives().get();
+
+        if (isClosed || drivesAfterRefresh.isNotEmpty) {
+          return;
+        }
       }
 
       String? selectedDriveId;
@@ -123,6 +165,20 @@ class DrivesCubit extends Cubit<DrivesState> {
       );
     });
   }
+
+  /// The single in-flight wait on the drive-list refresh.
+  ///
+  /// The watch feeding the listener can fire several times while the refresh
+  /// is still running - a ghost-folder write or a profile emission is enough -
+  /// and every firing runs the listener again without waiting for the last
+  /// one, because `Stream.listen` does not await an asynchronous callback.
+  /// Left alone each would open its own wait. One shared future keeps that
+  /// bounded; and because it stays completed once it completes, a later sync
+  /// cannot silence the sidebar again for a user whose drives are now known.
+  Future<void>? _driveListRefreshWait;
+
+  Future<void> _waitForDriveListRefresh() =>
+      _driveListRefreshWait ??= _syncCubit.waitForDriveListRefresh();
 
   void selectDrive(String driveId) {
     final profileIsLoggedIn = _profileCubit.state is ProfileLoggedIn;

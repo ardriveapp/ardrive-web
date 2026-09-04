@@ -43,6 +43,7 @@ void main() {
     when(() => syncCubit.syncStartTime).thenReturn(DateTime.now());
     when(() => syncCubit.clearErrorState()).thenReturn(null);
     when(() => syncCubit.retryFailedDrives(any())).thenAnswer((_) async {});
+    when(() => syncCubit.syncMetadataOnly()).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -758,6 +759,110 @@ void main() {
 
       await openMenu(tester);
       expect(find.text('Retry Failed'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+  });
+
+  /// The other way a sync fails: not "some drives could not be read" but "this
+  /// could not be done at all". `syncMetadataOnly` is the only place that
+  /// emits it terminally - everywhere else `onError` emits it and `SyncIdle`
+  /// in the same turn - and it is the whole of a default login, so it is
+  /// exactly the failure a user is most likely to hit.
+  group('a drive-list refresh that failed', () {
+    testWidgets('is visible at the top bar instead of the idle refresh icon',
+        (tester) async {
+      // The bug: no branch for SyncFailure, so it fell through to the final
+      // `else` and drew the ordinary refresh icon. With autoSync false in all
+      // three flavours nothing was going to retry it either - so the app
+      // looked fully synced while showing nothing, permanently.
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(SyncFailure(error: Exception('the gateway said no')));
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.text('Drives Could Not Be Loaded'), findsOneWidget);
+      expect(find.text('We could not reach the network to read your drive list.'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('stays reachable after the announcement has gone',
+        (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(SyncFailure(error: Exception('the gateway said no')));
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+
+      expect(find.text('Drives Could Not Be Loaded'), findsNothing,
+          reason: 'precondition: the announcement has had its few seconds');
+
+      // The failure outlives it, in the surface a partial failure uses: the
+      // menu the indicator opens.
+      await openMenu(tester);
+
+      expect(find.text('Drives Could Not Be Loaded'), findsOneWidget);
+      expect(find.text('Try Again'), findsOneWidget);
+
+      entryNamed(tester, 'Try Again').onClick!();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      // The request that failed, and not a full sync the user did not ask for.
+      verify(() => syncCubit.syncMetadataOnly()).called(1);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a retry that succeeds clears it', (tester) async {
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(SyncFailure(error: Exception('the gateway said no')));
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(find.text('Drives Could Not Be Loaded'), findsOneWidget,
+          reason: 'precondition: the failure is on screen');
+
+      // The retry runs and this time the drive list arrives.
+      stateController.add(SyncLoadingDrives());
+      await tester.pump(const Duration(milliseconds: 10));
+      stateController.add(SyncIdle());
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.text('Drives Could Not Be Loaded'), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      // And the retry goes with it - there is nothing left to retry.
+      await openMenu(tester);
+      expect(find.text('Try Again'), findsNothing);
+      expect(find.text('Resync'), findsOneWidget,
+          reason: 'precondition: the menu really did open');
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('a failure that has had its moment is not announced again',
+        (tester) async {
+      // SyncFailure stays the cubit's state until something refreshes the
+      // drive list, so an announcement counted from build time would replay on
+      // every rebuild of the top bar for the rest of the session.
+      await tester.pumpWidget(wrap());
+      await tester.pump();
+
+      stateController.add(SyncFailure(
+        error: Exception('the gateway said no'),
+        failedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+      ));
+      await tester.pump(const Duration(milliseconds: 10));
+
+      // Gone from the announcement, still in the menu: the indicator is what
+      // carries a failure that is no longer news.
+      expect(find.text('We could not reach the network to read your drive list.'), findsNothing);
+
+      await openMenu(tester);
+      expect(find.text('Try Again'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
