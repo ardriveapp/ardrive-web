@@ -1,4 +1,5 @@
 import 'package:ardrive/sync/domain/sync_progress.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
 /// The bar the sync modal fills.
@@ -18,14 +19,30 @@ import 'package:flutter/material.dart';
 /// when its `value` is null. Same distinction, no swap, and the element - with
 /// whatever its fill is currently doing - survives the transition.
 class ProgressBar extends StatelessWidget {
-  const ProgressBar({super.key, required this.percentage});
+  const ProgressBar({
+    super.key,
+    required this.percentage,
+    this.initialPercentage,
+  });
 
   final Stream<LinearProgress> percentage;
 
+  /// What the bar reads before [percentage] delivers anything.
+  ///
+  /// The sync modal mounts when a sync starts, so an empty bar is the truth
+  /// for it and it passes nothing. A bar that mounts *during* a sync - the
+  /// explorer's, when a drive is clicked while one runs - would otherwise sit
+  /// at zero until the next progress event, which in the unmeasurable phase
+  /// is up to half a minute of a bar claiming a number that is already wrong.
+  final LinearProgress? initialPercentage;
+
   @override
   Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return StreamBuilder<LinearProgress>(
       stream: percentage,
+      initialData: initialPercentage,
       builder: (context, snapshot) {
         final progress = snapshot.data;
 
@@ -50,8 +67,8 @@ class ProgressBar extends StatelessWidget {
             builder: (context, animated, _) => LinearProgressIndicator(
               value: isIndeterminate ? null : animated,
               minHeight: _barHeight,
-              backgroundColor: _barTrack,
-              valueColor: const AlwaysStoppedAnimation<Color>(_barFill),
+              backgroundColor: colorTokens.strokeHigh,
+              valueColor: AlwaysStoppedAnimation<Color>(colorTokens.textHigh),
             ),
           ),
         );
@@ -60,8 +77,6 @@ class ProgressBar extends StatelessWidget {
   }
 }
 
-const _barTrack = Color(0xffFAFAFA);
-const _barFill = Color(0xff3C3C3C);
 const _barHeight = 10.0;
 const _barRadius = Radius.circular(5);
 

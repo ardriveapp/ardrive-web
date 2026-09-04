@@ -34,6 +34,7 @@ import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_detail_syncing_card.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/file_icon.dart';
@@ -188,19 +189,22 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             widget.anonymouslyShowDriveDetail,
                       );
                     } else if (driveDetailState is DriveDetailLoadInProgress) {
+                      // Same chrome as before - only the middle of the panel
+                      // changes, so nothing around it moves when the wait ends
+                      // - and the same widget on both, because the surface with
+                      // less room and no hover is the last one that should be
+                      // told less.
                       return ScreenTypeLayout.builder(
                         mobile: (context) => const Scaffold(
                           drawerScrimColor: Colors.transparent,
                           drawer: AppSideBar(),
                           appBar: MobileAppBar(),
-                          body: Center(child: CircularProgressIndicator()),
+                          body: DriveDetailSyncingCard(),
                         ),
                         desktop: (context) => const Column(
                           children: [
                             AppTopBar(),
-                            Expanded(
-                              child: Center(child: CircularProgressIndicator()),
-                            ),
+                            Expanded(child: DriveDetailSyncingCard()),
                           ],
                         ),
                       );

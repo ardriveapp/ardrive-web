@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/components/progress_bar.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -11,8 +12,11 @@ void main() {
   setUp(() => progress = StreamController<LinearProgress>.broadcast());
   tearDown(() async => progress.close());
 
-  Widget wrap() => MaterialApp(
-        home: Scaffold(body: ProgressBar(percentage: progress.stream)),
+  Widget wrap() => ArDriveTheme(
+        themeData: lightTheme(),
+        child: MaterialApp(
+          home: Scaffold(body: ProgressBar(percentage: progress.stream)),
+        ),
       );
 
   SyncProgress at(double value, {bool indeterminate = false}) =>
