@@ -2713,6 +2713,14 @@
   "@syncCheckingForChanges": {
     "description": "Status message shown during drive activity probe"
   },
+  "syncConnectingToNetwork": "Connecting to the network...",
+  "@syncConnectingToNetwork": {
+    "description": "Status message shown while fetching the current block height"
+  },
+  "syncDownloadingSnapshots": "Downloading drive snapshots...",
+  "@syncDownloadingSnapshots": {
+    "description": "Status message shown while snapshots are prefetched for all drives"
+  },
   "retryFailedDrives": "Retry Failed",
   "@retryFailedDrives": {
     "description": "Button to retry syncing only the drives that failed"

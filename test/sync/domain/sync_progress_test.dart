@@ -62,5 +62,47 @@ void main() {
 
       expect(updated.driveName, 'Test Drive');
     });
+
+    test('drive counts start at zero', () {
+      final progress = SyncProgress.initial();
+
+      expect(progress.firstTimeSyncDriveCount, 0);
+      expect(progress.skippedDriveCount, 0);
+    });
+
+    test('sets firstTimeSyncDriveCount and skippedDriveCount', () {
+      final progress = SyncProgress.initial().copyWith(
+        firstTimeSyncDriveCount: 2,
+        skippedDriveCount: 7,
+      );
+
+      expect(progress.firstTimeSyncDriveCount, 2);
+      expect(progress.skippedDriveCount, 7);
+    });
+
+    test('retains the drive counts when not provided', () {
+      final progress = SyncProgress.initial().copyWith(
+        firstTimeSyncDriveCount: 2,
+        skippedDriveCount: 7,
+      );
+
+      final updated = progress.copyWith(drivesCount: 9);
+
+      expect(updated.firstTimeSyncDriveCount, 2);
+      expect(updated.skippedDriveCount, 7);
+      expect(updated.drivesCount, 9);
+    });
+
+    test('overwrites each drive count independently', () {
+      final progress = SyncProgress.initial().copyWith(
+        firstTimeSyncDriveCount: 2,
+        skippedDriveCount: 7,
+      );
+
+      final updated = progress.copyWith(skippedDriveCount: 0);
+
+      expect(updated.firstTimeSyncDriveCount, 2);
+      expect(updated.skippedDriveCount, 0);
+    });
   });
 }
