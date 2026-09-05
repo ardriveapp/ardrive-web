@@ -72,14 +72,24 @@ class DrivesListLoaded extends DrivesListState {
   /// it that way: with nothing ticked, the action is still Sync All Drives.
   final Set<String> selected;
 
-  /// Whether nothing here has ever been walked.
+  /// Whether nothing here has ever been walked *and* nothing is known about
+  /// what any of it holds.
   ///
   /// With sync-on-login off this is the state a first login lands in, and it
   /// is the one moment where offering to sync everything at once is a service
   /// rather than a nag. Once a single drive has been synced the offer goes
   /// away, because the per-drive answer is on the row.
+  ///
+  /// The second half of that is why a file count is consulted as well as a
+  /// block height. A brand new user creates one drive, uploads to it and lands
+  /// here: every drive they own is unwalked, so `every` was trivially true and
+  /// the card announced "Nothing has been synced yet - their contents have not
+  /// been fetched yet" over a drive whose contents they had just put there
+  /// themselves. The card's own words are the test: a drive whose figures are
+  /// on screen has had its contents fetched, whoever fetched them.
   bool get nothingHasEverBeenSynced =>
-      drives.isNotEmpty && drives.every((drive) => !drive.hasBeenWalked);
+      drives.isNotEmpty &&
+      drives.every((drive) => !drive.hasBeenWalked && drive.fileCount == null);
 
   /// The drives the network has moved on without.
   ///

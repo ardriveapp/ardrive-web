@@ -236,6 +236,24 @@ class DrivesListCubit extends Cubit<DrivesListState> {
           ? null
           : summaries[drive.id] ?? DriveContentSummary.empty;
 
+      // Whether the local tables know anything about this drive's contents.
+      //
+      // This is the question [hasBeenWalked] was being asked to answer as well
+      // as its own, and the two are not the same. A drive created on this
+      // device and uploaded to has a block height of zero - nothing has read it
+      // from chain - but its files are right here in `fileEntries`, written by
+      // the upload that put them there. Treating that as "we have not looked"
+      // meant a user who had just made their first drive and uploaded five
+      // files was shown `Never synced`, a dash for files and a dash for size:
+      // not a cautious label over correct figures, but the figures withheld.
+      //
+      // A zero from a walked drive still means empty, and a zero from an
+      // unwalked one still means unknown. Only a non-zero count proves the
+      // device knows something, which is why this asks for one.
+      final hasLocalContent = (summary?.fileCount ?? 0) > 0;
+
+      final figuresAreKnown = hasBeenWalked || hasLocalContent;
+
       return DriveListItem(
         id: drive.id,
         name: drive.name,
@@ -249,8 +267,8 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         // a row claiming both would be saying it has never been read and has
         // changed since.
         hasUnreadChanges: hasBeenWalked && unreadChanges.contains(drive.id),
-        fileCount: hasBeenWalked ? summary?.fileCount : null,
-        totalSize: hasBeenWalked ? summary?.totalSize : null,
+        fileCount: figuresAreKnown ? summary?.fileCount : null,
+        totalSize: figuresAreKnown ? summary?.totalSize : null,
         lastSyncedAt: syncedAt,
         // Says "Syncing..." only of a drive this run actually covers, and
         // stops saying it once the drive has been walked. A four-of-ten run
