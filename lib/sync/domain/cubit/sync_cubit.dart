@@ -253,6 +253,16 @@ class SyncCubit extends Cubit<SyncState> {
     // the next few seconds writing the previous wallet's transaction statuses
     // into a database that has just been cleared. The same hazard the sync
     // itself carries a token for, and the same answer.
+    // Cancelled *then* disposed, and in that order for two reasons.
+    //
+    // `dispose` only closes the stream controller - it does not set
+    // `isCancelled` - so a token that was disposed without being cancelled
+    // reports false forever and `checkCancellation` never throws. The refresh
+    // it belonged to would go on writing statuses underneath the newer one.
+    //
+    // And the reverse order throws: `cancel` adds to the controller `dispose`
+    // has already closed.
+    _statusRefreshToken?.cancel();
     _statusRefreshToken?.dispose();
     final token = _statusRefreshToken = SyncCancellationToken();
 

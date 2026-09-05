@@ -206,4 +206,50 @@ void main() {
     // And it reports nothing, because the wallet it was about is gone.
     expect(await refreshing, isFalse);
   });
+
+  /// `dispose` closes the token's stream controller and nothing else - it does
+  /// not set `isCancelled`. A token disposed without being cancelled therefore
+  /// answers false forever and `checkCancellation` never throws, so the refresh
+  /// it belonged to goes on writing statuses underneath the one that replaced
+  /// it.
+  test('a second refresh cancels the first rather than orphaning it', () async {
+    final tokens = <SyncCancellationToken>[];
+    final release = <Completer<void>>[];
+
+    when(() => syncRepository.refreshTransactionStatuses(
+          ownerAddress: any(named: 'ownerAddress'),
+          cancellationToken: any(named: 'cancellationToken'),
+        )).thenAnswer((invocation) {
+      tokens.add(invocation.namedArguments[#cancellationToken]
+          as SyncCancellationToken);
+      release.add(Completer<void>());
+
+      return release.last.future;
+    });
+
+    final cubit = buildCubit();
+    addTearDown(cubit.close);
+
+    final first = cubit.refreshPendingStatuses();
+    await Future<void>.delayed(Duration.zero);
+
+    final second = cubit.refreshPendingStatuses();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(tokens, hasLength(2), reason: 'both refreshes reached the gateway');
+    expect(
+      tokens.first.isCancelled,
+      isTrue,
+      reason: 'the refresh that was replaced has to be able to notice',
+    );
+    expect(tokens.last.isCancelled, isFalse);
+
+    for (final completer in release) {
+      completer.complete();
+    }
+
+    // The replaced one reports nothing; the live one reports its result.
+    expect(await first, isFalse);
+    expect(await second, isTrue);
+  });
 }
