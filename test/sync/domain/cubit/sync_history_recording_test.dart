@@ -114,6 +114,11 @@ void main() {
         .thenAnswer((_) async => 0);
     when(() => syncRepository.hasPendingTransactions())
         .thenAnswer((_) async => false);
+    // The returning-reader probe fires on the same "nothing owed" branch these
+    // tests exercise. It answers nothing here, which is the honest default:
+    // none of these tests is about what the network says changed.
+    when(() => syncRepository.probeDrivesWithChanges())
+        .thenAnswer((_) async => const <String>{});
     when(() => userPreferencesRepository.saveDrivesLastSynced(any()))
         .thenAnswer((_) async {});
     when(() => userPreferencesRepository.recordSyncRun(any()))

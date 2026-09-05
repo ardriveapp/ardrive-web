@@ -78,6 +78,11 @@ void main() {
     config = MockConfig();
     activityTracker = MockActivityTracker();
     syncRepository = MockSyncRepository();
+    // The returning-reader probe fires on the same "nothing owed" branch these
+    // tests exercise. It answers nothing here, which is the honest default:
+    // none of these tests is about what the network says changed.
+    when(() => syncRepository.probeDrivesWithChanges())
+        .thenAnswer((_) async => const <String>{});
     userPreferencesRepository = MockUserPreferencesRepository();
 
     // Logged in, so the metadata refresh really reaches updateUserDrives and a

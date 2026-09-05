@@ -7,10 +7,12 @@ import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/sync_failure_test_panel.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/presentation/sync_overlay.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -302,15 +304,62 @@ const double _mobileAppBarIconSize = 24;
 const double mobileAppBarIconSize = _mobileAppBarIconSize;
 
 // TODO: add the gift icon
+/// Search, as an icon that opens the sheet the field used to open.
+///
+/// The field it replaces did nothing until it was submitted - it opened this
+/// same modal and handed the typed query over - so nothing is lost by starting
+/// from the modal instead. What is gained is the band it occupied, on the one
+/// layout where vertical space is the scarce thing.
+///
+/// A controller per press rather than one held for the life of the bar: the
+/// modal owns the text while it is open and there is nothing to remember once
+/// it closes.
+class _MobileSearchButton extends StatelessWidget {
+  const _MobileSearchButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveIconButton(
+      // The same glyph the field carried, at the size every other control in
+      // this bar uses.
+      icon: ArDriveIcon(
+        icon: Icons.search,
+        size: _mobileAppBarIconSize,
+        color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+      ),
+      tooltip: appLocalizationsOf(context).searchFiles,
+      onPressed: () {
+        showSearchModalBottomSheet(
+          context: context,
+          driveDetailCubit: context.read<DriveDetailCubit>(),
+          drivesCubit: context.read<DrivesCubit>(),
+          controller: TextEditingController(),
+        );
+      },
+    );
+  }
+}
+
 class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   const MobileAppBar({
     super.key,
     this.leading,
     this.showDrawerButton = true,
+    this.showSearch = false,
   });
 
   final Widget? leading;
   final bool showDrawerButton;
+
+  /// Whether this screen offers search from the bar.
+  ///
+  /// Off by default and asked for explicitly, because the modal reads a
+  /// `DriveDetailCubit` and not every screen wearing this bar has a meaningful
+  /// one. The drives list has a cubit built against the root path rather than
+  /// a chosen drive, and the no-drives page has nothing to search - so a bar
+  /// that offered search everywhere would be offering it where it could only
+  /// disappoint.
+  final bool showSearch;
 
   @override
   // Its own row and nothing else. Nothing about a sync is laid out here: a
@@ -368,6 +417,16 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               const Spacer(),
+              // Search sits with the other controls that are about the whole
+              // view rather than one item in it - the hide toggle beside it is
+              // the same kind of thing. As a field it took a 60px band above
+              // the file list on the screen with the least vertical room to
+              // give; as an icon it takes the space that was already empty
+              // here.
+              if (showSearch) ...[
+                const _MobileSearchButton(),
+                const SizedBox(width: 8),
+              ],
               const GlobalHideToggleButton(),
               const SizedBox(width: 8),
               const SyncButton(),

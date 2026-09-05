@@ -313,6 +313,53 @@ abstract class SyncRepository {
   /// knows it and it is past [kRequiredTxConfirmationPendingThreshold].
   Future<bool> hasPendingTransactions();
 
+  /// Which already-read drives have activity on chain the device has not read.
+  ///
+  /// Read-only. It writes nothing, touches no sync state and starts no sync -
+  /// it runs the same per-owner query [syncAllDrives] uses to skip unchanged
+  /// drives, and hands back the answer instead of acting on it. That is the
+  /// whole point: a returning reader gets told what is stale and decides for
+  /// themselves, rather than having a sync begun on their behalf.
+  ///
+  /// Drives that have never been read are **not** included. Their rows already
+  /// say `Never synced`, and folding them in here would make one number mean
+  /// two different things.
+  ///
+  /// An empty set means "nothing to say", and that deliberately covers three
+  /// situations at once: nothing changed, the probe could not confirm it had
+  /// checked everything, and the probe failed outright. Inside a sync an
+  /// unanswerable probe means *sync everything*, because the cost of guessing
+  /// wrong is a slower sync. Here the cost of guessing wrong is a banner
+  /// claiming changes that may not exist, which is a nag - so the fallback
+  /// runs the other way.
+  Future<Set<String>> probeDrivesWithChanges();
+
+  /// Re-asks the gateway about every transaction still recorded as pending.
+  ///
+  /// The status pass a sync ends with, on its own. That pass is already
+  /// wallet-wide and independent of which drives the run covered - it reads the
+  /// pending transactions out of the local tables rather than out of the walk -
+  /// so nothing about it needs a sync around it.
+  ///
+  /// This exists because there was no way to ask "did my upload land?" without
+  /// starting one. A confirmation is owed within twenty minutes either way; the
+  /// point of this is the twenty minutes.
+  ///
+  /// It walks no history and moves no block-height watermark, so it cannot find
+  /// a file somebody else uploaded - only resolve the state of one already
+  /// known about.
+  ///
+  /// Takes a cancellation token for the same reason [syncAllDrives] does, and it
+  /// is not optional in practice: this writes rows, `ArDriveAuth.logout()`
+  /// empties every table *before* the cubit closes, and this repository is an
+  /// app-level singleton above the auth gate. Without a token an in-flight
+  /// refresh spends the next few seconds writing the previous wallet's
+  /// transaction statuses into a database that has just been cleared.
+  Future<void> refreshTransactionStatuses({
+    String? ownerAddress,
+    SyncCancellationToken? cancellationToken,
+  });
+
   factory SyncRepository({
     required ArweaveService arweave,
     required DriveDao driveDao,
@@ -3128,6 +3175,82 @@ class _SyncRepository implements SyncRepository {
   @override
   Future<bool> hasPendingTransactions() {
     return _driveDao.hasPendingTransactions();
+  }
+
+  @override
+  Future<void> refreshTransactionStatuses({
+    String? ownerAddress,
+    SyncCancellationToken? cancellationToken,
+  }) {
+    return _updateTransactionStatuses(
+      driveDao: _driveDao,
+      arweave: _arweave,
+      ownerAddress: ownerAddress,
+      cancellationToken: cancellationToken,
+    );
+  }
+
+  @override
+  Future<Set<String>> probeDrivesWithChanges() async {
+    try {
+      final drives = await _driveDao.allDrives().get();
+
+      // Only drives with a watermark to compare against. A never-read drive
+      // has a block height of zero, which would drag its owner's floor down to
+      // genesis - the same poisoning [syncAllDrives] partitions to avoid, and
+      // there it costs a slow query. Here it would also make the probe answer
+      // a question nobody asked, since those rows already say `Never synced`.
+      final readDrives =
+          drives.where((d) => (d.lastBlockHeight ?? 0) > 0).toList();
+
+      if (readDrives.isEmpty) {
+        return const {};
+      }
+
+      final drivesByOwner = <String, List<Drive>>{};
+      for (final drive in readDrives) {
+        drivesByOwner.putIfAbsent(drive.ownerAddress, () => []).add(drive);
+      }
+
+      final changed = <String>{};
+
+      for (final entry in drivesByOwner.entries) {
+        final ownerDrives = entry.value;
+        final minBlock = ownerDrives
+            .map((d) => _calculateSyncLastBlockHeight(d.lastBlockHeight ?? 0))
+            .reduce(min);
+
+        final result = await _arweave.probeActiveDriveIds(
+          driveIds: ownerDrives.map((d) => d.id).toList(),
+          minBlockHeight: minBlock,
+          ownerAddress: entry.key,
+        );
+
+        // One unconfirmable owner ends the whole probe, rather than dropping
+        // that owner and reporting the rest.
+        //
+        // `continue` here would have returned a partial answer through an
+        // interface documented to return none: a count that reads as "these are
+        // the drives that changed" when it is really "these are the ones we
+        // could confirm, out of some number we cannot state". Silence is the
+        // fallback this whole method is built around, and it has to hold for a
+        // partial failure too, or the contract means nothing.
+        if (!result.isComplete) {
+          return const {};
+        }
+
+        changed.addAll(result.activeDriveIds);
+      }
+
+      return changed;
+    } catch (e) {
+      // Nothing downstream of this is load-bearing: the drives list still
+      // shows every drive and its last-read time, and Sync still works. A
+      // failure here costs the reader a prompt, so it is logged and swallowed
+      // rather than surfaced.
+      logger.w('Could not probe for unread drive changes: $e');
+      return const {};
+    }
   }
 }
 

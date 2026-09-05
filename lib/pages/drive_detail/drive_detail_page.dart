@@ -47,8 +47,6 @@ import 'package:ardrive/pages/drive_detail/components/email_preview_widget.dart'
 import 'package:ardrive/pages/drive_detail/components/pdf_preview_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/no_drives/no_drives_page.dart';
-import 'package:ardrive/search/search_modal.dart';
-import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/shared/components/plausible_page_view_wrapper.dart';
 import 'package:ardrive/sharing/sharing_file_listener.dart';
@@ -100,7 +98,6 @@ class DriveDetailPage extends StatefulWidget {
 class _DriveDetailPageState extends State<DriveDetailPage> {
   bool checkboxEnabled = false;
   final _scrollController = ScrollController();
-  final controller = TextEditingController();
 
   @override
   void initState() {
@@ -1025,6 +1022,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           .withOpacity(0.5),
       drawer: const AppSideBar(),
       appBar: MobileAppBar(
+        showSearch: true,
         leading: (driveDetailLoadSuccessState.showSelectedItemDetails &&
                 context.read<DriveDetailCubit>().selectedItem != null)
             ? ArDriveIconButton(
@@ -1077,48 +1075,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
       filteredItems = items.where((item) => item.isHidden == false).toList();
     }
 
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SearchTextField(
-            controller: controller,
-            onFieldSubmitted: (query) {
-              if (query.isEmpty) {
-                return;
-              }
-
-              showModalBottomSheet(
-                isScrollControlled: true,
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (_) => Container(
-                  height: MediaQuery.of(context).size.height * 0.85,
-                  decoration: BoxDecoration(
-                    color: colorTokens.containerL2,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(6.0),
-                      topRight: Radius.circular(6.0),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: MediaQuery.of(context).viewInsets,
-                    child: BlocProvider.value(
-                      value: context.read<DriveDetailCubit>(),
-                      child: FileSearchModal(
-                        initialQuery: query,
-                        driveDetailCubit: context.read<DriveDetailCubit>(),
-                        controller: controller,
-                        drivesCubit: context.read<DrivesCubit>(),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+        // The search field used to sit here, 16px of padding either side of it,
+        // and did nothing until it was submitted - at which point it opened the
+        // same sheet the bar's search icon now opens. Nothing was lost by
+        // moving it; a 60px band above the file list was gained, on the layout
+        // with the least height to spare. See [MobileAppBar.showSearch].
         Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Row(

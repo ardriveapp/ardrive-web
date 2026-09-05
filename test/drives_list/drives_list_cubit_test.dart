@@ -52,6 +52,12 @@ void main() {
     // "every drive"; nothing finished yet.
     when(() => syncCubit.syncingDriveIds).thenReturn(null);
     when(() => syncCubit.completedDriveIds).thenReturn(const []);
+    // The probe never answers in these tests, which is the state the page is in
+    // for the whole of a real session until it does - and forever when it
+    // cannot. Every one of these expectations must hold in that state.
+    when(() => syncCubit.drivesWithUnreadChanges).thenReturn(const {});
+    when(() => syncCubit.unreadChangesStream)
+        .thenAnswer((_) => const Stream<Set<String>>.empty());
     when(() => preferences.currentPreferences).thenReturn(prefs());
   });
 
@@ -596,6 +602,74 @@ void main() {
             'make it',
       );
       expect(drive.totalSize, isNull);
+    });
+  });
+
+  /// A drive this device made and filled, before anything has read it back.
+  ///
+  /// `createDrive` inserts with no block height and the schema defaults it to
+  /// zero, so nothing has walked this drive - but the upload wrote its files
+  /// into `fileEntries`, and those rows are as true as any sync would make
+  /// them. The list used to withhold them and say `Never synced`, which told a
+  /// user who had just uploaded that nothing had happened.
+  group('a drive the device filled itself', () {
+    test('shows what was uploaded to it, unwalked or not', () async {
+      await addDrive('drive-new');
+      await addFile('drive-new', 'photo-1', 1024);
+      await addFile('drive-new', 'photo-2', 2048);
+
+      final state = await settle(
+        DrivesLoadSuccess(
+          selectedDriveId: 'drive-new',
+          userDrives: await drivesNamed(['drive-new']),
+          sharedDrives: const [],
+          drivesWithAlerts: const [],
+          canCreateNewDrive: true,
+        ),
+      ) as DrivesListLoaded;
+
+      expect(state.drives.single.fileCount, 2);
+      expect(state.drives.single.totalSize, 3072);
+
+      // Still true, and still said: nothing has read this drive from chain.
+      // It is the figures that were wrong to withhold, not the label.
+      expect(state.drives.single.hasBeenWalked, isFalse);
+    });
+
+    test('withholds figures for an unwalked drive it knows nothing about',
+        () async {
+      // No local files. A zero here would be a guess dressed as a fact.
+      await addDrive('drive-unread');
+
+      final state = await settle(
+        DrivesLoadSuccess(
+          selectedDriveId: 'drive-unread',
+          userDrives: await drivesNamed(['drive-unread']),
+          sharedDrives: const [],
+          drivesWithAlerts: const [],
+          canCreateNewDrive: true,
+        ),
+      ) as DrivesListLoaded;
+
+      expect(state.drives.single.fileCount, isNull);
+      expect(state.drives.single.totalSize, isNull);
+    });
+
+    test('reports a walked drive that really is empty as empty', () async {
+      await addDrive('drive-empty', lastBlockHeight: 42);
+
+      final state = await settle(
+        DrivesLoadSuccess(
+          selectedDriveId: 'drive-empty',
+          userDrives: await drivesNamed(['drive-empty']),
+          sharedDrives: const [],
+          drivesWithAlerts: const [],
+          canCreateNewDrive: true,
+        ),
+      ) as DrivesListLoaded;
+
+      expect(state.drives.single.fileCount, 0);
+      expect(state.drives.single.totalSize, 0);
     });
   });
 }

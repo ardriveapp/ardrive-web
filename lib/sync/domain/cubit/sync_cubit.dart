@@ -22,6 +22,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Re-exported so every surface that already imports this cubit keeps seeing
 /// [SyncTrigger] - it moved to its own file because the persisted sync history
@@ -201,6 +202,167 @@ class SyncCubit extends Cubit<SyncState> {
   /// Counts the results this cubit has reported, so each one is a state of its
   /// own. See [SyncComplete.sequence] for why a timestamp will not do.
   int _completedSyncCount = 0;
+
+  /// Drives with activity on chain this device has not read yet.
+  ///
+  /// Kept off [SyncState] on purpose. Every state in that hierarchy describes a
+  /// sync that is being run; this describes one that has not been asked for and
+  /// may never be. Folding it in would mean every reader of a sync state having
+  /// to ignore a field about a sync that is not happening.
+  ///
+  /// Seeded empty, so a page that subscribes before the probe answers - or when
+  /// it never does - renders exactly as it did before this existed.
+  final BehaviorSubject<Set<String>> _unreadChanges =
+      BehaviorSubject.seeded(const <String>{});
+
+  /// How many sync runs this cubit has accepted.
+  ///
+  /// The probe is un-awaited and slow enough to be overtaken. A sync can both
+  /// start *and finish* while it is in flight, and that sync's completion
+  /// retires the very ids the probe is about to report - so the late answer put
+  /// them back, and the list offered to sync drives it had just synced.
+  ///
+  /// Checking [state] again after the await does not catch it, because by then
+  /// the sync is over and the state is idle again. Only something that counts
+  /// runs can tell "no sync happened" from "a whole sync happened".
+  int _syncGeneration = 0;
+
+  /// See [_unreadChanges].
+  Stream<Set<String>> get unreadChangesStream => _unreadChanges.stream;
+
+  /// See [_unreadChanges].
+  Set<String> get drivesWithUnreadChanges => _unreadChanges.value;
+
+  /// Re-asks the gateway about pending transactions, and nothing else.
+  ///
+  /// For the reader who has just uploaded and wants to know now rather than
+  /// within twenty minutes. It walks no history, so it cannot find anything
+  /// new - it can only settle what is already known to be waiting, which is
+  /// exactly the question a pending file raises.
+  ///
+  /// Refused while a sync runs, on the standing one-at-a-time rule: that sync
+  /// ends with this very pass, so starting a second one would ask the same
+  /// question twice and race its own answer.
+  Future<bool> refreshPendingStatuses() async {
+    if (isClosed || state is SyncInProgress) {
+      return false;
+    }
+
+    // This writes rows, and `ArDriveAuth.logout()` empties every table *before*
+    // this cubit closes - so without a token an in-flight refresh would spend
+    // the next few seconds writing the previous wallet's transaction statuses
+    // into a database that has just been cleared. The same hazard the sync
+    // itself carries a token for, and the same answer.
+    // Cancelled *then* disposed, and in that order for two reasons.
+    //
+    // `dispose` only closes the stream controller - it does not set
+    // `isCancelled` - so a token that was disposed without being cancelled
+    // reports false forever and `checkCancellation` never throws. The refresh
+    // it belonged to would go on writing statuses underneath the newer one.
+    //
+    // And the reverse order throws: `cancel` adds to the controller `dispose`
+    // has already closed.
+    _statusRefreshToken?.cancel();
+    _statusRefreshToken?.dispose();
+    final token = _statusRefreshToken = SyncCancellationToken();
+
+    try {
+      await _syncRepository.refreshTransactionStatuses(
+        ownerAddress: _profileCubit.state is ProfileLoggedIn
+            ? (_profileCubit.state as ProfileLoggedIn).user.walletAddress
+            : null,
+        cancellationToken: token,
+      );
+
+      // Cancelled out from under us while the gateway was answering: the wallet
+      // this was about is gone, so there is nothing to report to anybody.
+      if (token.isCancelled) {
+        return false;
+      }
+
+      return true;
+    } on SyncCancelledException {
+      return false;
+    } catch (e, stackTrace) {
+      // The status a file already shows stays showing. Nothing is lost by this
+      // failing except the answer the reader asked for early.
+      logger.e('Could not refresh pending transaction statuses', e, stackTrace);
+
+      return false;
+    } finally {
+      if (identical(_statusRefreshToken, token)) {
+        _statusRefreshToken?.dispose();
+        _statusRefreshToken = null;
+      }
+    }
+  }
+
+  /// The token for the standalone status refresh above.
+  ///
+  /// Its own, not [_currentSyncToken]: that one is cancelled and replaced by
+  /// every sync, and a refresh must not be torn down by a sync starting - nor
+  /// survive one that cancelled it.
+  SyncCancellationToken? _statusRefreshToken;
+
+  /// Asks the network which already-read drives have moved on, once.
+  ///
+  /// Deliberately not awaited by anything and deliberately not run while a sync
+  /// is: a sync answers this question far better than a probe can, and asking
+  /// during one races the answer it is about to produce.
+  Future<void> checkForUnreadChanges() async {
+    if (isClosed || state is SyncInProgress) {
+      return;
+    }
+
+    // Read before the await, compared after it. See [_syncGeneration].
+    final generation = _syncGeneration;
+
+    final Set<String> changed;
+    try {
+      changed = await _syncRepository.probeDrivesWithChanges();
+    } catch (e) {
+      // Caught here as well as in the repository, because this is the boundary
+      // that matters: nothing awaits this call, so an exception escaping it is
+      // an unhandled async error rather than a failed request. The cost of it
+      // failing is that a reader is not offered a sync they were never
+      // promised.
+      logger.w('Could not ask what changed while away: $e');
+      return;
+    }
+
+    // The subject, not the cubit. [close] shuts this down *before* it awaits
+    // its way to `super.close()`, so there is a window where `isClosed` is
+    // still false and adding here throws `Cannot add new events after calling
+    // close` - out of an un-awaited future, where nothing catches it.
+    // A sync ran while this was in flight, so its answer is about a state that
+    // no longer exists - and the run it raced has already said what it read.
+    if (isClosed || _unreadChanges.isClosed || generation != _syncGeneration) {
+      return;
+    }
+
+    _unreadChanges.add(changed);
+
+    if (changed.isNotEmpty) {
+      logger.i('${changed.length} drives have changes that have not been read');
+    }
+  }
+
+  /// Forgets the drives a finished run has just read.
+  ///
+  /// Reading a drive is the one thing that makes its unread changes read, so a
+  /// completed run retires exactly the ids it covered and leaves the rest -
+  /// syncing three of eight drives must not clear the offer on the other five.
+  void _forgetUnreadChangesFor(Iterable<String> driveIds) {
+    if (_unreadChanges.isClosed) {
+      return;
+    }
+
+    final remaining = _unreadChanges.value.difference(driveIds.toSet());
+
+    if (remaining.length != _unreadChanges.value.length) {
+      _unreadChanges.add(remaining);
+    }
+  }
 
   SyncComplete _syncComplete(SyncTrigger trigger) => SyncComplete(
         entitiesSynced: _syncProgress.entitiesSynced,
@@ -409,6 +571,14 @@ class SyncCubit extends Cubit<SyncState> {
 
     if (isClosed || !thereIsWork) {
       logger.d('Nothing owed: leaving the login sync skipped');
+
+      // Nothing owed is not the same as nothing to say. This is the returning
+      // reader's moment: the drive list has just been refreshed from the
+      // network, every row is about to render counts and a last-read time from
+      // the local database, and none of those numbers knows whether the drives
+      // have moved on since. One query answers that, and the answer is only
+      // ever offered - see [checkForUnreadChanges].
+      unawaited(checkForUnreadChanges());
       return;
     }
 
@@ -669,6 +839,7 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     _syncProgress = SyncProgress.initial();
+    _syncGeneration++;
 
     // What this run covers, for every surface that has to tell a drive in the
     // run from one merely sitting beside it. Null means all of them.
@@ -874,6 +1045,7 @@ class SyncCubit extends Cubit<SyncState> {
       ));
       unawaited(_recordSyncRun(SyncRunOutcome.completedWithErrors, trigger));
     } else if (ranToCompletion) {
+      _forgetUnreadChangesFor(_syncProgress.syncedDriveIds);
       _emitIfOpen(_syncComplete(trigger));
       unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
     } else if (threw) {
@@ -964,6 +1136,7 @@ class SyncCubit extends Cubit<SyncState> {
       SecretKey? cipherKey;
 
       _initSync = DateTime.now();
+      _syncGeneration++;
 
       // Which drive this sync is for, so a surface listing drives can say
       // "Syncing..." on that row alone.
@@ -1103,6 +1276,7 @@ class SyncCubit extends Cubit<SyncState> {
       ));
       unawaited(_recordSyncRun(SyncRunOutcome.completedWithErrors, trigger));
     } else if (ranToCompletion) {
+      _forgetUnreadChangesFor(_syncProgress.syncedDriveIds);
       _emitIfOpen(_syncComplete(trigger));
       unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
     } else if (threw) {
@@ -1351,11 +1525,21 @@ class SyncCubit extends Cubit<SyncState> {
     _pendingConfirmationWatch?.cancel();
     _pendingConfirmationWatch = null;
 
+    // Same argument as the sync token below: logout empties the tables before
+    // this runs, so anything still writing has to be told to stop.
+    _statusRefreshToken?.cancel();
+    _statusRefreshToken?.dispose();
+    _statusRefreshToken = null;
+
     // First, so the sync begins unwinding while the subscriptions below are
     // being torn down rather than after.
     _currentSyncToken?.cancel();
     _currentSyncToken?.dispose();
     _currentSyncToken = null;
+
+    // The subject outlives no wallet: its ids name drives that are about to be
+    // dropped from the database.
+    await _unreadChanges.close();
 
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();
