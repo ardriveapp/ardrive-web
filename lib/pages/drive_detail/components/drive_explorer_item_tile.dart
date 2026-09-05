@@ -579,6 +579,39 @@ class _DriveExplorerItemTileTrailingState
             height: height,
           ),
         ),
+      // Only on a file that is actually waiting on something. A confirmed file
+      // has nothing to check, and an item that is present but does nothing is
+      // worse than one that is absent.
+      if (item.fileStatusFromTransactions == TransactionStatus.pending)
+        ArDriveDropdownItem(
+          onClick: () async {
+            // Both read before the await: the tile can be gone by the time the
+            // gateway answers - the row it sits in redraws whenever the folder
+            // does - and a context read afterwards is a context that may no
+            // longer be mounted.
+            final messenger = ScaffoldMessenger.of(context);
+            final checked = appLocalizationsOf(context).checkedUploadStatus;
+
+            final refreshed =
+                await context.read<SyncCubit>().refreshPendingStatuses();
+
+            // Refused because a sync is already running, or it failed. Either
+            // way the row keeps the status it had and says nothing it cannot
+            // stand behind.
+            if (!refreshed) {
+              return;
+            }
+
+            messenger.showSnackBar(SnackBar(content: Text(checked)));
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).checkUploadStatus,
+            ArDriveIcons.refresh(
+              size: defaultIconSize,
+            ),
+            height: height,
+          ),
+        ),
       if (isOwner) ...[
         if (item is FileDataTableItem)
           ArDriveDropdownItem(

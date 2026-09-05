@@ -221,6 +221,38 @@ class SyncCubit extends Cubit<SyncState> {
   /// See [_unreadChanges].
   Set<String> get drivesWithUnreadChanges => _unreadChanges.value;
 
+  /// Re-asks the gateway about pending transactions, and nothing else.
+  ///
+  /// For the reader who has just uploaded and wants to know now rather than
+  /// within twenty minutes. It walks no history, so it cannot find anything
+  /// new - it can only settle what is already known to be waiting, which is
+  /// exactly the question a pending file raises.
+  ///
+  /// Refused while a sync runs, on the standing one-at-a-time rule: that sync
+  /// ends with this very pass, so starting a second one would ask the same
+  /// question twice and race its own answer.
+  Future<bool> refreshPendingStatuses() async {
+    if (isClosed || state is SyncInProgress) {
+      return false;
+    }
+
+    try {
+      await _syncRepository.refreshTransactionStatuses(
+        ownerAddress: _profileCubit.state is ProfileLoggedIn
+            ? (_profileCubit.state as ProfileLoggedIn).user.walletAddress
+            : null,
+      );
+
+      return true;
+    } catch (e, stackTrace) {
+      // The status a file already shows stays showing. Nothing is lost by this
+      // failing except the answer the reader asked for early.
+      logger.e('Could not refresh pending transaction statuses', e, stackTrace);
+
+      return false;
+    }
+  }
+
   /// Asks the network which already-read drives have moved on, once.
   ///
   /// Deliberately not awaited by anything and deliberately not run while a sync

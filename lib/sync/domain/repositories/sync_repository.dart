@@ -334,6 +334,22 @@ abstract class SyncRepository {
   /// runs the other way.
   Future<Set<String>> probeDrivesWithChanges();
 
+  /// Re-asks the gateway about every transaction still recorded as pending.
+  ///
+  /// The status pass a sync ends with, on its own. That pass is already
+  /// wallet-wide and independent of which drives the run covered - it reads the
+  /// pending transactions out of the local tables rather than out of the walk -
+  /// so nothing about it needs a sync around it.
+  ///
+  /// This exists because there was no way to ask "did my upload land?" without
+  /// starting one. A confirmation is owed within twenty minutes either way; the
+  /// point of this is the twenty minutes.
+  ///
+  /// It walks no history and moves no block-height watermark, so it cannot find
+  /// a file somebody else uploaded - only resolve the state of one already
+  /// known about.
+  Future<void> refreshTransactionStatuses({String? ownerAddress});
+
   factory SyncRepository({
     required ArweaveService arweave,
     required DriveDao driveDao,
@@ -3149,6 +3165,15 @@ class _SyncRepository implements SyncRepository {
   @override
   Future<bool> hasPendingTransactions() {
     return _driveDao.hasPendingTransactions();
+  }
+
+  @override
+  Future<void> refreshTransactionStatuses({String? ownerAddress}) {
+    return _updateTransactionStatuses(
+      driveDao: _driveDao,
+      arweave: _arweave,
+      ownerAddress: ownerAddress,
+    );
   }
 
   @override
