@@ -159,7 +159,10 @@ class TutorialsViewState extends State<TutorialsView> {
     final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
     final List<Color> radialColors = isDarkMode
         ? [
-            const Color(0x66d9d9d9),
+            // Softer than the 0x66 this had: at 40% of a near-white over a
+            // near-black page every dot reads as a dot. Texture is what was
+            // wanted, and texture is what you stop noticing.
+            const Color(0x33d9d9d9),
             const Color(0x00d9d9d9),
           ]
         : [
@@ -182,10 +185,22 @@ class TutorialsViewState extends State<TutorialsView> {
                 child: SizedBox(
                     height: 264,
                     child: ShaderMask(
+                      // The fade has to finish inside the box it is fading.
+                      //
+                      // At radius 2.5 the gradient's outer stop sits two and a
+                      // half box-widths away, so everything actually drawn
+                      // comes from the first fraction of it - the dots stayed
+                      // near full strength all the way down and the ClipRect
+                      // ended them on a hard horizontal line. On a phone that
+                      // reads as a grid of white dots with a seam across it
+                      // rather than as texture behind the title.
+                      //
+                      // A radius of 1 puts the transparent stop at the box's
+                      // own edge, which is what makes it a fade.
                       shaderCallback: (Rect bounds) {
                         return RadialGradient(
                           center: Alignment.topCenter,
-                          radius: 2.5,
+                          radius: 1,
                           colors: radialColors,
                           tileMode: TileMode.clamp,
                         ).createShader(bounds);
