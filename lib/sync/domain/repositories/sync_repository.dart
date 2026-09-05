@@ -1815,7 +1815,7 @@ class _SyncRepository implements SyncRepository {
         } else if (txNotFound) {
           final abovePendingThreshold = DateTime.now()
                   .difference(pendingTxMap[txId]!.dateCreated)
-                  .inMinutes >
+                  .inMinutes >=
               kRequiredTxConfirmationPendingThreshold;
 
           if (abovePendingThreshold ||
@@ -2256,11 +2256,13 @@ class _SyncRepository implements SyncRepository {
         if (txConfirmed) {
           txStatus = TransactionStatus.confirmed;
         } else if (txNotFound) {
-          // Only mark transactions as failed if they are unconfirmed for over 45 minutes
-          // as the transaction might not be queryable for right after it was created.
+          // Not immediately: a transaction is not queryable for a short while
+          // after it is created, so a young one being absent means nothing.
+          // See [kRequiredTxConfirmationPendingThreshold] for how long is long
+          // enough, and why.
           final abovePendingThreshold = DateTime.now()
                   .difference(pendingTxMap[txId]!.dateCreated)
-                  .inMinutes >
+                  .inMinutes >=
               kRequiredTxConfirmationPendingThreshold;
 
           // Assume that data tx that weren't mined up to a maximum of

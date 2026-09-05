@@ -177,11 +177,45 @@ class GraphQLRetry {
         return response;
       },
       maxAttempts: maxAttempts,
+      retryIf: worthRetrying,
       onRetry: (exception) {
         onRetry?.call(exception);
         logger.w('Retrying Query: ${query.operationName}');
       },
     );
+  }
+
+  /// Whether asking the same endpoint the same thing again could answer it.
+  ///
+  /// `package:retry` retries every exception when this is not given, and the
+  /// budget here is five attempts with growing backoff - so a request that
+  /// cannot succeed spent about six seconds failing five times before saying
+  /// so. Two kinds of failure are worth spending that on: the ones that are
+  /// about the moment rather than the request.
+  ///
+  /// A 4xx is not one of them. Neither is a query the server understood well
+  /// enough to reject: a `GraphQLException` raised from an `errors` payload
+  /// came back over a successful HTTP response, so the endpoint read the
+  /// question and answered it. Asking again produces the same answer more
+  /// slowly, and delays the fallback that might actually have helped.
+  @visibleForTesting
+  static bool worthRetrying(Exception error) {
+    final status = _statusCodeOf(error);
+
+    if (status != null) {
+      // 429 and 5xx are about the moment. Everything else the server was
+      // clear about.
+      return status == 429 || status >= 500;
+    }
+
+    // A rejection the server composed rather than a failure to reach it.
+    if (error is GraphQLException && error.exception is List) {
+      return false;
+    }
+
+    // Anything else - a dropped socket, a DNS hiccup, a timeout - has no
+    // status to read and is exactly what a retry is for.
+    return true;
   }
 }
 

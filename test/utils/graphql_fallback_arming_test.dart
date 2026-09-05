@@ -69,4 +69,53 @@ void main() {
       );
     });
   });
+
+  /// What is worth asking the same endpoint twice.
+  ///
+  /// `package:retry` retries every exception unless told otherwise, and the
+  /// budget is five attempts with growing backoff - so a request that cannot
+  /// succeed spent about six seconds failing five times, and delayed the
+  /// fallback that might have helped.
+  group('a retry has to be able to change the answer', () {
+    HttpLinkServerException serverError(int status) => HttpLinkServerException(
+          response: http.Response('', status),
+          parsedResponse: const gql.Response(response: {}),
+        );
+
+    test('a rate limit is about the moment, so it is retried', () {
+      expect(GraphQLRetry.worthRetrying(serverError(429)), isTrue);
+    });
+
+    test('so is a gateway that fell over', () {
+      expect(GraphQLRetry.worthRetrying(serverError(502)), isTrue);
+      expect(GraphQLRetry.worthRetrying(serverError(503)), isTrue);
+    });
+
+    test('a request the server rejected is not', () {
+      expect(
+        GraphQLRetry.worthRetrying(serverError(400)),
+        isFalse,
+        reason: 'the same malformed request fails the same way, five times, '
+            'slowly',
+      );
+      expect(GraphQLRetry.worthRetrying(serverError(404)), isFalse);
+    });
+
+    /// This one came back over a *successful* HTTP response: the endpoint read
+    /// the question and answered it.
+    test('nor is a query the server understood and refused', () {
+      expect(
+        GraphQLRetry.worthRetrying(GraphQLException(const ['bad field'])),
+        isFalse,
+      );
+    });
+
+    test('but a failure with no status at all still is', () {
+      expect(
+        GraphQLRetry.worthRetrying(Exception('Connection closed')),
+        isTrue,
+        reason: 'a dropped socket is exactly what a retry is for',
+      );
+    });
+  });
 }
