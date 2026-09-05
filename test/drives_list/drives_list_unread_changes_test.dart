@@ -180,6 +180,8 @@ void main() {
       size: const Size(375, 667),
     );
 
+    const phone = Size(375, 667);
+
     expect(
       find.text('2 drives have changed since they were last read'),
       findsOneWidget,
@@ -188,5 +190,32 @@ void main() {
 
     // A Wrap that could not fall back to one column would overflow here.
     expect(tester.takeException(), isNull);
+
+    // Mounted is not the same as readable. A widget laid out past the right
+    // edge is still found by `findsOneWidget` and still invisible to whoever
+    // is holding the phone, which is the failure this notice would actually
+    // have on a narrow screen.
+    for (final finder in [
+      find.text('2 drives have changed since they were last read'),
+      find.text('Sync those 2'),
+    ]) {
+      final rect = tester.getRect(finder);
+
+      expect(rect.left, greaterThanOrEqualTo(0.0));
+      expect(
+        rect.right,
+        lessThanOrEqualTo(phone.width),
+        reason: 'laid out past the right edge of the screen',
+      );
+      expect(rect.width, greaterThan(0.0));
+      expect(rect.height, greaterThan(0.0));
+    }
+
+    // And the whole notice is above the fold, since a warning nobody scrolls
+    // to is a warning nobody reads.
+    expect(
+      tester.getRect(find.byType(ArDriveButtonNew).first).bottom,
+      lessThanOrEqualTo(phone.height),
+    );
   });
 }

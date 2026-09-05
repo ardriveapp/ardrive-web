@@ -958,11 +958,6 @@ class EntityActionsMenu extends StatelessWidget {
       ];
     } else if (item is DriveDataItem) {
       return [
-        // The same offer the row kebab makes, and it belongs here more: this is
-        // the panel somebody opens to find out why a file is showing an amber
-        // dot. See [checkUploadStatusDropdownItem].
-        if (item.fileStatusFromTransactions == TransactionStatus.pending)
-          checkUploadStatusDropdownItem(context),
         ArDriveDropdownItem(
             onClick: () async {
               promptToDownloadMultipleFiles(context,
@@ -1108,6 +1103,11 @@ class EntityActionsMenu extends StatelessWidget {
       ];
     }
     return [
+      // The same offer the row kebab makes, and it belongs here more: this is
+      // the panel somebody opens to find out why a file is showing an amber
+      // dot. See [checkUploadStatusDropdownItem].
+      if (item.fileStatusFromTransactions == TransactionStatus.pending)
+        checkUploadStatusDropdownItem(context),
       ArDriveDropdownItem(
         onClick: () {
           promptToDownloadProfileFile(
