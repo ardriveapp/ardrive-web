@@ -22,6 +22,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Re-exported so every surface that already imports this cubit keeps seeing
 /// [SyncTrigger] - it moved to its own file because the persisted sync history
@@ -201,6 +202,79 @@ class SyncCubit extends Cubit<SyncState> {
   /// Counts the results this cubit has reported, so each one is a state of its
   /// own. See [SyncComplete.sequence] for why a timestamp will not do.
   int _completedSyncCount = 0;
+
+  /// Drives with activity on chain this device has not read yet.
+  ///
+  /// Kept off [SyncState] on purpose. Every state in that hierarchy describes a
+  /// sync that is being run; this describes one that has not been asked for and
+  /// may never be. Folding it in would mean every reader of a sync state having
+  /// to ignore a field about a sync that is not happening.
+  ///
+  /// Seeded empty, so a page that subscribes before the probe answers - or when
+  /// it never does - renders exactly as it did before this existed.
+  final BehaviorSubject<Set<String>> _unreadChanges =
+      BehaviorSubject.seeded(const <String>{});
+
+  /// See [_unreadChanges].
+  Stream<Set<String>> get unreadChangesStream => _unreadChanges.stream;
+
+  /// See [_unreadChanges].
+  Set<String> get drivesWithUnreadChanges => _unreadChanges.value;
+
+  /// Asks the network which already-read drives have moved on, once.
+  ///
+  /// Deliberately not awaited by anything and deliberately not run while a sync
+  /// is: a sync answers this question far better than a probe can, and asking
+  /// during one races the answer it is about to produce.
+  Future<void> checkForUnreadChanges() async {
+    if (isClosed || state is SyncInProgress) {
+      return;
+    }
+
+    final Set<String> changed;
+    try {
+      changed = await _syncRepository.probeDrivesWithChanges();
+    } catch (e) {
+      // Caught here as well as in the repository, because this is the boundary
+      // that matters: nothing awaits this call, so an exception escaping it is
+      // an unhandled async error rather than a failed request. The cost of it
+      // failing is that a reader is not offered a sync they were never
+      // promised.
+      logger.w('Could not ask what changed while away: $e');
+      return;
+    }
+
+    // The subject, not the cubit. [close] shuts this down *before* it awaits
+    // its way to `super.close()`, so there is a window where `isClosed` is
+    // still false and adding here throws `Cannot add new events after calling
+    // close` - out of an un-awaited future, where nothing catches it.
+    if (isClosed || _unreadChanges.isClosed) {
+      return;
+    }
+
+    _unreadChanges.add(changed);
+
+    if (changed.isNotEmpty) {
+      logger.i('${changed.length} drives have changes that have not been read');
+    }
+  }
+
+  /// Forgets the drives a finished run has just read.
+  ///
+  /// Reading a drive is the one thing that makes its unread changes read, so a
+  /// completed run retires exactly the ids it covered and leaves the rest -
+  /// syncing three of eight drives must not clear the offer on the other five.
+  void _forgetUnreadChangesFor(Iterable<String> driveIds) {
+    if (_unreadChanges.isClosed) {
+      return;
+    }
+
+    final remaining = _unreadChanges.value.difference(driveIds.toSet());
+
+    if (remaining.length != _unreadChanges.value.length) {
+      _unreadChanges.add(remaining);
+    }
+  }
 
   SyncComplete _syncComplete(SyncTrigger trigger) => SyncComplete(
         entitiesSynced: _syncProgress.entitiesSynced,
@@ -409,6 +483,14 @@ class SyncCubit extends Cubit<SyncState> {
 
     if (isClosed || !thereIsWork) {
       logger.d('Nothing owed: leaving the login sync skipped');
+
+      // Nothing owed is not the same as nothing to say. This is the returning
+      // reader's moment: the drive list has just been refreshed from the
+      // network, every row is about to render counts and a last-read time from
+      // the local database, and none of those numbers knows whether the drives
+      // have moved on since. One query answers that, and the answer is only
+      // ever offered - see [checkForUnreadChanges].
+      unawaited(checkForUnreadChanges());
       return;
     }
 
@@ -874,6 +956,7 @@ class SyncCubit extends Cubit<SyncState> {
       ));
       unawaited(_recordSyncRun(SyncRunOutcome.completedWithErrors, trigger));
     } else if (ranToCompletion) {
+      _forgetUnreadChangesFor(_syncProgress.syncedDriveIds);
       _emitIfOpen(_syncComplete(trigger));
       unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
     } else if (threw) {
@@ -1103,6 +1186,7 @@ class SyncCubit extends Cubit<SyncState> {
       ));
       unawaited(_recordSyncRun(SyncRunOutcome.completedWithErrors, trigger));
     } else if (ranToCompletion) {
+      _forgetUnreadChangesFor(_syncProgress.syncedDriveIds);
       _emitIfOpen(_syncComplete(trigger));
       unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
     } else if (threw) {
@@ -1356,6 +1440,10 @@ class SyncCubit extends Cubit<SyncState> {
     _currentSyncToken?.cancel();
     _currentSyncToken?.dispose();
     _currentSyncToken = null;
+
+    // The subject outlives no wallet: its ids name drives that are about to be
+    // dropped from the database.
+    await _unreadChanges.close();
 
     await _syncSub?.cancel();
     await _arconnectSyncSub?.cancel();

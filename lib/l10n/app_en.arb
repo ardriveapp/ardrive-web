@@ -1639,6 +1639,20 @@
     "description": "Button that re-syncs only the drives that failed",
     "placeholders": { "count": { "type": "num", "format": "compact" } }
   },
+  "driveListDrivesHaveChanges": "{count, plural, =1{1 drive has changed since it was last read} other{{count} drives have changed since they were last read}}",
+  "@driveListDrivesHaveChanges": {
+    "description": "Heading of the notice offering to sync drives the network has activity for",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "driveListDrivesHaveChangesDetail": "The files and sizes below were read earlier. Syncing brings them up to date.",
+  "@driveListDrivesHaveChangesDetail": {
+    "description": "Explains that the figures on screen are still the last ones read"
+  },
+  "driveListSyncThoseWithChanges": "{count, plural, =1{Sync that drive} other{Sync those {count}}}",
+  "@driveListSyncThoseWithChanges": {
+    "description": "Button that syncs only the drives that have changed",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
   "@driveListClearSelection": {
     "description": "Button that unticks every selected drive"
   },

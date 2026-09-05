@@ -107,6 +107,8 @@ void main() {
         .thenAnswer((_) async => 0);
     when(() => syncRepository.numberOfFoldersInWallet())
         .thenAnswer((_) async => 0);
+    when(() => syncRepository.probeDrivesWithChanges())
+        .thenAnswer((_) async => const <String>{});
     // Default: the drives here have been walked before, so the only question
     // left is whether an upload is unresolved.
   });
@@ -408,4 +410,86 @@ void main() {
       expect(cubit.driveListRefreshFailed, isTrue);
     });
   });
+
+  /// The returning reader.
+  ///
+  /// Coming back to an existing session restores everything from the local
+  /// database and syncs nothing, which is exactly right and also silently
+  /// leaves the figures on screen as old as whenever the drives were last read.
+  /// The probe is the one thing that turns that silence into a fact.
+  group('coming back to a session that is already set up', () {
+    test('asks what changed once nothing else is owed', () async {
+      nothingIsPending();
+      when(() => syncRepository.probeDrivesWithChanges())
+          .thenAnswer((_) async => {'drive-b', 'drive-c'});
+
+      final cubit = buildCubit(syncAllDrivesOnLogin: false);
+      addTearDown(cubit.close);
+
+      await pendingWasChecked.future.timeout(const Duration(seconds: 10));
+      await _settle();
+
+      expect(cubit.drivesWithUnreadChanges, {'drive-b', 'drive-c'});
+
+      // Told, not acted on. The reader decides.
+      verifyNever(() => syncRepository.syncAllDrives(
+            wallet: any(named: 'wallet'),
+            password: any(named: 'password'),
+            cipherKey: any(named: 'cipherKey'),
+            syncDeep: any(named: 'syncDeep'),
+            onlyDriveIds: any(named: 'onlyDriveIds'),
+            cancellationToken: any(named: 'cancellationToken'),
+            txFechedCallback: any(named: 'txFechedCallback'),
+          ));
+    });
+
+    test('says nothing when the drives have not moved', () async {
+      nothingIsPending();
+      when(() => syncRepository.probeDrivesWithChanges())
+          .thenAnswer((_) async => const <String>{});
+
+      final cubit = buildCubit(syncAllDrivesOnLogin: false);
+      addTearDown(cubit.close);
+
+      await pendingWasChecked.future.timeout(const Duration(seconds: 10));
+      await _settle();
+
+      expect(cubit.drivesWithUnreadChanges, isEmpty);
+    });
+
+    /// The fallback runs the opposite way to the one inside a sync, where an
+    /// unanswerable probe means sync everything. Here it would mean a banner
+    /// claiming changes nobody has confirmed.
+    test('a probe that fails is not news', () async {
+      nothingIsPending();
+      when(() => syncRepository.probeDrivesWithChanges())
+          .thenThrow(Exception('gateway said no'));
+
+      final cubit = buildCubit(syncAllDrivesOnLogin: false);
+      addTearDown(cubit.close);
+
+      await pendingWasChecked.future.timeout(const Duration(seconds: 10));
+      await _settle();
+
+      expect(cubit.drivesWithUnreadChanges, isEmpty);
+    });
+
+    test('an upload still waiting is asked about instead', () async {
+      // Something is owed, so the sync that resolves it runs - and that answers
+      // the probe's question far better than the probe could.
+      somethingIsPending();
+
+      final cubit = buildCubit(syncAllDrivesOnLogin: false);
+      addTearDown(cubit.close);
+
+      await pendingWasChecked.future.timeout(const Duration(seconds: 10));
+      await _settle();
+
+      verifyNever(() => syncRepository.probeDrivesWithChanges());
+    });
+  });
 }
+
+/// Lets the un-awaited probe future complete.
+Future<void> _settle() =>
+    Future<void>.delayed(const Duration(milliseconds: 50));

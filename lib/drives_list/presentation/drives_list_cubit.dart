@@ -34,10 +34,17 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         _driveDao = driveDao,
         _userPreferencesRepository = userPreferencesRepository,
         super(const DrivesListLoading()) {
-    _subscription = Rx.combineLatest2<DrivesState, SyncState, void>(
+    // Three sources, one refresh. The third is the unread-changes probe, which
+    // answers long after the other two have settled and must repaint the rows
+    // when it does - it is the whole reason a returning reader is told anything
+    // at all.
+    _subscription =
+        Rx.combineLatest3<DrivesState, SyncState, Set<String>, void>(
       drivesCubit.stream.startWith(drivesCubit.state),
       syncCubit.stream.startWith(syncCubit.state),
-      (_, __) {},
+      syncCubit.unreadChangesStream
+          .startWith(syncCubit.drivesWithUnreadChanges),
+      (_, __, ___) {},
     ).listen((_) => unawaited(_refresh()));
   }
 
@@ -205,6 +212,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     final syncingDriveId = _syncCubit.syncingDriveId;
     final runDriveIds = _syncCubit.syncingDriveIds;
     final completedDriveIds = _syncCubit.completedDriveIds.toSet();
+    final unreadChanges = _syncCubit.drivesWithUnreadChanges;
 
     // The top bar says "1 of 5 drives failed" and the list is where a reader
     // goes to find out which. The state has always carried the ids; nothing on
@@ -236,6 +244,11 @@ class DrivesListCubit extends Cubit<DrivesListState> {
         isHidden: drive.isHidden,
         dateCreated: drive.dateCreated,
         hasBeenWalked: hasBeenWalked,
+        // Guarded on `hasBeenWalked` as well as the probe. The probe only ever
+        // returns walked drives, but the two facts are read a moment apart and
+        // a row claiming both would be saying it has never been read and has
+        // changed since.
+        hasUnreadChanges: hasBeenWalked && unreadChanges.contains(drive.id),
         fileCount: hasBeenWalked ? summary?.fileCount : null,
         totalSize: hasBeenWalked ? summary?.totalSize : null,
         lastSyncedAt: syncedAt,
@@ -443,6 +456,27 @@ class DrivesListCubit extends Cubit<DrivesListState> {
   /// The same one-run subset walk a selection uses. Offered on the page rather
   /// than only inside a menu because a partial failure is the moment a reader
   /// most needs one button that fixes exactly the thing that broke.
+  /// Syncs only the drives the probe found had changed.
+  ///
+  /// A subset, not everything: the reader was told a number and pressed a
+  /// button naming it, so syncing more than that would be doing something they
+  /// did not ask for and were not warned about.
+  void syncDrivesWithUnreadChanges() {
+    final current = state;
+
+    if (current is! DrivesListLoaded) {
+      return;
+    }
+
+    final changed = current.drivesWithUnreadChanges;
+
+    if (changed.isEmpty) {
+      return;
+    }
+
+    unawaited(_syncCubit.syncDrives(changed));
+  }
+
   void retryFailedDrives() {
     final current = state;
 

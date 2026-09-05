@@ -81,6 +81,17 @@ class DrivesListLoaded extends DrivesListState {
   bool get nothingHasEverBeenSynced =>
       drives.isNotEmpty && drives.every((drive) => !drive.hasBeenWalked);
 
+  /// The drives the network has moved on without.
+  ///
+  /// Read off the rows for the same reason [failedDriveIds] is, and scoped for
+  /// the same reason too: this is a claim about the list on screen, so filtering
+  /// to Private must not leave a notice up about a public drive that is no
+  /// longer in view.
+  List<String> get drivesWithUnreadChanges => [
+        for (final drive in drives)
+          if (drive.hasUnreadChanges) drive.id,
+      ];
+
   /// The drives the last sync could not read.
   ///
   /// Read off the rows rather than off a sync state, so it survives the sync

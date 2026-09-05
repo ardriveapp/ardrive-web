@@ -38,6 +38,12 @@ void main() {
     when(() => syncCubit.syncingDriveId).thenReturn(null);
     when(() => syncCubit.syncingDriveIds).thenReturn(null);
     when(() => syncCubit.completedDriveIds).thenReturn(const []);
+    // The probe never answers in these tests, which is the state the page is in
+    // for the whole of a real session until it does - and forever when it
+    // cannot. Every one of these expectations must hold in that state.
+    when(() => syncCubit.drivesWithUnreadChanges).thenReturn(const {});
+    when(() => syncCubit.unreadChangesStream)
+        .thenAnswer((_) => const Stream<Set<String>>.empty());
     whenListen(drivesCubit, const Stream<DrivesState>.empty(),
         initialState: DrivesLoadInProgress());
   });

@@ -313,6 +313,27 @@ abstract class SyncRepository {
   /// knows it and it is past [kRequiredTxConfirmationPendingThreshold].
   Future<bool> hasPendingTransactions();
 
+  /// Which already-read drives have activity on chain the device has not read.
+  ///
+  /// Read-only. It writes nothing, touches no sync state and starts no sync -
+  /// it runs the same per-owner query [syncAllDrives] uses to skip unchanged
+  /// drives, and hands back the answer instead of acting on it. That is the
+  /// whole point: a returning reader gets told what is stale and decides for
+  /// themselves, rather than having a sync begun on their behalf.
+  ///
+  /// Drives that have never been read are **not** included. Their rows already
+  /// say `Never synced`, and folding them in here would make one number mean
+  /// two different things.
+  ///
+  /// An empty set means "nothing to say", and that deliberately covers three
+  /// situations at once: nothing changed, the probe could not confirm it had
+  /// checked everything, and the probe failed outright. Inside a sync an
+  /// unanswerable probe means *sync everything*, because the cost of guessing
+  /// wrong is a slower sync. Here the cost of guessing wrong is a banner
+  /// claiming changes that may not exist, which is a nag - so the fallback
+  /// runs the other way.
+  Future<Set<String>> probeDrivesWithChanges();
+
   factory SyncRepository({
     required ArweaveService arweave,
     required DriveDao driveDao,
@@ -3128,6 +3149,64 @@ class _SyncRepository implements SyncRepository {
   @override
   Future<bool> hasPendingTransactions() {
     return _driveDao.hasPendingTransactions();
+  }
+
+  @override
+  Future<Set<String>> probeDrivesWithChanges() async {
+    try {
+      final drives = await _driveDao.allDrives().get();
+
+      // Only drives with a watermark to compare against. A never-read drive
+      // has a block height of zero, which would drag its owner's floor down to
+      // genesis - the same poisoning [syncAllDrives] partitions to avoid, and
+      // there it costs a slow query. Here it would also make the probe answer
+      // a question nobody asked, since those rows already say `Never synced`.
+      final readDrives =
+          drives.where((d) => (d.lastBlockHeight ?? 0) > 0).toList();
+
+      if (readDrives.isEmpty) {
+        return const {};
+      }
+
+      final drivesByOwner = <String, List<Drive>>{};
+      for (final drive in readDrives) {
+        drivesByOwner.putIfAbsent(drive.ownerAddress, () => []).add(drive);
+      }
+
+      final changed = <String>{};
+
+      for (final entry in drivesByOwner.entries) {
+        final ownerDrives = entry.value;
+        final minBlock = ownerDrives
+            .map((d) => _calculateSyncLastBlockHeight(d.lastBlockHeight ?? 0))
+            .reduce(min);
+
+        final result = await _arweave.probeActiveDriveIds(
+          driveIds: ownerDrives.map((d) => d.id).toList(),
+          minBlockHeight: minBlock,
+          ownerAddress: entry.key,
+        );
+
+        // An incomplete answer is dropped rather than widened. The probe
+        // reports `isComplete: false` when it could not see far enough to be
+        // sure, and the honest reading of that is "unknown" - which is not
+        // something to put in front of a reader as though it were news.
+        if (!result.isComplete) {
+          continue;
+        }
+
+        changed.addAll(result.activeDriveIds);
+      }
+
+      return changed;
+    } catch (e) {
+      // Nothing downstream of this is load-bearing: the drives list still
+      // shows every drive and its last-read time, and Sync still works. A
+      // failure here costs the reader a prompt, so it is logged and swallowed
+      // rather than surfaced.
+      logger.w('Could not probe for unread drive changes: $e');
+      return const {};
+    }
   }
 }
 

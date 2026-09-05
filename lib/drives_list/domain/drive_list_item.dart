@@ -16,6 +16,7 @@ class DriveListItem extends Equatable {
     required this.isHidden,
     required this.dateCreated,
     required this.hasBeenWalked,
+    this.hasUnreadChanges = false,
     required this.fileCount,
     required this.totalSize,
     required this.lastSyncedAt,
@@ -53,6 +54,18 @@ class DriveListItem extends Equatable {
   /// flag that tells the two apart, and everything derived from row counts is
   /// withheld when it is false.
   final bool hasBeenWalked;
+
+  /// Whether the network has activity for this drive that the device has not
+  /// read.
+  ///
+  /// Only ever true of a drive that *has* been walked: an unread drive is
+  /// already described by [hasBeenWalked], and one row cannot usefully say both
+  /// "never read" and "changed since it was read".
+  ///
+  /// False until the probe answers, and false forever if it never does, so this
+  /// only ever adds a claim - it never withdraws one the row was already
+  /// making.
+  final bool hasUnreadChanges;
 
   /// Files stored locally for this drive, or null when the drive has never
   /// been walked and the number would therefore be a guess dressed as a count.
@@ -93,6 +106,7 @@ class DriveListItem extends Equatable {
         isHidden,
         dateCreated,
         hasBeenWalked,
+        hasUnreadChanges,
         fileCount,
         totalSize,
         lastSyncedAt,
