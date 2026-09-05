@@ -3212,12 +3212,17 @@ class _SyncRepository implements SyncRepository {
           ownerAddress: entry.key,
         );
 
-        // An incomplete answer is dropped rather than widened. The probe
-        // reports `isComplete: false` when it could not see far enough to be
-        // sure, and the honest reading of that is "unknown" - which is not
-        // something to put in front of a reader as though it were news.
+        // One unconfirmable owner ends the whole probe, rather than dropping
+        // that owner and reporting the rest.
+        //
+        // `continue` here would have returned a partial answer through an
+        // interface documented to return none: a count that reads as "these are
+        // the drives that changed" when it is really "these are the ones we
+        // could confirm, out of some number we cannot state". Silence is the
+        // fallback this whole method is built around, and it has to hold for a
+        // partial failure too, or the contract means nothing.
         if (!result.isComplete) {
-          continue;
+          return const {};
         }
 
         changed.addAll(result.activeDriveIds);

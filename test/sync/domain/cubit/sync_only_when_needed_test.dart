@@ -418,16 +418,44 @@ void main() {
   /// leaves the figures on screen as old as whenever the drives were last read.
   /// The probe is the one thing that turns that silence into a fact.
   group('coming back to a session that is already set up', () {
+    /// Completed by the probe stub itself, so a test waits for the thing it is
+    /// about rather than for a duration. A fixed delay here was a race: if the
+    /// probe had not answered inside it, the assertion read the seeded empty
+    /// set and the test failed for no reason anybody could reproduce.
+    late Completer<void> probed;
+
+    setUp(() => probed = Completer<void>());
+
+    /// Wraps a probe answer so it reports when it was asked for.
+    void probeAnswers(Set<String> changed) {
+      when(() => syncRepository.probeDrivesWithChanges()).thenAnswer((_) async {
+        if (!probed.isCompleted) probed.complete();
+        return changed;
+      });
+    }
+
+    void probeThrows(Object error) {
+      when(() => syncRepository.probeDrivesWithChanges()).thenAnswer((_) async {
+        if (!probed.isCompleted) probed.complete();
+        throw error;
+      });
+    }
+
+    /// The probe has answered *and* the cubit has had a turn to publish it.
+    Future<void> published() async {
+      await probed.future.timeout(const Duration(seconds: 10));
+      await Future<void>.delayed(Duration.zero);
+    }
+
     test('asks what changed once nothing else is owed', () async {
       nothingIsPending();
-      when(() => syncRepository.probeDrivesWithChanges())
-          .thenAnswer((_) async => {'drive-b', 'drive-c'});
+      probeAnswers({'drive-b', 'drive-c'});
 
       final cubit = buildCubit(syncAllDrivesOnLogin: false);
       addTearDown(cubit.close);
 
       await pendingWasChecked.future.timeout(const Duration(seconds: 10));
-      await _settle();
+      await published();
 
       expect(cubit.drivesWithUnreadChanges, {'drive-b', 'drive-c'});
 
@@ -445,14 +473,13 @@ void main() {
 
     test('says nothing when the drives have not moved', () async {
       nothingIsPending();
-      when(() => syncRepository.probeDrivesWithChanges())
-          .thenAnswer((_) async => const <String>{});
+      probeAnswers(const <String>{});
 
       final cubit = buildCubit(syncAllDrivesOnLogin: false);
       addTearDown(cubit.close);
 
       await pendingWasChecked.future.timeout(const Duration(seconds: 10));
-      await _settle();
+      await published();
 
       expect(cubit.drivesWithUnreadChanges, isEmpty);
     });
@@ -462,16 +489,51 @@ void main() {
     /// claiming changes nobody has confirmed.
     test('a probe that fails is not news', () async {
       nothingIsPending();
-      when(() => syncRepository.probeDrivesWithChanges())
-          .thenThrow(Exception('gateway said no'));
+      probeThrows(Exception('gateway said no'));
 
       final cubit = buildCubit(syncAllDrivesOnLogin: false);
       addTearDown(cubit.close);
 
       await pendingWasChecked.future.timeout(const Duration(seconds: 10));
-      await _settle();
+      await published();
 
       expect(cubit.drivesWithUnreadChanges, isEmpty);
+    });
+
+    /// The race the generation counter exists for.
+    ///
+    /// The probe is un-awaited, so a sync can start *and finish* while it is in
+    /// flight. That sync's completion retires the ids it just read; a late
+    /// probe answer then put them straight back, and the list offered to sync
+    /// drives it had only just synced. Re-checking the state after the await
+    /// does not catch this - by then the sync is over and the state is idle.
+    test('a probe overtaken by a whole sync is thrown away', () async {
+      nothingIsPending();
+
+      // Held open so the sync can begin and end inside the probe's await.
+      final releaseProbe = Completer<Set<String>>();
+      when(() => syncRepository.probeDrivesWithChanges()).thenAnswer((_) {
+        if (!probed.isCompleted) probed.complete();
+        return releaseProbe.future;
+      });
+
+      final cubit = buildCubit(syncAllDrivesOnLogin: false);
+      addTearDown(cubit.close);
+
+      await probed.future.timeout(const Duration(seconds: 10));
+
+      // A whole sync, start to finish, while the probe is still waiting.
+      await cubit.startSync(trigger: SyncTrigger.userInitiated);
+
+      releaseProbe.complete({'drive-b'});
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        cubit.drivesWithUnreadChanges,
+        isEmpty,
+        reason: 'the sync that just ran is a better answer than the probe that '
+            'started before it',
+      );
     });
 
     test('an upload still waiting is asked about instead', () async {
@@ -483,13 +545,9 @@ void main() {
       addTearDown(cubit.close);
 
       await pendingWasChecked.future.timeout(const Duration(seconds: 10));
-      await _settle();
+      await Future<void>.delayed(Duration.zero);
 
       verifyNever(() => syncRepository.probeDrivesWithChanges());
     });
   });
 }
-
-/// Lets the un-awaited probe future complete.
-Future<void> _settle() =>
-    Future<void>.delayed(const Duration(milliseconds: 50));

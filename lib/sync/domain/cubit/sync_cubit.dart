@@ -215,6 +215,18 @@ class SyncCubit extends Cubit<SyncState> {
   final BehaviorSubject<Set<String>> _unreadChanges =
       BehaviorSubject.seeded(const <String>{});
 
+  /// How many sync runs this cubit has accepted.
+  ///
+  /// The probe is un-awaited and slow enough to be overtaken. A sync can both
+  /// start *and finish* while it is in flight, and that sync's completion
+  /// retires the very ids the probe is about to report - so the late answer put
+  /// them back, and the list offered to sync drives it had just synced.
+  ///
+  /// Checking [state] again after the await does not catch it, because by then
+  /// the sync is over and the state is idle again. Only something that counts
+  /// runs can tell "no sync happened" from "a whole sync happened".
+  int _syncGeneration = 0;
+
   /// See [_unreadChanges].
   Stream<Set<String>> get unreadChangesStream => _unreadChanges.stream;
 
@@ -263,6 +275,9 @@ class SyncCubit extends Cubit<SyncState> {
       return;
     }
 
+    // Read before the await, compared after it. See [_syncGeneration].
+    final generation = _syncGeneration;
+
     final Set<String> changed;
     try {
       changed = await _syncRepository.probeDrivesWithChanges();
@@ -280,7 +295,9 @@ class SyncCubit extends Cubit<SyncState> {
     // its way to `super.close()`, so there is a window where `isClosed` is
     // still false and adding here throws `Cannot add new events after calling
     // close` - out of an un-awaited future, where nothing catches it.
-    if (isClosed || _unreadChanges.isClosed) {
+    // A sync ran while this was in flight, so its answer is about a state that
+    // no longer exists - and the run it raced has already said what it read.
+    if (isClosed || _unreadChanges.isClosed || generation != _syncGeneration) {
       return;
     }
 
@@ -783,6 +800,7 @@ class SyncCubit extends Cubit<SyncState> {
     }
 
     _syncProgress = SyncProgress.initial();
+    _syncGeneration++;
 
     // What this run covers, for every surface that has to tell a drive in the
     // run from one merely sitting beside it. Null means all of them.
@@ -1079,6 +1097,7 @@ class SyncCubit extends Cubit<SyncState> {
       SecretKey? cipherKey;
 
       _initSync = DateTime.now();
+      _syncGeneration++;
 
       // Which drive this sync is for, so a surface listing drives can say
       // "Syncing..." on that row alone.
