@@ -57,8 +57,9 @@ void main() {
     DrivesListLoaded state, {
     VoidCallback? onSyncChanged,
     VoidCallback? onRetryFailed,
+    Size size = const Size(1200, 900),
   }) async {
-    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
@@ -163,5 +164,29 @@ void main() {
     expect(find.text('1 drive has changed since it was last read'),
         findsOneWidget);
     expect(find.textContaining('could not be read'), findsOneWidget);
+  });
+
+  /// The notice is added outside the `showsColumns` branch, so a phone gets it
+  /// too - on a layout where the rows are stacked blocks rather than a table,
+  /// and where a two-column Wrap has to fall back to one.
+  testWidgets('says the same thing on a phone, without overflowing',
+      (tester) async {
+    await pump(
+      tester,
+      DrivesListLoaded(drives: [
+        drive('a', hasUnreadChanges: true),
+        drive('b', hasUnreadChanges: true),
+      ]),
+      size: const Size(375, 667),
+    );
+
+    expect(
+      find.text('2 drives have changed since they were last read'),
+      findsOneWidget,
+    );
+    expect(find.text('Sync those 2'), findsOneWidget);
+
+    // A Wrap that could not fall back to one column would overflow here.
+    expect(tester.takeException(), isNull);
   });
 }

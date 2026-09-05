@@ -48,13 +48,20 @@ void main() {
     );
   });
 
-  Future<void> pumpAt(WidgetTester tester, Size size) async {
+  Future<void> pumpAt(
+    WidgetTester tester,
+    Size size, {
+    bool dark = false,
+    double textScale = 1,
+  }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
       ArDriveTheme(
-        themeData: lightTheme(),
+        themeData: dark
+            ? ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode())
+            : lightTheme(),
         child: MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -63,6 +70,11 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: const [Locale('en', '')],
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
           home: Scaffold(
             body: BlocProvider<DrivesCubit>.value(
               value: drivesCubit,
@@ -82,9 +94,8 @@ void main() {
   /// The measurement that matters, taken rather than assumed: a scroll view
   /// whose content is shorter than its viewport has nowhere to scroll to.
   double scrollableExtent(WidgetTester tester) {
-    final position = tester
-        .state<ScrollableState>(find.byType(Scrollable).first)
-        .position;
+    final position =
+        tester.state<ScrollableState>(find.byType(Scrollable).first).position;
 
     return position.maxScrollExtent;
   }
@@ -124,6 +135,43 @@ void main() {
         find.widgetWithText(ArDriveButtonNew, label),
       );
       expect(button.variant, ButtonVariant.primary, reason: label);
+    }
+  });
+
+  /// The card is drawn on `containerL2`, and the button colour is picked per
+  /// theme - so "does it fit" has to be asked in both, not just the one the
+  /// tests happened to start in.
+  testWidgets('fits in dark mode too', (tester) async {
+    await pumpAt(tester, const Size(375, 667), dark: true);
+
+    expect(scrollableExtent(tester), 0);
+    for (final label in ['Upload', 'Create Folder']) {
+      final button = tester.widget<ArDriveButtonNew>(
+        find.widgetWithText(ArDriveButtonNew, label),
+      );
+      expect(button.variant, ButtonVariant.primary, reason: label);
+    }
+  });
+
+  /// Text scale is the thing that actually breaks stacked layouts, and this
+  /// repo has shipped two breakpoints chosen by eye that clipped at some band
+  /// of widths nobody had rendered.
+  testWidgets('degrades to a scroll rather than an overflow at large text',
+      (tester) async {
+    await pumpAt(tester, const Size(375, 667), textScale: 1.6);
+
+    // Not asserted to fit: at some scale it cannot, and that is the whole
+    // reason the SingleChildScrollView stays. What must not happen is a
+    // RenderFlex overflow, which `pumpAndSettle` surfaces as an exception.
+    expect(tester.takeException(), isNull);
+
+    // And both offers must still be reachable by scrolling to them.
+    for (final label in ['Upload', 'Create Folder']) {
+      await tester.scrollUntilVisible(
+        find.widgetWithText(ArDriveButtonNew, label),
+        100,
+      );
+      expect(find.widgetWithText(ArDriveButtonNew, label), findsOneWidget);
     }
   });
 }
