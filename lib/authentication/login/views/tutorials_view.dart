@@ -187,16 +187,19 @@ class TutorialsViewState extends State<TutorialsView> {
                     child: ShaderMask(
                       // The fade has to finish inside the box it is fading.
                       //
-                      // At radius 2.5 the gradient's outer stop sits two and a
-                      // half box-widths away, so everything actually drawn
-                      // comes from the first fraction of it - the dots stayed
-                      // near full strength all the way down and the ClipRect
-                      // ended them on a hard horizontal line. On a phone that
-                      // reads as a grid of white dots with a seam across it
-                      // rather than as texture behind the title.
+                      // Flutter scales radius by the paint bounds' *shortest*
+                      // side. This box is full-width and 264 tall, so the
+                      // shortest side is that height at any real viewport:
+                      // radius 1 puts the transparent stop 264px below the
+                      // top-centre origin, which is the bottom edge. That is
+                      // what makes it a fade.
                       //
-                      // A radius of 1 puts the transparent stop at the box's
-                      // own edge, which is what makes it a fade.
+                      // At radius 2.5 the stop sat 660px down instead, so the
+                      // bottom of the box was only 40% of the way through the
+                      // gradient - the dots were still near full strength when
+                      // the ClipRect ended them on a hard horizontal line. On
+                      // a phone that reads as a grid of white dots with a seam
+                      // across it rather than as texture behind the title.
                       shaderCallback: (Rect bounds) {
                         return RadialGradient(
                           center: Alignment.topCenter,

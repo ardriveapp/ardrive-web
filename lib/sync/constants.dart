@@ -7,6 +7,11 @@ const kBlockHeightLookBack = 240;
 /// stalled or the bundler is having an outage, and neither resolves by being
 /// waited on for longer.
 ///
+/// Compared with `>=`, not `>`. `inMinutes` truncates, so `>` would not call a
+/// transaction failed until its 121st minute - and since the confirmation watch
+/// only looks every twenty minutes, missing the boundary by one minute costs a
+/// whole extra cycle. Two hours has to mean two hours.
+///
 /// This was `60 * 8` - eight hours - beside a comment claiming forty-five
 /// minutes, so nobody reading it knew what it did. Eight hours also meant the
 /// confirmation watch stayed awake that long for an upload already lost.

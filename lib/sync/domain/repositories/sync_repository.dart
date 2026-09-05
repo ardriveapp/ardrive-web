@@ -1815,7 +1815,7 @@ class _SyncRepository implements SyncRepository {
         } else if (txNotFound) {
           final abovePendingThreshold = DateTime.now()
                   .difference(pendingTxMap[txId]!.dateCreated)
-                  .inMinutes >
+                  .inMinutes >=
               kRequiredTxConfirmationPendingThreshold;
 
           if (abovePendingThreshold ||
@@ -2262,7 +2262,7 @@ class _SyncRepository implements SyncRepository {
           // enough, and why.
           final abovePendingThreshold = DateTime.now()
                   .difference(pendingTxMap[txId]!.dateCreated)
-                  .inMinutes >
+                  .inMinutes >=
               kRequiredTxConfirmationPendingThreshold;
 
           // Assume that data tx that weren't mined up to a maximum of
