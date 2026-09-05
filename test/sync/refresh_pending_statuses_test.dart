@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
+import 'package:ardrive/sync/domain/sync_cancellation_token.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -86,7 +87,9 @@ void main() {
     when(() => syncRepository.probeDrivesWithChanges())
         .thenAnswer((_) async => const <String>{});
     when(() => syncRepository.refreshTransactionStatuses(
-        ownerAddress: any(named: 'ownerAddress'))).thenAnswer((_) async {});
+          ownerAddress: any(named: 'ownerAddress'),
+          cancellationToken: any(named: 'cancellationToken'),
+        )).thenAnswer((_) async {});
     when(() => preferences.load()).thenAnswer(
       (_) async => const UserPreferences(
         currentTheme: ArDriveThemes.dark,
@@ -114,7 +117,9 @@ void main() {
     expect(await cubit.refreshPendingStatuses(), isTrue);
 
     verify(() => syncRepository.refreshTransactionStatuses(
-        ownerAddress: any(named: 'ownerAddress'))).called(1);
+          ownerAddress: any(named: 'ownerAddress'),
+          cancellationToken: any(named: 'cancellationToken'),
+        )).called(1);
 
     // The whole point: it cannot invent a drive state, only settle one already
     // recorded. A sync here would be the sledgehammer this exists to avoid.
@@ -132,8 +137,9 @@ void main() {
   test('a gateway that refuses leaves the file showing what it showed',
       () async {
     when(() => syncRepository.refreshTransactionStatuses(
-            ownerAddress: any(named: 'ownerAddress')))
-        .thenThrow(Exception('gateway said no'));
+          ownerAddress: any(named: 'ownerAddress'),
+          cancellationToken: any(named: 'cancellationToken'),
+        )).thenThrow(Exception('gateway said no'));
 
     final cubit = buildCubit();
     addTearDown(cubit.close);
@@ -153,6 +159,51 @@ void main() {
 
     expect(await cubit.refreshPendingStatuses(), isFalse);
     verifyNever(() => syncRepository.refreshTransactionStatuses(
-        ownerAddress: any(named: 'ownerAddress')));
+          ownerAddress: any(named: 'ownerAddress'),
+          cancellationToken: any(named: 'cancellationToken'),
+        ));
+  });
+
+  /// The hazard `sync_shutdown_test.dart` describes, reached by a new door.
+  ///
+  /// `ArDriveAuth.logout()` empties every table *before* this cubit closes, and
+  /// `SyncRepository` is an app-level singleton above the auth gate - so an
+  /// in-flight refresh would otherwise spend the next few seconds writing the
+  /// previous wallet's transaction statuses into a database that has just been
+  /// cleared.
+  test('a refresh still in flight is cancelled when the cubit closes',
+      () async {
+    late SyncCancellationToken given;
+    final released = Completer<void>();
+
+    when(() => syncRepository.refreshTransactionStatuses(
+          ownerAddress: any(named: 'ownerAddress'),
+          cancellationToken: any(named: 'cancellationToken'),
+        )).thenAnswer((invocation) {
+      given = invocation.namedArguments[#cancellationToken]
+          as SyncCancellationToken;
+
+      return released.future;
+    });
+
+    final cubit = buildCubit();
+
+    final refreshing = cubit.refreshPendingStatuses();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(given.isCancelled, isFalse, reason: 'nothing has happened yet');
+
+    await cubit.close();
+
+    expect(
+      given.isCancelled,
+      isTrue,
+      reason: 'the write has to be told to stop before the tables are emptied',
+    );
+
+    released.complete();
+
+    // And it reports nothing, because the wallet it was about is gone.
+    expect(await refreshing, isFalse);
   });
 }

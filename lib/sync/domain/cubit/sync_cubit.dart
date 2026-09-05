@@ -248,22 +248,51 @@ class SyncCubit extends Cubit<SyncState> {
       return false;
     }
 
+    // This writes rows, and `ArDriveAuth.logout()` empties every table *before*
+    // this cubit closes - so without a token an in-flight refresh would spend
+    // the next few seconds writing the previous wallet's transaction statuses
+    // into a database that has just been cleared. The same hazard the sync
+    // itself carries a token for, and the same answer.
+    _statusRefreshToken?.dispose();
+    final token = _statusRefreshToken = SyncCancellationToken();
+
     try {
       await _syncRepository.refreshTransactionStatuses(
         ownerAddress: _profileCubit.state is ProfileLoggedIn
             ? (_profileCubit.state as ProfileLoggedIn).user.walletAddress
             : null,
+        cancellationToken: token,
       );
 
+      // Cancelled out from under us while the gateway was answering: the wallet
+      // this was about is gone, so there is nothing to report to anybody.
+      if (token.isCancelled) {
+        return false;
+      }
+
       return true;
+    } on SyncCancelledException {
+      return false;
     } catch (e, stackTrace) {
       // The status a file already shows stays showing. Nothing is lost by this
       // failing except the answer the reader asked for early.
       logger.e('Could not refresh pending transaction statuses', e, stackTrace);
 
       return false;
+    } finally {
+      if (identical(_statusRefreshToken, token)) {
+        _statusRefreshToken?.dispose();
+        _statusRefreshToken = null;
+      }
     }
   }
+
+  /// The token for the standalone status refresh above.
+  ///
+  /// Its own, not [_currentSyncToken]: that one is cancelled and replaced by
+  /// every sync, and a refresh must not be torn down by a sync starting - nor
+  /// survive one that cancelled it.
+  SyncCancellationToken? _statusRefreshToken;
 
   /// Asks the network which already-read drives have moved on, once.
   ///
@@ -1485,6 +1514,12 @@ class SyncCubit extends Cubit<SyncState> {
     // drives into a database that has just been emptied.
     _pendingConfirmationWatch?.cancel();
     _pendingConfirmationWatch = null;
+
+    // Same argument as the sync token below: logout empties the tables before
+    // this runs, so anything still writing has to be told to stop.
+    _statusRefreshToken?.cancel();
+    _statusRefreshToken?.dispose();
+    _statusRefreshToken = null;
 
     // First, so the sync begins unwinding while the subscriptions below are
     // being torn down rather than after.

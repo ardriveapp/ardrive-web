@@ -348,7 +348,17 @@ abstract class SyncRepository {
   /// It walks no history and moves no block-height watermark, so it cannot find
   /// a file somebody else uploaded - only resolve the state of one already
   /// known about.
-  Future<void> refreshTransactionStatuses({String? ownerAddress});
+  ///
+  /// Takes a cancellation token for the same reason [syncAllDrives] does, and it
+  /// is not optional in practice: this writes rows, `ArDriveAuth.logout()`
+  /// empties every table *before* the cubit closes, and this repository is an
+  /// app-level singleton above the auth gate. Without a token an in-flight
+  /// refresh spends the next few seconds writing the previous wallet's
+  /// transaction statuses into a database that has just been cleared.
+  Future<void> refreshTransactionStatuses({
+    String? ownerAddress,
+    SyncCancellationToken? cancellationToken,
+  });
 
   factory SyncRepository({
     required ArweaveService arweave,
@@ -3168,11 +3178,15 @@ class _SyncRepository implements SyncRepository {
   }
 
   @override
-  Future<void> refreshTransactionStatuses({String? ownerAddress}) {
+  Future<void> refreshTransactionStatuses({
+    String? ownerAddress,
+    SyncCancellationToken? cancellationToken,
+  }) {
     return _updateTransactionStatuses(
       driveDao: _driveDao,
       arweave: _arweave,
       ownerAddress: ownerAddress,
+      cancellationToken: cancellationToken,
     );
   }
 
