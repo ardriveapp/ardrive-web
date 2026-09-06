@@ -579,39 +579,8 @@ class _DriveExplorerItemTileTrailingState
             height: height,
           ),
         ),
-      // Only on a file that is actually waiting on something. A confirmed file
-      // has nothing to check, and an item that is present but does nothing is
-      // worse than one that is absent.
       if (item.fileStatusFromTransactions == TransactionStatus.pending)
-        ArDriveDropdownItem(
-          onClick: () async {
-            // Both read before the await: the tile can be gone by the time the
-            // gateway answers - the row it sits in redraws whenever the folder
-            // does - and a context read afterwards is a context that may no
-            // longer be mounted.
-            final messenger = ScaffoldMessenger.of(context);
-            final checked = appLocalizationsOf(context).checkedUploadStatus;
-
-            final refreshed =
-                await context.read<SyncCubit>().refreshPendingStatuses();
-
-            // Refused because a sync is already running, or it failed. Either
-            // way the row keeps the status it had and says nothing it cannot
-            // stand behind.
-            if (!refreshed) {
-              return;
-            }
-
-            messenger.showSnackBar(SnackBar(content: Text(checked)));
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).checkUploadStatus,
-            ArDriveIcons.refresh(
-              size: defaultIconSize,
-            ),
-            height: height,
-          ),
-        ),
+        checkUploadStatusDropdownItem(context, height: height),
       if (isOwner) ...[
         if (item is FileDataTableItem)
           ArDriveDropdownItem(
@@ -1134,6 +1103,11 @@ class EntityActionsMenu extends StatelessWidget {
       ];
     }
     return [
+      // The same offer the row kebab makes, and it belongs here more: this is
+      // the panel somebody opens to find out why a file is showing an amber
+      // dot. See [checkUploadStatusDropdownItem].
+      if (item.fileStatusFromTransactions == TransactionStatus.pending)
+        checkUploadStatusDropdownItem(context),
       ArDriveDropdownItem(
         onClick: () {
           promptToDownloadProfileFile(
@@ -1278,6 +1252,51 @@ class EntityActionsMenu extends StatelessWidget {
   }) {
     return ArDriveDropdownItemTile(name: name, icon: icon, height: height);
   }
+}
+
+/// Re-asks the gateway whether a file's upload has landed.
+///
+/// A free function, and beside [hideFileDropdownItem] because it is here for
+/// the same reason: this menu exists twice - once on the row and once in the
+/// details panel - and an item written into one of those copies is an item half
+/// the app does not have. That is not hypothetical. The first version of this
+/// went into the row kebab only, so the details panel, which is where somebody
+/// staring at a pending status is most likely to be, could not do anything
+/// about it.
+///
+/// Only ever offered on a file that is actually waiting: a confirmed file has
+/// nothing to check, and an item that is present and does nothing is worse than
+/// one that is absent.
+ArDriveDropdownItem checkUploadStatusDropdownItem(
+  BuildContext context, {
+  double? height,
+}) {
+  return ArDriveDropdownItem(
+    onClick: () async {
+      // Both read before the await: the tile can be gone by the time the
+      // gateway answers - the row it sits in redraws whenever the folder does -
+      // and a context read afterwards is a context that may no longer be
+      // mounted.
+      final messenger = ScaffoldMessenger.of(context);
+      final checked = appLocalizationsOf(context).checkedUploadStatus;
+
+      final refreshed =
+          await context.read<SyncCubit>().refreshPendingStatuses();
+
+      // Refused because a sync is already running, or it failed. Either way the
+      // row keeps the status it had and says nothing it cannot stand behind.
+      if (!refreshed) {
+        return;
+      }
+
+      messenger.showSnackBar(SnackBar(content: Text(checked)));
+    },
+    content: ArDriveDropdownItemTile(
+      name: appLocalizationsOf(context).checkUploadStatus,
+      icon: ArDriveIcons.refresh(size: defaultIconSize),
+      height: height,
+    ),
+  );
 }
 
 ArDriveDropdownItem hideFileDropdownItem(
