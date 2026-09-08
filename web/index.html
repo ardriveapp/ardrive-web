@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
-    <meta name="description" content="Secure, permanent storage." />
+    <meta name="description" content="ArDrive stores your files permanently on Arweave. Pay once and they stay online, with no subscription and nothing to renew." />
 
     <!--
       Never send a route in a `Referer` header. Under hash routing the browser
@@ -97,12 +97,43 @@
       })();
     </script>
 
-    <!-- Open Graph meta tags -->
+    <!--
+      Open Graph. This is the card every shared drive, folder and file renders
+      as, so it is worth more than the one line it had.
+
+      Note what it cannot be: under hash routing a crawler fetching
+      `/#/file/{id}/view` never receives anything after the `#`, so the card is
+      necessarily the same for every link. That is not only a limitation. Share
+      links carry `n` and `ct`, which are private-file secrets - so a per-link
+      preview would mean a server reading those to render a filename into a
+      public card. Whatever this grows into, it must never cover private links.
+    -->
+    <meta property="og:site_name" content="ArDrive">
     <meta property="og:title" content="ArDrive">
-    <meta property="og:description" content="Secure, permanent storage.">
+    <meta property="og:description" content="Permanent file storage on Arweave. Pay once and your files stay online, with no subscription and nothing to renew.">
     <meta property="og:image" content="https://arweave.net/raw/Z7uRUbuiCQNWeOu4rCUGqEdTCybBf3H4OyIrs6bQrFA">
-    <meta property="og:url" content="https://ardrive.io">
+    <!-- Measured, not assumed: the asset really is 1200x630. Declaring it stops
+         scrapers guessing and cropping the card while they wait for the fetch. -->
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="ArDrive: permanent file storage on Arweave">
     <meta property="og:type" content="website">
+    <!--
+      `og:url` is deliberately absent. It was hardcoded to https://ardrive.io,
+      but this page is served from app.ardrive.io, staging.ardrive.io, PR preview
+      builds and any AR.IO gateway - so on all but one of those it declared a
+      canonical identity that was not its own, and a card for a shared file could
+      link a reader to the marketing site instead of the file. With no og:url a
+      scraper falls back to the address it actually fetched, which is correct on
+      every host.
+    -->
+
+    <!--
+      Without this, X renders the small summary card and the 1200x630 image is
+      cropped to a square thumbnail. Title, description and image all fall back
+      to the Open Graph tags above, so this one line is the whole fix.
+    -->
+    <meta name="twitter:card" content="summary_large_image">
 
     <!-- iOS meta tags & icons -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
