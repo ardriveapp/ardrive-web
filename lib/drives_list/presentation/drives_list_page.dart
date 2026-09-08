@@ -1,3 +1,7 @@
+import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
+import 'package:ardrive/pages/app_router_delegate.dart';
+import 'package:ardrive/search/search_modal.dart';
+import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_empty.dart';
 import 'package:ardrive/drives_list/presentation/drives_sync_menu.dart';
@@ -227,7 +231,12 @@ class _DrivesListChrome extends StatelessWidget {
                 .themeBgSurface
                 .withOpacity(0.5),
             drawer: const AppSideBar(),
-            appBar: const MobileAppBar(),
+            appBar: MobileAppBar(
+              showSearch: true,
+              onSearchNavigateToFolder: (driveId, folderId) => context
+                  .read<AppRouterDelegate>()
+                  .requestFolder(driveId, folderId),
+            ),
             body: body,
           ),
           desktop: (context) => Padding(
@@ -235,13 +244,27 @@ class _DrivesListChrome extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    SyncButton(),
-                    SizedBox(width: 8),
-                    SizedBox(width: 8),
-                    ProfileCard(),
+                    // Search is global - `DriveDao.search` takes no drive id -
+                    // so this page had no business being the one screen without
+                    // it. Capped and pushed left of the controls, the same shape
+                    // the explorer's top bar gives it.
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 400),
+                          child: const _DrivesListSearchField(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    const SyncButton(),
+                    const SizedBox(width: 8),
+                    const SizedBox(width: 8),
+                    const ProfileCard(),
                   ],
                 ),
                 const SizedBox(height: _sectionGap),
@@ -249,6 +272,53 @@ class _DrivesListChrome extends StatelessWidget {
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+}
+
+/// Global search, on the one page that did not have it.
+///
+/// The field is the explorer's, and so is the sheet it opens. What differs is
+/// how a result is reached: the explorer hands the modal its own long-lived
+/// `DriveDetailCubit`, which can be told to open a folder in another drive. Here
+/// selecting a drive replaces the whole subtree, so that cubit is torn down
+/// mid-navigation - hence [AppRouterDelegate.requestFolder], which asks for the
+/// folder before the selection that carries it.
+class _DrivesListSearchField extends StatefulWidget {
+  const _DrivesListSearchField();
+
+  @override
+  State<_DrivesListSearchField> createState() => _DrivesListSearchFieldState();
+}
+
+class _DrivesListSearchFieldState extends State<_DrivesListSearchField> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SearchTextField(
+      controller: _controller,
+      onFieldSubmitted: (query) {
+        if (query.isEmpty) {
+          return;
+        }
+
+        showSearchModalDesktop(
+          context: context,
+          driveDetailCubit: context.read<DriveDetailCubit>(),
+          drivesCubit: context.read<DrivesCubit>(),
+          controller: _controller,
+          onNavigateToFolder: (driveId, folderId) => context
+              .read<AppRouterDelegate>()
+              .requestFolder(driveId, folderId),
         );
       },
     );
