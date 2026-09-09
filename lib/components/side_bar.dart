@@ -572,7 +572,10 @@ class DriveListTile extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return GestureDetector(
-      key: key,
+      // Not `key: key`. The widget already carries its own key through
+      // `super.key`, so forwarding it here put the same key on two elements -
+      // harmless for a ValueKey, and an outright duplicate-GlobalKey assertion
+      // the moment anything needs to find this tile in the tree.
       onTap: onTap,
       child: Container(
         decoration: isSelected
@@ -899,14 +902,83 @@ Future<void> showSupportModal({
   );
 }
 
-class _Accordion extends StatelessWidget {
+/// The drive list, and the one piece of behaviour it owes a reader: when the
+/// selection moves, show them where it went.
+///
+/// Both sections ship expanded, so a wallet with a long public list pushes the
+/// private one below the fold. Opening a private drive from the drives list then
+/// highlighted a row nobody could see, which reads as nothing having happened.
+///
+/// Scrolling to it rather than collapsing the other section, deliberately: a
+/// reader who wanted their public drives hidden would have collapsed that
+/// section themselves, and closing it for them is the app moving furniture
+/// around while they are using it. Nothing is hidden; the selection is simply
+/// brought into view.
+class _Accordion extends StatefulWidget {
   const _Accordion({required this.state, required this.isMobile});
 
   final DrivesLoadSuccess state;
   final bool isMobile;
 
   @override
+  State<_Accordion> createState() => _AccordionState();
+}
+
+class _AccordionState extends State<_Accordion> {
+  /// Carried by whichever tile is selected, so it can be scrolled to.
+  final GlobalKey _selectedTileKey = GlobalKey();
+
+  /// What the last scroll was for.
+  ///
+  /// The selection is read on every rebuild - a sync tick alone causes several -
+  /// and scrolling on each of those would drag the list back under a reader who
+  /// was scrolling it themselves. Only a *change* is worth moving for.
+  String? _scrolledFor;
+
+  @override
+  void initState() {
+    super.initState();
+    // The selection a reader arrives with is not one they watched move, so
+    // there is nothing to show them about it.
+    _scrolledFor = widget.state.selectedDriveId;
+  }
+
+  @override
+  void didUpdateWidget(_Accordion oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final selected = widget.state.selectedDriveId;
+
+    if (selected == null || selected == _scrolledFor) {
+      return;
+    }
+
+    _scrolledFor = selected;
+
+    // After the frame, because the tile for a newly selected drive may not be
+    // laid out yet - and it has no context at all if the reader has collapsed
+    // the section holding it, which is the one case where doing nothing is
+    // right.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _selectedTileKey.currentContext;
+
+      if (context == null || !mounted) {
+        return;
+      }
+
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.5,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = widget.state;
+    final isMobile = widget.isMobile;
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
@@ -935,6 +1007,9 @@ class _Accordion extends StatelessWidget {
                     })
                     .map(
                       (d) => DriveListTile(
+                        key: state.selectedDriveId == d.id
+                            ? _selectedTileKey
+                            : null,
                         hasAlert: state.drivesWithAlerts.contains(d.id),
                         drive: d,
                         onTap: () {
@@ -977,6 +1052,9 @@ class _Accordion extends StatelessWidget {
                     })
                     .map(
                       (d) => DriveListTile(
+                        key: state.selectedDriveId == d.id
+                            ? _selectedTileKey
+                            : null,
                         hasAlert: state.drivesWithAlerts.contains(d.id),
                         drive: d,
                         onTap: () {
@@ -1004,6 +1082,9 @@ class _Accordion extends StatelessWidget {
                 state.sharedDrives
                     .map(
                       (d) => DriveListTile(
+                        key: state.selectedDriveId == d.id
+                            ? _selectedTileKey
+                            : null,
                         hasAlert: state.drivesWithAlerts.contains(d.id),
                         drive: d,
                         onTap: () {

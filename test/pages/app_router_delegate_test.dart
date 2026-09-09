@@ -198,7 +198,6 @@ void main() {
       expect(delegate.isViewingRawTransaction, isFalse);
       expect(delegate.showingDrivesList, isTrue);
     });
-
   });
 
   group('ordinary navigation', () {
@@ -264,6 +263,48 @@ void main() {
       delegate.requestDriveInfo('drive-2');
 
       expect(delegate.pendingInfoDriveId, 'drive-2');
+    });
+  });
+
+  /// A search result opened from the drives list.
+  ///
+  /// The explorer navigates a result by calling `openFolder` on its own
+  /// `DriveDetailCubit`, which works because that cubit is long-lived and
+  /// switches drives underneath the page. On the drives list it is not:
+  /// selecting a drive replaces the whole subtree, so the cubit the modal was
+  /// handed is torn down mid-navigation and the reader lands at the drive root
+  /// instead of the file they searched for. [AppRouterDelegate.requestFolder]
+  /// is the road that survives that.
+  group('a folder asked for before its drive is selected', () {
+    test('opens when that drive arrives', () {
+      delegate.requestFolder(driveId, folderId);
+      delegate.onDriveSelected(driveId);
+
+      expect(delegate.driveFolderId, folderId);
+      expect(delegate.driveId, driveId);
+    });
+
+    /// One shot, for the same reason a folder link is: navigating away and back
+    /// should land at the root rather than jumping to a folder visited once.
+    test('is not honoured a second time', () {
+      delegate.requestFolder(driveId, folderId);
+      delegate.onDriveSelected(driveId);
+
+      delegate.onDriveSelected(otherDriveId);
+      delegate.onDriveSelected(driveId);
+
+      expect(delegate.driveFolderId, isNull);
+    });
+
+    test('is ignored when a different drive is selected instead', () {
+      delegate.requestFolder(driveId, folderId);
+      delegate.onDriveSelected(otherDriveId);
+
+      expect(
+        delegate.driveFolderId,
+        isNull,
+        reason: 'a folder from one drive must not open inside another',
+      );
     });
   });
 }

@@ -44,8 +44,8 @@ void main() {
         initialState: const HiddingItems(userHasHiddenDrive: false));
   });
 
-  Widget wrap(DrivesState drivesState) {
-    whenListen(drivesCubit, const Stream<DrivesState>.empty(),
+  Widget wrap(DrivesState drivesState, {Stream<DrivesState>? updates}) {
+    whenListen(drivesCubit, updates ?? const Stream<DrivesState>.empty(),
         initialState: drivesState);
 
     return ArDriveTheme(
@@ -83,6 +83,17 @@ void main() {
         ownerAddress: 'me',
         name: id,
         privacy: DrivePrivacyTag.public,
+        isHidden: false,
+        dateCreated: DateTime(2024, 3, 4),
+        lastUpdated: DateTime(2024, 3, 4),
+      );
+
+  Drive privateDrive(String id) => Drive(
+        id: id,
+        rootFolderId: '$id-root',
+        ownerAddress: 'me',
+        name: id,
+        privacy: DrivePrivacyTag.private,
         isHidden: false,
         dateCreated: DateTime(2024, 3, 4),
         lastUpdated: DateTime(2024, 3, 4),
@@ -299,5 +310,92 @@ void main() {
     expect(find.text('Loading your drives...'), findsNothing);
 
     await tester.pumpWidget(const SizedBox());
+  });
+
+  /// Opening a private drive used to highlight a row nobody could see.
+  ///
+  /// Both sections ship expanded, so a wallet with a long public list pushes the
+  /// private section past the bottom of the window. Selecting a drive down there
+  /// - from the drives list, say - marked it and left the reader looking at an
+  /// unchanged screen, which reads as the click having done nothing.
+  group('when the selection moves somewhere off screen', () {
+    late StreamController<DrivesState> states;
+
+    setUp(() => states = StreamController<DrivesState>.broadcast());
+    tearDown(() => states.close());
+
+    /// Twenty public drives above one private drive, on a window far too short
+    /// for them, so the private row starts well below the fold.
+    List<Drive> manyDrives() => [
+          for (var i = 0; i < 20; i++) publicDrive('public-$i'),
+          privateDrive('the-private-one'),
+        ];
+
+    testWidgets('the sidebar scrolls it into view', (tester) async {
+      tester.view.physicalSize = const Size(1200, 700);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final drives = manyDrives();
+
+      await tester.pumpWidget(
+        wrap(
+          withDrives(drives, selected: 'public-0'),
+          updates: states.stream,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final target = find.text('the-private-one');
+
+      // Precondition, asserted rather than assumed: if it were already on
+      // screen this test would pass without the behaviour it is about.
+      expect(
+        tester.getRect(target).top,
+        greaterThan(700),
+        reason: 'the private drive has to start below the fold for this to '
+            'be testing anything',
+      );
+
+      states.add(withDrives(drives, selected: 'the-private-one'));
+      await tester.pumpAndSettle();
+
+      final rect = tester.getRect(target);
+
+      expect(rect.top, greaterThanOrEqualTo(0.0));
+      expect(
+        rect.bottom,
+        lessThanOrEqualTo(700.0),
+        reason: 'the drive that was just selected has to be somewhere the '
+            'reader can see it',
+      );
+    });
+
+    /// A sync tick alone rebuilds this several times. Scrolling on each would
+    /// drag the list back under a reader who was scrolling it themselves.
+    testWidgets('and leaves the list alone when nothing was selected',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 700);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final drives = manyDrives();
+
+      await tester.pumpWidget(
+        wrap(
+          withDrives(drives, selected: 'public-0'),
+          updates: states.stream,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final before = tester.getRect(find.text('the-private-one'));
+
+      // The same selection arriving again, which is what a rebuild looks like.
+      states.add(withDrives(drives, selected: 'public-0'));
+      await tester.pumpAndSettle();
+
+      expect(tester.getRect(find.text('the-private-one')), before);
+    });
   });
 }

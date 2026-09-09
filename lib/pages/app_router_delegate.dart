@@ -395,8 +395,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                                         driveDetailCubitState.currentDrive,
                                         (_) => null,
                                         0,
-                                        driveDetailCubitState.currentDrive
-                                                .ownerAddress ==
+                                        driveDetailCubitState
+                                                .currentDrive.ownerAddress ==
                                             context
                                                 .read<ArDriveAuth>()
                                                 .currentUser
@@ -615,6 +615,24 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// before the selection rather than threaded through it.
   void requestDriveInfo(String driveId) {
     _pendingInfoDriveId = driveId;
+  }
+
+  /// Asks for a drive to open at a particular folder, once it is selected.
+  ///
+  /// The road a search result takes off the drives list. The explorer navigates
+  /// a result by calling `openFolder` on its own `DriveDetailCubit`, which works
+  /// there because that cubit is long-lived and switches drives underneath the
+  /// page. On the drives list it is not: selecting a drive replaces the whole
+  /// subtree, so the cubit the modal was handed is torn down mid-navigation and
+  /// the reader lands at the drive root instead of the file they searched for.
+  ///
+  /// Set before the selection, like [requestDriveInfo], and honoured by
+  /// [onDriveSelected] when that drive arrives. One shot, so navigating away and
+  /// back lands at the root rather than jumping to a folder somebody visited
+  /// once.
+  void requestFolder(String driveId, String folderId) {
+    _pendingFolderDriveId = driveId;
+    _pendingFolderId = folderId;
   }
 
   @visibleForTesting

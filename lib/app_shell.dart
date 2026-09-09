@@ -315,7 +315,10 @@ const double mobileAppBarIconSize = _mobileAppBarIconSize;
 /// modal owns the text while it is open and there is nothing to remember once
 /// it closes.
 class _MobileSearchButton extends StatelessWidget {
-  const _MobileSearchButton();
+  const _MobileSearchButton({this.onNavigateToFolder});
+
+  /// See [MobileAppBar.onSearchNavigateToFolder].
+  final void Function(String driveId, String folderId)? onNavigateToFolder;
 
   @override
   Widget build(BuildContext context) {
@@ -334,6 +337,7 @@ class _MobileSearchButton extends StatelessWidget {
           driveDetailCubit: context.read<DriveDetailCubit>(),
           drivesCubit: context.read<DrivesCubit>(),
           controller: TextEditingController(),
+          onNavigateToFolder: onNavigateToFolder,
         );
       },
     );
@@ -346,6 +350,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.leading,
     this.showDrawerButton = true,
     this.showSearch = false,
+    this.onSearchNavigateToFolder,
   });
 
   final Widget? leading;
@@ -360,6 +365,15 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// that offered search everywhere would be offering it where it could only
   /// disappoint.
   final bool showSearch;
+
+  /// How a search result reaches its folder from this screen.
+  ///
+  /// Null on the explorer, where the modal's own `DriveDetailCubit` is
+  /// long-lived and can be told to open a folder in another drive. The drives
+  /// list passes one, because selecting a drive there replaces the subtree and
+  /// tears that cubit down mid-navigation. See [FileSearchModal.onNavigateToFolder].
+  final void Function(String driveId, String folderId)?
+      onSearchNavigateToFolder;
 
   @override
   // Its own row and nothing else. Nothing about a sync is laid out here: a
@@ -424,7 +438,9 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
               // give; as an icon it takes the space that was already empty
               // here.
               if (showSearch) ...[
-                const _MobileSearchButton(),
+                _MobileSearchButton(
+                  onNavigateToFolder: onSearchNavigateToFolder,
+                ),
                 const SizedBox(width: 8),
               ],
               const GlobalHideToggleButton(),

@@ -795,9 +795,9 @@
   "@nothingSyncedYetSyncingTitle": {
     "description": "Replaces nothingSyncedYetTitle while a sync is actually running, so the card does not offer work that is already under way beside a strip reporting it"
   },
-  "nothingSyncedYetSyncingDescription": "Each row will say what it holds as it arrives.",
+  "nothingSyncedYetSyncingDescription": "Large drives can take a few minutes.",
   "@nothingSyncedYetSyncingDescription": {
-    "description": "Replaces nothingSyncedYetDescription while a sync is running. It also explains the disabled button beside it"
+    "description": "Replaces nothingSyncedYetDescription while a sync is running. It also explains the disabled button beside it. Sets the expectation rather than narrating the interface: it read 'Each row will say what it holds as it arrives', which told the reader to go and watch something instead of saying the one thing the screen could not - how long this takes"
   },
   "nothingSyncedYetDescription": "Their contents have not been fetched yet.",
   "@nothingSyncedYetDescription": {
@@ -2622,7 +2622,7 @@
   "@sharedFileVersionLatest": {
     "description": "Chip marking the newest version in the recipient's version list"
   },
-  "sharedFileVersionPinned": "Pinned",
+  "sharedFileVersionPinned": "This version",
   "@sharedFileVersionPinned": {
     "description": "Chip marking the version a pinned share link deliberately points at, as opposed to merely the version the link carried"
   },
