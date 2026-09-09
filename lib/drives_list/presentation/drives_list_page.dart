@@ -233,9 +233,12 @@ class _DrivesListChrome extends StatelessWidget {
             drawer: const AppSideBar(),
             appBar: MobileAppBar(
               showSearch: true,
-              onSearchNavigateToFolder: (driveId, folderId) => context
-                  .read<AppRouterDelegate>()
-                  .requestFolder(driveId, folderId),
+              onSearchNavigateToFolder: (driveId, folderId, {itemId}) =>
+                  context.read<AppRouterDelegate>().requestFolder(
+                        driveId,
+                        folderId,
+                        itemId: itemId,
+                      ),
             ),
             body: body,
           ),
@@ -316,9 +319,12 @@ class _DrivesListSearchFieldState extends State<_DrivesListSearchField> {
           driveDetailCubit: context.read<DriveDetailCubit>(),
           drivesCubit: context.read<DrivesCubit>(),
           controller: _controller,
-          onNavigateToFolder: (driveId, folderId) => context
-              .read<AppRouterDelegate>()
-              .requestFolder(driveId, folderId),
+          onNavigateToFolder: (driveId, folderId, {itemId}) =>
+              context.read<AppRouterDelegate>().requestFolder(
+                    driveId,
+                    folderId,
+                    itemId: itemId,
+                  ),
         );
       },
     );

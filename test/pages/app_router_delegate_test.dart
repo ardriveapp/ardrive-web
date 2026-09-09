@@ -266,45 +266,102 @@ void main() {
     });
   });
 
-  /// A search result opened from the drives list.
+  /// A search result opened from the drives list, by the road that actually
+  /// runs.
   ///
-  /// The explorer navigates a result by calling `openFolder` on its own
-  /// `DriveDetailCubit`, which works because that cubit is long-lived and
-  /// switches drives underneath the page. On the drives list it is not:
-  /// selecting a drive replaces the whole subtree, so the cubit the modal was
-  /// handed is torn down mid-navigation and the reader lands at the drive root
-  /// instead of the file they searched for. [AppRouterDelegate.requestFolder]
-  /// is the road that survives that.
-  group('a folder asked for before its drive is selected', () {
-    test('opens when that drive arrives', () {
-      delegate.requestFolder(driveId, folderId);
-      delegate.onDriveSelected(driveId);
+  /// This is the group that was missing, and its absence shipped a broken
+  /// feature. The first version tested `requestFolder` followed by
+  /// [AppRouterDelegate.onDriveSelected] - which passes, and proves nothing,
+  /// because `onDriveSelected` is only mounted on the explorer's branch of the
+  /// router and never sees a drive opened from the list.
+  ///
+  /// From the list, `OpenDriveOnSelection` hears the selection and calls
+  /// [AppRouterDelegate.openDriveFromList] - which cleared the pending folder
+  /// outright, so the reader landed at the root of the right drive instead of at
+  /// the file they searched for.
+  group('a search result opened from the drives list', () {
+    const itemId = 'd5eaed3d-6e5d-7f4e-bd50-9a4d3e6f7081';
+
+    test('opens the folder it asked for', () {
+      delegate.requestFolder(driveId, folderId, itemId: itemId);
+      delegate.openDriveFromList(driveId);
 
       expect(delegate.driveFolderId, folderId);
       expect(delegate.driveId, driveId);
+      expect(delegate.showingDrivesList, isFalse);
     });
 
-    /// One shot, for the same reason a folder link is: navigating away and back
-    /// should land at the root rather than jumping to a folder visited once.
-    test('is not honoured a second time', () {
-      delegate.requestFolder(driveId, folderId);
-      delegate.onDriveSelected(driveId);
+    test('and hands the file to highlight to that drive, once', () {
+      delegate.requestFolder(driveId, folderId, itemId: itemId);
+      delegate.openDriveFromList(driveId);
 
-      delegate.onDriveSelected(otherDriveId);
-      delegate.onDriveSelected(driveId);
-
-      expect(delegate.driveFolderId, isNull);
+      expect(delegate.takeSelectedItemForTest(driveId), itemId);
+      expect(
+        delegate.takeSelectedItemForTest(driveId),
+        isNull,
+        reason: 'coming back to this drive later must not re-select a file '
+            'somebody searched for once',
+      );
     });
 
-    test('is ignored when a different drive is selected instead', () {
-      delegate.requestFolder(driveId, folderId);
-      delegate.onDriveSelected(otherDriveId);
+    /// `_driveDetailCubit` is built twice over - once for the drives list
+    /// against the root path, once for the explorer against the chosen drive.
+    /// Unkeyed, the list's cubit swallows the selection and the file is never
+    /// highlighted.
+    test('and not to a cubit built for some other drive', () {
+      delegate.requestFolder(driveId, folderId, itemId: itemId);
+      delegate.openDriveFromList(driveId);
+
+      expect(delegate.takeSelectedItemForTest(otherDriveId), isNull);
+      expect(delegate.takeSelectedItemForTest(driveId), itemId);
+    });
+
+    /// A row tap, which is what this method was written for: no folder is in
+    /// view and the drive opens at its root.
+    test('a plain row tap still opens the drive at its root', () {
+      delegate.requestFolder(otherDriveId, folderId, itemId: itemId);
+      delegate.openDriveFromList(driveId);
 
       expect(
         delegate.driveFolderId,
         isNull,
-        reason: 'a folder from one drive must not open inside another',
+        reason: 'a folder asked for in one drive must not open inside another',
       );
+      expect(delegate.takeSelectedItemForTest(driveId), isNull);
+    });
+
+    /// Every other pending field is cleared on logout, and these are no
+    /// different: a search somebody ran before signing out is not an
+    /// instruction to whoever signs in next on the same device.
+    test('and does not survive a logout', () {
+      delegate.requestFolder(driveId, folderId, itemId: itemId);
+
+      delegate.clearState();
+      delegate.openDriveFromList(driveId);
+
+      expect(delegate.driveFolderId, isNull);
+      expect(delegate.takeSelectedItemForTest(driveId), isNull);
+    });
+
+    /// Honoured, but the explorer never built and the reader went back to the
+    /// list. The selection dies with the navigation it belonged to.
+    test('and is abandoned by going back to the list', () {
+      delegate.requestFolder(driveId, folderId, itemId: itemId);
+      delegate.openDriveFromList(driveId);
+
+      delegate.showDrivesList();
+
+      expect(delegate.takeSelectedItemForTest(driveId), isNull);
+    });
+
+    test('and a request is spent even when it is not honoured', () {
+      delegate.requestFolder(otherDriveId, folderId, itemId: itemId);
+      delegate.openDriveFromList(driveId);
+
+      // The stale request must not fire the next time its own drive is opened.
+      delegate.openDriveFromList(otherDriveId);
+
+      expect(delegate.driveFolderId, isNull);
     });
   });
 }
