@@ -760,9 +760,20 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingDrivesList = true;
     signingIn = false;
     gettingStarted = false;
-    // Going back to the list abandons whatever a search asked for. Without
-    // this, a request honoured in a frame where the explorer never built would
-    // sit here and highlight a stale file the next time that drive was opened.
+    // Going back to the list abandons whatever a search asked for - all of it,
+    // in both the states it can be in. A request honoured in a frame where the
+    // explorer never built would otherwise sit here and highlight a stale file
+    // the next time that drive opened; one never honoured at all would sit in
+    // the other three fields and jump a later, unrelated row tap into a folder
+    // somebody searched for once.
+    //
+    // No live path is known to reach the second - `requestFolder` is always
+    // followed immediately by the selection that spends it. This is here
+    // because clearing half the state and describing it as all of it is how
+    // the first case got missed.
+    _requestedFolderDriveId = null;
+    _requestedFolderId = null;
+    _requestedItemId = null;
     _selectedItemForFolder = null;
     _selectedItemForFolderDriveId = null;
     sharedFileId = null;

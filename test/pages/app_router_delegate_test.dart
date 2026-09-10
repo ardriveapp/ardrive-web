@@ -354,6 +354,19 @@ void main() {
       expect(delegate.takeSelectedItemForTest(driveId), isNull);
     });
 
+    /// The other half of abandoning: a request that was never honoured at all,
+    /// because the reader went back to the list before it was spent. It must
+    /// not jump a later, unrelated row tap into that folder.
+    test('and an unspent request does not ambush a later row tap', () {
+      delegate.requestFolder(driveId, folderId, itemId: itemId);
+
+      delegate.showDrivesList();
+      delegate.openDriveFromList(driveId);
+
+      expect(delegate.driveFolderId, isNull);
+      expect(delegate.takeSelectedItemForTest(driveId), isNull);
+    });
+
     test('and a request is spent even when it is not honoured', () {
       delegate.requestFolder(otherDriveId, folderId, itemId: itemId);
       delegate.openDriveFromList(driveId);
