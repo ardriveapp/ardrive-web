@@ -4,6 +4,9 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:artemis/client.dart';
 import 'package:artemis/schema/graphql_query.dart';
 import 'package:artemis/schema/graphql_response.dart';
+import 'package:flutter/foundation.dart';
+import 'package:gql_http_link/gql_http_link.dart';
+import 'package:gql_link/gql_link.dart';
 import 'package:json_annotation/json_annotation.dart';
 import 'package:retry/retry.dart';
 
@@ -13,11 +16,9 @@ import 'package:retry/retry.dart';
 /// index ArDrive L2 data.
 class GraphQLRetry {
   GraphQLRetry(this._client,
-      {required InternetChecker internetChecker,
-      String? fallbackGraphqlUrl})
+      {required InternetChecker internetChecker, String? fallbackGraphqlUrl})
       : _internetChecker = internetChecker,
-        _fallbackGraphqlUrl =
-            fallbackGraphqlUrl ?? defaultFallbackGraphqlUrl;
+        _fallbackGraphqlUrl = fallbackGraphqlUrl ?? defaultFallbackGraphqlUrl;
 
   /// Where a query goes when the primary endpoint will not serve it.
   ///
@@ -68,12 +69,7 @@ class GraphQLRetry {
           onRetry: onRetry, maxAttempts: maxAttempts);
     } catch (primaryError) {
       // If primary exhausted all retries, try fallback
-      final errorStr = primaryError.toString();
-      if (errorStr.contains('429') ||
-          errorStr.contains('500') ||
-          errorStr.contains('502') ||
-          errorStr.contains('503') ||
-          errorStr.contains('504')) {
+      if (deservesFallback(primaryError)) {
         logger.w(
           'GraphQL primary exhausted retries, '
           'trying fallback: $_fallbackGraphqlUrl',
@@ -118,6 +114,54 @@ class GraphQLRetry {
     }
   }
 
+  /// Whether this failure is one another endpoint might not have.
+  ///
+  /// The status code is read off the exception rather than out of its text.
+  /// This used to string-match `error.toString()` for '429' and the 5xx codes,
+  /// and that never once matched an HTTP failure: a non-2xx from the gateway
+  /// arrives as `HttpLinkServerException`, whose `toString` prints
+  /// `originalException`, `originalStackTrace` and `parsedResponse` and *not*
+  /// the status - the one field the decision needed. So the fallback below has
+  /// never armed for a rate limit or a bad gateway, which is exactly what a
+  /// rate-limited primary looks like from the outside: retries against the
+  /// same host until the budget runs out, and no second endpoint ever tried.
+  ///
+  /// The string check stays underneath as a last resort, for anything that
+  /// does put a code in its message.
+  @visibleForTesting
+  static bool deservesFallback(Object error) {
+    final status = _statusCodeOf(error);
+
+    if (status != null) {
+      return status == 429 || (status >= 500 && status < 600);
+    }
+
+    final text = error.toString();
+
+    return text.contains('429') ||
+        text.contains('500') ||
+        text.contains('502') ||
+        text.contains('503') ||
+        text.contains('504');
+  }
+
+  /// The HTTP status behind a GraphQL failure, where there is one.
+  ///
+  /// `HttpLinkServerException` carries the whole `http.Response`;
+  /// `ServerException` carries a `statusCode` that the http link does not
+  /// currently populate. Both are read, so this keeps working if that changes.
+  static int? _statusCodeOf(Object error) {
+    if (error is HttpLinkServerException) {
+      return error.response.statusCode;
+    }
+
+    if (error is ServerException) {
+      return error.statusCode;
+    }
+
+    return null;
+  }
+
   Future<GraphQLResponse<T>> _executeWithRetry<T, U extends JsonSerializable>(
     ArtemisClient client,
     GraphQLQuery<T, U> query, {
@@ -133,11 +177,45 @@ class GraphQLRetry {
         return response;
       },
       maxAttempts: maxAttempts,
+      retryIf: worthRetrying,
       onRetry: (exception) {
         onRetry?.call(exception);
         logger.w('Retrying Query: ${query.operationName}');
       },
     );
+  }
+
+  /// Whether asking the same endpoint the same thing again could answer it.
+  ///
+  /// `package:retry` retries every exception when this is not given, and the
+  /// budget here is five attempts with growing backoff - so a request that
+  /// cannot succeed spent about six seconds failing five times before saying
+  /// so. Two kinds of failure are worth spending that on: the ones that are
+  /// about the moment rather than the request.
+  ///
+  /// A 4xx is not one of them. Neither is a query the server understood well
+  /// enough to reject: a `GraphQLException` raised from an `errors` payload
+  /// came back over a successful HTTP response, so the endpoint read the
+  /// question and answered it. Asking again produces the same answer more
+  /// slowly, and delays the fallback that might actually have helped.
+  @visibleForTesting
+  static bool worthRetrying(Exception error) {
+    final status = _statusCodeOf(error);
+
+    if (status != null) {
+      // 429 and 5xx are about the moment. Everything else the server was
+      // clear about.
+      return status == 429 || status >= 500;
+    }
+
+    // A rejection the server composed rather than a failure to reach it.
+    if (error is GraphQLException && error.exception is List) {
+      return false;
+    }
+
+    // Anything else - a dropped socket, a DNS hiccup, a timeout - has no
+    // status to read and is exactly what a retry is for.
+    return true;
   }
 }
 

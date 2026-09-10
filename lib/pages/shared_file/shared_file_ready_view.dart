@@ -1277,10 +1277,16 @@ class _SharedFileVersionRow extends StatelessWidget {
 
     final hasDate = !SharedFileCubit.isUnknownDate(revision.dateCreated);
 
-    // "Pinned" says the sharer chose this version; "This link" says only that
-    // the link carried it. On a pinned link the first is the fact worth
-    // knowing, and it is what makes the way back obvious after selecting
+    // "This version" says the sharer aimed the link at this one; "Shared" says
+    // only that the link carried it. On a pinned link the first is the fact
+    // worth knowing, and it is what makes the way back obvious after selecting
     // something else.
+    //
+    // It read "Pinned" until this was the third meaning of that word in one
+    // product: ArDrive's own File Pin brings a permaweb file into a drive, IPFS
+    // pinning is what many readers arrive already knowing, and neither is this.
+    // A link fixed to one version is best described as the version you are
+    // looking at.
     final label = isFromLink
         ? (isPinned
             ? appLocalizationsOf(context).sharedFileVersionPinned
@@ -1351,7 +1357,13 @@ class _SharedFileVersionRow extends StatelessWidget {
               // same thing, and on a phone that is what pushes it over.
               if (hasDate && label != null) ...[
                 const SizedBox(width: 8),
-                _VersionChip(label),
+                // Flexible, because the chip is the only thing in this row that
+                // could not give. The date is Expanded and the size is short and
+                // numeric, so a longer label pushed the row straight over the
+                // edge - renaming "Pinned" to "This version" overflowed it by
+                // eleven pixels. Any translation would have done the same, so
+                // this is the fix rather than a shorter word.
+                Flexible(child: _VersionChip(label)),
               ],
             ],
           ),
@@ -1408,6 +1420,8 @@ class _VersionChip extends StatelessWidget {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: ArDriveTypography.body.captionBold(
           color: SharedFileColors.subtle(context),
         ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -36,8 +37,18 @@ class _SharingFileListenerState extends State<SharingFileListener> {
         final sharingFileBloc = context.read<SharingFileBloc>();
         if (state is SharingFileReceivedState) {
           if (syncCubit.state is SyncInProgress) {
-            syncCubit.stream.listen((syncState) {
-              if (syncState is SyncIdle) {
+            // Whatever the sync ends as, not `SyncIdle` specifically: a sync
+            // that finished with one failed drive rests in
+            // `SyncCompleteWithErrors`, which is not a `SyncIdle` and which
+            // nothing clears - so this waited forever and the shared file was
+            // dropped without a word.
+            //
+            // The subscription cancels itself once it has fired, rather than
+            // outliving the share it was opened for.
+            late final StreamSubscription<SyncState> subscription;
+            subscription = syncCubit.stream.listen((syncState) {
+              if (SyncCubit.syncHasFinished(syncState)) {
+                subscription.cancel();
                 context.read<SharingFileBloc>().add(ResubmitSharingFile());
               }
             });

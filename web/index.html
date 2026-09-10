@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
-    <meta name="description" content="Secure, permanent storage." />
+    <meta name="description" content="ArDrive is a permanent home for your files, sites and apps, built on Arweave." />
 
     <!--
       Never send a route in a `Referer` header. Under hash routing the browser
@@ -97,12 +97,59 @@
       })();
     </script>
 
-    <!-- Open Graph meta tags -->
+    <!--
+      Open Graph. This is the card every shared drive, folder and file renders
+      as, so it is worth more than the one line it had.
+
+      Deliberately shorter than ardrive.io's, and deliberately not a paraphrase
+      of it. The homepage sells to somebody deciding whether to sign up; this
+      card is mostly seen by somebody who was sent a link and is about to open
+      a stranger's file. "No subscriptions, no renewals, no data loss" is the
+      right pitch there and the wrong one here - and those are claims about a
+      business model and an outcome, which is exactly the kind that stops being
+      true. A permanence brand cannot afford marketing that expires. This says
+      what the product is, which nothing can falsify.
+
+      "A permanent home" rather than "a permanent Dropbox", which reads better
+      and was the honest first draft of the idea. A competitor's registered mark
+      in our own indexed description is a legal question nobody needs, and "a
+      permanent X" makes X the reference point and us the variant - legible, and
+      permanently subordinate. "Home" also stretches to sites and apps, which
+      nobody deploys from a dropbox.
+
+      Note what it cannot be: under hash routing a crawler fetching
+      `/#/file/{id}/view` never receives anything after the `#`, so the card is
+      necessarily the same for every link. That is not only a limitation. Share
+      links carry `n` and `ct`, which are private-file secrets - so a per-link
+      preview would mean a server reading those to render a filename into a
+      public card. Whatever this grows into, it must never cover private links.
+    -->
+    <meta property="og:site_name" content="ArDrive">
     <meta property="og:title" content="ArDrive">
-    <meta property="og:description" content="Secure, permanent storage.">
+    <meta property="og:description" content="A permanent home for your files, sites and apps.">
     <meta property="og:image" content="https://arweave.net/raw/Z7uRUbuiCQNWeOu4rCUGqEdTCybBf3H4OyIrs6bQrFA">
-    <meta property="og:url" content="https://ardrive.io">
+    <!-- Measured, not assumed: the asset really is 1200x630. Declaring it stops
+         scrapers guessing and cropping the card while they wait for the fetch. -->
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="ArDrive: a permanent home for files, sites and apps">
     <meta property="og:type" content="website">
+    <!--
+      `og:url` is deliberately absent. It was hardcoded to https://ardrive.io,
+      but this page is served from app.ardrive.io, staging.ardrive.io, PR preview
+      builds and any AR.IO gateway - so on all but one of those it declared a
+      canonical identity that was not its own, and a card for a shared file could
+      link a reader to the marketing site instead of the file. With no og:url a
+      scraper falls back to the address it actually fetched, which is correct on
+      every host.
+    -->
+
+    <!--
+      Without this, X renders the small summary card and the 1200x630 image is
+      cropped to a square thumbnail. Title, description and image all fall back
+      to the Open Graph tags above, so this one line is the whole fix.
+    -->
+    <meta name="twitter:card" content="summary_large_image">
 
     <!-- iOS meta tags & icons -->
     <meta name="apple-mobile-web-app-capable" content="yes" />

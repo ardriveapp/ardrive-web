@@ -20,6 +20,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_utils/utils.dart';
 
+/// The bloc's own wait before it prompts. The tests below wait
+/// `durationAfterPrompting` for it to fire, and that margin has to be a
+/// margin: at 200 against 250 it was 50ms, which a loaded machine running the
+/// whole suite misses - one failure in roughly two full runs, always here.
 const durationBeforePrompting = Duration(milliseconds: 200);
 const numberOfTxsBeforeSnapshot = 3;
 const driveId = 'test-drive-id';
@@ -120,7 +124,7 @@ void main() {
       build: () => promptToSnapshotBloc,
       act: (PromptToSnapshotBloc bloc) async {
         bloc.add(SelectedDrive(driveId: driveId));
-        const durationAfterPrompting = Duration(milliseconds: 250);
+        const durationAfterPrompting = Duration(milliseconds: 1000);
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [
@@ -141,7 +145,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 1));
 
         bloc.add(const SelectedDrive(driveId: null));
-        const durationAfterPrompting = Duration(milliseconds: 250);
+        const durationAfterPrompting = Duration(milliseconds: 1000);
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [
@@ -155,7 +159,7 @@ void main() {
       act: (PromptToSnapshotBloc bloc) async {
         bloc.add(DriveSnapshotted(driveId: driveId));
         bloc.add(SelectedDrive(driveId: driveId));
-        const durationAfterPrompting = Duration(milliseconds: 250);
+        const durationAfterPrompting = Duration(milliseconds: 1000);
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [
@@ -169,7 +173,7 @@ void main() {
       act: (PromptToSnapshotBloc bloc) async {
         bloc.add(const DismissDontAskAgain(dontAskAgain: false));
         bloc.add(SelectedDrive(driveId: driveId));
-        const durationAfterPrompting = Duration(milliseconds: 250);
+        const durationAfterPrompting = Duration(milliseconds: 1000);
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [
@@ -183,7 +187,7 @@ void main() {
       act: (PromptToSnapshotBloc bloc) async {
         bloc.add(const DismissDontAskAgain(dontAskAgain: true));
         bloc.add(SelectedDrive(driveId: driveId));
-        const durationAfterPrompting = Duration(milliseconds: 250);
+        const durationAfterPrompting = Duration(milliseconds: 1000);
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [
@@ -198,7 +202,7 @@ void main() {
         when(() => userRepository.getOwnerOfDefaultProfile())
             .thenAnswer((_) => Future.value(null));
         bloc.add(SelectedDrive(driveId: driveId));
-        const durationAfterPrompting = Duration(milliseconds: 250);
+        const durationAfterPrompting = Duration(milliseconds: 1000);
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [],
@@ -209,7 +213,7 @@ void main() {
       build: () => promptToSnapshotBloc,
       act: (PromptToSnapshotBloc bloc) async {
         bloc.add(SelectedDrive(driveId: driveId));
-        const durationAfterPrompting = Duration(milliseconds: 250);
+        const durationAfterPrompting = Duration(milliseconds: 1000);
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [],
@@ -222,7 +226,7 @@ void main() {
         bloc.add(SelectedDrive(driveId: driveId));
         await Future<void>.delayed(const Duration(milliseconds: 1));
         bloc.add(DriveSnapshotting(driveId: driveId));
-        const durationAfterPrompting = Duration(milliseconds: 250);
+        const durationAfterPrompting = Duration(milliseconds: 1000);
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [
@@ -247,7 +251,7 @@ void main() {
           useTurbo: false,
         ));
         bloc.add(SelectedDrive(driveId: driveId));
-        const durationAfterPrompting = Duration(milliseconds: 250);
+        const durationAfterPrompting = Duration(milliseconds: 1000);
         await Future<void>.delayed(durationAfterPrompting);
       },
       expect: () => [],

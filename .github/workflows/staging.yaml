@@ -22,8 +22,14 @@ jobs:
     uses: ./.github/workflows/test.yml
 
   build-web:
-    needs: pre-build
+    # Deliberately no `needs:`. This job shares nothing with the test job but a
+    # checkout, so making it wait only added the tests' runtime to the wall
+    # clock. The one thing that must not happen over a red test run is the
+    # deploy, and that is now its own job below.
     runs-on: ubuntu-latest
+    # The repository default is write. This job only reads the source.
+    permissions:
+      contents: read
     steps:
       # Checkout
       - uses: actions/checkout@v3
@@ -47,6 +53,33 @@ jobs:
           scr setup
           flutter config --enable-web
           flutter build web --dart-define=environment=staging --release --pwa-strategy=none --no-web-resources-cdn --source-maps --dart2js-optimization=O1
+
+      - name: Upload the built web app
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+          retention-days: 1
+
+  deploy-web:
+    # The only job that waits for the tests, because publishing the build is
+    # the only step whose cost is not paid purely in CI minutes.
+    needs: [pre-build, build-web]
+    runs-on: ubuntu-latest
+    # This deploy pushes the built app to the gh-pages branch, so it needs to
+    # write the repository contents. It needs nothing else.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          persist-credentials: false
+
+      - name: Download the built web app
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: build/web
 
       # Deploy to github pages
       - uses: JamesIves/github-pages-deploy-action@4.1.1

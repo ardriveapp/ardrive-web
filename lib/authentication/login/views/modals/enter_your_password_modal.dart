@@ -144,8 +144,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
             'Enter your password to unlock your drives.',
             textAlign: TextAlign.center,
             style: typography.paragraphNormal(
-                color: colorTokens.textLow,
-                fontWeight: ArFontWeight.semiBold),
+                color: colorTokens.textLow, fontWeight: ArFontWeight.semiBold),
           ),
           const SizedBox(height: 24),
           BlocBuilder<ProfileNameBloc, ProfileNameState>(
@@ -245,8 +244,58 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
             ),
           ),
           const Flexible(child: SizedBox(height: 40)),
+          // Proving the password is not instant and never was: it finds a
+          // private drive transaction, reads that drive's signature from the
+          // gateway, derives a key and then fetches and decrypts the drive
+          // entity - three network round trips and a key derivation, which on
+          // a slow gateway runs to several seconds. The bloc has always
+          // reported the phase as `LoginCheckingPassword`; the only thing this
+          // screen did with it was grey the button out, which is
+          // indistinguishable from a press that did not register. Now it says
+          // what it is doing while it does it.
           ArDriveButtonNew(
               text: 'Continue',
+              // The spinner and the label as one centred group, rather than a
+              // spinner pinned to the left edge with the label centred in what
+              // is left of the button.
+              customContent: widget.checkingPassword
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              ArDriveTheme.of(context)
+                                  .themeData
+                                  .colorTokens
+                                  .textLow,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // Flexible so a narrow button ellipsises the label
+                        // rather than overflowing the row, and in the button's
+                        // own text style so the busy state is the same weight
+                        // and size as the label it replaces.
+                        Flexible(
+                          child: Text(
+                            appLocalizationsOf(context).loginCheckingPassword,
+                            overflow: TextOverflow.ellipsis,
+                            style: typography.paragraphLarge(
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colorTokens
+                                  .textLow,
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : null,
               typography: typography,
               variant: ButtonVariant.primary,
               isDisabled: !_isPasswordValid || widget.checkingPassword,

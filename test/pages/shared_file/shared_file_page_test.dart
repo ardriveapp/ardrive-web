@@ -1009,8 +1009,13 @@ void main() {
       await tester.tap(find.text('Version history'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Pinned'), findsOneWidget);
+      expect(find.text('This version'), findsOneWidget);
       expect(find.text('Shared'), findsNothing);
+
+      // Not "Pinned", which was the third meaning of that word in one product:
+      // an ArDrive File Pin brings a permaweb file into a drive, IPFS pinning is
+      // what many readers arrive already knowing, and neither is this.
+      expect(find.text('Pinned'), findsNothing);
 
       // And the newer one is still selectable.
       await tester.tap(find.text('Latest'));

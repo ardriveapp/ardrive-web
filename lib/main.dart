@@ -387,6 +387,21 @@ class AppState extends State<App> {
       ];
 
   List<SingleChildWidget> get repositoryProviders => [
+        // Navigation, offered to the widgets that have somewhere to go.
+        //
+        // `.value`, and the delegate is owned by this State: it is handed to
+        // `MaterialApp.router` below and must outlive every rebuild of this
+        // subtree, so nothing here may create or dispose it.
+        //
+        // `ListenableProvider` rather than `RepositoryProvider`, because the
+        // delegate is a [ChangeNotifier] and provider rejects one of those
+        // behind a plain `Provider` - a dependent would never be told it had
+        // changed. Nothing here watches it; the router does that.
+        //
+        // Provided rather than reached for through `Router.of`, so that a
+        // widget that navigates can be mounted, tapped and checked against a
+        // real delegate in a test without standing up the whole app.
+        ListenableProvider<AppRouterDelegate>.value(value: _routerDelegate),
         RepositoryProvider<ArweaveService>(create: (_) => arweave),
         // repository provider for UploadFileChecker
         RepositoryProvider<UploadFileSizeChecker>(
@@ -510,8 +525,8 @@ class AppState extends State<App> {
             final arweaveService = context.read<ArweaveService>();
             return RepositoryProvider<ArDriveUploader>.value(
               value: ArDriveUploader(
-                turboUploadUri: Uri.parse(
-                    configService.config.defaultTurboUploadUrl!),
+                turboUploadUri:
+                    Uri.parse(configService.config.defaultTurboUploadUrl!),
                 getArweaveForD2n: () => arweaveService.client,
                 metadataGenerator: ARFSUploadMetadataGenerator(
                   tagsGenerator: ARFSTagsGenerator(
@@ -537,8 +552,7 @@ class AppState extends State<App> {
                   create: (context) =>
                       createArDriveUploadPreparationManager(context),
                   child: RepositoryProvider(
-                    create: (context) =>
-                        createUploadRepository(context),
+                    create: (context) => createUploadRepository(context),
                     child: child,
                   ),
                 ),
