@@ -318,7 +318,8 @@ class _MobileSearchButton extends StatelessWidget {
   const _MobileSearchButton({this.onNavigateToFolder});
 
   /// See [MobileAppBar.onSearchNavigateToFolder].
-  final void Function(String driveId, String folderId)? onNavigateToFolder;
+  final void Function(String driveId, String folderId, {String? itemId})?
+      onNavigateToFolder;
 
   @override
   Widget build(BuildContext context) {
@@ -372,7 +373,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// long-lived and can be told to open a folder in another drive. The drives
   /// list passes one, because selecting a drive there replaces the subtree and
   /// tears that cubit down mid-navigation. See [FileSearchModal.onNavigateToFolder].
-  final void Function(String driveId, String folderId)?
+  final void Function(String driveId, String folderId, {String? itemId})?
       onSearchNavigateToFolder;
 
   @override

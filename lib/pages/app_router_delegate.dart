@@ -78,6 +78,28 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// drive's name.
   String? _pendingFolderId;
 
+  /// A folder asked for by a search result, and the file to pick out of it.
+  ///
+  /// Deliberately *not* [_pendingFolderId]. That one is a folder deep link, and
+  /// a link is not an instruction to resume: tapping a drive on the list after
+  /// arriving through `/drives/X/folders/Y` opens X at its root, which
+  /// `drives_list_routing_test` pins. A search result is the opposite - the
+  /// reader picked a folder out of a list of them - so it has to survive the
+  /// same call that discards the link.
+  String? _requestedFolderDriveId;
+  String? _requestedFolderId;
+  String? _requestedItemId;
+
+  /// The selection waiting for the cubit that is about to be built, and the
+  /// drive it belongs to.
+  ///
+  /// Keyed by drive because [_driveDetailCubit] builds twice over: once for the
+  /// drives list, against the root path, and once for the explorer against the
+  /// chosen drive. Unkeyed, the list's cubit would swallow a selection meant for
+  /// the explorer and the file would never be highlighted.
+  String? _selectedItemForFolder;
+  String? _selectedItemForFolderDriveId;
+
   /// The drive whose info panel should open once that drive has loaded.
   ///
   /// The drives list can only ask; it cannot open the panel itself. The panel
@@ -580,6 +602,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
       activityTracker: context.read<ActivityTracker>(),
       driveId: driveId,
       initialFolderId: driveFolderId,
+      initialSelectedItemId: _takeSelectedItemFor(driveId),
       profileCubit: context.read<ProfileCubit>(),
       driveDao: context.read<DriveDao>(),
       configService: context.read<ConfigService>(),
@@ -607,6 +630,28 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// to fetch it, and a drive with nothing local lands on the card that says
   /// so and carries its own Sync button.
   /// `drives_list_open_never_syncs_test.dart` holds that.
+  /// Hands the waiting selection to the cubit being built, if it is that
+  /// cubit's, and only once.
+  ///
+  /// Read at construction rather than kept as route state: a file to highlight
+  /// describes one arrival at one folder, not where the reader currently is.
+  String? _takeSelectedItemFor(String driveId) {
+    if (_selectedItemForFolderDriveId != driveId) {
+      return null;
+    }
+
+    final itemId = _selectedItemForFolder;
+    _selectedItemForFolder = null;
+    _selectedItemForFolderDriveId = null;
+
+    return itemId;
+  }
+
+  /// [_takeSelectedItemFor], for tests. The real caller is the cubit factory.
+  @visibleForTesting
+  String? takeSelectedItemForTest(String driveId) =>
+      _takeSelectedItemFor(driveId);
+
   /// Asks for a drive's info panel to open once that drive has loaded.
   ///
   /// Separate from [openDriveFromList] so the drives list keeps one way in: a
@@ -630,17 +675,41 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// [onDriveSelected] when that drive arrives. One shot, so navigating away and
   /// back lands at the root rather than jumping to a folder somebody visited
   /// once.
-  void requestFolder(String driveId, String folderId) {
-    _pendingFolderDriveId = driveId;
-    _pendingFolderId = folderId;
+  void requestFolder(String driveId, String folderId, {String? itemId}) {
+    _requestedFolderDriveId = driveId;
+    _requestedFolderId = folderId;
+    _requestedItemId = itemId;
   }
 
   @visibleForTesting
   void openDriveFromList(String driveId) {
     showingDrivesList = false;
     this.driveId = driveId;
-    // The list has no folder in view, and the drive opens at its root.
-    driveFolderId = null;
+
+    // A row tap has no folder in view and opens the drive at its root. A search
+    // result does have one, and asked for it through [requestFolder] a moment
+    // ago - so clearing unconditionally, as this did, threw that away and landed
+    // the reader at the root of the right drive rather than at the file they
+    // searched for.
+    //
+    // This is the road that actually runs from the list: `OpenDriveOnSelection`
+    // hears the selection and calls here. `onDriveSelected` honours the same
+    // request for the explorer, but it is only mounted on the explorer's branch,
+    // so it never sees a drive opened from the list.
+    if (_requestedFolderDriveId == driveId) {
+      driveFolderId = _requestedFolderId;
+      _selectedItemForFolder = _requestedItemId;
+      _selectedItemForFolderDriveId = driveId;
+    } else {
+      driveFolderId = null;
+    }
+
+    // One shot either way, honoured or not. The folder *link* is discarded
+    // here too, which is the older rule this must not disturb: a row tap opens
+    // a drive at its root, whatever link the reader arrived through.
+    _requestedFolderDriveId = null;
+    _requestedFolderId = null;
+    _requestedItemId = null;
     _pendingFolderDriveId = null;
     _pendingFolderId = null;
     // Not the info request: opening the drive is how it reaches somewhere it
@@ -691,6 +760,22 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     showingDrivesList = true;
     signingIn = false;
     gettingStarted = false;
+    // Going back to the list abandons whatever a search asked for - all of it,
+    // in both the states it can be in. A request honoured in a frame where the
+    // explorer never built would otherwise sit here and highlight a stale file
+    // the next time that drive opened; one never honoured at all would sit in
+    // the other three fields and jump a later, unrelated row tap into a folder
+    // somebody searched for once.
+    //
+    // No live path is known to reach the second - `requestFolder` is always
+    // followed immediately by the selection that spends it. This is here
+    // because clearing half the state and describing it as all of it is how
+    // the first case got missed.
+    _requestedFolderDriveId = null;
+    _requestedFolderId = null;
+    _requestedItemId = null;
+    _selectedItemForFolder = null;
+    _selectedItemForFolderDriveId = null;
     sharedFileId = null;
     sharedFileKey = null;
     sharedRawFileKey = null;
@@ -736,6 +821,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingFolderDriveId = null;
     _pendingFolderId = null;
     _pendingInfoDriveId = null;
+    // A search somebody ran before logging out is not an instruction to the
+    // next person to sign in on this device. Every other pending field here is
+    // cleared for the same reason.
+    _requestedFolderDriveId = null;
+    _requestedFolderId = null;
+    _requestedItemId = null;
+    _selectedItemForFolder = null;
+    _selectedItemForFolderDriveId = null;
     sharedDriveKey = null;
     sharedRawDriveKey = null;
     sharedFileId = null;

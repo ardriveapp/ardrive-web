@@ -95,6 +95,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   DriveDetailCubit({
     required String driveId,
     String? initialFolderId,
+
+    /// The item to pick out once [initialFolderId] has opened.
+    ///
+    /// For a search result reached from the drives list. The explorer's own
+    /// search calls `openFolder(selectedItemId: ...)` on a cubit that already
+    /// exists; there is no such cubit to call when the drives list is what is on
+    /// screen, so the file to highlight has to arrive with the drive.
+    String? initialSelectedItemId,
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     required ConfigService configService,
@@ -134,7 +142,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         if (_driveId != driveId) return;
 
         // Open the root folder if the deep-linked folder could not be found.
-        openFolder(folderId: folder?.id);
+        // The item is only meaningful inside the folder that was asked for: if
+        // that folder is gone, so is any claim about what was in it.
+        openFolder(
+          folderId: folder?.id,
+          selectedItemId: folder == null ? null : initialSelectedItemId,
+        );
         // The empty string here is required to open the root folder
       }).whenComplete(() {
         _initialLoadComplete = true;
@@ -783,9 +796,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           );
 
           if (selectedItemId != null) {
-            _selectedItem = currentFolderContents.firstWhere(
-              (element) => element.id == selectedItemId,
-            );
+            // `firstWhere` without `orElse` throws when it finds nothing, and
+            // there are ordinary reasons for it to find nothing here: the file
+            // was moved or deleted between the search and the tap, or hidden
+            // items are being filtered out. Failing to highlight a row is a
+            // disappointment; throwing out of a folder load is a broken screen.
+            _selectedItem = currentFolderContents
+                .where((element) => element.id == selectedItemId)
+                .firstOrNull;
           }
 
           final List<BreadCrumbRowInfo> pathSegments =

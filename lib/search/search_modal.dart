@@ -34,7 +34,8 @@ Future<void> showSearchModalBottomSheet({
   String? query,
 
   /// See [FileSearchModal.onNavigateToFolder].
-  void Function(String driveId, String folderId)? onNavigateToFolder,
+  void Function(String driveId, String folderId, {String? itemId})?
+      onNavigateToFolder,
 }) {
   PlausibleEventTracker.trackPageview(page: PlausiblePageView.searchPage);
 
@@ -77,7 +78,8 @@ Future<void> showSearchModalDesktop({
   String? query,
 
   /// See [FileSearchModal.onNavigateToFolder].
-  void Function(String driveId, String folderId)? onNavigateToFolder,
+  void Function(String driveId, String folderId, {String? itemId})?
+      onNavigateToFolder,
 }) {
   PlausibleEventTracker.trackPageview(page: PlausiblePageView.searchPage);
 
@@ -118,7 +120,8 @@ class FileSearchModal extends StatelessWidget {
   /// cubit this modal was handed is torn down mid-navigation - leaving the
   /// reader at the drive root rather than the file they searched for. Callers in
   /// that position pass this and the navigation goes through the router instead.
-  final void Function(String driveId, String folderId)? onNavigateToFolder;
+  final void Function(String driveId, String folderId, {String? itemId})?
+      onNavigateToFolder;
   final String? initialQuery;
   final TextEditingController controller;
 
@@ -166,7 +169,8 @@ class _FileSearchModal extends StatefulWidget {
   final TextEditingController controller;
 
   /// See [FileSearchModal.onNavigateToFolder].
-  final void Function(String driveId, String folderId)? onNavigateToFolder;
+  final void Function(String driveId, String folderId, {String? itemId})?
+      onNavigateToFolder;
 
   @override
   _FileSearchModalState createState() => _FileSearchModalState();
@@ -510,11 +514,11 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     final navigate = widget.onNavigateToFolder;
 
     if (navigate != null) {
-      // The folder the file is in, not the file itself: the router opens a
-      // drive at a folder, and has nowhere to put an item to select. Landing in
-      // the right folder with the file in the list is the substance of it; the
-      // explorer's own path below additionally opens the file's details.
-      navigate(file.driveId, file.parentFolderId);
+      // The folder the file is in, and the file to pick out of it once it
+      // opens - the same thing the explorer's path below does with
+      // `selectedItemId`, taking the long way round because the cubit that
+      // could be told directly is about to be torn down.
+      navigate(file.driveId, file.parentFolderId, itemId: file.id);
       widget.drivesCubit.selectDrive(file.driveId);
 
       if (mounted) {
