@@ -704,6 +704,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             context.read<ProfileCubit>(),
             context.read<ArDriveUploadPreparationManager>(),
             context.read<ArDriveAuth>(),
+            context.read<PaymentService>(),
           )..add(
               PrepareUploadPaymentMethod(
                 params: UploadParams(

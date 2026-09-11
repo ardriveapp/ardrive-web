@@ -1,3 +1,6 @@
+import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
+import 'package:ardrive/utils/truncate_string.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
@@ -254,53 +257,66 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                         color: colorTokens.textHigh,
                         fontWeight: ArFontWeight.bold)
                     : ArDriveTypography.body.buttonLargeBold(),
-                content: widget.uploadMethodInfo.hasNoTurboBalance
-                    ? GestureDetector(
-                        onTap: () {
-                          showTurboTopupModal(context, onSuccess: () {
-                            widget.onTurboTopupSucess();
-                          });
-                        },
-                        child: ArDriveClickArea(
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                // TODO: use text with multiple styles
-                                TextSpan(
-                                  text: 'Use Turbo Credits', // TODO: localize
-                                  style: widget.useNewArDriveUI
-                                      ? typography.paragraphLarge(
-                                          color: colorTokens.textMid,
-                                          fontWeight: ArFontWeight.bold,
-                                        )
-                                      : ArDriveTypography.body.buttonLargeBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgDefault,
-                                        ),
-                                ),
-                                TextSpan(
-                                  text:
-                                      ' for faster uploads.', // TODO: localize
-                                  style: widget.useNewArDriveUI
-                                      ? typography.paragraphLarge(
-                                          color: colorTokens.textMid,
-                                          fontWeight: ArFontWeight.bold,
-                                        )
-                                      : ArDriveTypography.body.buttonLargeBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgDefault,
-                                        ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                // Credits the reader already owns, on the wallet they signed in
+                // with. Offering to sell more to somebody who has just paid for
+                // some is the worst answer available, and it is the answer this
+                // sheet used to give: `hasNoTurboBalance` led straight to the
+                // top-up modal. See [SourceWalletCredits].
+                content: widget.uploadMethodInfo.sourceWalletCredits != null
+                    ? _SourceWalletCreditsNotice(
+                        credits: widget.uploadMethodInfo.sourceWalletCredits!,
+                        useNewArDriveUI: widget.useNewArDriveUI,
                       )
-                    : null,
+                    : widget.uploadMethodInfo.hasNoTurboBalance
+                        ? GestureDetector(
+                            onTap: () {
+                              showTurboTopupModal(context, onSuccess: () {
+                                widget.onTurboTopupSucess();
+                              });
+                            },
+                            child: ArDriveClickArea(
+                              child: RichText(
+                                text: TextSpan(
+                                  children: [
+                                    // TODO: use text with multiple styles
+                                    TextSpan(
+                                      text:
+                                          'Use Turbo Credits', // TODO: localize
+                                      style: widget.useNewArDriveUI
+                                          ? typography.paragraphLarge(
+                                              color: colorTokens.textMid,
+                                              fontWeight: ArFontWeight.bold,
+                                            )
+                                          : ArDriveTypography.body
+                                              .buttonLargeBold(
+                                              color: ArDriveTheme.of(context)
+                                                  .themeData
+                                                  .colors
+                                                  .themeFgDefault,
+                                            ),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          ' for faster uploads.', // TODO: localize
+                                      style: widget.useNewArDriveUI
+                                          ? typography.paragraphLarge(
+                                              color: colorTokens.textMid,
+                                              fontWeight: ArFontWeight.bold,
+                                            )
+                                          : ArDriveTypography.body
+                                              .buttonLargeBold(
+                                              color: ArDriveTheme.of(context)
+                                                  .themeData
+                                                  .colors
+                                                  .themeFgDefault,
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          )
+                        : null,
               )
           ],
           builder: (index, radioButton) => Column(
@@ -454,7 +470,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 
   Widget _buildCongestionWarning(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -471,7 +487,8 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           Icon(
             Icons.warning_amber_rounded,
             size: 16,
-            color: ArDriveTheme.of(context).themeData.colors.themeWarningEmphasis,
+            color:
+                ArDriveTheme.of(context).themeData.colors.themeWarningEmphasis,
           ),
           const SizedBox(width: 8),
           Flexible(
@@ -479,16 +496,84 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
               appLocalizationsOf(context).congestionWarningShort,
               style: widget.useNewArDriveUI
                   ? typography.paragraphSmall(
-                      color: ArDriveTheme.of(context).themeData.colors.themeWarningFg,
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeWarningFg,
                       fontWeight: ArFontWeight.semiBold,
                     )
                   : ArDriveTypography.body.smallBold(
-                      color: ArDriveTheme.of(context).themeData.colors.themeWarningFg,
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeWarningFg,
                     ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Says where the credits are, instead of offering to sell more.
+///
+/// Shown when the wallet somebody signed in with holds Turbo credits that this
+/// upload cannot spend. Signing in with Phantom or MetaMask derives a
+/// deterministic Arweave wallet, and that derived address is what ArDrive bills;
+/// credits bought in Turbo's own console land on the sign-in wallet's own
+/// account instead. Both balances are real and neither system used to mention
+/// the other.
+///
+/// It names both addresses rather than explaining the derivation. Somebody who
+/// has just been refused an upload wants to know where their money is, and the
+/// account menu already explains how the two wallets relate.
+class _SourceWalletCreditsNotice extends StatelessWidget {
+  const _SourceWalletCreditsNotice({
+    required this.credits,
+    required this.useNewArDriveUI,
+  });
+
+  final SourceWalletCredits credits;
+  final bool useNewArDriveUI;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    final chain = switch (credits.walletType) {
+      WalletType.ethereum => 'Ethereum',
+      WalletType.solana => 'Solana',
+      WalletType.arweave => 'Arweave',
+    };
+
+    final style = useNewArDriveUI
+        ? typography.paragraphNormal(color: colorTokens.textMid)
+        : ArDriveTypography.body.captionRegular();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '${winstonToAr(credits.balance)} Credits are on your $chain wallet '
+          '${truncateString(credits.sourceAddress, offsetStart: 6, offsetEnd: 4)}.',
+          style: useNewArDriveUI
+              ? typography.paragraphNormal(
+                  color: colorTokens.textHigh,
+                  fontWeight: ArFontWeight.semiBold,
+                )
+              : ArDriveTypography.body.captionBold(),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Uploads are paid from your Arweave address '
+          '${truncateString(credits.arweaveAddress, offsetStart: 6, offsetEnd: 4)}. '
+          'Share the credits to that address in Turbo to use them here.',
+          style: style,
+        ),
+      ],
     );
   }
 }

@@ -40,3 +40,14 @@ final class ChangeUploadPaymentMethod extends UploadPaymentMethodEvent {
   @override
   List<Object> get props => [];
 }
+
+/// Asks whether the credits somebody is looking for are on the wallet they
+/// signed in with.
+///
+/// Raised by [PrepareUploadPaymentMethod] itself, and only when that has already
+/// refused: a second event rather than an await, because the first handler must
+/// return before the payment sheet can paint. The answer arrives late and adds
+/// an explanation to a sheet that is already on screen.
+final class LookUpSourceWalletCredits extends UploadPaymentMethodEvent {
+  const LookUpSourceWalletCredits();
+}
