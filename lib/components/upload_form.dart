@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'dart:async';
 import 'dart:math';
@@ -152,6 +153,7 @@ Future<void> _showUploadForm(
       context.read<ProfileCubit>(),
       context.read<ArDriveUploadPreparationManager>(),
       context.read<ArDriveAuth>(),
+      context.read<PaymentService>(),
     ),
   );
 
@@ -1267,6 +1269,7 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                             context.read<ProfileCubit>(),
                             context.read<ArDriveUploadPreparationManager>(),
                             context.read<ArDriveAuth>(),
+                            context.read<PaymentService>(),
                           )..add(PrepareUploadPaymentMethod(
                               params: state.params,
                             )),
@@ -1331,6 +1334,7 @@ class _SelectPaymentMethodManifestUploadState
         context.read<ProfileCubit>(),
         context.read<ArDriveUploadPreparationManager>(),
         context.read<ArDriveAuth>(),
+        context.read<PaymentService>(),
       )..add(
           PrepareUploadPaymentMethod(
             params: UploadParams(
