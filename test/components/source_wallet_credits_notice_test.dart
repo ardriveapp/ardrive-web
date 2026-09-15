@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
+import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
@@ -112,6 +113,32 @@ void main() {
       findsOneWidget,
       reason: 'the reader has to know which address to share the credits to',
     );
+  });
+
+  /// A shortened address cannot be pasted into Turbo. Wherever the reader may
+  /// have to share by hand, the whole address is there to copy.
+  testWidgets('gives the whole address to copy when it cannot share',
+      (tester) async {
+    await pump(tester, info(credits: credits));
+
+    expect(find.text(credits.arweaveAddress), findsOneWidget);
+    expect(find.byType(CopyButton), findsOneWidget);
+  });
+
+  testWidgets('and once a share did not go through', (tester) async {
+    await pump(tester, info(credits: credits), onShare: () async => false);
+
+    expect(
+      find.byType(CopyButton),
+      findsNothing,
+      reason: 'while one press can work, that is the route offered',
+    );
+
+    await tester.tap(find.text('Share credits'));
+    await tester.pumpAndSettle();
+
+    expect(find.text(credits.arweaveAddress), findsOneWidget);
+    expect(find.byType(CopyButton), findsOneWidget);
   });
 
   /// The whole point. A refusal must not become a sales pitch.

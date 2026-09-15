@@ -95,8 +95,10 @@ void main() {
     user = _MockUser();
     params = _MockUploadParams();
     sharing = _MockCreditSharingService();
+    when(() => sharing.isSupported).thenReturn(true);
 
     when(() => sharing.shareCreditsFromSignInWallet(
+          sourceAddress: any(named: 'sourceAddress'),
           approvedAddress: any(named: 'approvedAddress'),
           approvedWinc: any(named: 'approvedWinc'),
         )).thenAnswer((_) async {});
@@ -300,6 +302,7 @@ void main() {
       expect(await bloc.shareSourceWalletCredits(), isTrue);
 
       verify(() => sharing.shareCreditsFromSignInWallet(
+            sourceAddress: '4WkBm7vD1qF9xYz',
             approvedAddress: 'arweave-address',
             approvedWinc: BigInt.from(12080),
           )).called(1);
@@ -327,6 +330,7 @@ void main() {
       final bloc = await refusedWithCredits();
 
       when(() => sharing.shareCreditsFromSignInWallet(
+            sourceAddress: any(named: 'sourceAddress'),
             approvedAddress: any(named: 'approvedAddress'),
             approvedWinc: any(named: 'approvedWinc'),
           )).thenThrow(Exception('user rejected'));
@@ -344,6 +348,7 @@ void main() {
       final wallet = Completer<void>();
 
       when(() => sharing.shareCreditsFromSignInWallet(
+            sourceAddress: any(named: 'sourceAddress'),
             approvedAddress: any(named: 'approvedAddress'),
             approvedWinc: any(named: 'approvedWinc'),
           )).thenAnswer((_) => wallet.future);
@@ -357,28 +362,74 @@ void main() {
       expect(await shared, isTrue);
     });
 
-    /// Off the web the service is a stub with nothing to sign with. A button
-    /// there could only ever fail, so it is not offered.
-    test('is offered only where something can sign the grant', () {
-      UploadPaymentMethodBloc sheet(CreditSharingService? service) {
+    /// A button that could only ever fail is not offered. Off the web there is
+    /// nothing to sign with, and on the web the signer is a Solana wallet.
+    group('is offered only where the grant can be signed', () {
+      test('on the web, for credits on a Solana wallet', () async {
+        final bloc = await refusedWithCredits();
+
+        expect(bloc.canShareSourceWalletCredits, isTrue);
+      });
+
+      test('not off the web', () async {
+        when(() => sharing.isSupported).thenReturn(false);
+        final bloc = await refusedWithCredits();
+
+        expect(bloc.canShareSourceWalletCredits, isFalse);
+        expect(await bloc.shareSourceWalletCredits(), isFalse);
+        verifyNever(() => sharing.shareCreditsFromSignInWallet(
+              sourceAddress: any(named: 'sourceAddress'),
+              approvedAddress: any(named: 'approvedAddress'),
+              approvedWinc: any(named: 'approvedWinc'),
+            ));
+      });
+
+      test('not where no service was given', () async {
+        when(() => paymentService.getBalanceForAddress(
+              address: any(named: 'address'),
+              walletType: any(named: 'walletType'),
+            )).thenAnswer((_) async => BigInt.from(12080));
+        when(() => user.sourceWalletAddress).thenReturn('4WkBm7vD1qF9xYz');
+        when(() => preparationManager.prepareUpload(
+                  params: any(named: 'params'),
+                ))
+            .thenAnswer(
+                (_) async => preparationWith(turboBalance: BigInt.zero));
+
         final bloc = UploadPaymentMethodBloc(
           profileCubit,
           preparationManager,
           auth,
           paymentService,
-          service,
         );
         addTearDown(bloc.close);
-        return bloc;
-      }
+        await prepare(bloc);
 
-      when(() => sharing.isSupported).thenReturn(true);
-      expect(sheet(sharing).canShareSourceWalletCredits, isTrue);
+        expect(bloc.canShareSourceWalletCredits, isFalse);
+      });
 
-      when(() => sharing.isSupported).thenReturn(false);
-      expect(sheet(sharing).canShareSourceWalletCredits, isFalse);
+      /// Found, so the only thing that can withhold the share is whose wallet
+      /// the credits are on.
+      test('not for credits on an Ethereum wallet', () async {
+        when(() => paymentService.getBalanceForAddress(
+              address: any(named: 'address'),
+              walletType: any(named: 'walletType'),
+            )).thenAnswer((_) async => BigInt.from(12080));
 
-      expect(sheet(null).canShareSourceWalletCredits, isFalse);
+        final bloc = build(
+          turboBalance: BigInt.zero,
+          sourceAddress: '0x3aF1c9E2b7D40c5E8f6A1B2C3D4E5F60718293A4',
+        );
+        addTearDown(bloc.close);
+        await prepare(bloc);
+
+        final found = (bloc.state as UploadPaymentMethodLoaded)
+            .paymentMethodInfo
+            .sourceWalletCredits;
+        expect(found?.walletType, WalletType.ethereum);
+        expect(bloc.canShareSourceWalletCredits, isFalse);
+        expect(await bloc.shareSourceWalletCredits(), isFalse);
+      });
     });
 
     test('and there is nothing to grant when nothing was found', () async {
@@ -391,6 +442,7 @@ void main() {
 
       expect(await bloc.shareSourceWalletCredits(), isFalse);
       verifyNever(() => sharing.shareCreditsFromSignInWallet(
+            sourceAddress: any(named: 'sourceAddress'),
             approvedAddress: any(named: 'approvedAddress'),
             approvedWinc: any(named: 'approvedWinc'),
           ));

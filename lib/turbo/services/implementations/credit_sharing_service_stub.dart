@@ -15,6 +15,7 @@ class CreditSharingService {
   bool get isSupported => false;
 
   Future<void> shareCreditsFromSignInWallet({
+    required String sourceAddress,
     required String approvedAddress,
     required BigInt approvedWinc,
   }) async {

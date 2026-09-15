@@ -42,11 +42,20 @@ class UploadPaymentMethodBloc
     on<UploadPaymentMethodEvent>(_onUploadPaymentMethodEvent);
   }
 
-  /// Whether to offer the one-press share at all. Off the web the service has
-  /// nothing to sign with, and a button that can only fail is worse than none:
-  /// the notice still says how to share the credits in Turbo.
-  bool get canShareSourceWalletCredits =>
-      _creditSharingService?.isSupported ?? false;
+  /// Whether to offer the one-press share at all. It takes something to sign
+  /// with, which only the web has, and a wallet that signs it: the web signs
+  /// with a Solana wallet extension, so credits on an Ethereum sign-in wallet
+  /// are left to Turbo. A button that can only fail is worse than none, and the
+  /// notice still says how to share the credits by hand.
+  bool get canShareSourceWalletCredits {
+    final current = state;
+    final credits = current is UploadPaymentMethodLoaded
+        ? current.paymentMethodInfo.sourceWalletCredits
+        : null;
+
+    return credits?.walletType == WalletType.solana &&
+        (_creditSharingService?.isSupported ?? false);
+  }
 
   Future<void> _onUploadPaymentMethodEvent(UploadPaymentMethodEvent event,
       Emitter<UploadPaymentMethodState> emit) async {
@@ -162,12 +171,13 @@ class UploadPaymentMethodBloc
     final credits = current.paymentMethodInfo.sourceWalletCredits;
     final params = _params;
 
-    if (credits == null || params == null) {
+    if (credits == null || params == null || !canShareSourceWalletCredits) {
       return false;
     }
 
     try {
       await service.shareCreditsFromSignInWallet(
+        sourceAddress: credits.sourceAddress,
         approvedAddress: credits.arweaveAddress,
         approvedWinc: credits.balance,
       );

@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
+import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
@@ -685,16 +686,28 @@ class _SourceWalletCreditsNoticeState
           canShare && !_failed
               ? 'Uploads are paid from your Arweave address. Share the credits '
                   'across to use them here.'
-              : 'Uploads are paid from your Arweave address '
-                  '${truncateString(widget.credits.arweaveAddress, offsetStart: 6, offsetEnd: 4)}. '
-                  'Share the credits to that address in Turbo to use them here.',
+              : 'Uploads are paid from your Arweave address. Share the credits '
+                  'to it in Turbo to use them here.',
           style: muted,
         ),
+        // Whole, and copyable, wherever the reader may have to do this by hand.
+        // A shortened address cannot be pasted into Turbo.
+        if (!canShare || _failed) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Flexible(
+                child: Text(widget.credits.arweaveAddress, style: muted),
+              ),
+              CopyButton(text: widget.credits.arweaveAddress, size: 16),
+            ],
+          ),
+        ],
         if (_failed) ...[
           const SizedBox(height: 2),
           // Just the fact. The retry is the button below and the manual route
-          // is the instruction above, which now names the full address; saying
-          // either again here only repeats what is already on screen.
+          // is the address above; saying either again here only repeats what is
+          // already on screen.
           Text(
             'That did not go through.',
             style: widget.useNewArDriveUI

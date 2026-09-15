@@ -50,24 +50,38 @@ class CreditSharingService {
 
   bool get isSupported => true;
 
-  /// Grants [approvedAddress] the right to spend [approvedWinc] of the sign-in
-  /// wallet's credits.
+  /// Grants [approvedAddress] the right to spend [approvedWinc] of the credits
+  /// on [sourceAddress], the wallet the reader signed in with.
   ///
   /// Prompts the wallet extension, so it is only ever called from a control the
   /// reader pressed. Reconnects first when the extension has dropped the
   /// session, which it does routinely between page loads: the sign-in signature
   /// happened once, long ago, and nothing has held the connection open since.
   ///
-  /// Throws on refusal or failure. The caller is expected to fall back to
+  /// Throws on refusal, on failure, and when the extension is signing as any
+  /// account but [sourceAddress]. The caller is expected to fall back to
   /// telling the reader where their credits are, which is what the sheet said
   /// before this control existed.
   Future<void> shareCreditsFromSignInWallet({
+    required String sourceAddress,
     required String approvedAddress,
     required BigInt approvedWinc,
   }) async {
     if (!_solanaWalletService.isConnected) {
       logger.d('Reconnecting the sign-in wallet to sign a credit approval');
       await _solanaWalletService.connect();
+    }
+
+    // The credits were found on [sourceAddress], but the extension signs as
+    // whichever account is selected in it now. Somebody who has switched
+    // accounts since signing in would otherwise grant from a wallet the sheet
+    // never named, so anything else is refused before Turbo is asked.
+    final signer = _solanaWalletService.connectedWallet?.address;
+
+    if (signer != sourceAddress) {
+      throw StateError(
+        'The wallet extension is signing as $signer, not $sourceAddress',
+      );
     }
 
     final adapter =
