@@ -311,6 +311,87 @@ void main() {
     expect(info.sourceWalletCredits, isNull);
   });
 
+  /// The same race one step earlier: the preparation itself can outlive a newer
+  /// one. Whatever the older one ends in, the newer sheet stays on screen.
+  group('an older preparation finishing late', () {
+    late Completer<UploadPreparation> older;
+
+    UploadPaymentMethodBloc raced() {
+      final bloc = build(
+        turboBalance: BigInt.zero,
+        sourceAddress: '4WkBm7vD1qF9xYz',
+      );
+      addTearDown(bloc.close);
+
+      older = Completer<UploadPreparation>();
+      var calls = 0;
+      when(() => preparationManager.prepareUpload(params: any(named: 'params')))
+          .thenAnswer((_) {
+        calls++;
+        return calls == 1
+            ? older.future
+            : Future.value(preparationWith(turboBalance: BigInt.from(1000)));
+      });
+
+      return bloc;
+    }
+
+    Future<void> settle() async {
+      for (var i = 0; i < 12; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    test('does not replace the newer result', () async {
+      final bloc = raced();
+      await prepare(bloc);
+      await prepare(bloc);
+
+      older.complete(preparationWith(turboBalance: BigInt.zero));
+      await settle();
+
+      final info = (bloc.state as UploadPaymentMethodLoaded).paymentMethodInfo;
+      expect(info.sufficentCreditsBalance, isTrue);
+      expect(bloc.uploadPreparation.uploadPaymentInfo.turboBalance.balance,
+          BigInt.from(1000));
+    });
+
+    test('does not turn the newer result into an error', () async {
+      final bloc = raced();
+      await prepare(bloc);
+      await prepare(bloc);
+
+      older.completeError(Exception('gateway timed out'));
+      await settle();
+
+      expect(bloc.state, isA<UploadPaymentMethodLoaded>());
+    });
+
+    test('does not put the sheet back to loading', () async {
+      final slowProfile = Completer<bool>();
+      var profileCalls = 0;
+      when(() => profileCubit.isCurrentProfileArConnect()).thenAnswer((_) {
+        profileCalls++;
+        return profileCalls == 1 ? slowProfile.future : Future.value(false);
+      });
+
+      final bloc = build(
+        turboBalance: BigInt.from(1000),
+        sourceAddress: '4WkBm7vD1qF9xYz',
+      );
+      addTearDown(bloc.close);
+
+      await prepare(bloc);
+      await prepare(bloc);
+      expect(bloc.state, isA<UploadPaymentMethodLoaded>());
+
+      slowProfile.complete(false);
+      await settle();
+
+      expect(bloc.state, isA<UploadPaymentMethodLoaded>());
+    });
+  });
+
   /// Granting the derived wallet the right to spend what the sign-in wallet
   /// holds. An approval is the holder's decision, so this is signed by the
   /// wallet the reader signed in with, not by the account being credited.

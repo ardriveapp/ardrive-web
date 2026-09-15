@@ -76,10 +76,27 @@ class UploadPaymentMethodBloc
       Emitter<UploadPaymentMethodState> emit) async {
     final preparation = ++_preparation;
 
-    emit(UploadPaymentMethodLoading(
-        isArConnect: await _profileCubit.isCurrentProfileArConnect()));
+    // Events here run concurrently, so every await below is a point where a
+    // newer preparation may have begun. That one owns the sheet, and this one
+    // stops rather than emit over it: an older result, an older failure, or
+    // even an older loading state would replace what the reader should see.
+    bool superseded() => preparation != _preparation;
 
-    if (await _profileCubit.checkIfWalletMismatch()) {
+    final isArConnect = await _profileCubit.isCurrentProfileArConnect();
+
+    if (superseded()) {
+      return;
+    }
+
+    emit(UploadPaymentMethodLoading(isArConnect: isArConnect));
+
+    final walletMismatch = await _profileCubit.checkIfWalletMismatch();
+
+    if (superseded()) {
+      return;
+    }
+
+    if (walletMismatch) {
       emit(UploadPaymentMethodWalletMismatch());
       return;
     }
@@ -87,8 +104,14 @@ class UploadPaymentMethodBloc
     _params = event.params;
 
     try {
-      uploadPreparation =
+      final prepared =
           await _arDriveUploadManager.prepareUpload(params: event.params);
+
+      if (superseded()) {
+        return;
+      }
+
+      uploadPreparation = prepared;
       final paymentInfo = uploadPreparation.uploadPaymentInfo;
 
       final literalTurboBalance = convertWinstonToLiteralString(
@@ -128,6 +151,11 @@ class UploadPaymentMethodBloc
         ),
       );
     } catch (e) {
+      if (superseded()) {
+        logger.d('An upload preparation failed after a newer one began: $e');
+        return;
+      }
+
       logger.e('Upload preparation failed.', e);
       emit(UploadPaymentMethodError());
       return;
