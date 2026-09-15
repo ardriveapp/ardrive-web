@@ -159,7 +159,10 @@ class TutorialsViewState extends State<TutorialsView> {
     final isDarkMode = ArDriveTheme.of(context).themeData.name == 'dark';
     final List<Color> radialColors = isDarkMode
         ? [
-            const Color(0x66d9d9d9),
+            // Softer than the 0x66 this had: at 40% of a near-white over a
+            // near-black page every dot reads as a dot. Texture is what was
+            // wanted, and texture is what you stop noticing.
+            const Color(0x33d9d9d9),
             const Color(0x00d9d9d9),
           ]
         : [
@@ -182,10 +185,25 @@ class TutorialsViewState extends State<TutorialsView> {
                 child: SizedBox(
                     height: 264,
                     child: ShaderMask(
+                      // The fade has to finish inside the box it is fading.
+                      //
+                      // Flutter scales radius by the paint bounds' *shortest*
+                      // side. This box is full-width and 264 tall, so the
+                      // shortest side is that height at any real viewport:
+                      // radius 1 puts the transparent stop 264px below the
+                      // top-centre origin, which is the bottom edge. That is
+                      // what makes it a fade.
+                      //
+                      // At radius 2.5 the stop sat 660px down instead, so the
+                      // bottom of the box was only 40% of the way through the
+                      // gradient - the dots were still near full strength when
+                      // the ClipRect ended them on a hard horizontal line. On
+                      // a phone that reads as a grid of white dots with a seam
+                      // across it rather than as texture behind the title.
                       shaderCallback: (Rect bounds) {
                         return RadialGradient(
                           center: Alignment.topCenter,
-                          radius: 2.5,
+                          radius: 1,
                           colors: radialColors,
                           tileMode: TileMode.clamp,
                         ).createShader(bounds);

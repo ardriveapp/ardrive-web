@@ -4,7 +4,6 @@ import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/components/app_top_bar.dart';
 import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/profile_card.dart';
-import 'package:ardrive/components/topbar/help_button.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
@@ -67,7 +66,6 @@ class NoDrivesPage extends StatelessWidget {
               children: [
                 SyncButton(),
                 SizedBox(width: 8),
-                HelpButtonTopBar(),
                 SizedBox(width: 8),
                 ProfileCard(),
               ],
@@ -229,96 +227,167 @@ class NoDrivesPage extends StatelessWidget {
       ),
     );
   }
+}
 
-  ArDriveLoginModal _privateDrivesCard({
-    required BuildContext context,
-  }) {
+ArDriveLoginModal _privateDrivesCard({
+  required BuildContext context,
+}) {
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final typography = ArDriveTypographyNew.of(context);
+
+  return ArDriveLoginModal(
+    padding: const EdgeInsets.all(40),
+    hasCloseButton: false,
+    content: Column(
+      children: [
+        ArDriveIcons.privateDrive(),
+        const SizedBox(height: 12),
+        Text(
+          'Private Drive',
+          style: typography.paragraphXLarge(
+            fontWeight: ArFontWeight.semiBold,
+            color: colorTokens.textHigh,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Private Drives offer state-of-the-art security, so you can control who can access the content.',
+          style: typography.paragraphNormal(
+            fontWeight: ArFontWeight.semiBold,
+            color: colorTokens.textLow,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+        ArDriveButtonNew(
+          text: 'Create new private drive',
+          typography: typography,
+          variant: ButtonVariant.primary,
+          onPressed: () {
+            PlausibleEventTracker.trackClickCreatePrivateDriveButton(
+              PlausiblePageView.fileExplorerNewUserEmpty,
+            );
+            promptToCreateDrive(context, privacy: DrivePrivacy.private);
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+ArDriveLoginModal _publicDrivesCard({
+  required BuildContext context,
+}) {
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final typography = ArDriveTypographyNew.of(context);
+
+  return ArDriveLoginModal(
+    padding: const EdgeInsets.all(40),
+    hasCloseButton: false,
+    content: Column(
+      children: [
+        ArDriveIcons.publicDrive(),
+        const SizedBox(height: 12),
+        Text(
+          'Public Drive',
+          style: typography.paragraphXLarge(
+            fontWeight: ArFontWeight.semiBold,
+            color: colorTokens.textHigh,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Public Drives are discoverable, meaning that others can find and view the contents.',
+          style: typography.paragraphNormal(
+            fontWeight: ArFontWeight.semiBold,
+            color: colorTokens.textLow,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 32),
+        ArDriveButtonNew(
+          text: 'Create new public drive',
+          typography: typography,
+          variant: ButtonVariant.primary,
+          onPressed: () {
+            PlausibleEventTracker.trackClickCreatePublicDriveButton(
+              PlausiblePageView.fileExplorerNewUserEmpty,
+            );
+            promptToCreateDrive(context, privacy: DrivePrivacy.public);
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+/// The Getting Started screen's content, without the page around it.
+///
+/// Extracted so the drives list's empty state is literally this screen rather
+/// than a second one that drifts away from it. It is the right answer for
+/// exactly one situation - an account that genuinely has no drives - and both
+/// callers are careful to show it only then.
+/// The width both cards need before they can sit side by side.
+///
+/// Measured, not guessed: the Row wants ~828.5px and renders clean from 878.
+const double _gettingStartedCardsSideBySide = 878;
+
+class GettingStartedCards extends StatelessWidget {
+  const GettingStartedCards({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    return ArDriveLoginModal(
-      padding: const EdgeInsets.all(40),
-      hasCloseButton: false,
-      content: Column(
-        children: [
-          ArDriveIcons.privateDrive(),
-          const SizedBox(height: 12),
-          Text(
-            'Private Drive',
-            style: typography.paragraphXLarge(
-              fontWeight: ArFontWeight.semiBold,
-              color: colorTokens.textHigh,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final children = [
+          _publicDrivesCard(context: context),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: colorTokens.containerL2,
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'or',
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textHigh,
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Private Drives offer state-of-the-art security, so you can control who can access the content.',
-            style: typography.paragraphNormal(
-              fontWeight: ArFontWeight.semiBold,
-              color: colorTokens.textLow,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          ArDriveButtonNew(
-            text: 'Create new private drive',
-            typography: typography,
-            variant: ButtonVariant.primary,
-            onPressed: () {
-              PlausibleEventTracker.trackClickCreatePrivateDriveButton(
-                PlausiblePageView.fileExplorerNewUserEmpty,
-              );
-              promptToCreateDrive(context, privacy: DrivePrivacy.private);
-            },
-          ),
-        ],
-      ),
-    );
-  }
+          _privateDrivesCard(context: context),
+        ];
 
-  ArDriveLoginModal _publicDrivesCard({
-    required BuildContext context,
-  }) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
+        // Side by side only where both cards genuinely fit. The pair needs
+        // ~828px (two fixed 283px cards, a 35px gap and their padding), and a
+        // threshold measured lower than that clips the second card against the
+        // window edge for every width in between - which is the whole of a
+        // laptop half-screen. Rendered clean from 878 up.
+        if (constraints.maxWidth < _gettingStartedCardsSideBySide) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              for (final child in children) ...[
+                child,
+                const SizedBox(height: 20),
+              ],
+            ],
+          );
+        }
 
-    return ArDriveLoginModal(
-      padding: const EdgeInsets.all(40),
-      hasCloseButton: false,
-      content: Column(
-        children: [
-          ArDriveIcons.publicDrive(),
-          const SizedBox(height: 12),
-          Text(
-            'Public Drive',
-            style: typography.paragraphXLarge(
-              fontWeight: ArFontWeight.semiBold,
-              color: colorTokens.textHigh,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Public Drives are discoverable, meaning that others can find and view the contents.',
-            style: typography.paragraphNormal(
-              fontWeight: ArFontWeight.semiBold,
-              color: colorTokens.textLow,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          ArDriveButtonNew(
-            text: 'Create new public drive',
-            typography: typography,
-            variant: ButtonVariant.primary,
-            onPressed: () {
-              PlausibleEventTracker.trackClickCreatePublicDriveButton(
-                PlausiblePageView.fileExplorerNewUserEmpty,
-              );
-              promptToCreateDrive(context, privacy: DrivePrivacy.public);
-            },
-          ),
-        ],
-      ),
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (final child in children) ...[
+              child,
+              const SizedBox(width: 35),
+            ],
+          ]..removeLast(),
+        );
+      },
     );
   }
 }

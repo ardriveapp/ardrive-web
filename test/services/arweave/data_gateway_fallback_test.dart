@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -580,6 +581,68 @@ void main() {
       // The slow item finishes last despite being claimed first.
       expect(completionOrder.last, 0);
       expect(completionOrder.length, 6);
+    });
+
+    test('reports each completion as it happens, not when the run ends',
+        () async {
+      // The whole point of the hook. `createDriveEntityHistoryFromTransactions`
+      // is one HTTP round trip per entity at `maxConcurrentDataFetches` at a
+      // time, and until this existed the only thing the sync could report was
+      // the batch being finished - which for a drive with thousands of
+      // revisions is minutes of a line that does not move.
+      final gates = List.generate(5, (_) => Completer<void>());
+      final reportedAfter = <int>[];
+      var completed = 0;
+
+      final run = ArweaveService.runPooled(
+        concurrency: 2,
+        itemCount: 5,
+        task: (i) async {
+          await gates[i].future;
+          completed++;
+        },
+        // Records how many tasks had finished at the moment it was called, so
+        // a hook that fired on scheduling rather than on completion, or once
+        // at the end, cannot produce this list.
+        onItemDone: () => reportedAfter.add(completed),
+      );
+
+      await pumpEventQueue();
+      expect(reportedAfter, isEmpty, reason: 'nothing has finished yet');
+
+      for (final gate in gates) {
+        gate.complete();
+        await pumpEventQueue();
+      }
+
+      await run;
+
+      expect(reportedAfter, [1, 2, 3, 4, 5]);
+    });
+
+    test('the hook changes neither the window nor the count of work', () async {
+      // It runs between a slot being released and the next index being
+      // claimed, so a hook that cost anything would be concurrency taken away
+      // from the fetches themselves.
+      var inFlight = 0;
+      var maxObserved = 0;
+      var reports = 0;
+
+      await ArweaveService.runPooled(
+        concurrency: 4,
+        itemCount: 20,
+        task: (i) async {
+          inFlight++;
+          maxObserved = inFlight > maxObserved ? inFlight : maxObserved;
+          await Future.delayed(const Duration(milliseconds: 5));
+          inFlight--;
+        },
+        onItemDone: () => reports++,
+      );
+
+      expect(maxObserved, 4);
+      expect(inFlight, 0);
+      expect(reports, 20, reason: 'one per item, and never more than one');
     });
 
     test('clamps worker count to itemCount and handles an empty workload',

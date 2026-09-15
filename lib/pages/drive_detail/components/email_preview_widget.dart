@@ -110,7 +110,8 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
           pageBuilder: (context, _, __) => Scaffold(
-            backgroundColor: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+            backgroundColor:
+                ArDriveTheme.of(context).themeData.colors.themeBgSurface,
             body: EmailPreviewWidget(
               state: widget.state,
               isSharePage: widget.isSharePage,
@@ -340,9 +341,7 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
         child: Text(
           label,
           style: typography.paragraphSmall(
-            color: isSelected
-                ? colors.themeFgOnAccent
-                : colors.themeFgDefault,
+            color: isSelected ? colors.themeFgOnAccent : colors.themeFgDefault,
             fontWeight: isSelected ? ArFontWeight.semiBold : ArFontWeight.book,
           ),
         ),
@@ -384,12 +383,14 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
             _showHtml && hasHtmlBody
                 ? widget.state.email.htmlBody
                 : widget.state.email.textBody,
-            style: typography.paragraphSmall(
-              fontWeight: ArFontWeight.book,
-            ).copyWith(
-              fontFamily: _showHtml ? null : 'Courier New',
-              height: 1.5,
-            ),
+            style: typography
+                .paragraphSmall(
+                  fontWeight: ArFontWeight.book,
+                )
+                .copyWith(
+                  fontFamily: _showHtml ? null : 'Courier New',
+                  height: 1.5,
+                ),
           ),
         ],
       ),

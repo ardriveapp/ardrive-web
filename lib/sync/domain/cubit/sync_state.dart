@@ -4,6 +4,20 @@ part of 'sync_cubit.dart';
 abstract class SyncState extends Equatable {
   @override
   List<Object> get props => [];
+
+  /// Whether this is a sync that ran to the end and succeeded.
+  ///
+  /// Asked instead of listing the ways a sync can go wrong. A surface that
+  /// reports what a sync "found" reads the database afterwards, and the
+  /// database looks exactly the same after a sync that failed, was cancelled,
+  /// or was never allowed to start - so every one of those, described as a
+  /// result, becomes a reassuring sentence about a network read that did not
+  /// happen. Enumerating the bad states put that decision one forgotten
+  /// `is` away from coming back: [SyncCompleteWithErrors] was added later and
+  /// fell straight through a guard that named only cancellation and failure.
+  ///
+  /// False here, so a state added tomorrow is not a success until it says so.
+  bool get isSuccessfulCompletion => false;
 }
 
 class SyncIdle extends SyncState {}
@@ -11,19 +25,86 @@ class SyncIdle extends SyncState {}
 /// Loading drive metadata only (not full sync).
 /// Used when syncAllDrivesOnLogin is disabled.
 /// This is a lightweight UI-only state that doesn't block waitCurrentSync().
-class SyncLoadingDrives extends SyncState {}
+/// The drive list itself is being read, before any drive's history is walked.
+///
+/// Carries how far that read has got. The count is real rather than a guess:
+/// the drive transactions are listed first, so the total is known before a
+/// single one is fetched. Both are zero before the listing comes back, which
+/// is the one moment there is genuinely nothing to say.
+/// Which part of reading the drive list is running.
+///
+/// Two, because they cost differently and only one of them is parallel. The
+/// fetch is pooled and quick; unlocking is serial and, per private drive, a
+/// signature read, a key derivation against the wallet and a decrypt - so the
+/// count would reach its total and then appear to hang.
+enum SyncLoadingDrivesPhase { reading, unlocking }
 
-class SyncInProgress extends SyncState {}
+class SyncLoadingDrives extends SyncState {
+  SyncLoadingDrives({
+    this.drivesRead = 0,
+    this.drivesFound = 0,
+    this.phase = SyncLoadingDrivesPhase.reading,
+  });
 
+  final SyncLoadingDrivesPhase phase;
+
+  /// Drives whose metadata has come back.
+  final int drivesRead;
+
+  /// Drives the listing turned up, and so the number [drivesRead] climbs to.
+  final int drivesFound;
+
+  /// Whether there is a figure worth showing yet.
+  bool get hasCount => drivesFound > 0;
+
+  @override
+  List<Object> get props => [drivesRead, drivesFound, phase];
+}
+
+class SyncInProgress extends SyncState {
+  /// Who asked for this sync. Nothing blocks the app for either any more -
+  /// both turn the same ring on the top bar, and a tap on it says which sync
+  /// this is and how far it has got - but it still decides where the *result*
+  /// is announced: the shell's summary for a sync the user pressed a button
+  /// for, the top bar's pill for one that merely happened.
+  final SyncTrigger trigger;
+
+  SyncInProgress({this.trigger = SyncTrigger.userInitiated});
+
+  @override
+  List<Object> get props => [trigger];
+}
+
+/// A sync that could not be done at all, as against one that got through some
+/// drives and not others - see [SyncCompleteWithErrors].
+///
+/// `syncMetadataOnly` is the only place this is terminal: everywhere else
+/// `onError` emits it and `SyncIdle` in the same turn, so it flashes past.
+/// Terminal is what makes it worth reporting - it means the drive list itself
+/// could not be read, and stays true until something refreshes it.
 class SyncFailure extends SyncState {
   final Object? error;
   final StackTrace? stackTrace;
 
-  SyncFailure({this.error, this.stackTrace});
+  /// When it failed, on the same terms as [SyncCompleteWithErrors.completedAt]
+  /// and deliberately out of [props] for the same reason: the top bar's
+  /// announcement is entitled to a few seconds from the moment of the failure,
+  /// not a fresh few seconds every time something rebuilds the bar.
+  final DateTime failedAt;
+
+  SyncFailure({this.error, this.stackTrace, DateTime? failedAt})
+      : failedAt = failedAt ?? DateTime.now();
 }
 
-class SyncEmpty extends SyncState {}
-
+/// The ArConnect wallet the session was signed in with is no longer the one
+/// the extension is offering, so the user has been signed out.
+///
+/// Reported at the top bar's [SyncButton]. It was emitted and rendered
+/// nowhere: the sync layer noticed the wallet had changed, bounced the user to
+/// login and never said why.
+///
+/// (A `SyncEmpty` state sat beside this one, emitted by nothing and rendered
+/// by nothing. It is gone.)
 class SyncWalletMismatch extends SyncState {}
 
 class SyncCancelled extends SyncState {
@@ -31,14 +112,22 @@ class SyncCancelled extends SyncState {
   final int totalDrives;
   final DateTime cancelledAt;
 
+  /// Who asked for the sync that was cancelled. Nothing user-facing can ask
+  /// for a cancellation any more - the modal that carried the Cancel button is
+  /// gone, and only the debug failure panel calls `cancelSync` - but the
+  /// trigger still follows the sync it came from rather than assuming.
+  final SyncTrigger trigger;
+
   SyncCancelled({
     required this.drivesCompleted,
     required this.totalDrives,
     required this.cancelledAt,
+    this.trigger = SyncTrigger.userInitiated,
   });
 
   @override
-  List<Object> get props => [drivesCompleted, totalDrives, cancelledAt];
+  List<Object> get props =>
+      [drivesCompleted, totalDrives, cancelledAt, trigger];
 }
 
 class SyncCompleteWithErrors extends SyncState {
@@ -52,6 +141,22 @@ class SyncCompleteWithErrors extends SyncState {
   final int skippedEntityCount;
   final Map<String, List<String>> skippedEntityTxIdsByDrive;
 
+  /// Who asked for the sync that failed, like every other terminal state.
+  ///
+  /// Nothing reads it for this state any more: every partial failure, whoever
+  /// asked, reports at the top bar. It is kept because the state is still
+  /// carried around by callers that distinguish the two.
+  final SyncTrigger trigger;
+
+  /// When the sync that failed finished.
+  ///
+  /// Deliberately NOT in [props]: it exists so a surface can tell how long ago
+  /// this happened, not to make two otherwise-identical failures distinct. A
+  /// background failure is announced at the top bar for a few seconds, and
+  /// this state stays current until the next sync runs - so without it, every
+  /// rebuild of the top bar replayed the announcement from the beginning.
+  final DateTime completedAt;
+
   SyncCompleteWithErrors({
     required this.failedDrives,
     required this.totalDrives,
@@ -59,7 +164,9 @@ class SyncCompleteWithErrors extends SyncState {
     required this.errorMessages,
     this.skippedEntityCount = 0,
     this.skippedEntityTxIdsByDrive = const {},
-  });
+    this.trigger = SyncTrigger.userInitiated,
+    DateTime? completedAt,
+  }) : completedAt = completedAt ?? DateTime.now();
 
   @override
   List<Object> get props => [
@@ -69,5 +176,94 @@ class SyncCompleteWithErrors extends SyncState {
         errorMessages,
         skippedEntityCount,
         skippedEntityTxIdsByDrive,
+        trigger,
+      ];
+}
+
+/// A sync that finished, and what it found.
+///
+/// It extends [SyncIdle] deliberately. `DriveDetailCubit` refreshes the open
+/// drive on `syncState is SyncIdle`, and `SharingFileListener` hands a shared
+/// file over on the same test; a sibling state would leave both waiting,
+/// silently, for a sync that had already finished. Subclassing keeps every
+/// existing `is SyncIdle` true while letting the two surfaces that report the
+/// result match `is SyncComplete`.
+///
+/// Only a sync that ran and got to the end emits this. A sync that was turned
+/// away before it started - a hidden tab, an upload in progress - still emits a
+/// plain [SyncIdle], because it has nothing to report.
+class SyncComplete extends SyncIdle {
+  /// The one state a result may be reported from. See
+  /// [SyncState.isSuccessfulCompletion].
+  @override
+  bool get isSuccessfulCompletion => true;
+
+  SyncComplete({
+    required this.entitiesSynced,
+    required this.sequence,
+    required this.completedAt,
+    this.skippedEntityCount = 0,
+    this.isSingleDriveSync = false,
+    this.driveName,
+    this.trigger = SyncTrigger.userInitiated,
+  });
+
+  /// Items this sync wrote, straight off [SyncProgress].
+  ///
+  /// An item is a file **or** a folder - that is the definition every surface
+  /// that says "item" uses. The drives list once put a files-only figure under
+  /// the same word, so a drive of three folders and two files reported "Found
+  /// 5 items", "5 items changed" and "2 items" on one page; that column says
+  /// "files" now, and means it. See `DriveContentSummary.fileCount`.
+  ///
+  /// Deliberately not accompanied by a count of drives. `drivesSynced` counts
+  /// drives *walked*, failures included, so "12 new items across 3 drives"
+  /// sent a user whose twelve files all landed in one drive looking through
+  /// three - and "1 new item across 3 drives" is not a thing that can happen.
+  /// The two numbers do not belong in one sentence, and the number of drives
+  /// a sync looked at is not a result worth reporting on its own.
+  final int entitiesSynced;
+
+  /// Entities dropped because their metadata could not be read - files the
+  /// user will not see, so the summary says so rather than claiming a clean
+  /// result. See [SyncCubit.lastSyncSkippedEntityTxIdsByDrive].
+  final int skippedEntityCount;
+
+  /// Whether this was a sync of one named drive rather than all of them, and
+  /// which drive it was, so the summary can name it.
+  final bool isSingleDriveSync;
+  final String? driveName;
+
+  /// Who asked for the sync that produced this. It decides which surface
+  /// reports it: the top bar's pill for a sync nobody asked for, the shell's
+  /// self-dismissing summary for one the user pressed a button for.
+  final SyncTrigger trigger;
+
+  /// When it finished, so a surface can refuse to announce a result that has
+  /// been sitting in the cubit's state for an hour - see `syncSummaryIsFresh`.
+  /// Never the discriminator: see [sequence].
+  final DateTime completedAt;
+
+  /// Which result this is, counted up by the cubit that emitted it.
+  ///
+  /// Bloc drops a state equal to the one it is already in, and two zero-change
+  /// syncs carry identical counts - so a result needs something that tells it
+  /// apart from the one before, or the second one goes unreported. A timestamp
+  /// cannot be that thing: `DateTime.now()` is only millisecond-grained here,
+  /// and two syncs with no I/O between them land inside the same millisecond
+  /// often enough to drop a result in the app and to fail a test at random.
+  final int sequence;
+
+  @override
+  List<Object> get props => [
+        entitiesSynced,
+        skippedEntityCount,
+        isSingleDriveSync,
+        // Equatable rejects a nullable member here. Collapsing null and '' is
+        // safe for identity only - the summary itself distinguishes them, and
+        // treats an empty name as no name.
+        driveName ?? '',
+        trigger,
+        sequence,
       ];
 }

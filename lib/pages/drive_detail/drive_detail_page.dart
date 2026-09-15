@@ -33,10 +33,13 @@ import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_detail_syncing_card.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/file_icon.dart';
+import 'package:ardrive/pages/drive_detail/components/syncing_drive_notice.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/unpreviewable_content.dart';
 import 'package:ardrive/pages/drive_detail/components/document_preview_widget.dart';
@@ -44,8 +47,6 @@ import 'package:ardrive/pages/drive_detail/components/email_preview_widget.dart'
 import 'package:ardrive/pages/drive_detail/components/pdf_preview_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/no_drives/no_drives_page.dart';
-import 'package:ardrive/search/search_modal.dart';
-import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/shared/components/plausible_page_view_wrapper.dart';
 import 'package:ardrive/sharing/sharing_file_listener.dart';
@@ -97,7 +98,6 @@ class DriveDetailPage extends StatefulWidget {
 class _DriveDetailPageState extends State<DriveDetailPage> {
   bool checkboxEnabled = false;
   final _scrollController = ScrollController();
-  final controller = TextEditingController();
 
   @override
   void initState() {
@@ -187,18 +187,58 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             widget.anonymouslyShowDriveDetail,
                       );
                     } else if (driveDetailState is DriveDetailLoadInProgress) {
+                      // Same chrome as before - only the middle of the panel
+                      // changes, so nothing around it moves when the wait ends
+                      // - and the same widget on both, because the surface with
+                      // less room and no hover is the last one that should be
+                      // told less.
                       return ScreenTypeLayout.builder(
                         mobile: (context) => const Scaffold(
                           drawerScrimColor: Colors.transparent,
                           drawer: AppSideBar(),
                           appBar: MobileAppBar(),
-                          body: Center(child: CircularProgressIndicator()),
+                          body: DriveDetailSyncingCard(),
+                        ),
+                        desktop: (context) => const Column(
+                          children: [
+                            AppTopBar(),
+                            // The margin the unsynced card already has. Without
+                            // it this panel ran to the window's right edge
+                            // while every other full-panel state stopped short
+                            // of it.
+                            Expanded(
+                              child: Padding(
+                                padding: EdgeInsets.only(right: 16),
+                                child: DriveDetailSyncingCard(),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else if (driveDetailState
+                        is DriveDetailDrivesUnavailable) {
+                      // The same chrome and the same panel as the wait above,
+                      // because it is the end of that wait - only the words
+                      // change. Notably NOT NoDrivesPage: we do not know that
+                      // the user has no drives, so we do not say so and do not
+                      // put two create-a-drive buttons where the answer should
+                      // be.
+                      return ScreenTypeLayout.builder(
+                        mobile: (context) => const Scaffold(
+                          drawerScrimColor: Colors.transparent,
+                          drawer: AppSideBar(),
+                          appBar: MobileAppBar(),
+                          body: DriveDetailSyncingCard.driveListUnavailable(),
                         ),
                         desktop: (context) => const Column(
                           children: [
                             AppTopBar(),
                             Expanded(
-                              child: Center(child: CircularProgressIndicator()),
+                              child: Padding(
+                                padding: EdgeInsets.only(right: 16),
+                                child: DriveDetailSyncingCard
+                                    .driveListUnavailable(),
+                              ),
                             ),
                           ],
                         ),
@@ -299,6 +339,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               body: _UnsyncedDriveMobileView(
                                 drive: driveDetailState.drive,
                                 isOwner: isOwner,
+                                syncFoundNothing:
+                                    driveDetailState.syncFoundNothing,
                               ),
                             );
                           },
@@ -325,6 +367,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                             Expanded(
                                               child: DriveDetailUnsyncedCard(
                                                 drive: driveDetailState.drive,
+                                                syncFoundNothing:
+                                                    driveDetailState
+                                                        .syncFoundNothing,
                                               ),
                                             ),
                                           ],
@@ -571,111 +616,192 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   child: ArDriveClickArea(
                                     tooltip:
                                         appLocalizationsOf(context).showMenu,
-                                    child: ArDriveDropdown(
-                                      anchor: const Aligned(
-                                        follower: Alignment.topRight,
-                                        target: Alignment.bottomRight,
-                                      ),
-                                      items: [
-                                        ArDriveDropdownItem(
-                                          onClick: () async {
-                                            final driveItem =
-                                                DriveDataTableItemMapper
-                                                    .fromDrive(
-                                                        driveDetailState
-                                                            .currentDrive,
-                                                        (p0) => null,
-                                                        0,
-                                                        true);
-
-                                            promptToDownloadMultipleFiles(
-                                                context,
-                                                selectedItems: [driveItem],
-                                                zipName: driveItem.name);
-                                          },
-                                          content: ArDriveDropdownItemTile(
-                                            name: appLocalizationsOf(context)
-                                                .download,
-                                            icon: ArDriveIcons.download(
-                                              size: defaultIconSize,
-                                            ),
-                                          ),
+                                    child: _DriveMenu(
+                                      builder: (context, isSyncing) =>
+                                          ArDriveDropdown(
+                                        anchor: const Aligned(
+                                          follower: Alignment.topRight,
+                                          target: Alignment.bottomRight,
                                         ),
-                                        if (isDriveOwner) ...[
+                                        items: [
                                           ArDriveDropdownItem(
-                                            onClick: () {
-                                              promptToRenameDrive(
-                                                context,
-                                                driveId: driveDetailState
-                                                    .currentDrive.id,
-                                                driveName: driveDetailState
-                                                    .currentDrive.name,
-                                              );
+                                            onClick: () async {
+                                              final driveItem =
+                                                  DriveDataTableItemMapper
+                                                      .fromDrive(
+                                                          driveDetailState
+                                                              .currentDrive,
+                                                          (p0) => null,
+                                                          0,
+                                                          true);
+
+                                              promptToDownloadMultipleFiles(
+                                                  context,
+                                                  selectedItems: [driveItem],
+                                                  zipName: driveItem.name);
                                             },
-                                            content: _buildItem(
-                                              appLocalizationsOf(context)
-                                                  .renameDrive,
-                                              ArDriveIcons.edit(
+                                            content: ArDriveDropdownItemTile(
+                                              name: appLocalizationsOf(context)
+                                                  .download,
+                                              icon: ArDriveIcons.download(
                                                 size: defaultIconSize,
                                               ),
                                             ),
                                           ),
-                                        ],
-                                        ArDriveDropdownItem(
-                                          onClick: () {
-                                            promptToCreateSnapshot(context,
-                                                driveDetailState.currentDrive);
-                                          },
-                                          content: _buildItem(
-                                            appLocalizationsOf(context)
-                                                .createSnapshot,
-                                            ArDriveIcons.iconCreateSnapshot(
-                                              size: defaultIconSize,
-                                            ),
-                                          ),
-                                        ),
-                                        ArDriveDropdownItem(
-                                          onClick: () {
-                                            context
-                                                .read<SyncCubit>()
-                                                .startSyncForDrive(
+                                          if (isDriveOwner) ...[
+                                            ArDriveDropdownItem(
+                                              onClick: () {
+                                                promptToRenameDrive(
+                                                  context,
                                                   driveId: driveDetailState
                                                       .currentDrive.id,
-                                                  deepSync: false,
+                                                  driveName: driveDetailState
+                                                      .currentDrive.name,
                                                 );
-                                          },
-                                          content: ArDriveDropdownItemTile(
-                                            name: appLocalizationsOf(context)
-                                                .syncThisDrive,
-                                            icon: ArDriveIcons.refresh(
-                                              size: defaultIconSize,
+                                              },
+                                              content: _buildItem(
+                                                appLocalizationsOf(context)
+                                                    .renameDrive,
+                                                ArDriveIcons.edit(
+                                                  size: defaultIconSize,
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                        ),
-                                        ArDriveDropdownItem(
-                                          onClick: () {
-                                            context
-                                                .read<SyncCubit>()
-                                                .startSyncForDrive(
-                                                  driveId: driveDetailState
-                                                      .currentDrive.id,
-                                                  deepSync: true,
-                                                );
-                                          },
-                                          content: ArDriveDropdownItemTile(
-                                            name: appLocalizationsOf(context)
-                                                .deepSyncThisDrive,
-                                            icon: ArDriveIcons.cloudSync(
-                                              size: defaultIconSize,
-                                            ),
-                                          ),
-                                        ),
-                                        if (isDriveOwner)
+                                          ],
                                           ArDriveDropdownItem(
                                             onClick: () {
-                                              promptToToggleHideState(
-                                                context,
-                                                item: DriveDataTableItemMapper
+                                              promptToCreateSnapshot(
+                                                  context,
+                                                  driveDetailState
+                                                      .currentDrive);
+                                            },
+                                            content: _buildItem(
+                                              appLocalizationsOf(context)
+                                                  .createSnapshot,
+                                              ArDriveIcons.iconCreateSnapshot(
+                                                size: defaultIconSize,
+                                              ),
+                                            ),
+                                          ),
+                                          ArDriveDropdownItem(
+                                            onClick: isSyncing
+                                                ? null
+                                                : () {
+                                                    context
+                                                        .read<SyncCubit>()
+                                                        .startSyncForDrive(
+                                                          driveId:
+                                                              driveDetailState
+                                                                  .currentDrive
+                                                                  .id,
+                                                          deepSync: false,
+                                                        );
+                                                  },
+                                            content: ArDriveDropdownItemTile(
+                                              name: appLocalizationsOf(context)
+                                                  .syncThisDrive,
+                                              isDisabled: isSyncing,
+                                              icon: ArDriveIcons.refresh(
+                                                size: defaultIconSize,
+                                              ),
+                                            ),
+                                          ),
+                                          ArDriveDropdownItem(
+                                            onClick: isSyncing
+                                                ? null
+                                                : () {
+                                                    context
+                                                        .read<SyncCubit>()
+                                                        .startSyncForDrive(
+                                                          driveId:
+                                                              driveDetailState
+                                                                  .currentDrive
+                                                                  .id,
+                                                          deepSync: true,
+                                                        );
+                                                  },
+                                            content: ArDriveDropdownItemTile(
+                                              name: appLocalizationsOf(context)
+                                                  .deepSyncThisDrive,
+                                              isDisabled: isSyncing,
+                                              icon: ArDriveIcons.cloudSync(
+                                                size: defaultIconSize,
+                                              ),
+                                            ),
+                                          ),
+                                          if (isDriveOwner)
+                                            ArDriveDropdownItem(
+                                              onClick: () {
+                                                promptToToggleHideState(
+                                                  context,
+                                                  item: DriveDataTableItemMapper
+                                                      .fromDrive(
+                                                    driveDetailState
+                                                        .currentDrive,
+                                                    (_) => null,
+                                                    0,
+                                                    isDriveOwner,
+                                                  ),
+                                                );
+                                              },
+                                              content: ArDriveDropdownItemTile(
+                                                name: driveDetailState
+                                                        .currentDrive.isHidden
+                                                    ? appLocalizationsOf(
+                                                            context)
+                                                        .unhide
+                                                    : appLocalizationsOf(
+                                                            context)
+                                                        .hide,
+                                                icon: driveDetailState
+                                                        .currentDrive.isHidden
+                                                    ? ArDriveIcons.eyeOpen(
+                                                        size: defaultIconSize,
+                                                      )
+                                                    : ArDriveIcons.eyeClosed(
+                                                        size: defaultIconSize,
+                                                      ),
+                                              ),
+                                            ),
+                                          ArDriveDropdownItem(
+                                            onClick: () {
+                                              promptToShareDrive(
+                                                context: context,
+                                                drive: driveDetailState
+                                                    .currentDrive,
+                                              );
+                                            },
+                                            content: ArDriveDropdownItemTile(
+                                              name: appLocalizationsOf(context)
+                                                  .shareDrive,
+                                              icon: ArDriveIcons.share(
+                                                size: defaultIconSize,
+                                              ),
+                                            ),
+                                          ),
+                                          ArDriveDropdownItem(
+                                            onClick: () {
+                                              promptToExportCSVData(
+                                                context: context,
+                                                driveId: driveDetailState
+                                                    .currentDrive.id,
+                                              );
+                                            },
+                                            content: ArDriveDropdownItemTile(
+                                              name: appLocalizationsOf(context)
+                                                  .exportDriveContents,
+                                              icon: ArDriveIcons.download(
+                                                size: defaultIconSize,
+                                              ),
+                                            ),
+                                          ),
+                                          ArDriveDropdownItem(
+                                            onClick: () {
+                                              final bloc = context
+                                                  .read<DriveDetailCubit>();
+
+                                              bloc.selectDataItem(
+                                                DriveDataTableItemMapper
                                                     .fromDrive(
                                                   driveDetailState.currentDrive,
                                                   (_) => null,
@@ -684,102 +810,39 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                 ),
                                               );
                                             },
-                                            content: ArDriveDropdownItemTile(
-                                              name: driveDetailState
-                                                      .currentDrive.isHidden
-                                                  ? appLocalizationsOf(context)
-                                                      .unhide
-                                                  : appLocalizationsOf(context)
-                                                      .hide,
-                                              icon: driveDetailState
-                                                      .currentDrive.isHidden
-                                                  ? ArDriveIcons.eyeOpen(
-                                                      size: defaultIconSize,
-                                                    )
-                                                  : ArDriveIcons.eyeClosed(
-                                                      size: defaultIconSize,
-                                                    ),
-                                            ),
-                                          ),
-                                        ArDriveDropdownItem(
-                                          onClick: () {
-                                            promptToShareDrive(
-                                              context: context,
-                                              drive:
-                                                  driveDetailState.currentDrive,
-                                            );
-                                          },
-                                          content: ArDriveDropdownItemTile(
-                                            name: appLocalizationsOf(context)
-                                                .shareDrive,
-                                            icon: ArDriveIcons.share(
-                                              size: defaultIconSize,
-                                            ),
-                                          ),
-                                        ),
-                                        ArDriveDropdownItem(
-                                          onClick: () {
-                                            promptToExportCSVData(
-                                              context: context,
-                                              driveId: driveDetailState
-                                                  .currentDrive.id,
-                                            );
-                                          },
-                                          content: ArDriveDropdownItemTile(
-                                            name: appLocalizationsOf(context)
-                                                .exportDriveContents,
-                                            icon: ArDriveIcons.download(
-                                              size: defaultIconSize,
-                                            ),
-                                          ),
-                                        ),
-                                        ArDriveDropdownItem(
-                                          onClick: () {
-                                            final bloc = context
-                                                .read<DriveDetailCubit>();
-
-                                            bloc.selectDataItem(
-                                              DriveDataTableItemMapper
-                                                  .fromDrive(
-                                                driveDetailState.currentDrive,
-                                                (_) => null,
-                                                0,
-                                                isDriveOwner,
-                                              ),
-                                            );
-                                          },
-                                          content: _buildItem(
-                                            appLocalizationsOf(context)
-                                                .moreInfo,
-                                            ArDriveIcons.info(
-                                              size: defaultIconSize,
-                                            ),
-                                          ),
-                                        ),
-                                        if (!driveDetailState
-                                                .hasWritePermissions &&
-                                            !isDriveOwner &&
-                                            context.read<ProfileCubit>().state
-                                                is ProfileLoggedIn)
-                                          ArDriveDropdownItem(
-                                            onClick: () {
-                                              showDetachDriveDialog(
-                                                context: context,
-                                                driveID: driveDetailState
-                                                    .currentDrive.id,
-                                                driveName: driveDetailState
-                                                    .currentDrive.name,
-                                              );
-                                            },
                                             content: _buildItem(
                                               appLocalizationsOf(context)
-                                                  .detachDrive,
-                                              ArDriveIcons.detach(),
+                                                  .moreInfo,
+                                              ArDriveIcons.info(
+                                                size: defaultIconSize,
+                                              ),
                                             ),
                                           ),
-                                      ],
-                                      child: HoverWidget(
-                                        child: ArDriveIcons.kebabMenu(),
+                                          if (!driveDetailState
+                                                  .hasWritePermissions &&
+                                              !isDriveOwner &&
+                                              context.read<ProfileCubit>().state
+                                                  is ProfileLoggedIn)
+                                            ArDriveDropdownItem(
+                                              onClick: () {
+                                                showDetachDriveDialog(
+                                                  context: context,
+                                                  driveID: driveDetailState
+                                                      .currentDrive.id,
+                                                  driveName: driveDetailState
+                                                      .currentDrive.name,
+                                                );
+                                              },
+                                              content: _buildItem(
+                                                appLocalizationsOf(context)
+                                                    .detachDrive,
+                                                ArDriveIcons.detach(),
+                                              ),
+                                            ),
+                                        ],
+                                        child: HoverWidget(
+                                          child: ArDriveIcons.kebabMenu(),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -959,6 +1022,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           .withOpacity(0.5),
       drawer: const AppSideBar(),
       appBar: MobileAppBar(
+        showSearch: true,
         leading: (driveDetailLoadSuccessState.showSelectedItemDetails &&
                 context.read<DriveDetailCubit>().selectedItem != null)
             ? ArDriveIconButton(
@@ -1011,48 +1075,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
       filteredItems = items.where((item) => item.isHidden == false).toList();
     }
 
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SearchTextField(
-            controller: controller,
-            onFieldSubmitted: (query) {
-              if (query.isEmpty) {
-                return;
-              }
-
-              showModalBottomSheet(
-                isScrollControlled: true,
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (_) => Container(
-                  height: MediaQuery.of(context).size.height * 0.85,
-                  decoration: BoxDecoration(
-                    color: colorTokens.containerL2,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(6.0),
-                      topRight: Radius.circular(6.0),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: MediaQuery.of(context).viewInsets,
-                    child: BlocProvider.value(
-                      value: context.read<DriveDetailCubit>(),
-                      child: FileSearchModal(
-                        initialQuery: query,
-                        driveDetailCubit: context.read<DriveDetailCubit>(),
-                        controller: controller,
-                        drivesCubit: context.read<DrivesCubit>(),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+        // The search field used to sit here, 16px of padding either side of it,
+        // and did nothing until it was submitted - at which point it opened the
+        // same sheet the bar's search icon now opens. Nothing was lost by
+        // moving it; a 60px band above the file list was gained, on the layout
+        // with the least height to spare. See [MobileAppBar.showSearch].
         Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Row(
@@ -1066,6 +1095,14 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               ),
             ],
           ),
+        ),
+        // The same warning the wide table carries. A phone reads a
+        // half-walked drive exactly as a desktop does, and this is the
+        // surface with the least room to work out for itself that a short
+        // list is short because a sync is still running.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SyncingDriveNotice(driveId: state.currentDrive.id),
         ),
         Expanded(
           child: (hasSubfolders || hasFiles)
@@ -1303,103 +1340,151 @@ class MobileFolderNavigation extends StatelessWidget {
                 final isOwner = isDriveOwner(context.read<ArDriveAuth>(),
                     state.currentDrive.ownerAddress);
 
-                return ArDriveDropdown(
-                  anchor: const Aligned(
-                    follower: Alignment.topRight,
-                    target: Alignment.bottomRight,
-                  ),
-                  items: [
-                    ArDriveDropdownItem(
-                        onClick: () async {
-                          final driveItem = DriveDataTableItemMapper.fromDrive(
-                              state.currentDrive, (p0) => null, 0, true);
+                return _DriveMenu(
+                  builder: (context, isSyncing) => ArDriveDropdown(
+                    anchor: const Aligned(
+                      follower: Alignment.topRight,
+                      target: Alignment.bottomRight,
+                    ),
+                    items: [
+                      ArDriveDropdownItem(
+                          onClick: () async {
+                            final driveItem =
+                                DriveDataTableItemMapper.fromDrive(
+                                    state.currentDrive, (p0) => null, 0, true);
 
-                          promptToDownloadMultipleFiles(context,
-                              selectedItems: [driveItem],
-                              zipName: driveItem.name);
-                        },
+                            promptToDownloadMultipleFiles(context,
+                                selectedItems: [driveItem],
+                                zipName: driveItem.name);
+                          },
+                          content: ArDriveDropdownItemTile(
+                            name: appLocalizationsOf(context).download,
+                            icon: ArDriveIcons.download(
+                              size: defaultIconSize,
+                            ),
+                          )),
+                      if (isOwner) ...[
+                        ArDriveDropdownItem(
+                          onClick: () {
+                            promptToRenameDrive(
+                              context,
+                              driveId: state.currentDrive.id,
+                              driveName: state.currentDrive.name,
+                            );
+                          },
+                          content: _buildItem(
+                            appLocalizationsOf(context).renameDrive,
+                            ArDriveIcons.edit(
+                              size: defaultIconSize,
+                            ),
+                          ),
+                        ),
+                        ArDriveDropdownItem(
+                          onClick: () {
+                            promptToCreateSnapshot(context, state.currentDrive);
+                          },
+                          content: _buildItem(
+                            appLocalizationsOf(context).createSnapshot,
+                            ArDriveIcons.iconCreateSnapshot(
+                              size: defaultIconSize,
+                            ),
+                          ),
+                        ),
+                      ],
+                      ArDriveDropdownItem(
+                        onClick: isSyncing
+                            ? null
+                            : () {
+                                context.read<SyncCubit>().startSyncForDrive(
+                                      driveId: state.currentDrive.id,
+                                      deepSync: false,
+                                    );
+                              },
                         content: ArDriveDropdownItemTile(
-                          name: appLocalizationsOf(context).download,
-                          icon: ArDriveIcons.download(
+                          name: appLocalizationsOf(context).syncThisDrive,
+                          isDisabled: isSyncing,
+                          icon: ArDriveIcons.refresh(
                             size: defaultIconSize,
                           ),
-                        )),
-                    if (isOwner) ...[
+                        ),
+                      ),
+                      ArDriveDropdownItem(
+                        onClick: isSyncing
+                            ? null
+                            : () {
+                                context.read<SyncCubit>().startSyncForDrive(
+                                      driveId: state.currentDrive.id,
+                                      deepSync: true,
+                                    );
+                              },
+                        content: ArDriveDropdownItemTile(
+                          name: appLocalizationsOf(context).deepSyncThisDrive,
+                          isDisabled: isSyncing,
+                          icon: ArDriveIcons.cloudSync(
+                            size: defaultIconSize,
+                          ),
+                        ),
+                      ),
                       ArDriveDropdownItem(
                         onClick: () {
-                          promptToRenameDrive(
-                            context,
-                            driveId: state.currentDrive.id,
-                            driveName: state.currentDrive.name,
+                          promptToShareDrive(
+                            context: context,
+                            drive: state.currentDrive,
                           );
                         },
                         content: _buildItem(
-                          appLocalizationsOf(context).renameDrive,
-                          ArDriveIcons.edit(
+                          appLocalizationsOf(context).shareDrive,
+                          ArDriveIcons.share(
                             size: defaultIconSize,
                           ),
                         ),
                       ),
+                      if (isOwner)
+                        ArDriveDropdownItem(
+                          onClick: () {
+                            promptToToggleHideState(
+                              context,
+                              item: DriveDataTableItemMapper.fromDrive(
+                                state.currentDrive,
+                                (_) => null,
+                                0,
+                                isOwner,
+                              ),
+                            );
+                          },
+                          content: ArDriveDropdownItemTile(
+                            name: state.currentDrive.isHidden
+                                ? appLocalizationsOf(context).unhide
+                                : appLocalizationsOf(context).hide,
+                            icon: state.currentDrive.isHidden
+                                ? ArDriveIcons.eyeOpen(
+                                    size: defaultIconSize,
+                                  )
+                                : ArDriveIcons.eyeClosed(
+                                    size: defaultIconSize,
+                                  ),
+                          ),
+                        ),
                       ArDriveDropdownItem(
                         onClick: () {
-                          promptToCreateSnapshot(context, state.currentDrive);
+                          promptToExportCSVData(
+                            context: context,
+                            driveId: state.currentDrive.id,
+                          );
                         },
                         content: _buildItem(
-                          appLocalizationsOf(context).createSnapshot,
-                          ArDriveIcons.iconCreateSnapshot(
+                          appLocalizationsOf(context).exportDriveContents,
+                          ArDriveIcons.download(
                             size: defaultIconSize,
                           ),
                         ),
                       ),
-                    ],
-                    ArDriveDropdownItem(
-                      onClick: () {
-                        context.read<SyncCubit>().startSyncForDrive(
-                              driveId: state.currentDrive.id,
-                              deepSync: false,
-                            );
-                      },
-                      content: ArDriveDropdownItemTile(
-                        name: appLocalizationsOf(context).syncThisDrive,
-                        icon: ArDriveIcons.refresh(
-                          size: defaultIconSize,
-                        ),
-                      ),
-                    ),
-                    ArDriveDropdownItem(
-                      onClick: () {
-                        context.read<SyncCubit>().startSyncForDrive(
-                              driveId: state.currentDrive.id,
-                              deepSync: true,
-                            );
-                      },
-                      content: ArDriveDropdownItemTile(
-                        name: appLocalizationsOf(context).deepSyncThisDrive,
-                        icon: ArDriveIcons.cloudSync(
-                          size: defaultIconSize,
-                        ),
-                      ),
-                    ),
-                    ArDriveDropdownItem(
-                      onClick: () {
-                        promptToShareDrive(
-                          context: context,
-                          drive: state.currentDrive,
-                        );
-                      },
-                      content: _buildItem(
-                        appLocalizationsOf(context).shareDrive,
-                        ArDriveIcons.share(
-                          size: defaultIconSize,
-                        ),
-                      ),
-                    ),
-                    if (isOwner)
                       ArDriveDropdownItem(
                         onClick: () {
-                          promptToToggleHideState(
-                            context,
-                            item: DriveDataTableItemMapper.fromDrive(
+                          final bloc = context.read<DriveDetailCubit>();
+
+                          bloc.selectDataItem(
+                            DriveDataTableItemMapper.fromDrive(
                               state.currentDrive,
                               (_) => null,
                               0,
@@ -1407,77 +1492,38 @@ class MobileFolderNavigation extends StatelessWidget {
                             ),
                           );
                         },
-                        content: ArDriveDropdownItemTile(
-                          name: state.currentDrive.isHidden
-                              ? appLocalizationsOf(context).unhide
-                              : appLocalizationsOf(context).hide,
-                          icon: state.currentDrive.isHidden
-                              ? ArDriveIcons.eyeOpen(
-                                  size: defaultIconSize,
-                                )
-                              : ArDriveIcons.eyeClosed(
-                                  size: defaultIconSize,
-                                ),
-                        ),
-                      ),
-                    ArDriveDropdownItem(
-                      onClick: () {
-                        promptToExportCSVData(
-                          context: context,
-                          driveId: state.currentDrive.id,
-                        );
-                      },
-                      content: _buildItem(
-                        appLocalizationsOf(context).exportDriveContents,
-                        ArDriveIcons.download(
-                          size: defaultIconSize,
-                        ),
-                      ),
-                    ),
-                    ArDriveDropdownItem(
-                      onClick: () {
-                        final bloc = context.read<DriveDetailCubit>();
-
-                        bloc.selectDataItem(
-                          DriveDataTableItemMapper.fromDrive(
-                            state.currentDrive,
-                            (_) => null,
-                            0,
-                            isOwner,
-                          ),
-                        );
-                      },
-                      content: _buildItem(
-                        appLocalizationsOf(context).moreInfo,
-                        ArDriveIcons.info(
-                          size: defaultIconSize,
-                        ),
-                      ),
-                    ),
-                    if (!state.hasWritePermissions &&
-                        !isOwner &&
-                        context.read<ProfileCubit>().state is ProfileLoggedIn)
-                      ArDriveDropdownItem(
-                        onClick: () {
-                          showDetachDriveDialog(
-                            context: context,
-                            driveID: state.currentDrive.id,
-                            driveName: state.currentDrive.name,
-                          );
-                        },
                         content: _buildItem(
-                          appLocalizationsOf(context).detachDrive,
-                          ArDriveIcons.detach(),
+                          appLocalizationsOf(context).moreInfo,
+                          ArDriveIcons.info(
+                            size: defaultIconSize,
+                          ),
                         ),
                       ),
-                  ],
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24.0,
-                      vertical: 8,
-                    ),
-                    child: HoverWidget(
-                      child: ArDriveIcons.kebabMenu(),
+                      if (!state.hasWritePermissions &&
+                          !isOwner &&
+                          context.read<ProfileCubit>().state is ProfileLoggedIn)
+                        ArDriveDropdownItem(
+                          onClick: () {
+                            showDetachDriveDialog(
+                              context: context,
+                              driveID: state.currentDrive.id,
+                              driveName: state.currentDrive.name,
+                            );
+                          },
+                          content: _buildItem(
+                            appLocalizationsOf(context).detachDrive,
+                            ArDriveIcons.detach(),
+                          ),
+                        ),
+                    ],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24.0,
+                        vertical: 8,
+                      ),
+                      child: HoverWidget(
+                        child: ArDriveIcons.kebabMenu(),
+                      ),
                     ),
                   ),
                 );
@@ -1674,6 +1720,29 @@ class ArDriveGridItem extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Rebuilds a drive menu when a sync starts or stops, so the items that start
+/// one can say they are unavailable.
+///
+/// `SyncCubit` refuses a second sync outright - one at a time, no queue - and
+/// an item that looks live, closes the menu and drops the request is the
+/// present-and-inert failure this series keeps removing. The rebuild is scoped
+/// to the menu rather than watched at the top of the page so a sync does not
+/// rebuild the whole explorer.
+class _DriveMenu extends StatelessWidget {
+  const _DriveMenu({required this.builder});
+
+  final Widget Function(BuildContext context, bool isSyncing) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<SyncCubit, SyncState>(
+      buildWhen: (previous, current) =>
+          (previous is SyncInProgress) != (current is SyncInProgress),
+      builder: (context, state) => builder(context, state is SyncInProgress),
     );
   }
 }

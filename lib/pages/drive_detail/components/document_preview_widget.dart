@@ -61,7 +61,8 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         widget.contentType == 'text/x-markdown';
   }
 
-  Widget _buildContentWidget(dynamic typography, dynamic colors, {bool isFullScreen = false}) {
+  Widget _buildContentWidget(dynamic typography, dynamic colors,
+      {bool isFullScreen = false}) {
     if (_isMarkdown() && _showAsMarkdown) {
       // Render markdown with proper formatting using flutter_markdown
       return MarkdownBody(
@@ -92,9 +93,9 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                       child: Text(
                         alt ?? title ?? 'Image',
                         style: typography.paragraphSmall().copyWith(
-                          color: colors.themeFgSubtle,
-                          fontStyle: FontStyle.italic,
-                        ),
+                              color: colors.themeFgSubtle,
+                              fontStyle: FontStyle.italic,
+                            ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -106,14 +107,18 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         },
         styleSheet: MarkdownStyleSheet(
           p: isFullScreen
-              ? typography.paragraphNormal(
-                  fontWeight: ArFontWeight.book,
-                  color: colors.themeFgDefault,
-                ).copyWith(height: 1.8)
-              : typography.paragraphSmall(
-                  fontWeight: ArFontWeight.book,
-                  color: colors.themeFgDefault,
-                ).copyWith(height: 1.5),
+              ? typography
+                  .paragraphNormal(
+                    fontWeight: ArFontWeight.book,
+                    color: colors.themeFgDefault,
+                  )
+                  .copyWith(height: 1.8)
+              : typography
+                  .paragraphSmall(
+                    fontWeight: ArFontWeight.book,
+                    color: colors.themeFgDefault,
+                  )
+                  .copyWith(height: 1.5),
           h1: isFullScreen
               ? typography.heading1(color: colors.themeFgDefault)
               : typography.heading3(color: colors.themeFgDefault),
@@ -129,23 +134,25 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           h5: typography.heading5(color: colors.themeFgDefault),
           h6: typography.heading6(color: colors.themeFgDefault),
           listBullet: typography.paragraphNormal(color: colors.themeFgDefault),
-          code: typography.paragraphSmall(
-            fontWeight: ArFontWeight.book,
-          ).copyWith(
-            fontFamily: 'Courier New',
-            fontFamilyFallback: const ['monospace'],
-            backgroundColor: colors.themeBgCanvas,
-            color: colors.themeFgDefault,
-          ),
+          code: typography
+              .paragraphSmall(
+                fontWeight: ArFontWeight.book,
+              )
+              .copyWith(
+                fontFamily: 'Courier New',
+                fontFamilyFallback: const ['monospace'],
+                backgroundColor: colors.themeBgCanvas,
+                color: colors.themeFgDefault,
+              ),
           codeblockDecoration: BoxDecoration(
             color: colors.themeBgCanvas,
             borderRadius: BorderRadius.circular(4),
             border: Border.all(color: colors.themeBorderDefault),
           ),
           blockquote: typography.paragraphNormal().copyWith(
-            color: colors.themeFgSubtle,
-            fontStyle: FontStyle.italic,
-          ),
+                color: colors.themeFgSubtle,
+                fontStyle: FontStyle.italic,
+              ),
           blockquoteDecoration: BoxDecoration(
             border: Border(
               left: BorderSide(
@@ -154,13 +161,15 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               ),
             ),
           ),
-          strong: typography.paragraphNormal(
-            fontWeight: ArFontWeight.bold,
-          ).copyWith(color: colors.themeFgDefault),
+          strong: typography
+              .paragraphNormal(
+                fontWeight: ArFontWeight.bold,
+              )
+              .copyWith(color: colors.themeFgDefault),
           em: typography.paragraphNormal().copyWith(
-            fontStyle: FontStyle.italic,
-            color: colors.themeFgDefault,
-          ),
+                fontStyle: FontStyle.italic,
+                color: colors.themeFgDefault,
+              ),
         ),
       );
     } else {
@@ -168,19 +177,23 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
       return Text(
         widget.content,
         style: isFullScreen
-            ? typography.paragraphNormal(
-                fontWeight: ArFontWeight.book,
-                color: colors.themeFgDefault,
-              ).copyWith(
-                fontFamily: 'Courier New',
-                height: 1.8,
-              )
-            : typography.paragraphSmall(
-                fontWeight: ArFontWeight.book,
-              ).copyWith(
-                fontFamily: 'Courier New',
-                height: 1.5,
-              ),
+            ? typography
+                .paragraphNormal(
+                  fontWeight: ArFontWeight.book,
+                  color: colors.themeFgDefault,
+                )
+                .copyWith(
+                  fontFamily: 'Courier New',
+                  height: 1.8,
+                )
+            : typography
+                .paragraphSmall(
+                  fontWeight: ArFontWeight.book,
+                )
+                .copyWith(
+                  fontFamily: 'Courier New',
+                  height: 1.5,
+                ),
       );
     }
   }
@@ -270,7 +283,8 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           transitionDuration: Duration.zero,
           reverseTransitionDuration: Duration.zero,
           pageBuilder: (context, _, __) => Scaffold(
-            backgroundColor: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+            backgroundColor:
+                ArDriveTheme.of(context).themeData.colors.themeBgSurface,
             body: DocumentPreviewWidget(
               filename: widget.filename,
               content: widget.content,
@@ -330,7 +344,8 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     padding: const EdgeInsets.all(16),
                     child: Align(
                       alignment: Alignment.topLeft,
-                      child: _buildContentWidget(typography, colors, isFullScreen: false),
+                      child: _buildContentWidget(typography, colors,
+                          isFullScreen: false),
                     ),
                   ),
                 ),
@@ -381,7 +396,8 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     alignment: Alignment.topLeft,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1200),
-                      child: _buildContentWidget(typography, colors, isFullScreen: true),
+                      child: _buildContentWidget(typography, colors,
+                          isFullScreen: true),
                     ),
                   ),
                 ),
@@ -397,7 +413,8 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                 duration: const Duration(milliseconds: 200),
                 child: Container(
                   color: colors.themeBgCanvas,
-                  child: _buildActionBar(colors, typography, isFullScreen: true),
+                  child:
+                      _buildActionBar(colors, typography, isFullScreen: true),
                 ),
               ),
             ),
@@ -418,9 +435,11 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
     );
   }
 
-  Widget _buildActionBar(dynamic colors, dynamic typography, {bool isFullScreen = false}) {
-    final fileNameWithoutExtension = getBasenameWithoutExtension(filePath: widget.filename);
-    
+  Widget _buildActionBar(dynamic colors, dynamic typography,
+      {bool isFullScreen = false}) {
+    final fileNameWithoutExtension =
+        getBasenameWithoutExtension(filePath: widget.filename);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       color: colors.themeBgCanvas,
@@ -444,7 +463,8 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                   ),
                 ),
                 Text(
-                  getFileTypeFromMime(contentType: widget.contentType).toUpperCase(),
+                  getFileTypeFromMime(contentType: widget.contentType)
+                      .toUpperCase(),
                   style: ArDriveTypography.body.smallRegular(
                     color: colors.themeFgDisabled,
                   ),
@@ -462,10 +482,14 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               if (_isMarkdown()) ...[
                 const SizedBox(width: 8),
                 Tooltip(
-                  message: _showAsMarkdown ? 'View as plain text' : 'View as markdown',
+                  message: _showAsMarkdown
+                      ? 'View as plain text'
+                      : 'View as markdown',
                   child: IconButton(
                     icon: Icon(
-                      _showAsMarkdown ? Icons.text_fields : Icons.article_outlined,
+                      _showAsMarkdown
+                          ? Icons.text_fields
+                          : Icons.article_outlined,
                       size: 24,
                     ),
                     onPressed: () {
@@ -476,7 +500,9 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                   ),
                 ),
               ],
-              if (_isMarkdown() && widget.fileItem != null && !widget.isSharePage) ...[
+              if (_isMarkdown() &&
+                  widget.fileItem != null &&
+                  !widget.isSharePage) ...[
                 const SizedBox(width: 8),
                 ArDriveIconButton(
                   icon: ArDriveIcons.edit(size: 20),
@@ -487,7 +513,9 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               const SizedBox(width: 8),
               IconButton(
                 icon: Icon(
-                  isFullScreen ? Icons.fullscreen_exit_outlined : Icons.fullscreen_outlined,
+                  isFullScreen
+                      ? Icons.fullscreen_exit_outlined
+                      : Icons.fullscreen_outlined,
                   size: 24,
                 ),
                 tooltip: isFullScreen ? 'Exit fullscreen' : 'Expand',
@@ -500,4 +528,3 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
     );
   }
 }
-

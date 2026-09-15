@@ -86,12 +86,10 @@ class SettingsSubmenu extends StatelessWidget {
               final syncAllDrivesOnLogin =
                   streamSnapshot.data?.syncAllDrivesOnLogin ??
                       repo.currentPreferences?.syncAllDrivesOnLogin ??
-                      true;
+                      false;
               return ArDriveHoverWidget(
-                hoverColor: ArDriveTheme.of(context)
-                    .themeData
-                    .dropdownTheme
-                    .hoverColor,
+                hoverColor:
+                    ArDriveTheme.of(context).themeData.dropdownTheme.hoverColor,
                 defaultColor: ArDriveTheme.of(context)
                     .themeData
                     .dropdownTheme
@@ -121,7 +119,8 @@ class SettingsSubmenu extends StatelessWidget {
 
   void _showGatewayInputDialog(BuildContext context) {
     final configService = context.read<ConfigService>();
-    final currentGateway = configService.config.arweaveGatewayForDataRequest.url;
+    final currentGateway =
+        configService.config.arweaveGatewayForDataRequest.url;
 
     showGatewayInputModal(
       context,

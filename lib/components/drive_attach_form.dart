@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_entity.dart';
@@ -38,6 +39,7 @@ Future<void> attachDrive({
           arweave: context.read<ArweaveService>(),
           driveDao: context.read<DriveDao>(),
           syncBloc: context.read<SyncCubit>(),
+          activityCubit: context.read<ActivityCubit>(),
           drivesBloc: context.read<DrivesCubit>(),
           profileKey: profileKey,
         ),

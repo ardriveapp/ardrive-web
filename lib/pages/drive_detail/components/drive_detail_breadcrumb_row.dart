@@ -87,9 +87,42 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       );
     }
 
+    /// The way home, drawn the same on both branches.
+    ///
+    /// It used to be appended only where the whole trail fits, so it vanished
+    /// exactly when the trail collapsed - two folders deep on a phone - which
+    /// is when somebody is most likely to want it. `textMid` and 24px, like
+    /// the top bar's: it is the same door and it was drawn as a disabled
+    /// 18px grey, which `themeAccentDisabled` renders identically in both
+    /// themes.
+    Widget buildHome() {
+      return ArDriveClickArea(
+        tooltip: appLocalizationsOf(context).yourDrives,
+        child: GestureDetector(
+          onTap: () => context.read<AppRouterDelegate>().showDrivesList(),
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Icon(
+              Icons.home_outlined,
+              size: 24,
+              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final showsHome = AppRouterDelegate.canShowDrivesList(
+      context.watch<ProfileCubit>().state,
+    );
+
     List<Widget> segments = [];
 
     if (_pathSegments.length >= breadCrumbcount) {
+      if (showsHome) {
+        segments.addAll([buildHome(), buildSeparator(true)]);
+      }
       segments.add(_navigateBackIcon(
         context: context,
         breadCrumbcount: breadCrumbcount,
@@ -106,6 +139,17 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     } else {
       segments.addAll(
         [
+          // The drive is not the top of the tree - the list of drives is, and
+          // until now nothing in the explorer said so. A file manager puts the
+          // way up at the head of the trail, which is where a reader looks for
+          // it; the sidebar's entry is the other door to the same place.
+          //
+          // Both doors are gated the same way: an anonymous share-link viewer
+          // has no drives list to reach, so they are not offered one.
+          if (showsHome) ...[
+            buildHome(),
+            buildSeparator(true),
+          ],
           GestureDetector(
             onTap: () => context
                 .read<DriveDetailCubit>()

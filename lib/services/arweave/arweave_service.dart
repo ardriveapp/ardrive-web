@@ -44,6 +44,25 @@ const byteCountPerChunk = 262144; // 256 KiB
 const defaultMaxRetries = 8;
 const kMaxNumberOfTransactionsPerPage = 100;
 
+/// How many transaction ids may go into one GraphQL query's `ids` argument.
+///
+/// Nine, because that is what the fallback endpoint accepts, and every query
+/// that chunks ids can end up there: `GraphQLRetry` falls back to Goldsky on a
+/// 429 or a 5xx, and Goldsky answers a longer list with
+/// `Too many ids in 'ids' argument: N provided, maximum 9 allowed`.
+///
+/// So a hundred was not merely wrong when Goldsky is configured as the primary
+/// endpoint. It made the fallback decorative for these queries on *every*
+/// configuration: the sync hits a rate limit on the primary, switches to the
+/// endpoint that exists to rescue it, and is refused for the shape of the
+/// request rather than for anything the endpoint could not answer.
+///
+/// The cost of the smaller batch is small where it is paid. Statuses are only
+/// asked for transactions not already known to be confirmed, so the list is
+/// short in an ordinary sync - the report that found this was 31 ids, which is
+/// four requests rather than one.
+const int maxGraphQLIdsPerQuery = 9;
+
 class ArweaveService {
   Arweave client;
   final ArDriveCrypto _crypto;
@@ -613,10 +632,9 @@ class ArweaveService {
     Iterable<String> licenseAssertionTxIds, {
     String? owner,
   }) async* {
-    const chunkSize = 100;
+    const chunkSize = maxGraphQLIdsPerQuery;
     final chunks = licenseAssertionTxIds.slices(chunkSize);
     for (final chunk in chunks) {
-      // Get a page of 100 transactions
       final licenseAssertionsQuery = await graphQLRetry.execute(
         LicenseAssertionsQuery(
           variables: LicenseAssertionsArguments(
@@ -639,10 +657,9 @@ class ArweaveService {
     Iterable<String> licenseComposedTxIds, {
     String? owner,
   }) async* {
-    const chunkSize = 100;
+    const chunkSize = maxGraphQLIdsPerQuery;
     final chunks = licenseComposedTxIds.slices(chunkSize);
     for (final chunk in chunks) {
-      // Get a page of 100 transactions
       final licenseComposedQuery = await graphQLRetry.execute(
         LicenseComposedQuery(
           variables: LicenseComposedArguments(
@@ -670,11 +687,24 @@ class ArweaveService {
   /// one slow or failing item costs the whole chunk its duration.
   ///
   /// [task] owns its error handling — a task that throws aborts the run.
+  ///
+  /// [onItemDone] is called once for every task that returns, at the moment it
+  /// returns, before its worker claims the next index. It is the only thing
+  /// inside this loop that a caller can see move: the run itself reports
+  /// nothing until all of it is over, and for metadata fetches that is one
+  /// HTTP round trip per item at [concurrency] at a time — the longest silence
+  /// in a sync. Counting is the caller's job; this says only "one more is
+  /// done", so the hook cannot be read as a total the pool does not own.
+  ///
+  /// It must not throw and it must not await: it runs between a slot being
+  /// released and the next index being claimed, so anything slow here is
+  /// concurrency taken away from the fetches.
   @visibleForTesting
   static Future<void> runPooled({
     required int concurrency,
     required int itemCount,
     required Future<void> Function(int index) task,
+    void Function()? onItemDone,
   }) async {
     if (itemCount <= 0) return;
 
@@ -692,6 +722,7 @@ class ArweaveService {
         if (i >= itemCount) return;
         nextIndex++;
         await task(i);
+        onItemDone?.call();
       }
     }
 
@@ -703,6 +734,13 @@ class ArweaveService {
   /// mounts the `blockHistory`
   ///
   /// returns DriveEntityHistory object
+  ///
+  /// [onEntityFetched] fires once per entity in [entityTxs], as each one is
+  /// finished with rather than when the batch is. It is the sync's only view
+  /// into this loop: every entity's metadata body is one HTTP round trip, run
+  /// `maxConcurrentDataFetches` at a time, and a drive with three thousand
+  /// revisions spends nearly the whole of its "reading the drive history" here
+  /// with nothing else to report.
   Future<DriveEntityHistory> createDriveEntityHistoryFromTransactions(
     List<DriveEntityHistoryTransactionModel> entityTxs,
     SecretKey? driveKey,
@@ -710,6 +748,7 @@ class ArweaveService {
     required String ownerAddress,
     required DriveID driveId,
     int? currentBlockHeight,
+    void Function()? onEntityFetched,
   }) async {
     // Limit concurrent data fetches to avoid overwhelming the gateway.
     //
@@ -731,6 +770,12 @@ class ArweaveService {
     await runPooled(
       concurrency: maxConcurrent,
       itemCount: entityTxs.length,
+      // One per entity, whether its body was fetched, skipped or already in
+      // hand - the caller is counting how much of the batch is behind it, not
+      // how many requests were made, so an entity that costs no request still
+      // has to land. Without that the count would stop short of the total on
+      // any batch holding a snapshot or a broken private entity.
+      onItemDone: onEntityFetched,
       task: (i) async {
         final entity = entityTxs[i].transactionCommonMixin;
         final tags = HashMap.fromIterable(
@@ -1120,11 +1165,39 @@ class ArweaveService {
   /// Gets the unique drive entities for a particular user.
   Future<Map<DriveEntity, DriveKey?>> getUniqueUserDriveEntities(
     Wallet wallet,
-    String password,
-  ) async {
+    String password, {
+    /// Called as each drive's metadata comes back, with how many have arrived
+    /// and how many were listed. Fires once with `(0, total)` as soon as the
+    /// listing is known, so a reader waiting on this learns the size of the
+    /// job before any of it is done.
+    void Function(int read, int found)? onDriveRead,
+
+    /// Called as each private drive is unlocked, with how many have been done
+    /// and how many there are. The work after the fetch is serial and, for a
+    /// private drive, expensive - a signature read over the network, a key
+    /// derivation against the wallet, then a decrypt - so a wallet with
+    /// several of them sits on a finished fetch count for a long time with
+    /// nothing said. Never fires when there are none.
+    void Function(int unlocked, int total)? onDriveUnlocked,
+  }) async {
     try {
       final userAddress = await wallet.getAddress();
       final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
+
+      // Distinct drives, not transactions. `getUniqueUserDriveEntityTxs`
+      // dedupes per GQL page only, so a wallet whose drive entities span more
+      // than one page has more rows here than it has drives - and the count
+      // read "43 of 137" for twelve drives.
+      final distinctDriveIds = <String>{};
+      for (final tx in driveTxs) {
+        final id = tx.getTag(EntityTag.driveId);
+        if (id != null) distinctDriveIds.add(id);
+      }
+
+      final driveCount = distinctDriveIds.length;
+      final readDriveIds = <String>{};
+
+      onDriveRead?.call(0, driveCount);
 
       // Sync's drive-discovery phase, and its only caller is
       // `_SyncRepository.updateUserDrives`. It reads the configured gateway
@@ -1153,7 +1226,15 @@ class ArweaveService {
           } catch (_) {
             // A drive we cannot read is dropped from this pass, as before.
           }
+
+          // Counted per drive, so a drive with several revisions on several
+          // pages advances the figure once.
+          final id = driveTxs[i].getTag(EntityTag.driveId);
+          if (id != null && readDriveIds.add(id)) {
+            onDriveRead?.call(readDriveIds.length, driveCount);
+          }
         },
+        onItemDone: null,
       );
 
       // Cache raw bytes for reuse by getLatestDriveEntityWithId (e.g., during
@@ -1175,6 +1256,24 @@ class ArweaveService {
       /// revision take its place and write stale metadata - worse than the
       /// drive simply being late.
       final handledDriveIds = <String?>{};
+
+      // Distinct private drives, which is what the loop below will actually
+      // unlock - `driveTxs` holds every revision, so counting rows would
+      // promise more work than there is.
+      final privateDriveIds = <String>{};
+      for (final tx in driveTxs) {
+        if (tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
+          final id = tx.getTag(EntityTag.driveId);
+          if (id != null) privateDriveIds.add(id);
+        }
+      }
+
+      final unlockedDriveIds = <String>{};
+
+      if (privateDriveIds.isNotEmpty) {
+        onDriveUnlocked?.call(0, privateDriveIds.length);
+      }
+
       for (var i = 0; i < driveTxs.length; i++) {
         if (driveResponses[i] == null) continue;
         final driveTx = driveTxs[i];
@@ -1193,6 +1292,24 @@ class ArweaveService {
           driveKey = await _driveDao.getDriveKeyFromMemory(
             driveTx.getTag(EntityTag.driveId)!,
           );
+
+          // Settled, however it settles. Counting only the drives whose keys
+          // were derived here left the figure short of its total whenever a
+          // signature could not be read - and stuck at "0 of 5" for a whole
+          // second pass, because by then every key is already in memory and
+          // the branch below never runs.
+          void settled() {
+            if (unlockedDriveIds.add(driveTx.getTag(EntityTag.driveId)!)) {
+              onDriveUnlocked?.call(
+                unlockedDriveIds.length,
+                privateDriveIds.length,
+              );
+            }
+          }
+
+          if (driveKey != null) {
+            settled();
+          }
 
           if (driveKey == null) {
             final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
@@ -1218,6 +1335,7 @@ class ArweaveService {
                 // Claim the id so an older transaction for the same drive on
                 // a later page cannot quietly stand in for the newest one.
                 handledDriveIds.add(txDriveId);
+                settled();
                 continue;
               }
             }
@@ -1233,6 +1351,8 @@ class ArweaveService {
               driveID: driveTx.getTag(EntityTag.driveId)!,
               driveKey: driveKey,
             );
+
+            settled();
           }
         }
         try {
@@ -1607,7 +1727,6 @@ class ArweaveService {
     }
 
     while (true) {
-      // Get a page of 100 transactions
       final allFileEntitiesQuery = await graphQLRetry.execute(
         AllFileEntitiesWithIdQuery(
           variables: AllFileEntitiesWithIdArguments(
@@ -1771,7 +1890,7 @@ class ArweaveService {
     // [owner] is provided, the query is scoped to that owner so the gateway can
     // prune its search space.
     Future<void> queryConfirmations(List<String?> ids, {String? owner}) async {
-      const chunkSize = 100;
+      const chunkSize = maxGraphQLIdsPerQuery;
       // Cap how many chunk queries hit the gateway at once so a large page
       // doesn't fan out into a burst of concurrent GraphQL retries (and a
       // potential rate-limit storm), matching the throttling used by the other

@@ -276,13 +276,17 @@ class _NewUserEmptyRootFolder extends StatelessWidget {
                 driveId: driveId,
                 parentFolderId: parentFolderId,
                 page: PlausiblePageView.newUserDriveEmptyPage,
+                variant: ButtonVariant.primary,
+                compact: true,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
               _ActionCard.createFolder(
                 context,
                 driveId: driveId,
                 parentFolderId: parentFolderId,
                 page: PlausiblePageView.newUserDriveEmptyPage,
+                variant: ButtonVariant.primary,
+                compact: true,
               ),
             ],
           ),
@@ -330,11 +334,13 @@ class _NewUserEmptyRootFolder extends StatelessWidget {
                 _ActionCard.uploadFile(context,
                     driveId: driveId,
                     parentFolderId: parentFolderId,
-                    page: PlausiblePageView.newUserDriveEmptyPage),
+                    page: PlausiblePageView.newUserDriveEmptyPage,
+                    variant: ButtonVariant.primary),
                 _ActionCard.createFolder(context,
                     driveId: driveId,
                     parentFolderId: parentFolderId,
-                    page: PlausiblePageView.newUserDriveEmptyPage),
+                    page: PlausiblePageView.newUserDriveEmptyPage,
+                    variant: ButtonVariant.primary),
               ],
             )
           ],
@@ -524,8 +530,12 @@ class _ActionCard {
     required String driveId,
     required String parentFolderId,
     required PlausiblePageView page,
+    ButtonVariant variant = ButtonVariant.secondary,
+    bool compact = false,
   }) {
     return _buildActionCard(
+      variant: variant,
+      compact: compact,
       context: context,
       title: 'Upload Files',
       description:
@@ -550,8 +560,12 @@ class _ActionCard {
     required String driveId,
     required String parentFolderId,
     required PlausiblePageView page,
+    ButtonVariant variant = ButtonVariant.secondary,
+    bool compact = false,
   }) {
     return _buildActionCard(
+      variant: variant,
+      compact: compact,
       context: context,
       title: 'Create a Folder',
       description: 'Create folders to keep your drive organized.',
@@ -614,9 +628,61 @@ class _ActionCard {
     required String buttonText,
     required Function() onPressed,
     required ArDriveIcon icon,
+    ButtonVariant variant = ButtonVariant.secondary,
+    bool compact = false,
   }) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    // A phone gets the same card lying down.
+    //
+    // Two 283px squares stacked, under a heading and a paragraph, is about
+    // 800px of content on a screen that has around 600 - so the one page in
+    // the product whose job is to say "well done, now do one of these two
+    // things" put both of those things below the fold. Laid on its side the
+    // pair takes roughly 260px and the whole page is visible at once.
+    if (compact) {
+      return ArDriveCard(
+        backgroundColor: colorTokens.containerL2,
+        contentPadding: const EdgeInsets.all(16),
+        content: Row(
+          children: [
+            icon.copyWith(size: 20),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style:
+                        typography.paragraphSmall(color: colorTokens.textMid),
+                  ),
+                  const SizedBox(height: 12),
+                  // Under the words rather than beside them: at this width a
+                  // third column leaves the description about ten characters
+                  // to work with.
+                  ArDriveButtonNew(
+                    text: buttonText,
+                    typography: typography,
+                    onPressed: onPressed,
+                    variant: variant,
+                    maxHeight: 36,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return ArDriveCard(
       width: 283,
@@ -644,7 +710,7 @@ class _ActionCard {
             text: buttonText,
             typography: typography,
             onPressed: onPressed,
-            variant: ButtonVariant.secondary,
+            variant: variant,
           ),
         ],
       ),

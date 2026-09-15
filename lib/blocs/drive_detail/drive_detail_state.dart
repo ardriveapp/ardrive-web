@@ -151,20 +151,33 @@ class DriveDetailLoadUnsynced extends DriveDetailState {
   final bool showDriveInfo;
   final ArDriveDataTableItem? selectedItem;
 
+  /// Whether a sync has already been run against this drive and came back with
+  /// nothing.
+  ///
+  /// Without it the card the user pressed Sync Now on is re-rendered exactly
+  /// as it was, which reads as a button that did nothing - when what actually
+  /// happened is that the sync ran, finished, and found no root metadata on
+  /// chain to open. The card says that instead, so the user is not sent round
+  /// the same loop expecting a different answer.
+  final bool syncFoundNothing;
+
   DriveDetailLoadUnsynced({
     required this.drive,
     this.showDriveInfo = false,
     this.selectedItem,
+    this.syncFoundNothing = false,
   });
 
   DriveDetailLoadUnsynced copyWith({
     Drive? drive,
     bool? showDriveInfo,
     Object? selectedItem = _driveDetailAbsent,
+    bool? syncFoundNothing,
   }) {
     return DriveDetailLoadUnsynced(
       drive: drive ?? this.drive,
       showDriveInfo: showDriveInfo ?? this.showDriveInfo,
+      syncFoundNothing: syncFoundNothing ?? this.syncFoundNothing,
       selectedItem: identical(selectedItem, _driveDetailAbsent)
           ? this.selectedItem
           : selectedItem as ArDriveDataTableItem?,
@@ -172,9 +185,24 @@ class DriveDetailLoadUnsynced extends DriveDetailState {
   }
 
   @override
-  List<Object?> get props => [drive, showDriveInfo, selectedItem];
+  List<Object?> get props =>
+      [drive, showDriveInfo, selectedItem, syncFoundNothing];
 }
 
+/// The user genuinely has no drives - we looked, and there were none.
+///
+/// Only ever emitted after the drive list has actually been refreshed. It is
+/// the "Getting Started" screen, and getting here off an empty local database
+/// that nobody has filled in yet tells a user with drives that they have none.
 class DriveDetailLoadEmpty extends DriveDetailState {}
+
+/// The drive list could not be read at all.
+///
+/// The third thing an empty database can mean, and the one the app used to
+/// render as the second: we asked, and could not find out. It is not
+/// [DriveDetailLoadEmpty] - the user is not told they have no drives, and is
+/// not offered a drive to create - and it is not
+/// [DriveDetailLoadInProgress], because nothing is still running.
+class DriveDetailDrivesUnavailable extends DriveDetailState {}
 
 class DriveInitialLoading extends DriveDetailState {}

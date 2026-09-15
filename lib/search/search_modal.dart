@@ -32,6 +32,10 @@ Future<void> showSearchModalBottomSheet({
   required DrivesCubit drivesCubit,
   required TextEditingController controller,
   String? query,
+
+  /// See [FileSearchModal.onNavigateToFolder].
+  void Function(String driveId, String folderId, {String? itemId})?
+      onNavigateToFolder,
 }) {
   PlausibleEventTracker.trackPageview(page: PlausiblePageView.searchPage);
 
@@ -58,6 +62,7 @@ Future<void> showSearchModalBottomSheet({
             driveDetailCubit: context.read<DriveDetailCubit>(),
             controller: controller,
             drivesCubit: drivesCubit,
+            onNavigateToFolder: onNavigateToFolder,
           ),
         ),
       ),
@@ -71,6 +76,10 @@ Future<void> showSearchModalDesktop({
   required DrivesCubit drivesCubit,
   required TextEditingController controller,
   String? query,
+
+  /// See [FileSearchModal.onNavigateToFolder].
+  void Function(String driveId, String folderId, {String? itemId})?
+      onNavigateToFolder,
 }) {
   PlausibleEventTracker.trackPageview(page: PlausiblePageView.searchPage);
 
@@ -83,6 +92,7 @@ Future<void> showSearchModalDesktop({
       driveDetailCubit: context.read<DriveDetailCubit>(),
       controller: controller,
       drivesCubit: drivesCubit,
+      onNavigateToFolder: onNavigateToFolder,
     ),
     barrierColor: colorTokens.containerL1.withOpacity(0.8),
   );
@@ -93,12 +103,25 @@ class FileSearchModal extends StatelessWidget {
     super.key,
     required this.driveDetailCubit,
     required this.drivesCubit,
+    this.onNavigateToFolder,
     this.initialQuery,
     required this.controller,
   });
 
   final DriveDetailCubit driveDetailCubit;
   final DrivesCubit drivesCubit;
+
+  /// How to reach a folder, when calling `openFolder` on [driveDetailCubit] will
+  /// not get there.
+  ///
+  /// The explorer's cubit is long-lived and switches drives underneath the page,
+  /// so it can simply be told to open a folder in another drive. The drives
+  /// list's is not: selecting a drive there replaces the whole subtree, and the
+  /// cubit this modal was handed is torn down mid-navigation - leaving the
+  /// reader at the drive root rather than the file they searched for. Callers in
+  /// that position pass this and the navigation goes through the router instead.
+  final void Function(String driveId, String folderId, {String? itemId})?
+      onNavigateToFolder;
   final String? initialQuery;
   final TextEditingController controller;
 
@@ -125,6 +148,7 @@ class FileSearchModal extends StatelessWidget {
         initialQuery: initialQuery,
         controller: controller,
         drivesCubit: drivesCubit,
+        onNavigateToFolder: onNavigateToFolder,
       ),
     );
   }
@@ -136,12 +160,17 @@ class _FileSearchModal extends StatefulWidget {
     required this.drivesCubit,
     this.initialQuery,
     required this.controller,
+    this.onNavigateToFolder,
   });
 
   final String? initialQuery;
   final DriveDetailCubit driveDetailCubit;
   final DrivesCubit drivesCubit;
   final TextEditingController controller;
+
+  /// See [FileSearchModal.onNavigateToFolder].
+  final void Function(String driveId, String folderId, {String? itemId})?
+      onNavigateToFolder;
 
   @override
   _FileSearchModalState createState() => _FileSearchModalState();
@@ -442,11 +471,23 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     if (searchResult.result is FileEntry) {
       _navigateToFile(context, searchResult.result as FileEntry);
     } else if (searchResult.result is FolderEntry) {
-      context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
-
       final otherDriveId = (searchResult.parentFolder == null)
           ? searchResult.drive.id
           : searchResult.parentFolder!.driveId;
+
+      final navigate = widget.onNavigateToFolder;
+
+      if (navigate != null) {
+        // Asked for before the selection, because the selection is what carries
+        // it - see [FileSearchModal.onNavigateToFolder].
+        navigate(otherDriveId, searchResult.result.id);
+        context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
+        Navigator.of(context).pop();
+
+        return;
+      }
+
+      context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
 
       widget.driveDetailCubit.openFolder(
         otherDriveId: otherDriveId,
@@ -469,6 +510,23 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     final file = DriveDataTableItemMapper.fromFileEntryForSearchModal(
       result,
     );
+
+    final navigate = widget.onNavigateToFolder;
+
+    if (navigate != null) {
+      // The folder the file is in, and the file to pick out of it once it
+      // opens - the same thing the explorer's path below does with
+      // `selectedItemId`, taking the long way round because the cubit that
+      // could be told directly is about to be torn down.
+      navigate(file.driveId, file.parentFolderId, itemId: file.id);
+      widget.drivesCubit.selectDrive(file.driveId);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      return;
+    }
 
     await Future.delayed(const Duration(milliseconds: 100));
 
