@@ -148,7 +148,8 @@ void main() {
   Future<void> prepare(UploadPaymentMethodBloc bloc) async {
     bloc.add(PrepareUploadPaymentMethod(params: params));
 
-    // The lookup is a second event, so the queue needs more than one turn.
+    // The lookup is awaited after the sheet is emitted, so this takes more
+    // than one turn.
     for (var i = 0; i < 12; i++) {
       await Future<void>.delayed(Duration.zero);
     }
@@ -274,6 +275,40 @@ void main() {
       reason: 'a failed lookup must not become a claim, and must not break the '
           'sheet that was already showing',
     );
+  });
+
+  /// Events here run concurrently, so a lookup can still be out when the sheet
+  /// is prepared again, after a top-up for instance. Its answer belongs to the
+  /// preparation that asked, not to whatever is on screen when it lands.
+  test('a late answer is not applied to a newer preparation', () async {
+    final lookup = Completer<BigInt>();
+    when(() => paymentService.getBalanceForAddress(
+          address: any(named: 'address'),
+          walletType: any(named: 'walletType'),
+        )).thenAnswer((_) => lookup.future);
+
+    final bloc = build(
+      turboBalance: BigInt.zero,
+      sourceAddress: '4WkBm7vD1qF9xYz',
+    );
+    addTearDown(bloc.close);
+    await prepare(bloc);
+
+    // Topped up while the gateway was still answering.
+    when(() => preparationManager.prepareUpload(params: any(named: 'params')))
+        .thenAnswer(
+            (_) async => preparationWith(turboBalance: BigInt.from(1000)));
+    await prepare(bloc);
+
+    lookup.complete(BigInt.from(12080));
+    for (var i = 0; i < 12; i++) {
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    final info = (bloc.state as UploadPaymentMethodLoaded).paymentMethodInfo;
+    expect(info.sufficentCreditsBalance, isTrue,
+        reason: 'the newer preparation is the one on screen');
+    expect(info.sourceWalletCredits, isNull);
   });
 
   /// Granting the derived wallet the right to spend what the sign-in wallet
