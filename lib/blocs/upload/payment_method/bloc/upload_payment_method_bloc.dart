@@ -32,6 +32,11 @@ class UploadPaymentMethodBloc
   /// credit grant has changed the answer.
   UploadParams? _params;
 
+  /// Which preparation is current. A credit lookup outlives the step that
+  /// started it and events here run concurrently, so a late answer is only
+  /// applied if no newer preparation has begun since.
+  int _preparation = 0;
+
   UploadPaymentMethodBloc(
     this._profileCubit,
     this._arDriveUploadManager,
@@ -69,10 +74,29 @@ class UploadPaymentMethodBloc
   Future<void> _handlePrepareUploadPaymentMethod(
       PrepareUploadPaymentMethod event,
       Emitter<UploadPaymentMethodState> emit) async {
-    emit(UploadPaymentMethodLoading(
-        isArConnect: await _profileCubit.isCurrentProfileArConnect()));
+    final preparation = ++_preparation;
 
-    if (await _profileCubit.checkIfWalletMismatch()) {
+    // Events here run concurrently, so every await below is a point where a
+    // newer preparation may have begun. That one owns the sheet, and this one
+    // stops rather than emit over it: an older result, an older failure, or
+    // even an older loading state would replace what the reader should see.
+    bool superseded() => preparation != _preparation;
+
+    final isArConnect = await _profileCubit.isCurrentProfileArConnect();
+
+    if (superseded()) {
+      return;
+    }
+
+    emit(UploadPaymentMethodLoading(isArConnect: isArConnect));
+
+    final walletMismatch = await _profileCubit.checkIfWalletMismatch();
+
+    if (superseded()) {
+      return;
+    }
+
+    if (walletMismatch) {
       emit(UploadPaymentMethodWalletMismatch());
       return;
     }
@@ -80,8 +104,14 @@ class UploadPaymentMethodBloc
     _params = event.params;
 
     try {
-      uploadPreparation =
+      final prepared =
           await _arDriveUploadManager.prepareUpload(params: event.params);
+
+      if (superseded()) {
+        return;
+      }
+
+      uploadPreparation = prepared;
       final paymentInfo = uploadPreparation.uploadPaymentInfo;
 
       final literalTurboBalance = convertWinstonToLiteralString(
@@ -121,6 +151,11 @@ class UploadPaymentMethodBloc
         ),
       );
     } catch (e) {
+      if (superseded()) {
+        logger.d('An upload preparation failed after a newer one began: $e');
+        return;
+      }
+
       logger.e('Upload preparation failed.', e);
       emit(UploadPaymentMethodError());
       return;
@@ -144,7 +179,7 @@ class UploadPaymentMethodBloc
     if (!_canUploadWithMethod(UploadMethod.turbo) &&
         walletTypeOfSourceAddress(_auth.currentUser.sourceWalletAddress) !=
             null) {
-      await _handleLookUpSourceWalletCredits(emit);
+      await _handleLookUpSourceWalletCredits(emit, preparation);
     }
   }
 
@@ -214,7 +249,7 @@ class UploadPaymentMethodBloc
   /// not a fact about somebody's money, and guessing at one turns an ordinary
   /// out-of-credits message into a puzzle.
   Future<void> _handleLookUpSourceWalletCredits(
-      Emitter<UploadPaymentMethodState> emit) async {
+      Emitter<UploadPaymentMethodState> emit, int preparation) async {
     final user = _auth.currentUser;
     final sourceAddress = user.sourceWalletAddress;
     final walletType = walletTypeOfSourceAddress(sourceAddress);
@@ -240,11 +275,12 @@ class UploadPaymentMethodBloc
     }
 
     // The sheet may have moved on while the gateway was answering - the reader
-    // could have topped up, or switched to AR, or closed it. A late answer is
-    // only worth adding to the state it was asked about.
+    // could have topped up, or switched to AR, or closed it, or the sheet may
+    // have been prepared again. A late answer is only worth adding to the
+    // preparation it was asked about.
     final current = state;
 
-    if (current is! UploadPaymentMethodLoaded) {
+    if (preparation != _preparation || current is! UploadPaymentMethodLoaded) {
       return;
     }
 

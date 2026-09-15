@@ -148,7 +148,8 @@ void main() {
   Future<void> prepare(UploadPaymentMethodBloc bloc) async {
     bloc.add(PrepareUploadPaymentMethod(params: params));
 
-    // The lookup is a second event, so the queue needs more than one turn.
+    // The lookup is awaited after the sheet is emitted, so this takes more
+    // than one turn.
     for (var i = 0; i < 12; i++) {
       await Future<void>.delayed(Duration.zero);
     }
@@ -274,6 +275,121 @@ void main() {
       reason: 'a failed lookup must not become a claim, and must not break the '
           'sheet that was already showing',
     );
+  });
+
+  /// Events here run concurrently, so a lookup can still be out when the sheet
+  /// is prepared again, after a top-up for instance. Its answer belongs to the
+  /// preparation that asked, not to whatever is on screen when it lands.
+  test('a late answer is not applied to a newer preparation', () async {
+    final lookup = Completer<BigInt>();
+    when(() => paymentService.getBalanceForAddress(
+          address: any(named: 'address'),
+          walletType: any(named: 'walletType'),
+        )).thenAnswer((_) => lookup.future);
+
+    final bloc = build(
+      turboBalance: BigInt.zero,
+      sourceAddress: '4WkBm7vD1qF9xYz',
+    );
+    addTearDown(bloc.close);
+    await prepare(bloc);
+
+    // Topped up while the gateway was still answering.
+    when(() => preparationManager.prepareUpload(params: any(named: 'params')))
+        .thenAnswer(
+            (_) async => preparationWith(turboBalance: BigInt.from(1000)));
+    await prepare(bloc);
+
+    lookup.complete(BigInt.from(12080));
+    for (var i = 0; i < 12; i++) {
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    final info = (bloc.state as UploadPaymentMethodLoaded).paymentMethodInfo;
+    expect(info.sufficentCreditsBalance, isTrue,
+        reason: 'the newer preparation is the one on screen');
+    expect(info.sourceWalletCredits, isNull);
+  });
+
+  /// The same race one step earlier: the preparation itself can outlive a newer
+  /// one. Whatever the older one ends in, the newer sheet stays on screen.
+  group('an older preparation finishing late', () {
+    late Completer<UploadPreparation> older;
+
+    UploadPaymentMethodBloc raced() {
+      final bloc = build(
+        turboBalance: BigInt.zero,
+        sourceAddress: '4WkBm7vD1qF9xYz',
+      );
+      addTearDown(bloc.close);
+
+      older = Completer<UploadPreparation>();
+      var calls = 0;
+      when(() => preparationManager.prepareUpload(params: any(named: 'params')))
+          .thenAnswer((_) {
+        calls++;
+        return calls == 1
+            ? older.future
+            : Future.value(preparationWith(turboBalance: BigInt.from(1000)));
+      });
+
+      return bloc;
+    }
+
+    Future<void> settle() async {
+      for (var i = 0; i < 12; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    test('does not replace the newer result', () async {
+      final bloc = raced();
+      await prepare(bloc);
+      await prepare(bloc);
+
+      older.complete(preparationWith(turboBalance: BigInt.zero));
+      await settle();
+
+      final info = (bloc.state as UploadPaymentMethodLoaded).paymentMethodInfo;
+      expect(info.sufficentCreditsBalance, isTrue);
+      expect(bloc.uploadPreparation.uploadPaymentInfo.turboBalance.balance,
+          BigInt.from(1000));
+    });
+
+    test('does not turn the newer result into an error', () async {
+      final bloc = raced();
+      await prepare(bloc);
+      await prepare(bloc);
+
+      older.completeError(Exception('gateway timed out'));
+      await settle();
+
+      expect(bloc.state, isA<UploadPaymentMethodLoaded>());
+    });
+
+    test('does not put the sheet back to loading', () async {
+      final slowProfile = Completer<bool>();
+      var profileCalls = 0;
+      when(() => profileCubit.isCurrentProfileArConnect()).thenAnswer((_) {
+        profileCalls++;
+        return profileCalls == 1 ? slowProfile.future : Future.value(false);
+      });
+
+      final bloc = build(
+        turboBalance: BigInt.from(1000),
+        sourceAddress: '4WkBm7vD1qF9xYz',
+      );
+      addTearDown(bloc.close);
+
+      await prepare(bloc);
+      await prepare(bloc);
+      expect(bloc.state, isA<UploadPaymentMethodLoaded>());
+
+      slowProfile.complete(false);
+      await settle();
+
+      expect(bloc.state, isA<UploadPaymentMethodLoaded>());
+    });
   });
 
   /// Granting the derived wallet the right to spend what the sign-in wallet
