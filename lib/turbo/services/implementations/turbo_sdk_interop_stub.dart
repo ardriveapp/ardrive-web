@@ -48,6 +48,15 @@ Future<Object> createAuthenticatedTurboWithSolanaAdapter({
   throw UnsupportedError('Turbo SDK is only available on web platforms');
 }
 
+/// Grants another address permission to spend this account's credits.
+Future<void> shareCredits(
+  Object turboClient, {
+  required String approvedAddress,
+  required BigInt approvedWinc,
+}) async {
+  throw UnsupportedError('Turbo SDK is only available on web platforms');
+}
+
 /// Get winc for a token amount
 Future<BigInt> getWincForToken(Object turboClient, Object tokenAmount) async {
   throw UnsupportedError('Turbo SDK is only available on web platforms');

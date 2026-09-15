@@ -3,6 +3,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
 import 'package:ardrive/core/upload/uploader.dart';
+import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
@@ -21,16 +22,31 @@ class UploadPaymentMethodBloc
   final ProfileCubit _profileCubit;
   final PaymentService _paymentService;
 
+  /// Every upload sheet is given one, but only the web can sign a grant, and
+  /// elsewhere it is a stub. See [canShareSourceWalletCredits].
+  final CreditSharingService? _creditSharingService;
+
   late UploadPreparation uploadPreparation;
+
+  /// What this sheet was prepared for, so it can be prepared again once a
+  /// credit grant has changed the answer.
+  UploadParams? _params;
 
   UploadPaymentMethodBloc(
     this._profileCubit,
     this._arDriveUploadManager,
     this._auth,
-    this._paymentService,
-  ) : super(UploadPaymentMethodInitial()) {
+    this._paymentService, [
+    this._creditSharingService,
+  ]) : super(UploadPaymentMethodInitial()) {
     on<UploadPaymentMethodEvent>(_onUploadPaymentMethodEvent);
   }
+
+  /// Whether to offer the one-press share at all. Off the web the service has
+  /// nothing to sign with, and a button that can only fail is worse than none:
+  /// the notice still says how to share the credits in Turbo.
+  bool get canShareSourceWalletCredits =>
+      _creditSharingService?.isSupported ?? false;
 
   Future<void> _onUploadPaymentMethodEvent(UploadPaymentMethodEvent event,
       Emitter<UploadPaymentMethodState> emit) async {
@@ -38,8 +54,6 @@ class UploadPaymentMethodBloc
       await _handlePrepareUploadPaymentMethod(event, emit);
     } else if (event is ChangeUploadPaymentMethod) {
       _handleChangeUploadPaymentMethod(event, emit);
-    } else if (event is LookUpSourceWalletCredits) {
-      await _handleLookUpSourceWalletCredits(emit);
     }
   }
 
@@ -53,6 +67,8 @@ class UploadPaymentMethodBloc
       emit(UploadPaymentMethodWalletMismatch());
       return;
     }
+
+    _params = event.params;
 
     try {
       uploadPreparation =
@@ -95,19 +111,87 @@ class UploadPaymentMethodBloc
           ),
         ),
       );
-
-      // Asked only when this sheet is about to say no, and only for somebody
-      // who signed in with another chain's wallet. Everyone else, which is most
-      // people, pays for none of it.
-      if (!_canUploadWithMethod(UploadMethod.turbo) &&
-          walletTypeOfSourceAddress(_auth.currentUser.sourceWalletAddress) !=
-              null) {
-        add(const LookUpSourceWalletCredits());
-      }
     } catch (e) {
       logger.e('Upload preparation failed.', e);
       emit(UploadPaymentMethodError());
+      return;
     }
+
+    // Outside the try on purpose: nothing below is preparation, so nothing
+    // below may be reported as preparation failing. It sat inside once, and a
+    // reader who closed the sheet mid-refresh was logged at error level as
+    // "Upload preparation failed".
+    //
+    // Asked only when this sheet is about to say no, and only for somebody who
+    // signed in with another chain's wallet. Everyone else, which is most
+    // people, pays for none of it.
+    //
+    // Awaited here rather than raised as a second event. The sheet has already
+    // painted - the state was emitted above - so waiting costs it nothing, and
+    // an emit after the bloc closes is a no-op. The second event was the bug:
+    // bloc closes its event controller before the state controller that
+    // `isClosed` reports on, so for part of `close()` an `isClosed` check passes
+    // and `add` throws anyway.
+    if (!_canUploadWithMethod(UploadMethod.turbo) &&
+        walletTypeOfSourceAddress(_auth.currentUser.sourceWalletAddress) !=
+            null) {
+      await _handleLookUpSourceWalletCredits(emit);
+    }
+  }
+
+  /// Grants the derived Arweave wallet the right to spend the credits found on
+  /// the wallet this reader signed in with.
+  ///
+  /// Returns whether it worked, because the control that called it has to
+  /// decide what to say next: nothing here emits an error state. A refused
+  /// signature is not a broken sheet, and the sheet still holds the
+  /// instructions for doing it by hand.
+  ///
+  /// On success the whole preparation is run again rather than the state being
+  /// patched. The grant changes what Turbo will report - `effectiveBalance`
+  /// picks it up, `receivedApprovals` names the payer - and re-asking is how
+  /// this sheet learns both without a second way of computing them.
+  Future<bool> shareSourceWalletCredits() async {
+    final service = _creditSharingService;
+    final current = state;
+
+    if (service == null || current is! UploadPaymentMethodLoaded) {
+      return false;
+    }
+
+    final credits = current.paymentMethodInfo.sourceWalletCredits;
+    final params = _params;
+
+    if (credits == null || params == null) {
+      return false;
+    }
+
+    try {
+      await service.shareCreditsFromSignInWallet(
+        approvedAddress: credits.arweaveAddress,
+        approvedWinc: credits.balance,
+      );
+    } catch (e) {
+      logger
+          .i('Sharing credits from the sign-in wallet did not go through: $e');
+
+      return false;
+    }
+
+    // The grant went through; that is the operation, and the answer. Preparing
+    // the sheet again is only how it learns the new balance, so a sheet closed
+    // while the wallet was answering changes nothing about what to report.
+    //
+    // Caught rather than checked: bloc closes its event controller before the
+    // state controller `isClosed` reads, so for part of `close()` that check
+    // passes and `add` throws regardless.
+    try {
+      add(PrepareUploadPaymentMethod(params: params));
+    } on StateError {
+      logger.d('Sheet closed before it could be prepared again after a grant');
+    }
+
+    return true;
   }
 
   /// Looks for the credits on the wallet the user signed in with.

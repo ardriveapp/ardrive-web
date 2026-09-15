@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/payment_method/bloc/upload_payment_method_bloc.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
+import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/user/user.dart';
@@ -16,6 +19,8 @@ class _MockUploadPreparationManager extends Mock
     implements ArDriveUploadPreparationManager {}
 
 class _MockPaymentService extends Mock implements PaymentService {}
+
+class _MockCreditSharingService extends Mock implements CreditSharingService {}
 
 class _MockUser extends Mock implements User {}
 
@@ -38,10 +43,15 @@ void main() {
   late _MockPaymentService paymentService;
   late _MockUser user;
   late _MockUploadParams params;
+  late _MockCreditSharingService sharing;
 
   setUpAll(() {
     registerFallbackValue(_FakeUploadParams());
     registerFallbackValue(WalletType.solana);
+    // `approvedWinc` is matched with `any()` in setUp, which runs before every
+    // test - so without this every test here fails, including the ones that
+    // never touch sharing.
+    registerFallbackValue(BigInt.zero);
   });
 
   /// A preparation whose Turbo balance is [turboBalance] against a cost of 100.
@@ -84,6 +94,12 @@ void main() {
     paymentService = _MockPaymentService();
     user = _MockUser();
     params = _MockUploadParams();
+    sharing = _MockCreditSharingService();
+
+    when(() => sharing.shareCreditsFromSignInWallet(
+          approvedAddress: any(named: 'approvedAddress'),
+          approvedWinc: any(named: 'approvedWinc'),
+        )).thenAnswer((_) async {});
 
     // The bloc threads approvals onto the params before it emits.
     when(() => params.copyWith(paidBy: any(named: 'paidBy')))
@@ -123,6 +139,7 @@ void main() {
       preparationManager,
       auth,
       paymentService,
+      sharing,
     );
   }
 
@@ -255,5 +272,128 @@ void main() {
       reason: 'a failed lookup must not become a claim, and must not break the '
           'sheet that was already showing',
     );
+  });
+
+  /// Granting the derived wallet the right to spend what the sign-in wallet
+  /// holds. An approval is the holder's decision, so this is signed by the
+  /// wallet the reader signed in with, not by the account being credited.
+  group('sharing the credits across', () {
+    Future<UploadPaymentMethodBloc> refusedWithCredits() async {
+      when(() => paymentService.getBalanceForAddress(
+            address: any(named: 'address'),
+            walletType: any(named: 'walletType'),
+          )).thenAnswer((_) async => BigInt.from(12080));
+
+      final bloc = build(
+        turboBalance: BigInt.zero,
+        sourceAddress: '4WkBm7vD1qF9xYz',
+      );
+      addTearDown(bloc.close);
+      await prepare(bloc);
+
+      return bloc;
+    }
+
+    test('grants the derived address exactly what was found', () async {
+      final bloc = await refusedWithCredits();
+
+      expect(await bloc.shareSourceWalletCredits(), isTrue);
+
+      verify(() => sharing.shareCreditsFromSignInWallet(
+            approvedAddress: 'arweave-address',
+            approvedWinc: BigInt.from(12080),
+          )).called(1);
+    });
+
+    /// The grant changes what Turbo reports, so the sheet asks again rather
+    /// than patching its own state from a second source of truth.
+    test('and prepares the sheet again so the new balance is read', () async {
+      final bloc = await refusedWithCredits();
+
+      clearInteractions(preparationManager);
+      await bloc.shareSourceWalletCredits();
+      for (var i = 0; i < 12; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+
+      verify(() => preparationManager.prepareUpload(
+            params: any(named: 'params'),
+          )).called(greaterThanOrEqualTo(1));
+    });
+
+    /// A declined signature or a wallet that is gone. Not an error state: the
+    /// sheet keeps its instructions and the control says so itself.
+    test('a refusal is answered, not thrown', () async {
+      final bloc = await refusedWithCredits();
+
+      when(() => sharing.shareCreditsFromSignInWallet(
+            approvedAddress: any(named: 'approvedAddress'),
+            approvedWinc: any(named: 'approvedWinc'),
+          )).thenThrow(Exception('user rejected'));
+
+      expect(await bloc.shareSourceWalletCredits(), isFalse);
+      expect(bloc.state, isA<UploadPaymentMethodLoaded>());
+    });
+
+    /// A reader who closes the sheet while the wallet is still answering. The
+    /// grant went through, so that is the answer, and a closed sheet cannot be
+    /// prepared again. Bloc closes its event controller before the state
+    /// controller `isClosed` reads, so this must not throw on the way out.
+    test('a sheet closed mid-grant still reports the grant', () async {
+      final bloc = await refusedWithCredits();
+      final wallet = Completer<void>();
+
+      when(() => sharing.shareCreditsFromSignInWallet(
+            approvedAddress: any(named: 'approvedAddress'),
+            approvedWinc: any(named: 'approvedWinc'),
+          )).thenAnswer((_) => wallet.future);
+
+      final shared = bloc.shareSourceWalletCredits();
+      await Future<void>.delayed(Duration.zero);
+
+      await bloc.close();
+      wallet.complete();
+
+      expect(await shared, isTrue);
+    });
+
+    /// Off the web the service is a stub with nothing to sign with. A button
+    /// there could only ever fail, so it is not offered.
+    test('is offered only where something can sign the grant', () {
+      UploadPaymentMethodBloc sheet(CreditSharingService? service) {
+        final bloc = UploadPaymentMethodBloc(
+          profileCubit,
+          preparationManager,
+          auth,
+          paymentService,
+          service,
+        );
+        addTearDown(bloc.close);
+        return bloc;
+      }
+
+      when(() => sharing.isSupported).thenReturn(true);
+      expect(sheet(sharing).canShareSourceWalletCredits, isTrue);
+
+      when(() => sharing.isSupported).thenReturn(false);
+      expect(sheet(sharing).canShareSourceWalletCredits, isFalse);
+
+      expect(sheet(null).canShareSourceWalletCredits, isFalse);
+    });
+
+    test('and there is nothing to grant when nothing was found', () async {
+      final bloc = build(
+        turboBalance: BigInt.zero,
+        sourceAddress: '4WkBm7vD1qF9xYz',
+      );
+      addTearDown(bloc.close);
+      await prepare(bloc);
+
+      expect(await bloc.shareSourceWalletCredits(), isFalse);
+      verifyNever(() => sharing.shareCreditsFromSignInWallet(
+            approvedAddress: any(named: 'approvedAddress'),
+            approvedWinc: any(named: 'approvedWinc'),
+          ));
+    });
   });
 }

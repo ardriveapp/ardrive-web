@@ -111,6 +111,13 @@ class _UploadPaymentMethodViewState extends State<UploadPaymentMethodView> {
             onTurboTopupSucess: () {
               widget.onTurboTopupSucess?.call();
             },
+            onShareCredits: context
+                    .read<UploadPaymentMethodBloc>()
+                    .canShareSourceWalletCredits
+                ? () => context
+                    .read<UploadPaymentMethodBloc>()
+                    .shareSourceWalletCredits()
+                : null,
           );
         }
         if (widget.loadingIndicator != null) {

@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'dart:async';
@@ -154,6 +155,7 @@ Future<void> _showUploadForm(
       context.read<ArDriveUploadPreparationManager>(),
       context.read<ArDriveAuth>(),
       context.read<PaymentService>(),
+      CreditSharingService.fromConfig(context.read<ConfigService>()),
     ),
   );
 
@@ -1270,6 +1272,7 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                             context.read<ArDriveUploadPreparationManager>(),
                             context.read<ArDriveAuth>(),
                             context.read<PaymentService>(),
+                            CreditSharingService.fromConfig(context.read<ConfigService>()),
                           )..add(PrepareUploadPaymentMethod(
                               params: state.params,
                             )),
@@ -1335,6 +1338,7 @@ class _SelectPaymentMethodManifestUploadState
         context.read<ArDriveUploadPreparationManager>(),
         context.read<ArDriveAuth>(),
         context.read<PaymentService>(),
+        CreditSharingService.fromConfig(context.read<ConfigService>()),
       )..add(
           PrepareUploadPaymentMethod(
             params: UploadParams(
