@@ -53,8 +53,41 @@ enum WalletType {
   solana,
 }
 
+/// Which chain an address a user signed in with belongs to.
+///
+/// Signing in with Phantom or MetaMask does not make the ArDrive account a
+/// Solana or Ethereum account: the signature derives a deterministic Arweave
+/// wallet and that is the account (see `solana_identity.dart`). The source
+/// address is kept alongside it, and anything that has to ask a chain-scoped
+/// question about it needs to know which chain.
+///
+/// Returns null for an Arweave sign-in, which has no source wallet.
+///
+/// One function rather than the fifth copy of `startsWith('0x')`: that test was
+/// already written out in four places in `profile_card.dart` alone, and a
+/// classification duplicated per call site is one that drifts per call site.
+WalletType? walletTypeOfSourceAddress(String? sourceAddress) {
+  if (sourceAddress == null) {
+    return null;
+  }
+
+  return sourceAddress.startsWith('0x')
+      ? WalletType.ethereum
+      : WalletType.solana;
+}
+
 /// Extension methods for WalletType
 extension WalletTypeX on WalletType {
+  /// What Turbo calls this chain in its account namespaces.
+  ///
+  /// Turbo keeps a separate account per chain, so a balance query has to name
+  /// one: `/v1/account/balance/{token}?address=...`.
+  String get turboTokenNamespace => switch (this) {
+        WalletType.arweave => 'arweave',
+        WalletType.ethereum => 'ethereum',
+        WalletType.solana => 'solana',
+      };
+
   /// Display name for the wallet type
   String get displayName => switch (this) {
         WalletType.arweave => 'Arweave Wallet',
@@ -259,7 +292,8 @@ extension CryptoTokenX on CryptoToken {
 
   /// Base URL for the block explorer for this token's network
   String get explorerBaseUrl => switch (this) {
-        CryptoToken.arioAO || CryptoToken.arioAOViaEth =>
+        CryptoToken.arioAO ||
+        CryptoToken.arioAOViaEth =>
           resolveArnsNameUrl('scan'),
         CryptoToken.arioBase ||
         CryptoToken.usdcBase ||
@@ -286,7 +320,8 @@ extension CryptoTokenX on CryptoToken {
 
   /// Name of the block explorer for this token's network
   String get explorerName => switch (this) {
-        CryptoToken.arioAO || CryptoToken.arioAOViaEth =>
+        CryptoToken.arioAO ||
+        CryptoToken.arioAOViaEth =>
           Uri.parse(resolveArnsNameUrl('scan')).host,
         CryptoToken.arioBase ||
         CryptoToken.usdcBase ||
