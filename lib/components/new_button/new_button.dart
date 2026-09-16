@@ -245,7 +245,19 @@ class NewButton extends StatelessWidget {
       },
     ).toList());
     final advancedItems = _getAdvancedItems(context);
-    if (advancedItems.isNotEmpty) {
+    final hasDriveInView =
+        driveDetailState is DriveDetailLoadSuccess && drive != null;
+
+    // Without a drive open, everything under Advanced is gone but attaching a
+    // drive. A menu whose only row opens a submenu holding one action reads as
+    // an empty menu, so with no drive those items sit at the top level.
+    if (advancedItems.isNotEmpty && !hasDriveInView) {
+      topLevelItems.addAll(
+        advancedItems.map(
+          (advancedItem) => _newButtonItemToSubMenuItem(context, advancedItem),
+        ),
+      );
+    } else if (advancedItems.isNotEmpty) {
       topLevelItems.add(
         ArDriveSubmenuItem(
           isDisabled: false,
@@ -383,7 +395,6 @@ class NewButton extends StatelessWidget {
 
   List<ArDriveNewButtonComponent> _getTopItems(BuildContext context) {
     final driveDetailState = context.read<DriveDetailCubit>().state;
-    final drivesState = context.read<DrivesCubit>().state;
     final appLocalizations = appLocalizationsOf(context);
     final profileState = context.read<ProfileCubit>().state;
     final profile = profileState;
@@ -424,16 +435,17 @@ class NewButton extends StatelessWidget {
           ),
           const ArDriveNewButtonDivider(),
         ],
-        if (drivesState is DrivesLoadSuccess) ...[
-          ArDriveNewButtonItem(
-            onClick: () {
-              promptToCreateDrive(context);
-            },
-            isDisabled: !drivesState.canCreateNewDrive || !canUpload,
-            name: appLocalizations.newDrive,
-            icon: ArDriveIcons.addDrive(size: defaultIconSize),
-          ),
-        ],
+        // Not gated on the drive list having loaded. Making a drive does not
+        // depend on knowing which drives already exist, and that gate is what
+        // left the All Drives menu holding nothing but an Advanced submenu.
+        ArDriveNewButtonItem(
+          onClick: () {
+            promptToCreateDrive(context);
+          },
+          isDisabled: !canUpload,
+          name: appLocalizations.newDrive,
+          icon: ArDriveIcons.addDrive(size: defaultIconSize),
+        ),
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
           ArDriveNewButtonItem(
             onClick: () => promptToCreateFolder(
@@ -453,7 +465,9 @@ class NewButton extends StatelessWidget {
             ),
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.newNote,
-            icon: ArDriveIcons.edit(size: defaultIconSize), // TODO: Create dedicated note icon (document/text icon)
+            icon: ArDriveIcons.edit(
+                size:
+                    defaultIconSize), // TODO: Create dedicated note icon (document/text icon)
           ),
           if (drive != null)
             ArDriveNewButtonItem(
@@ -479,7 +493,6 @@ class NewButton extends StatelessWidget {
 
   List<ArDriveNewButtonComponent> _getPlusButtonItems(BuildContext context) {
     final driveDetailState = context.read<DriveDetailCubit>().state;
-    final drivesState = context.read<DrivesCubit>().state;
     final appLocalizations = appLocalizationsOf(context);
     final profileState = context.read<ProfileCubit>().state;
     final profile = profileState;
@@ -525,16 +538,17 @@ class NewButton extends StatelessWidget {
             ),
         ],
         const ArDriveNewButtonDivider(),
-        if (drivesState is DrivesLoadSuccess) ...[
-          ArDriveNewButtonItem(
-            onClick: () {
-              promptToCreateDrive(context);
-            },
-            isDisabled: !drivesState.canCreateNewDrive || !canUpload,
-            name: appLocalizations.newDrive,
-            icon: ArDriveIcons.addDrive(size: defaultIconSize),
-          ),
-        ],
+        // Not gated on the drive list having loaded. Making a drive does not
+        // depend on knowing which drives already exist, and that gate is what
+        // left the All Drives menu holding nothing but an Advanced submenu.
+        ArDriveNewButtonItem(
+          onClick: () {
+            promptToCreateDrive(context);
+          },
+          isDisabled: !canUpload,
+          name: appLocalizations.newDrive,
+          icon: ArDriveIcons.addDrive(size: defaultIconSize),
+        ),
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
           ArDriveNewButtonItem(
             onClick: () => promptToCreateFolder(
@@ -554,7 +568,9 @@ class NewButton extends StatelessWidget {
             ),
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.newNote,
-            icon: ArDriveIcons.edit(size: defaultIconSize), // TODO: Create dedicated note icon (document/text icon)
+            icon: ArDriveIcons.edit(
+                size:
+                    defaultIconSize), // TODO: Create dedicated note icon (document/text icon)
           ),
           if (drive != null)
             ArDriveNewButtonItem(

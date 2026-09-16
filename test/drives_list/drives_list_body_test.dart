@@ -40,11 +40,13 @@ void main() {
   var opened = <String>[];
   var triedAgain = 0;
   var syncedAll = 0;
+  var newDrives = 0;
 
   setUp(() {
     opened = <String>[];
     triedAgain = 0;
     syncedAll = 0;
+    newDrives = 0;
   });
 
   Future<void> pumpBody(
@@ -53,6 +55,7 @@ void main() {
     double width = 1200,
     double height = 900,
     bool dark = false,
+    bool offersNewDrive = false,
   }) async {
     await tester.binding.setSurfaceSize(Size(width, height));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -75,12 +78,41 @@ void main() {
               onOpenDrive: (drive) => opened.add(drive.id),
               onTryAgain: () => triedAgain++,
               onSyncAllDrives: () => syncedAll++,
+              onNewDrive: offersNewDrive ? () => newDrives++ : null,
             ),
           ),
         ),
       ),
     );
   }
+
+  /// Making a drive is what this page is for, and it used to be reachable only
+  /// from the sidebar's New menu - where every other item needs a drive open,
+  /// so on this page that menu held nothing but a submenu to attaching a drive.
+  /// Readers took an app offering no options for a broken one.
+  group('the heading offers a new drive', () {
+    final loaded = DrivesListLoaded(
+      drives: [drive(id: 'a', name: 'Photos')],
+    );
+
+    testWidgets('and starts one when pressed', (tester) async {
+      await pumpBody(tester, loaded, offersNewDrive: true);
+
+      expect(find.text('New Drive'), findsOneWidget);
+
+      await tester.tap(find.text('New Drive'));
+      await tester.pump();
+
+      expect(newDrives, 1);
+    });
+
+    testWidgets('and offers nothing where it cannot be started',
+        (tester) async {
+      await pumpBody(tester, loaded);
+
+      expect(find.text('New Drive'), findsNothing);
+    });
+  });
 
   /// The chrome that makes this list read as the same component as every
   /// other table in the app, rather than as a spreadsheet parked on the page.
