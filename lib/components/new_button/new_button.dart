@@ -442,7 +442,10 @@ class NewButton extends StatelessWidget {
           onClick: () {
             promptToCreateDrive(context);
           },
-          isDisabled: !canUpload,
+          // Never greyed. A wallet that cannot pay is not a reason to withhold
+          // the action: the dialog behind it says so and offers to top up,
+          // which is more use than a dead control. It also matches the getting
+          // started cards, which open the same dialog ungated.
           name: appLocalizations.newDrive,
           icon: ArDriveIcons.addDrive(size: defaultIconSize),
         ),
@@ -550,7 +553,10 @@ class NewButton extends StatelessWidget {
           onClick: () {
             promptToCreateDrive(context);
           },
-          isDisabled: !canUpload,
+          // Never greyed. A wallet that cannot pay is not a reason to withhold
+          // the action: the dialog behind it says so and offers to top up,
+          // which is more use than a dead control. It also matches the getting
+          // started cards, which open the same dialog ungated.
           name: appLocalizations.newDrive,
           icon: ArDriveIcons.addDrive(size: defaultIconSize),
         ),
