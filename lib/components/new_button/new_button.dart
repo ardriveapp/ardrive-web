@@ -539,7 +539,10 @@ class NewButton extends StatelessWidget {
               !driveDetailState.hasWritePermissions || !canUpload,
             ),
         ],
-        const ArDriveNewButtonDivider(),
+        // Only between two groups. With no drive open the group above is empty,
+        // and an unconditional rule drew a hairline across the top of the sheet
+        // before the first item.
+        if (hasDriveInView) const ArDriveNewButtonDivider(),
         // Not gated on the drive list having loaded. Making a drive does not
         // depend on knowing which drives already exist, and that gate is what
         // left the All Drives menu holding nothing but an Advanced submenu.

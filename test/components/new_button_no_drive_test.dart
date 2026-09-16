@@ -114,4 +114,13 @@ void main() {
     expect(find.text('Attach Drive'), findsOneWidget);
     expect(find.text('Advanced'), findsNothing);
   });
+
+  /// The rule between two groups, with nothing above it. The group it used to
+  /// separate is empty with no drive open, so it drew a hairline across the top
+  /// of the sheet before the first item.
+  testWidgets('and opens with an item rather than a rule', (tester) async {
+    await pumpMenu(tester, bottomNavigation: true);
+
+    expect(find.byType(Divider), findsNothing);
+  });
 }
