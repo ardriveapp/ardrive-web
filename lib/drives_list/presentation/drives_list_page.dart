@@ -11,7 +11,6 @@ import 'dart:math' as math;
 
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
-import 'package:ardrive/components/drive_create_form.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
@@ -216,7 +215,6 @@ class _DrivesListChrome extends StatelessWidget {
           onSyncChanged: cubit.syncDrivesWithUnreadChanges,
           buildMenu: (drive) => _menuFor(drivesState, drive),
           syncMenu: const DrivesSyncMenu(),
-          onNewDrive: () => promptToCreateDrive(context),
         );
 
         // The chrome follows the app shell's own desktop/mobile split, because
@@ -355,7 +353,6 @@ class DrivesListBody extends StatelessWidget {
     this.onSyncChanged,
     this.buildMenu,
     this.syncMenu,
-    this.onNewDrive,
   });
 
   final DrivesListState state;
@@ -391,12 +388,6 @@ class DrivesListBody extends StatelessWidget {
   /// as [buildMenu].
   final Widget? syncMenu;
 
-  /// Starts a new drive, or null where that cannot be offered.
-  ///
-  /// A callback like every other action here: creating a drive needs four
-  /// app-wide providers, and this widget exists to be drawn without them.
-  final VoidCallback? onNewDrive;
-
   @override
   Widget build(BuildContext context) {
     final state = this.state;
@@ -430,7 +421,6 @@ class DrivesListBody extends StatelessWidget {
         onClearSelection: onClearSelection,
         onRetryFailed: onRetryFailed,
         onSyncChanged: onSyncChanged,
-        onNewDrive: onNewDrive,
       );
     }
 
@@ -636,7 +626,6 @@ class _DrivesListLoadedView extends StatelessWidget {
     this.onClearSelection,
     this.onRetryFailed,
     this.onSyncChanged,
-    this.onNewDrive,
   });
 
   final DrivesListLoaded state;
@@ -649,7 +638,6 @@ class _DrivesListLoadedView extends StatelessWidget {
   final VoidCallback? onClearSelection;
   final VoidCallback? onRetryFailed;
   final VoidCallback? onSyncChanged;
-  final VoidCallback? onNewDrive;
   final Widget? Function(DriveListItem drive)? buildMenu;
 
   /// The drive-wide sync actions, passed in rather than reached for.
@@ -898,25 +886,6 @@ class _DrivesListLoadedView extends StatelessWidget {
                   ),
                 ),
               ),
-              // The one action this page is *for*. It lived only in the
-              // sidebar's New menu, where every other item is gated on a drive
-              // being open - so on this page that menu held nothing but a
-              // submenu to attaching a drive, and readers took an app offering
-              // no options for a broken one.
-              if (onNewDrive != null) ...[
-                const SizedBox(width: 16),
-                ArDriveButtonNew(
-                  text: appLocalizationsOf(context).newDrive,
-                  typography: typography,
-                  variant: ButtonVariant.outline,
-                  maxHeight: 32,
-                  // A width, for the same reason the sync button carries one:
-                  // without it this is a Stack that expands, and in a Row that
-                  // is an infinite-width layout error rather than a button.
-                  maxWidth: 132,
-                  onPressed: onNewDrive,
-                ),
-              ],
               if (syncMenu != null) ...[
                 const SizedBox(width: 16),
                 syncMenu!,

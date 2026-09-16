@@ -39,7 +39,10 @@ void main() {
     );
   });
 
-  Future<void> pumpMenu(WidgetTester tester) async {
+  Future<void> pumpMenu(
+    WidgetTester tester, {
+    bool bottomNavigation = false,
+  }) async {
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -64,7 +67,8 @@ void main() {
                 child: NewButton(
                   drive: null,
                   driveDetailState: DriveDetailLoadInProgress(),
-                  child: const Text('open me'),
+                  isBottomNavigationButton: bottomNavigation,
+                  child: bottomNavigation ? null : const Text('open me'),
                 ),
               ),
             ),
@@ -73,7 +77,11 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('open me'));
+    // The plus button draws its own control and opens a modal; the sidebar
+    // menu wraps whatever child it is given.
+    await tester.tap(
+      bottomNavigation ? find.byType(ArDriveFAB) : find.text('open me'),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -92,6 +100,17 @@ void main() {
   testWidgets('and puts attaching a drive at the top level', (tester) async {
     await pumpMenu(tester);
 
+    expect(find.text('Attach Drive'), findsOneWidget);
+    expect(find.text('Advanced'), findsNothing);
+  });
+
+  /// The same menu on mobile, which is the plus button on a drive page. It
+  /// lands here only while that drive has not loaded or cannot be read, and
+  /// the rule is the reader's, not the surface's.
+  testWidgets('and does the same on the mobile plus button', (tester) async {
+    await pumpMenu(tester, bottomNavigation: true);
+
+    expect(find.text('New Drive'), findsOneWidget);
     expect(find.text('Attach Drive'), findsOneWidget);
     expect(find.text('Advanced'), findsNothing);
   });

@@ -493,6 +493,8 @@ class NewButton extends StatelessWidget {
 
   List<ArDriveNewButtonComponent> _getPlusButtonItems(BuildContext context) {
     final driveDetailState = context.read<DriveDetailCubit>().state;
+    final hasDriveInView =
+        driveDetailState is DriveDetailLoadSuccess && drive != null;
     final appLocalizations = appLocalizationsOf(context);
     final profileState = context.read<ProfileCubit>().state;
     final profile = profileState;
@@ -582,20 +584,27 @@ class NewButton extends StatelessWidget {
             ),
           const ArDriveNewButtonDivider(),
         ],
-        ArDriveNewButtonItem(
-          iconAlignment: ArDriveArDriveDropdownItemTileIconAlignment.right,
-          name: appLocalizationsOf(context).advanced,
-          display: _getAdvancedItems(context).isNotEmpty,
-          icon: ArDriveIcons.carretRight(size: defaultIconSize),
-          isDisabled: false,
-          onClick: () {
-            _displayPlusModal(
-              context,
-              ScrollController(),
-              _getAdvancedItems(context),
-            );
-          },
-        ),
+        // Same rule as the sidebar menu: with no drive open, everything under
+        // Advanced is gone but attaching a drive, and a row that opens a modal
+        // onto one action reads as a menu with nothing in it. This menu is the
+        // mobile button on a drive page, so it only lands here while that drive
+        // has not loaded or cannot be read.
+        if (!hasDriveInView) ..._getAdvancedItems(context),
+        if (hasDriveInView)
+          ArDriveNewButtonItem(
+            iconAlignment: ArDriveArDriveDropdownItemTileIconAlignment.right,
+            name: appLocalizationsOf(context).advanced,
+            display: _getAdvancedItems(context).isNotEmpty,
+            icon: ArDriveIcons.carretRight(size: defaultIconSize),
+            isDisabled: false,
+            onClick: () {
+              _displayPlusModal(
+                context,
+                ScrollController(),
+                _getAdvancedItems(context),
+              );
+            },
+          ),
       ];
     } else {
       return [
