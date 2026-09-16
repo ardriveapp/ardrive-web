@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/turbo/models/turbo_free_allowance.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/utils/get_signature_headers_for_turbo.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -112,6 +113,41 @@ class PaymentService {
   }) async {
     final turboBalance = await getBalanceAndPaidBy(wallet: wallet);
     return turboBalance.balance;
+  }
+
+  /// What an address holds in one of Turbo's chain-scoped accounts.
+  ///
+  /// Separate from [getBalanceAndPaidBy] because the inputs and the purpose are
+  /// different. That one takes a [Wallet], derives its address and asks about
+  /// money this app is going to spend. This takes a bare address on a chain the
+  /// app holds no wallet for, and asks a diagnostic question: is the balance
+  /// somebody is looking for sitting somewhere we never look?
+  ///
+  /// Nothing returned here is spendable. Turbo bills the account that signs the
+  /// upload, so credits on a sign-in wallet stay where they are until their
+  /// owner shares them across.
+  ///
+  /// Returns zero for an account Turbo has never seen, because 404 is how Turbo
+  /// says "no such account" and for this question that is the same answer as
+  /// "nothing there".
+  Future<BigInt> getBalanceForAddress({
+    required String address,
+    required WalletType walletType,
+  }) async {
+    try {
+      final result = await httpClient.get(
+        url: '$turboPaymentUri/v1/account/balance/'
+            '${walletType.turboTokenNamespace}?address=$address',
+      );
+
+      return BigInt.parse(json.decode(result.data)['effectiveBalance']);
+    } catch (error) {
+      if (error is ArDriveHTTPException && error.statusCode == 404) {
+        return BigInt.zero;
+      }
+
+      rethrow;
+    }
   }
 
   /// Fetches how much of the wallet's Turbo free-upload allowance is left.
