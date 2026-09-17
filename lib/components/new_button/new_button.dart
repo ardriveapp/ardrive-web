@@ -245,7 +245,19 @@ class NewButton extends StatelessWidget {
       },
     ).toList());
     final advancedItems = _getAdvancedItems(context);
-    if (advancedItems.isNotEmpty) {
+    final hasDriveInView =
+        driveDetailState is DriveDetailLoadSuccess && drive != null;
+
+    // Without a drive open, everything under Advanced is gone but attaching a
+    // drive. A menu whose only row opens a submenu holding one action reads as
+    // an empty menu, so with no drive those items sit at the top level.
+    if (advancedItems.isNotEmpty && !hasDriveInView) {
+      topLevelItems.addAll(
+        advancedItems.map(
+          (advancedItem) => _newButtonItemToSubMenuItem(context, advancedItem),
+        ),
+      );
+    } else if (advancedItems.isNotEmpty) {
       topLevelItems.add(
         ArDriveSubmenuItem(
           isDisabled: false,
@@ -383,7 +395,6 @@ class NewButton extends StatelessWidget {
 
   List<ArDriveNewButtonComponent> _getTopItems(BuildContext context) {
     final driveDetailState = context.read<DriveDetailCubit>().state;
-    final drivesState = context.read<DrivesCubit>().state;
     final appLocalizations = appLocalizationsOf(context);
     final profileState = context.read<ProfileCubit>().state;
     final profile = profileState;
@@ -424,16 +435,20 @@ class NewButton extends StatelessWidget {
           ),
           const ArDriveNewButtonDivider(),
         ],
-        if (drivesState is DrivesLoadSuccess) ...[
-          ArDriveNewButtonItem(
-            onClick: () {
-              promptToCreateDrive(context);
-            },
-            isDisabled: !drivesState.canCreateNewDrive || !canUpload,
-            name: appLocalizations.newDrive,
-            icon: ArDriveIcons.addDrive(size: defaultIconSize),
-          ),
-        ],
+        // Not gated on the drive list having loaded. Making a drive does not
+        // depend on knowing which drives already exist, and that gate is what
+        // left the All Drives menu holding nothing but an Advanced submenu.
+        ArDriveNewButtonItem(
+          onClick: () {
+            promptToCreateDrive(context);
+          },
+          // Never greyed. A wallet that cannot pay is not a reason to withhold
+          // the action: the dialog behind it says so and offers to top up,
+          // which is more use than a dead control. It also matches the getting
+          // started cards, which open the same dialog ungated.
+          name: appLocalizations.newDrive,
+          icon: ArDriveIcons.addDrive(size: defaultIconSize),
+        ),
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
           ArDriveNewButtonItem(
             onClick: () => promptToCreateFolder(
@@ -453,7 +468,9 @@ class NewButton extends StatelessWidget {
             ),
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.newNote,
-            icon: ArDriveIcons.edit(size: defaultIconSize), // TODO: Create dedicated note icon (document/text icon)
+            icon: ArDriveIcons.edit(
+                size:
+                    defaultIconSize), // TODO: Create dedicated note icon (document/text icon)
           ),
           if (drive != null)
             ArDriveNewButtonItem(
@@ -479,7 +496,8 @@ class NewButton extends StatelessWidget {
 
   List<ArDriveNewButtonComponent> _getPlusButtonItems(BuildContext context) {
     final driveDetailState = context.read<DriveDetailCubit>().state;
-    final drivesState = context.read<DrivesCubit>().state;
+    final hasDriveInView =
+        driveDetailState is DriveDetailLoadSuccess && drive != null;
     final appLocalizations = appLocalizationsOf(context);
     final profileState = context.read<ProfileCubit>().state;
     final profile = profileState;
@@ -524,17 +542,24 @@ class NewButton extends StatelessWidget {
               !driveDetailState.hasWritePermissions || !canUpload,
             ),
         ],
-        const ArDriveNewButtonDivider(),
-        if (drivesState is DrivesLoadSuccess) ...[
-          ArDriveNewButtonItem(
-            onClick: () {
-              promptToCreateDrive(context);
-            },
-            isDisabled: !drivesState.canCreateNewDrive || !canUpload,
-            name: appLocalizations.newDrive,
-            icon: ArDriveIcons.addDrive(size: defaultIconSize),
-          ),
-        ],
+        // Only between two groups. With no drive open the group above is empty,
+        // and an unconditional rule drew a hairline across the top of the sheet
+        // before the first item.
+        if (hasDriveInView) const ArDriveNewButtonDivider(),
+        // Not gated on the drive list having loaded. Making a drive does not
+        // depend on knowing which drives already exist, and that gate is what
+        // left the All Drives menu holding nothing but an Advanced submenu.
+        ArDriveNewButtonItem(
+          onClick: () {
+            promptToCreateDrive(context);
+          },
+          // Never greyed. A wallet that cannot pay is not a reason to withhold
+          // the action: the dialog behind it says so and offers to top up,
+          // which is more use than a dead control. It also matches the getting
+          // started cards, which open the same dialog ungated.
+          name: appLocalizations.newDrive,
+          icon: ArDriveIcons.addDrive(size: defaultIconSize),
+        ),
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
           ArDriveNewButtonItem(
             onClick: () => promptToCreateFolder(
@@ -554,7 +579,9 @@ class NewButton extends StatelessWidget {
             ),
             isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
             name: appLocalizations.newNote,
-            icon: ArDriveIcons.edit(size: defaultIconSize), // TODO: Create dedicated note icon (document/text icon)
+            icon: ArDriveIcons.edit(
+                size:
+                    defaultIconSize), // TODO: Create dedicated note icon (document/text icon)
           ),
           if (drive != null)
             ArDriveNewButtonItem(
@@ -566,20 +593,27 @@ class NewButton extends StatelessWidget {
             ),
           const ArDriveNewButtonDivider(),
         ],
-        ArDriveNewButtonItem(
-          iconAlignment: ArDriveArDriveDropdownItemTileIconAlignment.right,
-          name: appLocalizationsOf(context).advanced,
-          display: _getAdvancedItems(context).isNotEmpty,
-          icon: ArDriveIcons.carretRight(size: defaultIconSize),
-          isDisabled: false,
-          onClick: () {
-            _displayPlusModal(
-              context,
-              ScrollController(),
-              _getAdvancedItems(context),
-            );
-          },
-        ),
+        // Same rule as the sidebar menu: with no drive open, everything under
+        // Advanced is gone but attaching a drive, and a row that opens a modal
+        // onto one action reads as a menu with nothing in it. This menu is the
+        // mobile button on a drive page, so it only lands here while that drive
+        // has not loaded or cannot be read.
+        if (!hasDriveInView) ..._getAdvancedItems(context),
+        if (hasDriveInView)
+          ArDriveNewButtonItem(
+            iconAlignment: ArDriveArDriveDropdownItemTileIconAlignment.right,
+            name: appLocalizationsOf(context).advanced,
+            display: _getAdvancedItems(context).isNotEmpty,
+            icon: ArDriveIcons.carretRight(size: defaultIconSize),
+            isDisabled: false,
+            onClick: () {
+              _displayPlusModal(
+                context,
+                ScrollController(),
+                _getAdvancedItems(context),
+              );
+            },
+          ),
       ];
     } else {
       return [
