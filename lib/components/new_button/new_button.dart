@@ -247,19 +247,12 @@ class NewButton extends StatelessWidget {
       },
     ).toList());
     final advancedItems = _getAdvancedItems(context);
-    final hasDriveInView =
-        driveDetailState is DriveDetailLoadSuccess && drive != null;
 
-    // Without a drive open, everything under Advanced is gone but attaching a
-    // drive. A menu whose only row opens a submenu holding one action reads as
-    // an empty menu, so with no drive those items sit at the top level.
-    if (advancedItems.isNotEmpty && !hasDriveInView) {
-      topLevelItems.addAll(
-        advancedItems.map(
-          (advancedItem) => _newButtonItemToSubMenuItem(context, advancedItem),
-        ),
-      );
-    } else if (advancedItems.isNotEmpty) {
+    // Advanced holds only what needs the drive's contents, so with no drive
+    // open it is empty and never drawn. It used to hold attaching a drive as
+    // well, which is why a menu with no drive open was one row opening onto
+    // one action.
+    if (advancedItems.isNotEmpty) {
       topLevelItems.add(
         ArDriveSubmenuItem(
           isDisabled: false,
@@ -338,11 +331,6 @@ class NewButton extends StatelessWidget {
       );
 
       return [
-        ArDriveNewButtonItem(
-          onClick: () => attachDrive(context: context),
-          name: appLocalizations.attachDrive,
-          icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
-        ),
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
           if (driveDetailState.currentDrive.privacy == 'public')
             ArDriveNewButtonItem(
@@ -551,7 +539,12 @@ class NewButton extends StatelessWidget {
       final folderItems = _folderItems(context, canUpload: canUpload);
 
       return [
+        // Everything that goes into the folder in view, then the drives
+        // themselves. New Drive used to sit in the middle of the folder
+        // actions, which is how a menu comes to read as a list of whatever
+        // was added last.
         ..._uploadItems(context, canUpload: canUpload),
+        ...folderItems,
         const ArDriveNewButtonDivider(),
         // Not gated on the drive list having loaded. Making a drive does not
         // depend on knowing which drives already exist, and that gate is what
@@ -567,8 +560,13 @@ class NewButton extends StatelessWidget {
           name: appLocalizations.newDrive,
           icon: ArDriveIcons.addDrive(size: defaultIconSize),
         ),
-        ...folderItems,
-        if (folderItems.isNotEmpty) const ArDriveNewButtonDivider(),
+        ArDriveNewButtonItem(
+          onClick: () => attachDrive(context: context),
+          name: appLocalizations.attachDrive,
+          icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
+        ),
+        if (_getAdvancedItems(context).isNotEmpty)
+          const ArDriveNewButtonDivider(),
       ];
     } else {
       return [
@@ -583,8 +581,6 @@ class NewButton extends StatelessWidget {
 
   List<ArDriveNewButtonComponent> _getPlusButtonItems(BuildContext context) {
     final driveDetailState = context.read<DriveDetailCubit>().state;
-    final hasDriveInView =
-        driveDetailState is DriveDetailLoadSuccess && drive != null;
     final appLocalizations = appLocalizationsOf(context);
     final profileState = context.read<ProfileCubit>().state;
     final profile = profileState;
@@ -598,6 +594,7 @@ class NewButton extends StatelessWidget {
       final folderItems = _folderItems(context, canUpload: canUpload);
 
       return [
+        // The same grouping as the sidebar menu: this folder, then drives.
         ..._uploadItems(context, canUpload: canUpload),
         if (driveDetailState is DriveDetailLoadSuccess &&
             drive != null &&
@@ -606,8 +603,7 @@ class NewButton extends StatelessWidget {
             context,
             !driveDetailState.hasWritePermissions || !canUpload,
           ),
-        // Uploading is always the first group now, so this always separates
-        // two groups.
+        ...folderItems,
         const ArDriveNewButtonDivider(),
         // Not gated on the drive list having loaded. Making a drive does not
         // depend on knowing which drives already exist, and that gate is what
@@ -623,19 +619,19 @@ class NewButton extends StatelessWidget {
           name: appLocalizations.newDrive,
           icon: ArDriveIcons.addDrive(size: defaultIconSize),
         ),
-        ...folderItems,
-        if (folderItems.isNotEmpty) const ArDriveNewButtonDivider(),
-        // Same rule as the sidebar menu: with no drive open, everything under
-        // Advanced is gone but attaching a drive, and a row that opens a modal
-        // onto one action reads as a menu with nothing in it. The drive page
-        // only draws this button once its drive has loaded, so this is the
-        // sidebar's rule kept in step rather than a state it reaches today.
-        if (!hasDriveInView) ..._getAdvancedItems(context),
-        if (hasDriveInView)
+        ArDriveNewButtonItem(
+          onClick: () => attachDrive(context: context),
+          name: appLocalizations.attachDrive,
+          icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
+        ),
+        // Advanced holds only what needs the drive's contents now that
+        // attaching one sits with the drive actions, so with no drive open it
+        // is empty and this row is simply absent.
+        if (_getAdvancedItems(context).isNotEmpty) ...[
+          const ArDriveNewButtonDivider(),
           ArDriveNewButtonItem(
             iconAlignment: ArDriveArDriveDropdownItemTileIconAlignment.right,
             name: appLocalizationsOf(context).advanced,
-            display: _getAdvancedItems(context).isNotEmpty,
             icon: ArDriveIcons.carretRight(size: defaultIconSize),
             isDisabled: false,
             onClick: () {
@@ -646,6 +642,7 @@ class NewButton extends StatelessWidget {
               );
             },
           ),
+        ],
       ];
     } else {
       return [

@@ -24,13 +24,19 @@ void main() {
   final website = _drive('website', 'Website', privacy: 'public');
   final archive = _drive('archive', 'Archive');
 
-  Future<void> open(WidgetTester tester, WidgetBuilder dialog) async {
-    await tester.binding.setSurfaceSize(const Size(1200, 900));
+  Future<void> open(
+    WidgetTester tester,
+    WidgetBuilder dialog, {
+    Size size = const Size(1200, 900),
+    bool dark = false,
+  }) async {
+    await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
       ArDriveTheme(
-        themeData: lightTheme(),
+        // Passing no theme data is how ArDriveTheme yields the dark theme.
+        themeData: dark ? null : lightTheme(),
         child: MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -63,6 +69,8 @@ void main() {
     Future<void> openChooser(
       WidgetTester tester, {
       Set<String> unsynced = const {},
+      Size size = const Size(1200, 900),
+      bool dark = false,
     }) =>
         open(
           tester,
@@ -71,7 +79,36 @@ void main() {
             unsyncedDriveIds: unsynced,
             onSelect: selected.add,
           ),
+          size: size,
+          dark: dark,
         );
+
+    /// The narrowest phone the app is drawn for. A row that cannot fit its
+    /// name beside its privacy overflows here, and an overflow throws.
+    testWidgets('fits a narrow phone', (tester) async {
+      await openChooser(tester, size: const Size(320, 640));
+
+      expect(find.text('Photos'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+    });
+
+    testWidgets('and reads in the dark theme', (tester) async {
+      await openChooser(tester, dark: true);
+
+      expect(find.text('Photos'), findsOneWidget);
+    });
+
+    /// Every part of a row is text, so a reader who has asked for larger text
+    /// gets larger rows. They may wrap or scroll; they may not be clipped.
+    testWidgets('and survives the largest text a reader can ask for',
+        (tester) async {
+      tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+      await openChooser(tester, size: const Size(320, 640));
+
+      expect(find.text('Photos'), findsOneWidget);
+    });
 
     testWidgets('lists the drives in the order given', (tester) async {
       await openChooser(tester);
@@ -162,6 +199,17 @@ void main() {
           tester,
           (_) => UploadNeedsDriveDialog(onCreateDrive: () => created++),
         );
+
+    testWidgets('fits a narrow phone', (tester) async {
+      await open(
+        tester,
+        (_) => UploadNeedsDriveDialog(onCreateDrive: () => created++),
+        size: const Size(320, 640),
+      );
+
+      expect(find.text('Create a drive first'), findsOneWidget);
+      expect(find.text('New Drive'), findsOneWidget);
+    });
 
     testWidgets('says that files live in drives', (tester) async {
       await openNeedsDrive(tester);

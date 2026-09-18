@@ -76,15 +76,18 @@ void main() {
     required Drive drive,
     required DriveDetailState state,
     bool isFolderUpload = false,
+    Size size = const Size(1200, 900),
+    bool dark = false,
   }) async {
     whenListen(detail, detailStates.stream, initialState: state);
 
-    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
       ArDriveTheme(
-        themeData: lightTheme(),
+        // Passing no theme data is how ArDriveTheme yields the dark theme.
+        themeData: dark ? null : lightTheme(),
         child: MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -120,6 +123,47 @@ void main() {
   }
 
   Finder dialogTitle(Drive drive) => find.text('Upload to ${drive.name}');
+
+  /// The narrowest phone the app is drawn for. A dialog that sets a fixed
+  /// content width overflows here, and an overflow throws in a test.
+  testWidgets('fits a narrow phone', (tester) async {
+    await open(
+      tester,
+      drive: photos,
+      state: loaded(photos),
+      size: const Size(320, 640),
+    );
+
+    expect(dialogTitle(photos), findsOneWidget);
+    expect(find.text('Choose Files'), findsOneWidget);
+  });
+
+  testWidgets('and reads in the dark theme', (tester) async {
+    await open(tester, drive: photos, state: loaded(photos), dark: true);
+
+    expect(dialogTitle(photos), findsOneWidget);
+    expect(find.text('Choose Files'), findsOneWidget);
+  });
+
+  /// A long drive name at twice the text size is taller than a short phone.
+  /// The picker button has to survive that, or the dialog is a dead end.
+  testWidgets('and the largest text a reader can ask for', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2.0;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+    // The same drive the screen is showing: a dialog over any other drive
+    // closes itself, which is what this test was really proving.
+    final longName = _drive('holidays', 'Holidays and other long drive names');
+
+    await open(
+      tester,
+      drive: longName,
+      state: loaded(longName),
+      size: const Size(320, 640),
+    );
+
+    expect(find.text('Choose Files'), findsOneWidget);
+  });
 
   testWidgets('names the drive and says it is private', (tester) async {
     await open(tester, drive: photos, state: loaded(photos));

@@ -70,13 +70,14 @@ void main() {
     );
   });
 
-  Future<void> pumpSidebar(WidgetTester tester) async {
+  Future<void> pumpSidebar(WidgetTester tester, {bool dark = false}) async {
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
       ArDriveTheme(
-        themeData: lightTheme(),
+        // Passing no theme data is how ArDriveTheme yields the dark theme.
+        themeData: dark ? null : lightTheme(),
         child: MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -126,6 +127,15 @@ void main() {
   /// The same words, in the same case, as the rail on the drives list. They
   /// were uppercase here and title case there, which made one grouping read
   /// as two ideas depending on the screen.
+  testWidgets('in the dark theme too', (tester) async {
+    await pumpSidebar(tester, dark: true);
+
+    expect(
+      find.byIcon(DriveScopeRail.iconFor(DriveScope.public)),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('and says it the way the drives list says it', (tester) async {
     await pumpSidebar(tester);
 
