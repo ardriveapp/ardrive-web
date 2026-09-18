@@ -39,12 +39,14 @@ void main() {
     DriveDetailState detailState, {
     SyncState? syncState,
     String? syncingDriveId,
+    Set<String>? runDriveIds,
   }) =>
       driveWait(
         driveId: photos.id,
         detailState: detailState,
         syncState: syncState ?? SyncIdle(),
         syncingDriveId: syncingDriveId,
+        runDriveIds: runDriveIds,
       );
 
   group('an open drive', () {
@@ -95,6 +97,20 @@ void main() {
           syncingDriveId: photos.id,
         ),
         DriveWait.syncing,
+      );
+    });
+
+    /// Reading the drive list is a sync's first phase. A run over other
+    /// drives does not touch this one, but starting its sync beside that run
+    /// would be two at once. Found by CodeRabbit.
+    test('says a sync is busy while one reads the drive list for others', () {
+      expect(
+        waitFor(
+          DriveDetailLoadUnsynced(drive: photos),
+          syncState: SyncLoadingDrives(),
+          runDriveIds: {other.id},
+        ),
+        DriveWait.syncBusy,
       );
     });
 

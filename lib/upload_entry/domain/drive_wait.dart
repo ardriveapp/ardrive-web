@@ -91,7 +91,11 @@ DriveWait driveWait({
 
     // One sync at a time, and no queue: asking now would be refused, and a
     // refusal nobody can see is the silence this whole change is about.
-    if (syncState is SyncInProgress) {
+    //
+    // Reading the drive list is the first phase of a sync, not a pause
+    // before one. A run over other drives, in that phase, does not touch
+    // this one - but a second sync started beside it is still a second sync.
+    if (syncState is SyncInProgress || syncState is SyncLoadingDrives) {
       return DriveWait.syncBusy;
     }
 
