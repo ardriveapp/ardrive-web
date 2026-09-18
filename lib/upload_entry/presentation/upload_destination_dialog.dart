@@ -26,34 +26,29 @@ class UploadDestinationDialog extends StatelessWidget {
   /// Called after this dialog has closed.
   final void Function(Drive drive) onSelect;
 
-  /// Past this the list scrolls rather than pushing the Cancel button off a
-  /// short screen.
-  static const _maxListHeight = 320.0;
-
   @override
   Widget build(BuildContext context) {
     return ArDriveStandardModalNew(
       title: appLocalizationsOf(context).uploadWhichDrive,
+      // Bounded to the viewport and scrolled when it will not fit, so the
+      // Cancel button cannot be pushed off a short screen - which is what a
+      // phone at twice the text size is.
+      scrollableContent: true,
       content: SizedBox(
         width: kMediumDialogWidth,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: _maxListHeight),
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: drives.length,
-            itemBuilder: (context, index) {
-              final drive = drives[index];
-
-              return _DestinationRow(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final drive in drives)
+              _DestinationRow(
                 drive: drive,
                 isUnsynced: unsyncedDriveIds.contains(drive.id),
                 onTap: () {
                   Navigator.of(context).pop();
                   onSelect(drive);
                 },
-              );
-            },
-          ),
+              ),
+          ],
         ),
       ),
       actions: [
@@ -174,6 +169,7 @@ class UploadNeedsDriveDialog extends StatelessWidget {
     return ArDriveStandardModalNew(
       title: l10n.uploadNeedsDriveTitle,
       description: l10n.uploadNeedsDriveDescription,
+      scrollableContent: true,
       actions: [
         ModalAction(
           action: () => Navigator.of(context).pop(),

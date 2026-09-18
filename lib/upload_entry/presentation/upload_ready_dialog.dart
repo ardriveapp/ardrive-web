@@ -80,6 +80,9 @@ class _UploadReadyDialogState extends State<UploadReadyDialog> {
 
     return ArDriveStandardModalNew(
       title: l10n.uploadToDrive(widget.drive.name),
+      // See the drive chooser: a long drive name at twice the text size is
+      // taller than a short phone, and the picker button may not go with it.
+      scrollableContent: true,
       content: SizedBox(
         width: kMediumDialogWidth,
         child: _Privacy(drive: widget.drive),
