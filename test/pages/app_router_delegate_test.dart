@@ -21,6 +21,9 @@ void main() {
 
   setUp(() => delegate = AppRouterDelegate());
 
+  // A waiting upload holds a timer; logging out is what drops it.
+  tearDown(() => delegate.clearState());
+
   /// What the attach flow does when it finishes: the drive id is cleared so the
   /// attach prompt cannot fire again, and the drive is then selected fresh.
   void attachCompletes() => delegate.driveId = null;
@@ -285,6 +288,36 @@ void main() {
 
       delegate.clearState();
 
+      expect(delegate.pendingUpload, isNull);
+    });
+
+    /// An upload waits for the second or two a drive takes to open, never for
+    /// a sync. Held longer, the dialog would land minutes later on whatever
+    /// the reader had moved on to, or on a later visit to that drive.
+    testWidgets('expires if its drive does not open in time', (tester) async {
+      delegate.requestUpload(request);
+
+      await tester.pump(
+        AppRouterDelegate.uploadWaitLimit - const Duration(milliseconds: 1),
+      );
+      expect(delegate.pendingUpload, request, reason: 'still opening');
+
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(delegate.pendingUpload, isNull);
+    });
+
+    testWidgets('restarts that clock when pressed again', (tester) async {
+      const second =
+          UploadRequest(driveId: otherDriveId, isFolderUpload: false);
+
+      delegate.requestUpload(request);
+      await tester.pump(const Duration(seconds: 8));
+      delegate.requestUpload(second);
+      await tester.pump(const Duration(seconds: 8));
+
+      expect(delegate.pendingUpload, second);
+
+      await tester.pump(const Duration(seconds: 2));
       expect(delegate.pendingUpload, isNull);
     });
 

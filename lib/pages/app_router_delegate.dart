@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
@@ -124,10 +126,22 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   ///
   /// Held and honoured the way [_pendingInfoDriveId] is, for the same reason:
   /// an upload can only start from inside a loaded drive, because
-  /// `promptToUpload` reads the explorer's own cubit. The explorer opens the
-  /// upload dialog when the drive reports in - loaded, or unsynced, since the
-  /// dialog is what gets an unsynced drive ready - and clears this as it does.
+  /// `promptToUpload` reads the explorer's own cubit. When the drive reports
+  /// in, the explorer opens the upload dialog if it is loaded, or starts its
+  /// sync if nothing has read it, and clears this either way.
   UploadRequest? _pendingUpload;
+
+  /// Ends a waiting upload that its drive never came to.
+  Timer? _pendingUploadExpiry;
+
+  /// How long an upload waits for its drive to open.
+  ///
+  /// Opening takes a second or two. Anything longer is a drive the explorer
+  /// is holding back for some other reason, and an upload dialog that turned
+  /// up afterwards would land on whatever the reader had moved on to - or,
+  /// if they came back to that drive later, on a visit that had nothing to do
+  /// with it.
+  static const uploadWaitLimit = Duration(seconds: 10);
 
   /// The standing upload request, for tests.
   @visibleForTesting
@@ -688,6 +702,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// request replaces the first: only the latest press is still wanted.
   void requestUpload(UploadRequest request) {
     _pendingUpload = request;
+    _pendingUploadExpiry?.cancel();
+    _pendingUploadExpiry = Timer(uploadWaitLimit, _dropPendingUpload);
+  }
+
+  void _dropPendingUpload() {
+    _pendingUploadExpiry?.cancel();
+    _pendingUploadExpiry = null;
+    _pendingUpload = null;
   }
 
   /// Moves a waiting upload along as its drive reports in.
@@ -704,7 +726,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     }
 
     if (!actOnUpload(context, request: request, detailState: state)) {
-      _pendingUpload = null;
+      _dropPendingUpload();
     }
   }
 
@@ -867,7 +889,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingFolderDriveId = null;
     _pendingFolderId = null;
     _pendingInfoDriveId = null;
-    _pendingUpload = null;
+    _dropPendingUpload();
     // A search somebody ran before logging out is not an instruction to the
     // next person to sign in on this device. Every other pending field here is
     // cleared for the same reason.

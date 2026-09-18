@@ -658,6 +658,10 @@
     "description": "Action on the unsynced drive card once a sync has already looked and found nothing. Deliberately not Sync Now, which was the button that was already pressed"
   },
   "driveSyncNotStartedAnotherDriveIsSyncing": "Another drive is syncing, so this one was not started. Sync it once that one finishes.",
+  "driveIsSyncingTryLater": "This drive is syncing. Try again once it finishes.",
+  "@driveIsSyncingTryLater": {
+    "description": "Shown when an action in the New menu needs a drive that a sync is reading right now. Nothing is queued."
+  },
   "@driveSyncNotStartedAnotherDriveIsSyncing": {
     "description": "Shown on the unsynced drive card when a sync for a different drive is running. One sync runs at a time and there is no queue, so opening this drive started nothing - this is what says so, instead of leaving the user on a card with no request in flight and no explanation"
   },

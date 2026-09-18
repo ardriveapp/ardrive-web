@@ -85,14 +85,16 @@ void main() {
     });
 
     /// Minutes, not seconds. The reader comes back and presses Upload again.
-    test('drops the upload when its own sync is already running', () {
+    /// Dropped, but said: a press that silently does nothing is the
+    /// problem this whole change is about.
+    test('says its own sync is already running, and waits for nothing', () {
       expect(
         waitFor(
           DriveDetailLoadUnsynced(drive: photos),
           syncState: SyncInProgress(),
           syncingDriveId: photos.id,
         ),
-        DriveWait.forget,
+        DriveWait.syncing,
       );
     });
 
@@ -119,14 +121,14 @@ void main() {
       expect(waitFor(DriveInitialLoading()), DriveWait.wait);
     });
 
-    test('is not waited for while a sync is writing it', () {
+    test('is not waited for while a sync is writing it, and says so', () {
       expect(
         waitFor(
           DriveDetailLoadInProgress(),
           syncState: SyncInProgress(),
           syncingDriveId: photos.id,
         ),
-        DriveWait.forget,
+        DriveWait.syncing,
       );
     });
 

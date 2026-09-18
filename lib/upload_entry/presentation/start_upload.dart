@@ -66,7 +66,7 @@ Future<void> startUpload(
       }
 
     case UploadIntoDrive(:final drive):
-      _openForUpload(router, drivesCubit, drive.id, isFolderUpload);
+      _openForUpload(context, router, drivesCubit, drive.id, isFolderUpload);
 
     case UploadChooseDrive(:final drives):
       final unsynced =
@@ -81,8 +81,13 @@ Future<void> startUpload(
         content: UploadDestinationDialog(
           drives: drives,
           unsyncedDriveIds: unsynced,
-          onSelect: (drive) =>
-              _openForUpload(router, drivesCubit, drive.id, isFolderUpload),
+          onSelect: (drive) => _openForUpload(
+            context,
+            router,
+            drivesCubit,
+            drive.id,
+            isFolderUpload,
+          ),
         ),
       );
 
@@ -148,6 +153,7 @@ bool actOnUpload(
 
     case DriveWait.sync:
     case DriveWait.syncBusy:
+    case DriveWait.syncing:
       readDriveForAction(context, wait: wait);
 
       return false;
@@ -175,20 +181,25 @@ void readDriveForAction(BuildContext context, {required DriveWait wait}) {
     case DriveWait.syncBusy:
       // Nothing was started and nothing is queued, so the press answers for
       // itself rather than looking ignored.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            appLocalizationsOf(context)
-                .driveSyncNotStartedAnotherDriveIsSyncing,
-          ),
-        ),
+      _say(
+        context,
+        appLocalizationsOf(context).driveSyncNotStartedAnotherDriveIsSyncing,
       );
+
+    case DriveWait.syncing:
+      _say(context, appLocalizationsOf(context).driveIsSyncingTryLater);
 
     case DriveWait.ready:
     case DriveWait.wait:
     case DriveWait.forget:
       break;
   }
+}
+
+void _say(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(message)),
+  );
 }
 
 /// Reads the drive [driveId] needs for an action pressed in its own menu.
@@ -252,15 +263,37 @@ Future<void> showUploadReadyDialog(
 ///
 /// The request goes first: selecting the drive is what opens it, and the
 /// explorer looks for the request as soon as the drive reports in.
+///
+/// Unless a sync is walking that drive. The explorer waits that sync out
+/// before it reports anything, which can be minutes, and an upload must not
+/// arrive at the end of it. So the reader is told, the drive still opens -
+/// that much they did ask for - and nothing waits.
 void _openForUpload(
+  BuildContext context,
   AppRouterDelegate router,
   DrivesCubit drivesCubit,
   String driveId,
   bool isFolderUpload,
 ) {
-  router.requestUpload(
-    UploadRequest(driveId: driveId, isFolderUpload: isFolderUpload),
+  final syncCubit = context.read<SyncCubit>();
+  final beingSynced = SyncCubit.syncTouchesDrive(
+    state: syncCubit.state,
+    syncingDriveId: syncCubit.syncingDriveId,
+    driveId: driveId,
+    completedDriveIds: syncCubit.completedDriveIds,
+    runDriveIds: syncCubit.syncingDriveIds,
   );
+
+  if (beingSynced) {
+    if (context.mounted) {
+      _say(context, appLocalizationsOf(context).driveIsSyncingTryLater);
+    }
+  } else {
+    router.requestUpload(
+      UploadRequest(driveId: driveId, isFolderUpload: isFolderUpload),
+    );
+  }
+
   drivesCubit.selectDrive(driveId);
 }
 

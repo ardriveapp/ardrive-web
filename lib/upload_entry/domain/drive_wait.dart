@@ -26,6 +26,11 @@ enum DriveWait {
   /// pressing Upload has to answer for itself.
   syncBusy,
 
+  /// A sync is reading this very drive. The action cannot wait minutes for
+  /// it, and must not arrive afterwards over whatever the reader is doing
+  /// then, so it is dropped - but out loud, or the press looks ignored.
+  syncing,
+
   /// The drive is opening. Worth waiting through.
   wait,
 
@@ -72,9 +77,9 @@ DriveWait driveWait({
     }
 
     // Already being read. That is a wait of minutes, not seconds, so the
-    // upload is dropped rather than left to arrive over whatever comes next.
+    // action is dropped rather than left to arrive over whatever comes next.
     if (syncTouchesThisDrive) {
-      return DriveWait.forget;
+      return DriveWait.syncing;
     }
 
     // The sync ran and found nothing on chain for this drive. Running it
@@ -96,7 +101,7 @@ DriveWait driveWait({
   if (detailState is DriveDetailLoadInProgress ||
       detailState is DriveInitialLoading) {
     // Opening because a sync is writing it is the long wait again.
-    return syncTouchesThisDrive ? DriveWait.forget : DriveWait.wait;
+    return syncTouchesThisDrive ? DriveWait.syncing : DriveWait.wait;
   }
 
   return DriveWait.forget;
