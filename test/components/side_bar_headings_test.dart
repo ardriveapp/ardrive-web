@@ -13,8 +13,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
+import '../test_utils/fake_user.dart';
 import '../test_utils/mocks.dart';
 
 class _MockGlobalHideBloc extends MockBloc<GlobalHideEvent, GlobalHideState>
@@ -70,7 +72,19 @@ void main() {
     );
   });
 
-  Future<void> pumpSidebar(WidgetTester tester, {bool dark = false}) async {
+  Future<void> pumpSidebar(
+    WidgetTester tester, {
+    bool dark = false,
+    bool loggedIn = false,
+  }) async {
+    if (loggedIn) {
+      whenListen(
+        profileCubit,
+        const Stream<ProfileState>.empty(),
+        initialState: ProfileLoggedIn(user: fakeUserJson, useTurbo: true),
+      );
+    }
+
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -156,5 +170,108 @@ void main() {
         reason: 'the rail does not shout, so neither does this',
       );
     }
+  });
+
+  /// The drive view's nav on the Your Drives rail's grid. It sat 43px further
+  /// in, so its headings started an icon and a gap to the right of All
+  /// drives, and its drive names lined up under the headings' icons rather
+  /// than their words.
+  group('one grid with the rail', () {
+    double left(WidgetTester tester, Finder finder) =>
+        tester.getTopLeft(finder).dx;
+
+    testWidgets('a heading starts where All drives does', (tester) async {
+      await pumpSidebar(tester, loggedIn: true);
+
+      expect(
+        left(tester, find.byIcon(DriveScopeRail.iconFor(DriveScope.private))),
+        left(tester, find.byIcon(DriveScopeRail.iconFor(DriveScope.all))),
+      );
+    });
+
+    testWidgets("a drive's name starts where its heading's words do",
+        (tester) async {
+      await pumpSidebar(tester);
+
+      final heading = DriveScopeRail.labelFor(
+        tester.element(find.byType(AppSideBar)),
+        DriveScope.private,
+      );
+
+      expect(
+          left(tester, find.text('photos')), left(tester, find.text(heading)));
+    });
+
+    /// "Where am I" reads the same whichever nav is showing.
+    testWidgets('the open drive is lit the way the rail lights a scope',
+        (tester) async {
+      await pumpSidebar(tester);
+
+      DriveNavRow rowFor(String text) => tester.widget<DriveNavRow>(
+            find.ancestor(
+              of: find.text(text),
+              matching: find.byType(DriveNavRow),
+            ),
+          );
+
+      expect(rowFor('photos').isCurrent, isTrue);
+      expect(rowFor('website').isCurrent, isFalse);
+    });
+
+    testWidgets('a heading folds its drives away and back', (tester) async {
+      await pumpSidebar(tester);
+
+      final heading = DriveScopeRail.labelFor(
+        tester.element(find.byType(AppSideBar)),
+        DriveScope.private,
+      );
+
+      await tester.tap(find.text(heading));
+      await tester.pump();
+      expect(find.text('photos'), findsNothing);
+
+      await tester.tap(find.text(heading));
+      await tester.pump();
+      expect(find.text('photos'), findsOneWidget);
+    });
+
+    /// Hiding is something a reader does to their own drives.
+    testWidgets('a drive shared with you is never drawn as hidden',
+        (tester) async {
+      whenListen(
+        drivesCubit,
+        const Stream<DrivesState>.empty(),
+        initialState: DrivesLoadSuccess(
+          selectedDriveId: 'photos',
+          userDrives: [_drive('photos', DrivePrivacyTag.private)],
+          sharedDrives: [
+            _drive('shared', DrivePrivacyTag.public).copyWith(isHidden: true),
+          ],
+          drivesWithAlerts: const [],
+          canCreateNewDrive: true,
+        ),
+      );
+      await pumpSidebar(tester);
+
+      final shared = tester.widget<DriveNavRow>(
+        find.ancestor(
+          of: find.text('shared'),
+          matching: find.byType(DriveNavRow),
+        ),
+      );
+      expect(shared.isMuted, isFalse);
+    });
+
+    /// Only the Public group used to do this; Private and Shared did nothing.
+    testWidgets('clicking the open drive goes back to its root, in any group',
+        (tester) async {
+      when(() => driveDetailCubit.openFolder()).thenAnswer((_) async {});
+      await pumpSidebar(tester);
+
+      await tester.tap(find.text('photos'));
+      await tester.pump();
+
+      verify(() => driveDetailCubit.openFolder()).called(1);
+    });
   });
 }

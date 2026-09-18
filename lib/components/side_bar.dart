@@ -37,47 +37,37 @@ import 'package:responsive_builder/responsive_builder.dart';
 /// with its label on the drawer and the expanded rail, and as a bare icon on
 /// the collapsed one, where there is no text to look for.
 
-/// A drives heading, said the way the drives list says it.
+/// A group of drives in the drive view's nav: Public, Private or Shared.
 ///
-/// Public, private and shared mean the same things in both navs, and were
-/// drawn as three uppercase words here and three title-case rows with icons
-/// there. Same words now, same icons, same casing: the icon comes from
-/// [DriveScopeRail.iconFor] and the label from the same strings the rail
-/// reads, so neither can drift.
-///
-/// It still reads as a heading rather than a row, through its weight, its
-/// icon and the accordion's own chevron - which is what the shouting was
-/// doing before.
+/// Drawn from the same [DriveNavRow] as the Your Drives rail and the All
+/// drives row, so the two navs share one grid - the same icon, the same
+/// words from [DriveScopeRail.labelFor], at the same indent - instead of
+/// looking like two products. The drives under it start where its words do.
 class _DrivesHeading extends StatelessWidget {
-  const _DrivesHeading({required this.scope, required this.label});
+  const _DrivesHeading({
+    required this.scope,
+    required this.isExpanded,
+    required this.onToggle,
+  });
 
   final DriveScope scope;
-  final String label;
+  final bool isExpanded;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return Row(
-      children: [
-        Icon(
-          DriveScopeRail.iconFor(scope),
-          size: 16,
-          color: colorTokens.textMid,
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Text(
-            label,
-            overflow: TextOverflow.ellipsis,
-            style: typography.paragraphNormal(
-              fontWeight: ArFontWeight.semiBold,
-              color: colorTokens.textHigh,
-            ),
-          ),
-        ),
-      ],
+    return DriveNavRow(
+      icon: DriveScopeRail.iconFor(scope),
+      label: DriveScopeRail.labelFor(context, scope),
+      onTap: onToggle,
+      isExpanded: isExpanded,
+      trailing: AnimatedRotation(
+        turns: isExpanded ? 0.5 : 0,
+        duration: const Duration(milliseconds: 150),
+        child: ArDriveIcons.chevronDown(size: 16, color: colorTokens.textMid),
+      ),
     );
   }
 }
@@ -341,17 +331,13 @@ class _AppSideBarState extends State<AppSideBar> {
             if (state is DrivesLoadSuccess &&
                 (state.userDrives.isNotEmpty ||
                     state.sharedDrives.isNotEmpty)) {
-              final accordion = _Accordion(state: state, isMobile: isMobile);
-
               // Not Flexible any more: inside the sidebar's scroll view this
               // has no bounded height to take a share of, and asking for one
               // is what kept the list exactly as tall as the window.
-              return isMobile
-                  ? accordion
-                  : Padding(
-                      padding: const EdgeInsets.only(left: 43.0),
-                      child: accordion,
-                    );
+              //
+              // No indent of its own. It sat 43px in, so its headings started
+              // a whole icon-and-gap to the right of All drives above them.
+              return _DriveSections(state: state);
             }
 
             // Nothing while the list is being read. The nav is where a reader
@@ -613,82 +599,40 @@ class DriveListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return GestureDetector(
-      // Not `key: key`. The widget already carries its own key through
-      // `super.key`, so forwarding it here put the same key on two elements -
-      // harmless for a ValueKey, and an outright duplicate-GlobalKey assertion
-      // the moment anything needs to find this tile in the tree.
+    // The Your Drives rail's own row, without an icon: the name lines up with
+    // the heading's words above it, and the drive that is open is lit the way
+    // the rail lights where the reader is.
+    return DriveNavRow(
+      icon: null,
+      dense: true,
+      label: drive.name,
+      isCurrent: isSelected,
+      isMuted: isHidden,
       onTap: onTap,
-      child: Container(
-        decoration: isSelected
-            ? BoxDecoration(
-                color: colorTokens.containerL1,
-                borderRadius: BorderRadius.circular(4),
-              )
-            : null,
-        padding: const EdgeInsets.only(
-          left: 10.0,
-          right: 8.0,
-          top: 2.0,
-          bottom: 2.0,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Flexible(
-              child: HoverWidget(
-                hoverScale: 1,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        drive.name,
-                        style: isSelected
-                            ? typography.paragraphNormal(
-                                fontWeight: ArFontWeight.semiBold,
-                              )
-                            : typography.paragraphNormal(
-                                fontWeight: ArFontWeight.semiBold,
-                                color: isHidden
-                                    ? colorTokens.textLow
-                                    : ArDriveTheme.of(context)
-                                        .themeData
-                                        .colorTokens
-                                        .textMid,
-                              ),
-                      ),
+      trailing: isHidden || hasAlert
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isHidden)
+                  ArDriveIcons.eyeClosed(size: 16, color: colorTokens.textLow),
+                if (isHidden && hasAlert) const SizedBox(width: 8),
+                if (hasAlert)
+                  Container(
+                    width: 4,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeErrorOnEmphasis,
+                      shape: BoxShape.circle,
                     ),
-                    if (isHidden) ...{
-                      const SizedBox(width: 8),
-                      ArDriveIcons.eyeClosed(
-                          size: 16, color: colorTokens.textLow),
-                    },
-                  ],
-                ),
-              ),
-            ),
-            if (hasAlert) ...{
-              const SizedBox(width: 8),
-              Container(
-                width: 4,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeErrorOnEmphasis,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            }
-          ],
-        ),
-      ),
+                  ),
+              ],
+            )
+          : null,
     );
   }
 }
@@ -959,17 +903,16 @@ Future<void> showSupportModal({
 /// section themselves, and closing it for them is the app moving furniture
 /// around while they are using it. Nothing is hidden; the selection is simply
 /// brought into view.
-class _Accordion extends StatefulWidget {
-  const _Accordion({required this.state, required this.isMobile});
+class _DriveSections extends StatefulWidget {
+  const _DriveSections({required this.state});
 
   final DrivesLoadSuccess state;
-  final bool isMobile;
 
   @override
-  State<_Accordion> createState() => _AccordionState();
+  State<_DriveSections> createState() => _DriveSectionsState();
 }
 
-class _AccordionState extends State<_Accordion> {
+class _DriveSectionsState extends State<_DriveSections> {
   /// Carried by whichever tile is selected, so it can be scrolled to.
   final GlobalKey _selectedTileKey = GlobalKey();
 
@@ -989,7 +932,7 @@ class _AccordionState extends State<_Accordion> {
   }
 
   @override
-  void didUpdateWidget(_Accordion oldWidget) {
+  void didUpdateWidget(_DriveSections oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     final selected = widget.state.selectedDriveId;
@@ -1023,120 +966,96 @@ class _AccordionState extends State<_Accordion> {
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
-    final isMobile = widget.isMobile;
 
     return BlocBuilder<GlobalHideBloc, GlobalHideState>(
       builder: (context, hideState) {
-        return ArDriveAccordion(
-          contentPadding: isMobile ? const EdgeInsets.all(4) : null,
-          backgroundColor: ArDriveTheme.of(context).themeData.backgroundColor,
+        final hideHidden = hideState is HiddingItems;
+
+        bool shown(Drive drive) => !(hideHidden && drive.isHidden);
+
+        // No padding of its own on either breakpoint: the rows sit on the
+        // same edge as All drives above them.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (state.userDrives.isNotEmpty)
-              ArDriveAccordionItem(
-                isExpanded: true,
-                _DrivesHeading(
-                  scope: DriveScope.public,
-                  label: appLocalizationsOf(context).publicDrives,
-                ),
-                state.userDrives
-                    .where((element) {
-                      final isHidden = hideState is HiddingItems;
-
-                      return element.isPublic &&
-                          (isHidden ? !element.isHidden : true);
-                    })
-                    .map(
-                      (d) => DriveListTile(
-                        key: state.selectedDriveId == d.id
-                            ? _selectedTileKey
-                            : null,
-                        hasAlert: state.drivesWithAlerts.contains(d.id),
-                        drive: d,
-                        onTap: () {
-                          _closeDrawer(context);
-
-                          if (state.selectedDriveId == d.id) {
-                            // opens the root folder
-                            context.read<DriveDetailCubit>().openFolder();
-                          }
-
-                          // Selecting an already-selected drive changes no
-                          // state, and used to return here. That left the tap
-                          // silent on the drives list, where the selected
-                          // drive is not what is on screen - the list is, and
-                          // it opens a drive when one is chosen.
-                          context.read<DrivesCubit>().selectDrive(d.id);
-                        },
-                        isSelected: state.selectedDriveId == d.id,
-                        isHidden: d.isHidden,
-                      ),
-                    )
-                    .toList(),
+            if (state.userDrives.isNotEmpty) ...[
+              _section(
+                context,
+                DriveScope.public,
+                state.userDrives.where((d) => d.isPublic && shown(d)),
               ),
-            if (state.userDrives.isNotEmpty)
-              ArDriveAccordionItem(
-                isExpanded: true,
-                _DrivesHeading(
-                  scope: DriveScope.private,
-                  label: appLocalizationsOf(context).privateDrives,
-                ),
-                state.userDrives
-                    .where((element) {
-                      final isHidden = hideState is HiddingItems;
-
-                      return element.isPrivate &&
-                          (isHidden ? !element.isHidden : true);
-                    })
-                    .map(
-                      (d) => DriveListTile(
-                        key: state.selectedDriveId == d.id
-                            ? _selectedTileKey
-                            : null,
-                        hasAlert: state.drivesWithAlerts.contains(d.id),
-                        drive: d,
-                        onTap: () {
-                          _closeDrawer(context);
-
-                          context.read<DrivesCubit>().selectDrive(d.id);
-                        },
-                        isSelected: state.selectedDriveId == d.id,
-                        isHidden: d.isHidden,
-                      ),
-                    )
-                    .toList(),
+              _section(
+                context,
+                DriveScope.private,
+                state.userDrives.where((d) => d.isPrivate && shown(d)),
               ),
+            ],
+            // Shared drives are always visible.
             if (state.sharedDrives.isNotEmpty)
-              ArDriveAccordionItem(
-                isExpanded: true,
-                _DrivesHeading(
-                  scope: DriveScope.sharedWithMe,
-                  label: appLocalizationsOf(context).sharedDrives,
-                ),
-
-                /// Shared drives are always visible
-                state.sharedDrives
-                    .map(
-                      (d) => DriveListTile(
-                        key: state.selectedDriveId == d.id
-                            ? _selectedTileKey
-                            : null,
-                        hasAlert: state.drivesWithAlerts.contains(d.id),
-                        drive: d,
-                        onTap: () {
-                          _closeDrawer(context);
-
-                          context.read<DrivesCubit>().selectDrive(d.id);
-                        },
-                        isSelected: state.selectedDriveId == d.id,
-                        isHidden: false,
-                      ),
-                    )
-                    .toList(),
-              ),
+              _section(context, DriveScope.sharedWithMe, state.sharedDrives),
           ],
         );
       },
     );
+  }
+
+  /// Which headings the reader has folded away. All open to begin with.
+  final Set<DriveScope> _collapsed = {};
+
+  Widget _section(
+    BuildContext context,
+    DriveScope scope,
+    Iterable<Drive> drives,
+  ) {
+    final state = widget.state;
+    final isExpanded = !_collapsed.contains(scope);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _DrivesHeading(
+          scope: scope,
+          isExpanded: isExpanded,
+          onToggle: () => setState(() {
+            if (!_collapsed.remove(scope)) {
+              _collapsed.add(scope);
+            }
+          }),
+        ),
+        if (isExpanded)
+          for (final drive in drives)
+            DriveListTile(
+              key: state.selectedDriveId == drive.id ? _selectedTileKey : null,
+              hasAlert: state.drivesWithAlerts.contains(drive.id),
+              drive: drive,
+              onTap: () => _openDrive(context, drive),
+              isSelected: state.selectedDriveId == drive.id,
+              // Hiding is something a reader does to their own drives, so a
+              // drive shared with them is never drawn as hidden.
+              isHidden: scope != DriveScope.sharedWithMe && drive.isHidden,
+            ),
+      ],
+    );
+  }
+
+  /// One tap, the same in every group. Only the Public group used to take a
+  /// reader back to the root of the drive they were already in; Private and
+  /// Shared did nothing.
+  void _openDrive(BuildContext context, Drive drive) {
+    _closeDrawer(context);
+
+    if (widget.state.selectedDriveId == drive.id) {
+      // Opens the root folder.
+      context.read<DriveDetailCubit>().openFolder();
+    }
+
+    // Selecting an already-selected drive changes no state, and used to
+    // return here. That left the tap silent on the drives list, where the
+    // selected drive is not what is on screen - the list is, and it opens a
+    // drive when one is chosen.
+    context.read<DrivesCubit>().selectDrive(drive.id);
   }
 
   void _closeDrawer(BuildContext context) {
