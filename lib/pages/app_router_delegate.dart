@@ -414,6 +414,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       listeners: [
                         BlocListener<DriveDetailCubit, DriveDetailState>(
                           listener: (context, driveDetailCubitState) {
+                            _advancePendingUpload(
+                              context,
+                              driveDetailCubitState,
+                            );
+
                             if (driveDetailCubitState
                                 is DriveDetailLoadSuccess) {
                               driveId = driveDetailCubitState.currentDrive.id;
@@ -442,30 +447,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                                     );
                               }
 
-                              _openRequestedUpload(
-                                context,
-                                driveDetailCubitState.currentDrive,
-                              );
-
                               //Can be null at the root folder of the drive
                               notifyListeners();
                             } else if (driveDetailCubitState
-                                is DriveDetailLoadUnsynced) {
-                              // Opened on a drive nothing has read. The upload
-                              // dialog is what gets it ready, so it opens now
-                              // rather than waiting for a load that only a
-                              // sync the reader has not asked for would bring.
-                              _openRequestedUpload(
-                                context,
-                                driveDetailCubitState.drive,
-                              );
-                            } else if (driveDetailCubitState
                                 is DriveDetailLoadNotFound) {
-                              // Nothing to upload to. The attach prompt below
-                              // is the next step, and an upload that pops up
-                              // after it would be for a drive nobody chose.
-                              _pendingUpload = null;
-
                               // Do not prompt the user to attach an unfound drive if they are logging out.
                               final profileCubit = context.read<ProfileCubit>();
 
@@ -705,35 +690,22 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingUpload = request;
   }
 
-  /// Takes the waiting upload if it is for [driveId], and only once.
+  /// Moves a waiting upload along as its drive reports in.
   ///
-  /// Cleared as it is taken, so a rebuild cannot open the dialog twice and a
-  /// later visit to the same drive does not open it at all.
-  @visibleForTesting
-  UploadRequest? takeUploadFor(String driveId) {
+  /// Everything it can do happens once: the dialog for a drive that is open,
+  /// the sync for one nothing has read, or nothing at all. Only a drive still
+  /// opening leaves the request standing, so a rebuild cannot act twice and a
+  /// later visit to the same drive does nothing.
+  void _advancePendingUpload(BuildContext context, DriveDetailState state) {
     final request = _pendingUpload;
-
-    if (request == null || request.driveId != driveId) {
-      return null;
-    }
-
-    _pendingUpload = null;
-
-    return request;
-  }
-
-  void _openRequestedUpload(BuildContext context, Drive drive) {
-    final request = takeUploadFor(drive.id);
 
     if (request == null) {
       return;
     }
 
-    showUploadReadyDialog(
-      context,
-      drive: drive,
-      isFolderUpload: request.isFolderUpload,
-    );
+    if (!actOnUpload(context, request: request, detailState: state)) {
+      _pendingUpload = null;
+    }
   }
 
   /// Asks for a drive to open at a particular folder, once it is selected.

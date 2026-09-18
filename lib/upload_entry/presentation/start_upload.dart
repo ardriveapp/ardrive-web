@@ -9,8 +9,10 @@ import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/upload_entry/domain/upload_request.dart';
 import 'package:ardrive/upload_entry/domain/upload_start.dart';
+import 'package:ardrive/upload_entry/domain/upload_wait.dart';
 import 'package:ardrive/upload_entry/presentation/upload_destination_dialog.dart';
 import 'package:ardrive/upload_entry/presentation/upload_ready_dialog.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:flutter/material.dart';
@@ -47,22 +49,21 @@ Future<void> startUpload(
         isFolderUpload: isFolderUpload,
       );
 
-    case UploadWhenOpen(:final driveId, :final drive):
-      final record = drive ??
-          await context
-              .read<DriveDao>()
-              .driveById(driveId: driveId)
-              .getSingleOrNull();
-
-      if (record == null || !context.mounted) {
-        return;
-      }
-
-      await showUploadReadyDialog(
-        context,
-        drive: record,
+    case UploadWhenOpen(:final driveId):
+      final request = UploadRequest(
+        driveId: driveId,
         isFolderUpload: isFolderUpload,
       );
+
+      if (actOnUpload(
+        context,
+        request: request,
+        detailState: context.read<DriveDetailCubit>().state,
+      )) {
+        // Only ever the second or two a drive takes to open; anything longer
+        // is dropped rather than left to arrive over something else.
+        router.requestUpload(request);
+      }
 
     case UploadIntoDrive(:final drive):
       _openForUpload(router, drivesCubit, drive.id, isFolderUpload);
@@ -111,6 +112,68 @@ Future<void> startUpload(
   }
 }
 
+/// Acts on an upload headed for a drive, and says whether it is still waiting.
+///
+/// The one place that decides what a waiting upload does, so the press and the
+/// arrival cannot drift apart. Returns true only while the drive is opening:
+/// an upload that would have to outlive a sync is dropped here, and the reader
+/// presses Upload again when the drive is ready.
+///
+/// [context] must sit under the explorer's [DriveDetailCubit].
+bool actOnUpload(
+  BuildContext context, {
+  required UploadRequest request,
+  required DriveDetailState detailState,
+}) {
+  final syncCubit = context.read<SyncCubit>();
+
+  final wait = uploadWait(
+    driveId: request.driveId,
+    detailState: detailState,
+    syncState: syncCubit.state,
+    syncingDriveId: syncCubit.syncingDriveId,
+    completedDriveIds: syncCubit.completedDriveIds,
+    runDriveIds: syncCubit.syncingDriveIds,
+  );
+
+  switch (wait) {
+    case UploadWait.choose:
+      showUploadReadyDialog(
+        context,
+        drive: (detailState as DriveDetailLoadSuccess).currentDrive,
+        isFolderUpload: request.isFolderUpload,
+      );
+
+      return false;
+
+    case UploadWait.sync:
+      // The same sync the drive's own card runs, and reported the same way.
+      context.read<DriveDetailCubit>().syncCurrentDrive();
+
+      return false;
+
+    case UploadWait.syncBusy:
+      // Nothing was started and nothing is queued, so the press answers for
+      // itself rather than looking ignored.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            appLocalizationsOf(context)
+                .driveSyncNotStartedAnotherDriveIsSyncing,
+          ),
+        ),
+      );
+
+      return false;
+
+    case UploadWait.wait:
+      return true;
+
+    case UploadWait.forget:
+      return false;
+  }
+}
+
 /// The upload dialog for [drive], over the explorer that is showing it.
 ///
 /// [context] must sit under the explorer's [DriveDetailCubit], and stay
@@ -123,13 +186,10 @@ Future<void> showUploadReadyDialog(
 }) {
   return showArDriveDialog(
     context,
-    content: MultiBlocProvider(
+    content: BlocProvider.value(
       // Handed in rather than looked up: a dialog does not sit under the page
       // that opened it.
-      providers: [
-        BlocProvider.value(value: context.read<DriveDetailCubit>()),
-        BlocProvider.value(value: context.read<SyncCubit>()),
-      ],
+      value: context.read<DriveDetailCubit>(),
       child: UploadReadyDialog(
         drive: drive,
         isFolderUpload: isFolderUpload,

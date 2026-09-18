@@ -82,7 +82,7 @@ void main() {
       );
     });
 
-    test('an unsynced one waits with the reader, record in hand', () {
+    test('an unsynced one is left to its own state to answer for', () {
       final step = decide(
         detailState: DriveDetailLoadUnsynced(drive: photos),
         openDriveId: photos.id,
@@ -90,20 +90,16 @@ void main() {
 
       expect(
         step,
-        isA<UploadWhenOpen>()
-            .having((s) => s.driveId, 'drive', photos.id)
-            .having((s) => s.drive, 'record', photos),
+        isA<UploadWhenOpen>().having((s) => s.driveId, 'drive', photos.id),
       );
     });
 
-    test('one still opening waits too, and reads its record by id', () {
+    test('one still opening is too', () {
       final step = decide(openDriveId: photos.id);
 
       expect(
         step,
-        isA<UploadWhenOpen>()
-            .having((s) => s.driveId, 'drive', photos.id)
-            .having((s) => s.drive, 'record', isNull),
+        isA<UploadWhenOpen>().having((s) => s.driveId, 'drive', photos.id),
       );
     });
 

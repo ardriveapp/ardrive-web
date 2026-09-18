@@ -3519,31 +3519,6 @@
   "@uploadChooseFolder": {
     "description": "Opens the folder picker for an upload to the drive the dialog names"
   },
-  "uploadDriveNeedsSync": "{driveName} isn't synced on this device yet. Sync it to add files.",
-  "@uploadDriveNeedsSync": {
-    "description": "Why files cannot be chosen yet for a drive nothing on this device has read",
-    "placeholders": { "driveName": { "type": "String" } }
-  },
-  "uploadDriveWaitsForOtherSync": "Another drive is syncing. You can sync {driveName} once it finishes.",
-  "@uploadDriveWaitsForOtherSync": {
-    "description": "Why the Sync button is unavailable: only one sync runs at a time, and nothing queues",
-    "placeholders": { "driveName": { "type": "String" } }
-  },
-  "uploadDriveSyncing": "Syncing {driveName}...",
-  "@uploadDriveSyncing": {
-    "description": "The drive an upload is waiting on is being synced",
-    "placeholders": { "driveName": { "type": "String" } }
-  },
-  "uploadDriveOpening": "Opening {driveName}...",
-  "@uploadDriveOpening": {
-    "description": "The drive an upload is waiting on is being opened",
-    "placeholders": { "driveName": { "type": "String" } }
-  },
-  "uploadDriveReadOnly": "Only the owner of {driveName} can add files to it.",
-  "@uploadDriveReadOnly": {
-    "description": "Why files cannot be added to a drive this wallet does not own",
-    "placeholders": { "driveName": { "type": "String" } }
-  },
   "uploadWhichDrive": "Upload to which drive?",
   "@uploadWhichDrive": {
     "description": "Title of the list of drives an upload started away from any drive can go to"

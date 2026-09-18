@@ -22,16 +22,12 @@ final class UploadHere extends UploadStart {
   final String folderId;
 }
 
-/// Inside a drive that is not open yet. The upload dialog waits with the
-/// reader and says what is in the way.
+/// Inside a drive that is not open yet. What happens next comes from that
+/// drive's own state: a sync it needs, or the wait while it opens.
 final class UploadWhenOpen extends UploadStart {
-  const UploadWhenOpen({required this.driveId, this.drive});
+  const UploadWhenOpen({required this.driveId});
 
   final String driveId;
-
-  /// The record, when the state already carries it. Otherwise it is read by
-  /// [driveId].
-  final Drive? drive;
 }
 
 /// No drive to upload to, so one has to be made first.
@@ -79,10 +75,7 @@ UploadStart decideUploadStart({
     }
 
     if (detailState is DriveDetailLoadUnsynced) {
-      return UploadWhenOpen(
-        driveId: detailState.drive.id,
-        drive: detailState.drive,
-      );
+      return UploadWhenOpen(driveId: detailState.drive.id);
     }
 
     final isOpening = detailState is DriveDetailLoadInProgress ||

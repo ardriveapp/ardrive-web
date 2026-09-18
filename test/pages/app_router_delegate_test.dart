@@ -280,25 +280,6 @@ void main() {
       expect(delegate.pendingUpload, request);
     });
 
-    test('is taken by its own drive, once', () async {
-      delegate.requestUpload(request);
-
-      expect(delegate.takeUploadFor(driveId), request);
-      expect(
-        delegate.takeUploadFor(driveId),
-        isNull,
-        reason: 'a rebuild, or a later visit to the drive, must not open the '
-            'upload dialog again',
-      );
-    });
-
-    test('is left alone by another drive', () async {
-      delegate.requestUpload(request);
-
-      expect(delegate.takeUploadFor(otherDriveId), isNull);
-      expect(delegate.pendingUpload, request);
-    });
-
     test('is dropped on logout, like every other pending intent', () async {
       delegate.requestUpload(request);
 
