@@ -37,12 +37,17 @@ import 'package:responsive_builder/responsive_builder.dart';
 /// with its label on the drawer and the expanded rail, and as a bare icon on
 /// the collapsed one, where there is no text to look for.
 
-/// A drives heading, with the icon the drives list uses for the same group.
+/// A drives heading, said the way the drives list says it.
 ///
 /// Public, private and shared mean the same things in both navs, and were
-/// drawn as three plain words here and three icons there. The icon comes from
-/// [DriveScopeRail.iconFor] rather than being picked again, so the two cannot
-/// drift apart.
+/// drawn as three uppercase words here and three title-case rows with icons
+/// there. Same words now, same icons, same casing: the icon comes from
+/// [DriveScopeRail.iconFor] and the label from the same strings the rail
+/// reads, so neither can drift.
+///
+/// It still reads as a heading rather than a row, through its weight, its
+/// icon and the accordion's own chevron - which is what the shouting was
+/// doing before.
 class _DrivesHeading extends StatelessWidget {
   const _DrivesHeading({required this.scope, required this.label});
 
@@ -64,7 +69,7 @@ class _DrivesHeading extends StatelessWidget {
         const SizedBox(width: 8),
         Flexible(
           child: Text(
-            label.toUpperCase(),
+            label,
             overflow: TextOverflow.ellipsis,
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,

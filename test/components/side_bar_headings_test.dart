@@ -123,11 +123,28 @@ void main() {
     }
   });
 
-  testWidgets('and still says which group it is', (tester) async {
+  /// The same words, in the same case, as the rail on the drives list. They
+  /// were uppercase here and title case there, which made one grouping read
+  /// as two ideas depending on the screen.
+  testWidgets('and says it the way the drives list says it', (tester) async {
     await pumpSidebar(tester);
 
-    expect(find.text('PUBLIC DRIVES'), findsOneWidget);
-    expect(find.text('PRIVATE DRIVES'), findsOneWidget);
-    expect(find.text('SHARED DRIVES'), findsOneWidget);
+    for (final scope in [
+      DriveScope.public,
+      DriveScope.private,
+      DriveScope.sharedWithMe,
+    ]) {
+      final label = DriveScopeRail.labelFor(
+        tester.element(find.byType(AppSideBar)),
+        scope,
+      );
+
+      expect(find.text(label), findsOneWidget);
+      expect(
+        find.text(label.toUpperCase()),
+        findsNothing,
+        reason: 'the rail does not shout, so neither does this',
+      );
+    }
   });
 }
