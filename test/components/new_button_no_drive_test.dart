@@ -2,7 +2,9 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -11,16 +13,24 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 
 import '../test_utils/fake_user.dart';
 import '../test_utils/mocks.dart';
 
-Drive _drive({required String ownerAddress}) => Drive(
+class _Loaded extends Mock implements DriveDetailLoadSuccess {}
+
+class _Folder extends Mock implements FolderWithContents {}
+
+class _FolderEntry extends Mock implements FolderEntry {}
+
+Drive _drive({required String ownerAddress, String privacy = 'private'}) =>
+    Drive(
       id: 'photos',
       rootFolderId: 'root-photos',
       ownerAddress: ownerAddress,
       name: 'Photos',
-      privacy: 'private',
+      privacy: privacy,
       isHidden: false,
       dateCreated: DateTime(2026),
       lastUpdated: DateTime(2026),
@@ -40,23 +50,48 @@ Drive _drive({required String ownerAddress}) => Drive(
 void main() {
   late MockProfileCubit profileCubit;
   late MockDriveDetailCubit driveDetailCubit;
+  late MockDrivesCubit drivesCubit;
+  late MockSyncBloc syncCubit;
   late MockArDriveAuth auth;
+  late AppRouterDelegate router;
+
+  /// [syncingDriveId] is a sync reading that one drive.
+  void syncing({String? syncingDriveId}) {
+    whenListen(
+      syncCubit,
+      const Stream<SyncState>.empty(),
+      initialState: syncingDriveId == null ? SyncIdle() : SyncInProgress(),
+    );
+    when(() => syncCubit.syncingDriveId).thenReturn(syncingDriveId);
+    when(() => syncCubit.syncingDriveIds)
+        .thenReturn(syncingDriveId == null ? null : {syncingDriveId});
+    when(() => syncCubit.completedDriveIds).thenReturn(const []);
+  }
 
   setUp(() {
     profileCubit = MockProfileCubit();
     driveDetailCubit = MockDriveDetailCubit();
+    drivesCubit = MockDrivesCubit();
+    syncCubit = MockSyncBloc();
     auth = MockArDriveAuth();
+    router = AppRouterDelegate();
 
     when(() => profileCubit.state).thenReturn(
       ProfileLoggedIn(user: fakeUserJson, useTurbo: true),
     );
     when(() => auth.currentUser).thenReturn(fakeUserJson);
+    when(() => driveDetailCubit.syncCurrentDrive()).thenAnswer((_) async {});
+    syncing();
   });
 
   Future<void> pumpMenu(
     WidgetTester tester, {
     bool bottomNavigation = false,
     DriveDetailState? state,
+    String? openDriveId,
+    DrivesState? drivesState,
+    Drive? drive,
+    FolderWithContents? currentFolder,
   }) async {
     // No drive open, unless a test says otherwise: what the drives list
     // route provides.
@@ -66,6 +101,26 @@ void main() {
       const Stream<DriveDetailState>.empty(),
       initialState: detailState,
     );
+    whenListen(
+      drivesCubit,
+      const Stream<DrivesState>.empty(),
+      initialState: drivesState ??
+          DrivesLoadSuccess(
+            selectedDriveId: null,
+            userDrives: [_drive(ownerAddress: fakeUserJson.walletAddress)],
+            sharedDrives: const [],
+            drivesWithAlerts: const [],
+            canCreateNewDrive: true,
+          ),
+    );
+    // A drive in view is a drive page, and the drives list is not one.
+    final inDrive = state is DriveDetailLoadUnsynced ||
+        state is DriveDetailLoadSuccess ||
+        openDriveId != null;
+    router
+      ..showingDrivesList = !inDrive
+      ..driveId = openDriveId ??
+          (state is DriveDetailLoadUnsynced ? state.drive.id : null);
 
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -83,15 +138,19 @@ void main() {
           supportedLocales: const [Locale('en', '')],
           home: RepositoryProvider<ArDriveAuth>.value(
             value: auth,
-            child: MultiBlocProvider(
+            child: MultiProvider(
               providers: [
+                ListenableProvider<AppRouterDelegate>.value(value: router),
                 BlocProvider<ProfileCubit>.value(value: profileCubit),
                 BlocProvider<DriveDetailCubit>.value(value: driveDetailCubit),
+                BlocProvider<DrivesCubit>.value(value: drivesCubit),
+                BlocProvider<SyncCubit>.value(value: syncCubit),
               ],
               child: Scaffold(
                 body: Center(
                   child: NewButton(
-                    drive: null,
+                    drive: drive,
+                    currentFolder: currentFolder,
                     driveDetailState: detailState,
                     isBottomNavigationButton: bottomNavigation,
                     child: bottomNavigation ? null : const Text('open me'),
@@ -257,5 +316,159 @@ void main() {
       expect(tile(tester, 'Upload File(s)').isDisabled, isTrue);
       expect(tile(tester, 'Upload Folder').isDisabled, isTrue);
     });
+
+    testWidgets('pressing New Folder starts its sync', (tester) async {
+      await pumpMenu(
+        tester,
+        state: DriveDetailLoadUnsynced(
+          drive: _drive(ownerAddress: fakeUserJson.walletAddress),
+        ),
+      );
+
+      await tester.tap(find.text('New Folder'));
+      await tester.pumpAndSettle();
+
+      verify(() => driveDetailCubit.syncCurrentDrive()).called(1);
+    });
+
+    /// One sync at a time and no queue, so the press says why nothing
+    /// happened rather than looking ignored.
+    testWidgets('while a sync reads it, says so and starts nothing',
+        (tester) async {
+      syncing(syncingDriveId: 'photos');
+      await pumpMenu(
+        tester,
+        state: DriveDetailLoadUnsynced(
+          drive: _drive(ownerAddress: fakeUserJson.walletAddress),
+        ),
+      );
+
+      await tester.tap(find.text('New Folder'));
+      await tester.pump();
+
+      expect(
+        find.text('This drive is syncing. Try again once it finishes.'),
+        findsOneWidget,
+      );
+      verifyNever(() => driveDetailCubit.syncCurrentDrive());
+    });
+
+    /// Its card already says nothing was found on chain and offers to look
+    /// again. There is no folder to put anything in yet.
+    testWidgets('greys everything when its sync found nothing', (tester) async {
+      await pumpMenu(
+        tester,
+        state: DriveDetailLoadUnsynced(
+          drive: _drive(ownerAddress: fakeUserJson.walletAddress),
+          syncFoundNothing: true,
+        ),
+      );
+
+      for (final action in [
+        'Upload File(s)',
+        'Upload Folder',
+        'New Folder',
+        'New Note',
+        'New File Pin',
+      ]) {
+        expect(tile(tester, action).isDisabled, isTrue, reason: action);
+      }
+    });
+
+    /// Pinning a file never needed a balance, and still does not.
+    testWidgets('offers New File Pin to a wallet that cannot pay',
+        (tester) async {
+      when(() => profileCubit.state).thenReturn(
+        ProfileLoggedIn(user: fakeUserJson, useTurbo: false),
+      );
+      await pumpMenu(
+        tester,
+        state: DriveDetailLoadUnsynced(
+          drive: _drive(ownerAddress: fakeUserJson.walletAddress),
+        ),
+      );
+
+      expect(tile(tester, 'New Folder').isDisabled, isTrue);
+      expect(tile(tester, 'New File Pin').isDisabled, isFalse);
+    });
+  });
+
+  /// Opening a drive passes through a moment with nothing loaded, and a sync
+  /// can hold a drive there for minutes. The menu keeps its shape through
+  /// both.
+  group('in a drive that is opening', () {
+    testWidgets('keeps the folder actions, greyed for that moment',
+        (tester) async {
+      await pumpMenu(
+        tester,
+        state: DriveDetailLoadInProgress(),
+        openDriveId: 'photos',
+      );
+
+      for (final action in ['New Folder', 'New Note', 'New File Pin']) {
+        expect(tile(tester, action).isDisabled, isTrue, reason: action);
+      }
+      expect(
+        tile(tester, 'Upload File(s)').isDisabled,
+        isFalse,
+        reason: 'an upload waits the second or two a drive takes to open',
+      );
+    });
+
+    testWidgets('and, while a sync reads it, says so when pressed',
+        (tester) async {
+      syncing(syncingDriveId: 'photos');
+      await pumpMenu(
+        tester,
+        state: DriveDetailLoadInProgress(),
+        openDriveId: 'photos',
+      );
+
+      await tester.tap(find.text('New Note'));
+      await tester.pump();
+
+      expect(
+        find.text('This drive is syncing. Try again once it finishes.'),
+        findsOneWidget,
+      );
+    });
+  });
+
+  /// There is nowhere yet for Upload to lead.
+  testWidgets('Upload is greyed until the drive list is known', (tester) async {
+    await pumpMenu(tester, drivesState: DrivesLoadInProgress());
+
+    expect(tile(tester, 'Upload File(s)').isDisabled, isTrue);
+    expect(tile(tester, 'Upload Folder').isDisabled, isTrue);
+  });
+
+  /// It sat at the top of the plus menu and inside Advanced, so a public
+  /// drive listed it twice. Advanced is where the sidebar menu keeps it.
+  testWidgets('the plus menu lists Import from Manifest only under Advanced',
+      (tester) async {
+    final website = _drive(
+      ownerAddress: fakeUserJson.walletAddress,
+      privacy: 'public',
+    );
+    final entry = _FolderEntry();
+    when(() => entry.id).thenReturn('root-photos');
+    final folder = _Folder();
+    when(() => folder.folder).thenReturn(entry);
+    final loaded = _Loaded();
+    when(() => loaded.currentDrive).thenReturn(website);
+    when(() => loaded.hasWritePermissions).thenReturn(true);
+    when(() => loaded.driveIsEmpty).thenReturn(false);
+    when(() => loaded.folderInView).thenReturn(folder);
+
+    await pumpMenu(
+      tester,
+      bottomNavigation: true,
+      state: loaded,
+      drive: website,
+      currentFolder: folder,
+    );
+
+    expect(find.text('Advanced'), findsOneWidget);
+    expect(find.text('Import from Manifest'), findsNothing);
   });
 }
