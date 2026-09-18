@@ -2,6 +2,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/upload_entry/presentation/upload_destination_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -112,6 +113,33 @@ void main() {
 
       expect(selected, [photos]);
       expect(find.text('Upload to which drive?'), findsNothing);
+    });
+
+    /// Choosing a drive is how an upload started away from any drive
+    /// continues, so it cannot need a mouse.
+    testWidgets('lets a keyboard choose a drive', (tester) async {
+      await openChooser(tester);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(selected, [website]);
+      expect(find.text('Upload to which drive?'), findsNothing);
+    });
+
+    testWidgets('announces each drive as a button', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openChooser(tester);
+
+      expect(
+        tester.getSemantics(find.text('Photos')),
+        containsSemantics(
+            isButton: true, isFocusable: true, hasTapAction: true),
+      );
+
+      semantics.dispose();
     });
 
     testWidgets('can be cancelled without choosing', (tester) async {

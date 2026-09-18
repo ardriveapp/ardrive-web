@@ -85,60 +85,71 @@ class _DestinationRow extends StatelessWidget {
     final isPrivate = drive.privacy == DrivePrivacyTag.private;
     final l10n = appLocalizationsOf(context);
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: ArDriveHoverWidget(
-        hoverColor: theme.dropdownTheme.hoverColor,
-        defaultColor: null,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-          child: Row(
-            children: [
-              isPrivate
-                  ? ArDriveIcons.privateDrive(
-                      size: 18,
-                      color: colorTokens.textMid,
-                    )
-                  : ArDriveIcons.publicDrive(
-                      size: 18,
-                      color: colorTokens.textMid,
-                    ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      drive.name,
-                      overflow: TextOverflow.ellipsis,
-                      style: typography.paragraphLarge(
-                        color: colorTokens.textHigh,
-                        fontWeight: ArFontWeight.semiBold,
+    final highlight = theme.dropdownTheme.hoverColor;
+
+    // A button in every sense, not only to a pointer: reachable with Tab,
+    // chosen with Enter or Space, and announced as a button with its drive's
+    // name. A bare gesture detector did none of that, so choosing a drive,
+    // and with it finishing an upload, needed a mouse.
+    return Semantics(
+      button: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          hoverColor: highlight,
+          focusColor: highlight,
+          highlightColor: highlight,
+          splashFactory: NoSplash.splashFactory,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: Row(
+              children: [
+                isPrivate
+                    ? ArDriveIcons.privateDrive(
+                        size: 18,
+                        color: colorTokens.textMid,
+                      )
+                    : ArDriveIcons.publicDrive(
+                        size: 18,
+                        color: colorTokens.textMid,
                       ),
-                    ),
-                    if (isUnsynced)
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       Text(
-                        l10n.driveNeverSynced,
-                        style: typography.paragraphSmall(
-                          color: colorTokens.textLow,
+                        drive.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: typography.paragraphLarge(
+                          color: colorTokens.textHigh,
+                          fontWeight: ArFontWeight.semiBold,
                         ),
                       ),
-                  ],
+                      if (isUnsynced)
+                        Text(
+                          l10n.driveNeverSynced,
+                          style: typography.paragraphSmall(
+                            color: colorTokens.textLow,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              // The word as well as the icon: public or private is the
-              // choice being made here, and it cannot be taken back.
-              Text(
-                isPrivate ? l10n.private : l10n.public,
-                style: typography.paragraphNormal(
-                  color: colorTokens.textMid,
-                  fontWeight: ArFontWeight.semiBold,
+                const SizedBox(width: 12),
+                // The word as well as the icon: public or private is the
+                // choice being made here, and it cannot be taken back.
+                Text(
+                  isPrivate ? l10n.private : l10n.public,
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textMid,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
