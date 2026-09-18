@@ -203,6 +203,26 @@ void main() {
       expect(opened, isEmpty);
     });
 
+    /// Twenty-five rows to a page: a row chosen on the first is not on
+    /// screen once the reader has moved to the second.
+    testWidgets('does not open a row chosen on another page', (tester) async {
+      final many = [for (var i = 0; i < 30; i++) _Row(i, 'Photo $i')];
+      await pumpTable(tester, shown: many);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'Photo 0');
+      await waitOutDoubleClick(tester);
+      await tester.tap(find.text('2'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Photo 0'), findsNothing, reason: 'on the next page');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(opened, isEmpty);
+    });
+
     testWidgets('does nothing with no row chosen', (tester) async {
       await pumpTable(tester);
 

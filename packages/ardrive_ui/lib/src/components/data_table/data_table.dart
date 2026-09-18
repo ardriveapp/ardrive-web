@@ -203,10 +203,11 @@ class _ArDriveDataTableState<T extends IndexedItem>
       return KeyEventResult.ignored;
     }
 
-    // Only a row that is on screen. Entering a folder leaves it as the
-    // explorer's selection, so without this Enter would enter the folder the
-    // reader is already in, again.
-    if (!widget.rows.contains(selected)) {
+    // Only a row that is on screen, which means on this page. Entering a
+    // folder leaves it as the explorer's selection, so without this Enter
+    // would enter the folder the reader is already in, again; and a row
+    // chosen on one page is still selected after the reader moves to another.
+    if (!_currentPage.contains(selected)) {
       return KeyEventResult.ignored;
     }
 
