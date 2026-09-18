@@ -699,6 +699,14 @@
   "@driveNeverSynced": {
     "description": "Sync state of a drive whose history has never been read on this device. Deliberately not \"Empty\" - nothing has looked"
   },
+  "driveInfoNeverSyncedDetail": "This drive has not been synced on this device, so its size and contents are not known yet.",
+  "@driveInfoNeverSyncedDetail": {
+    "description": "In a drive's details panel, in place of its size and contents, when the drive has never been synced here."
+  },
+  "detailsCouldNotBeLoaded": "These details could not be loaded.",
+  "@detailsCouldNotBeLoaded": {
+    "description": "In the details panel, when reading an item's details failed."
+  },
   "driveSyncFailed": "Last sync failed",
   "@driveSyncFailed": {
     "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from 'Never synced', which means nobody has looked yet."
