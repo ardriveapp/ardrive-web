@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 /// An upload somebody asked for before the drive it goes to was open.
 ///
 /// It lives only as long as that drive takes to open. An upload waiting on a
-/// sync is dropped instead: see [UploadWait].
+/// sync is dropped instead: see [DriveWait].
 ///
 /// An upload can only start from inside a loaded drive: `promptToUpload` reads
 /// the explorer's own `DriveDetailCubit`, and the one the drives list provides

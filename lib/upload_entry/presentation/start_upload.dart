@@ -9,7 +9,7 @@ import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/upload_entry/domain/upload_request.dart';
 import 'package:ardrive/upload_entry/domain/upload_start.dart';
-import 'package:ardrive/upload_entry/domain/upload_wait.dart';
+import 'package:ardrive/upload_entry/domain/drive_wait.dart';
 import 'package:ardrive/upload_entry/presentation/upload_destination_dialog.dart';
 import 'package:ardrive/upload_entry/presentation/upload_ready_dialog.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -127,7 +127,7 @@ bool actOnUpload(
 }) {
   final syncCubit = context.read<SyncCubit>();
 
-  final wait = uploadWait(
+  final wait = driveWait(
     driveId: request.driveId,
     detailState: detailState,
     syncState: syncCubit.state,
@@ -137,7 +137,7 @@ bool actOnUpload(
   );
 
   switch (wait) {
-    case UploadWait.choose:
+    case DriveWait.ready:
       showUploadReadyDialog(
         context,
         drive: (detailState as DriveDetailLoadSuccess).currentDrive,
@@ -146,13 +146,33 @@ bool actOnUpload(
 
       return false;
 
-    case UploadWait.sync:
-      // The same sync the drive's own card runs, and reported the same way.
-      context.read<DriveDetailCubit>().syncCurrentDrive();
+    case DriveWait.sync:
+    case DriveWait.syncBusy:
+      readDriveForAction(context, wait: wait);
 
       return false;
 
-    case UploadWait.syncBusy:
+    case DriveWait.wait:
+      return true;
+
+    case DriveWait.forget:
+      return false;
+  }
+}
+
+/// Reads the drive an action needs, or says why it cannot be read now.
+///
+/// Every item in the New menu that writes into a drive waits on the same
+/// thing, so they all arrive here: pressing New Folder on a drive nothing has
+/// read starts the same sync that pressing Upload does, and the page reports
+/// it the same way. The action itself is not remembered - see [DriveWait].
+void readDriveForAction(BuildContext context, {required DriveWait wait}) {
+  switch (wait) {
+    case DriveWait.sync:
+      // The same sync the drive's own card runs.
+      context.read<DriveDetailCubit>().syncCurrentDrive();
+
+    case DriveWait.syncBusy:
       // Nothing was started and nothing is queued, so the press answers for
       // itself rather than looking ignored.
       ScaffoldMessenger.of(context).showSnackBar(
@@ -164,14 +184,32 @@ bool actOnUpload(
         ),
       );
 
-      return false;
-
-    case UploadWait.wait:
-      return true;
-
-    case UploadWait.forget:
-      return false;
+    case DriveWait.ready:
+    case DriveWait.wait:
+    case DriveWait.forget:
+      break;
   }
+}
+
+/// Reads the drive [driveId] needs for an action pressed in its own menu.
+///
+/// The menu's own entry point: it knows the drive is in view but not whether
+/// it has been read, and this answers that with the sync or with the reason
+/// there is none.
+void readDriveForMenuAction(BuildContext context, {required String driveId}) {
+  final syncCubit = context.read<SyncCubit>();
+
+  readDriveForAction(
+    context,
+    wait: driveWait(
+      driveId: driveId,
+      detailState: context.read<DriveDetailCubit>().state,
+      syncState: syncCubit.state,
+      syncingDriveId: syncCubit.syncingDriveId,
+      completedDriveIds: syncCubit.completedDriveIds,
+      runDriveIds: syncCubit.syncingDriveIds,
+    ),
+  );
 }
 
 /// The upload dialog for [drive], over the explorer that is showing it.

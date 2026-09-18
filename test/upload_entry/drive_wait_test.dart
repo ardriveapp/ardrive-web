@@ -1,7 +1,7 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
-import 'package:ardrive/upload_entry/domain/upload_wait.dart';
+import 'package:ardrive/upload_entry/domain/drive_wait.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -35,12 +35,12 @@ void main() {
     return state;
   }
 
-  UploadWait waitFor(
+  DriveWait waitFor(
     DriveDetailState detailState, {
     SyncState? syncState,
     String? syncingDriveId,
   }) =>
-      uploadWait(
+      driveWait(
         driveId: photos.id,
         detailState: detailState,
         syncState: syncState ?? SyncIdle(),
@@ -49,15 +49,15 @@ void main() {
 
   group('an open drive', () {
     test('is where the reader chooses files', () {
-      expect(waitFor(loaded(photos)), UploadWait.choose);
+      expect(waitFor(loaded(photos)), DriveWait.ready);
     });
 
     test('that this wallet cannot add to is dropped', () {
-      expect(waitFor(loaded(photos, writable: false)), UploadWait.forget);
+      expect(waitFor(loaded(photos, writable: false)), DriveWait.forget);
     });
 
     test('that is not the one asked about is dropped', () {
-      expect(waitFor(loaded(other)), UploadWait.forget);
+      expect(waitFor(loaded(other)), DriveWait.forget);
     });
   });
 
@@ -67,7 +67,7 @@ void main() {
     test('is synced', () {
       expect(
         waitFor(DriveDetailLoadUnsynced(drive: photos)),
-        UploadWait.sync,
+        DriveWait.sync,
       );
     });
 
@@ -80,7 +80,7 @@ void main() {
           syncState: SyncInProgress(),
           syncingDriveId: other.id,
         ),
-        UploadWait.syncBusy,
+        DriveWait.syncBusy,
       );
     });
 
@@ -92,7 +92,7 @@ void main() {
           syncState: SyncInProgress(),
           syncingDriveId: photos.id,
         ),
-        UploadWait.forget,
+        DriveWait.forget,
       );
     });
 
@@ -101,12 +101,12 @@ void main() {
         waitFor(
           DriveDetailLoadUnsynced(drive: photos, syncFoundNothing: true),
         ),
-        UploadWait.forget,
+        DriveWait.forget,
       );
     });
 
     test('that is not the one asked about is dropped', () {
-      expect(waitFor(DriveDetailLoadUnsynced(drive: other)), UploadWait.forget);
+      expect(waitFor(DriveDetailLoadUnsynced(drive: other)), DriveWait.forget);
     });
   });
 
@@ -115,8 +115,8 @@ void main() {
     /// sits through, and it is what carries an upload from the drive chooser
     /// into the drive.
     test('is waited for', () {
-      expect(waitFor(DriveDetailLoadInProgress()), UploadWait.wait);
-      expect(waitFor(DriveInitialLoading()), UploadWait.wait);
+      expect(waitFor(DriveDetailLoadInProgress()), DriveWait.wait);
+      expect(waitFor(DriveInitialLoading()), DriveWait.wait);
     });
 
     test('is not waited for while a sync is writing it', () {
@@ -126,7 +126,7 @@ void main() {
           syncState: SyncInProgress(),
           syncingDriveId: photos.id,
         ),
-        UploadWait.forget,
+        DriveWait.forget,
       );
     });
 
@@ -137,14 +137,14 @@ void main() {
           syncState: SyncInProgress(),
           syncingDriveId: other.id,
         ),
-        UploadWait.wait,
+        DriveWait.wait,
       );
     });
   });
 
   test('a screen showing no drive drops the upload', () {
-    expect(waitFor(DriveDetailLoadNotFound()), UploadWait.forget);
-    expect(waitFor(DriveDetailLoadEmpty()), UploadWait.forget);
-    expect(waitFor(DriveDetailDrivesUnavailable()), UploadWait.forget);
+    expect(waitFor(DriveDetailLoadNotFound()), DriveWait.forget);
+    expect(waitFor(DriveDetailLoadEmpty()), DriveWait.forget);
+    expect(waitFor(DriveDetailDrivesUnavailable()), DriveWait.forget);
   });
 }

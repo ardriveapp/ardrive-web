@@ -29,11 +29,14 @@ Drive _drive({required String ownerAddress}) => Drive(
 /// What the New menu offers with no drive open, which is what the drives list
 /// is, and in a drive nothing has read yet.
 ///
-/// Folders, notes, pins, manifests and snapshots all need an open drive, and
-/// drop out without one. Uploading used to drop out with them, which left a
-/// single row, "Advanced", holding a single action: users read that as a
-/// broken app. Uploading is now always offered, and leads to the drive the
-/// files will go to.
+/// Two rules are held here. On the drives list the menu is about drives:
+/// uploading, which leads to the drive the files will go to, and the drive
+/// actions themselves. Everything that needs a folder stays out, because
+/// there is no folder in sight.
+///
+/// Inside a drive the menu keeps its shape whether or not the app has read
+/// that drive. It used to hold a single row, "Advanced", opening onto a
+/// single action, which readers took for a broken app.
 void main() {
   late MockProfileCubit profileCubit;
   late MockDriveDetailCubit driveDetailCubit;
@@ -203,7 +206,33 @@ void main() {
     });
   });
 
+  /// The menu keeps its shape whether or not the app has read the drive.
+  /// "Synced" is the app's word, and a menu that grows items after a sync
+  /// teaches the reader only that it is unpredictable.
   group('in a drive nothing has read yet', () {
+    testWidgets('offers the folder actions too', (tester) async {
+      await pumpMenu(
+        tester,
+        state: DriveDetailLoadUnsynced(
+          drive: _drive(ownerAddress: fakeUserJson.walletAddress),
+        ),
+      );
+
+      for (final action in ['New Folder', 'New Note', 'New File Pin']) {
+        expect(tile(tester, action).isDisabled, isFalse, reason: action);
+      }
+    });
+
+    /// They only make sense inside a drive: on the drives list there is no
+    /// folder for any of them to go into.
+    testWidgets('which the drives list does not offer at all', (tester) async {
+      await pumpMenu(tester);
+
+      expect(find.text('New Folder'), findsNothing);
+      expect(find.text('New Note'), findsNothing);
+      expect(find.text('New File Pin'), findsNothing);
+    });
+
     /// Uploading there leads to its sync first, so it is offered.
     testWidgets('offers uploading into your own drive', (tester) async {
       await pumpMenu(
