@@ -658,6 +658,10 @@
     "description": "Action on the unsynced drive card once a sync has already looked and found nothing. Deliberately not Sync Now, which was the button that was already pressed"
   },
   "driveSyncNotStartedAnotherDriveIsSyncing": "Another drive is syncing, so this one was not started. Sync it once that one finishes.",
+  "driveIsSyncingTryLater": "This drive is syncing. Try again once it finishes.",
+  "@driveIsSyncingTryLater": {
+    "description": "Shown when an action in the New menu needs a drive that a sync is reading right now. Nothing is queued."
+  },
   "@driveSyncNotStartedAnotherDriveIsSyncing": {
     "description": "Shown on the unsynced drive card when a sync for a different drive is running. One sync runs at a time and there is no queue, so opening this drive started nothing - this is what says so, instead of leaving the user on a card with no request in flight and no explanation"
   },
@@ -3505,6 +3509,31 @@
   "uploadFolder": "Upload Folder",
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
+  },
+  "uploadToDrive": "Upload to {driveName}",
+  "@uploadToDrive": {
+    "description": "Title of the dialog that gets a drive ready before files are chosen for it",
+    "placeholders": { "driveName": { "type": "String" } }
+  },
+  "uploadChooseFiles": "Choose Files",
+  "@uploadChooseFiles": {
+    "description": "Opens the file picker for an upload to the drive the dialog names"
+  },
+  "uploadChooseFolder": "Choose Folder",
+  "@uploadChooseFolder": {
+    "description": "Opens the folder picker for an upload to the drive the dialog names"
+  },
+  "uploadWhichDrive": "Upload to which drive?",
+  "@uploadWhichDrive": {
+    "description": "Title of the list of drives an upload started away from any drive can go to"
+  },
+  "uploadNeedsDriveTitle": "Create a drive first",
+  "@uploadNeedsDriveTitle": {
+    "description": "Title shown when Upload is pressed by somebody with no drive to upload to"
+  },
+  "uploadNeedsDriveDescription": "Your files are kept in drives. Create one to start uploading.",
+  "@uploadNeedsDriveDescription": {
+    "description": "Explains that uploads go into a drive, for somebody who has none yet"
   },
   "uploadingManifestEmphasized": "UPLOADING MANIFEST...",
   "@uploadingManifestEmphasized": {

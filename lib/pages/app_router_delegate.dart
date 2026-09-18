@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
@@ -26,6 +28,8 @@ import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/upload_entry/domain/upload_request.dart';
+import 'package:ardrive/upload_entry/presentation/start_upload.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -117,6 +121,31 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// The standing request, for tests. The explorer clears it as it honours it.
   @visibleForTesting
   String? get pendingInfoDriveId => _pendingInfoDriveId;
+
+  /// The upload somebody asked for before its drive was open.
+  ///
+  /// Held and honoured the way [_pendingInfoDriveId] is, for the same reason:
+  /// an upload can only start from inside a loaded drive, because
+  /// `promptToUpload` reads the explorer's own cubit. When the drive reports
+  /// in, the explorer opens the upload dialog if it is loaded, or starts its
+  /// sync if nothing has read it, and clears this either way.
+  UploadRequest? _pendingUpload;
+
+  /// Ends a waiting upload that its drive never came to.
+  Timer? _pendingUploadExpiry;
+
+  /// How long an upload waits for its drive to open.
+  ///
+  /// Opening takes a second or two. Anything longer is a drive the explorer
+  /// is holding back for some other reason, and an upload dialog that turned
+  /// up afterwards would land on whatever the reader had moved on to - or,
+  /// if they came back to that drive later, on a visit that had nothing to do
+  /// with it.
+  static const uploadWaitLimit = Duration(seconds: 10);
+
+  /// The standing upload request, for tests.
+  @visibleForTesting
+  UploadRequest? get pendingUpload => _pendingUpload;
 
   /// Reconciles the folder in view with the drive that has just been selected.
   ///
@@ -399,6 +428,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       listeners: [
                         BlocListener<DriveDetailCubit, DriveDetailState>(
                           listener: (context, driveDetailCubitState) {
+                            _advancePendingUpload(
+                              context,
+                              driveDetailCubitState,
+                            );
+
                             if (driveDetailCubitState
                                 is DriveDetailLoadSuccess) {
                               driveId = driveDetailCubitState.currentDrive.id;
@@ -662,6 +696,40 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingInfoDriveId = driveId;
   }
 
+  /// Asks for an upload to start once its drive has opened.
+  ///
+  /// Set before the drive is selected, like [requestDriveInfo]. A second
+  /// request replaces the first: only the latest press is still wanted.
+  void requestUpload(UploadRequest request) {
+    _pendingUpload = request;
+    _pendingUploadExpiry?.cancel();
+    _pendingUploadExpiry = Timer(uploadWaitLimit, _dropPendingUpload);
+  }
+
+  void _dropPendingUpload() {
+    _pendingUploadExpiry?.cancel();
+    _pendingUploadExpiry = null;
+    _pendingUpload = null;
+  }
+
+  /// Moves a waiting upload along as its drive reports in.
+  ///
+  /// Everything it can do happens once: the dialog for a drive that is open,
+  /// the sync for one nothing has read, or nothing at all. Only a drive still
+  /// opening leaves the request standing, so a rebuild cannot act twice and a
+  /// later visit to the same drive does nothing.
+  void _advancePendingUpload(BuildContext context, DriveDetailState state) {
+    final request = _pendingUpload;
+
+    if (request == null) {
+      return;
+    }
+
+    if (!actOnUpload(context, request: request, detailState: state)) {
+      _dropPendingUpload();
+    }
+  }
+
   /// Asks for a drive to open at a particular folder, once it is selected.
   ///
   /// The road a search result takes off the drives list. The explorer navigates
@@ -821,6 +889,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingFolderDriveId = null;
     _pendingFolderId = null;
     _pendingInfoDriveId = null;
+    _dropPendingUpload();
     // A search somebody ran before logging out is not an instruction to the
     // next person to sign in on this device. Every other pending field here is
     // cleared for the same reason.
