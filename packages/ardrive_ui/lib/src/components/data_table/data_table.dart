@@ -126,6 +126,11 @@ class _ArDriveDataTableState<T extends IndexedItem>
   PointerDeviceKind? _tapKind;
 
   final _doubleClick = ArDriveDoubleClick<T>();
+
+  /// Where Enter is heard. A click on a row puts focus here, so Enter opens
+  /// the row just clicked even if the search box had focus a moment before,
+  /// and a button focused anywhere else keeps Enter for itself.
+  final _focusNode = FocusNode(debugLabel: 'ArDriveDataTable');
   int? _shiftSelectionStartIndex;
 
   bool get _isMultiSelecting {
@@ -161,7 +166,6 @@ class _ArDriveDataTableState<T extends IndexedItem>
     HardwareKeyboard.instance.addHandler(_handleKeyDownEvent);
     HardwareKeyboard.instance.addHandler(_handleEscapeKey);
     HardwareKeyboard.instance.addHandler(_handleSelectAllShortcut);
-    HardwareKeyboard.instance.addHandler(_handleOpenKey);
 
     _columns = widget.columns;
   }
@@ -174,45 +178,40 @@ class _ArDriveDataTableState<T extends IndexedItem>
     HardwareKeyboard.instance.removeHandler(_handleKeyDownEvent);
     HardwareKeyboard.instance.removeHandler(_handleEscapeKey);
     HardwareKeyboard.instance.removeHandler(_handleSelectAllShortcut);
-    HardwareKeyboard.instance.removeHandler(_handleOpenKey);
     _doubleClick.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
   /// Enter opens the selected row, as it does in any file manager.
   ///
-  /// The handler is global, like the others here, so it has to rule out every
-  /// place Enter means something else: text being typed, a dialog over the
-  /// table, several rows ticked at once.
-  bool _handleOpenKey(KeyEvent event) {
+  /// Heard only while focus is in the table, which a click on a row puts it.
+  /// That rules out, without listing them, every place Enter means something
+  /// else: a text field, a dialog, a button focused elsewhere. The table's
+  /// other shortcuts are global handlers; this one is not, because Enter is
+  /// the key everything else also wants.
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     final onRowOpen = widget.onRowOpen;
     final selected = _selectedItem;
 
-    if (!mounted ||
-        onRowOpen == null ||
+    if (onRowOpen == null ||
         selected == null ||
         _isMultiSelecting ||
         event is! KeyDownEvent ||
         (event.logicalKey != LogicalKeyboardKey.enter &&
             event.logicalKey != LogicalKeyboardKey.numpadEnter)) {
-      return false;
+      return KeyEventResult.ignored;
     }
 
-    // A dialog or menu on top owns Enter.
-    if (ModalRoute.of(context)?.isCurrent == false) {
-      return false;
-    }
-
-    // So does a text field, the search box above the table included.
-    final focused = FocusManager.instance.primaryFocus?.context;
-    if (focused != null &&
-        (focused.widget is EditableText ||
-            focused.findAncestorWidgetOfExactType<EditableText>() != null)) {
-      return false;
+    // Only a row that is on screen. Entering a folder leaves it as the
+    // explorer's selection, so without this Enter would enter the folder the
+    // reader is already in, again.
+    if (!widget.rows.contains(selected)) {
+      return KeyEventResult.ignored;
     }
 
     onRowOpen(selected);
-    return true;
+    return KeyEventResult.handled;
   }
 
   /// A plain tap on a row: select it, or open it, or both.
@@ -237,6 +236,8 @@ class _ArDriveDataTableState<T extends IndexedItem>
     if (onRowOpen == null) {
       return;
     }
+
+    _focusNode.requestFocus();
 
     if (ArDriveDoubleClick.tapOpens(kind)) {
       _doubleClick.reset();
@@ -530,97 +531,103 @@ class _ArDriveDataTableState<T extends IndexedItem>
       return EdgeInsets.only(left: leftPadding, right: rightPadding);
     }
 
-    return ArDriveCard(
-      backgroundColor:
-          ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      key: widget.key,
-      content: Column(
-        children: [
-          const SizedBox(
-            height: 28,
-          ),
-          Row(
+    // Focus lives on the whole table, not a row: a click on any row brings
+    // Enter here, and the row it opens is whichever one is selected.
+    return Focus(
+        focusNode: _focusNode,
+        onKeyEvent: _onKey,
+        child: ArDriveCard(
+          backgroundColor:
+              ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          key: widget.key,
+          content: Column(
             children: [
-              _masterMultiselectCheckBox(),
-              Flexible(
-                child: AnimatedPadding(
-                  duration: const Duration(milliseconds: 300),
-                  padding: getPadding(),
-                  child: Row(
-                    children: [
-                      ...columns,
-                      const SizedBox(
-                        width: 90,
-                      ),
-                      ArDriveSubmenu(
-                        alignmentOffset: const Offset(-150, 10),
-                        menuChildren: [
-                          for (int i = 0; i < _columns.length; i++)
-                            ArDriveSubmenuItem(
-                                widget: Padding(
-                              padding: EdgeInsets.only(
-                                  top: (i == 0) ? 16 : 8,
-                                  left: 16,
-                                  right: 16,
-                                  bottom: (i == _columns.length - 1) ? 16 : 8),
-                              child: ArDriveCheckBox(
-                                isDisabled: !_columns[i].canHide,
-                                title: _columns[i].title,
-                                checked: _columns[i].isVisible,
-                                titleStyle:
-                                    ArDriveTypography.body.buttonLargeBold(),
-                                onChange: (value) {
-                                  _toggleColumnVisibility(i);
-                                },
-                              ),
-                            ))
+              const SizedBox(
+                height: 28,
+              ),
+              Row(
+                children: [
+                  _masterMultiselectCheckBox(),
+                  Flexible(
+                    child: AnimatedPadding(
+                      duration: const Duration(milliseconds: 300),
+                      padding: getPadding(),
+                      child: Row(
+                        children: [
+                          ...columns,
+                          const SizedBox(
+                            width: 90,
+                          ),
+                          ArDriveSubmenu(
+                            alignmentOffset: const Offset(-150, 10),
+                            menuChildren: [
+                              for (int i = 0; i < _columns.length; i++)
+                                ArDriveSubmenuItem(
+                                    widget: Padding(
+                                  padding: EdgeInsets.only(
+                                      top: (i == 0) ? 16 : 8,
+                                      left: 16,
+                                      right: 16,
+                                      bottom:
+                                          (i == _columns.length - 1) ? 16 : 8),
+                                  child: ArDriveCheckBox(
+                                    isDisabled: !_columns[i].canHide,
+                                    title: _columns[i].title,
+                                    checked: _columns[i].isVisible,
+                                    titleStyle: ArDriveTypography.body
+                                        .buttonLargeBold(),
+                                    onChange: (value) {
+                                      _toggleColumnVisibility(i);
+                                    },
+                                  ),
+                                ))
+                            ],
+                            child: ArDriveIcons.plus(),
+                          ),
                         ],
-                        child: ArDriveIcons.plus(),
                       ),
-                    ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(
+                height: 25,
+              ),
+              Expanded(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height,
+                  ),
+                  child: ArDriveScrollBar(
+                    controller: _scrollController,
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: _currentPage.length,
+                      itemBuilder: (context, index) {
+                        return ArDriveClickArea(
+                          key: ValueKey(_currentPage[index]),
+                          child: _HoverableRow(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: _buildRowSpacing(
+                                _columns,
+                                widget.buildRow(_currentPage[index]).row,
+                                _currentPage[index],
+                                index,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
+              _pageIndicator(),
             ],
           ),
-          const SizedBox(
-            height: 25,
-          ),
-          Expanded(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height,
-              ),
-              child: ArDriveScrollBar(
-                controller: _scrollController,
-                child: ListView.builder(
-                  controller: _scrollController,
-                  itemCount: _currentPage.length,
-                  itemBuilder: (context, index) {
-                    return ArDriveClickArea(
-                      key: ValueKey(_currentPage[index]),
-                      child: _HoverableRow(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 5),
-                          child: _buildRowSpacing(
-                            _columns,
-                            widget.buildRow(_currentPage[index]).row,
-                            _currentPage[index],
-                            index,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-          _pageIndicator(),
-        ],
-      ),
-    );
+        ));
   }
 
   Widget _buildSingleColumn({required TableColumn column, required int index}) {

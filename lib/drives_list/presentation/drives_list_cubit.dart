@@ -420,20 +420,6 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     _emitSelection();
   }
 
-  /// Makes [driveId] the whole selection: what clicking a row does, as in any
-  /// file manager. Ticking a checkbox adds to a selection; clicking a row
-  /// replaces it.
-  void selectOnly(String driveId) {
-    if (_selected.length == 1 && _selected.contains(driveId)) {
-      return;
-    }
-
-    _selected
-      ..clear()
-      ..add(driveId);
-    _emitSelection();
-  }
-
   /// Ticks every drive in the scope on screen, or clears them if all are
   /// already ticked - the behaviour of a header checkbox everywhere.
   void toggleSelectAll() {

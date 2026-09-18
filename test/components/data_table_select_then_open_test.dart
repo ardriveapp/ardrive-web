@@ -34,6 +34,9 @@ void main() {
     WidgetTester tester, {
     bool opens = true,
     bool withSearch = false,
+    FocusNode? focusable,
+    List<_Row> shown = rows,
+    _Row? selectedRow,
   }) async {
     await tester.binding.setSurfaceSize(const Size(1200, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -46,10 +49,17 @@ void main() {
             body: Column(
               children: [
                 if (withSearch) const TextField(key: Key('search')),
+                if (focusable != null)
+                  TextButton(
+                    focusNode: focusable,
+                    onPressed: () {},
+                    child: const Text('Elsewhere'),
+                  ),
                 Expanded(
                   child: ArDriveDataTable<_Row>(
                     columns: [TableColumn('Name', 1, index: 0)],
-                    rows: rows,
+                    rows: shown,
+                    selectedRow: selectedRow,
                     rowsPerPageText: 'Rows per page',
                     buildRow: (row) => TableRowWidget([Text(row.name)]),
                     onRowTap: (row) => selected.add(row.name),
@@ -172,6 +182,27 @@ void main() {
       expect(opened, ['Receipts']);
     });
 
+    /// Entering a folder swaps the rows but leaves the folder selected in
+    /// the explorer, which hands it back to the table.
+    testWidgets('does not open a row that is no longer on screen',
+        (tester) async {
+      await pumpTable(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'Holidays');
+      await waitOutDoubleClick(tester);
+
+      await pumpTable(
+        tester,
+        shown: const [_Row(0, 'Inside Holidays')],
+        selectedRow: rows.first,
+      );
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(opened, isEmpty);
+    });
+
     testWidgets('does nothing with no row chosen', (tester) async {
       await pumpTable(tester);
 
@@ -181,8 +212,41 @@ void main() {
       expect(opened, isEmpty);
     });
 
-    /// The handler is global, so it must leave Enter to whatever is being
-    /// typed in: the search box sits right above the explorer's table.
+    /// Search, then pick a result: the click on the row is what moves focus
+    /// out of the box, so Enter opens the row rather than searching again.
+    testWidgets('opens the row clicked after typing in search', (tester) async {
+      await pumpTable(tester, withSearch: true);
+      final pointer = await mouse(tester);
+
+      await tester.tap(find.byKey(const Key('search')));
+      await tester.pump();
+      await click(tester, pointer, 'Receipts');
+      await waitOutDoubleClick(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(opened, ['Receipts']);
+    });
+
+    /// Enter belongs to whatever has focus. A button focused elsewhere on the
+    /// page keeps it, even with a row selected.
+    testWidgets('leaves a button focused elsewhere alone', (tester) async {
+      final elsewhere = FocusNode();
+      addTearDown(elsewhere.dispose);
+      await pumpTable(tester, focusable: elsewhere);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'Receipts');
+      await waitOutDoubleClick(tester);
+      elsewhere.requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(opened, isEmpty);
+    });
+
+    /// Typing in search after picking a row: Enter is the search's.
     testWidgets('belongs to a text field while one is being typed in',
         (tester) async {
       await pumpTable(tester, withSearch: true);
