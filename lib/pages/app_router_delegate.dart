@@ -26,6 +26,8 @@ import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/theme/theme_switcher_bloc.dart';
 import 'package:ardrive/theme/theme_switcher_state.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/upload_entry/domain/upload_request.dart';
+import 'package:ardrive/upload_entry/presentation/start_upload.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -117,6 +119,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// The standing request, for tests. The explorer clears it as it honours it.
   @visibleForTesting
   String? get pendingInfoDriveId => _pendingInfoDriveId;
+
+  /// The upload somebody asked for before its drive was open.
+  ///
+  /// Held and honoured the way [_pendingInfoDriveId] is, for the same reason:
+  /// an upload can only start from inside a loaded drive, because
+  /// `promptToUpload` reads the explorer's own cubit. The explorer opens the
+  /// upload dialog when the drive reports in - loaded, or unsynced, since the
+  /// dialog is what gets an unsynced drive ready - and clears this as it does.
+  UploadRequest? _pendingUpload;
+
+  /// The standing upload request, for tests.
+  @visibleForTesting
+  UploadRequest? get pendingUpload => _pendingUpload;
 
   /// Reconciles the folder in view with the drive that has just been selected.
   ///
@@ -427,10 +442,30 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                                     );
                               }
 
+                              _openRequestedUpload(
+                                context,
+                                driveDetailCubitState.currentDrive,
+                              );
+
                               //Can be null at the root folder of the drive
                               notifyListeners();
                             } else if (driveDetailCubitState
+                                is DriveDetailLoadUnsynced) {
+                              // Opened on a drive nothing has read. The upload
+                              // dialog is what gets it ready, so it opens now
+                              // rather than waiting for a load that only a
+                              // sync the reader has not asked for would bring.
+                              _openRequestedUpload(
+                                context,
+                                driveDetailCubitState.drive,
+                              );
+                            } else if (driveDetailCubitState
                                 is DriveDetailLoadNotFound) {
+                              // Nothing to upload to. The attach prompt below
+                              // is the next step, and an upload that pops up
+                              // after it would be for a drive nobody chose.
+                              _pendingUpload = null;
+
                               // Do not prompt the user to attach an unfound drive if they are logging out.
                               final profileCubit = context.read<ProfileCubit>();
 
@@ -662,6 +697,45 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingInfoDriveId = driveId;
   }
 
+  /// Asks for an upload to start once its drive has opened.
+  ///
+  /// Set before the drive is selected, like [requestDriveInfo]. A second
+  /// request replaces the first: only the latest press is still wanted.
+  void requestUpload(UploadRequest request) {
+    _pendingUpload = request;
+  }
+
+  /// Takes the waiting upload if it is for [driveId], and only once.
+  ///
+  /// Cleared as it is taken, so a rebuild cannot open the dialog twice and a
+  /// later visit to the same drive does not open it at all.
+  @visibleForTesting
+  UploadRequest? takeUploadFor(String driveId) {
+    final request = _pendingUpload;
+
+    if (request == null || request.driveId != driveId) {
+      return null;
+    }
+
+    _pendingUpload = null;
+
+    return request;
+  }
+
+  void _openRequestedUpload(BuildContext context, Drive drive) {
+    final request = takeUploadFor(drive.id);
+
+    if (request == null) {
+      return;
+    }
+
+    showUploadReadyDialog(
+      context,
+      drive: drive,
+      isFolderUpload: request.isFolderUpload,
+    );
+  }
+
   /// Asks for a drive to open at a particular folder, once it is selected.
   ///
   /// The road a search result takes off the drives list. The explorer navigates
@@ -821,6 +895,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingFolderDriveId = null;
     _pendingFolderId = null;
     _pendingInfoDriveId = null;
+    _pendingUpload = null;
     // A search somebody ran before logging out is not an instruction to the
     // next person to sign in on this device. Every other pending field here is
     // cleared for the same reason.

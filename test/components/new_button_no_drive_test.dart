@@ -1,5 +1,7 @@
+import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -13,37 +15,55 @@ import 'package:mocktail/mocktail.dart';
 import '../test_utils/fake_user.dart';
 import '../test_utils/mocks.dart';
 
+Drive _drive({required String ownerAddress}) => Drive(
+      id: 'photos',
+      rootFolderId: 'root-photos',
+      ownerAddress: ownerAddress,
+      name: 'Photos',
+      privacy: 'private',
+      isHidden: false,
+      dateCreated: DateTime(2026),
+      lastUpdated: DateTime(2026),
+    );
+
 /// What the New menu offers with no drive open, which is what the drives list
-/// is.
+/// is, and in a drive nothing has read yet.
 ///
-/// Every other item in that menu needs a drive: uploads, folders, notes, pins,
-/// manifests, snapshots. On the drives list they all drop out, correctly, and
-/// what was left was a single row, "Advanced", holding a single action. Users
-/// read an app offering no options as a broken one.
+/// Folders, notes, pins, manifests and snapshots all need an open drive, and
+/// drop out without one. Uploading used to drop out with them, which left a
+/// single row, "Advanced", holding a single action: users read that as a
+/// broken app. Uploading is now always offered, and leads to the drive the
+/// files will go to.
 void main() {
   late MockProfileCubit profileCubit;
   late MockDriveDetailCubit driveDetailCubit;
+  late MockArDriveAuth auth;
 
   setUp(() {
     profileCubit = MockProfileCubit();
     driveDetailCubit = MockDriveDetailCubit();
+    auth = MockArDriveAuth();
 
     when(() => profileCubit.state).thenReturn(
       ProfileLoggedIn(user: fakeUserJson, useTurbo: true),
     );
-
-    // No drive open: what the drives list route provides.
-    whenListen(
-      driveDetailCubit,
-      const Stream<DriveDetailState>.empty(),
-      initialState: DriveDetailLoadInProgress(),
-    );
+    when(() => auth.currentUser).thenReturn(fakeUserJson);
   });
 
   Future<void> pumpMenu(
     WidgetTester tester, {
     bool bottomNavigation = false,
+    DriveDetailState? state,
   }) async {
+    // No drive open, unless a test says otherwise: what the drives list
+    // route provides.
+    final detailState = state ?? DriveDetailLoadInProgress();
+    whenListen(
+      driveDetailCubit,
+      const Stream<DriveDetailState>.empty(),
+      initialState: detailState,
+    );
+
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -58,18 +78,21 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: const [Locale('en', '')],
-          home: MultiBlocProvider(
-            providers: [
-              BlocProvider<ProfileCubit>.value(value: profileCubit),
-              BlocProvider<DriveDetailCubit>.value(value: driveDetailCubit),
-            ],
-            child: Scaffold(
-              body: Center(
-                child: NewButton(
-                  drive: null,
-                  driveDetailState: DriveDetailLoadInProgress(),
-                  isBottomNavigationButton: bottomNavigation,
-                  child: bottomNavigation ? null : const Text('open me'),
+          home: RepositoryProvider<ArDriveAuth>.value(
+            value: auth,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<ProfileCubit>.value(value: profileCubit),
+                BlocProvider<DriveDetailCubit>.value(value: driveDetailCubit),
+              ],
+              child: Scaffold(
+                body: Center(
+                  child: NewButton(
+                    drive: null,
+                    driveDetailState: detailState,
+                    isBottomNavigationButton: bottomNavigation,
+                    child: bottomNavigation ? null : const Text('open me'),
+                  ),
                 ),
               ),
             ),
@@ -86,64 +109,124 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  /// A wallet that cannot pay is not a reason to withhold the action. The
-  /// dialog behind it says there is not enough AR and offers to top up, which
-  /// is more use than a control that does nothing, and it matches the getting
-  /// started cards, which open the same dialog ungated.
-  testWidgets('offers it even when the wallet cannot pay', (tester) async {
-    when(() => profileCubit.state).thenReturn(
-      // Zero balance, and no Turbo to fall back on.
-      ProfileLoggedIn(user: fakeUserJson, useTurbo: false),
-    );
+  /// The same lookup `drives_list_menu_test.dart` uses: the tile picks its
+  /// colours off this flag alone, so it is the flag that says whether a row is
+  /// offered or drawn dead.
+  ArDriveDropdownItemTile tile(WidgetTester tester, String name) =>
+      tester.widget<ArDriveDropdownItemTile>(
+        find.widgetWithText(ArDriveDropdownItemTile, name),
+      );
 
-    await pumpMenu(tester);
+  double top(WidgetTester tester, Finder finder) =>
+      tester.getTopLeft(finder).dy;
 
-    // The same lookup `drives_list_menu_test.dart` uses: the tile picks its
-    // colours off this flag alone, so it is the flag that says whether a row
-    // is offered or drawn dead.
-    final tile = tester.widget<ArDriveDropdownItemTile>(
-      find.widgetWithText(ArDriveDropdownItemTile, 'New Drive'),
-    );
+  group('with no drive open', () {
+    /// The one thing most people open this menu for.
+    testWidgets('offers uploading', (tester) async {
+      await pumpMenu(tester);
 
-    expect(tile.isDisabled, isFalse);
+      expect(tile(tester, 'Upload File(s)').isDisabled, isFalse);
+      expect(tile(tester, 'Upload Folder').isDisabled, isFalse);
+    });
+
+    testWidgets('offers a new drive', (tester) async {
+      await pumpMenu(tester);
+
+      expect(
+        find.text('New Drive'),
+        findsOneWidget,
+        reason: 'it was gated on the drive list having loaded, which creating '
+            'a drive does not depend on',
+      );
+    });
+
+    /// A wallet that cannot pay is not a reason to withhold the action. The
+    /// dialog behind it says there is not enough AR and offers to top up,
+    /// which is more use than a control that does nothing, and it matches the
+    /// getting started cards, which open the same dialog ungated.
+    testWidgets('offers a new drive even when the wallet cannot pay',
+        (tester) async {
+      when(() => profileCubit.state).thenReturn(
+        // Zero balance, and no Turbo to fall back on.
+        ProfileLoggedIn(user: fakeUserJson, useTurbo: false),
+      );
+
+      await pumpMenu(tester);
+
+      expect(tile(tester, 'New Drive').isDisabled, isFalse);
+    });
+
+    /// One action behind a submenu row is a menu that looks empty.
+    testWidgets('puts attaching a drive at the top level', (tester) async {
+      await pumpMenu(tester);
+
+      expect(find.text('Attach Drive'), findsOneWidget);
+      expect(find.text('Advanced'), findsNothing);
+    });
+
+    testWidgets('leads with uploading, ruled off from the drive actions',
+        (tester) async {
+      await pumpMenu(tester);
+
+      final upload = top(tester, find.text('Upload Folder'));
+      final rule = top(tester, find.byType(Divider).first);
+      final newDrive = top(tester, find.text('New Drive'));
+
+      expect(upload, lessThan(rule));
+      expect(rule, lessThan(newDrive));
+    });
   });
 
-  testWidgets('offers a new drive with no drive open', (tester) async {
-    await pumpMenu(tester);
+  /// The mobile plus button keeps the same rules. The drive page only draws it
+  /// once its drive has loaded, so these hold it in step with the sidebar
+  /// rather than describe a state it reaches today.
+  group('on the mobile plus button, with no drive open', () {
+    testWidgets('offers the same actions', (tester) async {
+      await pumpMenu(tester, bottomNavigation: true);
 
-    expect(
-      find.text('New Drive'),
-      findsOneWidget,
-      reason: 'it was gated on the drive list having loaded, which creating a '
-          'drive does not depend on',
-    );
+      expect(find.text('Upload File(s)'), findsOneWidget);
+      expect(find.text('Upload Folder'), findsOneWidget);
+      expect(find.text('New Drive'), findsOneWidget);
+      expect(find.text('Attach Drive'), findsOneWidget);
+      expect(find.text('Advanced'), findsNothing);
+    });
+
+    /// A rule with nothing above it drew a hairline across the top of the
+    /// sheet before its first item.
+    testWidgets('opens with an item rather than a rule', (tester) async {
+      await pumpMenu(tester, bottomNavigation: true);
+
+      expect(
+        top(tester, find.text('Upload File(s)')),
+        lessThan(top(tester, find.byType(Divider).first)),
+      );
+    });
   });
 
-  /// One action behind a submenu row is a menu that looks empty.
-  testWidgets('and puts attaching a drive at the top level', (tester) async {
-    await pumpMenu(tester);
+  group('in a drive nothing has read yet', () {
+    /// Uploading there leads to its sync first, so it is offered.
+    testWidgets('offers uploading into your own drive', (tester) async {
+      await pumpMenu(
+        tester,
+        state: DriveDetailLoadUnsynced(
+          drive: _drive(ownerAddress: fakeUserJson.walletAddress),
+        ),
+      );
 
-    expect(find.text('Attach Drive'), findsOneWidget);
-    expect(find.text('Advanced'), findsNothing);
-  });
+      expect(tile(tester, 'Upload File(s)').isDisabled, isFalse);
+    });
 
-  /// The same menu on mobile, which is the plus button on a drive page. It
-  /// lands here only while that drive has not loaded or cannot be read, and
-  /// the rule is the reader's, not the surface's.
-  testWidgets('and does the same on the mobile plus button', (tester) async {
-    await pumpMenu(tester, bottomNavigation: true);
+    /// Syncing somebody else's drive would only arrive at the same answer.
+    testWidgets("keeps somebody else's drive read-only", (tester) async {
+      await pumpMenu(
+        tester,
+        state: DriveDetailLoadUnsynced(
+          drive: _drive(ownerAddress: 'somebody-else'),
+        ),
+      );
 
-    expect(find.text('New Drive'), findsOneWidget);
-    expect(find.text('Attach Drive'), findsOneWidget);
-    expect(find.text('Advanced'), findsNothing);
-  });
-
-  /// The rule between two groups, with nothing above it. The group it used to
-  /// separate is empty with no drive open, so it drew a hairline across the top
-  /// of the sheet before the first item.
-  testWidgets('and opens with an item rather than a rule', (tester) async {
-    await pumpMenu(tester, bottomNavigation: true);
-
-    expect(find.byType(Divider), findsNothing);
+      expect(tile(tester, 'Upload File(s)').isDisabled, isTrue);
+      expect(tile(tester, 'Upload Folder').isDisabled, isTrue);
+    });
   });
 }

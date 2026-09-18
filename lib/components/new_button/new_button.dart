@@ -15,12 +15,14 @@ import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/pages/drive_detail/components/bulk_import_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
+import 'package:ardrive/upload_entry/presentation/start_upload.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/dependency_injection.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
+import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -393,6 +395,63 @@ class NewButton extends StatelessWidget {
     return [];
   }
 
+  /// Upload File(s) and Upload Folder, offered to anybody logged in.
+  ///
+  /// Inside an open drive they go straight to the picker, as they always have.
+  /// Everywhere else they go through [startUpload], which leads to the drive
+  /// the files will go to. Leaving them out there was what made this menu
+  /// read as broken: the one thing most people open it for was not in it.
+  List<ArDriveNewButtonItem> _uploadItems(
+    BuildContext context, {
+    required bool canUpload,
+  }) {
+    final driveDetailState = context.read<DriveDetailCubit>().state;
+    final appLocalizations = appLocalizationsOf(context);
+
+    final bool isDisabled;
+    if (driveDetailState is DriveDetailLoadSuccess && drive != null) {
+      isDisabled = !driveDetailState.hasWritePermissions || !canUpload;
+    } else if (driveDetailState is DriveDetailLoadUnsynced) {
+      // Somebody else's drive is read-only whether or not it has synced, and
+      // syncing it first would only lead to the same answer.
+      isDisabled = !isDriveOwner(
+            context.read<ArDriveAuth>(),
+            driveDetailState.drive.ownerAddress,
+          ) ||
+          !canUpload;
+    } else {
+      isDisabled = !canUpload;
+    }
+
+    void upload({required bool isFolderUpload}) {
+      if (driveDetailState is DriveDetailLoadSuccess && drive != null) {
+        promptToUpload(
+          context,
+          driveId: drive!.id,
+          parentFolderId: currentFolder!.folder.id,
+          isFolderUpload: isFolderUpload,
+        );
+      } else {
+        startUpload(context, isFolderUpload: isFolderUpload);
+      }
+    }
+
+    return [
+      ArDriveNewButtonItem(
+        onClick: () => upload(isFolderUpload: false),
+        isDisabled: isDisabled,
+        name: appLocalizations.uploadFiles,
+        icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
+      ),
+      ArDriveNewButtonItem(
+        onClick: () => upload(isFolderUpload: true),
+        isDisabled: isDisabled,
+        name: appLocalizations.uploadFolder,
+        icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
+      ),
+    ];
+  }
+
   List<ArDriveNewButtonComponent> _getTopItems(BuildContext context) {
     final driveDetailState = context.read<DriveDetailCubit>().state;
     final appLocalizations = appLocalizationsOf(context);
@@ -406,35 +465,8 @@ class NewButton extends StatelessWidget {
       );
 
       return [
-        if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
-          ArDriveNewButtonItem(
-            onClick: () {
-              promptToUpload(
-                context,
-                driveId: drive!.id,
-                parentFolderId: currentFolder!.folder.id,
-                isFolderUpload: false,
-              );
-            },
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.uploadFiles,
-            icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
-          ),
-          ArDriveNewButtonItem(
-            onClick: () {
-              promptToUpload(
-                context,
-                driveId: drive!.id,
-                parentFolderId: currentFolder!.folder.id,
-                isFolderUpload: true,
-              );
-            },
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.uploadFolder,
-            icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
-          ),
-          const ArDriveNewButtonDivider(),
-        ],
+        ..._uploadItems(context, canUpload: canUpload),
+        const ArDriveNewButtonDivider(),
         // Not gated on the drive list having loaded. Making a drive does not
         // depend on knowing which drives already exist, and that gate is what
         // left the All Drives menu holding nothing but an Advanced submenu.
@@ -509,43 +541,17 @@ class NewButton extends StatelessWidget {
       );
 
       return [
-        if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
-          ArDriveNewButtonItem(
-            onClick: () {
-              promptToUpload(
-                context,
-                driveId: drive!.id,
-                parentFolderId: currentFolder!.folder.id,
-                isFolderUpload: false,
-              );
-            },
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.uploadFiles,
-            icon: ArDriveIcons.iconUploadFiles(size: defaultIconSize),
+        ..._uploadItems(context, canUpload: canUpload),
+        if (driveDetailState is DriveDetailLoadSuccess &&
+            drive != null &&
+            driveDetailState.currentDrive.privacy == 'public')
+          _getImportFromManifestItem(
+            context,
+            !driveDetailState.hasWritePermissions || !canUpload,
           ),
-          ArDriveNewButtonItem(
-            onClick: () {
-              promptToUpload(
-                context,
-                driveId: drive!.id,
-                parentFolderId: currentFolder!.folder.id,
-                isFolderUpload: true,
-              );
-            },
-            isDisabled: !driveDetailState.hasWritePermissions || !canUpload,
-            name: appLocalizations.uploadFolder,
-            icon: ArDriveIcons.iconUploadFolder1(size: defaultIconSize),
-          ),
-          if (driveDetailState.currentDrive.privacy == 'public')
-            _getImportFromManifestItem(
-              context,
-              !driveDetailState.hasWritePermissions || !canUpload,
-            ),
-        ],
-        // Only between two groups. With no drive open the group above is empty,
-        // and an unconditional rule drew a hairline across the top of the sheet
-        // before the first item.
-        if (hasDriveInView) const ArDriveNewButtonDivider(),
+        // Uploading is always the first group now, so this always separates
+        // two groups.
+        const ArDriveNewButtonDivider(),
         // Not gated on the drive list having loaded. Making a drive does not
         // depend on knowing which drives already exist, and that gate is what
         // left the All Drives menu holding nothing but an Advanced submenu.
@@ -595,9 +601,9 @@ class NewButton extends StatelessWidget {
         ],
         // Same rule as the sidebar menu: with no drive open, everything under
         // Advanced is gone but attaching a drive, and a row that opens a modal
-        // onto one action reads as a menu with nothing in it. This menu is the
-        // mobile button on a drive page, so it only lands here while that drive
-        // has not loaded or cannot be read.
+        // onto one action reads as a menu with nothing in it. The drive page
+        // only draws this button once its drive has loaded, so this is the
+        // sidebar's rule kept in step rather than a state it reaches today.
         if (!hasDriveInView) ..._getAdvancedItems(context),
         if (hasDriveInView)
           ArDriveNewButtonItem(

@@ -1,6 +1,7 @@
 import 'package:ardrive/pages/app_route_information_parser.dart';
 import 'package:ardrive/pages/app_route_path.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
+import 'package:ardrive/upload_entry/domain/upload_request.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// How a folder link survives the drive being attached under it.
@@ -263,6 +264,57 @@ void main() {
       delegate.requestDriveInfo('drive-2');
 
       expect(delegate.pendingInfoDriveId, 'drive-2');
+    });
+  });
+
+  /// An upload pressed away from any drive. It can only start once its drive
+  /// is open, so it waits here the way the info request does, and the explorer
+  /// takes it when that drive reports in.
+  group('the upload somebody asked for', () {
+    const request = UploadRequest(driveId: driveId, isFolderUpload: true);
+
+    test('survives the drive being opened', () async {
+      delegate.requestUpload(request);
+      delegate.openDriveFromList(driveId);
+
+      expect(delegate.pendingUpload, request);
+    });
+
+    test('is taken by its own drive, once', () async {
+      delegate.requestUpload(request);
+
+      expect(delegate.takeUploadFor(driveId), request);
+      expect(
+        delegate.takeUploadFor(driveId),
+        isNull,
+        reason: 'a rebuild, or a later visit to the drive, must not open the '
+            'upload dialog again',
+      );
+    });
+
+    test('is left alone by another drive', () async {
+      delegate.requestUpload(request);
+
+      expect(delegate.takeUploadFor(otherDriveId), isNull);
+      expect(delegate.pendingUpload, request);
+    });
+
+    test('is dropped on logout, like every other pending intent', () async {
+      delegate.requestUpload(request);
+
+      delegate.clearState();
+
+      expect(delegate.pendingUpload, isNull);
+    });
+
+    test('is replaced, not stacked, by a second press', () async {
+      const second =
+          UploadRequest(driveId: otherDriveId, isFolderUpload: false);
+
+      delegate.requestUpload(request);
+      delegate.requestUpload(second);
+
+      expect(delegate.pendingUpload, second);
     });
   });
 
