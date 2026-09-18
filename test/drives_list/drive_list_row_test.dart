@@ -1,7 +1,9 @@
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,6 +51,8 @@ void main() {
     bool withHeader = false,
     double textScale = 1,
     VoidCallback? onTap,
+    VoidCallback? onSelect,
+    bool? selected,
   }) {
     return ArDriveTheme(
       // Passing no theme data is how ArDriveTheme yields the dark theme.
@@ -80,7 +84,9 @@ void main() {
                       DriveListRow(
                         drive: item,
                         showsColumns: showsColumns,
-                        onTap: onTap ?? () {},
+                        onOpen: onTap ?? () {},
+                        onSelect: onSelect,
+                        selected: selected,
                       ),
                     ],
                   ),
@@ -108,6 +114,8 @@ void main() {
     bool withHeader = false,
     double textScale = 1,
     VoidCallback? onTap,
+    VoidCallback? onSelect,
+    bool? selected,
   }) async {
     await tester.binding.setSurfaceSize(Size(width + 200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -123,6 +131,8 @@ void main() {
         withHeader: withHeader,
         textScale: textScale,
         onTap: onTap,
+        onSelect: onSelect,
+        selected: selected,
       ),
     );
   }
@@ -246,13 +256,130 @@ void main() {
       expect(find.text('Shared with me'), findsNothing);
     });
 
-    testWidgets('opening one is what the tap does', (tester) async {
+    /// Where the list offers no selection, a click has nothing to select.
+    testWidgets('opening one is what the tap does without selection',
+        (tester) async {
       var opened = 0;
 
       await pumpRow(tester, drive(), width: 1200, onTap: () => opened++);
       await tester.tap(find.text('Photos'));
 
       expect(opened, 1);
+    });
+  });
+
+  /// A click selects and a double-click opens, as a row does in the explorer
+  /// and in Google Drive. The rule is the explorer's own, so the two lists
+  /// cannot drift apart.
+  group('a click and a double-click', () {
+    late int opened;
+    late int chosen;
+
+    setUp(() {
+      opened = 0;
+      chosen = 0;
+    });
+
+    Future<void> pumpSelectable(WidgetTester tester, {bool? selected}) =>
+        pumpRow(
+          tester,
+          drive(),
+          width: 1200,
+          onTap: () => opened++,
+          onSelect: () => chosen++,
+          selected: selected ?? false,
+        );
+
+    Future<TestGesture> mouse(WidgetTester tester) async {
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      return gesture;
+    }
+
+    Future<void> click(WidgetTester tester, TestGesture gesture) async {
+      await gesture.down(tester.getCenter(find.text('Photos')));
+      await gesture.up();
+      await tester.pump();
+    }
+
+    Future<void> waitOutDoubleClick(WidgetTester tester) =>
+        tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
+
+    testWidgets('a click chooses the drive and does not open it',
+        (tester) async {
+      await pumpSelectable(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer);
+
+      expect(chosen, 1);
+      expect(opened, 0);
+
+      await waitOutDoubleClick(tester);
+    });
+
+    testWidgets('a double-click opens it', (tester) async {
+      await pumpSelectable(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer);
+      await tester.pump(const Duration(milliseconds: 100));
+      await click(tester, pointer);
+
+      expect(opened, 1);
+      expect(chosen, 1);
+    });
+
+    testWidgets('two slow clicks are two clicks', (tester) async {
+      await pumpSelectable(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer);
+      await waitOutDoubleClick(tester);
+      await click(tester, pointer);
+      await waitOutDoubleClick(tester);
+
+      expect(opened, 0);
+      expect(chosen, 2);
+    });
+
+    testWidgets('a tap on a touch screen opens it', (tester) async {
+      await pumpSelectable(tester);
+
+      await tester.tap(find.text('Photos'), kind: PointerDeviceKind.touch);
+      await tester.pump();
+
+      expect(opened, 1);
+      expect(chosen, 0);
+    });
+
+    /// Enter on the focused row reaches the tap with no pointer behind it,
+    /// which is also how a screen reader's activate arrives.
+    testWidgets('Enter on the focused row opens it', (tester) async {
+      await pumpSelectable(tester);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(opened, 1);
+    });
+
+    /// A click has to show it did something, and on a narrow screen there is
+    /// no checkbox to tick. The colour is the explorer's for a chosen row.
+    testWidgets('a chosen drive is drawn chosen', (tester) async {
+      await pumpSelectable(tester, selected: true);
+
+      final chosenColour = lightTheme().tableTheme.selectedItemColor;
+
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is ColoredBox && w.color == chosenColour,
+        ),
+        findsOneWidget,
+      );
     });
   });
 

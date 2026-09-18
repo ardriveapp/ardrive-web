@@ -208,6 +208,7 @@ class _DrivesListChrome extends StatelessWidget {
           onSyncAllDrives: cubit.syncAllDrives,
           onSort: cubit.sortBy,
           onToggleSelected: cubit.toggleSelected,
+          onSelectOnly: cubit.selectOnly,
           onToggleSelectAll: cubit.toggleSelectAll,
           onSyncSelected: cubit.syncSelectedDrives,
           onClearSelection: cubit.clearSelection,
@@ -346,6 +347,7 @@ class DrivesListBody extends StatelessWidget {
     required this.onSyncAllDrives,
     this.onSort,
     this.onToggleSelected,
+    this.onSelectOnly,
     this.onToggleSelectAll,
     this.onSyncSelected,
     this.onClearSelection,
@@ -367,6 +369,9 @@ class DrivesListBody extends StatelessWidget {
   /// Selection, threaded the same way [onSort] is - the page draws what it is
   /// given so its tests need no providers.
   final void Function(String driveId)? onToggleSelected;
+
+  /// Clicking a row: that drive becomes the whole selection.
+  final void Function(String driveId)? onSelectOnly;
   final VoidCallback? onToggleSelectAll;
   final VoidCallback? onSyncSelected;
   final VoidCallback? onClearSelection;
@@ -416,6 +421,7 @@ class DrivesListBody extends StatelessWidget {
         syncMenu: syncMenu,
         onSort: onSort,
         onToggleSelected: onToggleSelected,
+        onSelectOnly: onSelectOnly,
         onToggleSelectAll: onToggleSelectAll,
         onSyncSelected: onSyncSelected,
         onClearSelection: onClearSelection,
@@ -621,6 +627,7 @@ class _DrivesListLoadedView extends StatelessWidget {
     required this.syncMenu,
     this.onSort,
     this.onToggleSelected,
+    this.onSelectOnly,
     this.onToggleSelectAll,
     this.onSyncSelected,
     this.onClearSelection,
@@ -633,6 +640,9 @@ class _DrivesListLoadedView extends StatelessWidget {
   final VoidCallback onSyncAllDrives;
   final void Function(DriveListSort column)? onSort;
   final void Function(String driveId)? onToggleSelected;
+
+  /// Clicking a row: that drive becomes the whole selection.
+  final void Function(String driveId)? onSelectOnly;
   final VoidCallback? onToggleSelectAll;
   final VoidCallback? onSyncSelected;
   final VoidCallback? onClearSelection;
@@ -837,7 +847,11 @@ class _DrivesListLoadedView extends StatelessWidget {
             key: ValueKey(drive.id),
             drive: drive,
             showsColumns: showsColumns,
-            onTap: () => onOpenDrive(drive),
+            onOpen: () => onOpenDrive(drive),
+            // Without selection on offer, a click has nothing to select and
+            // opens, as it always did.
+            onSelect:
+                onSelectOnly == null ? null : () => onSelectOnly!(drive.id),
             menu: buildMenu?.call(drive),
             selected: onToggleSelected == null
                 ? null

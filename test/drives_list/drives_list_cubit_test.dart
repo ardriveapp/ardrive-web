@@ -519,6 +519,19 @@ void main() {
       expect((cubit.state as DrivesListLoaded).selected, isEmpty);
     });
 
+    /// Clicking a row replaces the selection, as in any file manager;
+    /// ticking a checkbox is what adds to one.
+    test('a click on a row makes that drive the whole selection', () async {
+      await addDrive('a');
+      await addDrive('b');
+      final cubit = await settleLive(loaded(await drivesNamed(['a', 'b'])));
+
+      cubit.toggleSelected('a');
+      cubit.selectOnly('b');
+
+      expect((cubit.state as DrivesListLoaded).selected, {'b'});
+    });
+
     test('nothing ticked syncs everything, rather than nothing', () async {
       when(() => syncCubit.startSync()).thenAnswer((_) async => true);
 

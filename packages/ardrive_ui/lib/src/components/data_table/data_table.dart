@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_ui/src/styles/colors/global_colors.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -44,6 +47,14 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   final String rowsPerPageText;
   final Function(List<MultiSelectBox<T>> selectedRows)? onSelectedRows;
   final Function(T row)? onRowTap;
+
+  /// Opening a row, as a file manager means it: a double-click, a single tap
+  /// on a touch screen, or Enter on the selected row.
+  ///
+  /// When this is given, a click only selects - [onRowTap] - and opening is a
+  /// separate act. Without it the table behaves as it always has, so the
+  /// dialogs that draw one to pick a row are unaffected.
+  final void Function(T row)? onRowOpen;
   final Function(bool onChangeMultiSelecting)? onChangeMultiSelecting;
   final bool forceDisableMultiSelect;
   final bool lockMultiSelect;
@@ -66,6 +77,7 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     this.sortRows,
     this.onSelectedRows,
     this.onRowTap,
+    this.onRowOpen,
     this.onChangeMultiSelecting,
     this.forceDisableMultiSelect = false,
     this.lockMultiSelect = false,
@@ -106,6 +118,14 @@ class _ArDriveDataTableState<T extends IndexedItem>
   TableSort? _tableSort;
 
   bool _isCtrlPressed = false;
+
+  /// The pointer behind the tap being handled, read on the way down. Null
+  /// when the tap came from no pointer at all - Enter or Space on a focused
+  /// row, or a screen reader - and those open, since opening is what they ask
+  /// for.
+  PointerDeviceKind? _tapKind;
+
+  final _doubleClick = ArDriveDoubleClick<T>();
   int? _shiftSelectionStartIndex;
 
   bool get _isMultiSelecting {
@@ -141,8 +161,90 @@ class _ArDriveDataTableState<T extends IndexedItem>
     HardwareKeyboard.instance.addHandler(_handleKeyDownEvent);
     HardwareKeyboard.instance.addHandler(_handleEscapeKey);
     HardwareKeyboard.instance.addHandler(_handleSelectAllShortcut);
+    HardwareKeyboard.instance.addHandler(_handleOpenKey);
 
     _columns = widget.columns;
+  }
+
+  // These handlers are global, so without this they outlived the table: the
+  // select-all shortcut would go on calling setState on a table the reader had
+  // already left.
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyDownEvent);
+    HardwareKeyboard.instance.removeHandler(_handleEscapeKey);
+    HardwareKeyboard.instance.removeHandler(_handleSelectAllShortcut);
+    HardwareKeyboard.instance.removeHandler(_handleOpenKey);
+    _doubleClick.dispose();
+    super.dispose();
+  }
+
+  /// Enter opens the selected row, as it does in any file manager.
+  ///
+  /// The handler is global, like the others here, so it has to rule out every
+  /// place Enter means something else: text being typed, a dialog over the
+  /// table, several rows ticked at once.
+  bool _handleOpenKey(KeyEvent event) {
+    final onRowOpen = widget.onRowOpen;
+    final selected = _selectedItem;
+
+    if (!mounted ||
+        onRowOpen == null ||
+        selected == null ||
+        _isMultiSelecting ||
+        event is! KeyDownEvent ||
+        (event.logicalKey != LogicalKeyboardKey.enter &&
+            event.logicalKey != LogicalKeyboardKey.numpadEnter)) {
+      return false;
+    }
+
+    // A dialog or menu on top owns Enter.
+    if (ModalRoute.of(context)?.isCurrent == false) {
+      return false;
+    }
+
+    // So does a text field, the search box above the table included.
+    final focused = FocusManager.instance.primaryFocus?.context;
+    if (focused != null &&
+        (focused.widget is EditableText ||
+            focused.findAncestorWidgetOfExactType<EditableText>() != null)) {
+      return false;
+    }
+
+    onRowOpen(selected);
+    return true;
+  }
+
+  /// A plain tap on a row: select it, or open it, or both.
+  void _onRowTapped(T row) {
+    final kind = _tapKind;
+    _tapKind = null;
+
+    final onRowOpen = widget.onRowOpen;
+
+    // A second click on the row a first one just selected: that is a
+    // double-click, and it opens. It does not select again on the way.
+    if (onRowOpen != null && _doubleClick.completes(row)) {
+      onRowOpen(row);
+      return;
+    }
+
+    setState(() {
+      _selectedItem = row;
+    });
+    widget.onRowTap?.call(row);
+
+    if (onRowOpen == null) {
+      return;
+    }
+
+    if (ArDriveDoubleClick.tapOpens(kind)) {
+      _doubleClick.reset();
+      onRowOpen(row);
+      return;
+    }
+
+    _doubleClick.arm(row);
   }
 
   void openMultiSelectBox() {
@@ -834,19 +936,18 @@ class _ArDriveDataTableState<T extends IndexedItem>
     final multiselect = getMultiSelectBox();
 
     return GestureDetector(
+      onTapDown: (details) => _tapKind = details.kind,
+      onTapCancel: () => _tapKind = null,
       onTap: () {
         if (_isMultiSelecting) {
+          _tapKind = null;
           _onChangeItemCheck(
             value: !multiselect.selectedItems.any((r) => r.index == row.index),
             row: row,
             index: row.index,
           );
         } else {
-          setState(() {
-            _selectedItem = row;
-          });
-
-          widget.onRowTap?.call(row);
+          _onRowTapped(row);
         }
       },
       onLongPress: () {
@@ -1183,4 +1284,53 @@ class _HoverableRowState extends State<_HoverableRow> {
       ),
     );
   }
+}
+
+/// Tells the second click of a double-click from a click, without holding
+/// the first one back.
+///
+/// `onDoubleTap` would do the telling, but a detector listening for a double
+/// tap delays every single tap until the window closes, and a click that
+/// takes a third of a second to select anything feels broken. So the first
+/// click acts at once and arms this; a second click on the same thing inside
+/// the platform's double-tap window completes it.
+class ArDriveDoubleClick<T> {
+  T? _armed;
+  Timer? _timer;
+
+  /// Whether a tap from [kind] opens a thing rather than selecting it.
+  ///
+  /// The file manager's rule, as Google Drive keeps it: a mouse click selects
+  /// and a double-click opens, but a finger has no double-click and no hover
+  /// to show what is chosen, so a tap opens. So does a tap with no pointer
+  /// behind it at all - Enter or Space on something focused, or a screen
+  /// reader's activate - because opening is what those ask for.
+  static bool tapOpens(PointerDeviceKind? kind) =>
+      kind == null ||
+      kind == PointerDeviceKind.touch ||
+      kind == PointerDeviceKind.stylus ||
+      kind == PointerDeviceKind.invertedStylus;
+
+  /// Whether a click on [target] completes a double-click. Either way the
+  /// window is spent.
+  bool completes(T target) {
+    final completes = _armed == target && (_timer?.isActive ?? false);
+    reset();
+    return completes;
+  }
+
+  /// A first click landed on [target].
+  void arm(T target) {
+    _timer?.cancel();
+    _armed = target;
+    _timer = Timer(kDoubleTapTimeout, reset);
+  }
+
+  void reset() {
+    _timer?.cancel();
+    _timer = null;
+    _armed = null;
+  }
+
+  void dispose() => reset();
 }

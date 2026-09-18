@@ -3,6 +3,7 @@ import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -264,7 +265,8 @@ class DriveListRow extends StatelessWidget {
   const DriveListRow({
     super.key,
     required this.drive,
-    required this.onTap,
+    required this.onOpen,
+    this.onSelect,
     required this.showsColumns,
     this.menu,
     this.selected,
@@ -272,7 +274,14 @@ class DriveListRow extends StatelessWidget {
   });
 
   final DriveListItem drive;
-  final VoidCallback onTap;
+
+  /// Opening the drive: a double-click, a tap on a touch screen, or Enter.
+  final VoidCallback onOpen;
+
+  /// A click with a mouse: the drive becomes the selection, as a row does in
+  /// the explorer and in any file manager. Null when the list offers no
+  /// selection, and then a click opens.
+  final VoidCallback? onSelect;
 
   /// The drive's own actions, drawn in the gutter this row already reserves.
   ///
@@ -301,6 +310,12 @@ class DriveListRow extends StatelessWidget {
 
     return _HoverHighlight(
       colour: colorTokens.containerL1,
+      // The explorer's own colour for a chosen row. A click that selects has
+      // to show it did something, and on a narrow screen there is no checkbox
+      // to tick.
+      selectedColour:
+          ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor,
+      selected: selected ?? false,
       child: Container(
         // A hairline under every row is what made this read as a spreadsheet
         // where every other table reads as a panel: the explorer separates its
@@ -350,8 +365,9 @@ class DriveListRow extends StatelessWidget {
                 child: Semantics(
                   button: true,
                   label: drive.name,
-                  child: InkWell(
-                    onTap: onTap,
+                  child: _SelectOrOpen(
+                    onSelect: onSelect,
+                    onOpen: onOpen,
                     child: Padding(
                       // The checkbox column already supplies the gutter on
                       // its side, so the name would otherwise be indented one
@@ -688,16 +704,83 @@ String formatDriveSyncState(
       .driveSyncedOnDate(DateFormat.yMMMd().format(lastSyncedAt));
 }
 
-/// Paints a row's hover state.
+/// A row's tap, read the way a file manager reads it.
+///
+/// A mouse click selects and a double-click opens; a tap on a touch screen
+/// opens; so do Enter on the focused row and a screen reader's activate, which
+/// reach [InkWell.onTap] with no pointer behind them. The rule is the
+/// explorer's, from [ArDriveDoubleClick], so the two lists cannot disagree.
+class _SelectOrOpen extends StatefulWidget {
+  const _SelectOrOpen({
+    required this.onSelect,
+    required this.onOpen,
+    required this.child,
+  });
+
+  final VoidCallback? onSelect;
+  final VoidCallback onOpen;
+  final Widget child;
+
+  @override
+  State<_SelectOrOpen> createState() => _SelectOrOpenState();
+}
+
+class _SelectOrOpenState extends State<_SelectOrOpen> {
+  final _doubleClick = ArDriveDoubleClick<Object>();
+  static const _thisRow = Object();
+  PointerDeviceKind? _kind;
+
+  @override
+  void dispose() {
+    _doubleClick.dispose();
+    super.dispose();
+  }
+
+  void _onTap() {
+    final kind = _kind;
+    _kind = null;
+
+    final onSelect = widget.onSelect;
+
+    if (onSelect == null ||
+        _doubleClick.completes(_thisRow) ||
+        ArDriveDoubleClick.tapOpens(kind)) {
+      widget.onOpen();
+      return;
+    }
+
+    onSelect();
+    _doubleClick.arm(_thisRow);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTapDown: (details) => _kind = details.kind,
+      onTapCancel: () => _kind = null,
+      onTap: _onTap,
+      child: widget.child,
+    );
+  }
+}
+
+/// Paints a row's hover state, and its selected state.
 ///
 /// A row that opens a drive when clicked should look like one. The row uses an
 /// `InkWell` for its tap, and an InkWell's hover needs a `Material` ancestor
 /// that a table built out of Containers does not provide - so nothing ever
 /// painted. This owns the state so the row itself can stay stateless.
 class _HoverHighlight extends StatefulWidget {
-  const _HoverHighlight({required this.colour, required this.child});
+  const _HoverHighlight({
+    required this.colour,
+    required this.selectedColour,
+    required this.selected,
+    required this.child,
+  });
 
   final Color colour;
+  final Color selectedColour;
+  final bool selected;
   final Widget child;
 
   @override
@@ -713,7 +796,11 @@ class _HoverHighlightState extends State<_HoverHighlight> {
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
       child: ColoredBox(
-        color: _isHovering ? widget.colour : Colors.transparent,
+        color: widget.selected
+            ? widget.selectedColour
+            : _isHovering
+                ? widget.colour
+                : Colors.transparent,
         child: widget.child,
       ),
     );
