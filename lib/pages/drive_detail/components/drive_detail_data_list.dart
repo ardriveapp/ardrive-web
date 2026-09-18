@@ -1,5 +1,29 @@
 part of '../drive_detail_page.dart';
 
+/// A click on a row: choose it, and show what it is.
+///
+/// Clicking a row that is already chosen does nothing new. It used to open a
+/// folder or hide a file's details, which made a double-click on a file show
+/// its details and then snatch them away. The details panel closes from its
+/// own button.
+void _selectRow(BuildContext context, ArDriveDataTableItem item) {
+  context.read<DriveDetailCubit>().selectDataItem(item);
+}
+
+/// Opening a row: a double-click, a tap on a touch screen, or Enter.
+///
+/// A folder is entered. A file has no view of its own beyond the details
+/// panel, so opening one shows that, the same as choosing it.
+void _openRow(BuildContext context, ArDriveDataTableItem item) {
+  final cubit = context.read<DriveDetailCubit>();
+
+  if (item is FolderDataTableItem) {
+    cubit.openFolder(folderId: item.id);
+  } else {
+    cubit.selectDataItem(item);
+  }
+}
+
 Widget _buildDataList(
   BuildContext context,
   DriveDetailLoadSuccess state,
@@ -167,23 +191,13 @@ Widget _buildDataListContent(
           leading: (file) => DriveExplorerItemTileLeading(
             item: file,
           ),
-          onRowTap: (item) {
-            final cubit = context.read<DriveDetailCubit>();
-            if (item is FolderDataTableItem) {
-              if (item.id == cubit.selectedItem?.id) {
-                cubit.openFolder(folderId: item.id);
-              } else {
-                cubit.selectDataItem(item);
-              }
-            } else if (item is FileDataTableItem) {
-              if (item.id == cubit.selectedItem?.id) {
-                cubit.toggleSelectedItemDetails();
-                return;
-              }
-
-              cubit.selectDataItem(item);
-            }
-          },
+          // A click selects and a double-click opens, as in any file manager.
+          // Opening used to be a second, separate click on a row already
+          // chosen - the gesture that means rename everywhere else - and it
+          // made entering a folder slower than in any comparable app. A touch
+          // screen still opens on a single tap: the table decides which.
+          onRowTap: (item) => _selectRow(context, item),
+          onRowOpen: (item) => _openRow(context, item),
           sortRows: (list, columnIndex, ascDescSort) {
             // Separate folders and files
             List<ArDriveDataTableItem> folders = [];
@@ -220,20 +234,9 @@ Widget _buildDataListContent(
                   : '',
               isHidden: row.isHidden,
               onPressed: () {
-                final cubit = context.read<DriveDetailCubit>();
-                if (row is FolderDataTableItem) {
-                  if (row.id == cubit.selectedItem?.id) {
-                    cubit.openFolder(folderId: row.id);
-                  } else {
-                    cubit.selectDataItem(row);
-                  }
-                } else if (row is FileDataTableItem) {
-                  if (row.id == cubit.selectedItem?.id) {
-                    cubit.toggleSelectedItemDetails();
-                  } else {
-                    cubit.selectDataItem(row);
-                  }
-                }
+                // Not reached by the table, which handles its own taps; kept
+                // in step so the old open-on-second-click cannot linger here.
+                _selectRow(context, row);
               },
             );
           },

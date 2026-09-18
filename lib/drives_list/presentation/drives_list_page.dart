@@ -837,7 +837,7 @@ class _DrivesListLoadedView extends StatelessWidget {
             key: ValueKey(drive.id),
             drive: drive,
             showsColumns: showsColumns,
-            onTap: () => onOpenDrive(drive),
+            onOpen: () => onOpenDrive(drive),
             menu: buildMenu?.call(drive),
             selected: onToggleSelected == null
                 ? null
