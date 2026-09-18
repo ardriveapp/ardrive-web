@@ -64,11 +64,12 @@ void main() {
     when(() => sync.completedDriveIds).thenReturn(const []);
   });
 
-  void syncState({String? syncingDriveId}) {
+  void syncState({String? syncingDriveId, SyncState? state}) {
     whenListen(
       sync,
       const Stream<SyncState>.empty(),
-      initialState: syncingDriveId == null ? SyncIdle() : SyncInProgress(),
+      initialState:
+          state ?? (syncingDriveId == null ? SyncIdle() : SyncInProgress()),
     );
     when(() => sync.syncingDriveId).thenReturn(syncingDriveId);
     when(() => sync.syncingDriveIds)
@@ -139,5 +140,26 @@ void main() {
     );
     expect(router.pendingUpload, isNull);
     verify(() => drivesCubit.selectDrive('photos')).called(1);
+  });
+
+  /// A refresh of the drive list does not hold the drive: it opens in the
+  /// usual second or two. Saying it was syncing, and dropping the upload,
+  /// would be wrong on both counts. At login it can run for many seconds.
+  testWidgets('waits for the drive through a refresh of the drive list',
+      (tester) async {
+    syncState(state: SyncLoadingDrives());
+
+    await pressUpload(tester);
+
+    expect(
+      find.text('This drive is syncing. Try again once it finishes.'),
+      findsNothing,
+    );
+    expect(
+      router.pendingUpload,
+      const UploadRequest(driveId: 'photos', isFolderUpload: false),
+    );
+
+    await tester.pump(AppRouterDelegate.uploadWaitLimit);
   });
 }

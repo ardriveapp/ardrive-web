@@ -276,10 +276,10 @@ void _openForUpload(
   bool isFolderUpload,
 ) {
   final syncCubit = context.read<SyncCubit>();
-  final beingSynced = SyncCubit.syncTouchesDrive(
-    state: syncCubit.state,
-    syncingDriveId: syncCubit.syncingDriveId,
+  final beingSynced = syncHoldsDrive(
     driveId: driveId,
+    syncState: syncCubit.state,
+    syncingDriveId: syncCubit.syncingDriveId,
     completedDriveIds: syncCubit.completedDriveIds,
     runDriveIds: syncCubit.syncingDriveIds,
   );

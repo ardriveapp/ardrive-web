@@ -100,17 +100,16 @@ void main() {
       );
     });
 
-    /// Reading the drive list is a sync's first phase. A run over other
-    /// drives does not touch this one, but starting its sync beside that run
-    /// would be two at once. Found by CodeRabbit.
-    test('says a sync is busy while one reads the drive list for others', () {
+    /// A refresh of the drive list reads the drives table, not the drive.
+    /// The drive's own Sync card may start a sync during one, and so may
+    /// this.
+    test('reads it during a refresh of the drive list, as its card would', () {
       expect(
         waitFor(
           DriveDetailLoadUnsynced(drive: photos),
           syncState: SyncLoadingDrives(),
-          runDriveIds: {other.id},
         ),
-        DriveWait.syncBusy,
+        DriveWait.sync,
       );
     });
 
@@ -145,6 +144,20 @@ void main() {
           syncingDriveId: photos.id,
         ),
         DriveWait.syncing,
+      );
+    });
+
+    /// Opening a folder never hangs behind a drive-list refresh:
+    /// `waitCurrentSync` counts one as finished. So the upload waits the
+    /// second or two it takes, rather than being dropped with a message
+    /// about a sync that is not happening.
+    test('is waited for through a refresh of the drive list', () {
+      expect(
+        waitFor(
+          DriveDetailLoadInProgress(),
+          syncState: SyncLoadingDrives(),
+        ),
+        DriveWait.wait,
       );
     });
 

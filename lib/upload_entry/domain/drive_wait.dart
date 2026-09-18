@@ -45,6 +45,31 @@ enum DriveWait {
 ///
 /// Pure, so every path an upload can take is checked without a widget or a
 /// router.
+/// Whether a sync is walking [driveId] right now, the one thing an action on
+/// that drive cannot wait for.
+///
+/// Only [SyncInProgress]. A refresh of the drive list, [SyncLoadingDrives],
+/// reads the drives table rather than any drive: a drive opens while it runs
+/// (`waitCurrentSync` counts it as finished, so that opening a folder never
+/// hangs behind it), and the drive's own Sync card may start a sync during
+/// it. [SyncCubit.syncTouchesDrive] counts it, because a drive's row may be
+/// rewritten; the drive itself is not held.
+bool syncHoldsDrive({
+  required String driveId,
+  required SyncState syncState,
+  required String? syncingDriveId,
+  Iterable<String> completedDriveIds = const [],
+  Set<String>? runDriveIds,
+}) =>
+    syncState is SyncInProgress &&
+    SyncCubit.syncTouchesDrive(
+      state: syncState,
+      syncingDriveId: syncingDriveId,
+      driveId: driveId,
+      completedDriveIds: completedDriveIds,
+      runDriveIds: runDriveIds,
+    );
+
 DriveWait driveWait({
   required String driveId,
   required DriveDetailState detailState,
@@ -53,10 +78,10 @@ DriveWait driveWait({
   Iterable<String> completedDriveIds = const [],
   Set<String>? runDriveIds,
 }) {
-  final syncTouchesThisDrive = SyncCubit.syncTouchesDrive(
-    state: syncState,
-    syncingDriveId: syncingDriveId,
+  final syncTouchesThisDrive = syncHoldsDrive(
     driveId: driveId,
+    syncState: syncState,
+    syncingDriveId: syncingDriveId,
     completedDriveIds: completedDriveIds,
     runDriveIds: runDriveIds,
   );
@@ -90,12 +115,10 @@ DriveWait driveWait({
     }
 
     // One sync at a time, and no queue: asking now would be refused, and a
-    // refusal nobody can see is the silence this whole change is about.
-    //
-    // Reading the drive list is the first phase of a sync, not a pause
-    // before one. A run over other drives, in that phase, does not touch
-    // this one - but a second sync started beside it is still a second sync.
-    if (syncState is SyncInProgress || syncState is SyncLoadingDrives) {
+    // refusal nobody can see is the silence this whole change is about. A
+    // drive-list refresh is not a sync here, as it is not for the drive's
+    // own Sync card: see [syncHoldsDrive].
+    if (syncState is SyncInProgress) {
       return DriveWait.syncBusy;
     }
 
