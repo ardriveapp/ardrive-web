@@ -37,6 +37,46 @@ import 'package:responsive_builder/responsive_builder.dart';
 /// with its label on the drawer and the expanded rail, and as a bare icon on
 /// the collapsed one, where there is no text to look for.
 
+/// A drives heading, with the icon the drives list uses for the same group.
+///
+/// Public, private and shared mean the same things in both navs, and were
+/// drawn as three plain words here and three icons there. The icon comes from
+/// [DriveScopeRail.iconFor] rather than being picked again, so the two cannot
+/// drift apart.
+class _DrivesHeading extends StatelessWidget {
+  const _DrivesHeading({required this.scope, required this.label});
+
+  final DriveScope scope;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Row(
+      children: [
+        Icon(
+          DriveScopeRail.iconFor(scope),
+          size: 16,
+          color: colorTokens.textMid,
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            label.toUpperCase(),
+            overflow: TextOverflow.ellipsis,
+            style: typography.paragraphNormal(
+              fontWeight: ArFontWeight.semiBold,
+              color: colorTokens.textHigh,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class AppSideBar extends StatefulWidget {
   const AppSideBar({super.key});
 
@@ -979,8 +1019,6 @@ class _AccordionState extends State<_Accordion> {
   Widget build(BuildContext context) {
     final state = widget.state;
     final isMobile = widget.isMobile;
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return BlocBuilder<GlobalHideBloc, GlobalHideState>(
       builder: (context, hideState) {
@@ -991,12 +1029,9 @@ class _AccordionState extends State<_Accordion> {
             if (state.userDrives.isNotEmpty)
               ArDriveAccordionItem(
                 isExpanded: true,
-                Text(
-                  appLocalizationsOf(context).publicDrives.toUpperCase(),
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: colorTokens.textHigh,
-                  ),
+                _DrivesHeading(
+                  scope: DriveScope.public,
+                  label: appLocalizationsOf(context).publicDrives,
                 ),
                 state.userDrives
                     .where((element) {
@@ -1036,12 +1071,9 @@ class _AccordionState extends State<_Accordion> {
             if (state.userDrives.isNotEmpty)
               ArDriveAccordionItem(
                 isExpanded: true,
-                Text(
-                  appLocalizationsOf(context).privateDrives.toUpperCase(),
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: colorTokens.textHigh,
-                  ),
+                _DrivesHeading(
+                  scope: DriveScope.private,
+                  label: appLocalizationsOf(context).privateDrives,
                 ),
                 state.userDrives
                     .where((element) {
@@ -1071,11 +1103,9 @@ class _AccordionState extends State<_Accordion> {
             if (state.sharedDrives.isNotEmpty)
               ArDriveAccordionItem(
                 isExpanded: true,
-                Text(
-                  appLocalizationsOf(context).sharedDrives.toUpperCase(),
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
+                _DrivesHeading(
+                  scope: DriveScope.sharedWithMe,
+                  label: appLocalizationsOf(context).sharedDrives,
                 ),
 
                 /// Shared drives are always visible
