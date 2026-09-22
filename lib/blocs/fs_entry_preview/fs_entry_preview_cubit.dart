@@ -78,9 +78,38 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   /// released when this cubit closes rather than living as long as the tab.
   final List<String> _createdObjectUrls = [];
 
-  /// The data transaction whose PDF bytes are already in flight or already
-  /// rendered. See [_previewPdf].
-  String? _pdfDataTxId;
+  /// The data transaction whose bytes a buffered preview - a PDF, private
+  /// media, a document or an email - already has in flight or on screen.
+  ///
+  /// The drive explorer previews once immediately and again on every database
+  /// change to the file's row, and drift emits the current row the moment the
+  /// watch starts. Unguarded, opening a private video downloaded it twice, and
+  /// any later write to the row - an upload being confirmed, a sync - fetched
+  /// up to a hundred megabytes again and swapped the playing video for a new
+  /// one, restarting it. PDFs were guarded; the other buffered types were not.
+  String? _claimedDataTxId;
+
+  /// Claims [dataTxId] for a buffered preview. `false` means it is already in
+  /// flight or on screen, and the caller must not fetch it again.
+  ///
+  /// Synchronous, and to be called before the caller's first `await`, or two
+  /// calls that arrive together would both get past it.
+  bool _claim(String dataTxId) {
+    if (_claimedDataTxId == dataTxId) {
+      return false;
+    }
+
+    _claimedDataTxId = dataTxId;
+    return true;
+  }
+
+  /// Gives up the claim after a load that produced nothing, so a later
+  /// database change is free to try again. A newer claim is left alone.
+  void _release(String dataTxId) {
+    if (_claimedDataTxId == dataTxId) {
+      _claimedDataTxId = null;
+    }
+  }
 
   StreamSubscription? _entrySubscription;
   static final ValueNotifier<ImagePreviewNotification?> imagePreviewNotifier =
@@ -302,15 +331,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return;
     }
 
-    // The drive explorer previews once immediately and again on every database
-    // change; a PDF can be a hundred megabytes, so the same one is not fetched
-    // twice. Claimed synchronously, before the first await, or two calls that
-    // arrive together would both get past it.
-    if (_pdfDataTxId == selectedItem.dataTxId) {
+    // A PDF can be a hundred megabytes, so the same one is not fetched twice.
+    // See [_claimedDataTxId].
+    if (!_claim(selectedItem.dataTxId)) {
       return;
     }
-
-    _pdfDataTxId = selectedItem.dataTxId;
 
     // A private file with no key is not a preview that fails; it is one that
     // must never be attempted. Checked before anything is fetched, so the
@@ -326,7 +351,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       );
 
       if (fileKey == null) {
-        _pdfDataTxId = null;
+        _release(selectedItem.dataTxId);
         _emitUnavailable();
         return;
       }
@@ -364,7 +389,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     if (dataBytes == null) {
       // Nothing was rendered, so a later database change is free to try again.
-      _pdfDataTxId = null;
+      _release(selectedItem.dataTxId);
 
       if (isEncrypted) {
         // No plaintext, and no URL to offer instead.
@@ -892,6 +917,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return null;
     }
 
+    // Already in flight or playing. Fetching it again would only replace the
+    // playing video with the same one, from the start. See [_claimedDataTxId].
+    if (!_claim(selectedItem.dataTxId)) {
+      return null;
+    }
+
     // A private file with no key is not a preview that failed; it is one that
     // must never be attempted. Checked before a single byte is requested.
     final fileKey = await _getFileKey(
@@ -902,6 +933,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     );
 
     if (fileKey == null) {
+      _release(selectedItem.dataTxId);
       _emitUnavailable();
       return null;
     }
@@ -925,6 +957,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
 
     if (dataBytes == null) {
+      _release(selectedItem.dataTxId);
       _emitUnavailable();
       return null;
     }
@@ -936,6 +969,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     );
 
     if (decryptedBytes == null) {
+      _release(selectedItem.dataTxId);
       _emitUnavailable();
       return null;
     }
@@ -943,6 +977,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     final objectUrl = _objectUrls.create(decryptedBytes, contentType);
 
     if (objectUrl == null) {
+      _release(selectedItem.dataTxId);
       _emitUnavailable();
       return null;
     }
@@ -1019,6 +1054,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String previewUrl, {
     SecretKey? fileKey,
   }) async {
+    // Already in flight or on screen. See [_claimedDataTxId].
+    if (!_claim(selectedItem.dataTxId)) {
+      return;
+    }
+
     emit(const FsEntryPreviewLoading());
 
     try {
@@ -1034,6 +1074,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       );
 
       if (dataBytes == null) {
+        _release(selectedItem.dataTxId);
         emit(FsEntryPreviewUnavailable());
         return;
       }
@@ -1053,6 +1094,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             );
 
         if (decryptionKey == null) {
+          _release(selectedItem.dataTxId);
           emit(FsEntryPreviewUnavailable());
           return;
         }
@@ -1065,6 +1107,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         );
 
         if (decryptedBytes == null) {
+          _release(selectedItem.dataTxId);
           emit(FsEntryPreviewUnavailable());
           return;
         }
@@ -1096,6 +1139,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       ));
     } catch (e) {
       logger.e('Error loading document preview', e);
+      _release(selectedItem.dataTxId);
       emit(FsEntryPreviewUnavailable());
     }
   }
@@ -1106,6 +1150,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String previewUrl, {
     SecretKey? fileKey,
   }) async {
+    // Already in flight or on screen. See [_claimedDataTxId].
+    if (!_claim(selectedItem.dataTxId)) {
+      return;
+    }
+
     emit(const FsEntryPreviewLoading());
 
     try {
@@ -1115,6 +1164,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       );
 
       if (dataBytes == null) {
+        _release(selectedItem.dataTxId);
         emit(FsEntryPreviewUnavailable());
         return;
       }
@@ -1134,6 +1184,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             );
 
         if (decryptionKey == null) {
+          _release(selectedItem.dataTxId);
           emit(FsEntryPreviewUnavailable());
           return;
         }
@@ -1146,6 +1197,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         );
 
         if (decryptedBytes == null) {
+          _release(selectedItem.dataTxId);
           emit(FsEntryPreviewUnavailable());
           return;
         }
@@ -1168,6 +1220,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       ));
     } catch (e) {
       logger.e('Error loading email preview', e);
+      _release(selectedItem.dataTxId);
       emit(FsEntryPreviewUnavailable());
     }
   }

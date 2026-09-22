@@ -1094,4 +1094,150 @@ void main() {
       },
     );
   });
+
+
+  /// The drive explorer previews once immediately and again for every row the
+  /// file's database watch emits - and drift emits the current row the moment
+  /// the watch starts. A buffered preview must be fetched once for all of
+  /// that: a second fetch is up to a hundred megabytes again, and for media it
+  /// replaced the playing video with a new one, from the start.
+  group('FsEntryPreviewCubit fetches a buffered preview once', () {
+    late StreamController<FileEntry> rows;
+    late FakePreviewObjectUrls objectUrls;
+
+    setUp(() {
+      rows = StreamController<FileEntry>();
+      objectUrls = FakePreviewObjectUrls();
+    });
+
+    tearDown(() => rows.close());
+
+    FileEntry row({
+      required String name,
+      required String contentType,
+      String txId = dataTxId,
+    }) =>
+        createMockFileEntry(
+          id: fileId,
+          driveId: driveId,
+          name: name,
+          dataTxId: txId,
+          dataContentType: contentType,
+          size: underLimitFileSize,
+        );
+
+    /// An explorer cubit on a private drive whose file row is [rows].
+    FsEntryPreviewCubit explorerCubit(FileDataTableItem item) {
+      final drive = MockDrive();
+      final driveSelectable = MockSelectable<Drive>();
+      final fileSelectable = MockSelectable<FileEntry>();
+
+      when(() => drive.privacy).thenReturn(DrivePrivacyTag.private);
+      when(() => mockDriveDao.driveById(driveId: driveId))
+          .thenReturn(driveSelectable);
+      when(() => driveSelectable.getSingleOrNull())
+          .thenAnswer((_) async => drive);
+      when(() => driveSelectable.getSingle()).thenAnswer((_) async => drive);
+      when(() => mockDriveDao.fileById(fileId: fileId))
+          .thenReturn(fileSelectable);
+      when(() => fileSelectable.watchSingle()).thenAnswer((_) => rows.stream);
+
+      return FsEntryPreviewCubit(
+        driveId: driveId,
+        maybeSelectedItem: item,
+        driveDao: mockDriveDao,
+        configService: mockConfigService,
+        arweave: mockArweaveService,
+        profileCubit: mockProfileCubit,
+        crypto: mockCrypto,
+        fileKey: SecretKey([1, 2, 3]),
+        objectUrls: objectUrls,
+      );
+    }
+
+    Future<void> settle() => Future.delayed(const Duration(milliseconds: 30));
+
+    int fetches(String txId) =>
+        verify(() => mockGatewayFallback.fetchData(txId, any())).callCount;
+
+    test('a private video is fetched once on opening, and not again on a '
+        'later write to its row', () async {
+      stubPrivateFetchAndDecrypt();
+      final videoRow = row(name: 'clip.mp4', contentType: 'video/mp4');
+      final cubit = explorerCubit(createVideoItem(size: underLimitFileSize));
+      final states = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(states.add);
+
+      await settle();
+      rows.add(videoRow); // what drift emits as the watch starts
+      await settle();
+      rows.add(videoRow); // an upload being confirmed, a sync
+      await settle();
+
+      expect(fetches(dataTxId), 1);
+      expect(objectUrls.created, hasLength(1));
+      expect(cubit.state, isA<FsEntryPreviewVideo>());
+      expect(states.whereType<FsEntryPreviewLoading>(), hasLength(1),
+          reason: 'a second spinner is the playing video being replaced');
+
+      await sub.cancel();
+      await cubit.close();
+    });
+
+    test('a fetch that failed is tried again on the next write to the row',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      var gatewaysDown = true;
+      when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+        (_) async {
+          if (gatewaysDown) throw Exception('every gateway failed');
+          return http.Response.bytes([1, 2, 3, 4], 200);
+        },
+      );
+      final videoRow = row(name: 'clip.mp4', contentType: 'video/mp4');
+      final cubit = explorerCubit(createVideoItem(size: underLimitFileSize));
+
+      await settle();
+      rows.add(videoRow);
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+      final failedAttempts = fetches(dataTxId);
+
+      gatewaysDown = false;
+      rows.add(videoRow);
+      await settle();
+
+      expect(fetches(dataTxId), 1,
+          reason: 'after $failedAttempts failed attempt(s), one more');
+      expect(cubit.state, isA<FsEntryPreviewVideo>());
+
+      await cubit.close();
+    });
+
+    test('a private document is fetched once, and shown once', () async {
+      stubPrivateFetchAndDecrypt(decrypted: 'hello'.codeUnits);
+      final textRow = row(name: 'notes.txt', contentType: 'text/plain');
+      final cubit = explorerCubit(createItem(
+        size: underLimitFileSize,
+        name: 'notes.txt',
+        contentType: 'text/plain',
+      ));
+      final states = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(states.add);
+
+      await settle();
+      rows.add(textRow);
+      await settle();
+      rows.add(textRow);
+      await settle();
+
+      expect(fetches(dataTxId), 1);
+      expect(cubit.state, isA<FsEntryPreviewText>());
+      expect(states.whereType<FsEntryPreviewLoading>(), hasLength(1),
+          reason: 'a second spinner resets the text the reader is in');
+
+      await sub.cancel();
+      await cubit.close();
+    });
+  });
 }
