@@ -1278,6 +1278,18 @@ void downloadOrPreviewRevision({
   promptToDownloadFileRevision(context: context, revision: revision);
 }
 
+/// Whether the toolbar offers to download [item], given what the panel has
+/// read about it.
+///
+/// A file or a folder is always offered. A drive is offered only once the read
+/// of the local database says this device knows its contents: a drive that has
+/// never synced here has none, and until the read comes back neither has any
+/// other. An offer that may be withdrawn a moment later is worse than one that
+/// arrives late.
+@visibleForTesting
+bool offersDownload(ArDriveDataTableItem item, FsEntryInfoState info) =>
+    item is! DriveDataItem || info is FsEntryDriveInfoSuccess;
+
 class DetailsPanelToolbar extends StatelessWidget {
   const DetailsPanelToolbar({
     super.key,
@@ -1352,11 +1364,9 @@ class DetailsPanelToolbar extends StatelessWidget {
                 }
               },
             ),
-          // Nothing to download from a drive that has never synced here:
-          // none of its files are known. Said by the details below it.
-          if (!(item is DriveDataItem &&
-              context.watch<FsEntryInfoCubit>().state
-                  is FsEntryUnsyncedDriveInfo))
+          // A drive whose contents this device does not know has nothing to
+          // download. Said by the details below it. See [offersDownload].
+          if (offersDownload(item, context.watch<FsEntryInfoCubit>().state))
             _buildActionIcon(
                 tooltip: appLocalizationsOf(context).download,
                 icon: ArDriveIcons.download(size: defaultIconSize),

@@ -81,6 +81,31 @@ void main() {
 
   tearDown(() => db.close());
 
+  /// The revisions reading a drive's contents leaves behind, which is what
+  /// tells the panel this device knows what is in the drive.
+  Future<void> markDriveRead() async {
+    await db.into(db.folderRevisions).insert(
+          FolderRevisionsCompanion.insert(
+            folderId: rootFolderId,
+            driveId: driveId,
+            name: 'Photos',
+            metadataTxId: 'folder-tx',
+            action: RevisionAction.create,
+          ),
+        );
+    await db.into(db.driveRevisions).insert(
+          DriveRevisionsCompanion.insert(
+            driveId: driveId,
+            rootFolderId: rootFolderId,
+            ownerAddress: fakeUserJson.walletAddress,
+            name: 'Photos',
+            privacy: DrivePrivacyTag.public,
+            metadataTxId: 'drive-tx',
+            action: RevisionAction.create,
+          ),
+        );
+  }
+
   Future<void> pumpPanel(WidgetTester tester, {bool withSync = true}) async {
     await tester.binding.setSurfaceSize(const Size(1400, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -234,5 +259,53 @@ void main() {
     expect(toolbarAction('Download'), findsNothing);
 
     await takeDown(tester);
+  });
+
+  /// The test above is one end of the rule. The read that decides it is a
+  /// round trip, and these are the states the panel passes through on the way,
+  /// where the drive's contents are just as unknown. Asked of the rule
+  /// directly: the wait is over before a widget test can look at it.
+  group('the download a drive is offered', () {
+    late DriveDataItem driveItem;
+
+    setUp(() {
+      driveItem = DriveDataTableItemMapper.fromDrive(drive, (_) {}, 0, true);
+    });
+
+    test('is withheld while the read is in flight', () {
+      expect(offersDownload(driveItem, FsEntryInfoInitial()), isFalse);
+    });
+
+    test('is withheld when the read fails', () {
+      expect(offersDownload(driveItem, FsEntryInfoFailure()), isFalse);
+    });
+
+    /// And is made once the read says the drive has contents here, which is
+    /// every drive the explorer shows. Through the cubit the panel uses, so
+    /// the rule is tied to the state it really emits.
+    test('is made once the read says the drive has contents', () async {
+      await markDriveRead();
+
+      final info = FsEntryInfoCubit(
+        driveId: driveId,
+        maybeSelectedItem: driveItem,
+        driveDao: db.driveDao,
+        licenseService: MockLicenseService(),
+        arweave: MockArweaveService(),
+      );
+      addTearDown(info.close);
+
+      final state = await info.stream.first;
+
+      expect(state, isA<FsEntryDriveInfoSuccess>());
+      expect(offersDownload(driveItem, state), isTrue);
+    });
+
+    test('is made for a file whatever the panel has read', () {
+      final file = createMockFileDataTableItem();
+
+      expect(offersDownload(file, FsEntryInfoInitial()), isTrue);
+      expect(offersDownload(file, FsEntryInfoFailure()), isTrue);
+    });
   });
 }
