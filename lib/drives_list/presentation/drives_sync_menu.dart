@@ -132,13 +132,7 @@ class DrivesSyncMenu extends StatelessWidget {
           // that reaches it, and a real button swallows that tap with its own
           // handler - so the menu never opened. Every other dropdown in the app
           // passes an inert child for the same reason.
-          child: Container(
-            constraints: const BoxConstraints(minHeight: 40),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-            decoration: BoxDecoration(
-              border: Border.all(color: colorTokens.strokeHigh),
-              borderRadius: BorderRadius.circular(6),
-            ),
+          child: _OutlineButtonFace(
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -173,5 +167,69 @@ class DrivesSyncMenu extends StatelessWidget {
 
     return drives.userDrives.isNotEmpty &&
         drives.userDrives.every((d) => (d.lastBlockHeight ?? 0) == 0);
+  }
+}
+
+/// The design system's outline button, drawn by hand so a tap still reaches
+/// the menu around it.
+///
+/// Being inert is what let the menu open, but it also left this control with
+/// none of a button's states: no fill under a pointer, no border change, no
+/// press, not even the hand cursor, so it read as a label. These are the
+/// outline variant's own tokens - `ArDriveButtonNew` with
+/// `ButtonVariant.outline` - so it answers a pointer the way every other
+/// outlined button in the app does. Watching the pointer takes nothing from
+/// the gesture the menu opens on.
+class _OutlineButtonFace extends StatefulWidget {
+  const _OutlineButtonFace({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_OutlineButtonFace> createState() => _OutlineButtonFaceState();
+}
+
+class _OutlineButtonFaceState extends State<_OutlineButtonFace> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  void _setPressed(bool pressed) {
+    if (_pressed != pressed) setState(() => _pressed = pressed);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final active = _hovered || _pressed;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() {
+        _hovered = false;
+        _pressed = false;
+      }),
+      child: Listener(
+        onPointerDown: (_) => _setPressed(true),
+        onPointerUp: (_) => _setPressed(false),
+        onPointerCancel: (_) => _setPressed(false),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 40),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+          decoration: BoxDecoration(
+            color: _pressed
+                ? colorTokens.buttonOutlinePress
+                : _hovered
+                    ? colorTokens.buttonOutlineHover
+                    : colorTokens.buttonOutlineDefault,
+            border: Border.all(
+              color: active ? colorTokens.strokeHigh : colorTokens.strokeMid,
+            ),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
   }
 }

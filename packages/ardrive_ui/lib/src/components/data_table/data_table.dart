@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_ui/src/styles/colors/global_colors.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -44,6 +47,14 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   final String rowsPerPageText;
   final Function(List<MultiSelectBox<T>> selectedRows)? onSelectedRows;
   final Function(T row)? onRowTap;
+
+  /// Opening a row, as a file manager means it: a double-click, a single tap
+  /// on a touch screen, or Enter on the selected row.
+  ///
+  /// When this is given, a click only selects - [onRowTap] - and opening is a
+  /// separate act. Without it the table behaves as it always has, so the
+  /// dialogs that draw one to pick a row are unaffected.
+  final void Function(T row)? onRowOpen;
   final Function(bool onChangeMultiSelecting)? onChangeMultiSelecting;
   final bool forceDisableMultiSelect;
   final bool lockMultiSelect;
@@ -66,6 +77,7 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     this.sortRows,
     this.onSelectedRows,
     this.onRowTap,
+    this.onRowOpen,
     this.onChangeMultiSelecting,
     this.forceDisableMultiSelect = false,
     this.lockMultiSelect = false,
@@ -106,6 +118,19 @@ class _ArDriveDataTableState<T extends IndexedItem>
   TableSort? _tableSort;
 
   bool _isCtrlPressed = false;
+
+  /// The pointer behind the tap being handled, read on the way down. Null
+  /// when the tap came from no pointer at all - Enter or Space on a focused
+  /// row, or a screen reader - and those open, since opening is what they ask
+  /// for.
+  PointerDeviceKind? _tapKind;
+
+  final _doubleClick = ArDriveDoubleClick<T>();
+
+  /// Where Enter is heard. A click on a row puts focus here, so Enter opens
+  /// the row just clicked even if the search box had focus a moment before,
+  /// and a button focused anywhere else keeps Enter for itself.
+  final _focusNode = FocusNode(debugLabel: 'ArDriveDataTable');
   int? _shiftSelectionStartIndex;
 
   bool get _isMultiSelecting {
@@ -143,6 +168,85 @@ class _ArDriveDataTableState<T extends IndexedItem>
     HardwareKeyboard.instance.addHandler(_handleSelectAllShortcut);
 
     _columns = widget.columns;
+  }
+
+  // These handlers are global, so without this they outlived the table: the
+  // select-all shortcut would go on calling setState on a table the reader had
+  // already left.
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleKeyDownEvent);
+    HardwareKeyboard.instance.removeHandler(_handleEscapeKey);
+    HardwareKeyboard.instance.removeHandler(_handleSelectAllShortcut);
+    _doubleClick.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  /// Enter opens the selected row, as it does in any file manager.
+  ///
+  /// Heard only while focus is in the table, which a click on a row puts it.
+  /// That rules out, without listing them, every place Enter means something
+  /// else: a text field, a dialog, a button focused elsewhere. The table's
+  /// other shortcuts are global handlers; this one is not, because Enter is
+  /// the key everything else also wants.
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    final onRowOpen = widget.onRowOpen;
+    final selected = _selectedItem;
+
+    if (onRowOpen == null ||
+        selected == null ||
+        _isMultiSelecting ||
+        event is! KeyDownEvent ||
+        (event.logicalKey != LogicalKeyboardKey.enter &&
+            event.logicalKey != LogicalKeyboardKey.numpadEnter)) {
+      return KeyEventResult.ignored;
+    }
+
+    // Only a row that is on screen, which means on this page. Entering a
+    // folder leaves it as the explorer's selection, so without this Enter
+    // would enter the folder the reader is already in, again; and a row
+    // chosen on one page is still selected after the reader moves to another.
+    if (!_currentPage.contains(selected)) {
+      return KeyEventResult.ignored;
+    }
+
+    onRowOpen(selected);
+    return KeyEventResult.handled;
+  }
+
+  /// A plain tap on a row: select it, or open it, or both.
+  void _onRowTapped(T row) {
+    final kind = _tapKind;
+    _tapKind = null;
+
+    final onRowOpen = widget.onRowOpen;
+
+    // A second click on the row a first one just selected: that is a
+    // double-click, and it opens. It does not select again on the way.
+    if (onRowOpen != null && _doubleClick.completes(row)) {
+      onRowOpen(row);
+      return;
+    }
+
+    setState(() {
+      _selectedItem = row;
+    });
+    widget.onRowTap?.call(row);
+
+    if (onRowOpen == null) {
+      return;
+    }
+
+    _focusNode.requestFocus();
+
+    if (ArDriveDoubleClick.tapOpens(kind)) {
+      _doubleClick.reset();
+      onRowOpen(row);
+      return;
+    }
+
+    _doubleClick.arm(row);
   }
 
   void openMultiSelectBox() {
@@ -428,97 +532,110 @@ class _ArDriveDataTableState<T extends IndexedItem>
       return EdgeInsets.only(left: leftPadding, right: rightPadding);
     }
 
-    return ArDriveCard(
-      backgroundColor:
-          ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      key: widget.key,
-      content: Column(
-        children: [
-          const SizedBox(
-            height: 28,
-          ),
-          Row(
+    // Focus lives on the whole table, not a row: a click on any row brings
+    // Enter here, and the row it opens is whichever one is selected.
+    return Focus(
+        focusNode: _focusNode,
+        onKeyEvent: _onKey,
+        child: ArDriveCard(
+          backgroundColor:
+              ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          key: widget.key,
+          content: Column(
             children: [
-              _masterMultiselectCheckBox(),
-              Flexible(
-                child: AnimatedPadding(
-                  duration: const Duration(milliseconds: 300),
-                  padding: getPadding(),
-                  child: Row(
-                    children: [
-                      ...columns,
-                      const SizedBox(
-                        width: 90,
-                      ),
-                      ArDriveSubmenu(
-                        alignmentOffset: const Offset(-150, 10),
-                        menuChildren: [
-                          for (int i = 0; i < _columns.length; i++)
-                            ArDriveSubmenuItem(
-                                widget: Padding(
-                              padding: EdgeInsets.only(
-                                  top: (i == 0) ? 16 : 8,
-                                  left: 16,
-                                  right: 16,
-                                  bottom: (i == _columns.length - 1) ? 16 : 8),
-                              child: ArDriveCheckBox(
-                                isDisabled: !_columns[i].canHide,
-                                title: _columns[i].title,
-                                checked: _columns[i].isVisible,
-                                titleStyle:
-                                    ArDriveTypography.body.buttonLargeBold(),
-                                onChange: (value) {
-                                  _toggleColumnVisibility(i);
-                                },
-                              ),
-                            ))
+              // The same air the drives list puts above its headings: 8 of
+              // panel padding and 6 of the header's own. It was 28 here, which
+              // is why one table looked roomier than the other on screens a
+              // reader moves between.
+              const SizedBox(
+                height: 14,
+              ),
+              Row(
+                children: [
+                  _masterMultiselectCheckBox(),
+                  Flexible(
+                    child: AnimatedPadding(
+                      duration: const Duration(milliseconds: 300),
+                      padding: getPadding(),
+                      child: Row(
+                        children: [
+                          ...columns,
+                          const SizedBox(
+                            width: 90,
+                          ),
+                          ArDriveSubmenu(
+                            alignmentOffset: const Offset(-150, 10),
+                            menuChildren: [
+                              for (int i = 0; i < _columns.length; i++)
+                                ArDriveSubmenuItem(
+                                    widget: Padding(
+                                  padding: EdgeInsets.only(
+                                      top: (i == 0) ? 16 : 8,
+                                      left: 16,
+                                      right: 16,
+                                      bottom:
+                                          (i == _columns.length - 1) ? 16 : 8),
+                                  child: ArDriveCheckBox(
+                                    isDisabled: !_columns[i].canHide,
+                                    title: _columns[i].title,
+                                    checked: _columns[i].isVisible,
+                                    titleStyle: ArDriveTypography.body
+                                        .buttonLargeBold(),
+                                    onChange: (value) {
+                                      _toggleColumnVisibility(i);
+                                    },
+                                  ),
+                                ))
+                            ],
+                            child: ArDriveIcons.plus(),
+                          ),
                         ],
-                        child: ArDriveIcons.plus(),
                       ),
-                    ],
+                    ),
+                  ),
+                ],
+              ),
+              // And the same 6 beneath them before the first row, where the
+              // gap was 25: four times the drives list, and the half of it a
+              // reader actually notices.
+              const SizedBox(
+                height: 6,
+              ),
+              Expanded(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height,
+                  ),
+                  child: ArDriveScrollBar(
+                    controller: _scrollController,
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      itemCount: _currentPage.length,
+                      itemBuilder: (context, index) {
+                        return ArDriveClickArea(
+                          key: ValueKey(_currentPage[index]),
+                          child: _HoverableRow(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: _buildRowSpacing(
+                                _columns,
+                                widget.buildRow(_currentPage[index]).row,
+                                _currentPage[index],
+                                index,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
+              _pageIndicator(),
             ],
           ),
-          const SizedBox(
-            height: 25,
-          ),
-          Expanded(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height,
-              ),
-              child: ArDriveScrollBar(
-                controller: _scrollController,
-                child: ListView.builder(
-                  controller: _scrollController,
-                  itemCount: _currentPage.length,
-                  itemBuilder: (context, index) {
-                    return ArDriveClickArea(
-                      key: ValueKey(_currentPage[index]),
-                      child: _HoverableRow(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 5),
-                          child: _buildRowSpacing(
-                            _columns,
-                            widget.buildRow(_currentPage[index]).row,
-                            _currentPage[index],
-                            index,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-          _pageIndicator(),
-        ],
-      ),
-    );
+        ));
   }
 
   Widget _buildSingleColumn({required TableColumn column, required int index}) {
@@ -834,19 +951,18 @@ class _ArDriveDataTableState<T extends IndexedItem>
     final multiselect = getMultiSelectBox();
 
     return GestureDetector(
+      onTapDown: (details) => _tapKind = details.kind,
+      onTapCancel: () => _tapKind = null,
       onTap: () {
         if (_isMultiSelecting) {
+          _tapKind = null;
           _onChangeItemCheck(
             value: !multiselect.selectedItems.any((r) => r.index == row.index),
             row: row,
             index: row.index,
           );
         } else {
-          setState(() {
-            _selectedItem = row;
-          });
-
-          widget.onRowTap?.call(row);
+          _onRowTapped(row);
         }
       },
       onLongPress: () {
@@ -1183,4 +1299,53 @@ class _HoverableRowState extends State<_HoverableRow> {
       ),
     );
   }
+}
+
+/// Tells the second click of a double-click from a click, without holding
+/// the first one back.
+///
+/// `onDoubleTap` would do the telling, but a detector listening for a double
+/// tap delays every single tap until the window closes, and a click that
+/// takes a third of a second to select anything feels broken. So the first
+/// click acts at once and arms this; a second click on the same thing inside
+/// the platform's double-tap window completes it.
+class ArDriveDoubleClick<T> {
+  T? _armed;
+  Timer? _timer;
+
+  /// Whether a tap from [kind] opens a thing rather than selecting it.
+  ///
+  /// The file manager's rule, as Google Drive keeps it: a mouse click selects
+  /// and a double-click opens, but a finger has no double-click and no hover
+  /// to show what is chosen, so a tap opens. So does a tap with no pointer
+  /// behind it at all - Enter or Space on something focused, or a screen
+  /// reader's activate - because opening is what those ask for.
+  static bool tapOpens(PointerDeviceKind? kind) =>
+      kind == null ||
+      kind == PointerDeviceKind.touch ||
+      kind == PointerDeviceKind.stylus ||
+      kind == PointerDeviceKind.invertedStylus;
+
+  /// Whether a click on [target] completes a double-click. Either way the
+  /// window is spent.
+  bool completes(T target) {
+    final completes = _armed == target && (_timer?.isActive ?? false);
+    reset();
+    return completes;
+  }
+
+  /// A first click landed on [target].
+  void arm(T target) {
+    _timer?.cancel();
+    _armed = target;
+    _timer = Timer(kDoubleTapTimeout, reset);
+  }
+
+  void reset() {
+    _timer?.cancel();
+    _timer = null;
+    _armed = null;
+  }
+
+  void dispose() => reset();
 }

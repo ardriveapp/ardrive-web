@@ -118,7 +118,8 @@ void main() {
 
         expect(find.text('Download finished!'), findsOneWidget,
             reason: 'for $verdict');
-        expect(find.text('holiday.mp4'), findsOneWidget, reason: 'for $verdict');
+        expect(find.text('holiday.mp4'), findsOneWidget,
+            reason: 'for $verdict');
         expect(find.text('DONE'), findsOneWidget, reason: 'for $verdict');
 
         // No claim about the bytes, in either direction.
