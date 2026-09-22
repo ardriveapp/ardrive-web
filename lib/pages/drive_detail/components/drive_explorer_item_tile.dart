@@ -247,26 +247,37 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
     );
   }
 
+  /// The dot on a file's icon: amber waiting, green on chain, red not.
+  ///
+  /// It says what it means now. An 8px circle in three colours is the only
+  /// report a file's own journey onto Arweave gets, and it was unlabelled:
+  /// confirming an upload is otherwise silent by design, since it asks about
+  /// one transaction and changes nothing about the drive.
   Widget _buildFileStatus(BuildContext context) {
     late Color indicatorColor;
+    late String meaning;
 
     switch (item.fileStatusFromTransactions) {
       case TransactionStatus.pending:
         indicatorColor =
             ArDriveTheme.of(context).themeData.colors.themeWarningFg;
+        meaning = appLocalizationsOf(context).fileStatusPendingTooltip;
         break;
       case TransactionStatus.confirmed:
         indicatorColor =
             ArDriveTheme.of(context).themeData.colors.themeSuccessFb;
+        meaning = appLocalizationsOf(context).fileStatusConfirmedTooltip;
         break;
       case TransactionStatus.failed:
         indicatorColor = ArDriveTheme.of(context).themeData.colors.themeErrorFg;
+        meaning = appLocalizationsOf(context).fileStatusFailedTooltip;
         break;
       default:
         indicatorColor = Colors.transparent;
+        meaning = '';
     }
 
-    return Container(
+    final dot = Container(
       width: 8,
       height: 8,
       decoration: BoxDecoration(
@@ -274,6 +285,12 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
     );
+
+    if (meaning.isEmpty) {
+      return dot;
+    }
+
+    return ArDriveTooltip(message: meaning, child: dot);
   }
 }
 

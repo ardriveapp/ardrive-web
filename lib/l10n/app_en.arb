@@ -658,6 +658,10 @@
     "description": "Action on the unsynced drive card once a sync has already looked and found nothing. Deliberately not Sync Now, which was the button that was already pressed"
   },
   "driveSyncNotStartedAnotherDriveIsSyncing": "Another drive is syncing, so this one was not started. Sync it once that one finishes.",
+  "driveIsSyncingTryLater": "This drive is syncing. Try again once it finishes.",
+  "@driveIsSyncingTryLater": {
+    "description": "Shown when an action in the New menu needs a drive that a sync is reading right now. Nothing is queued."
+  },
   "@driveSyncNotStartedAnotherDriveIsSyncing": {
     "description": "Shown on the unsynced drive card when a sync for a different drive is running. One sync runs at a time and there is no queue, so opening this drive started nothing - this is what says so, instead of leaving the user on a card with no request in flight and no explanation"
   },
@@ -698,6 +702,14 @@
   "driveNeverSynced": "Never synced",
   "@driveNeverSynced": {
     "description": "Sync state of a drive whose history has never been read on this device. Deliberately not \"Empty\" - nothing has looked"
+  },
+  "driveInfoNeverSyncedDetail": "This drive has not been synced on this device, so its size and contents are not known yet.",
+  "@driveInfoNeverSyncedDetail": {
+    "description": "In a drive's details panel, in place of its size and contents, when the drive has never been synced here."
+  },
+  "detailsCouldNotBeLoaded": "These details could not be loaded.",
+  "@detailsCouldNotBeLoaded": {
+    "description": "In the details panel, when reading an item's details failed."
   },
   "driveSyncFailed": "Last sync failed",
   "@driveSyncFailed": {
@@ -1643,6 +1655,18 @@
   "@driveListDrivesHaveChanges": {
     "description": "Heading of the notice offering to sync drives the network has activity for",
     "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "fileStatusPendingTooltip": "Waiting to be mined on Arweave. This is checked for you until it is.",
+  "@fileStatusPendingTooltip": {
+    "description": "Tooltip on the amber dot on a file's icon in the explorer."
+  },
+  "fileStatusConfirmedTooltip": "On Arweave, and permanent.",
+  "@fileStatusConfirmedTooltip": {
+    "description": "Tooltip on the green dot on a file's icon in the explorer."
+  },
+  "fileStatusFailedTooltip": "This did not make it onto Arweave.",
+  "@fileStatusFailedTooltip": {
+    "description": "Tooltip on the red dot on a file's icon in the explorer."
   },
   "checkUploadStatus": "Check upload status",
   "@checkUploadStatus": {
@@ -3505,6 +3529,31 @@
   "uploadFolder": "Upload Folder",
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
+  },
+  "uploadToDrive": "Upload to {driveName}",
+  "@uploadToDrive": {
+    "description": "Title of the dialog that gets a drive ready before files are chosen for it",
+    "placeholders": { "driveName": { "type": "String" } }
+  },
+  "uploadChooseFiles": "Choose Files",
+  "@uploadChooseFiles": {
+    "description": "Opens the file picker for an upload to the drive the dialog names"
+  },
+  "uploadChooseFolder": "Choose Folder",
+  "@uploadChooseFolder": {
+    "description": "Opens the folder picker for an upload to the drive the dialog names"
+  },
+  "uploadWhichDrive": "Upload to which drive?",
+  "@uploadWhichDrive": {
+    "description": "Title of the list of drives an upload started away from any drive can go to"
+  },
+  "uploadNeedsDriveTitle": "Create a drive first",
+  "@uploadNeedsDriveTitle": {
+    "description": "Title shown when Upload is pressed by somebody with no drive to upload to"
+  },
+  "uploadNeedsDriveDescription": "Your files are kept in drives. Create one to start uploading.",
+  "@uploadNeedsDriveDescription": {
+    "description": "Explains that uploads go into a drive, for somebody who has none yet"
   },
   "uploadingManifestEmphasized": "UPLOADING MANIFEST...",
   "@uploadingManifestEmphasized": {

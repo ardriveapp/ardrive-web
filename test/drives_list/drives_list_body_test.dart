@@ -4,6 +4,7 @@ import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -38,11 +39,13 @@ void main() {
       );
 
   var opened = <String>[];
+  var ticked = <String>[];
   var triedAgain = 0;
   var syncedAll = 0;
 
   setUp(() {
     opened = <String>[];
+    ticked = <String>[];
     triedAgain = 0;
     syncedAll = 0;
   });
@@ -53,6 +56,7 @@ void main() {
     double width = 1200,
     double height = 900,
     bool dark = false,
+    bool offersSelection = false,
   }) async {
     await tester.binding.setSurfaceSize(Size(width, height));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -73,6 +77,8 @@ void main() {
             body: DrivesListBody(
               state: state,
               onOpenDrive: (drive) => opened.add(drive.id),
+              onToggleSelected: offersSelection ? ticked.add : null,
+              onSyncSelected: offersSelection ? () {} : null,
               onTryAgain: () => triedAgain++,
               onSyncAllDrives: () => syncedAll++,
             ),
@@ -232,6 +238,33 @@ void main() {
     testWidgets('opening one hands it back', (tester) async {
       await pumpBody(tester, twoDrives);
       await tester.tap(find.text('Work'));
+
+      expect(opened, ['b']);
+    });
+
+    /// A double-click opens the drive it was aimed at. Nothing a click does
+    /// may move the rows between its two halves: a click that ticked the
+    /// drive would bring in the selection strip above the list, and the
+    /// second click would land on a different drive.
+    testWidgets('a double-click opens the drive it was aimed at',
+        (tester) async {
+      await pumpBody(tester, twoDrives, offersSelection: true);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+
+      final target = tester.getCenter(find.text('Work'));
+      await mouse.down(target);
+      await mouse.up();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(ticked, isEmpty, reason: 'a click highlights; it never ticks');
+      expect(tester.getCenter(find.text('Work')), target);
+
+      await mouse.down(target);
+      await mouse.up();
+      await tester.pump();
 
       expect(opened, ['b']);
     });

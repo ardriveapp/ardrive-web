@@ -1,7 +1,9 @@
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -49,6 +51,8 @@ void main() {
     bool withHeader = false,
     double textScale = 1,
     VoidCallback? onTap,
+    void Function(String driveId)? onSelectedChanged,
+    bool? selected,
   }) {
     return ArDriveTheme(
       // Passing no theme data is how ArDriveTheme yields the dark theme.
@@ -80,7 +84,9 @@ void main() {
                       DriveListRow(
                         drive: item,
                         showsColumns: showsColumns,
-                        onTap: onTap ?? () {},
+                        onOpen: onTap ?? () {},
+                        onSelectedChanged: onSelectedChanged,
+                        selected: selected,
                       ),
                     ],
                   ),
@@ -108,6 +114,8 @@ void main() {
     bool withHeader = false,
     double textScale = 1,
     VoidCallback? onTap,
+    void Function(String driveId)? onSelectedChanged,
+    bool? selected,
   }) async {
     await tester.binding.setSurfaceSize(Size(width + 200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -123,6 +131,8 @@ void main() {
         withHeader: withHeader,
         textScale: textScale,
         onTap: onTap,
+        onSelectedChanged: onSelectedChanged,
+        selected: selected,
       ),
     );
   }
@@ -246,13 +256,154 @@ void main() {
       expect(find.text('Shared with me'), findsNothing);
     });
 
-    testWidgets('opening one is what the tap does', (tester) async {
+    /// `tester.tap` is a finger. A mouse click is the next group's business.
+    testWidgets('opening one is what a tap does', (tester) async {
       var opened = 0;
 
       await pumpRow(tester, drive(), width: 1200, onTap: () => opened++);
       await tester.tap(find.text('Photos'));
 
       expect(opened, 1);
+    });
+  });
+
+  /// A click highlights and a double-click opens, as a row does in the
+  /// explorer and in Google Drive. The rule is the explorer's own, so the two
+  /// lists cannot drift apart.
+  group('a click and a double-click', () {
+    late int opened;
+    late int ticked;
+
+    setUp(() {
+      opened = 0;
+      ticked = 0;
+    });
+
+    Future<void> pumpClickable(WidgetTester tester, {bool selected = false}) =>
+        pumpRow(
+          tester,
+          drive(),
+          width: 1200,
+          onTap: () => opened++,
+          onSelectedChanged: (_) => ticked++,
+          selected: selected,
+        );
+
+    Future<TestGesture> mouse(WidgetTester tester) async {
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      return gesture;
+    }
+
+    Future<void> click(WidgetTester tester, TestGesture gesture) async {
+      await gesture.down(tester.getCenter(find.text('Photos')));
+      await gesture.up();
+      await tester.pump();
+    }
+
+    Future<void> waitOutDoubleClick(WidgetTester tester) =>
+        tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
+
+    final chosenColour = lightTheme().tableTheme.selectedItemColor;
+    Finder drawnChosen() => find.byWidgetPredicate(
+          (w) => w is ColoredBox && w.color == chosenColour,
+        );
+
+    testWidgets('a click highlights the drive and does not open it',
+        (tester) async {
+      await pumpClickable(tester);
+      final pointer = await mouse(tester);
+
+      expect(drawnChosen(), findsNothing);
+
+      await click(tester, pointer);
+
+      expect(opened, 0);
+      expect(drawnChosen(), findsOneWidget);
+
+      await waitOutDoubleClick(tester);
+    });
+
+    /// Ticking is the selection Sync acts on. A click that ticked would
+    /// narrow Sync to one drive without saying so, and would put the
+    /// selection strip above the list, shifting every row down between the
+    /// two clicks of a double-click.
+    testWidgets('and does not tick it', (tester) async {
+      await pumpClickable(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer);
+      await waitOutDoubleClick(tester);
+
+      expect(ticked, 0);
+    });
+
+    testWidgets('a double-click opens it', (tester) async {
+      await pumpClickable(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer);
+      await tester.pump(const Duration(milliseconds: 100));
+      await click(tester, pointer);
+
+      expect(opened, 1);
+      expect(ticked, 0);
+    });
+
+    testWidgets('two slow clicks are two clicks', (tester) async {
+      await pumpClickable(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer);
+      await waitOutDoubleClick(tester);
+      await click(tester, pointer);
+      await waitOutDoubleClick(tester);
+
+      expect(opened, 0);
+    });
+
+    testWidgets('a tap on a touch screen opens it', (tester) async {
+      await pumpClickable(tester);
+
+      await tester.tap(find.text('Photos'), kind: PointerDeviceKind.touch);
+      await tester.pump();
+
+      expect(opened, 1);
+    });
+
+    /// No Tab first: the click is what puts the row where Enter reaches it.
+    testWidgets('Enter straight after a click opens it', (tester) async {
+      await pumpClickable(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer);
+      await waitOutDoubleClick(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(opened, 1);
+    });
+
+    /// A screen reader's activate arrives the same way, with no pointer.
+    testWidgets('and so does Enter on a row reached with Tab', (tester) async {
+      await pumpClickable(tester);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+
+      expect(drawnChosen(), findsOneWidget, reason: 'Tab shows where it is');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(opened, 1);
+    });
+
+    testWidgets('a ticked drive is drawn chosen', (tester) async {
+      await pumpClickable(tester, selected: true);
+
+      expect(drawnChosen(), findsOneWidget);
     });
   });
 

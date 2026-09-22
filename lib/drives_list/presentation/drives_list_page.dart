@@ -27,6 +27,11 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/utils/user_utils.dart';
+import 'package:flutter/services.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 const double _pagePadding = 16;
@@ -198,24 +203,34 @@ class _DrivesListChrome extends StatelessWidget {
         // being the one a user would notice immediately.
         final drivesState = context.watch<DrivesCubit>().state;
 
-        final body = DrivesListBody(
-          state: state,
-          // Selecting is how a drive is opened from anywhere on this route,
-          // the sidebar included.
-          onOpenDrive: (drive) =>
-              context.read<DrivesCubit>().selectDrive(drive.id),
-          onTryAgain: cubit.retryLoadingDrives,
-          onSyncAllDrives: cubit.syncAllDrives,
-          onSort: cubit.sortBy,
-          onToggleSelected: cubit.toggleSelected,
-          onToggleSelectAll: cubit.toggleSelectAll,
-          onSyncSelected: cubit.syncSelectedDrives,
-          onClearSelection: cubit.clearSelection,
-          onRetryFailed: cubit.retryFailedDrives,
-          onSyncChanged: cubit.syncDrivesWithUnreadChanges,
-          buildMenu: (drive) => _menuFor(drivesState, drive),
-          syncMenu: const DrivesSyncMenu(),
-        );
+        Widget bodyWith({
+          String? chosenDriveId,
+          void Function(String driveId)? onChoose,
+          bool allowCompactColumns = false,
+        }) =>
+            DrivesListBody(
+              chosenDriveId: chosenDriveId,
+              onChoose: onChoose,
+              allowCompactColumns: allowCompactColumns,
+              state: state,
+              // Selecting is how a drive is opened from anywhere on this route,
+              // the sidebar included.
+              onOpenDrive: (drive) =>
+                  context.read<DrivesCubit>().selectDrive(drive.id),
+              onTryAgain: cubit.retryLoadingDrives,
+              onSyncAllDrives: cubit.syncAllDrives,
+              onSort: cubit.sortBy,
+              onToggleSelected: cubit.toggleSelected,
+              onToggleSelectAll: cubit.toggleSelectAll,
+              onSyncSelected: cubit.syncSelectedDrives,
+              onClearSelection: cubit.clearSelection,
+              onRetryFailed: cubit.retryFailedDrives,
+              onSyncChanged: cubit.syncDrivesWithUnreadChanges,
+              buildMenu: (drive) => _menuFor(drivesState, drive),
+              syncMenu: const DrivesSyncMenu(),
+            );
+
+        final body = bodyWith();
 
         // The chrome follows the app shell's own desktop/mobile split, because
         // it has to agree with it: the shell wraps the page in a Scaffold on
@@ -271,7 +286,16 @@ class _DrivesListChrome extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: _sectionGap),
-                Expanded(child: body),
+                // A click on a drive opens its details on the right, as a
+                // click on a row does in the explorer. Desktop only: on a
+                // phone a tap opens the drive itself.
+                Expanded(
+                  child: _DriveDetailsHost(
+                    listState: state,
+                    drivesState: drivesState,
+                    buildBody: bodyWith,
+                  ),
+                ),
               ],
             ),
           ),
@@ -353,7 +377,22 @@ class DrivesListBody extends StatelessWidget {
     this.onSyncChanged,
     this.buildMenu,
     this.syncMenu,
+    this.chosenDriveId,
+    this.onChoose,
+    this.allowCompactColumns = false,
   });
+
+  /// The drive whose details are open beside the list, if any.
+  final String? chosenDriveId;
+
+  /// A click on a row: show that drive's details. Null where there is no
+  /// room for them, which is also how a row knows to show focus instead.
+  final void Function(String driveId)? onChoose;
+
+  /// Whether the list may drop to three columns - see
+  /// [driveListCompactColumnsFrom]. True only while a drive's details push
+  /// the list narrower, since those are what the two dropped columns show.
+  final bool allowCompactColumns;
 
   final DrivesListState state;
   final void Function(DriveListItem drive) onOpenDrive;
@@ -421,6 +460,9 @@ class DrivesListBody extends StatelessWidget {
         onClearSelection: onClearSelection,
         onRetryFailed: onRetryFailed,
         onSyncChanged: onSyncChanged,
+        chosenDriveId: chosenDriveId,
+        onChoose: onChoose,
+        allowCompactColumns: allowCompactColumns,
       );
     }
 
@@ -626,7 +668,14 @@ class _DrivesListLoadedView extends StatelessWidget {
     this.onClearSelection,
     this.onRetryFailed,
     this.onSyncChanged,
+    this.chosenDriveId,
+    this.onChoose,
+    this.allowCompactColumns = false,
   });
+
+  final String? chosenDriveId;
+  final void Function(String driveId)? onChoose;
+  final bool allowCompactColumns;
 
   final DrivesListLoaded state;
   final void Function(DriveListItem drive) onOpenDrive;
@@ -661,14 +710,23 @@ class _DrivesListLoadedView extends StatelessWidget {
             // actually given, which is why the cap is applied above it, and on
             // the reader's text scale, because every one of the five columns
             // is text.
-            final showsColumns = driveListShowsColumns(
-              constraints.maxWidth,
-              textScale: driveListTextScale(
-                context,
-                ArDriveTypographyNew.of(context).paragraphSmall().fontSize ??
-                    14,
-              ),
+            final textScale = driveListTextScale(
+              context,
+              ArDriveTypographyNew.of(context).paragraphSmall().fontSize ?? 14,
             );
+            final showsAllColumns = driveListShowsColumns(
+              constraints.maxWidth,
+              textScale: textScale,
+            );
+            // Three columns rather than cards while a drive's details push
+            // the list narrower: a card is taller than a row, so turning the
+            // rows into cards would move every one of them under the pointer.
+            final showsColumns = showsAllColumns ||
+                (allowCompactColumns &&
+                    driveListShowsCompactColumns(
+                      constraints.maxWidth,
+                      textScale: textScale,
+                    ));
 
             // The whole page scrolls, not just the list inside it. A phone in
             // landscape - 568x264, which is also a portrait phone at a large
@@ -800,9 +858,10 @@ class _DrivesListLoadedView extends StatelessWidget {
                                       state.drives.every((drive) =>
                                           state.selected.contains(drive.id)),
                               onToggleSelectAll: onToggleSelectAll,
+                              showsAllColumns: showsAllColumns,
                             ),
                           ),
-                          _rows(state, showsColumns),
+                          _rows(state, showsColumns, showsAllColumns),
                           const SliverToBoxAdapter(
                             child: SizedBox(height: _panelPadding),
                           ),
@@ -827,7 +886,11 @@ class _DrivesListLoadedView extends StatelessWidget {
   ///
   /// Lazy either way: the panel above wraps this sliver rather than replacing
   /// it with a column of pre-built rows.
-  Widget _rows(DrivesListLoaded state, bool showsColumns) {
+  Widget _rows(
+    DrivesListLoaded state,
+    bool showsColumns, [
+    bool showsAllColumns = true,
+  ]) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
         (context, index) {
@@ -837,7 +900,10 @@ class _DrivesListLoadedView extends StatelessWidget {
             key: ValueKey(drive.id),
             drive: drive,
             showsColumns: showsColumns,
-            onTap: () => onOpenDrive(drive),
+            showsAllColumns: showsAllColumns,
+            onOpen: () => onOpenDrive(drive),
+            chosen: onChoose == null ? null : chosenDriveId == drive.id,
+            onChoose: onChoose == null ? null : () => onChoose!(drive.id),
             menu: buildMenu?.call(drive),
             selected: onToggleSelected == null
                 ? null
@@ -1352,6 +1418,191 @@ class _PartialFailureBanner extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A drive's details beside Your Drives, the explorer's own panel.
+///
+/// Which drive is open lives here rather than in the list's cubit: it is a
+/// fact about this page's layout, gone when the page is.
+///
+/// The panel pushes the list narrower, as the explorer's does, while the
+/// list can keep its rows as rows - five columns, or three, since the two it
+/// drops are what the panel shows. Where it cannot, the panel covers the
+/// right of the list instead. Pushing would turn the rows into cards, which
+/// are taller, and every row would move under the pointer between the two
+/// clicks of a double-click.
+///
+/// The list sits at the same place in the tree whichever it is, so opening
+/// the panel never rebuilds a row: a rebuilt row would forget the first
+/// click of a double-click, and its focus.
+class _DriveDetailsHost extends StatefulWidget {
+  const _DriveDetailsHost({
+    required this.listState,
+    required this.drivesState,
+    required this.buildBody,
+  });
+
+  final DrivesListState listState;
+  final DrivesState drivesState;
+  final Widget Function({
+    String? chosenDriveId,
+    void Function(String driveId)? onChoose,
+    bool allowCompactColumns,
+  }) buildBody;
+
+  @override
+  State<_DriveDetailsHost> createState() => _DriveDetailsHostState();
+}
+
+class _DriveDetailsHostState extends State<_DriveDetailsHost> {
+  String? _chosenId;
+
+  /// The explorer's width for its panel: a quarter of the window, never less
+  /// than this.
+  static const _panelMinWidth = 375.0;
+
+  /// The drive whose details are open - only while the list is showing it.
+  /// A scope that filters it out, or a drive that goes away, closes them.
+  Drive? _chosenDrive() {
+    final id = _chosenId;
+    final list = widget.listState;
+    final drives = widget.drivesState;
+
+    if (id == null ||
+        list is! DrivesListLoaded ||
+        drives is! DrivesLoadSuccess ||
+        !list.drives.any((drive) => drive.id == id)) {
+      return null;
+    }
+
+    for (final drive in [...drives.userDrives, ...drives.sharedDrives]) {
+      if (drive.id == id) {
+        return drive;
+      }
+    }
+
+    return null;
+  }
+
+  void _choose(String driveId) {
+    if (_chosenId != driveId) {
+      setState(() => _chosenId = driveId);
+    }
+  }
+
+  void _close() {
+    if (_chosenId != null) {
+      setState(() => _chosenId = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final drive = _chosenDrive();
+
+    // A drive the list no longer shows leaves nothing behind to reappear
+    // when it comes back.
+    if (_chosenId != null && drive == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _chosenDrive() == null) {
+          _close();
+        }
+      });
+    }
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): _close,
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final panelWidth = math.max(
+            _panelMinWidth,
+            MediaQuery.sizeOf(context).width * 0.25,
+          );
+          final textScale = driveListTextScale(
+            context,
+            ArDriveTypographyNew.of(context).paragraphSmall().fontSize ?? 14,
+          );
+
+          final pushes = drive != null &&
+              driveDetailsPushList(
+                width: constraints.maxWidth,
+                panelWidth: panelWidth,
+                textScale: textScale,
+              );
+          final covers = drive != null && !pushes;
+
+          return Stack(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: widget.buildBody(
+                      chosenDriveId: drive?.id,
+                      onChoose: _choose,
+                      allowCompactColumns: pushes,
+                    ),
+                  ),
+                  // The explorer's animation, the explorer's width.
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: pushes
+                        ? SizedBox(
+                            width: panelWidth,
+                            child: _panel(context, drive),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+              if (covers)
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  right: 0,
+                  width: panelWidth,
+                  // Over the list, so it needs its own ground and an edge.
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: ArDriveTheme.of(context).themeData.backgroundColor,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.12),
+                          blurRadius: 16,
+                        ),
+                      ],
+                    ),
+                    child: _panel(context, drive),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _panel(BuildContext context, Drive drive) {
+    return DetailsPanel(
+      key: ValueKey('drive-details-${drive.id}'),
+      item: DriveDataTableItemMapper.fromDrive(
+        drive,
+        (_) {},
+        0,
+        isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress),
+      ),
+      currentDrive: drive,
+      canNavigateThroughImages: false,
+      onClose: _close,
+      // What the drive's own menu on this page does: somebody pressed it, so
+      // it is theirs.
+      onSync: () =>
+          context.read<SyncCubit>().startSyncForDrive(driveId: drive.id),
     );
   }
 }
