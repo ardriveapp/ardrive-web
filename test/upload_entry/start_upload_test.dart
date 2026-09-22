@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -14,7 +15,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 
-import '../test_utils/mocks.dart';
+import '../test_utils/utils.dart';
+
+class _MockActivityTracker extends Mock implements ActivityTracker {}
+
+final _work = Drive(
+  id: 'work',
+  rootFolderId: 'root-work',
+  ownerAddress: 'owner',
+  name: 'Work',
+  privacy: 'private',
+  isHidden: false,
+  dateCreated: DateTime(2026),
+  lastUpdated: DateTime(2026),
+);
 
 final _photos = Drive(
   id: 'photos',
@@ -76,7 +90,7 @@ void main() {
         .thenReturn(syncingDriveId == null ? null : {syncingDriveId});
   }
 
-  Future<void> pressUpload(WidgetTester tester) async {
+  Future<void> pressUpload(WidgetTester tester, {DriveDao? driveDao}) async {
     await tester.pumpWidget(
       ArDriveTheme(
         themeData: lightTheme(),
@@ -90,6 +104,14 @@ void main() {
           supportedLocales: const [Locale('en', '')],
           home: MultiProvider(
             providers: [
+              if (driveDao != null) ...[
+                RepositoryProvider<DriveDao>.value(value: driveDao),
+                // `showArDriveDialog` pauses the activity tracker while a
+                // dialog is up, so the chooser needs one.
+                ListenableProvider<ActivityTracker>.value(
+                  value: _MockActivityTracker(),
+                ),
+              ],
               ListenableProvider<AppRouterDelegate>.value(value: router),
               BlocProvider<DrivesCubit>.value(value: drivesCubit),
               BlocProvider<DriveDetailCubit>.value(value: detail),
@@ -110,6 +132,24 @@ void main() {
 
     await tester.tap(find.text('Upload'));
     await tester.pump();
+  }
+
+  /// Two drives, so Upload asks which one before it opens anything.
+  Future<void> pressUploadWithTwoDrives(WidgetTester tester) async {
+    whenListen(
+      drivesCubit,
+      const Stream<DrivesState>.empty(),
+      initialState: DrivesLoadSuccess(
+        selectedDriveId: null,
+        userDrives: [_photos, _work],
+        sharedDrives: const [],
+        drivesWithAlerts: const [],
+        canCreateNewDrive: true,
+      ),
+    );
+
+    await pressUpload(tester, driveDao: getTestDb().driveDao);
+    await tester.pumpAndSettle();
   }
 
   testWidgets('opens the drive with the upload waiting for it', (tester) async {
@@ -158,6 +198,31 @@ void main() {
     expect(
       router.pendingUpload,
       const UploadRequest(driveId: 'photos', isFolderUpload: false),
+    );
+
+    await tester.pump(AppRouterDelegate.uploadWaitLimit);
+  });
+
+  /// The drive chooser hands its answer back after its own dialog has closed.
+  /// Everything that callback needs is read while the press is still on
+  /// screen: the shell that provided the context can be gone by the time a
+  /// drive is picked, and a lookup on an unmounted context throws.
+  testWidgets('choosing a drive opens it with the upload waiting',
+      (tester) async {
+    syncState();
+
+    await pressUploadWithTwoDrives(tester);
+
+    expect(find.text('Photos'), findsOneWidget);
+    expect(find.text('Work'), findsOneWidget);
+
+    await tester.tap(find.text('Work'));
+    await tester.pumpAndSettle();
+
+    verify(() => drivesCubit.selectDrive('work')).called(1);
+    expect(
+      router.pendingUpload,
+      const UploadRequest(driveId: 'work', isFolderUpload: false),
     );
 
     await tester.pump(AppRouterDelegate.uploadWaitLimit);

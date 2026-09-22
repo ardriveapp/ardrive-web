@@ -32,6 +32,12 @@ Future<void> startUpload(
 }) async {
   final router = context.read<AppRouterDelegate>();
   final drivesCubit = context.read<DrivesCubit>();
+  // Read here, while the press is still on screen. The drive chooser's
+  // callback runs after its dialog has closed, and the dialog sits on the
+  // root navigator: the shell that provided this context can be gone by then
+  // - a logout, or navigation - and a lookup on an unmounted context throws
+  // before any `mounted` check inside the callback could help.
+  final syncCubit = context.read<SyncCubit>();
 
   final step = decideUploadStart(
     detailState: context.read<DriveDetailCubit>().state,
@@ -66,7 +72,14 @@ Future<void> startUpload(
       }
 
     case UploadIntoDrive(:final drive):
-      _openForUpload(context, router, drivesCubit, drive.id, isFolderUpload);
+      _openForUpload(
+        context,
+        router,
+        drivesCubit,
+        syncCubit,
+        drive.id,
+        isFolderUpload,
+      );
 
     case UploadChooseDrive(:final drives):
       final unsynced =
@@ -85,6 +98,7 @@ Future<void> startUpload(
             context,
             router,
             drivesCubit,
+            syncCubit,
             drive.id,
             isFolderUpload,
           ),
@@ -272,10 +286,10 @@ void _openForUpload(
   BuildContext context,
   AppRouterDelegate router,
   DrivesCubit drivesCubit,
+  SyncCubit syncCubit,
   String driveId,
   bool isFolderUpload,
 ) {
-  final syncCubit = context.read<SyncCubit>();
   final beingSynced = syncHoldsDrive(
     driveId: driveId,
     syncState: syncCubit.state,
