@@ -620,7 +620,7 @@ packages:
     source: git
     version: "1.0.3"
   fetch_client:
-    dependency: "direct overridden"
+    dependency: "direct main"
     description:
       path: "."
       ref: master

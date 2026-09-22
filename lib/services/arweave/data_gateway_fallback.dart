@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:ardrive/components/sandboxed_transaction_view/arweave_sandbox_url.dart';
 import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/services/arweave/gateway_http_client.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
@@ -31,8 +32,11 @@ class DataGatewayFallback {
   final Map<String, Arweave> _clientCache = {};
 
   /// Injectable so the methods here that talk to a gateway themselves rather
-  /// than through an [Arweave] client - [fetchDataAtMost] and the manifest
-  /// fetch - can be tested without a network.
+  /// than through an [Arweave] client - [fetchData], [fetchDataAtMost] and the
+  /// manifest fetch - can be tested without a network.
+  ///
+  /// Defaults to [gatewayHttpClient], which is fetch-based in the browser.
+  /// That is what makes [_tryGatewayStreamed] streamed on the web at all.
   final Client Function() _clientFactory;
 
   static const _maxGarFallbacks = 2;
@@ -144,7 +148,7 @@ class DataGatewayFallback {
     @visibleForTesting Duration? dataRequestTimeout,
     @visibleForTesting Duration? dataTotalTimeout,
   })  : _arioSDK = arioSDK,
-        _clientFactory = clientFactory ?? Client.new,
+        _clientFactory = clientFactory ?? gatewayHttpClient,
         _dataRequestTimeout = dataRequestTimeout ?? _requestTimeout,
         _dataTotalTimeout = dataTotalTimeout ?? _totalFetchTimeout,
         _syncRequestTimeout = syncRequestTimeout ?? _requestTimeout,
@@ -162,8 +166,8 @@ class DataGatewayFallback {
     // to hang up with. `Future.timeout` does not cancel what it times out: the
     // read would otherwise carry on buffering - up to the 100 MiB preview cap -
     // and holding its connection long after the caller was told it had failed.
-    // Closing the client aborts the request in flight (`BrowserClient.close`
-    // fires its `AbortController`).
+    // Closing the client aborts the request in flight (`FetchClient.close`
+    // fires its `AbortController`; `BrowserClient.close` aborts its XHRs).
     final httpClient = _clientFactory();
 
     try {
@@ -644,8 +648,12 @@ class DataGatewayFallback {
   ///
   /// Reading the body as a stream makes the timeout fire only when no chunk
   /// has arrived for that long. A slow body finishes; a dead gateway is still
-  /// dropped just as quickly. `BrowserClient` reads through a `ReadableStream`,
-  /// so this is chunk-wise on the web too, not only on the VM.
+  /// dropped just as quickly.
+  ///
+  /// On the web that depends on the client being [gatewayHttpClient]. The
+  /// `BrowserClient` this used before completes `send` only once the whole body
+  /// has arrived, so there the budget below was still a deadline on the entire
+  /// transfer, and the body came as one chunk.
   ///
   /// Sync deliberately keeps [_tryGateway]: its reads are a few hundred bytes
   /// each and there are hundreds of them, so a wall clock is the right shape

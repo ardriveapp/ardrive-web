@@ -98,6 +98,12 @@ dependencies:
   flutter_launcher_icons: ^0.13.1
   equatable: ^2.0.5
   http: ^1.1.0
+  # Streams response bodies in the browser, which http 1.2's BrowserClient
+  # (XMLHttpRequest) cannot. Pinned by the override below.
+  fetch_client:
+    git:
+      url: https://github.com/ardriveapp/fetch_client.git
+      ref: master
   stash: ^5.1.0
   path: ^1.8.1
   flutter_svg: ^2.0.10+1
