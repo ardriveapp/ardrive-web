@@ -3,6 +3,7 @@ import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -264,7 +265,7 @@ class DriveListRow extends StatelessWidget {
   const DriveListRow({
     super.key,
     required this.drive,
-    required this.onTap,
+    required this.onOpen,
     required this.showsColumns,
     this.menu,
     this.selected,
@@ -272,7 +273,16 @@ class DriveListRow extends StatelessWidget {
   });
 
   final DriveListItem drive;
-  final VoidCallback onTap;
+
+  /// Opening the drive: a double-click, a tap on a touch screen, or Enter.
+  ///
+  /// A single click only highlights the row, the way a click on a row in the
+  /// explorer does. It does not tick the row's checkbox: ticking is the
+  /// selection that Sync acts on, and a click that quietly narrowed Sync to
+  /// one drive would be a trap. It would also put the selection strip above
+  /// the list, shifting every row down between the two clicks of a
+  /// double-click so the second landed on a different drive.
+  final VoidCallback onOpen;
 
   /// The drive's own actions, drawn in the gutter this row already reserves.
   ///
@@ -301,6 +311,12 @@ class DriveListRow extends StatelessWidget {
 
     return _HoverHighlight(
       colour: colorTokens.containerL1,
+      // The explorer's own colour for a chosen row, for a row that is ticked
+      // or the one just clicked. A click has to show it did something, and on
+      // a narrow screen there is no checkbox column at all.
+      selectedColour:
+          ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor,
+      selected: selected ?? false,
       child: Container(
         // A hairline under every row is what made this read as a spreadsheet
         // where every other table reads as a panel: the explorer separates its
@@ -350,8 +366,8 @@ class DriveListRow extends StatelessWidget {
                 child: Semantics(
                   button: true,
                   label: drive.name,
-                  child: InkWell(
-                    onTap: onTap,
+                  child: _SelectOrOpen(
+                    onOpen: onOpen,
                     child: Padding(
                       // The checkbox column already supplies the gutter on
                       // its side, so the name would otherwise be indented one
@@ -688,16 +704,88 @@ String formatDriveSyncState(
       .driveSyncedOnDate(DateFormat.yMMMd().format(lastSyncedAt));
 }
 
-/// Paints a row's hover state.
+/// A row's tap, read the way a file manager reads it.
+///
+/// A mouse click highlights the row and a double-click opens it; a tap on a
+/// touch screen opens it; so do Enter and Space on the highlighted row, and a
+/// screen reader's activate, which reach [InkWell.onTap] with no pointer
+/// behind them. The rule is the explorer's, from [ArDriveDoubleClick], so the
+/// two lists cannot disagree.
+///
+/// The highlight is keyboard focus. A click puts focus on the row, which is
+/// what lets Enter open it straight after, and Tab moves the same highlight
+/// from row to row.
+class _SelectOrOpen extends StatefulWidget {
+  const _SelectOrOpen({
+    required this.onOpen,
+    required this.child,
+  });
+
+  final VoidCallback onOpen;
+  final Widget child;
+
+  @override
+  State<_SelectOrOpen> createState() => _SelectOrOpenState();
+}
+
+class _SelectOrOpenState extends State<_SelectOrOpen> {
+  final _doubleClick = ArDriveDoubleClick<Object>();
+  final _focusNode = FocusNode(debugLabel: 'DriveListRow');
+  static const _thisRow = Object();
+  PointerDeviceKind? _kind;
+
+  @override
+  void dispose() {
+    _doubleClick.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _onTap() {
+    final kind = _kind;
+    _kind = null;
+
+    if (_doubleClick.completes(_thisRow) || ArDriveDoubleClick.tapOpens(kind)) {
+      widget.onOpen();
+      return;
+    }
+
+    _focusNode.requestFocus();
+    _doubleClick.arm(_thisRow);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      focusNode: _focusNode,
+      // The row paints its own highlight across its full width, checkbox and
+      // menu included; the InkWell's would cover only the middle.
+      focusColor: Colors.transparent,
+      onTapDown: (details) => _kind = details.kind,
+      onTapCancel: () => _kind = null,
+      onTap: _onTap,
+      child: widget.child,
+    );
+  }
+}
+
+/// Paints a row's hover state, and its selected state.
 ///
 /// A row that opens a drive when clicked should look like one. The row uses an
 /// `InkWell` for its tap, and an InkWell's hover needs a `Material` ancestor
 /// that a table built out of Containers does not provide - so nothing ever
 /// painted. This owns the state so the row itself can stay stateless.
 class _HoverHighlight extends StatefulWidget {
-  const _HoverHighlight({required this.colour, required this.child});
+  const _HoverHighlight({
+    required this.colour,
+    required this.selectedColour,
+    required this.selected,
+    required this.child,
+  });
 
   final Color colour;
+  final Color selectedColour;
+  final bool selected;
   final Widget child;
 
   @override
@@ -707,14 +795,30 @@ class _HoverHighlight extends StatefulWidget {
 class _HoverHighlightState extends State<_HoverHighlight> {
   bool _isHovering = false;
 
+  /// Whether focus is anywhere in the row: the row just clicked, or reached
+  /// with Tab.
+  bool _hasFocus = false;
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
       child: ColoredBox(
-        color: _isHovering ? widget.colour : Colors.transparent,
-        child: widget.child,
+        color: widget.selected || _hasFocus
+            ? widget.selectedColour
+            : _isHovering
+                ? widget.colour
+                : Colors.transparent,
+        // Not focusable itself; it only hears when something inside the row
+        // takes focus or gives it up.
+        child: Focus(
+          canRequestFocus: false,
+          skipTraversal: true,
+          includeSemantics: false,
+          onFocusChange: (hasFocus) => setState(() => _hasFocus = hasFocus),
+          child: widget.child,
+        ),
       ),
     );
   }

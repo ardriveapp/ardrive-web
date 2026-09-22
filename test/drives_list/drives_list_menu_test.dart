@@ -258,7 +258,7 @@ void main() {
               child: DriveListRow(
                 drive: item(),
                 showsColumns: false,
-                onTap: () {},
+                onOpen: () {},
                 menu: DriveActionsMenu(drive: drive(), isOwner: true),
               ),
             ),
@@ -311,7 +311,7 @@ void main() {
                 DriveListRow(
                   drive: item(),
                   showsColumns: true,
-                  onTap: () {},
+                  onOpen: () {},
                   menu: DriveActionsMenu(drive: drive(), isOwner: true),
                 ),
               ],
