@@ -544,8 +544,12 @@ class _ArDriveDataTableState<T extends IndexedItem>
           key: widget.key,
           content: Column(
             children: [
+              // The same air the drives list puts above its headings: 8 of
+              // panel padding and 6 of the header's own. It was 28 here, which
+              // is why one table looked roomier than the other on screens a
+              // reader moves between.
               const SizedBox(
-                height: 28,
+                height: 14,
               ),
               Row(
                 children: [
@@ -592,8 +596,11 @@ class _ArDriveDataTableState<T extends IndexedItem>
                   ),
                 ],
               ),
+              // And the same 6 beneath them before the first row, where the
+              // gap was 25: four times the drives list, and the half of it a
+              // reader actually notices.
               const SizedBox(
-                height: 25,
+                height: 6,
               ),
               Expanded(
                 child: ConstrainedBox(

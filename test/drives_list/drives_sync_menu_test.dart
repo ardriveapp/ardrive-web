@@ -9,7 +9,9 @@ import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -131,6 +133,91 @@ void main() {
           matching: find.byType(ArDriveDropdownItem),
         ),
       );
+
+  /// It is drawn by hand so the menu can open, which once left it with none
+  /// of a button's states: it read as a label. It now takes the outline
+  /// button's own tokens, so these compare against the theme rather than
+  /// against hex values that would go stale.
+  group('answers a pointer like an outline button', () {
+    BoxDecoration face(WidgetTester tester) => tester
+        .widgetList<Container>(find.descendant(
+          of: find.byType(DrivesSyncMenu),
+          matching: find.byType(Container),
+        ))
+        .map((c) => c.decoration)
+        .whereType<BoxDecoration>()
+        .firstWhere((d) => d.border != null);
+
+    Color borderOf(BoxDecoration d) => (d.border! as Border).top.color;
+
+    late ArDriveColorTokens tokens;
+
+    Future<TestGesture> hover(WidgetTester tester) async {
+      await tester.pumpWidget(host());
+      await tester.pump();
+      tokens = lightTheme().colorTokens;
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(find.byType(DrivesSyncMenu)));
+      await tester.pump();
+      return mouse;
+    }
+
+    testWidgets('resting', (tester) async {
+      await tester.pumpWidget(host());
+      await tester.pump();
+      tokens = lightTheme().colorTokens;
+
+      expect(face(tester).color, tokens.buttonOutlineDefault);
+      expect(borderOf(face(tester)), tokens.strokeMid);
+    });
+
+    testWidgets('under a pointer', (tester) async {
+      await hover(tester);
+
+      expect(face(tester).color, tokens.buttonOutlineHover);
+      expect(borderOf(face(tester)), tokens.strokeHigh);
+      expect(
+        RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1),
+        SystemMouseCursors.click,
+      );
+    });
+
+    testWidgets('and pressed', (tester) async {
+      final mouse = await hover(tester);
+
+      await mouse.down(tester.getCenter(find.byType(DrivesSyncMenu)));
+      await tester.pump();
+
+      expect(face(tester).color, tokens.buttonOutlinePress);
+
+      await mouse.up();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    /// The reason it is not a real button: that would swallow this tap.
+    testWidgets('and still opens its menu when clicked', (tester) async {
+      final mouse = await hover(tester);
+
+      await mouse.down(tester.getCenter(find.byType(DrivesSyncMenu)));
+      await mouse.up();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Sync history'), findsOneWidget);
+    });
+
+    testWidgets('and lets go when the pointer leaves', (tester) async {
+      final mouse = await hover(tester);
+
+      await mouse.moveTo(const Offset(1, 1));
+      await tester.pump();
+
+      expect(face(tester).color, tokens.buttonOutlineDefault);
+      expect(borderOf(face(tester)), tokens.strokeMid);
+    });
+  });
 
   group('what it offers', () {
     testWidgets('every drive-wide action, in one place', (tester) async {

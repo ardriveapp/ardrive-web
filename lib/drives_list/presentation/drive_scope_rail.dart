@@ -105,14 +105,39 @@ class DriveNavRow extends StatelessWidget {
     this.count,
     this.isCurrent = false,
     this.showLabel = true,
+    this.trailing,
+    this.isMuted = false,
+    this.dense = false,
+    this.isExpanded,
   });
 
-  final IconData icon;
+  /// Null for a row that belongs to the row above it - a drive under its
+  /// Public or Private heading. The icon's width is still kept, so the
+  /// drive's name starts where the heading's words do.
+  final IconData? icon;
   final String label;
   final VoidCallback onTap;
   final int? count;
   final bool isCurrent;
   final bool showLabel;
+
+  /// Drawn at the far end: a heading's chevron, a drive's hidden or alert
+  /// mark.
+  final Widget? trailing;
+
+  /// A hidden drive: there, but quieter.
+  final bool isMuted;
+
+  /// Less height, for the drives listed under a heading. Same grid, same
+  /// highlight; a long list of drives just takes less room.
+  final bool dense;
+
+  /// For a row that opens and closes the rows under it: whether they are
+  /// showing, said to a screen reader. Null for every other row.
+  final bool? isExpanded;
+
+  /// The icon's size, and the space a row without one keeps for it.
+  static const iconSize = 18.0;
 
   @override
   Widget build(BuildContext context) {
@@ -121,59 +146,78 @@ class DriveNavRow extends StatelessWidget {
 
     // Lit the way a selected drive row is, so "where am I" reads the same
     // whichever of the two the sidebar is showing.
-    final color = isCurrent ? colorTokens.textHigh : colorTokens.textMid;
+    final color = isCurrent
+        ? colorTokens.textHigh
+        : isMuted
+            ? colorTokens.textLow
+            : colorTokens.textMid;
 
     return HoverWidget(
       tooltip: showLabel ? '' : label,
       child: ArDriveClickArea(
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: Container(
-            decoration: isCurrent
-                ? BoxDecoration(
-                    color: colorTokens.containerL2,
-                    borderRadius: BorderRadius.circular(4),
-                  )
-                : null,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-            child: Row(
-              mainAxisAlignment: showLabel
-                  ? MainAxisAlignment.start
-                  : MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: color),
-                if (showLabel) ...[
-                  const SizedBox(width: 10),
-                  // Wraps rather than ellipsizes, like the drive names that
-                  // used to be here: at a large text scale a clipped scope is
-                  // a destination the reader cannot identify.
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: typography.paragraphNormal(
-                        color: color,
-                        fontWeight: isCurrent
-                            ? ArFontWeight.bold
-                            : ArFontWeight.semiBold,
+        child: Semantics(
+          button: true,
+          selected: isCurrent,
+          expanded: isExpanded,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: Container(
+              decoration: isCurrent
+                  ? BoxDecoration(
+                      color: colorTokens.containerL2,
+                      borderRadius: BorderRadius.circular(4),
+                    )
+                  : null,
+              padding: EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: dense ? 5 : 9,
+              ),
+              child: Row(
+                mainAxisAlignment: showLabel
+                    ? MainAxisAlignment.start
+                    : MainAxisAlignment.center,
+                children: [
+                  if (icon == null)
+                    const SizedBox(width: iconSize)
+                  else
+                    Icon(icon, size: iconSize, color: color),
+                  if (showLabel) ...[
+                    const SizedBox(width: 10),
+                    // Wraps rather than ellipsizes, like the drive names that
+                    // used to be here: at a large text scale a clipped scope is
+                    // a destination the reader cannot identify.
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: typography.paragraphNormal(
+                          color: color,
+                          fontWeight: isCurrent
+                              ? ArFontWeight.bold
+                              : ArFontWeight.semiBold,
+                        ),
                       ),
                     ),
-                  ),
-                  if (count != null) ...[
-                    const SizedBox(width: 8),
-                    Text(
-                      '$count',
-                      style: typography
-                          .paragraphSmall(
-                        color: colorTokens.textLow,
-                      )
-                          .copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                    if (count != null) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        '$count',
+                        style: typography
+                            .paragraphSmall(
+                          color: colorTokens.textLow,
+                        )
+                            .copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                       ),
-                    ),
+                    ],
+                    if (trailing != null) ...[
+                      const SizedBox(width: 8),
+                      trailing!,
+                    ],
                   ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
