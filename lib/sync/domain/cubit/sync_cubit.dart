@@ -705,19 +705,25 @@ class SyncCubit extends Cubit<SyncState> {
     // confirmations and at nothing less, and one the gateway cannot find yet
     // stays pending rather than being called failed. Asking sooner asks the
     // same question sooner; it cannot answer it more loosely.
-    final refreshed = await refreshPendingStatuses();
+    // A sync is running: the standing one-at-a-time rule, and that sync
+    // answers this question itself. The round was never spent, so the wait
+    // does not widen; ask again at the same spacing once it is over.
+    if (state is SyncInProgress) {
+      _schedulePendingConfirmation();
+      return;
+    }
+
+    await refreshPendingStatuses();
 
     if (isClosed) {
       return;
     }
 
-    // Refused because a sync is running, which is the standing one-at-a-time
-    // rule: that sync answers this question itself. The round is not spent,
-    // so the wait does not widen either - ask again at the same spacing once
-    // it is over.
-    if (refreshed) {
-      _pendingConfirmationStep++;
-    }
+    // Spent, whatever came back. A refresh that failed - a gateway that would
+    // not answer, a token cancelled underneath it - widens the wait like any
+    // other round. Reading every `false` as "deferred" is how a gateway that
+    // is down gets asked every thirty seconds until it is not.
+    _pendingConfirmationStep++;
 
     // Round again. What is pending is what ends this, not a counter.
     _schedulePendingConfirmation();

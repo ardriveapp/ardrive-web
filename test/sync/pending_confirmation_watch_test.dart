@@ -419,6 +419,35 @@ void main() {
       });
     });
 
+    /// A gateway that will not answer is a round that was spent, not one
+    /// that was deferred. Asking a failing gateway every thirty seconds until
+    /// it recovers is the failure mode this guards.
+    test('a refresh that fails widens the wait like any other round', () async {
+      when(() => syncRepository.refreshTransactionStatuses(
+            ownerAddress: any(named: 'ownerAddress'),
+            cancellationToken: any(named: 'cancellationToken'),
+          )).thenThrow(Exception('gateway will not answer'));
+
+      final cubit = buildCubit(syncAllDrivesOnLogin: false);
+      addTearDown(cubit.close);
+
+      fakeAsync((async) {
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+        clearInteractions(syncRepository);
+        somethingIsPending();
+
+        cubit.watchForPendingConfirmations();
+
+        // 30s, then a minute later: two rounds in a hundred seconds, not the
+        // three that asking every thirty seconds would give.
+        async.elapse(const Duration(seconds: 100));
+        async.flushMicrotasks();
+
+        verify(() => syncRepository.hasPendingTransactions()).called(2);
+      });
+    });
+
     /// A write arms this, and a write means something new is seconds old, so
     /// the schedule starts again from the top rather than from wherever the
     /// last round had widened to.
