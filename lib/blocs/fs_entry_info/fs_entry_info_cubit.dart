@@ -101,17 +101,15 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
             ));
           }
 
-          _entrySubscription = _driveDao
-              .fileById(fileId: selectedItem.id)
-              .watchSingle()
-              .listen(
-                (fileEntry) => fileHandler(
-                  fileEntry.id,
-                  name: fileEntry.name,
-                  lastUpdated: fileEntry.lastUpdated,
-                  dateCreated: fileEntry.dateCreated,
-                ),
-              );
+          _entrySubscription =
+              _driveDao.fileById(fileId: selectedItem.id).watchSingle().listen(
+                    (fileEntry) => fileHandler(
+                      fileEntry.id,
+                      name: fileEntry.name,
+                      lastUpdated: fileEntry.lastUpdated,
+                      dateCreated: fileEntry.dateCreated,
+                    ),
+                  );
           break;
         default:
           _entrySubscription = _driveDao
@@ -125,29 +123,55 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                 return;
               }
 
-              final rootFolderRevision = await _driveDao
-                  .latestFolderRevisionByFolderId(
-                    folderId: d.rootFolderId,
-                    driveId: d.id,
-                  )
-                  .getSingle();
-              final rootFolderTree =
-                  await _driveDao.getFolderTree(d.id, d.rootFolderId);
-              final metadataTxId = await _driveDao
-                  .latestDriveRevisionByDriveId(driveId: driveId)
-                  .getSingle();
+              // Inside a listener, a throw escapes to the zone rather than to
+              // [onError], and the panel waited on a spinner that could never
+              // finish. That is what a drive nothing had read always did.
+              try {
+                final rootFolderRevision = await _driveDao
+                    .latestFolderRevisionByFolderId(
+                      folderId: d.rootFolderId,
+                      driveId: d.id,
+                    )
+                    .getSingleOrNull();
 
-              emit(
-                FsEntryDriveInfoSuccess(
-                  name: d.name,
-                  lastUpdated: d.lastUpdated,
-                  dateCreated: d.dateCreated,
-                  drive: d,
-                  rootFolderRevision: rootFolderRevision,
-                  rootFolderTree: rootFolderTree,
-                  metadataTxId: metadataTxId.metadataTxId,
-                ),
-              );
+                if (isClosed) {
+                  return;
+                }
+
+                // The explorer's own test for a drive that has been read: its
+                // root folder has a revision. Reading the drive list stores
+                // only a placeholder for it.
+                if (rootFolderRevision == null) {
+                  emit(FsEntryUnsyncedDriveInfo(d));
+                  return;
+                }
+
+                final rootFolderTree =
+                    await _driveDao.getFolderTree(d.id, d.rootFolderId);
+                final metadataTxId = await _driveDao
+                    .latestDriveRevisionByDriveId(driveId: driveId)
+                    .getSingle();
+
+                if (isClosed) {
+                  return;
+                }
+
+                emit(
+                  FsEntryDriveInfoSuccess(
+                    name: d.name,
+                    lastUpdated: d.lastUpdated,
+                    dateCreated: d.dateCreated,
+                    drive: d,
+                    rootFolderRevision: rootFolderRevision,
+                    rootFolderTree: rootFolderTree,
+                    metadataTxId: metadataTxId.metadataTxId,
+                  ),
+                );
+              } catch (e, stackTrace) {
+                if (!isClosed) {
+                  addError(e, stackTrace);
+                }
+              }
             },
           );
       }

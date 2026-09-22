@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -113,6 +115,54 @@ const double _stackedGap = 6;
 const double _badgeGap = 8;
 const double _iconSize = 20;
 
+/// The narrowest a row may be and still be drawn as three columns - name,
+/// last synced and size - at a text scale of 1.
+///
+/// Only ever used while a drive's details are open beside the list, because
+/// the two columns it drops, files and created, are what that panel shows for
+/// the drive it is about. Derived the same way as [driveListColumnsFrom]: the
+/// last synced column keeps its [driveListSyncColumnMinimum], now as four of
+/// twelve shares rather than four of seventeen.
+const double driveListCompactColumnsFrom = 540;
+
+/// Whether a list this wide draws the three columns - see
+/// [driveListCompactColumnsFrom] and [driveListShowsColumns], whose rules this
+/// follows.
+bool driveListShowsCompactColumns(
+  double contentWidth, {
+  double textScale = 1,
+}) =>
+    contentWidth - driveListRowHorizontalPadding * 2 - driveListMenuGutter >=
+    driveListCompactColumnsFrom * textScale;
+
+/// Whether a drive's details, [panelWidth] wide, push a list that has
+/// [width] to itself, or cover its right side instead.
+///
+/// They push, as the explorer's do, while the list can keep its rows as rows:
+/// it has columns now, and still has at least the three beside the panel.
+/// Otherwise they cover. Pushing a list of cards, or pushing a list of rows
+/// into cards, changes how tall every row is, and every row would move under
+/// the pointer between the two clicks of a double-click.
+///
+/// The list caps its own width at [driveListMaxContentWidth], so that is the
+/// width it measures, as it does itself.
+bool driveDetailsPushList({
+  required double width,
+  required double panelWidth,
+  double textScale = 1,
+}) {
+  bool keepsRows(double available, {required bool compact}) {
+    final listWidth = math.min(available, driveListMaxContentWidth);
+
+    return driveListShowsColumns(listWidth, textScale: textScale) ||
+        (compact &&
+            driveListShowsCompactColumns(listWidth, textScale: textScale));
+  }
+
+  return keepsRows(width, compact: false) &&
+      keepsRows(width - panelWidth, compact: true);
+}
+
 /// The share of a wide row each column gets.
 const int _nameFlex = 6;
 const int _syncFlex = 4;
@@ -135,7 +185,12 @@ class DriveListHeader extends StatelessWidget {
     this.onSort,
     this.allSelected,
     this.onToggleSelectAll,
+    this.showsAllColumns = true,
   });
+
+  /// False for the three columns drawn beside a drive's details - see
+  /// [driveListCompactColumnsFrom].
+  final bool showsAllColumns;
 
   /// Which column is ordering the list, if this header is sortable.
   final DriveListSort? sort;
@@ -244,14 +299,19 @@ class DriveListHeader extends StatelessWidget {
           heading(appLocalizationsOf(context).lastSynced, _syncFlex,
               column: DriveListSort.lastSynced),
           const SizedBox(width: _columnGap),
-          heading(appLocalizationsOf(context).driveListFilesHeading, _filesFlex,
-              column: DriveListSort.files),
-          const SizedBox(width: _columnGap),
+          if (showsAllColumns) ...[
+            heading(
+                appLocalizationsOf(context).driveListFilesHeading, _filesFlex,
+                column: DriveListSort.files),
+            const SizedBox(width: _columnGap),
+          ],
           heading(appLocalizationsOf(context).size, _sizeFlex,
               column: DriveListSort.size),
-          const SizedBox(width: _columnGap),
-          heading(appLocalizationsOf(context).dateCreated, _createdFlex,
-              column: DriveListSort.created),
+          if (showsAllColumns) ...[
+            const SizedBox(width: _columnGap),
+            heading(appLocalizationsOf(context).dateCreated, _createdFlex,
+                column: DriveListSort.created),
+          ],
           // The rows' menu gutter, so the headings sit over their own columns.
           const SizedBox(width: driveListMenuGutter),
         ],
@@ -267,10 +327,27 @@ class DriveListRow extends StatelessWidget {
     required this.drive,
     required this.onOpen,
     required this.showsColumns,
+    this.showsAllColumns = true,
     this.menu,
     this.selected,
     this.onSelectedChanged,
+    this.chosen,
+    this.onChoose,
   });
+
+  /// False for the three columns drawn beside a drive's details - see
+  /// [driveListCompactColumnsFrom].
+  final bool showsAllColumns;
+
+  /// Whether this drive's details are open beside the list, or null where no
+  /// details can be open. Then the row is drawn chosen while it has focus,
+  /// the one other sign that a click landed.
+  final bool? chosen;
+
+  /// A click on the row, or focus reaching it: show this drive's details.
+  /// The same act as choosing a row in the explorer, which opens its details
+  /// beside the table.
+  final VoidCallback? onChoose;
 
   final DriveListItem drive;
 
@@ -317,6 +394,8 @@ class DriveListRow extends StatelessWidget {
       selectedColour:
           ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor,
       selected: selected ?? false,
+      chosen: chosen,
+      onFocusGained: onChoose,
       child: Container(
         // A hairline under every row is what made this read as a spreadsheet
         // where every other table reads as a panel: the explorer separates its
@@ -368,6 +447,7 @@ class DriveListRow extends StatelessWidget {
                   label: drive.name,
                   child: _SelectOrOpen(
                     onOpen: onOpen,
+                    onChoose: onChoose,
                     child: Padding(
                       // The checkbox column already supplies the gutter on
                       // its side, so the name would otherwise be indented one
@@ -416,11 +496,15 @@ class DriveListRow extends StatelessWidget {
         const SizedBox(width: _columnGap),
         Expanded(flex: _syncFlex, child: _syncState(context)),
         const SizedBox(width: _columnGap),
-        Expanded(flex: _filesFlex, child: _files(context)),
-        const SizedBox(width: _columnGap),
+        if (showsAllColumns) ...[
+          Expanded(flex: _filesFlex, child: _files(context)),
+          const SizedBox(width: _columnGap),
+        ],
         Expanded(flex: _sizeFlex, child: _size(context)),
-        const SizedBox(width: _columnGap),
-        Expanded(flex: _createdFlex, child: _created(context)),
+        if (showsAllColumns) ...[
+          const SizedBox(width: _columnGap),
+          Expanded(flex: _createdFlex, child: _created(context)),
+        ],
       ],
     );
   }
@@ -719,9 +803,15 @@ class _SelectOrOpen extends StatefulWidget {
   const _SelectOrOpen({
     required this.onOpen,
     required this.child,
+    this.onChoose,
   });
 
   final VoidCallback onOpen;
+
+  /// See [DriveListRow.onChoose]. Called on the click itself as well as when
+  /// focus arrives: a row that already has focus - the one whose details
+  /// were just closed - reports no change of focus when clicked again.
+  final VoidCallback? onChoose;
   final Widget child;
 
   @override
@@ -751,6 +841,7 @@ class _SelectOrOpenState extends State<_SelectOrOpen> {
     }
 
     _focusNode.requestFocus();
+    widget.onChoose?.call();
     _doubleClick.arm(_thisRow);
   }
 
@@ -781,12 +872,20 @@ class _HoverHighlight extends StatefulWidget {
     required this.selectedColour,
     required this.selected,
     required this.child,
+    this.chosen,
+    this.onFocusGained,
   });
 
   final Color colour;
   final Color selectedColour;
   final bool selected;
   final Widget child;
+
+  /// See [DriveListRow.chosen].
+  final bool? chosen;
+
+  /// Called when focus arrives anywhere in the row: a click, or Tab.
+  final VoidCallback? onFocusGained;
 
   @override
   State<_HoverHighlight> createState() => _HoverHighlightState();
@@ -805,7 +904,10 @@ class _HoverHighlightState extends State<_HoverHighlight> {
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
       child: ColoredBox(
-        color: widget.selected || _hasFocus
+        // Where a drive's details can be open, the highlight is theirs: it
+        // goes when they are closed, as a chosen row does in the explorer.
+        // Elsewhere, focus is the only sign a click landed.
+        color: widget.selected || (widget.chosen ?? _hasFocus)
             ? widget.selectedColour
             : _isHovering
                 ? widget.colour
@@ -816,7 +918,12 @@ class _HoverHighlightState extends State<_HoverHighlight> {
           canRequestFocus: false,
           skipTraversal: true,
           includeSemantics: false,
-          onFocusChange: (hasFocus) => setState(() => _hasFocus = hasFocus),
+          onFocusChange: (hasFocus) {
+            setState(() => _hasFocus = hasFocus);
+            if (hasFocus) {
+              widget.onFocusGained?.call();
+            }
+          },
           child: widget.child,
         ),
       ),

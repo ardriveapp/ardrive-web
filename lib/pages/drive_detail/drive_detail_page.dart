@@ -388,6 +388,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           item: driveDetailState.selectedItem!,
                                           canNavigateThroughImages: false,
                                           currentDrive: driveDetailState.drive,
+                                          // It had no close of its own: the
+                                          // toolbar only drew for a loaded
+                                          // drive.
+                                          onClose: () => context
+                                              .read<DriveDetailCubit>()
+                                              .closeDriveInfoForUnsyncedDrive(),
+                                          onSync: () => context
+                                              .read<DriveDetailCubit>()
+                                              .syncCurrentDrive(),
                                         ),
                                       ),
                                   ],
