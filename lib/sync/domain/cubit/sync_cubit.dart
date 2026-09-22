@@ -597,17 +597,34 @@ class SyncCubit extends Cubit<SyncState> {
 
   /// How long to leave between checks while an upload is waiting to be mined.
   ///
-  /// Twenty minutes, which is about ten Arweave blocks. Asking more often than
-  /// that mostly asks a question whose answer cannot have changed yet - of a
-  /// gateway that rate limits.
+  /// How long the watch waits before each check, widening as it goes.
   ///
-  /// It also divides the window evenly: a transaction is called failed at
-  /// sixty blocks, so this looks six times before giving up on one.
-  static const _pendingConfirmationInterval = Duration(minutes: 20);
+  /// It was a flat twenty minutes because each check ran a whole sync, and
+  /// that is not a thing to do every half minute. A check is now a status
+  /// refresh: it asks the gateway about exactly the transactions already
+  /// known to be waiting, so the early ones can come quickly. A file that had
+  /// settled two minutes after it was uploaded used to carry its pending mark
+  /// for eighteen more, which was this schedule showing rather than the
+  /// network.
+  ///
+  /// The tail stays at twenty minutes, which is about ten Arweave blocks:
+  /// past that, asking more often mostly re-asks a question whose answer
+  /// cannot have changed, of a gateway that rate limits.
+  static const _pendingConfirmationBackoff = <Duration>[
+    Duration(seconds: 30),
+    Duration(minutes: 1),
+    Duration(minutes: 2),
+    Duration(minutes: 5),
+    Duration(minutes: 10),
+    Duration(minutes: 20),
+  ];
 
   Timer? _pendingConfirmationWatch;
 
-  /// Syncs until nothing is waiting to be mined, and then stops.
+  /// How far into [_pendingConfirmationBackoff] the watch has gone.
+  int _pendingConfirmationStep = 0;
+
+  /// Settles what is waiting to be mined, and then stops.
   ///
   /// The gap this closes: an upload writes its file locally and shows it
   /// immediately, and nothing afterwards ever confirmed it. `autoSync` ships
@@ -618,17 +635,41 @@ class SyncCubit extends Cubit<SyncState> {
   /// pressed sync or logged in again.
   ///
   /// Deliberately not a periodic sync with a pending check bolted on: it is a
-  /// pending check that syncs. With nothing pending it costs one local
-  /// database read and stops, so an app with no outstanding uploads is exactly
-  /// as quiet as it is today. That is the whole difference between this and
-  /// the `autoSync` flag, which is off precisely because it is unconditional.
+  /// pending check. With nothing pending it costs one local database read and
+  /// stops, so an app with no outstanding uploads is exactly as quiet as it is
+  /// today. That is the whole difference between this and the `autoSync` flag,
+  /// which is off precisely because it is unconditional.
+  ///
+  /// **It asks about transactions, never about drives.** A status refresh
+  /// walks no history, so it cannot find anything new, cannot rewrite the rows
+  /// under an open folder, and never enters [SyncInProgress]. That is why
+  /// confirming an upload no longer locks multi-select or tells the reader
+  /// their drive is still being read: it used to run a sync of every drive
+  /// they own to answer a question about one transaction.
   void watchForPendingConfirmations() {
-    if (isClosed || _pendingConfirmationWatch != null) {
+    if (isClosed) {
       return;
     }
 
-    _pendingConfirmationWatch =
-        Timer(_pendingConfirmationInterval, _confirmPendingTransactions);
+    // Something was just written, so the schedule starts again from the top
+    // however far the last round had widened: what is pending now is seconds
+    // old. Every caller of this is a write - an upload, a folder, a rename, a
+    // licence - never navigation, so this cannot be pushed out indefinitely.
+    _pendingConfirmationStep = 0;
+    _schedulePendingConfirmation();
+  }
+
+  void _schedulePendingConfirmation() {
+    _pendingConfirmationWatch?.cancel();
+
+    final step = _pendingConfirmationStep < _pendingConfirmationBackoff.length
+        ? _pendingConfirmationStep
+        : _pendingConfirmationBackoff.length - 1;
+
+    _pendingConfirmationWatch = Timer(
+      _pendingConfirmationBackoff[step],
+      _confirmPendingTransactions,
+    );
   }
 
   Future<void> _confirmPendingTransactions() async {
@@ -651,19 +692,41 @@ class SyncCubit extends Cubit<SyncState> {
 
     if (isClosed || !stillPending) {
       logger.d('Nothing pending: the confirmation watch stops here');
+      _pendingConfirmationStep = 0;
       return;
     }
 
-    // Refused outright if a sync is already running, which is the standing
-    // rule and exactly right here: that sync will confirm them anyway.
-    await startSync(trigger: SyncTrigger.background);
+    // The narrow question: what the gateway now says about the transactions
+    // this device already knows are waiting. Nothing about drives, nothing
+    // about history.
+    //
+    // What makes a row green is unchanged and is not this method's to change:
+    // a transaction is confirmed at `kRequiredTxConfirmationCount`
+    // confirmations and at nothing less, and one the gateway cannot find yet
+    // stays pending rather than being called failed. Asking sooner asks the
+    // same question sooner; it cannot answer it more loosely.
+    // A sync is running: the standing one-at-a-time rule, and that sync
+    // answers this question itself. The round was never spent, so the wait
+    // does not widen; ask again at the same spacing once it is over.
+    if (state is SyncInProgress) {
+      _schedulePendingConfirmation();
+      return;
+    }
+
+    await refreshPendingStatuses();
 
     if (isClosed) {
       return;
     }
 
-    // Round again. The check above is what ends this, not a counter.
-    watchForPendingConfirmations();
+    // Spent, whatever came back. A refresh that failed - a gateway that would
+    // not answer, a token cancelled underneath it - widens the wait like any
+    // other round. Reading every `false` as "deferred" is how a gateway that
+    // is down gets asked every thirty seconds until it is not.
+    _pendingConfirmationStep++;
+
+    // Round again. What is pending is what ends this, not a counter.
+    _schedulePendingConfirmation();
   }
 
   void restartSyncOnFocus() {
