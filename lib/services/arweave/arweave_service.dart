@@ -2321,11 +2321,23 @@ class ArweaveService {
   /// `null` when the gateway does not answer with both a 200 and a length.
   Future<DataTxSizeAndType?> _headDataTx(String txId) async {
     final gateway = _configService.config.arweaveGatewayForDataRequest.url;
+    final uri = Uri.parse('$gateway/raw/$txId');
     try {
       final response = await retry(
-        () => _httpClient
-            .head(Uri.parse('$gateway/raw/$txId'))
-            .timeout(const Duration(seconds: 15)),
+        () async {
+          final response =
+              await _httpClient.head(uri).timeout(const Duration(seconds: 15));
+
+          // `retry` retries only what throws, and an answer is not a throw. A
+          // busy or unwell gateway has to be one, or the second attempt is
+          // never spent on the very answers it exists for. A 404 is left as
+          // an answer: asking again will not make the data exist.
+          if (_isTransientStatus(response.statusCode)) {
+            throw _TransientHeadStatus(response.statusCode);
+          }
+
+          return response;
+        },
         maxAttempts: 2,
       );
 
@@ -2348,6 +2360,20 @@ class ArweaveService {
       return null;
     }
   }
+}
+
+/// A status worth asking the gateway again for: it timed the request out, is
+/// rate limiting, or is unwell.
+bool _isTransientStatus(int status) =>
+    status == 408 || status == 429 || status >= 500;
+
+class _TransientHeadStatus implements Exception {
+  final int statusCode;
+
+  const _TransientHeadStatus(this.statusCode);
+
+  @override
+  String toString() => 'Gateway answered $statusCode';
 }
 
 /// What a file entity needs from its data transaction.

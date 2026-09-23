@@ -176,6 +176,35 @@ void main() {
     expect(batches.single['a'], isNull);
   });
 
+  for (final status in [408, 429, 503]) {
+    test('a gateway that answers $status is asked again', () async {
+      var attempts = 0;
+      final service = serviceWith(
+        _FakeRetry((_) => throw GraphQLException('refused')),
+        (_) async => attempts++ == 0
+            ? http.Response('', status)
+            : http.Response('', 200, headers: {'content-length': '7'}),
+      );
+
+      final batches = await service.getSizeAndTypeOfDataTxs(['a']).toList();
+
+      expect(heads, hasLength(2));
+      expect(batches.single['a']?.size, 7);
+    });
+  }
+
+  test('a 404 is an answer, and is not asked again', () async {
+    final service = serviceWith(
+      _FakeRetry((_) => throw GraphQLException('refused')),
+      (_) async => http.Response('', 404),
+    );
+
+    final batches = await service.getSizeAndTypeOfDataTxs(['a']).toList();
+
+    expect(heads, hasLength(1));
+    expect(batches.single['a'], isNull);
+  });
+
   test('every id is yielded, batch by batch, when every batch fails',
       () async {
     final retry = _FakeRetry((_) => throw GraphQLException('refused'));
