@@ -32,14 +32,13 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:retry/retry.dart';
 import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 
 import 'error/gateway_response_handler.dart';
 
 typedef SnapshotEntityTransaction
     = SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
-typedef TxInfo
-    = InfoOfTransactionsToBePinned$Query$TransactionConnection$TransactionEdge$Transaction;
 const byteCountPerChunk = 262144; // 256 KiB
 const defaultMaxRetries = 8;
 const kMaxNumberOfTransactionsPerPage = 100;
@@ -72,6 +71,10 @@ class ArweaveService {
   late DataGatewayFallback _gatewayFallback;
   DataGatewayFallback get gatewayFallback => _gatewayFallback;
 
+  /// For the requests this service makes itself rather than through [client]
+  /// or GraphQL. Injectable so they can be tested without a network.
+  final Client _httpClient;
+
   static String _graphqlUrlFromGateway(String gatewayUrl) {
     final uri = Uri.parse(gatewayUrl);
     if (uri.path.endsWith('/graphql')) return gatewayUrl;
@@ -94,7 +97,9 @@ class ArweaveService {
     this._driveDao,
     this._configService, {
     ArtemisClient? artemisClient,
-  }) : _gql = artemisClient ??
+    Client? httpClient,
+  })  : _httpClient = httpClient ?? Client(),
+        _gql = artemisClient ??
             ArtemisClient(_graphqlUrlFromGateway(
                 _configService.config.arweaveGatewayUrl ??
                     defaultGraphqlGateway)) {
@@ -2244,9 +2249,23 @@ class ArweaveService {
     return metadata;
   }
 
-  /// Fetches transaction info for multiple transactions in batches.
-  /// Returns a stream of transaction info batches.
-  Stream<Map<String, TxInfo>> getInfoOfTxsToBePinned(
+  /// The size and content type of each data transaction, in batches.
+  ///
+  /// Every batch yielded has a key for every id in it. A value is `null` only
+  /// when neither source below could say anything about that id, so a caller
+  /// can report the file as failed rather than lose it without a word.
+  ///
+  /// GraphQL is asked first, because one query answers a whole batch. An id it
+  /// does not answer for - its batch failed, or the index simply did not
+  /// return it - is asked of the data gateway with a HEAD on `/raw/{id}`,
+  /// which carries the transaction's exact size and its `Content-Type` tag.
+  ///
+  /// That second source is not a nicety. The query here filters by id alone,
+  /// and a gateway's index can refuse it outright for reading too many rows
+  /// (#2222), for every batch, deterministically. Before the HEAD, such a
+  /// batch was logged and skipped, so an import of a manifest found nothing to
+  /// import and could not say which files, or why.
+  Stream<Map<String, DataTxSizeAndType?>> getSizeAndTypeOfDataTxs(
     List<String> transactionIds, {
     int batchSize = 5,
   }) async* {
@@ -2256,7 +2275,9 @@ class ArweaveService {
           : transactionIds.length;
       final batch = transactionIds.sublist(i, end);
 
-      logger.i('Fetching transaction info for batch ${batch.length}');
+      logger.i('Fetching size and type for batch of ${batch.length}');
+
+      final results = <String, DataTxSizeAndType?>{};
 
       try {
         final query = await graphQLRetry.execute(
@@ -2267,21 +2288,102 @@ class ArweaveService {
           ),
         );
 
-        if (query.data != null) {
-          final batchResults = <String, TxInfo>{};
-          for (final edge in query.data!.transactions.edges) {
-            final tx = edge.node;
-            batchResults[tx.id] = tx;
-          }
-          logger.d('Batch results length: ${batchResults.length}');
-          yield batchResults;
+        final edges = query.data?.transactions.edges ??
+            const <InfoOfTransactionsToBePinned$Query$TransactionConnection$TransactionEdge>[];
+
+        for (final edge in edges) {
+          final tx = edge.node;
+          final size = int.tryParse(tx.data.size);
+          if (size == null) continue;
+
+          results[tx.id] = DataTxSizeAndType(
+            size: size,
+            contentType: tx.tags
+                .firstWhereOrNull((tag) => tag.name == 'Content-Type')
+                ?.value,
+          );
         }
       } catch (e) {
-        logger.e('Failed to fetch transaction info batch', e);
-        // Continue with next batch even if one fails
+        logger.w('GraphQL could not describe a batch, asking the gateway: $e');
       }
+
+      final unanswered = batch.where((id) => !results.containsKey(id));
+      final fromGateway = await Future.wait(
+        unanswered.map((id) async => MapEntry(id, await _headDataTx(id))),
+      );
+      results.addEntries(fromGateway);
+
+      yield results;
     }
   }
+
+  /// The size and content type of [txId] from the data gateway's headers, or
+  /// `null` when the gateway does not answer with both a 200 and a length.
+  Future<DataTxSizeAndType?> _headDataTx(String txId) async {
+    final gateway = _configService.config.arweaveGatewayForDataRequest.url;
+    final uri = Uri.parse('$gateway/raw/$txId');
+    try {
+      final response = await retry(
+        () async {
+          final response =
+              await _httpClient.head(uri).timeout(const Duration(seconds: 15));
+
+          // `retry` retries only what throws, and an answer is not a throw. A
+          // busy or unwell gateway has to be one, or the second attempt is
+          // never spent on the very answers it exists for. A 404 is left as
+          // an answer: asking again will not make the data exist.
+          if (_isTransientStatus(response.statusCode)) {
+            throw _TransientHeadStatus(response.statusCode);
+          }
+
+          return response;
+        },
+        maxAttempts: 2,
+      );
+
+      if (response.statusCode != 200) {
+        logger.w('HEAD for $txId answered ${response.statusCode}');
+        return null;
+      }
+
+      final size = int.tryParse(response.headers['content-length'] ?? '');
+      if (size == null) return null;
+
+      return DataTxSizeAndType(
+        size: size,
+        // Mime only, without parameters such as charset.
+        contentType: response.headers['content-type']
+            ?.replaceFirst(RegExp(r';.*$'), ''),
+      );
+    } catch (e) {
+      logger.w('HEAD for $txId failed: $e');
+      return null;
+    }
+  }
+}
+
+/// A status worth asking the gateway again for: it timed the request out, is
+/// rate limiting, or is unwell.
+bool _isTransientStatus(int status) =>
+    status == 408 || status == 429 || status >= 500;
+
+class _TransientHeadStatus implements Exception {
+  final int statusCode;
+
+  const _TransientHeadStatus(this.statusCode);
+
+  @override
+  String toString() => 'Gateway answered $statusCode';
+}
+
+/// What a file entity needs from its data transaction.
+class DataTxSizeAndType {
+  final int size;
+
+  /// The `Content-Type` tag, when the transaction has one.
+  final String? contentType;
+
+  const DataTxSizeAndType({required this.size, this.contentType});
 }
 
 /// The entity history of a particular drive, chunked by block height.
