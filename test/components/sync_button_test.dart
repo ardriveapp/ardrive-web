@@ -364,6 +364,27 @@ void main() {
     expect(find.text('Up to date, nothing new'), findsNothing);
   });
 
+  testWidgets('the indicator leaves with the result', (tester) async {
+    await tester.pumpWidget(wrap());
+    await tester.pump();
+
+    stateController.add(finished());
+    await tester.pump(const Duration(milliseconds: 10));
+
+    // While the result is showing, the glyph it hangs off is there too.
+    expect(find.byType(ArDriveIcon), findsOneWidget);
+
+    // Nothing else rebuilds the bar here: no sync, no drive change. The glyph
+    // has to take itself away when its time is up, as the pill does. It used
+    // to stay until something unrelated rebuilt the top bar.
+    await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+
+    expect(find.byType(ArDriveIcon), findsNothing);
+    expect(find.byType(Tooltip), findsNothing);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('a second result that reads the same is shown again',
       (tester) async {
     await tester.pumpWidget(wrap());
