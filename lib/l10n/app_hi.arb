@@ -1098,7 +1098,7 @@
   "@goToLast": {
     "description": "Action of going to the latest page"
   },
-  "greenCheckMark": "जब आपकी फ़ाइल के आगे हरे रंग का चेकमार्क दिखाई देता है, तो इसका मतलब होता है कि इसे PermaWeb पर अपलोड कर दिया गया है।",
+  "greenCheckMark": "जब आपकी फ़ाइल के आगे हरे रंग का चेकमार्क दिखाई देता है, तो इसका मतलब होता है कि इसे permaweb पर अपलोड कर दिया गया है।",
   "@greenCheckMark": {
     "description": "Describes the indicator of the status of uploaded files"
   },

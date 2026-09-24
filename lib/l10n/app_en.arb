@@ -1420,7 +1420,7 @@
   "@goToLast": {
     "description": "Action of going to the latest page"
   },
-  "greenCheckMark": "When the green checkmark appears next to your file, it has been uploaded to the PermaWeb.",
+  "greenCheckMark": "When the green checkmark appears next to your file, it has been uploaded to the permaweb.",
   "@greenCheckMark": {
     "description": "Describes the indicator of the status of uploaded files"
   },
