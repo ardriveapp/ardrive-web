@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
@@ -1126,8 +1127,12 @@ void main() {
           size: underLimitFileSize,
         );
 
-    /// An explorer cubit on a private drive whose file row is [rows].
-    FsEntryPreviewCubit explorerCubit(FileDataTableItem item) {
+    /// An explorer cubit on a private drive whose file row is [rows]. With
+    /// [lookUpKey] the file key is not handed in, so the cubit looks it up.
+    FsEntryPreviewCubit explorerCubit(
+      FileDataTableItem item, {
+      bool lookUpKey = false,
+    }) {
       final drive = MockDrive();
       final driveSelectable = MockSelectable<Drive>();
       final fileSelectable = MockSelectable<FileEntry>();
@@ -1150,9 +1155,23 @@ void main() {
         arweave: mockArweaveService,
         profileCubit: mockProfileCubit,
         crypto: mockCrypto,
-        fileKey: SecretKey([1, 2, 3]),
+        fileKey: lookUpKey ? null : SecretKey([1, 2, 3]),
         objectUrls: objectUrls,
       );
+    }
+
+    /// A key lookup that throws the first time it is asked, and finds the key
+    /// after that - a database that was busy, then was not.
+    void stubKeyLookupThatThrowsOnce() {
+      var asked = 0;
+      when(() => mockProfileCubit.state).thenAnswer((_) {
+        if (asked++ == 0) throw Exception('database is locked');
+        return ProfileLoggingOut();
+      });
+      when(() => mockDriveDao.getDriveKeyFromMemory(driveId))
+          .thenAnswer((_) async => DriveKey(SecretKey([9]), false));
+      when(() => mockDriveDao.getFileKey(fileId, any()))
+          .thenAnswer((_) async => SecretKey([1, 2, 3]));
     }
 
     Future<void> settle() => Future.delayed(const Duration(milliseconds: 30));
@@ -1237,6 +1256,86 @@ void main() {
           reason: 'a second spinner resets the text the reader is in');
 
       await sub.cancel();
+      await cubit.close();
+    });
+    test('a key lookup that throws leaves the video free to try again',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      stubKeyLookupThatThrowsOnce();
+      final videoRow = row(name: 'clip.mp4', contentType: 'video/mp4');
+      final cubit = explorerCubit(
+        createVideoItem(size: underLimitFileSize),
+        lookUpKey: true,
+      );
+
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+
+      rows.add(videoRow);
+      await settle();
+
+      expect(cubit.state, isA<FsEntryPreviewVideo>(),
+          reason: 'a claim kept by the throw would refuse this retry');
+
+      await cubit.close();
+    });
+
+    test('a key lookup that throws leaves the PDF free to try again',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      stubKeyLookupThatThrowsOnce();
+      final pdfRow = row(name: 'Q3 Report.pdf', contentType: 'application/pdf');
+      final cubit = explorerCubit(
+        createPdfItem(size: underLimitFileSize),
+        lookUpKey: true,
+      );
+
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+
+      rows.add(pdfRow);
+      await settle();
+
+      expect(cubit.state, isA<FsEntryPreviewPdf>());
+
+      await cubit.close();
+    });
+
+    test('the row can correct a guessed type, and the guess stays quiet',
+        () async {
+      stubPrivateFetchAndDecrypt();
+
+      // The immediate preview guesses text from the item; the row says PDF.
+      // The text load is the slow one, so it finishes after the PDF has
+      // been shown - and must not paint over it when it does.
+      final textBytes = Completer<http.Response>();
+      var calls = 0;
+      when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+        (_) => calls++ == 0
+            ? textBytes.future
+            : Future.value(http.Response.bytes([1, 2, 3, 4], 200)),
+      );
+
+      final cubit = explorerCubit(createItem(
+        size: underLimitFileSize,
+        name: 'report',
+        contentType: 'text/plain',
+      ));
+
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewLoading>());
+
+      rows.add(row(name: 'report', contentType: 'application/pdf'));
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewPdf>(),
+          reason: "the text load's claim must not shut out the PDF");
+
+      textBytes.complete(http.Response.bytes([1, 2, 3, 4], 200));
+      await settle();
+
+      expect(cubit.state, isA<FsEntryPreviewPdf>(),
+          reason: 'the superseded text load must not publish');
+
       await cubit.close();
     });
   });
