@@ -1,11 +1,17 @@
+import 'dart:math';
+
 import 'package:ardrive/pages/raw_transaction_view/raw_transaction_preview.dart';
 import 'package:ardrive/pages/raw_transaction_view/raw_transaction_view_cubit.dart';
-// The recipient landing page's chrome and identity card. `/view` is the same
-// page for a reader who was sent a link, so it is the same frame, the same card
-// and the same error states - see `docs/FILE_SHARING_REDESIGN_PLAN.md` §2,
-// which specifies one state machine for both routes.
+// The recipient landing page's chrome, card and states. `/view` is the same
+// page for a reader who was sent a link, so it is the same frame, the same
+// ready card and the same error states - see
+// `docs/FILE_SHARING_REDESIGN_PLAN.md` §2, which specifies one state machine
+// for both routes.
 import 'package:ardrive/pages/shared_file/shared_file_frame.dart';
 import 'package:ardrive/pages/shared_file/shared_file_identity.dart';
+import 'package:ardrive/pages/shared_file/shared_file_ready_layout.dart';
+import 'package:ardrive/pages/shared_file/shared_file_ready_view.dart'
+    show SharedFileDetailRow, SharedFileDrawer, SharedFileInfoPanel;
 import 'package:ardrive/pages/shared_file/shared_file_status_views.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -14,8 +20,8 @@ import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 /// `/view/{txId}` - ArDrive as a front end for any Arweave transaction.
 ///
@@ -74,20 +80,49 @@ class RawTransactionViewBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       child: BlocBuilder<RawTransactionViewCubit, RawTransactionViewState>(
-        builder: (context, state) => SharedFileFrame(
-          child: _buildState(context, state),
+        // The same fork the recipient page makes, at the same breakpoint.
+        // `tablet` is deliberately not supplied: the package falls back to
+        // `mobile` for 600-950px, and a 700px window is a reading column, not
+        // half a desktop.
+        builder: (context, state) => ScreenTypeLayout.builder(
+          mobile: (context) => _buildFrame(context, state, isWide: false),
+          desktop: (context) => _buildFrame(context, state, isWide: true),
         ),
       ),
     );
   }
 
-  Widget _buildState(BuildContext context, RawTransactionViewState state) {
+  /// The frame, sized for the state inside it.
+  ///
+  /// As on the recipient page, only the ready card has any use for the extra
+  /// width - it is the one that hosts the preview. The spinner and the error
+  /// cards read better narrow and stay narrow at every screen size.
+  Widget _buildFrame(
+    BuildContext context,
+    RawTransactionViewState state, {
+    required bool isWide,
+  }) {
+    final isWideReady = isWide && state is RawTransactionReady;
+
+    return SharedFileFrame(
+      maxWidth: isWideReady
+          ? SharedFileFrame.maxWideContentWidth
+          : SharedFileFrame.maxContentWidth,
+      child: _buildState(context, state, isWide: isWideReady),
+    );
+  }
+
+  Widget _buildState(
+    BuildContext context,
+    RawTransactionViewState state, {
+    required bool isWide,
+  }) {
     if (state is RawTransactionReady) {
-      return _RawTransactionReadyView(state: state);
+      return RawTransactionReadyView(state: state, isWide: isWide);
     }
 
     if (state is RawTransactionLinkDamaged) {
-      return _RawTransactionMessage(
+      return SharedFileMessage(
         icon: ArDriveIcons.fileX(
           size: 32,
           color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
@@ -97,7 +132,7 @@ class RawTransactionViewBody extends StatelessWidget {
     }
 
     if (state is RawTransactionNotFound) {
-      return _RawTransactionMessage(
+      return SharedFileMessage(
         icon: ArDriveIcons.fileX(
           size: 32,
           color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
@@ -115,8 +150,7 @@ class RawTransactionViewBody extends StatelessWidget {
       );
     }
 
-    final loading =
-        state is RawTransactionLoadInProgress ? state : null;
+    final loading = state is RawTransactionLoadInProgress ? state : null;
 
     return _RawTransactionResolvingView(
       name: loading?.name,
@@ -174,47 +208,101 @@ class _RawTransactionResolvingView extends StatelessWidget {
   }
 }
 
-/// READY - what the transaction is, what it looks like, and how to keep it.
-class _RawTransactionReadyView extends StatefulWidget {
-  const _RawTransactionReadyView({required this.state});
+/// READY - what the transaction is, what it looks like, and how to keep it, in
+/// the recipient page's own card ([SharedFileReadyLayout]).
+///
+/// Public for its widget tests, which drive both layouts directly.
+class RawTransactionReadyView extends StatefulWidget {
+  const RawTransactionReadyView({
+    super.key,
+    required this.state,
+    this.isWide = false,
+    this.preview,
+  });
 
   final RawTransactionReady state;
 
+  /// Whether there is room for the preview pane. Decided by the page, from the
+  /// screen size, so that the frame's width and this layout always agree.
+  final bool isWide;
+
+  /// Injectable for tests; otherwise the real [RawTransactionPreview], whose
+  /// PDF and media renderers need a browser.
+  final Widget? preview;
+
   @override
-  State<_RawTransactionReadyView> createState() =>
+  State<RawTransactionReadyView> createState() =>
       _RawTransactionReadyViewState();
 }
 
-class _RawTransactionReadyViewState extends State<_RawTransactionReadyView> {
+/// The preview pane on the wide card, which a widget test measures.
+@visibleForTesting
+const Key rawTransactionPreviewPaneKey = Key('rawTransactionPreviewPane');
+
+class _RawTransactionReadyViewState extends State<RawTransactionReadyView> {
+  /// Room between the pane's border and what is in it.
+  static const double _paneInset = 16;
+
   bool _isSaving = false;
 
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
+    final isWide = widget.isWide;
+    final preview = widget.preview ?? RawTransactionPreview(state: state);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SharedFileIdentity(
-          name: state.name,
-          size: state.size,
-          contentType: state.presentation.contentType,
-          ownerAddress: state.ownerAddress,
+    return SharedFileReadyLayout(
+      isWide: isWide,
+      identity: SharedFileIdentity(
+        // A transaction with no name hint and no naming tag is exactly what it
+        // is, and saying so beats the share page's "Shared file" - nobody
+        // shared a *file* here.
+        name: state.name ??
+            appLocalizationsOf(context).rawTransactionGenericTitle,
+        size: state.size,
+        contentType: state.presentation.contentType,
+        ownerAddress: state.ownerAddress,
+      ),
+      download: ArDriveButton(
+        maxWidth: isWide ? null : double.infinity,
+        isDisabled: _isSaving,
+        icon: ArDriveIcons.download(size: 20, color: Colors.white),
+        onPressed: _download,
+        text: appLocalizationsOf(context).download,
+      ),
+      // Always something to show: the preview widget renders every
+      // presentation, including the ones that are only a sentence and an offer
+      // to open the transaction elsewhere.
+      inlinePreview: preview,
+      previewPaneKey: rawTransactionPreviewPaneKey,
+      previewPane: _buildPane(preview),
+      infoPanel: (height) => SharedFileInfoPanel(
+        height: height,
+        details: RawTransactionDetailsContent(state: state),
+      ),
+    );
+  }
+
+  /// The preview, fitted to the wide card's fixed pane.
+  ///
+  /// The pane's height is fixed so nothing moves under the pointer, and the
+  /// preview is a column whose height the transaction decides: a warning that
+  /// the type was contradicted, a note that it is sandboxed, up to 360px of
+  /// content, and an offer to open it on the gateway. Every one of those can
+  /// be present at once. So the pane scrolls rather than clip or overflow, and
+  /// anything shorter than the pane sits in its middle, the way the recipient
+  /// page's pane centres its preview.
+  Widget _buildPane(Widget preview) {
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: const EdgeInsets.all(_paneInset),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: max(0, constraints.maxHeight - 2 * _paneInset),
+          ),
+          child: Center(child: preview),
         ),
-        const SizedBox(height: 20),
-        ArDriveButton(
-          maxWidth: double.infinity,
-          isDisabled: _isSaving,
-          icon: ArDriveIcons.download(size: 20, color: Colors.white),
-          onPressed: _download,
-          text: appLocalizationsOf(context).download,
-        ),
-        const SizedBox(height: 12),
-        RawTransactionPreview(state: state),
-        const SizedBox(height: 16),
-        _RawTransactionDetailsDrawer(state: state),
-      ],
+      ),
     );
   }
 
@@ -264,152 +352,48 @@ class _RawTransactionReadyViewState extends State<_RawTransactionReadyView> {
   }
 }
 
-/// Where the protocol lives, one deliberate tap away.
+/// The Details tab for a bare transaction, in the recipient page's rows.
 ///
-/// Mirrors `SharedFileDetailsContent`, whose row and drawer helpers are private
-/// to `shared_file_ready_view.dart` and are built around a `FileRevision` that a
-/// raw transaction does not have. Extracting them would mean reshaping the
-/// recipient page's ready view around a second caller for two rows; this copy
-/// is the smaller change.
-class _RawTransactionDetailsDrawer extends StatelessWidget {
-  const _RawTransactionDetailsDrawer({required this.state});
+/// What a person can use leads - the type, and who put it on the network - and
+/// the identifier waits one step further in, behind the same disclosure the
+/// share page uses, for the same reason: somebody should be able to get the
+/// thing without ever learning what a transaction id is.
+///
+/// Public for its widget tests.
+class RawTransactionDetailsContent extends StatelessWidget {
+  const RawTransactionDetailsContent({super.key, required this.state});
 
   final RawTransactionReady state;
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final contentType = state.presentation.contentType;
     final ownerAddress = state.ownerAddress;
-
-    return Theme(
-      data: Theme.of(context).copyWith(
-        dividerColor: Colors.transparent,
-        splashColor: Colors.transparent,
-        highlightColor: Colors.transparent,
-      ),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: EdgeInsets.zero,
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        title: Text(
-          appLocalizationsOf(context).sharedFileDetailsDrawerTitle,
-          style: ArDriveTypography.body.captionBold(
-            color: colors.themeFgSubtle,
-          ),
-        ),
-        children: [
-          _RawTransactionDetailRow(
-            label: appLocalizationsOf(context).sharedFileDetailsTransaction,
-            value: state.txId,
-          ),
-          if (ownerAddress != null && ownerAddress.isNotEmpty)
-            _RawTransactionDetailRow(
-              label: appLocalizationsOf(context).sharedFileDetailsOwner,
-              value: ownerAddress,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RawTransactionDetailRow extends StatelessWidget {
-  const _RawTransactionDetailRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 96,
-            child: Text(
-              label,
-              style: ArDriveTypography.body.captionRegular(
-                color: colors.themeFgSubtle,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              overflow: TextOverflow.ellipsis,
-              style: ArDriveTypography.body.captionRegular(
-                color: colors.themeFgDefault,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          ArDriveTooltip(
-            message: appLocalizationsOf(context).copyTooltip,
-            child: GestureDetector(
-              onTap: () => Clipboard.setData(ClipboardData(text: value)),
-              child: ArDriveClickArea(
-                child: ArDriveIcons.copy(size: 16, color: colors.themeFgSubtle),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// An icon, a sentence and at most one thing to do about it.
-///
-/// The same shape as `_SharedFileMessage`, which is private to
-/// `shared_file_status_views.dart`. Copied rather than extracted because
-/// exporting it would mean reworking that file's four public views around a
-/// shared base for the sake of two states.
-class _RawTransactionMessage extends StatelessWidget {
-  const _RawTransactionMessage({
-    required this.icon,
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  final Widget icon;
-  final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final actionLabel = this.actionLabel;
-    final onAction = this.onAction;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SizedBox(height: 8),
-        Center(child: icon),
-        const SizedBox(height: 16),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: ArDriveTypography.body.bodyRegular(
-            color: colors.themeFgDefault,
+        if (contentType != null && contentType.isNotEmpty)
+          SharedFileDetailRow(
+            label: appLocalizationsOf(context).fileType,
+            value: contentType,
+            canCopy: false,
           ),
+        if (ownerAddress != null && ownerAddress.isNotEmpty)
+          SharedFileDetailRow(
+            label: appLocalizationsOf(context).sharedFileDetailsOwner,
+            value: ownerAddress,
+          ),
+        SharedFileDrawer(
+          title: appLocalizationsOf(context).sharedFileTransactionDetails,
+          children: [
+            SharedFileDetailRow(
+              label: appLocalizationsOf(context).sharedFileDetailsTransaction,
+              value: state.txId,
+            ),
+          ],
         ),
-        if (actionLabel != null && onAction != null) ...[
-          const SizedBox(height: 24),
-          ArDriveButton(
-            maxWidth: double.infinity,
-            onPressed: onAction,
-            text: actionLabel,
-          ),
-        ],
-        const SizedBox(height: 8),
       ],
     );
   }

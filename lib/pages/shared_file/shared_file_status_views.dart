@@ -136,7 +136,7 @@ class _SharedFileNotFoundViewState extends State<SharedFileNotFoundView> {
     final iconColor = SharedFileColors.subtle(context);
 
     if (widget.mayStillBePropagating) {
-      return _SharedFileMessage(
+      return SharedFileMessage(
         icon: ArDriveIcons.cloudSync(size: 32, color: iconColor),
         message: _secondsRemaining > 0
             ? appLocalizationsOf(context)
@@ -145,7 +145,7 @@ class _SharedFileNotFoundViewState extends State<SharedFileNotFoundView> {
       );
     }
 
-    return _SharedFileMessage(
+    return SharedFileMessage(
       icon: ArDriveIcons.fileX(size: 32, color: iconColor),
       // An attempt was spent, so the file was expected to be there: the honest
       // answer is that we cannot find it *right now*, not that it is not real.
@@ -191,7 +191,7 @@ class SharedFileNetworkErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SharedFileMessage(
+    return SharedFileMessage(
       icon: ArDriveIcons.triangle(
         size: 32,
         color: SharedFileColors.subtle(context),
@@ -212,7 +212,7 @@ class SharedFileLinkErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SharedFileMessage(
+    return SharedFileMessage(
       icon: ArDriveIcons.fileX(
         size: 32,
         color: SharedFileColors.subtle(context),
@@ -222,8 +222,12 @@ class SharedFileLinkErrorView extends StatelessWidget {
   }
 }
 
-class _SharedFileMessage extends StatelessWidget {
-  const _SharedFileMessage({
+/// An icon, a sentence and at most one thing to do about it: every state of
+/// the recipient card that is not the file itself. Public so that `/view`
+/// says its "not found" and "damaged link" the same way.
+class SharedFileMessage extends StatelessWidget {
+  const SharedFileMessage({
+    super.key,
     required this.icon,
     required this.message,
     this.actionLabel,

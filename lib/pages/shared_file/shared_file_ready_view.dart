@@ -13,6 +13,7 @@ import 'package:ardrive/pages/drive_detail/drive_detail_page.dart'
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/shared_file/shared_file_colors.dart';
 import 'package:ardrive/pages/shared_file/shared_file_identity.dart';
+import 'package:ardrive/pages/shared_file/shared_file_ready_layout.dart';
 import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -72,27 +73,10 @@ const double _rowHeight = 44;
 const Key sharedFilePreviewPaneKey = Key('sharedFilePreviewPane');
 
 class _SharedFileReadyViewState extends State<SharedFileReadyView> {
-  /// The gap between the two regions, and between the identity and Download
-  /// in the header above them.
-  static const double _paneGutter = 24;
-
-  /// Reserved whether or not the preview is open, which is the whole point of
-  /// it: the recipient presses Preview and the file appears *in place*, with
-  /// the download button exactly where it was.
-  static const double _previewPaneHeight = 420;
-
   /// How much room the phone column gives a preview that needs a box of its
   /// own - an image, a video, a rasterised PDF. A preview whose content is a
   /// sentence gets the height of the sentence; see [_previewFillsItsBox].
   static const double _inlinePreviewHeight = 360;
-
-  /// The info panel's height, fixed so that swapping tabs never resizes it.
-  ///
-  /// Wide matches the preview pane beside it, so the two regions line up.
-  /// Narrow is shorter than the tallest tab on purpose: a phone column is
-  /// already scrolling, and a panel tall enough for every version of every file
-  /// would push the preview off the top of the screen.
-  static const double _infoPanelHeightWide = _previewPaneHeight;
 
   /// The largest the file's own thumbnail is drawn in the preview pane.
   ///
@@ -149,95 +133,30 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     // its own - the banner offers, and only a press takes the offer.
     final revision = state.revision;
 
-    return widget.isWide
-        ? _buildWide(context, revision)
-        : _buildNarrow(context, revision);
+    return _buildLayout(context, revision);
   }
 
-  /// The phone column, which is where most shared links are opened: identity,
-  /// Download, an optional preview underneath it, then the drawers.
-  Widget _buildNarrow(BuildContext context, FileRevision revision) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ..._buildNotice(context, isWide: false),
-        _buildIdentity(context, revision, showThumbnail: true),
-        const SizedBox(height: 20),
-        _buildDownload(context, revision, fillWidth: true),
-        ..._buildUnlockedNote(context),
-        // The preview reads the file through its drive, which only the
-        // resolved metadata knows about. There is no resting box on a phone -
-        // an empty 360px band above the fold would cost more than it says -
-        // so the preview simply appears once there is something to show.
-        if (_canPreview(revision)) ...[
-          const SizedBox(height: 16),
-          _buildPreview(context, revision, isInline: true),
-        ],
-        const SizedBox(height: 16),
-        // No fixed height on a phone: the column already scrolls, and a panel
-        // that scrolled inside it would put a second scrollbar under the
-        // thumb - and would hide the transaction details behind it rather than
-        // letting the card grow to hold them.
-        _buildInfoPanel(context, revision),
-      ],
-    );
-  }
+  /// The card, in [SharedFileReadyLayout]'s shape - the same one `/view` uses.
+  Widget _buildLayout(BuildContext context, FileRevision revision) {
+    final isWide = widget.isWide;
 
-  /// The desktop card: actions left, the file itself right.
-  ///
-  /// Two things decide the shape. The Download button is the primary action and
-  /// has to stay obvious, so it keeps the top of the reading order rather than
-  /// being pushed under a preview; and the preview pane is *always* laid out,
-  /// empty or not, so that pressing Preview fills a hole that was already there
-  /// instead of reflowing the card under the recipient's cursor.
-  ///
-  /// Actions on the left also means the visual order, the widget order and the
-  /// tab order are the same one, so no focus traversal policy is needed to make
-  /// the keyboard reach Download first.
-  Widget _buildWide(BuildContext context, FileRevision revision) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ..._buildNotice(context, isWide: true),
-        // What the file is and the one thing to do with it, across the top.
-        //
-        // Both used to head a narrow left-hand column, which put the primary
-        // action in a third of the card's width and left the identity wrapping
-        // against a preview pane twice its size. Up here they get the whole
-        // width, and the two regions below divide what is left.
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              // The thumbnail belongs in the pane on this layout, at a size
-              // worth looking at. Showing it twice would be one fetch and one
-              // picture too many.
-              child: _buildIdentity(context, revision, showThumbnail: false),
-            ),
-            const SizedBox(width: _paneGutter),
-            _buildDownload(context, revision, fillWidth: false),
-          ],
-        ),
-        ..._buildUnlockedNote(context),
-        const SizedBox(height: 20),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 3, child: _buildPreviewPane(context, revision)),
-            const SizedBox(width: _paneGutter),
-            Expanded(
-              flex: 2,
-              child: _buildInfoPanel(
-                context,
-                revision,
-                height: _infoPanelHeightWide,
-              ),
-            ),
-          ],
-        ),
-      ],
+    return SharedFileReadyLayout(
+      isWide: isWide,
+      notices: _buildNotice(context, isWide: isWide),
+      // The thumbnail belongs in the pane on the wide card, at a size worth
+      // looking at. Showing it twice would be one fetch and one picture too
+      // many.
+      identity: _buildIdentity(context, revision, showThumbnail: !isWide),
+      download: _buildDownload(context, revision, fillWidth: !isWide),
+      belowHeader: _buildUnlockedNote(context),
+      // The preview reads the file through its drive, which only the resolved
+      // metadata knows about.
+      inlinePreview: _canPreview(revision)
+          ? _buildPreview(context, revision, isInline: true)
+          : null,
+      previewPaneKey: sharedFilePreviewPaneKey,
+      previewPane: _buildPreviewPane(context, revision),
+      infoPanel: (height) => _buildInfoPanel(context, revision, height: height),
     );
   }
 
@@ -279,11 +198,8 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     return const [];
   }
 
-  /// Everything the recipient can act on, in the order they want it.
-  ///
-  /// [previewIsInline] is the only difference between the two layouts: the
-  /// phone opens the preview underneath the button, the desktop card opens it
-  /// in the pane beside this column.
+  /// What the file is. [showThumbnail] is off on the desktop card, where the
+  /// thumbnail is drawn in the preview pane at a size worth looking at.
   Widget _buildIdentity(
     BuildContext context,
     FileRevision revision, {
@@ -402,29 +318,13 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// failed to load - and Download, in the column beside it, is still the way
   /// forward in every one of them.
   ///
-  /// The height is a constant so that none of those transitions resize the
-  /// card under the pointer that is on its way to Download.
+  /// The box is [SharedFileReadyLayout]'s, at a constant height, so that none
+  /// of those transitions resize the card under the pointer that is on its way
+  /// to Download.
   Widget _buildPreviewPane(BuildContext context, FileRevision revision) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-
-    return Container(
-      key: sharedFilePreviewPaneKey,
-      height: _previewPaneHeight,
-      decoration: BoxDecoration(
-        color: colors.themeBgCanvas,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: colors.themeBorderDefault),
-      ),
-      clipBehavior: Clip.antiAlias,
-      // Centred the way `DetailsPanel` centres the same widget.
-      child: Center(
-        // The preview reads the file through its drive, which only the
-        // resolved metadata knows about.
-        child: _canPreview(revision)
-            ? _buildPreview(context, revision, isInline: false)
-            : _buildPaneAtRest(context, revision),
-      ),
-    );
+    return _canPreview(revision)
+        ? _buildPreview(context, revision, isInline: false)
+        : _buildPaneAtRest(context, revision);
   }
 
   /// The pane while the metadata is still resolving.
@@ -1055,7 +955,7 @@ class SharedFileDetailsContent extends StatelessWidget {
         // date anywhere sat inside the version history, which is collapsed and
         // not fetched until it is opened.
         if (contentType != null && contentType.isNotEmpty)
-          _SharedFileDetailRow(
+          SharedFileDetailRow(
             label: appLocalizationsOf(context).fileType,
             value: contentType,
             canCopy: false,
@@ -1064,13 +964,13 @@ class SharedFileDetailsContent extends StatelessWidget {
           // Read like dates, not like timestamps. The exact instant is a
           // hover away, which is the pairing the version rows and the drive
           // explorer both use.
-          _SharedFileDetailRow(
+          SharedFileDetailRow(
             label: appLocalizationsOf(context).dateCreated,
             value: yMMdDateFormatter.format(revision.dateCreated),
             tooltip: formatDateToUtcString(revision.dateCreated),
             canCopy: false,
           ),
-          _SharedFileDetailRow(
+          SharedFileDetailRow(
             label: appLocalizationsOf(context).lastUpdated,
             value: yMMdDateFormatter.format(revision.lastModifiedDate),
             tooltip: formatDateToUtcString(revision.lastModifiedDate),
@@ -1078,12 +978,12 @@ class SharedFileDetailsContent extends StatelessWidget {
           ),
         ],
         if (ownerAddress != null && ownerAddress.isNotEmpty)
-          _SharedFileDetailRow(
+          SharedFileDetailRow(
             label: appLocalizationsOf(context).sharedFileDetailsOwner,
             value: ownerAddress,
           ),
         if (licenseName != null && licenseName.isNotEmpty)
-          _SharedFileDetailRow(
+          SharedFileDetailRow(
             label: appLocalizationsOf(context).sharedFileDetailsLicense,
             value: licenseName,
             canCopy: false,
@@ -1095,20 +995,20 @@ class SharedFileDetailsContent extends StatelessWidget {
         // details became a tab, a closed drawer was what kept that true. A tab
         // that opens by default cannot, so the ids move behind their own
         // disclosure and the tab leads with what a person can actually use.
-        _SharedFileDrawer(
+        SharedFileDrawer(
           title: appLocalizationsOf(context).sharedFileTransactionDetails,
           children: [
-            _SharedFileDetailRow(
+            SharedFileDetailRow(
               label: appLocalizationsOf(context).fileID,
               value: revision.fileId,
             ),
             if (revision.dataTxId.isNotEmpty)
-              _SharedFileDetailRow(
+              SharedFileDetailRow(
                 label: appLocalizationsOf(context).sharedFileDetailsTransaction,
                 value: revision.dataTxId,
               ),
             if (revision.metadataTxId.isNotEmpty)
-              _SharedFileDetailRow(
+              SharedFileDetailRow(
                 label: appLocalizationsOf(context).sharedFileDetailsMetadata,
                 value: revision.metadataTxId,
               ),
@@ -1444,18 +1344,23 @@ class SharedFileInfoPanel extends StatefulWidget {
   const SharedFileInfoPanel({
     super.key,
     required this.details,
-    required this.versions,
-    required this.onVersionsOpened,
+    this.versions,
+    this.onVersionsOpened,
     this.height,
   });
 
   final Widget details;
-  final Widget versions;
+
+  /// The version history, or null for something that has none - a bare
+  /// transaction on `/view` is one immutable thing. Without it the panel is
+  /// the Details tab alone: the same box and the same header, so the two
+  /// pages still read as one design, with nothing offered that cannot answer.
+  final Widget? versions;
 
   /// Asks the resolver for the history, the first time the Versions tab is
   /// chosen. The history costs one metadata fetch per revision, so it stays
   /// unasked-for until somebody looks.
-  final VoidCallback onVersionsOpened;
+  final VoidCallback? onVersionsOpened;
 
   /// A fixed height, or `null` to size to the content.
   ///
@@ -1480,7 +1385,7 @@ class _SharedFileInfoPanelState extends State<SharedFileInfoPanel> {
     setState(() => _tab = tab);
 
     if (tab == 1) {
-      widget.onVersionsOpened();
+      widget.onVersionsOpened?.call();
     }
   }
 
@@ -1489,6 +1394,10 @@ class _SharedFileInfoPanelState extends State<SharedFileInfoPanel> {
     final colors = ArDriveTheme.of(context).themeData.colors;
 
     final isFixed = widget.height != null;
+    final versions = widget.versions;
+
+    // A panel with no history has one tab, and it is always the one showing.
+    final body = versions == null || _tab == 0 ? widget.details : versions;
 
     return Container(
       height: widget.height,
@@ -1508,19 +1417,21 @@ class _SharedFileInfoPanelState extends State<SharedFileInfoPanel> {
                   child: _SharedFileTab(
                     label: appLocalizationsOf(context)
                         .sharedFileDetailsDrawerTitle,
-                    isSelected: _tab == 0,
+                    isSelected: versions == null || _tab == 0,
                     onSelected: () => _select(0),
                   ),
                 ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: _SharedFileTab(
-                    label: appLocalizationsOf(context)
-                        .sharedFileVersionHistoryTitle,
-                    isSelected: _tab == 1,
-                    onSelected: () => _select(1),
+                if (versions != null) ...[
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: _SharedFileTab(
+                      label: appLocalizationsOf(context)
+                          .sharedFileVersionHistoryTitle,
+                      isSelected: _tab == 1,
+                      onSelected: () => _select(1),
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -1528,13 +1439,13 @@ class _SharedFileInfoPanelState extends State<SharedFileInfoPanel> {
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(14, 2, 14, 14),
-                child: _tab == 0 ? widget.details : widget.versions,
+                child: body,
               ),
             )
           else
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 2, 14, 14),
-              child: _tab == 0 ? widget.details : widget.versions,
+              child: body,
             ),
         ],
       ),
@@ -1595,8 +1506,9 @@ class _SharedFileTab extends StatelessWidget {
 /// takes focus and opens on Enter or Space - but in this Flutter version it
 /// reports no expansion state to a screen reader at all. Tracking the state
 /// here is only so that the header can say whether it is open.
-class _SharedFileDrawer extends StatefulWidget {
-  const _SharedFileDrawer({
+class SharedFileDrawer extends StatefulWidget {
+  const SharedFileDrawer({
+    super.key,
     required this.title,
     required this.children,
   });
@@ -1604,10 +1516,10 @@ class _SharedFileDrawer extends StatefulWidget {
   final String title;
   final List<Widget> children;
   @override
-  State<_SharedFileDrawer> createState() => _SharedFileDrawerState();
+  State<SharedFileDrawer> createState() => _SharedFileDrawerState();
 }
 
-class _SharedFileDrawerState extends State<_SharedFileDrawer> {
+class _SharedFileDrawerState extends State<SharedFileDrawer> {
   bool _isExpanded = false;
 
   @override
@@ -1663,8 +1575,9 @@ class _SharedFileDrawerState extends State<_SharedFileDrawer> {
   }
 }
 
-class _SharedFileDetailRow extends StatelessWidget {
-  const _SharedFileDetailRow({
+class SharedFileDetailRow extends StatelessWidget {
+  const SharedFileDetailRow({
+    super.key,
     required this.label,
     required this.value,
     this.canCopy = true,
