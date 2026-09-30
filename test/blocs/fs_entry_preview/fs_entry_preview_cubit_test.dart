@@ -1220,6 +1220,8 @@ void main() {
       rows.add(videoRow);
       await settle();
       expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+      // Reading a count through `verify` resets it, so the next [fetches]
+      // counts only what happens after this line.
       final failedAttempts = fetches(dataTxId);
 
       gatewaysDown = false;
@@ -1227,7 +1229,7 @@ void main() {
       await settle();
 
       expect(fetches(dataTxId), 1,
-          reason: 'after $failedAttempts failed attempt(s), one more');
+          reason: 'after $failedAttempts failed attempt(s), exactly one more');
       expect(cubit.state, isA<FsEntryPreviewVideo>());
 
       await cubit.close();
@@ -1335,6 +1337,37 @@ void main() {
 
       expect(cubit.state, isA<FsEntryPreviewPdf>(),
           reason: 'the superseded text load must not publish');
+
+      await cubit.close();
+    });
+    test('a superseded video gives its decrypted bytes back', () async {
+      stubPrivateFetchAndDecrypt();
+
+      // The video load is held open; the row then says the file is a PDF,
+      // which takes the claim over. When the video's bytes arrive they are
+      // decrypted into a URL - which must be revoked, not kept until close.
+      final videoBytes = Completer<http.Response>();
+      var calls = 0;
+      when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+        (_) => calls++ == 0
+            ? videoBytes.future
+            : Future.value(http.Response.bytes([1, 2, 3, 4], 200)),
+      );
+
+      final cubit = explorerCubit(createVideoItem(size: underLimitFileSize));
+
+      await settle();
+      rows.add(row(name: 'clip.mp4', contentType: 'application/pdf'));
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewPdf>());
+
+      videoBytes.complete(http.Response.bytes([1, 2, 3, 4], 200));
+      await settle();
+
+      expect(cubit.state, isA<FsEntryPreviewPdf>());
+      expect(objectUrls.created, hasLength(1));
+      expect(objectUrls.revoked, objectUrls.created,
+          reason: 'a superseded load must not hold decrypted media');
 
       await cubit.close();
     });

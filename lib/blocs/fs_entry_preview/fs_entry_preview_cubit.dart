@@ -898,7 +898,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       contentType,
     );
 
-    if (url == null || isClosed) {
+    // Taken over between the URL and here: the newer preview has the screen.
+    if (url == null || !_isCurrent('media', selectedItem.dataTxId)) {
       return;
     }
 
@@ -918,7 +919,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       contentType,
     );
 
-    if (url == null || isClosed) {
+    // Taken over between the URL and here: the newer preview has the screen.
+    if (url == null || !_isCurrent('media', selectedItem.dataTxId)) {
       return;
     }
 
@@ -944,8 +946,16 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String contentType,
   ) async {
     final isPinFile = selectedItem.pinnedDataOwnerAddress != null;
+    const kind = 'media';
+    final txId = selectedItem.dataTxId;
 
     if (!isPrivate || isPinFile) {
+      // Nothing to fetch, but still a claim: a row that says the file is
+      // something else takes it over, and this must then say nothing.
+      if (!_claim(kind, txId)) {
+        return null;
+      }
+
       return previewUrl;
     }
 
@@ -957,9 +967,6 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     // Already in flight or playing. Fetching it again would only replace the
     // playing video with the same one, from the start. See [_claimedLoad].
-    const kind = 'media';
-    final txId = selectedItem.dataTxId;
-
     if (!_claim(kind, txId)) {
       return null;
     }
@@ -1019,8 +1026,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     _createdObjectUrls.add(objectUrl);
 
-    // Taken over while it decrypted: the newer preview has the screen.
+    // Taken over while it decrypted: the newer preview has the screen. Give the
+    // decrypted bytes back now - up to a hundred megabytes - rather than
+    // holding them until the cubit closes.
     if (!_isCurrent(kind, txId)) {
+      _objectUrls.revoke(objectUrl);
+      _createdObjectUrls.remove(objectUrl);
       return null;
     }
 
