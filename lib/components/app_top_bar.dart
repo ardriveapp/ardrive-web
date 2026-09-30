@@ -1174,6 +1174,20 @@ class _ExpiresWhenStale extends StatefulWidget {
 class _ExpiresWhenStaleState extends State<_ExpiresWhenStale> {
   Timer? _timer;
 
+  /// Whether [_ExpiresWhenStale.after] has run out.
+  ///
+  /// The timer used to call an empty `setState` and trust "the parent then
+  /// asks the same question again". It never did: a child's `setState`
+  /// rebuilds the child, whose build returned the same [widget.child], and
+  /// [SyncButton] only re-decides when a sync or drive state rebuilds it. So
+  /// after the result pill had gone, the idle glyph stayed in the top bar until
+  /// something unrelated happened to rebuild it.
+  ///
+  /// So this answers for the parent instead. [after] is only set when nothing
+  /// is running and nothing is waiting to be read - a fresh result - so once it
+  /// has run out the parent's answer is the empty slot, always.
+  bool _expired = false;
+
   @override
   void initState() {
     super.initState();
@@ -1187,6 +1201,7 @@ class _ExpiresWhenStaleState extends State<_ExpiresWhenStale> {
     // A new result while one is still showing gets its own full window, and a
     // sync starting again cancels the old timer rather than firing under it.
     if (oldWidget.after != widget.after) {
+      _expired = false;
       _schedule();
     }
   }
@@ -1201,11 +1216,10 @@ class _ExpiresWhenStaleState extends State<_ExpiresWhenStale> {
       return;
     }
 
-    // One rebuild, at the moment the result stops being fresh. The parent then
-    // asks the same question again and gets the other answer.
+    // One rebuild, at the moment the result stops being fresh. See [_expired].
     _timer = Timer(after, () {
       if (mounted) {
-        setState(() {});
+        setState(() => _expired = true);
       }
     });
   }
@@ -1217,5 +1231,12 @@ class _ExpiresWhenStaleState extends State<_ExpiresWhenStale> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) => _expired
+      // The same held slot [SyncButton] draws when it has nothing to say, so
+      // nothing beside it moves.
+      ? const SizedBox(
+          width: _syncButtonOuterSize,
+          height: _syncButtonOuterSize,
+        )
+      : widget.child;
 }

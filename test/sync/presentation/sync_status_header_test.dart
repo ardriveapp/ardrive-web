@@ -720,16 +720,22 @@ void main() {
 
       expect(find.text('12 items changed'), findsOneWidget);
 
-      // It has nothing to add to the header afterwards - a finished sync is
-      // not a running one - so the menu's own door to the record is what
-      // carries it from here.
-      await tester.pump(const Duration(seconds: 30));
+      // A finished sync is not a running one, so it has nothing to add to the
+      // header. While the result shows, the menu is the way to the drives
+      // list, where the record now lives.
       await openMenu(tester);
 
       expect(find.byKey(syncStatusHeaderKey), findsNothing);
-      // The record moved to the drives list; what is left here is the way
-      // to the page that carries it.
       expect(find.text('All drives'), findsOneWidget);
+
+      // And once its few seconds are up it is history: nothing is running and
+      // nothing is waiting to be read, so the indicator goes, menu and all.
+      // This used to find the menu still here, because the glyph outlived
+      // the result until something else rebuilt the top bar.
+      await tester.pump(const Duration(seconds: 30));
+
+      expect(find.byType(ArDriveDropdown), findsNothing);
+      expect(find.text('All drives'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });
