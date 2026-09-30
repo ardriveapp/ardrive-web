@@ -165,7 +165,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     var hasReported = false;
 
     return (received, total) {
-      final isLast = total != null && received >= total;
+      // Exact, not `>=`: a gateway that sends more than it declared would
+      // otherwise make every chunk past the declared length "the last", and
+      // switch the throttle off for the rest of the body.
+      final isLast = total != null && received == total;
 
       if (hasReported &&
           received != 0 &&

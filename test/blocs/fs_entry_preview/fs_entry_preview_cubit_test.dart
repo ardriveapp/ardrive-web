@@ -1513,6 +1513,31 @@ void main() {
       await cubit.close();
     });
 
+    test('a gateway that sends more than it declared is still throttled',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      // Declares 100, sends 1,100: every chunk past 100 must not count as
+      // "the last one" and slip past the throttle.
+      stubFetchReporting([
+        for (var i = 0; i <= 1100; i++) (i, 100),
+      ]);
+
+      final cubit = privateVideo();
+      final states = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(states.add);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final reports = states
+          .whereType<FsEntryPreviewLoading>()
+          .where((s) => s.phase == FsEntryPreviewLoadPhase.downloading)
+          .length;
+
+      expect(reports, lessThan(5));
+
+      await sub.cancel();
+      await cubit.close();
+    });
+
     test('a fraction is only claimed when the gateway declared a length', () {
       expect(
         const FsEntryPreviewLoading(received: 50, total: 200).fraction,
