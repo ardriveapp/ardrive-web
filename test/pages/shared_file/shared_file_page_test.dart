@@ -828,7 +828,7 @@ void main() {
       await pumpPage(tester, success(), surface: const Size(1440, 1000));
 
       final rows = find.byWidgetPredicate(
-          (w) => w.runtimeType.toString() == '_SharedFileDetailRow');
+          (w) => w.runtimeType.toString() == 'SharedFileDetailRow');
       expect(rows, findsWidgets);
       for (var i = 0; i < rows.evaluate().length; i++) {
         expect(tester.getSize(rows.at(i)).height, _rowHeight,
