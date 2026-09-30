@@ -6,6 +6,8 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/services/arweave/data_gateway_fallback.dart'
+    show FetchProgress;
 import 'package:ardrive/services/eml_parser/eml_parser_service.dart';
 import 'package:ardrive/services/eml_parser/models/parsed_email.dart';
 import 'package:ardrive/services/services.dart';
@@ -121,15 +123,92 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       !isClosed && _claimedLoad == _loadKey(kind, dataTxId);
 
   /// Ends a load that produced nothing: gives up its claim, so a later
-  /// database change is free to try again, and says the preview is
-  /// unavailable. A load that has been taken over does neither.
-  void _failLoad(String kind, String dataTxId) {
+  /// database change is free to try again, and says so. A load that has been
+  /// taken over does neither.
+  ///
+  /// With a [failure], the preview was attempted and did not arrive, and the
+  /// reader is told why - see [FsEntryPreviewFailed]. Without one, there was
+  /// never going to be a preview (no key, a platform that cannot play it), and
+  /// it is [FsEntryPreviewUnavailable] as before.
+  void _failLoad(
+    String kind,
+    String dataTxId, {
+    FsEntryPreviewFailure? failure,
+  }) {
     if (!_isCurrent(kind, dataTxId)) {
       return;
     }
 
     _claimedLoad = null;
-    emit(FsEntryPreviewUnavailable());
+    emit(
+      failure == null
+          ? FsEntryPreviewUnavailable()
+          : FsEntryPreviewFailed(failure),
+    );
+  }
+
+  /// The shortest gap between two progress reports.
+  ///
+  /// A chunk can be a few kilobytes, so a hundred megabytes is thousands of
+  /// them; a report per chunk would rebuild the preview thousands of times to
+  /// move a bar a pixel. Ten a second is smooth to the eye and costs nothing.
+  static const _progressInterval = Duration(milliseconds: 100);
+
+  /// Reports a download's progress as [FsEntryPreviewLoading] states, for as
+  /// long as the load of [kind] for [dataTxId] still holds the claim.
+  ///
+  /// A restart - the count going back to zero because a fallback gateway took
+  /// over - and the last chunk are always reported, whatever the clock says,
+  /// so the bar never lags behind a step that matters.
+  FetchProgress _reportProgress(String kind, String dataTxId) {
+    final sinceLast = Stopwatch()..start();
+    var hasReported = false;
+
+    return (received, total) {
+      final isLast = total != null && received >= total;
+
+      if (hasReported &&
+          received != 0 &&
+          !isLast &&
+          sinceLast.elapsed < _progressInterval) {
+        return;
+      }
+
+      if (!_isCurrent(kind, dataTxId)) {
+        return;
+      }
+
+      hasReported = true;
+      sinceLast.reset();
+      emit(FsEntryPreviewLoading(received: received, total: total));
+    };
+  }
+
+  /// Says the bytes are in and being decrypted.
+  void _reportDecrypting(String kind, String dataTxId) {
+    if (_isCurrent(kind, dataTxId)) {
+      emit(const FsEntryPreviewLoading(
+        phase: FsEntryPreviewLoadPhase.decrypting,
+      ));
+    }
+  }
+
+  /// The last buffered load, so [retry] can run it again as it was.
+  Future<void> Function()? _retryLoad;
+
+  /// Tries the preview again, after a failure that asking again could fix.
+  ///
+  /// Does nothing otherwise: a decryption that failed would fail the same way
+  /// on the same bytes, and a preview that is loading or on screen needs no
+  /// second attempt.
+  Future<void> retry() async {
+    final state = this.state;
+
+    if (state is! FsEntryPreviewFailed || !state.canRetry) {
+      return;
+    }
+
+    await _retryLoad?.call();
   }
 
   /// [_getFileKey] for a private file, with a lookup that throws treated like
@@ -381,6 +460,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return;
     }
 
+    _retryLoad = () => _previewPdf(
+          isPrivate,
+          selectedItem,
+          previewUrl,
+          size: size,
+        );
+
     // A private file with no key is not a preview that fails; it is one that
     // must never be attempted. Checked before anything is fetched, so the
     // ciphertext of a file this viewer cannot read is never even requested.
@@ -407,18 +493,24 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     Uint8List? dataBytes;
 
     try {
-      dataBytes = await _fetchPreviewBytes(selectedItem.dataTxId);
+      dataBytes = await _fetchPreviewBytes(
+        txId,
+        onProgress: _reportProgress(kind, txId),
+      );
     } catch (e) {
       logger.d('Could not fetch the bytes for a PDF preview: $e');
       dataBytes = null;
     }
 
+    FsEntryPreviewFailure? failure =
+        dataBytes == null ? FsEntryPreviewFailure.download : null;
+
     if (dataBytes != null && isEncrypted) {
-      dataBytes = await _decodePrivateData(
-        dataBytes,
-        fileKey!,
-        selectedItem.dataTxId,
-      );
+      _reportDecrypting(kind, txId);
+
+      final decrypted = await _decryptForPreview(dataBytes, fileKey!, txId);
+      dataBytes = decrypted.bytes;
+      failure = decrypted.failure;
     }
 
     if (!_isCurrent(kind, txId)) {
@@ -427,8 +519,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
     if (dataBytes == null) {
       if (isEncrypted) {
-        // No plaintext, and no URL to offer instead.
-        _failLoad(kind, txId);
+        // No plaintext, and no URL to offer instead - but a reason, and for a
+        // download that failed, another try.
+        _failLoad(kind, txId, failure: failure);
         return;
       }
 
@@ -891,6 +984,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String previewUrl,
     String contentType,
   ) async {
+    _retryLoad = () => _previewAudio(
+          isPrivate,
+          selectedItem,
+          previewUrl,
+          contentType,
+        );
+
     final url = await _mediaUrl(
       isPrivate,
       selectedItem,
@@ -912,6 +1012,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String previewUrl,
     String contentType,
   ) async {
+    _retryLoad = () => _previewVideo(
+          isPrivate,
+          selectedItem,
+          previewUrl,
+          contentType,
+        );
+
     final url = await _mediaUrl(
       isPrivate,
       selectedItem,
@@ -995,25 +1102,27 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     Uint8List? dataBytes;
 
     try {
-      dataBytes = await _fetchPreviewBytes(selectedItem.dataTxId);
+      dataBytes = await _fetchPreviewBytes(
+        txId,
+        onProgress: _reportProgress(kind, txId),
+      );
     } catch (e) {
       logger.d('Could not fetch the bytes for a media preview: $e');
       dataBytes = null;
     }
 
     if (dataBytes == null) {
-      _failLoad(kind, txId);
+      _failLoad(kind, txId, failure: FsEntryPreviewFailure.download);
       return null;
     }
 
-    final decryptedBytes = await _decodePrivateData(
-      dataBytes,
-      fileKey,
-      selectedItem.dataTxId,
-    );
+    _reportDecrypting(kind, txId);
+
+    final decrypted = await _decryptForPreview(dataBytes, fileKey, txId);
+    final decryptedBytes = decrypted.bytes;
 
     if (decryptedBytes == null) {
-      _failLoad(kind, txId);
+      _failLoad(kind, txId, failure: decrypted.failure);
       return null;
     }
 
@@ -1113,6 +1222,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return;
     }
 
+    _retryLoad = () => _previewDocument(
+          isPrivate,
+          selectedItem,
+          previewUrl,
+          fileKey: fileKey,
+        );
+
     emit(const FsEntryPreviewLoading());
 
     try {
@@ -1124,11 +1240,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       // Fetch the document content using cache
       final Uint8List? dataBytes = await _getBytesFromCache(
         dataTxId: selectedItem.dataTxId,
+        onProgress: _reportProgress(kind, txId),
         isManifest: isManifest,
       );
 
       if (dataBytes == null) {
-        _failLoad(kind, txId);
+        _failLoad(kind, txId, failure: FsEntryPreviewFailure.download);
         return;
       }
 
@@ -1151,15 +1268,17 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           return;
         }
 
-        // Decrypt the data
-        final decryptedBytes = await _decodePrivateData(
+        _reportDecrypting(kind, txId);
+
+        final decrypted = await _decryptForPreview(
           dataBytes,
           decryptionKey,
           selectedItem.dataTxId,
         );
+        final decryptedBytes = decrypted.bytes;
 
         if (decryptedBytes == null) {
-          _failLoad(kind, txId);
+          _failLoad(kind, txId, failure: decrypted.failure);
           return;
         }
 
@@ -1212,16 +1331,24 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return;
     }
 
+    _retryLoad = () => _previewEmail(
+          isPrivate,
+          selectedItem,
+          previewUrl,
+          fileKey: fileKey,
+        );
+
     emit(const FsEntryPreviewLoading());
 
     try {
       // Fetch the email file using cache
       final Uint8List? dataBytes = await _getBytesFromCache(
         dataTxId: selectedItem.dataTxId,
+        onProgress: _reportProgress(kind, txId),
       );
 
       if (dataBytes == null) {
-        _failLoad(kind, txId);
+        _failLoad(kind, txId, failure: FsEntryPreviewFailure.download);
         return;
       }
 
@@ -1244,15 +1371,17 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           return;
         }
 
-        // Decrypt the data
-        final decryptedBytes = await _decodePrivateData(
+        _reportDecrypting(kind, txId);
+
+        final decrypted = await _decryptForPreview(
           dataBytes,
           decryptionKey,
           selectedItem.dataTxId,
         );
+        final decryptedBytes = decrypted.bytes;
 
         if (decryptedBytes == null) {
-          _failLoad(kind, txId);
+          _failLoad(kind, txId, failure: decrypted.failure);
           return;
         }
 
@@ -1286,6 +1415,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     required String dataTxId,
     bool withDriveDao = true,
     bool isManifest = false,
+    FetchProgress? onProgress,
   }) async {
     Uint8List? dataBytes;
 
@@ -1300,6 +1430,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         final fetchedBytes = await _fetchPreviewBytes(
           dataTxId,
           isManifest: isManifest,
+          onProgress: onProgress,
         );
 
         await _driveDao.putPreviewDataInMemory(
@@ -1324,9 +1455,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   ///
   /// This is the same path the download flow uses — see [DataGatewayFallback]
   /// and `ArDriveDownloader`.
+  ///
+  /// [onProgress] hears the body arrive. A manifest is read through the `/raw/`
+  /// endpoint, which reports nothing - it is small enough not to need to.
   Future<Uint8List> _fetchPreviewBytes(
     String dataTxId, {
     bool isManifest = false,
+    FetchProgress? onProgress,
   }) async {
     final gatewayFallback = _arweave.gatewayFallback;
 
@@ -1337,15 +1472,33 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             dataTxId,
             _arweave.client,
           )
-        : await gatewayFallback.fetchData(
-            dataTxId,
-            _arweave.client,
-          );
+        : onProgress == null
+            ? await gatewayFallback.fetchData(dataTxId, _arweave.client)
+            : await gatewayFallback.fetchData(
+                dataTxId,
+                _arweave.client,
+                onProgress: onProgress,
+              );
 
     return response.bodyBytes;
   }
 
+  /// [_decryptForPreview], for the paths that only need the bytes.
   Future<Uint8List?> _decodePrivateData(
+    Uint8List dataBytes,
+    SecretKey fileKey,
+    String dataTxId,
+  ) async =>
+      (await _decryptForPreview(dataBytes, fileKey, dataTxId)).bytes;
+
+  /// The plaintext, or why there is none.
+  ///
+  /// Two failures that used to be one `null`, and they want different answers.
+  /// Not being able to look up what the file is encrypted with is the network,
+  /// and another try may well work; bytes that will not decrypt will not
+  /// decrypt the second time either.
+  Future<({Uint8List? bytes, FsEntryPreviewFailure? failure})>
+      _decryptForPreview(
     Uint8List dataBytes,
     SecretKey fileKey,
     String dataTxId,
@@ -1353,33 +1506,41 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     final cipher = _cipher;
     final cipherIv = _cipherIv;
 
-    try {
-      // The caller already knew what this is encrypted with, so the lookup
-      // that would have asked is skipped. This is the same saving the download
-      // path makes with the same two values from the same share link: before
-      // it, previewing a private shared file spent a GraphQL round trip
-      // re-reading tags the link had already delivered - on a rate-limited
-      // connection, a call that can fail and cost the preview entirely.
-      if (cipher != null && cipherIv != null) {
-        return await _crypto.decryptDataWithCipher(
-          cipher,
-          cipherIv,
-          dataBytes,
-          fileKey,
-        );
-      }
+    // The caller already knew what this is encrypted with, so the lookup
+    // that would have asked is skipped. This is the same saving the download
+    // path makes with the same two values from the same share link: before
+    // it, previewing a private shared file spent a GraphQL round trip
+    // re-reading tags the link had already delivered - on a rate-limited
+    // connection, a call that can fail and cost the preview entirely.
+    TransactionCommonMixin? dataTx;
 
-      final dataTx = await _getDataTx(dataTxId);
+    if (cipher == null || cipherIv == null) {
+      try {
+        dataTx = await _getDataTx(dataTxId);
+      } catch (e) {
+        logger.w('Could not look up how $dataTxId is encrypted: $e');
+      }
 
       if (dataTx == null) {
-        return null;
+        return (bytes: null, failure: FsEntryPreviewFailure.download);
       }
+    }
 
-      return await _crypto.decryptDataFromTransaction(
-        dataTx,
-        dataBytes,
-        fileKey,
-      );
+    try {
+      final bytes = dataTx == null
+          ? await _crypto.decryptDataWithCipher(
+              cipher!,
+              cipherIv!,
+              dataBytes,
+              fileKey,
+            )
+          : await _crypto.decryptDataFromTransaction(
+              dataTx,
+              dataBytes,
+              fileKey,
+            );
+
+      return (bytes: bytes, failure: null);
     } catch (e, stacktrace) {
       // Said out loud. This used to return `null` in silence, and the only
       // thing downstream of it is "this file can't be previewed here" - so a
@@ -1393,7 +1554,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         stacktrace,
       );
 
-      return null;
+      return (bytes: null, failure: FsEntryPreviewFailure.decrypt);
     }
   }
 

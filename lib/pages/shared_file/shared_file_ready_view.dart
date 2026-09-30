@@ -718,7 +718,10 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// of its own content, and so do the two message states, which are handled
   /// here rather than by [FsEntryPreviewWidget].
   bool _previewFillsItsBox(FsEntryPreviewState previewState) {
-    if (previewState is FsEntryPreviewUnavailable) {
+    // A sentence in a box, like the unavailable states: a failure with a
+    // Retry under it is not something that needs 360px to be read.
+    if (previewState is FsEntryPreviewUnavailable ||
+        previewState is FsEntryPreviewFailed) {
       return false;
     }
 

@@ -508,6 +508,103 @@ void main() {
     });
   });
 
+  /// What a preview's progress bar reads. The bar is the difference between
+  /// a large private file that reads as frozen and one that reads as arriving.
+  group('fetchData reports the body as it arrives', () {
+    test('counts every chunk, against the declared length', () async {
+      final chunks = [
+        utf8.encode('aaaa'),
+        utf8.encode('bbbbbb'),
+        utf8.encode('cc'),
+      ];
+      final client = _FakeHttpClient(
+        (_) => StreamedResponse(
+          Stream.fromIterable(chunks),
+          200,
+          contentLength: 12,
+        ),
+      );
+      final heard = <(int, int?)>[];
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(
+        txId,
+        primaryClient,
+        onProgress: (received, total) => heard.add((received, total)),
+      );
+
+      expect(response.body, 'aaaabbbbbbcc');
+      expect(heard, [(0, 12), (4, 12), (10, 12), (12, 12)]);
+    });
+
+    test('says so when the gateway declares no length', () async {
+      final client = _FakeHttpClient((_) => _streamed('metadata', 200));
+      final heard = <(int, int?)>[];
+
+      await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(
+        txId,
+        primaryClient,
+        onProgress: (received, total) => heard.add((received, total)),
+      );
+
+      expect(heard.last, (8, null));
+      expect(heard.every((h) => h.$2 == null), isTrue);
+    });
+
+    Stream<List<int>> partThenReset() async* {
+      yield utf8.encode('partial');
+      throw Exception('connection reset');
+    }
+
+    test('starts over at zero when a fallback gateway takes over', () async {
+      // The configured gateway sends a chunk and then fails mid-body; the
+      // next gateway sends the whole thing. The bytes the first one sent are
+      // thrown away, so the count must say so rather than carry on from them.
+      final client = _FakeHttpClient(
+        (attempt) => attempt == 1
+            ? StreamedResponse(
+                partThenReset(),
+                200,
+                contentLength: 20,
+              )
+            : StreamedResponse(
+                Stream.value(utf8.encode('the whole thing')),
+                200,
+                contentLength: 15,
+              ),
+      );
+      final heard = <(int, int?)>[];
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(
+        txId,
+        primaryClient,
+        onProgress: (received, total) => heard.add((received, total)),
+      );
+
+      expect(response.body, 'the whole thing');
+      expect(heard, [(0, 20), (7, 20), (0, 15), (15, 15)]);
+    });
+
+    test('costs nothing when nobody is listening', () async {
+      final client = _FakeHttpClient((_) => _streamed('metadata', 200));
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(txId, primaryClient);
+
+      expect(response.body, 'metadata');
+    });
+  });
+
   group('ArweaveService.runPooled', () {
     test('writes results positionally when tasks complete out of order',
         () async {

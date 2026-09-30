@@ -39,8 +39,85 @@ class FsEntryPreviewSuccess extends FsEntryPreviewState {
   List<Object> get props => [previewUrl];
 }
 
+/// What a buffered preview is doing while the reader waits.
+enum FsEntryPreviewLoadPhase {
+  /// The bytes are on their way, and [FsEntryPreviewLoading.received] counts
+  /// them.
+  downloading,
+
+  /// The bytes are here and being decrypted. One opaque call over the whole
+  /// buffer, so there is no progress to report - and none is faked.
+  decrypting,
+}
+
+/// A preview that is not on screen yet, and how far it has got.
+///
+/// A private file of tens of MiB used to sit behind a bare spinner for as long
+/// as it took to arrive (#2206). It read as frozen, and the natural response -
+/// a refresh - threw the download away and started it over. This carries what
+/// the reader needs to see that it is working.
 class FsEntryPreviewLoading extends FsEntryPreviewSuccess {
-  const FsEntryPreviewLoading() : super(previewUrl: '');
+  const FsEntryPreviewLoading({
+    this.phase = FsEntryPreviewLoadPhase.downloading,
+    this.received = 0,
+    this.total,
+  }) : super(previewUrl: '');
+
+  final FsEntryPreviewLoadPhase phase;
+
+  /// Bytes received so far from the gateway answering now.
+  final int received;
+
+  /// What that gateway declared it would send, or null when it did not say.
+  final int? total;
+
+  /// How much of the download is done, from 0 to 1, or null when that cannot
+  /// be known: no declared length, or not downloading any more.
+  double? get fraction {
+    final total = this.total;
+
+    if (phase != FsEntryPreviewLoadPhase.downloading ||
+        total == null ||
+        total <= 0) {
+      return null;
+    }
+
+    return (received / total).clamp(0.0, 1.0);
+  }
+
+  @override
+  List<Object> get props => [phase, received, total ?? -1];
+}
+
+/// Why a preview that was attempted did not arrive.
+enum FsEntryPreviewFailure {
+  /// No gateway would give the bytes, or what the file is encrypted with could
+  /// not be looked up. Worth asking again.
+  download,
+
+  /// The bytes arrived and would not decrypt. Asking again fetches the same
+  /// bytes; the file may still download and open elsewhere.
+  decrypt,
+}
+
+/// A preview that was attempted and failed - as against one that is not
+/// offered at all.
+///
+/// Deliberately *not* an [FsEntryPreviewUnavailable]. That state means "this
+/// kind of file is not previewed here", and every consumer that checks for it
+/// hides the preview: the details panel drops its Preview tab, the share page
+/// says the type is unsupported. A failure is neither of those. It keeps its
+/// place on screen, says what went wrong, and offers Retry when asking again
+/// could help.
+class FsEntryPreviewFailed extends FsEntryPreviewState {
+  const FsEntryPreviewFailed(this.reason);
+
+  final FsEntryPreviewFailure reason;
+
+  bool get canRetry => reason == FsEntryPreviewFailure.download;
+
+  @override
+  List<Object> get props => [reason];
 }
 
 class FsEntryPreviewImage extends FsEntryPreviewSuccess {
