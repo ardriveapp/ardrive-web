@@ -98,6 +98,12 @@ dependencies:
   flutter_launcher_icons: ^0.13.1
   equatable: ^2.0.5
   http: ^1.1.0
+  # Streams response bodies in the browser, which http 1.2's BrowserClient
+  # (XMLHttpRequest) cannot. Pinned by the override below.
+  fetch_client:
+    git:
+      url: https://github.com/ardriveapp/fetch_client.git
+      ref: master
   stash: ^5.1.0
   path: ^1.8.1
   flutter_svg: ^2.0.10+1
@@ -172,10 +178,13 @@ dependency_overrides:
       url: https://github.com/ardriveapp/flutter_stripe/
       path: packages/stripe_platform_interface
       ref: main
+  # Pinned to the branch that forwards response headers again; master
+  # (bb61a9c) drops every one of them. See ardriveapp/fetch_client
+  # forward-response-headers.
   fetch_client:
     git:
       url: https://github.com/ardriveapp/fetch_client.git
-      ref: master
+      ref: eb659b9e443344f80dcaa60e99a22ae7111bbab9
   fetch_api:
     git:
       url: https://github.com/ardriveapp/fetch_api.git

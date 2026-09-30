@@ -620,11 +620,11 @@ packages:
     source: git
     version: "1.0.3"
   fetch_client:
-    dependency: "direct overridden"
+    dependency: "direct main"
     description:
       path: "."
-      ref: master
-      resolved-ref: bb61a9c832f04a3939f1f7f4850f137bf4ee679b
+      ref: eb659b9e443344f80dcaa60e99a22ae7111bbab9
+      resolved-ref: eb659b9e443344f80dcaa60e99a22ae7111bbab9
       url: "https://github.com/ardriveapp/fetch_client.git"
     source: git
     version: "1.0.2"

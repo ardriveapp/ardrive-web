@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
@@ -1093,5 +1094,282 @@ void main() {
         expectNoBytesFetched();
       },
     );
+  });
+
+
+  /// The drive explorer previews once immediately and again for every row the
+  /// file's database watch emits - and drift emits the current row the moment
+  /// the watch starts. A buffered preview must be fetched once for all of
+  /// that: a second fetch is up to a hundred megabytes again, and for media it
+  /// replaced the playing video with a new one, from the start.
+  group('FsEntryPreviewCubit fetches a buffered preview once', () {
+    late StreamController<FileEntry> rows;
+    late FakePreviewObjectUrls objectUrls;
+
+    setUp(() {
+      rows = StreamController<FileEntry>();
+      objectUrls = FakePreviewObjectUrls();
+    });
+
+    tearDown(() => rows.close());
+
+    FileEntry row({
+      required String name,
+      required String contentType,
+      String txId = dataTxId,
+    }) =>
+        createMockFileEntry(
+          id: fileId,
+          driveId: driveId,
+          name: name,
+          dataTxId: txId,
+          dataContentType: contentType,
+          size: underLimitFileSize,
+        );
+
+    /// An explorer cubit on a private drive whose file row is [rows]. With
+    /// [lookUpKey] the file key is not handed in, so the cubit looks it up.
+    FsEntryPreviewCubit explorerCubit(
+      FileDataTableItem item, {
+      bool lookUpKey = false,
+    }) {
+      final drive = MockDrive();
+      final driveSelectable = MockSelectable<Drive>();
+      final fileSelectable = MockSelectable<FileEntry>();
+
+      when(() => drive.privacy).thenReturn(DrivePrivacyTag.private);
+      when(() => mockDriveDao.driveById(driveId: driveId))
+          .thenReturn(driveSelectable);
+      when(() => driveSelectable.getSingleOrNull())
+          .thenAnswer((_) async => drive);
+      when(() => driveSelectable.getSingle()).thenAnswer((_) async => drive);
+      when(() => mockDriveDao.fileById(fileId: fileId))
+          .thenReturn(fileSelectable);
+      when(() => fileSelectable.watchSingle()).thenAnswer((_) => rows.stream);
+
+      return FsEntryPreviewCubit(
+        driveId: driveId,
+        maybeSelectedItem: item,
+        driveDao: mockDriveDao,
+        configService: mockConfigService,
+        arweave: mockArweaveService,
+        profileCubit: mockProfileCubit,
+        crypto: mockCrypto,
+        fileKey: lookUpKey ? null : SecretKey([1, 2, 3]),
+        objectUrls: objectUrls,
+      );
+    }
+
+    /// A key lookup that throws the first time it is asked, and finds the key
+    /// after that - a database that was busy, then was not.
+    void stubKeyLookupThatThrowsOnce() {
+      var asked = 0;
+      when(() => mockProfileCubit.state).thenAnswer((_) {
+        if (asked++ == 0) throw Exception('database is locked');
+        return ProfileLoggingOut();
+      });
+      when(() => mockDriveDao.getDriveKeyFromMemory(driveId))
+          .thenAnswer((_) async => DriveKey(SecretKey([9]), false));
+      when(() => mockDriveDao.getFileKey(fileId, any()))
+          .thenAnswer((_) async => SecretKey([1, 2, 3]));
+    }
+
+    Future<void> settle() => Future.delayed(const Duration(milliseconds: 30));
+
+    int fetches(String txId) =>
+        verify(() => mockGatewayFallback.fetchData(txId, any())).callCount;
+
+    test('a private video is fetched once on opening, and not again on a '
+        'later write to its row', () async {
+      stubPrivateFetchAndDecrypt();
+      final videoRow = row(name: 'clip.mp4', contentType: 'video/mp4');
+      final cubit = explorerCubit(createVideoItem(size: underLimitFileSize));
+      final states = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(states.add);
+
+      await settle();
+      rows.add(videoRow); // what drift emits as the watch starts
+      await settle();
+      rows.add(videoRow); // an upload being confirmed, a sync
+      await settle();
+
+      expect(fetches(dataTxId), 1);
+      expect(objectUrls.created, hasLength(1));
+      expect(cubit.state, isA<FsEntryPreviewVideo>());
+      expect(states.whereType<FsEntryPreviewLoading>(), hasLength(1),
+          reason: 'a second spinner is the playing video being replaced');
+
+      await sub.cancel();
+      await cubit.close();
+    });
+
+    test('a fetch that failed is tried again on the next write to the row',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      var gatewaysDown = true;
+      when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+        (_) async {
+          if (gatewaysDown) throw Exception('every gateway failed');
+          return http.Response.bytes([1, 2, 3, 4], 200);
+        },
+      );
+      final videoRow = row(name: 'clip.mp4', contentType: 'video/mp4');
+      final cubit = explorerCubit(createVideoItem(size: underLimitFileSize));
+
+      await settle();
+      rows.add(videoRow);
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+      // Reading a count through `verify` resets it, so the next [fetches]
+      // counts only what happens after this line.
+      final failedAttempts = fetches(dataTxId);
+
+      gatewaysDown = false;
+      rows.add(videoRow);
+      await settle();
+
+      expect(fetches(dataTxId), 1,
+          reason: 'after $failedAttempts failed attempt(s), exactly one more');
+      expect(cubit.state, isA<FsEntryPreviewVideo>());
+
+      await cubit.close();
+    });
+
+    test('a private document is fetched once, and shown once', () async {
+      stubPrivateFetchAndDecrypt(decrypted: 'hello'.codeUnits);
+      final textRow = row(name: 'notes.txt', contentType: 'text/plain');
+      final cubit = explorerCubit(createItem(
+        size: underLimitFileSize,
+        name: 'notes.txt',
+        contentType: 'text/plain',
+      ));
+      final states = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(states.add);
+
+      await settle();
+      rows.add(textRow);
+      await settle();
+      rows.add(textRow);
+      await settle();
+
+      expect(fetches(dataTxId), 1);
+      expect(cubit.state, isA<FsEntryPreviewText>());
+      expect(states.whereType<FsEntryPreviewLoading>(), hasLength(1),
+          reason: 'a second spinner resets the text the reader is in');
+
+      await sub.cancel();
+      await cubit.close();
+    });
+    test('a key lookup that throws leaves the video free to try again',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      stubKeyLookupThatThrowsOnce();
+      final videoRow = row(name: 'clip.mp4', contentType: 'video/mp4');
+      final cubit = explorerCubit(
+        createVideoItem(size: underLimitFileSize),
+        lookUpKey: true,
+      );
+
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+
+      rows.add(videoRow);
+      await settle();
+
+      expect(cubit.state, isA<FsEntryPreviewVideo>(),
+          reason: 'a claim kept by the throw would refuse this retry');
+
+      await cubit.close();
+    });
+
+    test('a key lookup that throws leaves the PDF free to try again',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      stubKeyLookupThatThrowsOnce();
+      final pdfRow = row(name: 'Q3 Report.pdf', contentType: 'application/pdf');
+      final cubit = explorerCubit(
+        createPdfItem(size: underLimitFileSize),
+        lookUpKey: true,
+      );
+
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+
+      rows.add(pdfRow);
+      await settle();
+
+      expect(cubit.state, isA<FsEntryPreviewPdf>());
+
+      await cubit.close();
+    });
+
+    test('the row can correct a guessed type, and the guess stays quiet',
+        () async {
+      stubPrivateFetchAndDecrypt();
+
+      // The immediate preview guesses text from the item; the row says PDF.
+      // The text load is the slow one, so it finishes after the PDF has
+      // been shown - and must not paint over it when it does.
+      final textBytes = Completer<http.Response>();
+      var calls = 0;
+      when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+        (_) => calls++ == 0
+            ? textBytes.future
+            : Future.value(http.Response.bytes([1, 2, 3, 4], 200)),
+      );
+
+      final cubit = explorerCubit(createItem(
+        size: underLimitFileSize,
+        name: 'report',
+        contentType: 'text/plain',
+      ));
+
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewLoading>());
+
+      rows.add(row(name: 'report', contentType: 'application/pdf'));
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewPdf>(),
+          reason: "the text load's claim must not shut out the PDF");
+
+      textBytes.complete(http.Response.bytes([1, 2, 3, 4], 200));
+      await settle();
+
+      expect(cubit.state, isA<FsEntryPreviewPdf>(),
+          reason: 'the superseded text load must not publish');
+
+      await cubit.close();
+    });
+    test('a superseded video gives its decrypted bytes back', () async {
+      stubPrivateFetchAndDecrypt();
+
+      // The video load is held open; the row then says the file is a PDF,
+      // which takes the claim over. When the video's bytes arrive they are
+      // decrypted into a URL - which must be revoked, not kept until close.
+      final videoBytes = Completer<http.Response>();
+      var calls = 0;
+      when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+        (_) => calls++ == 0
+            ? videoBytes.future
+            : Future.value(http.Response.bytes([1, 2, 3, 4], 200)),
+      );
+
+      final cubit = explorerCubit(createVideoItem(size: underLimitFileSize));
+
+      await settle();
+      rows.add(row(name: 'clip.mp4', contentType: 'application/pdf'));
+      await settle();
+      expect(cubit.state, isA<FsEntryPreviewPdf>());
+
+      videoBytes.complete(http.Response.bytes([1, 2, 3, 4], 200));
+      await settle();
+
+      expect(cubit.state, isA<FsEntryPreviewPdf>());
+      expect(objectUrls.created, hasLength(1));
+      expect(objectUrls.revoked, objectUrls.created,
+          reason: 'a superseded load must not hold decrypted media');
+
+      await cubit.close();
+    });
   });
 }
