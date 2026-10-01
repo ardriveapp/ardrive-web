@@ -606,6 +606,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((invocation) async {});
 
         await arDriveAuth.logout();
 
@@ -615,6 +617,9 @@ void main() {
         verify(() => mockSecureKeyValueStore.remove('biometricEnabled'))
             .called(1);
         verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+        // What was read out of the tables goes with them: drive keys and
+        // previewed bytes live in memory, not in a table.
+        verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
       });
 
       /// This is for the case when has user is true but the user is not logged in
@@ -626,6 +631,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(false));
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((invocation) async {});
         when(() => mockUserRepository.deleteUser())
             .thenAnswer((invocation) async {});
 
@@ -634,6 +641,9 @@ void main() {
         verifyNever(() => mockSecureKeyValueStore.remove('password'));
         verifyNever(() => mockSecureKeyValueStore.remove('biometricEnabled'));
         verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+        // What was read out of the tables goes with them: drive keys and
+        // previewed bytes live in memory, not in a table.
+        verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
         verify(() => mockUserRepository.deleteUser()).called(1);
         expect(() => arDriveAuth.currentUser,
             throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
@@ -697,6 +707,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((invocation) async {});
 
         await arDriveAuth.login(wallet, 'password', ProfileType.json);
 
@@ -710,6 +722,9 @@ void main() {
         verify(() => mockSecureKeyValueStore.remove('biometricEnabled'))
             .called(1);
         verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+        // What was read out of the tables goes with them: drive keys and
+        // previewed bytes live in memory, not in a table.
+        verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
         verify(() => mockUserRepository.deleteUser()).called(1);
       });
     });
@@ -813,6 +828,8 @@ void main() {
         when(() => mockSecureKeyValueStore.remove('biometricEnabled'))
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
             .thenAnswer((invocation) async {});
 
         arDriveAuth.onAuthStateChanged().listen((user) {

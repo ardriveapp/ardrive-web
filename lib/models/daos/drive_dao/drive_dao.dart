@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/utils/preview_byte_cache.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -33,7 +34,8 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   late Vault<DriveKey> _driveKeyVault;
 
-  late Vault<Uint8List> _previewVault;
+  /// Recently previewed bytes, held to a total size. See [PreviewByteCache].
+  final PreviewByteCache _previewCache = PreviewByteCache();
 
   final ArDriveCrypto _crypto = ArDriveCrypto();
 
@@ -49,7 +51,6 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
     // Creates a vault from the previously created store
     _driveKeyVault = await store.vault<DriveKey>(name: 'driveKeyVault');
-    _previewVault = await store.vault<Uint8List>(name: 'previewVault');
   }
 
   Future<void> deleteSharedPrivateDrives(String? owner) async {
@@ -102,22 +103,28 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     }
   }
 
-  Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async {
-    try {
-      return await _previewVault.get(dataTxId);
-    } catch (e) {
-      throw _handleError('Error getting preview data from memory', e);
-    }
-  }
+  Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async =>
+      _previewCache.get(dataTxId);
 
   Future<void> putPreviewDataInMemory({
     required TxID dataTxId,
     required Uint8List bytes,
-  }) async {
+  }) async =>
+      _previewCache.put(dataTxId, bytes);
+
+  /// Forgets everything this DAO holds in memory for the signed-in session:
+  /// drive keys, and the bytes of recently previewed files.
+  ///
+  /// Logout deletes every table, and used to leave both of these behind until
+  /// the tab closed - including the keys to shared private drives opened from
+  /// a `driveKey` link, which are kept here rather than in the database.
+  Future<void> clearSessionMemory() async {
+    _previewCache.clear();
+
     try {
-      await _previewVault.put(dataTxId, bytes);
+      await _driveKeyVault.clear();
     } catch (e) {
-      throw _handleError('Error putting preview data in memory', e);
+      throw _handleError('Error clearing drive keys from memory', e);
     }
   }
 
