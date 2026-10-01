@@ -652,6 +652,23 @@ void main() {
           reason: 'the waterfall must stop, not move on to the next gateway');
     });
 
+    test('a fetch abandoned before it reaches a gateway sends nothing',
+        () async {
+      // Cancelled between gateways, or before the first: the check at the top
+      // of the waterfall is what stops it, not an aborted body.
+      final client = _FakeHttpClient((_) => _streamed('metadata', 200));
+
+      await expectLater(
+        DataGatewayFallback(
+          arioSDK: arioSDK,
+          clientFactory: () => client,
+        ).fetchData(txId, primaryClient, cancelWhen: Future<void>.value()),
+        throwsA(isA<FetchCancelled>()),
+      );
+
+      expect(client.sends, 0);
+    });
+
     test('a fetch nobody cancels finishes as before', () async {
       final client = _FakeHttpClient((_) => _streamed('metadata', 200));
 
