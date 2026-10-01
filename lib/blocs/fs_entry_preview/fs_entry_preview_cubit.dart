@@ -114,8 +114,34 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
 
     _claimedLoad = key;
+
+    // The load this takes over, if it is still downloading, stops now rather
+    // than buffering - and walking the fallback gateways - for nobody.
+    _cancelClaimedLoad();
+    _claimedLoadCancel = Completer<void>();
+
     return true;
   }
+
+  /// Completed when the claimed load is taken over, or the cubit closes.
+  ///
+  /// [_closing] alone stopped a preview the reader had left, but not one a
+  /// newer preview had replaced: that kept downloading, silenced, beside the
+  /// load that replaced it.
+  Completer<void>? _claimedLoadCancel;
+
+  void _cancelClaimedLoad() {
+    final cancel = _claimedLoadCancel;
+
+    if (cancel != null && !cancel.isCompleted) {
+      cancel.complete();
+    }
+
+    _claimedLoadCancel = null;
+  }
+
+  /// What the claimed load should hand its fetch: its own cancel signal.
+  Future<void>? get _claimedLoadCancelled => _claimedLoadCancel?.future;
 
   /// Whether the load of [kind] for [dataTxId] still holds the claim, and so
   /// may still say anything. Checked after every `await` in a buffered load.
@@ -259,7 +285,17 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return;
     }
 
+    // Let go of it before running it: a second press, while this one is still
+    // on its way, finds nothing to start. Not every path claims its load - the
+    // share page's image does not - so this is the only thing that stops two
+    // presses becoming two downloads of the same file.
+    _onRequestTxId = null;
+    _onRequestLoad = null;
     _requested.add(txId);
+
+    // And take the prompt down at once, so there is nothing to press twice.
+    emit(const FsEntryPreviewLoading());
+
     await load();
   }
 
@@ -574,6 +610,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       dataBytes = await _fetchPreviewBytes(
         txId,
         onProgress: _reportProgress(kind, txId),
+        cancelWhen: _claimedLoadCancelled,
       );
     } catch (e) {
       logger.d('Could not fetch the bytes for a PDF preview: $e');
@@ -1240,6 +1277,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       dataBytes = await _fetchPreviewBytes(
         txId,
         onProgress: _reportProgress(kind, txId),
+        cancelWhen: _claimedLoadCancelled,
       );
     } catch (e) {
       logger.d('Could not fetch the bytes for a media preview: $e');
@@ -1382,6 +1420,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       final Uint8List? dataBytes = await _getBytesFromCache(
         dataTxId: selectedItem.dataTxId,
         onProgress: _reportProgress(kind, txId),
+        cancelWhen: _claimedLoadCancelled,
         isManifest: isManifest,
       );
 
@@ -1490,6 +1529,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       final Uint8List? dataBytes = await _getBytesFromCache(
         dataTxId: selectedItem.dataTxId,
         onProgress: _reportProgress(kind, txId),
+        cancelWhen: _claimedLoadCancelled,
       );
 
       if (dataBytes == null) {
@@ -1565,6 +1605,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     bool withDriveDao = true,
     bool isManifest = false,
     FetchProgress? onProgress,
+    Future<void>? cancelWhen,
   }) async {
     Uint8List? dataBytes;
 
@@ -1580,6 +1621,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           dataTxId,
           isManifest: isManifest,
           onProgress: onProgress,
+          cancelWhen: cancelWhen,
         );
 
         await _driveDao.putPreviewDataInMemory(
@@ -1607,10 +1649,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   ///
   /// [onProgress] hears the body arrive. A manifest is read through the `/raw/`
   /// endpoint, which reports nothing - it is small enough not to need to.
+  ///
+  /// [cancelWhen] abandons the fetch; without one, it is abandoned when the
+  /// cubit closes.
   Future<Uint8List> _fetchPreviewBytes(
     String dataTxId, {
     bool isManifest = false,
     FetchProgress? onProgress,
+    Future<void>? cancelWhen,
   }) async {
     final gatewayFallback = _arweave.gatewayFallback;
 
@@ -1625,7 +1671,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             dataTxId,
             _arweave.client,
             onProgress: onProgress,
-            cancelWhen: _closing.future,
+            cancelWhen: cancelWhen ?? _closing.future,
           );
 
     return response.bodyBytes;
@@ -1769,6 +1815,8 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     if (!_closing.isCompleted) {
       _closing.complete();
     }
+
+    _cancelClaimedLoad();
 
     // Decrypted media outlives the widget that played it unless the URL is
     // released, so a recipient who opens and closes a preview does not leave

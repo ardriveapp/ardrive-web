@@ -622,6 +622,25 @@ void main() {
         verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
       });
 
+      test('says it failed when drive keys could not be cleared from memory',
+          () async {
+        when(() => mockUserRepository.hasUser())
+            .thenAnswer((invocation) => Future.value(false));
+        when(() => mockUserRepository.deleteUser())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenThrow(Exception('vault would not clear'));
+
+        // A logout that reported success with drive keys still in memory would
+        // be worse than one that says it failed.
+        await expectLater(
+          arDriveAuth.logout(),
+          throwsA(isA<AuthenticationUnknownException>()),
+        );
+      });
+
       /// This is for the case when has user is true but the user is not logged in
       /// one example is the forget wallet page before the user is logged in
       test(

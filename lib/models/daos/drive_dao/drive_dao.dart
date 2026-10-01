@@ -34,6 +34,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   late Vault<DriveKey> _driveKeyVault;
 
+  /// Completes once [_driveKeyVault] exists. Every use of the vault waits for
+  /// it: the constructor cannot await, and a drive key stored in the moment
+  /// after start-up used to reach for a vault that was not there yet.
+  late final Future<void> _vaultsReady;
+
   /// Recently previewed bytes, held to a total size. See [PreviewByteCache].
   final PreviewByteCache _previewCache = PreviewByteCache();
 
@@ -42,10 +47,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   DriveDao(
     super.db,
   ) {
-    initVaults();
+    _vaultsReady = _initVaults();
   }
 
-  initVaults() async {
+  Future<void> _initVaults() async {
     // Creates a store
     final store = await newMemoryVaultStore();
 
@@ -86,6 +91,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<DriveKey?> getDriveKeyFromMemory(DriveID driveID) async {
     try {
+      await _vaultsReady;
       return await _driveKeyVault.get(driveID);
     } catch (e) {
       throw _handleError('Error getting drive key from memory', e);
@@ -97,6 +103,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required DriveKey driveKey,
   }) async {
     try {
+      await _vaultsReady;
       return await _driveKeyVault.put(driveID, driveKey);
     } catch (e) {
       throw _handleError('Error putting drive key in memory', e);
@@ -122,6 +129,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     _previewCache.clear();
 
     try {
+      await _vaultsReady;
       await _driveKeyVault.clear();
     } catch (e) {
       throw _handleError('Error clearing drive keys from memory', e);

@@ -22,11 +22,16 @@ class DatabaseHelpers {
   /// Drops what the signed-in session kept in memory rather than in a table -
   /// drive keys and recently previewed bytes. Logout needs both this and
   /// [deleteAllTables]: the tables go, and so must what was read out of them.
+  ///
+  /// Unlike [deleteAllTables], a failure here is not swallowed. A logout that
+  /// reported success with drive keys still in memory would be the one outcome
+  /// worse than a logout that says it failed.
   Future<void> clearSessionMemory() async {
     try {
       await _db.driveDao.clearSessionMemory();
     } catch (e) {
       logger.e('Error clearing session memory', e);
+      rethrow;
     }
   }
 }

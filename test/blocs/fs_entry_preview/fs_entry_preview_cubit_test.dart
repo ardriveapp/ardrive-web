@@ -1431,6 +1431,43 @@ void main() {
       await cubit.close();
     });
 
+    test('a video taken over while it downloads stops downloading', () async {
+      stubPrivateFetchAndDecrypt();
+      // Closing the preview already aborted its download; being replaced by a
+      // newer preview did not, and the old one kept fetching beside it.
+      final videoCancel = Completer<Future<void>?>();
+      final neverArrives = Completer<http.Response>();
+      var calls = 0;
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'),
+          cancelWhen: any(named: 'cancelWhen'))).thenAnswer((invocation) {
+        if (calls++ == 0) {
+          videoCancel.complete(
+              invocation.namedArguments[#cancelWhen] as Future<void>?);
+          return neverArrives.future;
+        }
+        return Future.value(http.Response.bytes([1, 2, 3, 4], 200));
+      });
+
+      final cubit = explorerCubit(createVideoItem(size: underLimitFileSize));
+      await settle();
+
+      final signal = await videoCancel.future;
+      var cancelled = false;
+      unawaited(signal!.then((_) => cancelled = true));
+      await Future<void>.delayed(Duration.zero);
+      expect(cancelled, isFalse);
+
+      rows.add(row(name: 'clip.mp4', contentType: 'application/pdf'));
+      await settle();
+
+      expect(cubit.state, isA<FsEntryPreviewPdf>());
+      expect(cancelled, isTrue,
+          reason: 'the replaced download must stop, not buffer for nobody');
+
+      await cubit.close();
+    });
+
     test('a video superseded while it decrypts gives its bytes back', () async {
       stubPrivateFetchAndDecrypt();
 
@@ -2004,6 +2041,38 @@ void main() {
       expect(fetches(), 1);
       expect(cubit.state, isA<FsEntryPreviewImage>());
 
+      await cubit.close();
+    });
+
+    test('two quick presses are one download, and the prompt goes at once',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      // The share page's image takes no claim, so nothing else would stop a
+      // second press while the first is still downloading.
+      final slow = Completer<http.Response>();
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'),
+          cancelWhen: any(named: 'cancelWhen'))).thenAnswer((_) => slow.future);
+
+      final cubit = buildSharedFileCubit(
+        item: createImageItem(size: large),
+        fileKey: SecretKey([1, 2, 3]),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(cubit.state, const FsEntryPreviewOnRequest(size: large));
+
+      unawaited(cubit.loadOnRequest());
+      await Future<void>.delayed(Duration.zero);
+      expect(cubit.state, isA<FsEntryPreviewLoading>(),
+          reason: 'the prompt must not stay up to be pressed again');
+
+      unawaited(cubit.loadOnRequest());
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(fetches(), 1);
+
+      slow.complete(http.Response.bytes([1, 2, 3, 4], 200));
+      await Future<void>.delayed(const Duration(milliseconds: 30));
       await cubit.close();
     });
 

@@ -14,14 +14,26 @@ void main() {
   late Database db;
   late DriveDao driveDao;
 
-  setUp(() async {
+  setUp(() {
     db = getTestDb();
     driveDao = db.driveDao;
-    // The vaults are created asynchronously by the constructor.
-    await Future<void>.delayed(Duration.zero);
   });
 
   tearDown(() => db.close());
+
+  test('a drive key stored the moment the DAO exists is kept', () async {
+    // No wait for the vaults: the constructor starts creating them and cannot
+    // await, so the DAO has to wait for them itself.
+    final fresh = getTestDb();
+    addTearDown(fresh.close);
+
+    await fresh.driveDao.putDriveKeyInMemory(
+      driveID: 'drive',
+      driveKey: DriveKey(SecretKey([1, 2, 3]), false),
+    );
+
+    expect(await fresh.driveDao.getDriveKeyFromMemory('drive'), isNotNull);
+  });
 
   test('previewed bytes come back while they fit', () async {
     await driveDao.putPreviewDataInMemory(
