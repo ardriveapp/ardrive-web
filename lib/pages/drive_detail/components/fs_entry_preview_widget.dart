@@ -102,6 +102,55 @@ class FsEntryPreviewProgress extends StatelessWidget {
   }
 }
 
+/// A large preview, offered rather than started.
+///
+/// Says what pressing it costs - the whole file, in bytes - because that is
+/// the only thing the reader needs to decide, and the reason it waits at all.
+@visibleForTesting
+class FsEntryPreviewOnRequestPrompt extends StatelessWidget {
+  const FsEntryPreviewOnRequestPrompt({
+    super.key,
+    required this.state,
+    required this.onPreview,
+  });
+
+  final FsEntryPreviewOnRequest state;
+  final VoidCallback onPreview;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final l10n = appLocalizationsOf(context);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // The sentence under it says the same thing, in words.
+          ExcludeSemantics(
+            child: ArDriveIcons.eyeOpen(size: 24, color: colors.themeFgSubtle),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            l10n.previewOnRequestNote(filesize(state.size)),
+            textAlign: TextAlign.center,
+            style: ArDriveTypography.body.captionRegular(
+              color: colors.themeFgDefault,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ArDriveButton(
+            style: ArDriveButtonStyle.secondary,
+            text: l10n.preview,
+            onPressed: onPreview,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// A preview that was attempted and did not arrive - said, not hidden.
 ///
 /// Retry is offered only when asking again could help: a download that no
@@ -184,6 +233,14 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         return Center(
           child: FsEntryPreviewProgress(
             state: widget.state as FsEntryPreviewLoading,
+          ),
+        );
+
+      case const (FsEntryPreviewOnRequest):
+        return Center(
+          child: FsEntryPreviewOnRequestPrompt(
+            state: widget.state as FsEntryPreviewOnRequest,
+            onPreview: widget.previewCubit.loadOnRequest,
           ),
         );
 

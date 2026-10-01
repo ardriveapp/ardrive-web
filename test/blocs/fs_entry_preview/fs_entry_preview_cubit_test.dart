@@ -1905,4 +1905,185 @@ void main() {
           () => mockCrypto.decryptDataFromTransaction(any(), any(), any()));
     });
   });
+
+  /// Selecting a file used to start every whole-file preview at once, up to
+  /// 100 MiB of it. Above 25 MiB it now waits to be asked for.
+  group('FsEntryPreviewCubit waits to be asked for a large preview', () {
+    const large = 30 * 1024 * 1024;
+    const atThreshold = FsEntryPreviewCubit.previewOnRequestSize;
+
+    int fetches() => verify(() => mockGatewayFallback.fetchData(any(), any(),
+        onProgress: any(named: 'onProgress'),
+        cancelWhen: any(named: 'cancelWhen'))).callCount;
+
+    test('a large private video waits, and Preview fetches it', () async {
+      stubPrivateFetchAndDecrypt();
+
+      final cubit = buildSharedFileCubit(
+        item: createVideoItem(size: large),
+        fileKey: SecretKey([1, 2, 3]),
+        objectUrls: FakePreviewObjectUrls(),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(cubit.state, const FsEntryPreviewOnRequest(size: large));
+      expect(cubit.state, isNot(isA<FsEntryPreviewUnavailable>()),
+          reason: 'offered, not withheld: the Preview tab must stay');
+      verifyNever(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'),
+          cancelWhen: any(named: 'cancelWhen')));
+
+      await cubit.loadOnRequest();
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(fetches(), 1);
+      expect(cubit.state, isA<FsEntryPreviewVideo>());
+
+      await cubit.close();
+    });
+
+    test('a file of exactly the threshold previews on its own', () async {
+      stubPrivateFetchAndDecrypt();
+
+      final cubit = buildSharedFileCubit(
+        item: createVideoItem(size: atThreshold),
+        fileKey: SecretKey([1, 2, 3]),
+        objectUrls: FakePreviewObjectUrls(),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(cubit.state, isA<FsEntryPreviewVideo>());
+
+      await cubit.close();
+    });
+
+    test('a large public PDF waits too: it downloads whole as well', () async {
+      stubPrivateFetchAndDecrypt();
+
+      final cubit = buildSharedFileCubit(item: createPdfItem(size: large));
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(cubit.state, const FsEntryPreviewOnRequest(size: large));
+
+      await cubit.loadOnRequest();
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(cubit.state, isA<FsEntryPreviewPdf>());
+
+      await cubit.close();
+    });
+
+    test('a large public video is not asked about: the player streams it',
+        () async {
+      final cubit = buildSharedFileCubit(item: createVideoItem(size: large));
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(cubit.state, isA<FsEntryPreviewVideo>());
+      verifyNever(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'),
+          cancelWhen: any(named: 'cancelWhen')));
+
+      await cubit.close();
+    });
+
+    test('a large image on the share page waits, and Preview fetches it',
+        () async {
+      stubPrivateFetchAndDecrypt();
+
+      final cubit = buildSharedFileCubit(
+        item: createImageItem(size: large),
+        fileKey: SecretKey([1, 2, 3]),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(cubit.state, const FsEntryPreviewOnRequest(size: large));
+
+      await cubit.loadOnRequest();
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(fetches(), 1);
+      expect(cubit.state, isA<FsEntryPreviewImage>());
+
+      await cubit.close();
+    });
+
+    test('Preview does nothing when nothing is waiting', () async {
+      stubPrivateFetchAndDecrypt();
+
+      final cubit = buildSharedFileCubit(
+        item: createVideoItem(size: underLimitFileSize),
+        fileKey: SecretKey([1, 2, 3]),
+        objectUrls: FakePreviewObjectUrls(),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      fetches();
+
+      await cubit.loadOnRequest();
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      verifyNever(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'),
+          cancelWhen: any(named: 'cancelWhen')));
+
+      await cubit.close();
+    });
+
+    test('once asked for, a later write to the row does not ask again',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      final drive = MockDrive();
+      final driveSelectable = MockSelectable<Drive>();
+      final fileSelectable = MockSelectable<FileEntry>();
+      final rows = StreamController<FileEntry>();
+      addTearDown(rows.close);
+
+      when(() => drive.privacy).thenReturn(DrivePrivacyTag.private);
+      when(() => mockDriveDao.driveById(driveId: driveId))
+          .thenReturn(driveSelectable);
+      when(() => driveSelectable.getSingleOrNull())
+          .thenAnswer((_) async => drive);
+      when(() => driveSelectable.getSingle()).thenAnswer((_) async => drive);
+      when(() => mockDriveDao.fileById(fileId: fileId))
+          .thenReturn(fileSelectable);
+      when(() => fileSelectable.watchSingle()).thenAnswer((_) => rows.stream);
+
+      final videoRow = createMockFileEntry(
+        id: fileId,
+        driveId: driveId,
+        name: 'clip.mp4',
+        dataTxId: dataTxId,
+        dataContentType: 'video/mp4',
+        size: large,
+      );
+      final cubit = FsEntryPreviewCubit(
+        driveId: driveId,
+        maybeSelectedItem: createVideoItem(size: large),
+        driveDao: mockDriveDao,
+        configService: mockConfigService,
+        arweave: mockArweaveService,
+        profileCubit: mockProfileCubit,
+        crypto: mockCrypto,
+        fileKey: SecretKey([1, 2, 3]),
+        objectUrls: FakePreviewObjectUrls(),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      rows.add(videoRow);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(cubit.state, const FsEntryPreviewOnRequest(size: large));
+
+      await cubit.loadOnRequest();
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(cubit.state, isA<FsEntryPreviewVideo>());
+
+      rows.add(videoRow);
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(cubit.state, isA<FsEntryPreviewVideo>(),
+          reason: 'the prompt must not come back over a playing video');
+      expect(fetches(), 1);
+
+      await cubit.close();
+    });
+  });
 }

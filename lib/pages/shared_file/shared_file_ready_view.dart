@@ -721,7 +721,8 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     // A sentence in a box, like the unavailable states: a failure with a
     // Retry under it is not something that needs 360px to be read.
     if (previewState is FsEntryPreviewUnavailable ||
-        previewState is FsEntryPreviewFailed) {
+        previewState is FsEntryPreviewFailed ||
+        previewState is FsEntryPreviewOnRequest) {
       return false;
     }
 

@@ -1,6 +1,9 @@
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart'
-    show FsEntryPreviewFailedMessage, FsEntryPreviewProgress,
+    show
+        FsEntryPreviewFailedMessage,
+        FsEntryPreviewOnRequestPrompt,
+        FsEntryPreviewProgress,
         FsEntryPreviewWidget;
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -76,7 +79,8 @@ void main() {
       expect(find.text('Downloading...'), findsOneWidget);
     });
 
-    testWidgets('once the bytes are in, it says it is decrypting, without a bar',
+    testWidgets(
+        'once the bytes are in, it says it is decrypting, without a bar',
         (tester) async {
       await tester.pumpWidget(wrap(const FsEntryPreviewProgress(
         state: FsEntryPreviewLoading(
@@ -125,12 +129,36 @@ void main() {
     });
   });
 
+  group('a large file waits to be asked for', () {
+    testWidgets('says what Preview will download, and asks', (tester) async {
+      const size = 47 * 1024 * 1024;
+      var asked = 0;
+
+      await tester.pumpWidget(wrap(FsEntryPreviewOnRequestPrompt(
+        state: const FsEntryPreviewOnRequest(size: size),
+        onPreview: () => asked++,
+      )));
+
+      expect(
+        find.text('This file is ${filesize(size)}. '
+            'Previewing it downloads the whole file.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Preview'));
+      await tester.pump();
+
+      expect(asked, 1);
+    });
+  });
+
   group('inside the preview', () {
     late _MockFsEntryPreviewCubit cubit;
 
     setUp(() {
       cubit = _MockFsEntryPreviewCubit();
       when(() => cubit.retry()).thenAnswer((_) async {});
+      when(() => cubit.loadOnRequest()).thenAnswer((_) async {});
     });
 
     Future<void> pumpPreview(
@@ -173,8 +201,19 @@ void main() {
       verify(() => cubit.retry()).called(1);
     });
 
-    testWidgets('a failure is not dressed up as "unavailable"',
-        (tester) async {
+    testWidgets('Preview on a large file asks the cubit', (tester) async {
+      await pumpPreview(
+        tester,
+        const FsEntryPreviewOnRequest(size: 30 * 1024 * 1024),
+      );
+
+      await tester.tap(find.text('Preview'));
+      await tester.pump();
+
+      verify(() => cubit.loadOnRequest()).called(1);
+    });
+
+    testWidgets('a failure is not dressed up as "unavailable"', (tester) async {
       await pumpPreview(
         tester,
         const FsEntryPreviewFailed(FsEntryPreviewFailure.download),

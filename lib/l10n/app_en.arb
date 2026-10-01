@@ -1191,6 +1191,16 @@
       }
     }
   },
+  "previewOnRequestNote": "This file is {size}. Previewing it downloads the whole file.",
+  "@previewOnRequestNote": {
+    "description": "In place of a large file's preview, above a Preview button: what pressing it will download",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "47 MB"
+      }
+    }
+  },
   "previewDecrypting": "Decrypting...",
   "@previewDecrypting": {
     "description": "Under a private file's preview once its bytes have arrived and are being decrypted"

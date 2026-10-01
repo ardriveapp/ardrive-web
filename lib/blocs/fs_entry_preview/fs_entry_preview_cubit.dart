@@ -204,6 +204,65 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   /// request is aborted the moment the preview goes away.
   final Completer<void> _closing = Completer<void>();
 
+  /// Above this, a preview that downloads the whole file waits for a press.
+  ///
+  /// 25 MiB: almost every document and photo previews on its own, and a large
+  /// video or PDF waits until the reader asks for it - on a phone on mobile
+  /// data, which is where most share links are opened, the difference matters.
+  /// Media that streams (public video and audio) is not gated: the player
+  /// only ever fetches what it plays.
+  static const int previewOnRequestSize = 25 * 1024 * 1024;
+
+  /// Data the reader has pressed Preview for, so a later database change does
+  /// not put the prompt back in front of a preview they already asked for.
+  final Set<String> _requested = {};
+
+  String? _onRequestTxId;
+  Future<void> Function()? _onRequestLoad;
+
+  /// Whether a preview of [size] bytes must wait to be asked for. When it
+  /// must, says so with [FsEntryPreviewOnRequest] and keeps [load] for
+  /// [loadOnRequest]; the caller stops there.
+  ///
+  /// An unknown size previews as before: there is nothing to warn about.
+  bool _waitForRequest(
+    String dataTxId,
+    int? size,
+    Future<void> Function() load,
+  ) {
+    if (!_mustWaitForRequest(dataTxId, size)) {
+      return false;
+    }
+
+    _onRequestTxId = dataTxId;
+    _onRequestLoad = load;
+
+    if (!isClosed) {
+      emit(FsEntryPreviewOnRequest(size: size!));
+    }
+
+    return true;
+  }
+
+  bool _mustWaitForRequest(String dataTxId, int? size) =>
+      size != null &&
+      size > previewOnRequestSize &&
+      !_requested.contains(dataTxId);
+
+  /// The reader pressed Preview: fetch what [FsEntryPreviewOnRequest] was
+  /// holding back.
+  Future<void> loadOnRequest() async {
+    final txId = _onRequestTxId;
+    final load = _onRequestLoad;
+
+    if (state is! FsEntryPreviewOnRequest || txId == null || load == null) {
+      return;
+    }
+
+    _requested.add(txId);
+    await load();
+  }
+
   /// The last buffered load, so [retry] can run it again as it was.
   Future<void> Function()? _retryLoad;
 
@@ -459,6 +518,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     // The file is buffered whole to be rasterised, so the cap is checked before
     // a single byte is requested.
     if (_emitOversizedIfOverLimit(size ?? selectedItem.size)) {
+      return;
+    }
+
+    if (_waitForRequest(
+      selectedItem.dataTxId,
+      size ?? selectedItem.size,
+      () => _previewPdf(isPrivate, selectedItem, previewUrl, size: size),
+    )) {
       return;
     }
 
@@ -753,6 +820,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           return;
         }
 
+        // Nor one the reader has not asked for: the database watch puts the
+        // prompt up, and painting an image placeholder first would only flash.
+        if (_mustWaitForRequest(fileItem.dataTxId, fileItem.size)) {
+          return;
+        }
+
         // For images, we can emit the preview URL immediately
         // The actual loading will happen in the widget
         emit(FsEntryPreviewImage(previewUrl: previewUrl));
@@ -798,6 +871,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     // Public images used to be fetched with no cap at all — they are buffered
     // in memory just like private ones, so cap both before fetching.
     if (_emitOversizedIfOverLimit(file.size)) {
+      return;
+    }
+
+    if (_waitForRequest(
+      file.dataTxId,
+      file.size,
+      () => _previewImageDriveExplorer(file, dataUrl),
+    )) {
       return;
     }
 
@@ -892,6 +973,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     // after the download and was missing its `return`, so an over-limit private
     // image was downloaded and decrypted anyway.
     if (_emitOversizedIfOverLimit(file.size)) {
+      return;
+    }
+
+    if (_waitForRequest(
+      file.dataTxId,
+      file.size,
+      () async => _previewImageSharePage(isPrivate, file, previewUrl),
+    )) {
       return;
     }
 
@@ -1024,6 +1113,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       selectedItem,
       previewUrl,
       contentType,
+      reload: () => _previewAudio(
+        isPrivate,
+        selectedItem,
+        previewUrl,
+        contentType,
+      ),
     );
 
     // Taken over between the URL and here: the newer preview has the screen.
@@ -1052,6 +1147,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       selectedItem,
       previewUrl,
       contentType,
+      reload: () => _previewVideo(
+        isPrivate,
+        selectedItem,
+        previewUrl,
+        contentType,
+      ),
     );
 
     // Taken over between the URL and here: the newer preview has the screen.
@@ -1078,8 +1179,9 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     bool isPrivate,
     FileDataTableItem selectedItem,
     String previewUrl,
-    String contentType,
-  ) async {
+    String contentType, {
+    required Future<void> Function() reload,
+  }) async {
     final isPinFile = selectedItem.pinnedDataOwnerAddress != null;
     const kind = 'media';
     final txId = selectedItem.dataTxId;
@@ -1097,6 +1199,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     // The bytes are buffered whole, so the size gate runs before anything is
     // fetched.
     if (_emitOversizedIfOverLimit(selectedItem.size)) {
+      return null;
+    }
+
+    // Public media above streams and is never gated; this downloads it whole.
+    if (_waitForRequest(selectedItem.dataTxId, selectedItem.size, reload)) {
       return null;
     }
 

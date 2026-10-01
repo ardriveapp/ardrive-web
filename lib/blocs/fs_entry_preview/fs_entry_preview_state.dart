@@ -89,6 +89,24 @@ class FsEntryPreviewLoading extends FsEntryPreviewSuccess {
   List<Object> get props => [phase, received, total ?? -1];
 }
 
+/// A preview big enough that it waits to be asked for.
+///
+/// Every preview that downloads the whole file - a PDF, private media, an
+/// image - used to start the moment the file was selected, up to 100 MiB of
+/// it. Above [FsEntryPreviewCubit.previewOnRequestSize] it now waits for the
+/// reader to press Preview, so selecting a large file costs nothing until they
+/// do. Like [FsEntryPreviewFailed], deliberately not an
+/// [FsEntryPreviewUnavailable]: the preview is offered, not withheld.
+class FsEntryPreviewOnRequest extends FsEntryPreviewState {
+  const FsEntryPreviewOnRequest({required this.size});
+
+  /// How much pressing Preview will download.
+  final int size;
+
+  @override
+  List<Object> get props => [size];
+}
+
 /// Why a preview that was attempted did not arrive.
 enum FsEntryPreviewFailure {
   /// No gateway would give the bytes, or what the file is encrypted with could
