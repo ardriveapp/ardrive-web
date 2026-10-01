@@ -40,6 +40,30 @@ class _FakeHttpClient extends BaseClient {
   void close() => closed = true;
 }
 
+/// An HTTP client whose [close] aborts the body in flight, the way the real
+/// ones do: `FetchClient` fires its AbortController, `BrowserClient` aborts its
+/// XHRs, `IOClient` force-closes the socket.
+class _AbortableHttpClient extends BaseClient {
+  final StreamController<List<int>> body = StreamController<List<int>>();
+  int sends = 0;
+  bool closed = false;
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    sends += 1;
+    return StreamedResponse(body.stream, 200, contentLength: 100);
+  }
+
+  @override
+  void close() {
+    closed = true;
+    if (!body.isClosed) {
+      body.addError(ClientException('aborted'));
+      body.close();
+    }
+  }
+}
+
 StreamedResponse _streamed(String body, int status) =>
     StreamedResponse(Stream.value(utf8.encode(body)), status);
 
@@ -600,6 +624,41 @@ void main() {
         arioSDK: arioSDK,
         clientFactory: () => client,
       ).fetchData(txId, primaryClient);
+
+      expect(response.body, 'metadata');
+    });
+  });
+
+  /// A preview the reader has left must stop downloading, not carry on to the
+  /// end and then try every other gateway.
+  group('fetchData can be abandoned', () {
+    test('aborts the request in flight and tries no other gateway', () async {
+      final client = _AbortableHttpClient();
+      final cancel = Completer<void>();
+
+      final fetch = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(txId, primaryClient, cancelWhen: cancel.future);
+
+      client.body.add(utf8.encode('the first chunk'));
+      await Future<void>.delayed(Duration.zero);
+
+      cancel.complete();
+
+      await expectLater(fetch, throwsA(isA<FetchCancelled>()));
+      expect(client.closed, isTrue);
+      expect(client.sends, 1,
+          reason: 'the waterfall must stop, not move on to the next gateway');
+    });
+
+    test('a fetch nobody cancels finishes as before', () async {
+      final client = _FakeHttpClient((_) => _streamed('metadata', 200));
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(txId, primaryClient, cancelWhen: Completer<void>().future);
 
       expect(response.body, 'metadata');
     });

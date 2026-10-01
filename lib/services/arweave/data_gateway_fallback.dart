@@ -171,10 +171,16 @@ class DataGatewayFallback {
   /// If ALL gateways return 404, throws [TransactionNotFound].
   ///
   /// [onProgress], when given, hears the body arrive - see [FetchProgress].
+  ///
+  /// [cancelWhen], when it completes, abandons the fetch: the request in
+  /// flight is aborted, no further gateway is tried, and [FetchCancelled] is
+  /// thrown. A preview the reader has already left must not carry on
+  /// downloading a hundred megabytes nobody will see.
   Future<Response> fetchData(
     String txId,
     Arweave primaryClient, {
     FetchProgress? onProgress,
+    Future<void>? cancelWhen,
   }) async {
     // One client for the whole waterfall, so the backstop below has something
     // to hang up with. `Future.timeout` does not cancel what it times out: the
@@ -184,12 +190,21 @@ class DataGatewayFallback {
     // fires its `AbortController`; `BrowserClient.close` aborts its XHRs).
     final httpClient = _clientFactory();
 
+    var isCancelled = false;
+    cancelWhen?.then((_) {
+      isCancelled = true;
+      // Aborts whatever is in flight; the waterfall checks the flag before it
+      // tries anything else.
+      httpClient.close();
+    });
+
     try {
       return await _serialFetch(
         txId,
         primaryClient,
         httpClient: httpClient,
         onProgress: onProgress,
+        isCancelled: () => isCancelled,
       )
           .timeout(_dataTotalTimeout, onTimeout: () {
         logger.w('Total fetch timeout exceeded for tx $txId');
@@ -308,11 +323,16 @@ class DataGatewayFallback {
     Arweave primaryClient, {
     required Client httpClient,
     FetchProgress? onProgress,
+    bool Function()? isCancelled,
   }) async {
     final clients = await _buildClientList(primaryClient);
     var all404 = true;
 
     for (final client in clients) {
+      if (isCancelled?.call() ?? false) {
+        throw FetchCancelled(txId);
+      }
+
       final gatewayName = client.api.gatewayUrl.host;
       final isPrimary = client == primaryClient;
 
@@ -351,6 +371,11 @@ class DataGatewayFallback {
           retryable = e.statusCode == 404;
           logger.w('Gateway $gatewayName failed for tx $txId: $e');
         } catch (e) {
+          // Aborted on purpose, not a gateway failing.
+          if (isCancelled?.call() ?? false) {
+            throw FetchCancelled(txId);
+          }
+
           all404 = false;
           logger.w('Gateway $gatewayName failed for tx $txId: $e');
         }
@@ -800,6 +825,16 @@ class DataGatewayFallback {
       ),
     );
   }
+}
+
+/// A [DataGatewayFallback.fetchData] that its caller abandoned.
+class FetchCancelled implements Exception {
+  const FetchCancelled(this.txId);
+
+  final String txId;
+
+  @override
+  String toString() => 'FetchCancelled: $txId';
 }
 
 class _ErrorFromStatus implements Exception {

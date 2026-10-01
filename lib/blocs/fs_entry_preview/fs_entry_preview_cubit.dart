@@ -196,6 +196,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
   }
 
+  /// Completed by [close], and handed to every fetch this cubit starts.
+  ///
+  /// Closing used to leave a download running to the end - a reader who
+  /// clicked past five large private videos downloaded all five in the
+  /// background, and the private ones were decrypted for nobody. Now the
+  /// request is aborted the moment the preview goes away.
+  final Completer<void> _closing = Completer<void>();
+
   /// The last buffered load, so [retry] can run it again as it was.
   Future<void> Function()? _retryLoad;
 
@@ -505,6 +513,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       dataBytes = null;
     }
 
+    // Gone, or taken over, while the bytes were in flight: nobody is going to
+    // see this, so it is not decrypted either.
+    if (!_isCurrent(kind, txId)) {
+      return;
+    }
+
     FsEntryPreviewFailure? failure =
         dataBytes == null ? FsEntryPreviewFailure.download : null;
 
@@ -799,6 +813,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       dataTxId: file.dataTxId,
     );
 
+    // The preview went away while the bytes were in flight.
+    if (isClosed) {
+      return;
+    }
+
     try {
       final driveId = file.driveId;
       final drive = await _driveDao.driveById(driveId: driveId).getSingle();
@@ -888,6 +907,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       dataTxId: file.dataTxId,
       withDriveDao: false,
     );
+
+    // The page went away while the bytes were in flight. The notifier is left
+    // alone: it is shared, and whatever replaced this page may own it now.
+    if (isClosed) {
+      return;
+    }
 
     if (dataBytes == null) {
       // The notifier was set to `isLoading` above and is static, so leaving it
@@ -1119,6 +1144,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return null;
     }
 
+    // Gone, or taken over, while the bytes were in flight: not decrypted for
+    // nobody.
+    if (!_isCurrent(kind, txId)) {
+      return null;
+    }
+
     _reportDecrypting(kind, txId);
 
     final decrypted = await _decryptForPreview(dataBytes, fileKey, txId);
@@ -1271,6 +1302,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
           return;
         }
 
+        if (!_isCurrent(kind, txId)) {
+          return;
+        }
+
         _reportDecrypting(kind, txId);
 
         final decrypted = await _decryptForPreview(
@@ -1371,6 +1406,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
         if (decryptionKey == null) {
           _failLoad(kind, txId);
+          return;
+        }
+
+        if (!_isCurrent(kind, txId)) {
           return;
         }
 
@@ -1475,13 +1514,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             dataTxId,
             _arweave.client,
           )
-        : onProgress == null
-            ? await gatewayFallback.fetchData(dataTxId, _arweave.client)
-            : await gatewayFallback.fetchData(
-                dataTxId,
-                _arweave.client,
-                onProgress: onProgress,
-              );
+        : await gatewayFallback.fetchData(
+            dataTxId,
+            _arweave.client,
+            onProgress: onProgress,
+            cancelWhen: _closing.future,
+          );
 
     return response.bodyBytes;
   }
@@ -1621,6 +1659,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   @override
   Future<void> close() async {
+    if (!_closing.isCompleted) {
+      _closing.complete();
+    }
+
     // Decrypted media outlives the widget that played it unless the URL is
     // released, so a recipient who opens and closes a preview does not leave
     // the plaintext sitting in the tab.
