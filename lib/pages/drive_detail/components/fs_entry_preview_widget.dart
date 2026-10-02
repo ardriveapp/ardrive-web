@@ -24,58 +24,203 @@ class FsEntryPreviewWidget extends StatefulWidget {
   State<FsEntryPreviewWidget> createState() => _FsEntryPreviewWidgetState();
 }
 
+/// The one layout every "not yet" and "not this time" of a preview is drawn
+/// with: something to look at, a line of words, and at most one thing to do.
+///
+/// Before this, each state drew its own - a bare spinner in the players, a
+/// spinner and caption for a download, an icon and a button for a failure -
+/// and they read as three different designs. On a video's black stage it is
+/// drawn [onDark], so the same words and the same button sit in the player
+/// that will play the file.
+class _PreviewStatusLayout extends StatelessWidget {
+  const _PreviewStatusLayout({
+    required this.leading,
+    required this.label,
+    this.action,
+    this.onDark = false,
+    this.isMessage = false,
+  });
+
+  final Widget leading;
+  final String label;
+  final Widget? action;
+  final bool onDark;
+
+  /// A sentence to read and act on - a prompt, a failure - rather than a
+  /// running status. It gets the full text colour; a status gets a quieter
+  /// one, still readable on an audio player's tinted stage.
+  final bool isMessage;
+
+  /// On a video's black stage: a message near-white, a status a step back.
+  static const Color _messageOnDark = Color(0xF2FFFFFF);
+  static const Color _statusOnDark = Color(0xBFFFFFFF);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final action = this.action;
+
+    final content = Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          leading,
+          const SizedBox(height: 12),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: ArDriveTypography.body.captionRegular(
+              color: onDark
+                  ? (isMessage ? _messageOnDark : _statusOnDark)
+                  : (isMessage ? colors.themeFgDefault : colors.themeFgMuted),
+            ),
+          ),
+          if (action != null) ...[
+            const SizedBox(height: 16),
+            action,
+          ],
+        ],
+      ),
+    );
+
+    // A player's stage on a phone can be shorter than a prompt with its
+    // button: shrink to fit rather than overflow. The text still wraps at the
+    // full width, so it is only scaled when it truly does not fit.
+    return LayoutBuilder(builder: (context, box) {
+      if (!box.hasBoundedWidth || !box.hasBoundedHeight) {
+        return content;
+      }
+
+      return FittedBox(
+        fit: BoxFit.scaleDown,
+        child: SizedBox(width: box.maxWidth, child: content),
+      );
+    });
+  }
+}
+
+/// A spinner sized to sit above a caption in [_PreviewStatusLayout].
+class _PreviewSpinner extends StatelessWidget {
+  const _PreviewSpinner();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 24,
+      width: 24,
+      child: CircularProgressIndicator(strokeWidth: 2.5),
+    );
+  }
+}
+
+/// The icon above a caption: decorative, since the caption says the same in
+/// words.
+Widget _previewStatusIcon(
+  BuildContext context,
+  ArDriveIcon Function({double? size, Color? color}) icon, {
+  required bool onDark,
+}) {
+  final colors = ArDriveTheme.of(context).themeData.colors;
+
+  return ExcludeSemantics(
+    child: icon(
+      size: 24,
+      color: onDark ? _PreviewStatusLayout._statusOnDark : colors.themeFgMuted,
+    ),
+  );
+}
+
+/// The button under a caption. On a dark stage the filled one: an outlined
+/// button there is a dark outline on black.
+Widget _previewStatusButton({
+  required String text,
+  required VoidCallback onPressed,
+  required bool onDark,
+}) {
+  return ArDriveButton(
+    style: onDark ? ArDriveButtonStyle.primary : ArDriveButtonStyle.secondary,
+    text: text,
+    onPressed: onPressed,
+  );
+}
+
+/// A player that has its file and is getting ready to play it.
+///
+/// Public media streams, so there is no download to count: the player fetches
+/// what it needs to start, and this is what it says meanwhile - in the same
+/// words and the same place as a private file's download before it.
+@visibleForTesting
+class FsEntryPreviewStarting extends StatelessWidget {
+  const FsEntryPreviewStarting({super.key, this.onDark = false});
+
+  final bool onDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return _PreviewStatusLayout(
+      leading: const _PreviewSpinner(),
+      label: appLocalizationsOf(context).previewLoading,
+      onDark: onDark,
+    );
+  }
+}
+
 /// How far a buffered preview has got (#2206).
 ///
 /// A bar with "18.2 MB of 47 MB" when the gateway said how much it would send,
-/// a spinner with the running count when it did not, and "Decrypting…" once
+/// a spinner with the running count when it did not, and "Decrypting..." once
 /// the bytes are in - which is one opaque call with nothing honest to count.
 /// The words matter as much as the bar: a wait that says what it is doing is
 /// a wait people sit through, and one that does not is one they refresh away.
 @visibleForTesting
 class FsEntryPreviewProgress extends StatelessWidget {
-  const FsEntryPreviewProgress({super.key, required this.state});
+  const FsEntryPreviewProgress({
+    super.key,
+    required this.state,
+    this.onDark = false,
+  });
 
   final FsEntryPreviewLoading state;
+  final bool onDark;
 
   /// Wide enough to read as a bar, narrow enough for a phone's details panel.
   static const double barWidth = 200;
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
     final fraction = state.fraction;
     final label = _label(context);
+    final colors = ArDriveTheme.of(context).themeData.colors;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (fraction == null)
-            const SizedBox(
-              height: 24,
-              width: 24,
-              child: CircularProgressIndicator(),
-            )
-          else
-            SizedBox(
+    return _PreviewStatusLayout(
+      leading: fraction == null
+          ? const _PreviewSpinner()
+          // The spinner's own height, so swapping one for the other - the
+          // gateway's length arriving a moment after the first byte - moves
+          // nothing under it.
+          : SizedBox(
               width: barWidth,
-              child: LinearProgressIndicator(
-                value: fraction,
-                semanticsLabel: label,
-                semanticsValue: '${(fraction * 100).round()}%',
+              height: 24,
+              child: Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: fraction,
+                    minHeight: 4,
+                    // The track shows how far there is to go; the theme's
+                    // default is the surface colour, so it would not show.
+                    backgroundColor: onDark
+                        ? const Color(0x33FFFFFF)
+                        : colors.themeFgMuted.withOpacity(0.2),
+                    semanticsLabel: label,
+                    semanticsValue: '${(fraction * 100).round()}%',
+                  ),
+                ),
               ),
             ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: ArDriveTypography.body.captionRegular(
-              color: colors.themeFgSubtle,
-            ),
-          ),
-        ],
-      ),
+      label: label,
+      onDark: onDark,
     );
   }
 
@@ -112,41 +257,28 @@ class FsEntryPreviewOnRequestPrompt extends StatelessWidget {
     super.key,
     required this.state,
     required this.onPreview,
+    this.onDark = false,
   });
 
   final FsEntryPreviewOnRequest state;
   final VoidCallback onPreview;
+  final bool onDark;
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
     final l10n = appLocalizationsOf(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // The sentence under it says the same thing, in words.
-          ExcludeSemantics(
-            child: ArDriveIcons.eyeOpen(size: 24, color: colors.themeFgSubtle),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            l10n.previewOnRequestNote(filesize(state.size)),
-            textAlign: TextAlign.center,
-            style: ArDriveTypography.body.captionRegular(
-              color: colors.themeFgDefault,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ArDriveButton(
-            style: ArDriveButtonStyle.secondary,
-            text: l10n.preview,
-            onPressed: onPreview,
-          ),
-        ],
+    return _PreviewStatusLayout(
+      leading:
+          _previewStatusIcon(context, ArDriveIcons.eyeOpen, onDark: onDark),
+      label: l10n.previewOnRequestNote(filesize(state.size)),
+      action: _previewStatusButton(
+        text: l10n.preview,
+        onPressed: onPreview,
+        onDark: onDark,
       ),
+      onDark: onDark,
+      isMessage: true,
     );
   }
 }
@@ -162,45 +294,32 @@ class FsEntryPreviewFailedMessage extends StatelessWidget {
     super.key,
     required this.state,
     required this.onRetry,
+    this.onDark = false,
   });
 
   final FsEntryPreviewFailed state;
   final VoidCallback onRetry;
+  final bool onDark;
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
     final l10n = appLocalizationsOf(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // The sentence under it says the same thing, in words.
-          ExcludeSemantics(
-            child: ArDriveIcons.triangle(size: 24, color: colors.themeFgSubtle),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            state.canRetry
-                ? l10n.previewDownloadFailed
-                : l10n.previewDecryptFailed,
-            textAlign: TextAlign.center,
-            style: ArDriveTypography.body.captionRegular(
-              color: colors.themeFgDefault,
-            ),
-          ),
-          if (state.canRetry) ...[
-            const SizedBox(height: 16),
-            ArDriveButton(
-              style: ArDriveButtonStyle.secondary,
+    return _PreviewStatusLayout(
+      leading:
+          _previewStatusIcon(context, ArDriveIcons.triangle, onDark: onDark),
+      label: state.canRetry
+          ? l10n.previewDownloadFailed
+          : l10n.previewDecryptFailed,
+      action: state.canRetry
+          ? _previewStatusButton(
               text: l10n.tryAgain,
               onPressed: onRetry,
-            ),
-          ],
-        ],
-      ),
+              onDark: onDark,
+            )
+          : null,
+      onDark: onDark,
+      isMessage: true,
     );
   }
 }
@@ -230,36 +349,50 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         );
 
       case const (FsEntryPreviewLoading):
-        return Center(
-          child: FsEntryPreviewProgress(
-            state: widget.state as FsEntryPreviewLoading,
-          ),
-        );
+        final loading = widget.state as FsEntryPreviewLoading;
+        return _inPlayer(
+              loading.media,
+              (onDark) =>
+                  FsEntryPreviewProgress(state: loading, onDark: onDark),
+            ) ??
+            Center(child: FsEntryPreviewProgress(state: loading));
 
       case const (FsEntryPreviewOnRequest):
-        return Center(
-          child: FsEntryPreviewOnRequestPrompt(
-            state: widget.state as FsEntryPreviewOnRequest,
-            onPreview: widget.previewCubit.loadOnRequest,
-          ),
-        );
+        final onRequest = widget.state as FsEntryPreviewOnRequest;
+        return _inPlayer(
+              onRequest.media,
+              (onDark) => FsEntryPreviewOnRequestPrompt(
+                state: onRequest,
+                onPreview: widget.previewCubit.loadOnRequest,
+                onDark: onDark,
+              ),
+            ) ??
+            Center(
+              child: FsEntryPreviewOnRequestPrompt(
+                state: onRequest,
+                onPreview: widget.previewCubit.loadOnRequest,
+              ),
+            );
 
       case const (FsEntryPreviewFailed):
-        return Center(
-          child: FsEntryPreviewFailedMessage(
-            state: widget.state as FsEntryPreviewFailed,
-            onRetry: widget.previewCubit.retry,
-          ),
-        );
+        final failed = widget.state as FsEntryPreviewFailed;
+        return _inPlayer(
+              failed.media,
+              (onDark) => FsEntryPreviewFailedMessage(
+                state: failed,
+                onRetry: widget.previewCubit.retry,
+                onDark: onDark,
+              ),
+            ) ??
+            Center(
+              child: FsEntryPreviewFailedMessage(
+                state: failed,
+                onRetry: widget.previewCubit.retry,
+              ),
+            );
 
       case const (FsEntryPreviewInitial):
-        return const Center(
-          child: SizedBox(
-            height: 24,
-            width: 24,
-            child: CircularProgressIndicator(),
-          ),
-        );
+        return const Center(child: _PreviewSpinner());
 
       case const (FsEntryPreviewImage):
         return ImagePreviewWidget(
@@ -317,6 +450,39 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         return const SizedBox.shrink();
     }
   }
+
+  /// A media preview that is not playing yet, drawn inside the player that
+  /// will play it, or null for anything that is not media.
+  ///
+  /// The player is the same widget, in the same place, as the one the playing
+  /// state builds - so when the file arrives Flutter keeps it, and it starts
+  /// playing where the download was. A video's stage is black, so what is on
+  /// it is drawn for a dark background; an audio player's follows the theme.
+  Widget? _inPlayer(
+    FsEntryPreviewMedia? media,
+    Widget Function(bool onDark) stage,
+  ) {
+    if (media == null) {
+      return null;
+    }
+
+    switch (media.kind) {
+      case FsEntryPreviewMediaKind.video:
+        return VideoPlayerWidget(
+          filename: media.filename,
+          videoUrl: null,
+          isSharePage: widget.isSharePage,
+          stage: stage(true),
+        );
+      case FsEntryPreviewMediaKind.audio:
+        return AudioPlayerWidget(
+          filename: media.filename,
+          audioUrl: null,
+          isSharePage: widget.isSharePage,
+          stage: stage(false),
+        );
+    }
+  }
 }
 
 String getTimeString(Duration duration) {
@@ -342,16 +508,30 @@ String getTimeString(Duration duration) {
   return timeString;
 }
 
+/// The inline video player - and, before it has a file, the frame the file
+/// will play in.
+///
+/// With no [videoUrl] it creates no player at all: it draws its stage and its
+/// controls, disabled, and puts [stage] on the stage - a private file's
+/// download, the prompt for a large one, a failure. When the URL arrives the
+/// same widget starts playing it, so nothing on screen moves except what is on
+/// the stage. Before this, a private video was a spinner on the panel's
+/// background that was swapped for a whole player at the end.
 class VideoPlayerWidget extends StatefulWidget {
-  final String videoUrl;
+  final String? videoUrl;
   final String filename;
   final bool isSharePage;
+
+  /// What the stage shows until there is a picture. Without one, a player
+  /// that is starting says so ([FsEntryPreviewStarting]).
+  final Widget? stage;
 
   const VideoPlayerWidget({
     super.key,
     required this.filename,
     required this.videoUrl,
     required this.isSharePage,
+    this.stage,
   });
 
   @override
@@ -361,7 +541,12 @@ class VideoPlayerWidget extends StatefulWidget {
 
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     with AutomaticKeepAliveClientMixin {
-  late VideoPlayerController _videoPlayerController;
+  VideoPlayerController? _controller;
+
+  /// What the player is doing, or - with no file yet - that it is doing
+  /// nothing, which every control below already treats as "not ready".
+  VideoPlayerValue get _value =>
+      _controller?.value ?? const VideoPlayerValue.uninitialized();
   bool _isVolumeSliderVisible = false;
   bool _wasPlaying = false;
   final _menuController = MenuController();
@@ -370,54 +555,106 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
 
   @override
   void initState() {
-    logger.d('Initializing video player: ${widget.videoUrl}');
     super.initState();
-    _videoPlayerController =
-        VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
-    _videoPlayerController.initialize().then((v) {
-      _videoPlayerController.addListener(_listener);
-      // force refresh
-      setState(() {});
-    }).catchError((err) {
-      final formatError =
-          err.toString().contains('MEDIA_ERR_SRC_NOT_SUPPORTED');
-      setState(() {
-        _errorMessage = formatError
-            ? appLocalizationsOf(context).fileTypeUnsupported
-            : appLocalizationsOf(context).couldNotLoadFile;
-      });
-    });
+    _start(widget.videoUrl);
+  }
+
+  @override
+  void didUpdateWidget(covariant VideoPlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // The file has arrived - or is a different file. A player that kept the
+    // old one played the wrong thing, silently.
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      _stop();
+      _errorMessage = null;
+      _start(widget.videoUrl);
+    }
   }
 
   @override
   void dispose() {
-    logger.d('Disposing video player');
-    _videoPlayerController.removeListener(_listener);
-    _videoPlayerController.dispose();
+    _stop();
     super.dispose();
   }
 
-  void _listener() {
-    setState(() {
-      if (_videoPlayerController.value.hasError) {
-        logger.e('>>> ${_videoPlayerController.value.errorDescription}');
-        setState(() {
-          final formatError = _videoPlayerController.value.errorDescription
-                  ?.contains('MEDIA_ERR_SRC_NOT_SUPPORTED') ??
-              false;
+  void _start(String? url) {
+    // Waiting for a file: the frame stands, with [VideoPlayerWidget.stage] in it.
+    if (url == null) {
+      return;
+    }
 
-          _errorMessage = formatError
-              ? appLocalizationsOf(context).fileTypeUnsupported
-              : appLocalizationsOf(context).couldNotLoadFile;
-        });
+    logger.d('Initializing video player: $url');
+
+    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    _controller = controller;
+
+    controller.initialize().then((_) {
+      // Replaced or gone while it was starting.
+      if (!mounted || _controller != controller) {
+        return;
+      }
+
+      controller.addListener(_listener);
+      setState(() {});
+    }).catchError((err) {
+      if (!mounted || _controller != controller) {
+        return;
+      }
+
+      setState(() => _errorMessage = _describeError(err.toString()));
+    });
+  }
+
+  void _stop() {
+    final controller = _controller;
+
+    if (controller == null) {
+      return;
+    }
+
+    logger.d('Disposing video player');
+    controller.removeListener(_listener);
+    controller.dispose();
+    _controller = null;
+  }
+
+  String _describeError(String? error) {
+    final formatError = error?.contains('MEDIA_ERR_SRC_NOT_SUPPORTED') ?? false;
+
+    return formatError
+        ? appLocalizationsOf(context).fileTypeUnsupported
+        : appLocalizationsOf(context).couldNotLoadFile;
+  }
+
+  void _listener() {
+    final value = _value;
+
+    if (value.hasError) {
+      logger.e('Video player error: ${value.errorDescription}');
+    }
+
+    // One rebuild per tick of the player, error or not. This used to call
+    // setState inside setState.
+    setState(() {
+      if (value.hasError) {
+        _errorMessage = _describeError(value.errorDescription);
       }
     });
   }
 
   void goFullScreen() {
-    bool wasPlaying = _videoPlayerController.value.isPlaying;
+    // Reachable only once the file is playing; a frame still waiting for one
+    // has nothing to show full screen.
+    final videoUrl = widget.videoUrl;
+
+    if (videoUrl == null) {
+      return;
+    }
+
+    bool wasPlaying = _value.isPlaying;
     if (wasPlaying) {
-      _videoPlayerController.pause().catchError((error) {
+      _controller?.pause().catchError((error) {
         logger.e('Error pausing video: $error');
       });
     }
@@ -431,16 +668,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
             body: Center(
               child: FullScreenVideoPlayerWidget(
                 filename: widget.filename,
-                videoUrl: widget.videoUrl,
-                initialPosition: _videoPlayerController.value.position,
+                videoUrl: videoUrl,
+                initialPosition: _value.position,
                 initialIsPlaying: wasPlaying,
-                initialVolume: _videoPlayerController.value.volume,
+                initialVolume: _value.volume,
                 onClose: (position, isPlaying, volume) async {
-                  _videoPlayerController.seekTo(position);
-                  _videoPlayerController.setVolume(volume);
+                  _controller?.seekTo(position);
+                  _controller?.setVolume(volume);
                   if (isPlaying) {
                     await _lock.synchronized(() async {
-                      await _videoPlayerController.play().catchError((e) {
+                      await _controller?.play().catchError((e) {
                         logger.e('Error playing video: $e');
                       });
                     });
@@ -458,7 +695,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
     super.build(context);
 
     final colors = ArDriveTheme.of(context).themeData.colors;
-    final videoValue = _videoPlayerController.value;
+    final videoValue = _value;
     final currentTime = getTimeString(videoValue.position);
     final duration = getTimeString(videoValue.duration);
 
@@ -474,10 +711,9 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
         key: const Key('video-player'),
         onVisibilityChanged: (VisibilityInfo info) async {
           if (mounted) {
-            if (info.visibleFraction < 0.5 &&
-                _videoPlayerController.value.isPlaying) {
+            if (info.visibleFraction < 0.5 && _value.isPlaying) {
               await _lock.synchronized(() async {
-                await _videoPlayerController.pause().catchError((error) {
+                await _controller?.pause().catchError((error) {
                   logger.e('Error pausing video: $error');
                 });
               });
@@ -506,17 +742,11 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                 .copyWith(fontSize: 13),
                           ))
                       : !videoValue.isInitialized
-                          ? const Center(
-                              child: SizedBox(
-                                height: 24,
-                                width: 24,
-                                child: CircularProgressIndicator(),
-                              ),
-                            )
+                          ? widget.stage ??
+                              const FsEntryPreviewStarting(onDark: true)
                           : AspectRatio(
-                              aspectRatio:
-                                  _videoPlayerController.value.aspectRatio,
-                              child: VideoPlayer(_videoPlayerController,
+                              aspectRatio: _value.aspectRatio,
+                              child: VideoPlayer(_controller!,
                                   key: const Key('videoPlayer')))),
             ],
           ))),
@@ -569,14 +799,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                           onChangeStart: !controlsEnabled
                               ? null
                               : (v) async {
-                                  if (_videoPlayerController.value.duration >
-                                      Duration.zero) {
-                                    _wasPlaying =
-                                        _videoPlayerController.value.isPlaying;
+                                  if (_value.duration > Duration.zero) {
+                                    _wasPlaying = _value.isPlaying;
                                     if (_wasPlaying) {
                                       await _lock.synchronized(() async {
-                                        await _videoPlayerController
-                                            .pause()
+                                        await _controller
+                                            ?.pause()
                                             .catchError((e) {
                                           logger.e('Error pausing video: $e');
                                         });
@@ -591,9 +819,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                   setState(() {
                                     final milliseconds = v.toInt();
 
-                                    if (_videoPlayerController.value.duration >
-                                        Duration.zero) {
-                                      _videoPlayerController.seekTo(
+                                    if (_value.duration > Duration.zero) {
+                                      _controller?.seekTo(
                                           Duration(milliseconds: milliseconds));
                                     }
                                   });
@@ -601,13 +828,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                           onChangeEnd: !controlsEnabled
                               ? null
                               : (v) async {
-                                  if (_videoPlayerController.value.duration >
-                                          Duration.zero &&
+                                  if (_value.duration > Duration.zero &&
                                       _wasPlaying) {
                                     await _lock.synchronized(() async {
-                                      await _videoPlayerController
-                                          .play()
-                                          .catchError((e) {
+                                      await _controller?.play().catchError((e) {
                                         logger.e('Error playing video: $e');
                                       });
                                     });
@@ -669,8 +893,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                       onPressed: () {
                                         _displaySpeedOptionsModal(context, (v) {
                                           setState(() {
-                                            _videoPlayerController
-                                                .setPlaybackSpeed(v);
+                                            _controller?.setPlaybackSpeed(v);
                                           });
                                         });
                                       },
@@ -696,10 +919,10 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                   }
                                 },
                                 desktop: (context) => VolumeSliderWidget(
-                                  volume: _videoPlayerController.value.volume,
+                                  volume: _value.volume,
                                   setVolume: (v) {
                                     setState(() {
-                                      _videoPlayerController.setVolume(v);
+                                      _controller?.setVolume(v);
                                     });
                                   },
                                   sliderVisible: _isVolumeSliderVisible,
@@ -715,9 +938,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                           desktop: (context) => IconButton.outlined(
                             onPressed: () {
                               setState(() {
-                                _videoPlayerController.seekTo(
-                                    _videoPlayerController.value.position -
-                                        const Duration(seconds: 10));
+                                _controller?.seekTo(_value.position -
+                                    const Duration(seconds: 10));
                               });
                             },
                             icon: const Icon(Icons.replay_10, size: 24),
@@ -728,7 +950,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                         onPressed: !controlsEnabled
                             ? null
                             : () async {
-                                final value = _videoPlayerController.value;
+                                final value = _value;
                                 if (!value.isInitialized ||
                                     value.isBuffering ||
                                     value.duration <= Duration.zero) {
@@ -736,22 +958,17 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                 }
                                 if (value.isPlaying) {
                                   await _lock.synchronized(() async {
-                                    await _videoPlayerController
-                                        .pause()
-                                        .catchError((e) {
+                                    await _controller?.pause().catchError((e) {
                                       logger.e('Error pausing video: $e');
                                     });
                                   });
                                 } else {
                                   if (value.position >= value.duration) {
-                                    _videoPlayerController
-                                        .seekTo(Duration.zero);
+                                    _controller?.seekTo(Duration.zero);
                                   }
 
                                   await _lock.synchronized(() async {
-                                    await _videoPlayerController
-                                        .play()
-                                        .catchError((e) {
+                                    await _controller?.play().catchError((e) {
                                       logger.e('Error playing video: $e');
                                     });
                                   });
@@ -763,7 +980,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                         shape: const CircleBorder(),
                         child: Padding(
                             padding: const EdgeInsets.all(8),
-                            child: (_videoPlayerController.value.isPlaying)
+                            child: (_value.isPlaying)
                                 ? Icon(
                                     Icons.pause_outlined,
                                     size: 32,
@@ -780,9 +997,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                           desktop: (context) => IconButton.outlined(
                             onPressed: () {
                               setState(() {
-                                _videoPlayerController.seekTo(
-                                    _videoPlayerController.value.position +
-                                        const Duration(seconds: 10));
+                                _controller?.seekTo(_value.position +
+                                    const Duration(seconds: 10));
                               });
                             },
                             icon: const Icon(Icons.forward_10, size: 24),
@@ -803,8 +1019,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                       tileColor: colors.themeBgSurface,
                                       onTap: () {
                                         setState(() {
-                                          _videoPlayerController
-                                              .setPlaybackSpeed(v);
+                                          _controller?.setPlaybackSpeed(v);
                                           _menuController.close();
                                         });
                                       },
@@ -846,8 +1061,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                     onPressed: () {
                                       _displaySpeedOptionsModal(context, (v) {
                                         setState(() {
-                                          _videoPlayerController
-                                              .setPlaybackSpeed(v);
+                                          _controller?.setPlaybackSpeed(v);
                                         });
                                       });
                                     },
@@ -1056,13 +1270,7 @@ class _FullScreenVideoPlayerWidgetState
                             .copyWith(fontSize: 13),
                       ))
                   : !videoValue.isInitialized
-                      ? const Center(
-                          child: SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(),
-                          ),
-                        )
+                      ? const FsEntryPreviewStarting(onDark: true)
                       : _videoPlayer ?? const SizedBox.shrink(),
             )),
             MouseRegion(
@@ -1637,13 +1845,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     final Widget content;
 
     if (isLoading) {
-      content = const Center(
-        child: SizedBox(
-          height: 24,
-          width: 24,
-          child: CircularProgressIndicator(),
-        ),
-      );
+      content = const Center(child: _PreviewSpinner());
     } else {
       if (imageBytes == null) {
         content = const UnpreviewableContent();
@@ -1968,16 +2170,26 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 }
 
+/// The inline audio player - and, before it has a file, the frame the file
+/// will play in. See [VideoPlayerWidget], which works the same way.
+///
+/// It used to show a bare spinner, with no frame at all, until the audio had
+/// loaded, and then the whole player appeared at once.
 class AudioPlayerWidget extends StatefulWidget {
-  final String audioUrl;
+  final String? audioUrl;
   final String filename;
   final bool isSharePage;
+
+  /// What the stage shows until there is audio. Without one, a player that is
+  /// starting says so ([FsEntryPreviewStarting]).
+  final Widget? stage;
 
   const AudioPlayerWidget({
     super.key,
     required this.filename,
     required this.audioUrl,
     required this.isSharePage,
+    this.stage,
   });
 
   @override
@@ -1985,54 +2197,107 @@ class AudioPlayerWidget extends StatefulWidget {
   _AudioPlayerWidgetState createState() => _AudioPlayerWidgetState();
 }
 
-enum LoadState { loading, loaded, failed }
+enum _AudioLoadState { loading, loaded, failed }
 
 class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
     with AutomaticKeepAliveClientMixin {
-  late AudioPlayer player;
-  LoadState _loadState = LoadState.loading;
+  /// Null until there is a file to play.
+  AudioPlayer? _player;
+  _AudioLoadState _loadState = _AudioLoadState.loading;
   bool _isVolumeSliderVisible = false;
   bool _wasPlaying = false;
   final _menuController = MenuController();
   StreamSubscription<Duration>? _positionListener;
   StreamSubscription<PlayerState>? _playStateListener;
 
+  bool get _controlsEnabled => _loadState == _AudioLoadState.loaded;
+
+  Duration get _position => _player?.position ?? Duration.zero;
+
+  Duration? get _duration => _player?.duration;
+
+  bool get _isPlaying => _player?.playing ?? false;
+
+  bool get _isCompleted =>
+      _player?.playerState.processingState == ProcessingState.completed;
+
   @override
   void initState() {
-    logger.d('Initializing audio player: ${widget.audioUrl}');
-    player = AudioPlayer();
-    player.setUrl(widget.audioUrl).then((value) {
-      setState(() {
-        _loadState = LoadState.loaded;
-        _positionListener = player.positionStream.listen((event) {
-          setState(() {});
-        });
-
-        _playStateListener = player.playerStateStream.listen((event) {
-          if (event.processingState == ProcessingState.completed) {
-            player.stop();
-          }
-          setState(() {});
-        });
-      });
-    }).catchError((e) {
-      logger.e('Error setting audio url: $e');
-      setState(() {
-        _loadState = LoadState.failed;
-      });
-    });
-
     super.initState();
+    _start(widget.audioUrl);
+  }
+
+  @override
+  void didUpdateWidget(covariant AudioPlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.audioUrl != widget.audioUrl) {
+      _stop();
+      _loadState = _AudioLoadState.loading;
+      _start(widget.audioUrl);
+    }
   }
 
   @override
   void dispose() {
+    _stop();
+    super.dispose();
+  }
+
+  void _start(String? url) {
+    // Waiting for a file: the frame stands, with [AudioPlayerWidget.stage] in it.
+    if (url == null) {
+      return;
+    }
+
+    logger.d('Initializing audio player: $url');
+
+    final player = AudioPlayer();
+    _player = player;
+
+    player.setUrl(url).then((_) {
+      // Replaced or gone while it was loading.
+      if (!mounted || _player != player) {
+        return;
+      }
+
+      _positionListener = player.positionStream.listen((_) {
+        setState(() {});
+      });
+      _playStateListener = player.playerStateStream.listen((event) {
+        if (event.processingState == ProcessingState.completed) {
+          player.stop();
+        }
+        setState(() {});
+      });
+
+      setState(() => _loadState = _AudioLoadState.loaded);
+    }).catchError((e) {
+      logger.e('Error setting audio url: $e');
+
+      if (!mounted || _player != player) {
+        return;
+      }
+
+      setState(() => _loadState = _AudioLoadState.failed);
+    });
+  }
+
+  void _stop() {
+    final player = _player;
+
+    if (player == null) {
+      return;
+    }
+
     logger.d('Disposing audio player');
-    player.stop();
     _playStateListener?.cancel();
     _positionListener?.cancel();
+    _playStateListener = null;
+    _positionListener = null;
+    player.stop();
     player.dispose();
-    super.dispose();
+    _player = null;
   }
 
   @override
@@ -2040,9 +2305,9 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
     super.build(context);
     var colors = ArDriveTheme.of(context).themeData.colors;
 
-    var currentTime = getTimeString(player.position);
-    var duration =
-        player.duration != null ? getTimeString(player.duration!) : '0:00';
+    final currentTime = getTimeString(_position);
+    final duration = _duration;
+    final durationText = duration != null ? getTimeString(duration) : '0:00';
 
     final slider = SliderTheme(
         data: SliderThemeData(
@@ -2056,37 +2321,37 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
               enabledThumbRadius: 8,
             )),
         child: Slider(
-            value: _loadState == LoadState.failed
+            value: !_controlsEnabled
                 ? 0
                 : min(
-                    player.position.inMilliseconds.toDouble(),
-                    player.duration?.inMilliseconds.toDouble() ?? 0,
+                    _position.inMilliseconds.toDouble(),
+                    duration?.inMilliseconds.toDouble() ?? 0,
                   ),
             min: 0.0,
-            max: player.duration?.inMilliseconds.toDouble() ?? 0,
-            onChangeStart: _loadState == LoadState.failed
+            max: duration?.inMilliseconds.toDouble() ?? 0,
+            onChangeStart: !_controlsEnabled
                 ? null
                 : (v) {
                     setState(() {
-                      _wasPlaying = player.playing;
+                      _wasPlaying = _isPlaying;
                       if (_wasPlaying) {
-                        player.pause();
+                        _player?.pause();
                       }
                     });
                   },
-            onChanged: _loadState == LoadState.failed
+            onChanged: !_controlsEnabled
                 ? null
                 : (v) {
                     setState(() {
-                      player.seek(Duration(milliseconds: v.toInt()));
+                      _player?.seek(Duration(milliseconds: v.toInt()));
                     });
                   },
-            onChangeEnd: _loadState == LoadState.failed
+            onChangeEnd: !_controlsEnabled
                 ? null
                 : (v) {
                     setState(() {
                       if (_wasPlaying) {
-                        player.play();
+                        _player?.play();
                       }
                     });
                   }));
@@ -2097,193 +2362,193 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
           if (mounted) {
             setState(
               () {
-                if (player.playing && info.visibleFraction < 0.5) {
-                  player.pause();
+                if (_isPlaying && info.visibleFraction < 0.5) {
+                  _player?.pause();
                 }
               },
             );
           }
         },
-        child: _loadState == LoadState.loading
-            ? const Center(
-                child: SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(),
+        child: Column(children: [
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              alignment: Alignment.center,
+              children: [
+                Container(color: colors.themeBgSubtle),
+                Align(
+                  alignment: Alignment.center,
+                  child: _buildStage(colors),
                 ),
-              )
-            : Column(children: [
-                Expanded(
-                  child: Stack(
-                    fit: StackFit.expand,
-                    alignment: Alignment.center,
-                    children: [
-                      Container(color: colors.themeBgSubtle),
-                      Align(
-                          alignment: Alignment.center,
-                          child: FittedBox(
-                            fit: BoxFit.contain,
-                            child: _loadState == LoadState.failed
-                                ? const UnpreviewableContent()
-                                : ArDriveIcons.music(
-                                    size: 100, color: colors.themeFgMuted),
-                          )),
-                    ],
-                  ),
+              ],
+            ),
+          ),
+          Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              child: Column(children: [
+                Text(widget.filename,
+                    textAlign: TextAlign.center,
+                    style: ArDriveTypography.body
+                        .smallBold700(color: colors.themeFgDefault)),
+                if (!widget.isSharePage) ...[
+                  const SizedBox(height: 8),
+                  slider,
+                ],
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(currentTime),
+                    const SizedBox(width: 8),
+                    widget.isSharePage
+                        ? Expanded(child: slider)
+                        : const Expanded(child: SizedBox.shrink()),
+                    const SizedBox(width: 8),
+                    Text(durationText)
+                  ],
                 ),
-                Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-                    child: Column(children: [
-                      Text(widget.filename,
-                          textAlign: TextAlign.center,
-                          style: ArDriveTypography.body
-                              .smallBold700(color: colors.themeFgDefault)),
-                      if (!widget.isSharePage) ...[
-                        const SizedBox(height: 8),
-                        slider,
-                      ],
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Text(currentTime),
-                          const SizedBox(width: 8),
-                          widget.isSharePage
-                              ? Expanded(child: slider)
-                              : const Expanded(child: SizedBox.shrink()),
-                          const SizedBox(width: 8),
-                          Text(duration)
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      MouseRegion(
-                          onExit: (event) {
-                            setState(() {
-                              _isVolumeSliderVisible = false;
-                            });
-                          },
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                  child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: ScreenTypeLayout.builder(
-                                        mobile: (context) =>
-                                            const SizedBox.shrink(),
-                                        desktop: (context) =>
-                                            VolumeSliderWidget(
-                                          volume: player.volume,
-                                          setVolume: (v) {
-                                            setState(() {
-                                              player.setVolume(v);
-                                            });
-                                          },
-                                          sliderVisible: _isVolumeSliderVisible,
-                                          setSliderVisible: (v) {
-                                            setState(() {
-                                              _isVolumeSliderVisible = v;
-                                            });
-                                          },
-                                        ),
-                                      ))),
-                              MaterialButton(
-                                onPressed: _loadState == LoadState.failed
-                                    ? null
-                                    : () {
-                                        setState(() {
-                                          if (player.playerState
-                                                      .processingState ==
-                                                  ProcessingState.completed ||
-                                              !player.playing) {
-                                            if (player.position ==
-                                                player.duration) {
-                                              player.stop();
-                                              player.seek(Duration.zero);
-                                            }
-                                            player.play();
-                                          } else {
-                                            player.pause();
-                                          }
-                                        });
-                                      },
-                                color: colors.themeAccentBrand,
-                                disabledColor: colors.themeAccentDisabled,
-                                shape: const CircleBorder(),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8),
-                                  child: (player.playerState.processingState ==
-                                              ProcessingState.completed ||
-                                          !player.playing)
-                                      ? Icon(
-                                          Icons.play_arrow_outlined,
-                                          size: 32,
-                                          color: colors.themeFgOnAccent,
-                                        )
-                                      : Icon(
-                                          Icons.pause_outlined,
-                                          size: 32,
-                                          color: colors.themeFgOnAccent,
-                                        ),
-                                ),
-                              ),
-                              Expanded(
-                                  child: Align(
-                                      alignment: Alignment.centerRight,
-                                      child: ScreenTypeLayout.builder(
-                                          desktop: (context) => MenuAnchor(
-                                                menuChildren: [
-                                                  ..._speedOptions.map((v) {
-                                                    return ListTile(
-                                                      tileColor:
-                                                          colors.themeBgSurface,
-                                                      onTap: () {
-                                                        setState(() {
-                                                          player.setSpeed(v);
-                                                          _menuController
-                                                              .close();
-                                                        });
-                                                      },
-                                                      title: Text(
-                                                        v == 1.0
-                                                            ? appLocalizationsOf(
-                                                                    context)
-                                                                .normal
-                                                            : '$v',
-                                                        style: ArDriveTypography
-                                                            .body
-                                                            .buttonNormalBold(
-                                                                color: colors
-                                                                    .themeFgDefault),
-                                                      ),
-                                                    );
-                                                  })
-                                                ],
-                                                controller: _menuController,
-                                                child: IconButton(
-                                                    onPressed: () {
-                                                      _menuController.open();
-                                                    },
-                                                    icon: const Icon(
-                                                        Icons.settings_outlined,
-                                                        size: 24)),
-                                              ),
-                                          mobile: (context) => IconButton(
-                                              onPressed: () {
-                                                _displaySpeedOptionsModal(
-                                                    context, (v) {
+                const SizedBox(height: 8),
+                MouseRegion(
+                    onExit: (event) {
+                      setState(() {
+                        _isVolumeSliderVisible = false;
+                      });
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                            child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: ScreenTypeLayout.builder(
+                                  mobile: (context) => const SizedBox.shrink(),
+                                  desktop: (context) => VolumeSliderWidget(
+                                    volume: _player?.volume ?? 1,
+                                    setVolume: (v) {
+                                      setState(() {
+                                        _player?.setVolume(v);
+                                      });
+                                    },
+                                    sliderVisible: _isVolumeSliderVisible,
+                                    setSliderVisible: (v) {
+                                      setState(() {
+                                        _isVolumeSliderVisible = v;
+                                      });
+                                    },
+                                  ),
+                                ))),
+                        MaterialButton(
+                          onPressed: !_controlsEnabled
+                              ? null
+                              : () {
+                                  setState(() {
+                                    if (_isCompleted || !_isPlaying) {
+                                      if (_position == _duration) {
+                                        _player?.stop();
+                                        _player?.seek(Duration.zero);
+                                      }
+                                      _player?.play();
+                                    } else {
+                                      _player?.pause();
+                                    }
+                                  });
+                                },
+                          color: colors.themeAccentBrand,
+                          disabledColor: colors.themeAccentDisabled,
+                          shape: const CircleBorder(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: (_isCompleted || !_isPlaying)
+                                ? Icon(
+                                    Icons.play_arrow_outlined,
+                                    size: 32,
+                                    color: colors.themeFgOnAccent,
+                                  )
+                                : Icon(
+                                    Icons.pause_outlined,
+                                    size: 32,
+                                    color: colors.themeFgOnAccent,
+                                  ),
+                          ),
+                        ),
+                        Expanded(
+                            child: Align(
+                                alignment: Alignment.centerRight,
+                                child: ScreenTypeLayout.builder(
+                                    desktop: (context) => MenuAnchor(
+                                          menuChildren: [
+                                            ..._speedOptions.map((v) {
+                                              return ListTile(
+                                                tileColor:
+                                                    colors.themeBgSurface,
+                                                onTap: () {
                                                   setState(() {
-                                                    player.setSpeed(v);
+                                                    _player?.setSpeed(v);
+                                                    _menuController.close();
                                                   });
-                                                });
+                                                },
+                                                title: Text(
+                                                  v == 1.0
+                                                      ? appLocalizationsOf(
+                                                              context)
+                                                          .normal
+                                                      : '$v',
+                                                  style: ArDriveTypography.body
+                                                      .buttonNormalBold(
+                                                          color: colors
+                                                              .themeFgDefault),
+                                                ),
+                                              );
+                                            })
+                                          ],
+                                          controller: _menuController,
+                                          child: IconButton(
+                                              onPressed: () {
+                                                _menuController.open();
                                               },
                                               icon: const Icon(
                                                   Icons.settings_outlined,
-                                                  size: 24))))),
-                            ],
-                          ))
-                    ]))
-              ]));
+                                                  size: 24)),
+                                        ),
+                                    mobile: (context) => IconButton(
+                                        onPressed: () {
+                                          _displaySpeedOptionsModal(context,
+                                              (v) {
+                                            setState(() {
+                                              _player?.setSpeed(v);
+                                            });
+                                          });
+                                        },
+                                        icon: const Icon(
+                                            Icons.settings_outlined,
+                                            size: 24))))),
+                      ],
+                    ))
+              ]))
+        ]));
+  }
+
+  /// The stage: what the player is waiting for, that it is starting, that it
+  /// could not play the file, or - once it can - the music glyph.
+  Widget _buildStage(ArDriveColors colors) {
+    if (_player == null) {
+      return widget.stage ?? const FsEntryPreviewStarting();
+    }
+
+    switch (_loadState) {
+      case _AudioLoadState.loading:
+        return const FsEntryPreviewStarting();
+      case _AudioLoadState.failed:
+        return const FittedBox(
+          fit: BoxFit.contain,
+          child: UnpreviewableContent(),
+        );
+      case _AudioLoadState.loaded:
+        return FittedBox(
+          fit: BoxFit.contain,
+          child: ArDriveIcons.music(size: 100, color: colors.themeFgMuted),
+        );
+    }
   }
 
   @override

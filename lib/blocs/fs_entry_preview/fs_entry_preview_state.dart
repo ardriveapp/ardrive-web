@@ -39,6 +39,26 @@ class FsEntryPreviewSuccess extends FsEntryPreviewState {
   List<Object> get props => [previewUrl];
 }
 
+/// Which player a media preview will play in.
+enum FsEntryPreviewMediaKind { video, audio }
+
+/// What a not-yet-playing media preview needs to draw its player's frame: the
+/// kind of player, and the file's name under it.
+///
+/// Carried by [FsEntryPreviewLoading], [FsEntryPreviewOnRequest] and
+/// [FsEntryPreviewFailed] when the preview is media, so those states are drawn
+/// inside the player that will play the file instead of on the panel behind
+/// it - and the player's frame stands from the first moment to the last.
+class FsEntryPreviewMedia extends Equatable {
+  const FsEntryPreviewMedia({required this.kind, required this.filename});
+
+  final FsEntryPreviewMediaKind kind;
+  final String filename;
+
+  @override
+  List<Object> get props => [kind, filename];
+}
+
 /// What a buffered preview is doing while the reader waits.
 enum FsEntryPreviewLoadPhase {
   /// The bytes are on their way, and [FsEntryPreviewLoading.received] counts
@@ -61,7 +81,11 @@ class FsEntryPreviewLoading extends FsEntryPreviewSuccess {
     this.phase = FsEntryPreviewLoadPhase.downloading,
     this.received = 0,
     this.total,
+    this.media,
   }) : super(previewUrl: '');
+
+  /// Set when the file will play in a media player. See [FsEntryPreviewMedia].
+  final FsEntryPreviewMedia? media;
 
   final FsEntryPreviewLoadPhase phase;
 
@@ -86,7 +110,12 @@ class FsEntryPreviewLoading extends FsEntryPreviewSuccess {
   }
 
   @override
-  List<Object> get props => [phase, received, total ?? -1];
+  List<Object> get props => [
+        phase,
+        received,
+        total ?? -1,
+        if (media != null) media!,
+      ];
 }
 
 /// A preview big enough that it waits to be asked for.
@@ -98,13 +127,16 @@ class FsEntryPreviewLoading extends FsEntryPreviewSuccess {
 /// do. Like [FsEntryPreviewFailed], deliberately not an
 /// [FsEntryPreviewUnavailable]: the preview is offered, not withheld.
 class FsEntryPreviewOnRequest extends FsEntryPreviewState {
-  const FsEntryPreviewOnRequest({required this.size});
+  const FsEntryPreviewOnRequest({required this.size, this.media});
 
   /// How much pressing Preview will download.
   final int size;
 
+  /// Set when the file will play in a media player. See [FsEntryPreviewMedia].
+  final FsEntryPreviewMedia? media;
+
   @override
-  List<Object> get props => [size];
+  List<Object> get props => [size, if (media != null) media!];
 }
 
 /// Why a preview that was attempted did not arrive.
@@ -128,14 +160,18 @@ enum FsEntryPreviewFailure {
 /// place on screen, says what went wrong, and offers Retry when asking again
 /// could help.
 class FsEntryPreviewFailed extends FsEntryPreviewState {
-  const FsEntryPreviewFailed(this.reason);
+  const FsEntryPreviewFailed(this.reason, {this.media});
 
   final FsEntryPreviewFailure reason;
+
+  /// Set when the file would have played in a media player. See
+  /// [FsEntryPreviewMedia].
+  final FsEntryPreviewMedia? media;
 
   bool get canRetry => reason == FsEntryPreviewFailure.download;
 
   @override
-  List<Object> get props => [reason];
+  List<Object> get props => [reason, if (media != null) media!];
 }
 
 class FsEntryPreviewImage extends FsEntryPreviewSuccess {
@@ -223,7 +259,8 @@ class FsEntryPreviewText extends FsEntryPreviewSuccess {
   });
 
   @override
-  List<Object> get props => [previewUrl, filename, content, contentType, fileItem];
+  List<Object> get props =>
+      [previewUrl, filename, content, contentType, fileItem];
 }
 
 class FsEntryPreviewEmail extends FsEntryPreviewSuccess {

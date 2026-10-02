@@ -160,6 +160,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String kind,
     String dataTxId, {
     FsEntryPreviewFailure? failure,
+    FsEntryPreviewMedia? media,
   }) {
     if (!_isCurrent(kind, dataTxId)) {
       return;
@@ -169,7 +170,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     emit(
       failure == null
           ? FsEntryPreviewUnavailable()
-          : FsEntryPreviewFailed(failure),
+          : FsEntryPreviewFailed(failure, media: media),
     );
   }
 
@@ -186,7 +187,11 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   /// A restart - the count going back to zero because a fallback gateway took
   /// over - and the last chunk are always reported, whatever the clock says,
   /// so the bar never lags behind a step that matters.
-  FetchProgress _reportProgress(String kind, String dataTxId) {
+  FetchProgress _reportProgress(
+    String kind,
+    String dataTxId, {
+    FsEntryPreviewMedia? media,
+  }) {
     final sinceLast = Stopwatch()..start();
     var hasReported = false;
 
@@ -209,15 +214,24 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
       hasReported = true;
       sinceLast.reset();
-      emit(FsEntryPreviewLoading(received: received, total: total));
+      emit(FsEntryPreviewLoading(
+        received: received,
+        total: total,
+        media: media,
+      ));
     };
   }
 
   /// Says the bytes are in and being decrypted.
-  void _reportDecrypting(String kind, String dataTxId) {
+  void _reportDecrypting(
+    String kind,
+    String dataTxId, {
+    FsEntryPreviewMedia? media,
+  }) {
     if (_isCurrent(kind, dataTxId)) {
-      emit(const FsEntryPreviewLoading(
+      emit(FsEntryPreviewLoading(
         phase: FsEntryPreviewLoadPhase.decrypting,
+        media: media,
       ));
     }
   }
@@ -245,6 +259,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
 
   String? _onRequestTxId;
   Future<void> Function()? _onRequestLoad;
+  FsEntryPreviewMedia? _onRequestMedia;
 
   /// Whether a preview of [size] bytes must wait to be asked for. When it
   /// must, says so with [FsEntryPreviewOnRequest] and keeps [load] for
@@ -254,17 +269,19 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
   bool _waitForRequest(
     String dataTxId,
     int? size,
-    Future<void> Function() load,
-  ) {
+    Future<void> Function() load, {
+    FsEntryPreviewMedia? media,
+  }) {
     if (!_mustWaitForRequest(dataTxId, size)) {
       return false;
     }
 
     _onRequestTxId = dataTxId;
     _onRequestLoad = load;
+    _onRequestMedia = media;
 
     if (!isClosed) {
-      emit(FsEntryPreviewOnRequest(size: size!));
+      emit(FsEntryPreviewOnRequest(size: size!, media: media));
     }
 
     return true;
@@ -289,12 +306,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     // on its way, finds nothing to start. Not every path claims its load - the
     // share page's image does not - so this is the only thing that stops two
     // presses becoming two downloads of the same file.
+    final media = _onRequestMedia;
     _onRequestTxId = null;
     _onRequestLoad = null;
+    _onRequestMedia = null;
     _requested.add(txId);
 
     // And take the prompt down at once, so there is nothing to press twice.
-    emit(const FsEntryPreviewLoading());
+    emit(FsEntryPreviewLoading(media: media));
 
     await load();
   }
@@ -1156,6 +1175,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         previewUrl,
         contentType,
       ),
+      media: FsEntryPreviewMedia(
+        kind: FsEntryPreviewMediaKind.audio,
+        filename: selectedItem.name,
+      ),
     );
 
     // Taken over between the URL and here: the newer preview has the screen.
@@ -1190,6 +1213,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         previewUrl,
         contentType,
       ),
+      media: FsEntryPreviewMedia(
+        kind: FsEntryPreviewMediaKind.video,
+        filename: selectedItem.name,
+      ),
     );
 
     // Taken over between the URL and here: the newer preview has the screen.
@@ -1218,6 +1245,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String previewUrl,
     String contentType, {
     required Future<void> Function() reload,
+    required FsEntryPreviewMedia media,
   }) async {
     final isPinFile = selectedItem.pinnedDataOwnerAddress != null;
     const kind = 'media';
@@ -1240,7 +1268,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
 
     // Public media above streams and is never gated; this downloads it whole.
-    if (_waitForRequest(selectedItem.dataTxId, selectedItem.size, reload)) {
+    if (_waitForRequest(
+      selectedItem.dataTxId,
+      selectedItem.size,
+      reload,
+      media: media,
+    )) {
       return null;
     }
 
@@ -1266,7 +1299,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return null;
     }
 
-    emit(const FsEntryPreviewLoading());
+    emit(FsEntryPreviewLoading(media: media));
 
     // Deliberately not routed through the preview vault: that cache is
     // unbounded, and media is the one preview type that can be a hundred
@@ -1276,7 +1309,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     try {
       dataBytes = await _fetchPreviewBytes(
         txId,
-        onProgress: _reportProgress(kind, txId),
+        onProgress: _reportProgress(kind, txId, media: media),
         cancelWhen: _claimedLoadCancelled,
       );
     } catch (e) {
@@ -1285,7 +1318,12 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
 
     if (dataBytes == null) {
-      _failLoad(kind, txId, failure: FsEntryPreviewFailure.download);
+      _failLoad(
+        kind,
+        txId,
+        failure: FsEntryPreviewFailure.download,
+        media: media,
+      );
       return null;
     }
 
@@ -1295,13 +1333,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return null;
     }
 
-    _reportDecrypting(kind, txId);
+    _reportDecrypting(kind, txId, media: media);
 
     final decrypted = await _decryptForPreview(dataBytes, fileKey, txId);
     final decryptedBytes = decrypted.bytes;
 
     if (decryptedBytes == null) {
-      _failLoad(kind, txId, failure: decrypted.failure);
+      _failLoad(kind, txId, failure: decrypted.failure, media: media);
       return null;
     }
 

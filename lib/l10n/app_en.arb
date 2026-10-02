@@ -1201,6 +1201,10 @@
       }
     }
   },
+  "previewLoading": "Loading...",
+  "@previewLoading": {
+    "description": "In a media player that has its file and is getting ready to play it"
+  },
   "previewDecrypting": "Decrypting...",
   "@previewDecrypting": {
     "description": "Under a private file's preview once its bytes have arrived and are being decrypted"

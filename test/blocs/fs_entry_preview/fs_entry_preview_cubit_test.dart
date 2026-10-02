@@ -122,6 +122,17 @@ const fileId = 'file-id';
 const dataTxId = 'data-tx-id';
 const gatewayUrl = 'https://gateway.example';
 
+/// What the media paths attach to their not-yet-playing states, so those are
+/// drawn inside the player that will play the file.
+const clipMedia = FsEntryPreviewMedia(
+  kind: FsEntryPreviewMediaKind.video,
+  filename: 'clip.mp4',
+);
+const memoMedia = FsEntryPreviewMedia(
+  kind: FsEntryPreviewMediaKind.audio,
+  filename: 'memo.mp3',
+);
+
 const previewMaxFileSize = 1024 * 1024 * 100;
 const overLimitFileSize = previewMaxFileSize + 1;
 const underLimitFileSize = 1024 * 1024;
@@ -464,10 +475,11 @@ void main() {
       },
       wait: const Duration(milliseconds: 100),
       expect: () => [
-        const FsEntryPreviewLoading(),
+        const FsEntryPreviewLoading(media: clipMedia),
         // The bytes are in; decryption is its own step, said as one.
         const FsEntryPreviewLoading(
           phase: FsEntryPreviewLoadPhase.decrypting,
+          media: clipMedia,
         ),
         const FsEntryPreviewVideo(
           previewUrl: 'blob:fake/0-video/mp4',
@@ -510,10 +522,11 @@ void main() {
       },
       wait: const Duration(milliseconds: 100),
       expect: () => [
-        const FsEntryPreviewLoading(),
+        const FsEntryPreviewLoading(media: memoMedia),
         // The bytes are in; decryption is its own step, said as one.
         const FsEntryPreviewLoading(
           phase: FsEntryPreviewLoadPhase.decrypting,
+          media: memoMedia,
         ),
         const FsEntryPreviewAudio(
           previewUrl: 'blob:fake/0-audio/mpeg',
@@ -802,10 +815,11 @@ void main() {
       },
       wait: const Duration(milliseconds: 100),
       expect: () => [
-        const FsEntryPreviewLoading(),
+        const FsEntryPreviewLoading(media: clipMedia),
         // The bytes are in; decryption is its own step, said as one.
         const FsEntryPreviewLoading(
           phase: FsEntryPreviewLoadPhase.decrypting,
+          media: clipMedia,
         ),
         const FsEntryPreviewVideo(
           previewUrl: 'blob:fake/0-video/mp4',
@@ -877,10 +891,11 @@ void main() {
       },
       wait: const Duration(milliseconds: 100),
       expect: () => [
-        const FsEntryPreviewLoading(),
+        const FsEntryPreviewLoading(media: clipMedia),
         // The bytes are in; decryption is its own step, said as one.
         const FsEntryPreviewLoading(
           phase: FsEntryPreviewLoadPhase.decrypting,
+          media: clipMedia,
         ),
         const FsEntryPreviewVideo(
           previewUrl: 'blob:fake/0-video/mp4',
@@ -1270,7 +1285,8 @@ void main() {
       await settle();
       expect(
         cubit.state,
-        const FsEntryPreviewFailed(FsEntryPreviewFailure.download),
+        const FsEntryPreviewFailed(FsEntryPreviewFailure.download,
+            media: clipMedia),
       );
       // Reading a count through `verify` resets it, so the next [fetches]
       // counts only what happens after this line.
@@ -1652,7 +1668,8 @@ void main() {
 
       expect(
         cubit.state,
-        const FsEntryPreviewFailed(FsEntryPreviewFailure.download),
+        const FsEntryPreviewFailed(FsEntryPreviewFailure.download,
+            media: clipMedia),
       );
       expect(cubit.state, isNot(isA<FsEntryPreviewUnavailable>()),
           reason: 'unavailable hides the preview; a failure must not');
@@ -1678,7 +1695,8 @@ void main() {
 
       expect(
         cubit.state,
-        const FsEntryPreviewFailed(FsEntryPreviewFailure.decrypt),
+        const FsEntryPreviewFailed(FsEntryPreviewFailure.decrypt,
+            media: clipMedia),
       );
       expect((cubit.state as FsEntryPreviewFailed).canRetry, isFalse);
       fetches();
@@ -1691,7 +1709,8 @@ void main() {
           cancelWhen: any(named: 'cancelWhen')));
       expect(
         cubit.state,
-        const FsEntryPreviewFailed(FsEntryPreviewFailure.decrypt),
+        const FsEntryPreviewFailed(FsEntryPreviewFailure.decrypt,
+            media: clipMedia),
       );
 
       await cubit.close();
@@ -1709,7 +1728,8 @@ void main() {
 
       expect(
         cubit.state,
-        const FsEntryPreviewFailed(FsEntryPreviewFailure.download),
+        const FsEntryPreviewFailed(FsEntryPreviewFailure.download,
+            media: clipMedia),
       );
       verifyNever(
         () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
@@ -1963,7 +1983,8 @@ void main() {
       );
       await Future<void>.delayed(const Duration(milliseconds: 30));
 
-      expect(cubit.state, const FsEntryPreviewOnRequest(size: large));
+      expect(cubit.state,
+          const FsEntryPreviewOnRequest(size: large, media: clipMedia));
       expect(cubit.state, isNot(isA<FsEntryPreviewUnavailable>()),
           reason: 'offered, not withheld: the Preview tab must stay');
       verifyNever(() => mockGatewayFallback.fetchData(any(), any(),
@@ -1976,6 +1997,40 @@ void main() {
       expect(fetches(), 1);
       expect(cubit.state, isA<FsEntryPreviewVideo>());
 
+      await cubit.close();
+    });
+
+    test('pressing Preview on a video keeps it in its player', () async {
+      stubPrivateFetchAndDecrypt();
+      final slow = Completer<http.Response>();
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'),
+          cancelWhen: any(named: 'cancelWhen'))).thenAnswer((_) => slow.future);
+
+      final cubit = buildSharedFileCubit(
+        item: createVideoItem(size: large),
+        fileKey: SecretKey([1, 2, 3]),
+        objectUrls: FakePreviewObjectUrls(),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      final states = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(states.add);
+
+      unawaited(cubit.loadOnRequest());
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+
+      // The prompt was drawn in the video player; everything that replaces it
+      // must be too, or the frame jumps out of the player for a frame and
+      // back. Every state, not just the last: the jump is a single frame.
+      expect(states, isNotEmpty);
+      expect(
+        states.whereType<FsEntryPreviewLoading>().map((s) => s.media),
+        everyElement(clipMedia),
+      );
+      await sub.cancel();
+
+      slow.complete(http.Response.bytes([1, 2, 3, 4], 200));
+      await Future<void>.delayed(const Duration(milliseconds: 30));
       await cubit.close();
     });
 
@@ -2139,7 +2194,8 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 30));
       rows.add(videoRow);
       await Future<void>.delayed(const Duration(milliseconds: 30));
-      expect(cubit.state, const FsEntryPreviewOnRequest(size: large));
+      expect(cubit.state,
+          const FsEntryPreviewOnRequest(size: large, media: clipMedia));
 
       await cubit.loadOnRequest();
       await Future<void>.delayed(const Duration(milliseconds: 30));

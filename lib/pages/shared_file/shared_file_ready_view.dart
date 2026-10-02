@@ -719,11 +719,19 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// here rather than by [FsEntryPreviewWidget].
   bool _previewFillsItsBox(FsEntryPreviewState previewState) {
     // A sentence in a box, like the unavailable states: a failure with a
-    // Retry under it is not something that needs 360px to be read.
-    if (previewState is FsEntryPreviewUnavailable ||
-        previewState is FsEntryPreviewFailed ||
-        previewState is FsEntryPreviewOnRequest) {
+    // Retry under it is not something that needs 360px to be read - unless it
+    // is media, which is drawn inside its player's frame, and that frame wants
+    // the room it will play in.
+    if (previewState is FsEntryPreviewUnavailable) {
       return false;
+    }
+
+    if (previewState is FsEntryPreviewFailed) {
+      return previewState.media != null;
+    }
+
+    if (previewState is FsEntryPreviewOnRequest) {
+      return previewState.media != null;
     }
 
     if (previewState is FsEntryPreviewPdf) {
