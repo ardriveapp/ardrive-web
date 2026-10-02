@@ -12,6 +12,14 @@ import 'package:arweave/arweave.dart' as arweave_pkg;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
 
+/// How much of one gateway's answer has arrived: [received] bytes of [total],
+/// or of an unknown total when the gateway did not declare one.
+///
+/// Called with `received == 0` when an attempt starts, which includes a
+/// fallback gateway taking over from one that failed: the count starts again,
+/// because the bytes the failed gateway sent are thrown away.
+typedef FetchProgress = void Function(int received, int? total);
+
 /// Provides data gateway fallback resilience.
 ///
 /// Two distinct read paths live here:
@@ -161,7 +169,13 @@ class DataGatewayFallback {
   /// Used for metadata fetches during sync (called hundreds of times).
   ///
   /// If ALL gateways return 404, throws [TransactionNotFound].
-  Future<Response> fetchData(String txId, Arweave primaryClient) async {
+  ///
+  /// [onProgress], when given, hears the body arrive - see [FetchProgress].
+  Future<Response> fetchData(
+    String txId,
+    Arweave primaryClient, {
+    FetchProgress? onProgress,
+  }) async {
     // One client for the whole waterfall, so the backstop below has something
     // to hang up with. `Future.timeout` does not cancel what it times out: the
     // read would otherwise carry on buffering - up to the 100 MiB preview cap -
@@ -171,7 +185,12 @@ class DataGatewayFallback {
     final httpClient = _clientFactory();
 
     try {
-      return await _serialFetch(txId, primaryClient, httpClient: httpClient)
+      return await _serialFetch(
+        txId,
+        primaryClient,
+        httpClient: httpClient,
+        onProgress: onProgress,
+      )
           .timeout(_dataTotalTimeout, onTimeout: () {
         logger.w('Total fetch timeout exceeded for tx $txId');
         httpClient.close();
@@ -288,6 +307,7 @@ class DataGatewayFallback {
     String txId,
     Arweave primaryClient, {
     required Client httpClient,
+    FetchProgress? onProgress,
   }) async {
     final clients = await _buildClientList(primaryClient);
     var all404 = true;
@@ -316,7 +336,12 @@ class DataGatewayFallback {
         var retryable = false;
 
         try {
-          final response = await _tryGatewayStreamed(client, txId, httpClient);
+          final response = await _tryGatewayStreamed(
+            client,
+            txId,
+            httpClient,
+            onProgress: onProgress,
+          );
           if (!isPrimary) {
             logger.i('Fallback gateway $gatewayName succeeded for tx $txId');
           }
@@ -663,6 +688,7 @@ class DataGatewayFallback {
     String txId,
     Client httpClient, {
     Duration? requestTimeout,
+    FetchProgress? onProgress,
   }) async {
     final budget = requestTimeout ?? _dataRequestTimeout;
 
@@ -690,10 +716,16 @@ class DataGatewayFallback {
 
       final chunks = <List<int>>[];
       var length = 0;
+      final total = response.contentLength;
+
+      // Zero first, so a fallback gateway reads as starting over rather than
+      // as the bar jumping back on its own.
+      onProgress?.call(0, total);
 
       await for (final chunk in response.stream.timeout(budget)) {
         chunks.add(chunk);
         length += chunk.length;
+        onProgress?.call(length, total);
       }
 
       final body = Uint8List(length);

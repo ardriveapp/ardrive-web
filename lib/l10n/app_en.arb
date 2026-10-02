@@ -1173,6 +1173,36 @@
       }
     }
   },
+  "previewDownloading": "Downloading...",
+  "@previewDownloading": {
+    "description": "Under a preview that is still arriving, before its size is known"
+  },
+  "previewDownloadedOf": "{received} of {total}",
+  "@previewDownloadedOf": {
+    "description": "Under a preview's progress bar: how much has arrived of how much",
+    "placeholders": {
+      "received": {
+        "type": "String",
+        "example": "18.2 MB"
+      },
+      "total": {
+        "type": "String",
+        "example": "47 MB"
+      }
+    }
+  },
+  "previewDecrypting": "Decrypting...",
+  "@previewDecrypting": {
+    "description": "Under a private file's preview once its bytes have arrived and are being decrypted"
+  },
+  "previewDownloadFailed": "The preview couldn't be downloaded.",
+  "@previewDownloadFailed": {
+    "description": "In place of a preview whose bytes no gateway would send; offered with a way to try again"
+  },
+  "previewDecryptFailed": "This file couldn't be decrypted for preview. Downloading it may still work.",
+  "@previewDecryptFailed": {
+    "description": "In place of a private file's preview whose bytes arrived but would not decrypt"
+  },
   "fileSize": "File size",
   "@fileSize": {
     "description": "The size of a file"

@@ -56,7 +56,11 @@ class WaterfallGatewayFallback extends Mock implements DataGatewayFallback {
   final List<int> attemptedGateways = [];
 
   @override
-  Future<http.Response> fetchData(String txId, Arweave primaryClient) async {
+  Future<http.Response> fetchData(
+    String txId,
+    Arweave primaryClient, {
+    FetchProgress? onProgress,
+  }) async {
     Object? lastError;
 
     for (var i = 0; i < gateways.length; i++) {
@@ -256,7 +260,8 @@ void main() {
     List<int> fetched = const [1, 2, 3, 4],
     List<int> decrypted = const [5, 6, 7, 8],
   }) {
-    when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+    when(() => mockGatewayFallback.fetchData(any(), any(),
+        onProgress: any(named: 'onProgress'))).thenAnswer(
       (_) async => http.Response.bytes(fetched, 200),
     );
     when(() => mockArweaveService.getTransactionDetails(any()))
@@ -267,7 +272,8 @@ void main() {
 
   void expectNoBytesFetched() {
     verifyNever(() => mockArweaveService.gatewayFallback);
-    verifyNever(() => mockGatewayFallback.fetchData(any(), any()));
+    verifyNever(() => mockGatewayFallback.fetchData(any(), any(),
+        onProgress: any(named: 'onProgress')));
     verifyNever(
       () => mockGatewayFallback.fetchManifestWithFallback(any(), any()),
     );
@@ -360,7 +366,8 @@ void main() {
     blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
       'under-limit public image is still previewed',
       build: () {
-        when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+        when(() => mockGatewayFallback.fetchData(any(), any(),
+            onProgress: any(named: 'onProgress'))).thenAnswer(
           (_) async => http.Response.bytes(<int>[1, 2, 3, 4], 200),
         );
 
@@ -373,7 +380,8 @@ void main() {
         const FsEntryPreviewImage(previewUrl: '$gatewayUrl/$dataTxId'),
       ],
       verify: (cubit) {
-        verify(() => mockGatewayFallback.fetchData(dataTxId, any())).called(1);
+        verify(() => mockGatewayFallback.fetchData(dataTxId, any(),
+            onProgress: any(named: 'onProgress'))).called(1);
         expect(
           FsEntryPreviewCubit.imagePreviewNotifier.value?.dataBytes,
           Uint8List.fromList([1, 2, 3, 4]),
@@ -452,13 +460,18 @@ void main() {
       wait: const Duration(milliseconds: 100),
       expect: () => [
         const FsEntryPreviewLoading(),
+        // The bytes are in; decryption is its own step, said as one.
+        const FsEntryPreviewLoading(
+          phase: FsEntryPreviewLoadPhase.decrypting,
+        ),
         const FsEntryPreviewVideo(
           previewUrl: 'blob:fake/0-video/mp4',
           filename: 'clip.mp4',
         ),
       ],
       verify: (cubit) {
-        verify(() => mockGatewayFallback.fetchData(dataTxId, any())).called(1);
+        verify(() => mockGatewayFallback.fetchData(dataTxId, any(),
+            onProgress: any(named: 'onProgress'))).called(1);
         verify(
           () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
         ).called(1);
@@ -492,6 +505,10 @@ void main() {
       wait: const Duration(milliseconds: 100),
       expect: () => [
         const FsEntryPreviewLoading(),
+        // The bytes are in; decryption is its own step, said as one.
+        const FsEntryPreviewLoading(
+          phase: FsEntryPreviewLoadPhase.decrypting,
+        ),
         const FsEntryPreviewAudio(
           previewUrl: 'blob:fake/0-audio/mpeg',
           filename: 'memo.mp3',
@@ -780,6 +797,10 @@ void main() {
       wait: const Duration(milliseconds: 100),
       expect: () => [
         const FsEntryPreviewLoading(),
+        // The bytes are in; decryption is its own step, said as one.
+        const FsEntryPreviewLoading(
+          phase: FsEntryPreviewLoadPhase.decrypting,
+        ),
         const FsEntryPreviewVideo(
           previewUrl: 'blob:fake/0-video/mp4',
           filename: 'clip.mp4',
@@ -851,6 +872,10 @@ void main() {
       wait: const Duration(milliseconds: 100),
       expect: () => [
         const FsEntryPreviewLoading(),
+        // The bytes are in; decryption is its own step, said as one.
+        const FsEntryPreviewLoading(
+          phase: FsEntryPreviewLoadPhase.decrypting,
+        ),
         const FsEntryPreviewVideo(
           previewUrl: 'blob:fake/0-video/mp4',
           filename: 'clip.mp4',
@@ -938,7 +963,8 @@ void main() {
         // its ciphertext.
         expect(state.canOpenOnGateway, isFalse);
 
-        verify(() => mockGatewayFallback.fetchData(dataTxId, any())).called(1);
+        verify(() => mockGatewayFallback.fetchData(dataTxId, any(),
+            onProgress: any(named: 'onProgress'))).called(1);
         verify(
           () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
         ).called(1);
@@ -1058,7 +1084,7 @@ void main() {
     );
 
     blocTest<FsEntryPreviewCubit, FsEntryPreviewState>(
-      'a private PDF whose bytes never arrive is unavailable',
+      'a private PDF whose bytes never arrive fails, and can be tried again',
       build: () {
         final waterfall = WaterfallGatewayFallback([
           () => throw Exception('primary gateway is blackholed'),
@@ -1073,9 +1099,13 @@ void main() {
       },
       wait: const Duration(milliseconds: 100),
       verify: (cubit) {
-        // No plaintext, and no URL to offer instead.
-        expect(cubit.state, isA<FsEntryPreviewUnavailable>());
-        expect(cubit.state, isNot(isA<FsEntryPreviewPdf>()));
+        // No plaintext and no URL to offer instead - but not "unavailable"
+        // either: this is a download that failed, and it says so.
+        expect(
+          cubit.state,
+          const FsEntryPreviewFailed(FsEntryPreviewFailure.download),
+        );
+        expect((cubit.state as FsEntryPreviewFailed).canRetry, isTrue);
       },
     );
 
@@ -1095,7 +1125,6 @@ void main() {
       },
     );
   });
-
 
   /// The drive explorer previews once immediately and again for every row the
   /// file's database watch emits - and drift emits the current row the moment
@@ -1176,10 +1205,20 @@ void main() {
 
     Future<void> settle() => Future.delayed(const Duration(milliseconds: 30));
 
-    int fetches(String txId) =>
-        verify(() => mockGatewayFallback.fetchData(txId, any())).callCount;
+    /// Each time a download begins from nothing. Decrypting, and progress
+    /// along the way, are not new downloads.
+    Iterable<FsEntryPreviewLoading> downloadStarts(
+      List<FsEntryPreviewState> states,
+    ) =>
+        states.whereType<FsEntryPreviewLoading>().where((s) =>
+            s.phase == FsEntryPreviewLoadPhase.downloading && s.received == 0);
 
-    test('a private video is fetched once on opening, and not again on a '
+    int fetches(String txId) =>
+        verify(() => mockGatewayFallback.fetchData(txId, any(),
+            onProgress: any(named: 'onProgress'))).callCount;
+
+    test(
+        'a private video is fetched once on opening, and not again on a '
         'later write to its row', () async {
       stubPrivateFetchAndDecrypt();
       final videoRow = row(name: 'clip.mp4', contentType: 'video/mp4');
@@ -1196,7 +1235,7 @@ void main() {
       expect(fetches(dataTxId), 1);
       expect(objectUrls.created, hasLength(1));
       expect(cubit.state, isA<FsEntryPreviewVideo>());
-      expect(states.whereType<FsEntryPreviewLoading>(), hasLength(1),
+      expect(downloadStarts(states), hasLength(1),
           reason: 'a second spinner is the playing video being replaced');
 
       await sub.cancel();
@@ -1207,7 +1246,8 @@ void main() {
         () async {
       stubPrivateFetchAndDecrypt();
       var gatewaysDown = true;
-      when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'))).thenAnswer(
         (_) async {
           if (gatewaysDown) throw Exception('every gateway failed');
           return http.Response.bytes([1, 2, 3, 4], 200);
@@ -1219,7 +1259,10 @@ void main() {
       await settle();
       rows.add(videoRow);
       await settle();
-      expect(cubit.state, isA<FsEntryPreviewUnavailable>());
+      expect(
+        cubit.state,
+        const FsEntryPreviewFailed(FsEntryPreviewFailure.download),
+      );
       // Reading a count through `verify` resets it, so the next [fetches]
       // counts only what happens after this line.
       final failedAttempts = fetches(dataTxId);
@@ -1254,7 +1297,7 @@ void main() {
 
       expect(fetches(dataTxId), 1);
       expect(cubit.state, isA<FsEntryPreviewText>());
-      expect(states.whereType<FsEntryPreviewLoading>(), hasLength(1),
+      expect(downloadStarts(states), hasLength(1),
           reason: 'a second spinner resets the text the reader is in');
 
       await sub.cancel();
@@ -1282,8 +1325,7 @@ void main() {
       await cubit.close();
     });
 
-    test('a key lookup that throws leaves the PDF free to try again',
-        () async {
+    test('a key lookup that throws leaves the PDF free to try again', () async {
       stubPrivateFetchAndDecrypt();
       stubKeyLookupThatThrowsOnce();
       final pdfRow = row(name: 'Q3 Report.pdf', contentType: 'application/pdf');
@@ -1312,7 +1354,8 @@ void main() {
       // been shown - and must not paint over it when it does.
       final textBytes = Completer<http.Response>();
       var calls = 0;
-      when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'))).thenAnswer(
         (_) => calls++ == 0
             ? textBytes.future
             : Future.value(http.Response.bytes([1, 2, 3, 4], 200)),
@@ -1348,7 +1391,8 @@ void main() {
       // decrypted into a URL - which must be revoked, not kept until close.
       final videoBytes = Completer<http.Response>();
       var calls = 0;
-      when(() => mockGatewayFallback.fetchData(any(), any())).thenAnswer(
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'))).thenAnswer(
         (_) => calls++ == 0
             ? videoBytes.future
             : Future.value(http.Response.bytes([1, 2, 3, 4], 200)),
@@ -1369,6 +1413,359 @@ void main() {
       expect(objectUrls.revoked, objectUrls.created,
           reason: 'a superseded load must not hold decrypted media');
 
+      await cubit.close();
+    });
+  });
+
+  /// #2206: a private file of tens of MiB used to sit behind a bare spinner
+  /// until it arrived, and a failure looked exactly like a file type that is
+  /// never previewed - with no way to try again.
+  group('FsEntryPreviewCubit says how far a preview has got', () {
+    late FakePreviewObjectUrls objectUrls;
+
+    setUp(() => objectUrls = FakePreviewObjectUrls());
+
+    /// A gateway that reports [reports] through the preview's progress
+    /// callback, [gap] apart, and then answers.
+    void stubFetchReporting(
+      List<(int, int?)> reports, {
+      Duration gap = Duration.zero,
+    }) {
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'))).thenAnswer((invocation) async {
+        final onProgress =
+            invocation.namedArguments[#onProgress] as FetchProgress?;
+
+        for (final (received, total) in reports) {
+          if (gap > Duration.zero) await Future<void>.delayed(gap);
+          onProgress?.call(received, total);
+        }
+
+        return http.Response.bytes([1, 2, 3, 4], 200);
+      });
+    }
+
+    FsEntryPreviewCubit privateVideo() => buildSharedFileCubit(
+          item: createVideoItem(size: underLimitFileSize),
+          fileKey: SecretKey([1, 2, 3]),
+          objectUrls: objectUrls,
+        );
+
+    int fetches() => verify(() => mockGatewayFallback.fetchData(any(), any(),
+        onProgress: any(named: 'onProgress'))).callCount;
+
+    test('counts the download, then says it is decrypting, then plays',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      stubFetchReporting(
+        [(0, 400), (100, 400), (200, 400), (400, 400)],
+        gap: const Duration(milliseconds: 120),
+      );
+
+      final cubit = privateVideo();
+      final states = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(states.add);
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+
+      final loading = states.whereType<FsEntryPreviewLoading>().toList();
+      final downloading = loading
+          // The first Loading comes before any gateway has answered, so it
+          // knows no length; everything after it is the gateway's own count.
+          .where((s) =>
+              s.phase == FsEntryPreviewLoadPhase.downloading && s.total != null)
+          .map((s) => s.received)
+          .toList();
+
+      expect(downloading, [0, 100, 200, 400]);
+      expect(loading.last.phase, FsEntryPreviewLoadPhase.decrypting);
+      expect(loading.last.fraction, isNull,
+          reason: 'decryption has no progress to show, and none is faked');
+      expect(states.last, isA<FsEntryPreviewVideo>());
+
+      await sub.cancel();
+      await cubit.close();
+    });
+
+    test('reports no faster than it can be drawn, and never skips the end',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      // A thousand chunks with no time between them: a report for each would
+      // rebuild the preview a thousand times to move a bar a pixel.
+      stubFetchReporting([
+        for (var i = 0; i <= 1000; i++) (i, 1000),
+      ]);
+
+      final cubit = privateVideo();
+      final states = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(states.add);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final received = states
+          .whereType<FsEntryPreviewLoading>()
+          .where((s) => s.phase == FsEntryPreviewLoadPhase.downloading)
+          .map((s) => s.received)
+          .toList();
+
+      expect(received.length, lessThan(5));
+      expect(received.last, 1000);
+
+      await sub.cancel();
+      await cubit.close();
+    });
+
+    test('a gateway that sends more than it declared is still throttled',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      // Declares 100, sends 1,100: every chunk past 100 must not count as
+      // "the last one" and slip past the throttle.
+      stubFetchReporting([
+        for (var i = 0; i <= 1100; i++) (i, 100),
+      ]);
+
+      final cubit = privateVideo();
+      final states = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(states.add);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final reports = states
+          .whereType<FsEntryPreviewLoading>()
+          .where((s) => s.phase == FsEntryPreviewLoadPhase.downloading)
+          .length;
+
+      expect(reports, lessThan(5));
+
+      await sub.cancel();
+      await cubit.close();
+    });
+
+    test('a fraction is only claimed when the gateway declared a length', () {
+      expect(
+        const FsEntryPreviewLoading(received: 50, total: 200).fraction,
+        0.25,
+      );
+      expect(const FsEntryPreviewLoading(received: 50).fraction, isNull);
+      expect(
+        const FsEntryPreviewLoading(received: 500, total: 200).fraction,
+        1.0,
+        reason: 'a gateway that sent more than it declared still reads full',
+      );
+    });
+
+    test('a download that fails can be tried again, and the retry fetches',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      var gatewaysDown = true;
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'))).thenAnswer((_) async {
+        if (gatewaysDown) throw Exception('every gateway failed');
+        return http.Response.bytes([1, 2, 3, 4], 200);
+      });
+
+      final cubit = privateVideo();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(
+        cubit.state,
+        const FsEntryPreviewFailed(FsEntryPreviewFailure.download),
+      );
+      expect(cubit.state, isNot(isA<FsEntryPreviewUnavailable>()),
+          reason: 'unavailable hides the preview; a failure must not');
+      final failed = fetches();
+
+      gatewaysDown = false;
+      await cubit.retry();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(fetches(), 1, reason: 'after $failed, exactly one more');
+      expect(cubit.state, isA<FsEntryPreviewVideo>());
+
+      await cubit.close();
+    });
+
+    test('bytes that will not decrypt are not fetched again', () async {
+      stubPrivateFetchAndDecrypt();
+      when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
+          .thenThrow(Exception('bad padding'));
+
+      final cubit = privateVideo();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(
+        cubit.state,
+        const FsEntryPreviewFailed(FsEntryPreviewFailure.decrypt),
+      );
+      expect((cubit.state as FsEntryPreviewFailed).canRetry, isFalse);
+      fetches();
+
+      await cubit.retry();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      verifyNever(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress')));
+      expect(
+        cubit.state,
+        const FsEntryPreviewFailed(FsEntryPreviewFailure.decrypt),
+      );
+
+      await cubit.close();
+    });
+
+    test('not finding how the file is encrypted is the network, not the file',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      // The bytes arrived; the lookup of the cipher tags did not.
+      when(() => mockArweaveService.getTransactionDetails(any()))
+          .thenAnswer((_) async => null);
+
+      final cubit = privateVideo();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(
+        cubit.state,
+        const FsEntryPreviewFailed(FsEntryPreviewFailure.download),
+      );
+      verifyNever(
+        () => mockCrypto.decryptDataFromTransaction(any(), any(), any()),
+      );
+
+      await cubit.close();
+    });
+
+    test('retry does nothing unless the preview failed', () async {
+      stubPrivateFetchAndDecrypt();
+
+      final cubit = privateVideo();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(cubit.state, isA<FsEntryPreviewVideo>());
+      fetches();
+
+      await cubit.retry();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      verifyNever(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress')));
+      expect(cubit.state, isA<FsEntryPreviewVideo>());
+
+      await cubit.close();
+    });
+
+    test('a private document says how far it has got, and can be retried',
+        () async {
+      stubPrivateFetchAndDecrypt(decrypted: 'hello'.codeUnits);
+      var gatewaysDown = true;
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'))).thenAnswer((invocation) async {
+        if (gatewaysDown) throw Exception('every gateway failed');
+        (invocation.namedArguments[#onProgress] as FetchProgress?)?.call(4, 4);
+        return http.Response.bytes([1, 2, 3, 4], 200);
+      });
+
+      final cubit = buildSharedFileCubit(
+        item: createItem(
+          size: underLimitFileSize,
+          name: 'notes.txt',
+          contentType: 'text/plain',
+        ),
+        fileKey: SecretKey([1, 2, 3]),
+      );
+      final states = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(states.add);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(
+        cubit.state,
+        const FsEntryPreviewFailed(FsEntryPreviewFailure.download),
+      );
+
+      gatewaysDown = false;
+      await cubit.retry();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(cubit.state, isA<FsEntryPreviewText>());
+      expect(
+        states.whereType<FsEntryPreviewLoading>().map((s) => s.received),
+        contains(4),
+      );
+
+      await sub.cancel();
+      await cubit.close();
+    });
+  });
+
+  group('FsEntryPreviewCubit progress for a load that was taken over', () {
+    test('a superseded download reports nothing more', () async {
+      final drive = MockDrive();
+      final driveSelectable = MockSelectable<Drive>();
+      final fileSelectable = MockSelectable<FileEntry>();
+      final rows = StreamController<FileEntry>();
+      addTearDown(rows.close);
+
+      when(() => drive.privacy).thenReturn(DrivePrivacyTag.private);
+      when(() => mockDriveDao.driveById(driveId: driveId))
+          .thenReturn(driveSelectable);
+      when(() => driveSelectable.getSingleOrNull())
+          .thenAnswer((_) async => drive);
+      when(() => driveSelectable.getSingle()).thenAnswer((_) async => drive);
+      when(() => mockDriveDao.fileById(fileId: fileId))
+          .thenReturn(fileSelectable);
+      when(() => fileSelectable.watchSingle()).thenAnswer((_) => rows.stream);
+      when(() => mockArweaveService.getTransactionDetails(any()))
+          .thenAnswer((_) async => MockTransactionCommonMixin());
+      when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
+          .thenAnswer((_) async => Uint8List.fromList([5, 6, 7, 8]));
+
+      // The video's download reports late, after the row has said the file is
+      // a PDF and the PDF has taken the screen.
+      final videoProgress = Completer<FetchProgress?>();
+      final videoDone = Completer<http.Response>();
+      var calls = 0;
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'))).thenAnswer((invocation) {
+        if (calls++ == 0) {
+          videoProgress.complete(
+              invocation.namedArguments[#onProgress] as FetchProgress?);
+          return videoDone.future;
+        }
+        return Future.value(http.Response.bytes([1, 2, 3, 4], 200));
+      });
+
+      final cubit = FsEntryPreviewCubit(
+        driveId: driveId,
+        maybeSelectedItem: createVideoItem(size: underLimitFileSize),
+        driveDao: mockDriveDao,
+        configService: mockConfigService,
+        arweave: mockArweaveService,
+        profileCubit: mockProfileCubit,
+        crypto: mockCrypto,
+        fileKey: SecretKey([1, 2, 3]),
+        objectUrls: FakePreviewObjectUrls(),
+      );
+      final states = <FsEntryPreviewState>[];
+      final sub = cubit.stream.listen(states.add);
+
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      rows.add(createMockFileEntry(
+        id: fileId,
+        driveId: driveId,
+        name: 'clip.mp4',
+        dataTxId: dataTxId,
+        dataContentType: 'application/pdf',
+        size: underLimitFileSize,
+      ));
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(cubit.state, isA<FsEntryPreviewPdf>());
+
+      final lateReport = await videoProgress.future;
+      states.clear();
+      lateReport?.call(3, 4);
+      videoDone.complete(http.Response.bytes([1, 2, 3, 4], 200));
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      expect(states, isEmpty,
+          reason: 'a superseded load must not move a bar that is not its own');
+      expect(cubit.state, isA<FsEntryPreviewPdf>());
+
+      await sub.cancel();
       await cubit.close();
     });
   });

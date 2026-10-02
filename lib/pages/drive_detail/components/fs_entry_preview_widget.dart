@@ -24,6 +24,138 @@ class FsEntryPreviewWidget extends StatefulWidget {
   State<FsEntryPreviewWidget> createState() => _FsEntryPreviewWidgetState();
 }
 
+/// How far a buffered preview has got (#2206).
+///
+/// A bar with "18.2 MB of 47 MB" when the gateway said how much it would send,
+/// a spinner with the running count when it did not, and "Decrypting…" once
+/// the bytes are in - which is one opaque call with nothing honest to count.
+/// The words matter as much as the bar: a wait that says what it is doing is
+/// a wait people sit through, and one that does not is one they refresh away.
+@visibleForTesting
+class FsEntryPreviewProgress extends StatelessWidget {
+  const FsEntryPreviewProgress({super.key, required this.state});
+
+  final FsEntryPreviewLoading state;
+
+  /// Wide enough to read as a bar, narrow enough for a phone's details panel.
+  static const double barWidth = 200;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final fraction = state.fraction;
+    final label = _label(context);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (fraction == null)
+            const SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(),
+            )
+          else
+            SizedBox(
+              width: barWidth,
+              child: LinearProgressIndicator(
+                value: fraction,
+                semanticsLabel: label,
+                semanticsValue: '${(fraction * 100).round()}%',
+              ),
+            ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: ArDriveTypography.body.captionRegular(
+              color: colors.themeFgSubtle,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _label(BuildContext context) {
+    final l10n = appLocalizationsOf(context);
+
+    if (state.phase == FsEntryPreviewLoadPhase.decrypting) {
+      return l10n.previewDecrypting;
+    }
+
+    final total = state.total;
+
+    if (total != null && total > 0) {
+      return l10n.previewDownloadedOf(
+        filesize(state.received),
+        filesize(total),
+      );
+    }
+
+    // No length to measure against, but a count still says it is moving.
+    return state.received > 0
+        ? filesize(state.received)
+        : l10n.previewDownloading;
+  }
+}
+
+/// A preview that was attempted and did not arrive - said, not hidden.
+///
+/// Retry is offered only when asking again could help: a download that no
+/// gateway answered may well answer the second time, and bytes that would not
+/// decrypt will not decrypt the second time either.
+@visibleForTesting
+class FsEntryPreviewFailedMessage extends StatelessWidget {
+  const FsEntryPreviewFailedMessage({
+    super.key,
+    required this.state,
+    required this.onRetry,
+  });
+
+  final FsEntryPreviewFailed state;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colors;
+    final l10n = appLocalizationsOf(context);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // The sentence under it says the same thing, in words.
+          ExcludeSemantics(
+            child: ArDriveIcons.triangle(size: 24, color: colors.themeFgSubtle),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            state.canRetry
+                ? l10n.previewDownloadFailed
+                : l10n.previewDecryptFailed,
+            textAlign: TextAlign.center,
+            style: ArDriveTypography.body.captionRegular(
+              color: colors.themeFgDefault,
+            ),
+          ),
+          if (state.canRetry) ...[
+            const SizedBox(height: 16),
+            ArDriveButton(
+              style: ArDriveButtonStyle.secondary,
+              text: l10n.tryAgain,
+              onPressed: onRetry,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
   @override
   Widget build(BuildContext context) {
@@ -49,6 +181,20 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
         );
 
       case const (FsEntryPreviewLoading):
+        return Center(
+          child: FsEntryPreviewProgress(
+            state: widget.state as FsEntryPreviewLoading,
+          ),
+        );
+
+      case const (FsEntryPreviewFailed):
+        return Center(
+          child: FsEntryPreviewFailedMessage(
+            state: widget.state as FsEntryPreviewFailed,
+            onRetry: widget.previewCubit.retry,
+          ),
+        );
+
       case const (FsEntryPreviewInitial):
         return const Center(
           child: SizedBox(
