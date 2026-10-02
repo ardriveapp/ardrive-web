@@ -1297,6 +1297,32 @@ void main() {
     });
 
     test(
+        'an image whose load threw is tried again on the next write to the row',
+        () async {
+      stubPrivateFetchAndDecrypt();
+      stubKeyLookupThatThrowsOnce();
+      final imageRow = row(name: 'photo.png', contentType: 'image/png');
+      final cubit = explorerCubit(
+        createImageItem(size: underLimitFileSize),
+        lookUpKey: true,
+      );
+
+      await settle();
+      rows.add(imageRow); // the key lookup throws: nothing to show
+      await settle();
+      expect(FsEntryPreviewCubit.imagePreviewNotifier.value?.dataBytes, isNull);
+
+      rows.add(imageRow); // a sync; the database is free again
+      await settle();
+
+      expect(FsEntryPreviewCubit.imagePreviewNotifier.value?.dataBytes,
+          [5, 6, 7, 8],
+          reason: 'a load that showed nothing must not hold its claim');
+
+      await cubit.close();
+    });
+
+    test(
         'an image revision that lands mid-download replaces the old one, '
         'which stops and is never shown', () async {
       stubPrivateFetchAndDecrypt();

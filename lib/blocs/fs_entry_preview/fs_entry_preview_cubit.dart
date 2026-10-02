@@ -1866,6 +1866,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       contentType: file.dataContentType!,
     );
     emit(FsEntryPreviewImage(previewUrl: dataUrl));
+
+    // Nothing was shown - a fetch that failed, a lookup that threw - so a
+    // later write to the row is free to try again, as it always could before
+    // images held a claim. The check above means this claim is still ours.
+    if (dataBytes == null) {
+      _claimedLoad = null;
+    }
   }
 
   bool _supportedExtension(String? previewType, String? fileExtension) {
