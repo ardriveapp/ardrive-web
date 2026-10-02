@@ -938,6 +938,17 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return;
     }
 
+    // Every write to the file's row runs this again. Without a claim each run
+    // fetched the image again beside the last, and a run for an older
+    // revision could finish last and paint over the newer one. See
+    // [_claimedLoad].
+    const kind = _imageLoad;
+    final txId = file.dataTxId;
+
+    if (!_claim(kind, txId)) {
+      return;
+    }
+
     imagePreviewNotifier.value = ImagePreviewNotification(
       isLoading: true,
       filename: file.name,
@@ -947,11 +958,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     emit(FsEntryPreviewImage(previewUrl: dataUrl));
 
     final Uint8List? dataBytes = await _getBytesFromCache(
-      dataTxId: file.dataTxId,
+      dataTxId: txId,
+      cancelWhen: _claimedLoadCancelled,
     );
 
-    // The preview went away while the bytes were in flight.
-    if (isClosed) {
+    // The preview went away, or was taken over, while the bytes were in
+    // flight.
+    if (!_isCurrent(kind, txId)) {
       return;
     }
 
@@ -959,6 +972,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       final driveId = file.driveId;
       final drive = await _driveDao.driveById(driveId: driveId).getSingle();
       final isPinFile = file.pinnedDataOwnerAddress != null;
+
+      if (!_isCurrent(kind, txId)) {
+        return;
+      }
 
       switch (drive.privacy) {
         case DrivePrivacyTag.public:
@@ -976,8 +993,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             // No ciphertext means no plaintext. Said plainly rather than
             // emitted as a preview holding a null, which only looked right
             // because the widget happens to render bytes and never [dataUrl].
-            imagePreviewNotifier.value = null;
-            _emitUnavailable();
+            _failImageLoad(txId);
             break;
           }
 
@@ -988,6 +1004,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
             isPin: isPinFile,
           );
 
+          if (!_isCurrent(kind, txId)) {
+            return;
+          }
+
           // Null whenever the drive key cannot be produced - no profile, or a
           // private drive whose key is not in memory. Dereferencing it threw a
           // null check error into the `catch` below, which reported it as an
@@ -997,8 +1017,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
               'No file key for private image ${file.id}; cannot decrypt it '
               'for preview.',
             );
-            imagePreviewNotifier.value = null;
-            _emitUnavailable();
+            _failImageLoad(txId);
             break;
           }
 
@@ -1040,6 +1059,13 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       return;
     }
 
+    const kind = _imageLoad;
+    final txId = file.dataTxId;
+
+    if (!_claim(kind, txId)) {
+      return;
+    }
+
     final isPinFile = file.pinnedDataOwnerAddress != null;
 
     imagePreviewNotifier.value = ImagePreviewNotification(
@@ -1049,21 +1075,21 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     );
 
     final Uint8List? dataBytes = await _getBytesFromCache(
-      dataTxId: file.dataTxId,
+      dataTxId: txId,
       withDriveDao: false,
+      cancelWhen: _claimedLoadCancelled,
     );
 
     // The page went away while the bytes were in flight. The notifier is left
     // alone: it is shared, and whatever replaced this page may own it now.
-    if (isClosed) {
+    if (!_isCurrent(kind, txId)) {
       return;
     }
 
     if (dataBytes == null) {
       // The notifier was set to `isLoading` above and is static, so leaving it
       // there would spin under the *next* image this page previews.
-      imagePreviewNotifier.value = null;
-      emit(FsEntryPreviewUnavailable());
+      _failImageLoad(txId);
       return;
     }
 
@@ -1077,12 +1103,15 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         isPin: false,
       );
 
+      if (!_isCurrent(kind, txId)) {
+        return;
+      }
+
       // Unreachable while `isPrivate` means "a key came with the link", since
       // [_getFileKey] hands that same key straight back - but it is a `?` and
       // the alternative to checking it is a crash swallowed by a caller.
       if (fileKey == null) {
-        imagePreviewNotifier.value = null;
-        _emitUnavailable();
+        _failImageLoad(txId);
         return;
       }
 
@@ -1096,15 +1125,14 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
       // rather than published as an image preview holding no image - which is
       // the shape [_previewPdf] and [_mediaUrl] both refuse.
       if (bytesToShow == null) {
-        imagePreviewNotifier.value = null;
-        _emitUnavailable();
+        _failImageLoad(txId);
         return;
       }
     }
 
     // The retraction may have landed while the bytes were in flight, and it
     // cannot reach the notifier from here.
-    if (_refusedAsEncrypted || isClosed) {
+    if (_refusedAsEncrypted || !_isCurrent(kind, txId)) {
       return;
     }
 
@@ -1362,6 +1390,21 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     }
 
     return objectUrl;
+  }
+
+  /// The kind both image loaders claim under. See [_claim].
+  static const _imageLoad = 'image';
+
+  /// [_failLoad] for an image, which also takes down the shared
+  /// [imagePreviewNotifier]'s spinner - but only while this load still owns
+  /// it. A load that was taken over leaves it to the one that took over.
+  void _failImageLoad(String dataTxId) {
+    if (!_isCurrent(_imageLoad, dataTxId)) {
+      return;
+    }
+
+    imagePreviewNotifier.value = null;
+    _failLoad(_imageLoad, dataTxId);
   }
 
   void _emitUnavailable() {
@@ -1654,6 +1697,10 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         : null;
 
     if (cachedBytes == null) {
+      // Noted before the fetch: if logout happens while it is in flight, the
+      // bytes are not kept. See [DriveDao.putPreviewDataInMemory].
+      final session = _driveDao.previewSession;
+
       try {
         final fetchedBytes = await _fetchPreviewBytes(
           dataTxId,
@@ -1665,6 +1712,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         await _driveDao.putPreviewDataInMemory(
           dataTxId: dataTxId,
           bytes: fetchedBytes,
+          session: session,
         );
 
         dataBytes = fetchedBytes;
@@ -1803,7 +1851,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
     String dataUrl, {
     Uint8List? dataBytes,
   }) {
-    if (isClosed) {
+    if (!_isCurrent(_imageLoad, file.dataTxId)) {
       return;
     }
 

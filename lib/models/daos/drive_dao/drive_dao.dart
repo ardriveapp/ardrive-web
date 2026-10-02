@@ -113,11 +113,28 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async =>
       _previewCache.get(dataTxId);
 
+  /// Which signed-in session the memory belongs to. [clearSessionMemory]
+  /// moves it on.
+  int _previewSession = 0;
+
+  /// The session a preview fetch starts in, to hand back to
+  /// [putPreviewDataInMemory] when its bytes arrive.
+  int get previewSession => _previewSession;
+
+  /// Keeps [bytes] for [dataTxId], unless the session they were fetched in
+  /// has since ended: a download that finishes after logout must not put the
+  /// previous session's bytes back into memory that logout just cleared.
   Future<void> putPreviewDataInMemory({
     required TxID dataTxId,
     required Uint8List bytes,
-  }) async =>
-      _previewCache.put(dataTxId, bytes);
+    required int session,
+  }) async {
+    if (session != _previewSession) {
+      return;
+    }
+
+    _previewCache.put(dataTxId, bytes);
+  }
 
   /// Forgets everything this DAO holds in memory for the signed-in session:
   /// drive keys, and the bytes of recently previewed files.
@@ -126,6 +143,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   /// the tab closed - including the keys to shared private drives opened from
   /// a `driveKey` link, which are kept here rather than in the database.
   Future<void> clearSessionMemory() async {
+    _previewSession++;
     _previewCache.clear();
 
     try {

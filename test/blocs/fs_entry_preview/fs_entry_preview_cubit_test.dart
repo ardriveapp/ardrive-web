@@ -229,10 +229,12 @@ void main() {
       () => mockDriveDao.putPreviewDataInMemory(
         dataTxId: any(named: 'dataTxId'),
         bytes: any(named: 'bytes'),
+        session: any(named: 'session'),
       ),
     ).thenAnswer((_) async {});
     when(() => mockDriveDao.getPreviewDataFromMemory(any()))
         .thenAnswer((_) async => null);
+    when(() => mockDriveDao.previewSession).thenReturn(0);
   });
 
   FsEntryPreviewCubit buildSharedFileCubit({
@@ -296,6 +298,7 @@ void main() {
       () => mockDriveDao.putPreviewDataInMemory(
         dataTxId: any(named: 'dataTxId'),
         bytes: any(named: 'bytes'),
+        session: any(named: 'session'),
       ),
     );
   }
@@ -1266,6 +1269,86 @@ void main() {
       await cubit.close();
     });
 
+    test(
+        'an image is fetched once while it downloads, however often its row '
+        'is written', () async {
+      stubPrivateFetchAndDecrypt();
+      final held = Completer<http.Response>();
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'),
+          cancelWhen: any(named: 'cancelWhen'))).thenAnswer((_) => held.future);
+      final imageRow = row(name: 'photo.png', contentType: 'image/png');
+      final cubit = explorerCubit(createImageItem(size: underLimitFileSize));
+
+      await settle();
+      rows.add(imageRow);
+      await settle();
+      rows.add(imageRow); // a sync writing the row mid-download
+      await settle();
+
+      held.complete(http.Response.bytes([1, 2, 3, 4], 200));
+      await settle();
+
+      expect(fetches(dataTxId), 1);
+      expect(FsEntryPreviewCubit.imagePreviewNotifier.value?.dataBytes,
+          [5, 6, 7, 8]);
+
+      await cubit.close();
+    });
+
+    test(
+        'an image revision that lands mid-download replaces the old one, '
+        'which stops and is never shown', () async {
+      stubPrivateFetchAndDecrypt();
+      // Decrypting hands the bytes back as they are, so what is shown says
+      // which download it came from.
+      when(() => mockCrypto.decryptDataFromTransaction(any(), any(), any()))
+          .thenAnswer((invocation) async =>
+              invocation.positionalArguments[1] as Uint8List);
+      const newerTxId = 'newer-data-tx-id';
+      final oldBytes = Completer<http.Response>();
+      Future<void>? oldCancel;
+      when(() => mockGatewayFallback.fetchData(dataTxId, any(),
+          onProgress: any(named: 'onProgress'),
+          cancelWhen: any(named: 'cancelWhen'))).thenAnswer((invocation) {
+        oldCancel = invocation.namedArguments[#cancelWhen] as Future<void>?;
+        return oldBytes.future;
+      });
+      when(() => mockGatewayFallback.fetchData(newerTxId, any(),
+              onProgress: any(named: 'onProgress'),
+              cancelWhen: any(named: 'cancelWhen')))
+          .thenAnswer((_) async => http.Response.bytes([1, 2, 3, 4], 200));
+      final cubit = explorerCubit(createImageItem(size: underLimitFileSize));
+
+      await settle();
+      rows.add(row(name: 'photo.png', contentType: 'image/png'));
+      await settle();
+      expect(oldCancel, isNotNull);
+
+      var oldStopped = false;
+      unawaited(oldCancel!.then((_) => oldStopped = true));
+
+      rows.add(row(
+        name: 'photo.png',
+        contentType: 'image/png',
+        txId: newerTxId,
+      ));
+      await settle();
+
+      expect(oldStopped, isTrue, reason: 'the old download is cancelled');
+      expect(FsEntryPreviewCubit.imagePreviewNotifier.value?.dataBytes,
+          [1, 2, 3, 4]);
+
+      // The old download finishing anyway must not paint over the new one.
+      oldBytes.complete(http.Response.bytes([9, 9, 9], 200));
+      await settle();
+
+      expect(FsEntryPreviewCubit.imagePreviewNotifier.value?.dataBytes,
+          [1, 2, 3, 4]);
+
+      await cubit.close();
+    });
+
     test('a fetch that failed is tried again on the next write to the row',
         () async {
       stubPrivateFetchAndDecrypt();
@@ -1914,6 +1997,37 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(aborted, isTrue);
+    });
+
+    test('bytes are kept under the session the fetch started in', () async {
+      // Logout lands while the bytes are in flight: what they are kept under
+      // must be the session that asked for them, which logout has ended.
+      var session = 7;
+      when(() => mockDriveDao.previewSession).thenAnswer((_) => session);
+      when(() => mockGatewayFallback.fetchData(any(), any(),
+          onProgress: any(named: 'onProgress'),
+          cancelWhen: any(named: 'cancelWhen'))).thenAnswer((_) async {
+        session = 8;
+        return http.Response.bytes([1, 2, 3, 4], 200);
+      });
+
+      // A document: PDFs and media are not kept in this memory at all.
+      final cubit = buildSharedFileCubit(
+        item: createItem(
+          size: underLimitFileSize,
+          name: 'notes.txt',
+          contentType: 'text/plain',
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      verify(() => mockDriveDao.putPreviewDataInMemory(
+            dataTxId: dataTxId,
+            bytes: any(named: 'bytes'),
+            session: 7,
+          )).called(1);
+
+      await cubit.close();
     });
 
     test('closing aborts a manifest it was reading too', () async {

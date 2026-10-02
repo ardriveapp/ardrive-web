@@ -39,6 +39,7 @@ void main() {
     await driveDao.putPreviewDataInMemory(
       dataTxId: 'tx',
       bytes: Uint8List.fromList([1, 2, 3]),
+      session: driveDao.previewSession,
     );
 
     expect(await driveDao.getPreviewDataFromMemory('tx'), [1, 2, 3]);
@@ -52,14 +53,39 @@ void main() {
     await driveDao.putPreviewDataInMemory(
       dataTxId: 'tx',
       bytes: Uint8List.fromList([1, 2, 3]),
+      session: driveDao.previewSession,
     );
 
     await DatabaseHelpers(db).clearSessionMemory();
 
     // A key to a shared private drive used to outlive the logout that was
     // supposed to end the session, until the tab closed.
-    expect(await driveDao.getDriveKeyFromMemory('shared-private-drive'),
-        isNull);
+    expect(
+        await driveDao.getDriveKeyFromMemory('shared-private-drive'), isNull);
     expect(await driveDao.getPreviewDataFromMemory('tx'), isNull);
+  });
+
+  test('bytes fetched before a logout are not kept after it', () async {
+    // A preview download that was in flight when the session ended.
+    final startedIn = driveDao.previewSession;
+
+    await DatabaseHelpers(db).clearSessionMemory();
+
+    await driveDao.putPreviewDataInMemory(
+      dataTxId: 'tx',
+      bytes: Uint8List.fromList([1, 2, 3]),
+      session: startedIn,
+    );
+
+    expect(await driveDao.getPreviewDataFromMemory('tx'), isNull);
+
+    // The next session's own fetches are kept as before.
+    await driveDao.putPreviewDataInMemory(
+      dataTxId: 'tx',
+      bytes: Uint8List.fromList([4, 5, 6]),
+      session: driveDao.previewSession,
+    );
+
+    expect(await driveDao.getPreviewDataFromMemory('tx'), [4, 5, 6]);
   });
 }
