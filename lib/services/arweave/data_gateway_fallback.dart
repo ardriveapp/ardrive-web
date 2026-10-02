@@ -659,13 +659,15 @@ class DataGatewayFallback {
         if (e.statusCode != 404) all404 = false;
         logger.w('Gateway $gatewayName failed for manifest $txId: $e');
       } catch (e) {
-        if (isCancelled) {
-          throw FetchCancelled(txId);
-        }
-
         all404 = false;
         logger.w('Gateway $gatewayName failed for manifest $txId: $e');
       }
+    }
+
+    // Cancelled while the last gateway was answering: whatever it answered -
+    // an abort, a 404 - is not the outcome, the cancel is.
+    if (isCancelled) {
+      throw FetchCancelled(txId);
     }
 
     if (all404) {

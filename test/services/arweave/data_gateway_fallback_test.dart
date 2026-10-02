@@ -756,6 +756,30 @@ void main() {
       expect(client.sends, 0);
     });
 
+    test('says it was cancelled when the last gateway answers 404 after it',
+        () async {
+      when(() => primaryApi.gatewayUrl)
+          .thenReturn(Uri.parse('https://arweave.net'));
+      final cancel = Completer<void>();
+      final client = _FakeHttpClient((_) {
+        // The cancel lands while the gateway is answering.
+        cancel.complete();
+        return _streamed('not found', 404);
+      });
+
+      await expectLater(
+        DataGatewayFallback(
+          arioSDK: arioSDK,
+          clientFactory: () => client,
+        ).fetchManifestWithFallback(
+          txId,
+          primaryClient,
+          cancelWhen: cancel.future,
+        ),
+        throwsA(isA<FetchCancelled>()),
+      );
+    });
+
     test('a fetch nobody cancels finishes as before', () async {
       final client = _FakeHttpClient((_) => _streamed('{}', 200));
 
