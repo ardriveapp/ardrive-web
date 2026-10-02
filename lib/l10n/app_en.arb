@@ -1191,7 +1191,7 @@
       }
     }
   },
-  "previewOnRequestNote": "This file is {size}. Previewing it downloads the whole file.",
+  "previewOnRequestNote": "This file is {size}.\nPreviewing it downloads the whole file.",
   "@previewOnRequestNote": {
     "description": "In place of a large file's preview, above a Preview button: what pressing it will download",
     "placeholders": {

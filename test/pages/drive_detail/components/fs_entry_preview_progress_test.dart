@@ -140,7 +140,7 @@ void main() {
       )));
 
       expect(
-        find.text('This file is ${filesize(size)}. '
+        find.text('This file is ${filesize(size)}.\n'
             'Previewing it downloads the whole file.'),
         findsOneWidget,
       );
