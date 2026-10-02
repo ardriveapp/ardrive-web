@@ -289,7 +289,8 @@ void main() {
         onProgress: any(named: 'onProgress'),
         cancelWhen: any(named: 'cancelWhen')));
     verifyNever(
-      () => mockGatewayFallback.fetchManifestWithFallback(any(), any()),
+      () => mockGatewayFallback.fetchManifestWithFallback(any(), any(),
+          cancelWhen: any(named: 'cancelWhen')),
     );
     verifyNever(
       () => mockDriveDao.putPreviewDataInMemory(
@@ -1899,6 +1900,38 @@ void main() {
         item: createVideoItem(size: underLimitFileSize),
         fileKey: SecretKey([1, 2, 3]),
         objectUrls: FakePreviewObjectUrls(),
+      );
+
+      final signal = await cancelSignal.future;
+      expect(signal, isNotNull);
+
+      var aborted = false;
+      unawaited(signal!.then((_) => aborted = true));
+      await Future<void>.delayed(Duration.zero);
+      expect(aborted, isFalse, reason: 'nothing is aborted while it is shown');
+
+      await cubit.close();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(aborted, isTrue);
+    });
+
+    test('closing aborts a manifest it was reading too', () async {
+      final cancelSignal = Completer<Future<void>?>();
+      final neverArrives = Completer<http.Response>();
+      when(() => mockGatewayFallback.fetchManifestWithFallback(any(), any(),
+          cancelWhen: any(named: 'cancelWhen'))).thenAnswer((invocation) {
+        cancelSignal
+            .complete(invocation.namedArguments[#cancelWhen] as Future<void>?);
+        return neverArrives.future;
+      });
+
+      final cubit = buildSharedFileCubit(
+        item: createItem(
+          size: underLimitFileSize,
+          name: 'site.json',
+          contentType: 'application/x.arweave-manifest+json',
+        ),
       );
 
       final signal = await cancelSignal.future;

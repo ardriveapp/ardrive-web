@@ -1704,6 +1704,7 @@ class FsEntryPreviewCubit extends Cubit<FsEntryPreviewState> {
         ? await gatewayFallback.fetchManifestWithFallback(
             dataTxId,
             _arweave.client,
+            cancelWhen: cancelWhen ?? _closing.future,
           )
         : await gatewayFallback.fetchData(
             dataTxId,

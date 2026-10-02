@@ -681,6 +681,97 @@ void main() {
     });
   });
 
+  group('fetchManifestWithFallback can be abandoned', () {
+    test('aborts the request in flight and tries no other gateway', () async {
+      final client = _AbortableHttpClient();
+      final cancel = Completer<void>();
+
+      final fetch = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchManifestWithFallback(
+        txId,
+        primaryClient,
+        cancelWhen: cancel.future,
+      );
+
+      client.body.add(utf8.encode('{"manifest":'));
+      await Future<void>.delayed(Duration.zero);
+
+      cancel.complete();
+
+      // At once: not after the request's own timeout gives up on it.
+      await expectLater(
+        fetch.timeout(const Duration(seconds: 2)),
+        throwsA(isA<FetchCancelled>()),
+      );
+      expect(client.closed, isTrue);
+      expect(client.sends, 1,
+          reason: 'the waterfall must stop, not move on to the next gateway');
+    });
+
+    test('says it was cancelled when the last gateway is the one aborted',
+        () async {
+      // With arweave.net configured there is no gateway after it, so nothing
+      // further along the waterfall would notice the cancel.
+      when(() => primaryApi.gatewayUrl)
+          .thenReturn(Uri.parse('https://arweave.net'));
+      final client = _AbortableHttpClient();
+      final cancel = Completer<void>();
+
+      final fetch = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchManifestWithFallback(
+        txId,
+        primaryClient,
+        cancelWhen: cancel.future,
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      cancel.complete();
+
+      await expectLater(
+        fetch.timeout(const Duration(seconds: 2)),
+        throwsA(isA<FetchCancelled>()),
+      );
+    });
+
+    test('a fetch abandoned before it reaches a gateway sends nothing',
+        () async {
+      final client = _FakeHttpClient((_) => _streamed('{}', 200));
+
+      await expectLater(
+        DataGatewayFallback(
+          arioSDK: arioSDK,
+          clientFactory: () => client,
+        ).fetchManifestWithFallback(
+          txId,
+          primaryClient,
+          cancelWhen: Future<void>.value(),
+        ),
+        throwsA(isA<FetchCancelled>()),
+      );
+
+      expect(client.sends, 0);
+    });
+
+    test('a fetch nobody cancels finishes as before', () async {
+      final client = _FakeHttpClient((_) => _streamed('{}', 200));
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchManifestWithFallback(
+        txId,
+        primaryClient,
+        cancelWhen: Completer<void>().future,
+      );
+
+      expect(response.body, '{}');
+    });
+  });
+
   group('ArweaveService.runPooled', () {
     test('writes results positionally when tasks complete out of order',
         () async {

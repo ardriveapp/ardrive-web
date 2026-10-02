@@ -205,8 +205,7 @@ class DataGatewayFallback {
         httpClient: httpClient,
         onProgress: onProgress,
         isCancelled: () => isCancelled,
-      )
-          .timeout(_dataTotalTimeout, onTimeout: () {
+      ).timeout(_dataTotalTimeout, onTimeout: () {
         logger.w('Total fetch timeout exceeded for tx $txId');
         httpClient.close();
 
@@ -620,15 +619,37 @@ class DataGatewayFallback {
   }
 
   /// Fetch manifest data with serial gateway fallback.
+  ///
+  /// [cancelWhen] abandons the fetch as it does for [fetchData]: the request
+  /// in flight is aborted, no further gateway is tried, and [FetchCancelled]
+  /// is thrown.
   Future<Response> fetchManifestWithFallback(
-      String txId, Arweave primaryClient) async {
+    String txId,
+    Arweave primaryClient, {
+    Future<void>? cancelWhen,
+  }) async {
+    var isCancelled = false;
+    Client? inFlight;
+    cancelWhen?.then((_) {
+      isCancelled = true;
+      inFlight?.close();
+    });
+
     final clients = await _buildClientList(primaryClient);
     var all404 = true;
 
     for (final client in clients) {
+      if (isCancelled) {
+        throw FetchCancelled(txId);
+      }
+
       final gatewayName = client.api.gatewayUrl.host;
       try {
-        final response = await _tryManifestGateway(client, txId);
+        final response = await _tryManifestGateway(
+          client,
+          txId,
+          onClient: (httpClient) => inFlight = httpClient,
+        );
         if (client != primaryClient) {
           logger
               .i('Fallback gateway $gatewayName succeeded for manifest $txId');
@@ -638,6 +659,10 @@ class DataGatewayFallback {
         if (e.statusCode != 404) all404 = false;
         logger.w('Gateway $gatewayName failed for manifest $txId: $e');
       } catch (e) {
+        if (isCancelled) {
+          throw FetchCancelled(txId);
+        }
+
         all404 = false;
         logger.w('Gateway $gatewayName failed for manifest $txId: $e');
       }
@@ -797,8 +822,16 @@ class DataGatewayFallback {
   /// land in the waterfall's `catch`, be counted as this gateway failing, and
   /// reach the user as "all gateways failed" once every gateway had returned
   /// the same perfectly good manifest.
-  Future<Response> _tryManifestGateway(Arweave client, String txId) async {
+  ///
+  /// [onClient] is handed the client before the request goes out, so a
+  /// cancelled [fetchManifestWithFallback] can close it.
+  Future<Response> _tryManifestGateway(
+    Arweave client,
+    String txId, {
+    void Function(Client httpClient)? onClient,
+  }) async {
     final httpClient = _clientFactory();
+    onClient?.call(httpClient);
 
     try {
       final response = await httpClient
@@ -827,7 +860,8 @@ class DataGatewayFallback {
   }
 }
 
-/// A [DataGatewayFallback.fetchData] that its caller abandoned.
+/// A [DataGatewayFallback.fetchData] or
+/// [DataGatewayFallback.fetchManifestWithFallback] that its caller abandoned.
 class FetchCancelled implements Exception {
   const FetchCancelled(this.txId);
 
