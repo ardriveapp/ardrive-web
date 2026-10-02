@@ -133,6 +133,10 @@ Widget _previewStatusIcon(
 
 /// The button under a caption. On a dark stage the filled one: an outlined
 /// button there is a dark outline on black.
+///
+/// Sized like the details panel's inline buttons, not the default's headline
+/// type, which is meant for a dialog's call to action and outweighs the
+/// caption above it.
 Widget _previewStatusButton({
   required String text,
   required VoidCallback onPressed,
@@ -141,6 +145,8 @@ Widget _previewStatusButton({
   return ArDriveButton(
     style: onDark ? ArDriveButtonStyle.primary : ArDriveButtonStyle.secondary,
     text: text,
+    maxHeight: 36,
+    fontStyle: ArDriveTypography.body.buttonNormalBold(),
     onPressed: onPressed,
   );
 }
