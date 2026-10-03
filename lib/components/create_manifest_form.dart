@@ -105,8 +105,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
   bool _isFormValid = false;
 
   ArDriveTextFieldNew manifestNameForm() {
-    final readCubitContext = context.read<CreateManifestCubit>();
-
     return ArDriveTextFieldNew(
       hintText: appLocalizationsOf(context).manifestName,
       controller: _manifestNameController,
@@ -121,7 +119,14 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       },
       autofocus: true,
       onFieldSubmitted: (s) {
-        readCubitContext.processManifestName(s);
+        final state = context.read<DriveDetailCubit>().state;
+        if (state is DriveDetailLoadSuccess) {
+          context.read<CreateManifestCubit>().chooseTargetFolder(
+                currentFolderId: state.folderInView.folder.id,
+              );
+        } else {
+          context.read<CreateManifestCubit>().chooseTargetFolder();
+        }
       },
     );
   }
@@ -468,7 +473,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     required TextStyle textStyle,
     required CreateManifestNameInput state,
   }) {
-    final readCubitContext = context.read<CreateManifestCubit>();
     return ArDriveStandardModalNew(
       width: kLargeDialogWidth,
       title: appLocalizationsOf(context).addnewManifestEmphasized,
@@ -479,8 +483,16 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         ),
         ModalAction(
           isEnable: _isFormValid,
-          action: () => readCubitContext
-              .processManifestName(_manifestNameController.text),
+          action: () {
+            final state = context.read<DriveDetailCubit>().state;
+            if (state is DriveDetailLoadSuccess) {
+              context.read<CreateManifestCubit>().chooseTargetFolder(
+                    currentFolderId: state.folderInView.folder.id,
+                  );
+            } else {
+              context.read<CreateManifestCubit>().chooseTargetFolder();
+            }
+          },
           title: appLocalizationsOf(context).nextEmphasized,
         ),
       ],
