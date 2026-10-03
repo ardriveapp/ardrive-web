@@ -40,6 +40,30 @@ class _FakeHttpClient extends BaseClient {
   void close() => closed = true;
 }
 
+/// An HTTP client whose [close] aborts the body in flight, the way the real
+/// ones do: `FetchClient` fires its AbortController, `BrowserClient` aborts its
+/// XHRs, `IOClient` force-closes the socket.
+class _AbortableHttpClient extends BaseClient {
+  final StreamController<List<int>> body = StreamController<List<int>>();
+  int sends = 0;
+  bool closed = false;
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    sends += 1;
+    return StreamedResponse(body.stream, 200, contentLength: 100);
+  }
+
+  @override
+  void close() {
+    closed = true;
+    if (!body.isClosed) {
+      body.addError(ClientException('aborted'));
+      body.close();
+    }
+  }
+}
+
 StreamedResponse _streamed(String body, int status) =>
     StreamedResponse(Stream.value(utf8.encode(body)), status);
 
@@ -602,6 +626,173 @@ void main() {
       ).fetchData(txId, primaryClient);
 
       expect(response.body, 'metadata');
+    });
+  });
+
+  /// A preview the reader has left must stop downloading, not carry on to the
+  /// end and then try every other gateway.
+  group('fetchData can be abandoned', () {
+    test('aborts the request in flight and tries no other gateway', () async {
+      final client = _AbortableHttpClient();
+      final cancel = Completer<void>();
+
+      final fetch = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(txId, primaryClient, cancelWhen: cancel.future);
+
+      client.body.add(utf8.encode('the first chunk'));
+      await Future<void>.delayed(Duration.zero);
+
+      cancel.complete();
+
+      await expectLater(fetch, throwsA(isA<FetchCancelled>()));
+      expect(client.closed, isTrue);
+      expect(client.sends, 1,
+          reason: 'the waterfall must stop, not move on to the next gateway');
+    });
+
+    test('a fetch abandoned before it reaches a gateway sends nothing',
+        () async {
+      // Cancelled between gateways, or before the first: the check at the top
+      // of the waterfall is what stops it, not an aborted body.
+      final client = _FakeHttpClient((_) => _streamed('metadata', 200));
+
+      await expectLater(
+        DataGatewayFallback(
+          arioSDK: arioSDK,
+          clientFactory: () => client,
+        ).fetchData(txId, primaryClient, cancelWhen: Future<void>.value()),
+        throwsA(isA<FetchCancelled>()),
+      );
+
+      expect(client.sends, 0);
+    });
+
+    test('a fetch nobody cancels finishes as before', () async {
+      final client = _FakeHttpClient((_) => _streamed('metadata', 200));
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(txId, primaryClient, cancelWhen: Completer<void>().future);
+
+      expect(response.body, 'metadata');
+    });
+  });
+
+  group('fetchManifestWithFallback can be abandoned', () {
+    test('aborts the request in flight and tries no other gateway', () async {
+      final client = _AbortableHttpClient();
+      final cancel = Completer<void>();
+
+      final fetch = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchManifestWithFallback(
+        txId,
+        primaryClient,
+        cancelWhen: cancel.future,
+      );
+
+      client.body.add(utf8.encode('{"manifest":'));
+      await Future<void>.delayed(Duration.zero);
+
+      cancel.complete();
+
+      // At once: not after the request's own timeout gives up on it.
+      await expectLater(
+        fetch.timeout(const Duration(seconds: 2)),
+        throwsA(isA<FetchCancelled>()),
+      );
+      expect(client.closed, isTrue);
+      expect(client.sends, 1,
+          reason: 'the waterfall must stop, not move on to the next gateway');
+    });
+
+    test('says it was cancelled when the last gateway is the one aborted',
+        () async {
+      // With arweave.net configured there is no gateway after it, so nothing
+      // further along the waterfall would notice the cancel.
+      when(() => primaryApi.gatewayUrl)
+          .thenReturn(Uri.parse('https://arweave.net'));
+      final client = _AbortableHttpClient();
+      final cancel = Completer<void>();
+
+      final fetch = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchManifestWithFallback(
+        txId,
+        primaryClient,
+        cancelWhen: cancel.future,
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      cancel.complete();
+
+      await expectLater(
+        fetch.timeout(const Duration(seconds: 2)),
+        throwsA(isA<FetchCancelled>()),
+      );
+    });
+
+    test('a fetch abandoned before it reaches a gateway sends nothing',
+        () async {
+      final client = _FakeHttpClient((_) => _streamed('{}', 200));
+
+      await expectLater(
+        DataGatewayFallback(
+          arioSDK: arioSDK,
+          clientFactory: () => client,
+        ).fetchManifestWithFallback(
+          txId,
+          primaryClient,
+          cancelWhen: Future<void>.value(),
+        ),
+        throwsA(isA<FetchCancelled>()),
+      );
+
+      expect(client.sends, 0);
+    });
+
+    test('says it was cancelled when the last gateway answers 404 after it',
+        () async {
+      when(() => primaryApi.gatewayUrl)
+          .thenReturn(Uri.parse('https://arweave.net'));
+      final cancel = Completer<void>();
+      final client = _FakeHttpClient((_) {
+        // The cancel lands while the gateway is answering.
+        cancel.complete();
+        return _streamed('not found', 404);
+      });
+
+      await expectLater(
+        DataGatewayFallback(
+          arioSDK: arioSDK,
+          clientFactory: () => client,
+        ).fetchManifestWithFallback(
+          txId,
+          primaryClient,
+          cancelWhen: cancel.future,
+        ),
+        throwsA(isA<FetchCancelled>()),
+      );
+    });
+
+    test('a fetch nobody cancels finishes as before', () async {
+      final client = _FakeHttpClient((_) => _streamed('{}', 200));
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchManifestWithFallback(
+        txId,
+        primaryClient,
+        cancelWhen: Completer<void>().future,
+      );
+
+      expect(response.body, '{}');
     });
   });
 

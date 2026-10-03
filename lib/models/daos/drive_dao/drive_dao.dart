@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/utils/preview_byte_cache.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -33,23 +34,28 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   late Vault<DriveKey> _driveKeyVault;
 
-  late Vault<Uint8List> _previewVault;
+  /// Completes once [_driveKeyVault] exists. Every use of the vault waits for
+  /// it: the constructor cannot await, and a drive key stored in the moment
+  /// after start-up used to reach for a vault that was not there yet.
+  late final Future<void> _vaultsReady;
+
+  /// Recently previewed bytes, held to a total size. See [PreviewByteCache].
+  final PreviewByteCache _previewCache = PreviewByteCache();
 
   final ArDriveCrypto _crypto = ArDriveCrypto();
 
   DriveDao(
     super.db,
   ) {
-    initVaults();
+    _vaultsReady = _initVaults();
   }
 
-  initVaults() async {
+  Future<void> _initVaults() async {
     // Creates a store
     final store = await newMemoryVaultStore();
 
     // Creates a vault from the previously created store
     _driveKeyVault = await store.vault<DriveKey>(name: 'driveKeyVault');
-    _previewVault = await store.vault<Uint8List>(name: 'previewVault');
   }
 
   Future<void> deleteSharedPrivateDrives(String? owner) async {
@@ -85,6 +91,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<DriveKey?> getDriveKeyFromMemory(DriveID driveID) async {
     try {
+      await _vaultsReady;
       return await _driveKeyVault.get(driveID);
     } catch (e) {
       throw _handleError('Error getting drive key from memory', e);
@@ -96,28 +103,54 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required DriveKey driveKey,
   }) async {
     try {
+      await _vaultsReady;
       return await _driveKeyVault.put(driveID, driveKey);
     } catch (e) {
       throw _handleError('Error putting drive key in memory', e);
     }
   }
 
-  Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async {
-    try {
-      return await _previewVault.get(dataTxId);
-    } catch (e) {
-      throw _handleError('Error getting preview data from memory', e);
-    }
-  }
+  Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async =>
+      _previewCache.get(dataTxId);
 
+  /// Which signed-in session the memory belongs to. [clearSessionMemory]
+  /// moves it on.
+  int _previewSession = 0;
+
+  /// The session a preview fetch starts in, to hand back to
+  /// [putPreviewDataInMemory] when its bytes arrive.
+  int get previewSession => _previewSession;
+
+  /// Keeps [bytes] for [dataTxId], unless the session they were fetched in
+  /// has since ended: a download that finishes after logout must not put the
+  /// previous session's bytes back into memory that logout just cleared.
   Future<void> putPreviewDataInMemory({
     required TxID dataTxId,
     required Uint8List bytes,
+    required int session,
   }) async {
+    if (session != _previewSession) {
+      return;
+    }
+
+    _previewCache.put(dataTxId, bytes);
+  }
+
+  /// Forgets everything this DAO holds in memory for the signed-in session:
+  /// drive keys, and the bytes of recently previewed files.
+  ///
+  /// Logout deletes every table, and used to leave both of these behind until
+  /// the tab closed - including the keys to shared private drives opened from
+  /// a `driveKey` link, which are kept here rather than in the database.
+  Future<void> clearSessionMemory() async {
+    _previewSession++;
+    _previewCache.clear();
+
     try {
-      await _previewVault.put(dataTxId, bytes);
+      await _vaultsReady;
+      await _driveKeyVault.clear();
     } catch (e) {
-      throw _handleError('Error putting preview data in memory', e);
+      throw _handleError('Error clearing drive keys from memory', e);
     }
   }
 
