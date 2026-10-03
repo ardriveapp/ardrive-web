@@ -1,0 +1,16 @@
+{
+  "configVersion": 3,
+  "defaultArweaveGatewayUrl": "https://turbo-gateway.com",
+  "defaultArweaveGatewayForDataRequest": {
+    "label": "Turbo Gateway",
+    "url": "https://turbo-gateway.com"
+  },
+  "useTurboUpload": true,
+  "useTurboPayment": true,
+  "defaultTurboUploadUrl": "https://upload.services.ar-io.dev",
+  "defaultTurboPaymentUrl": "https://payment.services.ar-io.dev",
+  "allowedDataItemSizeForTurbo": 100000,
+  "stripePublishableKey": "pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z",
+  "uploadThumbnails": true,
+  "autoSync": false
+}
