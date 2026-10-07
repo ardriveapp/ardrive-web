@@ -11,6 +11,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/presentation/widgets/gateway_input_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/permanence/permanence_panel.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/services/config/config_service.dart';
@@ -439,7 +440,11 @@ class _ProfileCardState extends State<ProfileCard> {
     if (_accountStatsFuture == null ||
         _accountStatsForWallet != walletAddress) {
       _accountStatsForWallet = walletAddress;
-      _accountStatsFuture = _getAccountStats(driveDao, walletAddress);
+      _accountStatsFuture = _getAccountStats(
+        driveDao,
+        walletAddress,
+        context.read<ConfigService>(),
+      );
     }
 
     return FutureBuilder<_AccountStats>(
@@ -447,16 +452,59 @@ class _ProfileCardState extends State<ProfileCard> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const SizedBox.shrink();
         final stats = snapshot.data!;
+        final usdPerGb = stats.usdPerGb;
+        final costToday = usdPerGb == null
+            ? null
+            : stats.totalSize / (1024 * 1024 * 1024) * usdPerGb;
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: Center(
-            child: Text(
-              '${stats.driveCount} ${stats.driveCount == 1 ? 'drive' : 'drives'} · ${stats.fileCount} ${stats.fileCount == 1 ? 'file' : 'files'} · ${_formatBytes(stats.totalSize)}',
-              style: typography.caption(
-                color: colorTokens.textLow,
-                fontWeight: ArFontWeight.book,
+          child: Column(
+            children: [
+              Text(
+                '${stats.driveCount} ${stats.driveCount == 1 ? 'drive' : 'drives'} · ${stats.fileCount} ${stats.fileCount == 1 ? 'file' : 'files'} · ${_formatBytes(stats.totalSize)}',
+                style: typography.caption(
+                  color: colorTokens.textLow,
+                  fontWeight: ArFontWeight.book,
+                ),
               ),
-            ),
+              if (costToday != null) ...[
+                const SizedBox(height: 4),
+                ArDriveClickArea(
+                  child: GestureDetector(
+                    onTap: () async {
+                      final bytesByYear = await context
+                          .read<DriveDao>()
+                          .bytesByYearCreated(stats.driveIds);
+
+                      if (!context.mounted) return;
+
+                      setState(() {
+                        _showProfileCard = false;
+                      });
+
+                      showPermanencePanel(
+                        context,
+                        PermanenceSummary(
+                          totalBytes: stats.totalSize,
+                          fileCount: stats.fileCount,
+                          driveCount: stats.driveCount,
+                          bytesByYear: bytesByYear,
+                          usdPerGb: usdPerGb,
+                        ),
+                      );
+                    },
+                    child: Text(
+                      '\$${costToday.toStringAsFixed(0)} to store it today  ›',
+                      style: typography.caption(
+                        color: colorTokens.textRed,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         );
       },
@@ -488,6 +536,7 @@ class _ProfileCardState extends State<ProfileCard> {
   Future<_AccountStats> _getAccountStats(
     DriveDao driveDao,
     String walletAddress,
+    ConfigService configService,
   ) async {
     // Only the drives this wallet owns, and only the ones it is showing.
     //
@@ -526,10 +575,17 @@ class _ProfileCardState extends State<ProfileCard> {
       totalSize += summary.totalSize;
     }
 
+    // PROTOTYPE: today's price, from Turbo's public rates.
+    final paymentUrl = configService.config.defaultTurboPaymentUrl ??
+        'https://payment.ardrive.io';
+    final usdPerGb = await fetchUsdPerGb(paymentUrl);
+
     return _AccountStats(
       driveCount: drives.length,
       fileCount: fileCount,
       totalSize: totalSize,
+      driveIds: [for (final drive in drives) drive.id],
+      usdPerGb: usdPerGb,
     );
   }
 
@@ -1503,10 +1559,14 @@ class _AccountStats {
   final int driveCount;
   final int fileCount;
   final int totalSize;
+  final List<String> driveIds;
+  final double? usdPerGb;
 
   _AccountStats({
     required this.driveCount,
     required this.fileCount,
     required this.totalSize,
+    this.driveIds = const [],
+    this.usdPerGb,
   });
 }

@@ -960,6 +960,26 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     };
   }
 
+  /// PROTOTYPE: bytes of the files in [driveIds], grouped by the year each
+  /// was created, oldest first.
+  Future<Map<int, int>> bytesByYearCreated(Iterable<String> driveIds) async {
+    final year = fileEntries.dateCreated.year;
+    final totalSize = fileEntries.size.sum();
+
+    final query = selectOnly(fileEntries)
+      ..addColumns([year, totalSize])
+      ..where(fileEntries.driveId.isIn(driveIds))
+      ..groupBy([year])
+      ..orderBy([OrderingTerm.asc(year)]);
+
+    final rows = await query.get();
+
+    return {
+      for (final row in rows)
+        if (row.read(year) != null) row.read(year)!: row.read(totalSize) ?? 0,
+    };
+  }
+
   /// Whether any transaction is still waiting to be resolved as confirmed or
   /// failed.
   ///
