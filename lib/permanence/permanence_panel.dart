@@ -60,39 +60,71 @@ Future<TurboRates?> fetchTurboRates(String paymentUrl) async {
   }
 }
 
+/// How reading the wallet's spending went.
+class SpendLookup {
+  const SpendLookup._({this.estimate, this.failed = false});
+
+  /// The history could not be read: a signature the wallet refused, the
+  /// service unreachable. Not the same as there being nothing to read.
+  const SpendLookup.failed() : this._(failed: true);
+
+  /// The history was read, and holds no top-ups.
+  const SpendLookup.none() : this._();
+
+  const SpendLookup.found(SpendEstimate estimate) : this._(estimate: estimate);
+
+  final SpendEstimate? estimate;
+  final bool failed;
+}
+
 /// What [wallet] has spent on storage, from its Turbo top-ups. See
-/// [estimateSpend]. Null when there is nothing to estimate from, or the
-/// history could not be read.
-Future<SpendEstimate?> loadSpendEstimate({
+/// [estimateSpend].
+Future<SpendLookup> loadSpendEstimate({
   required PaymentService paymentService,
   required Wallet wallet,
   required TurboRates rates,
 }) async {
+  final List<Map<String, dynamic>> history;
+
   try {
-    final history = await paymentService.getPaymentHistory(wallet: wallet);
-
-    if (history.isEmpty) {
-      return null;
-    }
-
-    BigInt balance;
-    try {
-      balance = await paymentService.getBalance(wallet: wallet);
-    } on TurboUserNotFound {
-      balance = BigInt.zero;
-    }
-
-    return estimateSpend(
-      topUps: [
-        for (final row in history)
-          TurboTopUp.fromJson(row, usdPerUnit: rates.usdPerUnit),
-      ],
-      balanceWinc: balance,
-    );
+    history = await paymentService.getPaymentHistory(wallet: wallet);
   } catch (e) {
     logger.w('Could not read the Turbo payment history: $e');
-    return null;
+    return const SpendLookup.failed();
   }
+
+  // PROTOTYPE: what the rows look like, to check the reading of them against
+  // real accounts. Kinds and amounts only - no ids, no addresses.
+  final rows = history
+      .map((row) => row['type'] == 'crypto'
+          ? 'crypto ${row['tokenType']} usd=${row['usdEquivalent']}'
+          : 'fiat ${row['paymentProvider']} ${row['currencyType']} '
+              'amount=${row['paymentAmount']} '
+              'gift=${row['giftMessage'] != null}')
+      .join('; ');
+  logger.i('Turbo payment history: ${history.length} rows - $rows');
+
+  BigInt balance;
+  try {
+    balance = await paymentService.getBalance(wallet: wallet);
+  } on TurboUserNotFound {
+    balance = BigInt.zero;
+  } catch (e) {
+    logger.w('Could not read the Turbo balance: $e');
+    return const SpendLookup.failed();
+  }
+
+  final estimate = estimateSpend(
+    topUps: [
+      for (final row in history)
+        TurboTopUp.fromJson(row, usdPerUnit: rates.usdPerUnit),
+    ],
+    balanceWinc: balance,
+  );
+
+  return estimate == null
+      ? const SpendLookup.none()
+      : SpendLookup.found(estimate);
 }
 
 /// What the permanence panel shows.
@@ -117,7 +149,7 @@ class PermanenceSummary {
   final double? usdPerGb;
 
   /// What the wallet has spent, still arriving when the panel opens.
-  final Future<SpendEstimate?>? spend;
+  final Future<SpendLookup>? spend;
 
   static const _gb = 1024 * 1024 * 1024;
 
@@ -194,28 +226,42 @@ class PermanencePanel extends StatelessWidget {
           ),
         );
 
-    final spentTile = FutureBuilder<SpendEstimate?>(
+    final spentTile = FutureBuilder<SpendLookup>(
       future: summary.spend,
       builder: (context, snapshot) {
         if (summary.spend == null) {
-          return tile('SPENT', '-', 'top-up history unavailable');
+          return tile('SPENT', '-', "couldn't read your top-ups");
         }
 
         if (snapshot.connectionState != ConnectionState.done) {
           return tile('SPENT', '...', 'reading your top-ups');
         }
 
-        final spend = snapshot.data;
+        final lookup = snapshot.data;
+        final spend = lookup?.estimate;
+
+        if (lookup == null || lookup.failed) {
+          return tile('SPENT', '-', "couldn't read your top-ups");
+        }
 
         if (spend == null) {
           return tile('SPENT', '-', 'no top-ups found');
         }
 
+        String plural(int n, String one) => '$n $one${n == 1 ? '' : 's'}';
+
+        if (spend.paidCount == 0) {
+          return tile(
+            'SPENT',
+            _usd.format(0),
+            '${plural(spend.grantCount, 'credit grant')}, nothing bought',
+          );
+        }
+
         return tile(
           'SPENT',
           _usd.format(spend.usd),
-          'estimated, from ${spend.topUpCount} '
-              '${spend.topUpCount == 1 ? 'top-up' : 'top-ups'}',
+          'estimated, from ${plural(spend.paidCount, 'top-up')}',
         );
       },
     );

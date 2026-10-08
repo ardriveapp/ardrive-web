@@ -7,55 +7,42 @@ void main() {
   TurboTopUp row(Map<String, dynamic> json) =>
       TurboTopUp.fromJson(json, usdPerUnit: usdPerUnit);
 
-  group('reading a payment history row', () {
-    test('a card payment in dollars is in cents', () {
-      final topUp = row({
+  Map<String, dynamic> card({
+    String amount = '2500',
+    String currency = 'usd',
+    String provider = 'stripe',
+    String? giftMessage,
+  }) =>
+      {
         'type': 'fiat',
         'wincCredited': '1000',
-        'paymentAmount': '2500',
-        'currencyType': 'usd',
-        'giftMessage': null,
-      });
+        'paymentAmount': amount,
+        'currencyType': currency,
+        'paymentProvider': provider,
+        'giftMessage': giftMessage,
+      };
+
+  group('reading a payment history row', () {
+    test('a card payment in dollars is in cents', () {
+      final topUp = row(card());
 
       expect(topUp.usd, 25.0);
       expect(topUp.wincCredited, BigInt.from(1000));
-      expect(topUp.isGift, isFalse);
+      expect(topUp.isGrant, isFalse);
     });
 
     test('a card payment in another currency is converted to dollars', () {
-      final topUp = row({
-        'type': 'fiat',
-        'wincCredited': '1000',
-        'paymentAmount': '1000',
-        'currencyType': 'EUR',
-        'giftMessage': null,
-      });
-
-      expect(topUp.usd, closeTo(11.0, 1e-9));
+      expect(
+          row(card(amount: '1000', currency: 'EUR')).usd, closeTo(11.0, 1e-9));
     });
 
     test('yen has no cents', () {
-      final topUp = row({
-        'type': 'fiat',
-        'wincCredited': '1000',
-        'paymentAmount': '3000',
-        'currencyType': 'jpy',
-        'giftMessage': null,
-      });
-
-      expect(topUp.usd, closeTo(20.1, 1e-9));
+      expect(
+          row(card(amount: '3000', currency: 'jpy')).usd, closeTo(20.1, 1e-9));
     });
 
     test('a currency that cannot be converted has no dollar value', () {
-      final topUp = row({
-        'type': 'fiat',
-        'wincCredited': '1000',
-        'paymentAmount': '1000',
-        'currencyType': 'xyz',
-        'giftMessage': null,
-      });
-
-      expect(topUp.usd, isNull);
+      expect(row(card(amount: '1000', currency: 'xyz')).usd, isNull);
     });
 
     test('a crypto top-up carries its dollar value from when it landed', () {
@@ -66,36 +53,67 @@ void main() {
       });
 
       expect(topUp.usd, 12.34);
-      expect(topUp.isGift, isFalse);
+      expect(topUp.isGrant, isFalse);
     });
 
-    test('a row with a gift message is a gift', () {
-      final topUp = row({
-        'type': 'fiat',
-        'wincCredited': '1000',
-        'paymentAmount': '1000',
-        'currencyType': 'usd',
-        'giftMessage': 'happy birthday',
-      });
+    test('credits an admin granted were not bought', () {
+      // What the console calls "Credit grant via admin".
+      final topUp = row(card(provider: 'admin', currency: 'usd'));
 
-      expect(topUp.isGift, isTrue);
+      expect(topUp.isGrant, isTrue);
+      expect(topUp.usd, 0);
+    });
+
+    test('nothing charged is a grant, whatever the provider', () {
+      expect(row(card(amount: '0')).isGrant, isTrue);
+    });
+
+    test('a gift is a grant', () {
+      expect(row(card(giftMessage: 'happy birthday')).isGrant, isTrue);
     });
   });
 
   group('estimating what was spent', () {
     TurboTopUp paid(int winc, double usd) =>
-        TurboTopUp(wincCredited: BigInt.from(winc), usd: usd, isGift: false);
+        TurboTopUp(wincCredited: BigInt.from(winc), usd: usd, isGrant: false);
+    TurboTopUp granted(int winc) =>
+        TurboTopUp(wincCredited: BigInt.from(winc), usd: 0, isGrant: true);
 
     test('credits used, at the average price paid for them', () {
-      // 1,000 credits for $10 and 1,000 for $30: $0.02 each on average.
-      // 500 are left, so 1,500 were used.
+      // 1,000 credits for $10 and 1,000 for $30. 500 are left, so 1,500 of
+      // the 2,000 were used: three quarters of the $40.
       final estimate = estimateSpend(
         topUps: [paid(1000, 10), paid(1000, 30)],
         balanceWinc: BigInt.from(500),
       );
 
       expect(estimate!.usd, closeTo(30.0, 1e-9));
-      expect(estimate.topUpCount, 2);
+      expect(estimate.paidCount, 2);
+      expect(estimate.grantCount, 0);
+    });
+
+    test('a wallet whose credits were all granted has spent nothing', () {
+      final estimate = estimateSpend(
+        topUps: [granted(5000), granted(400), granted(5000)],
+        balanceWinc: BigInt.from(100),
+      );
+
+      expect(estimate!.usd, 0);
+      expect(estimate.paidCount, 0);
+      expect(estimate.grantCount, 3);
+    });
+
+    test('bought and granted credits are used in proportion', () {
+      // 1,000 bought for $10 and 1,000 granted. Half of all of it is used, so
+      // half of what was bought: $5.
+      final estimate = estimateSpend(
+        topUps: [paid(1000, 10), granted(1000)],
+        balanceWinc: BigInt.from(1000),
+      );
+
+      expect(estimate!.usd, closeTo(5.0, 1e-9));
+      expect(estimate.paidCount, 1);
+      expect(estimate.grantCount, 1);
     });
 
     test('nothing used is nothing spent', () {
@@ -107,8 +125,8 @@ void main() {
       expect(estimate!.usd, 0);
     });
 
-    test('a balance above what was bought does not make spending negative', () {
-      // Gifted or shared credits on top of what was paid for.
+    test('a balance above what came in does not make spending negative', () {
+      // Credits shared from another wallet sit in the balance too.
       final estimate = estimateSpend(
         topUps: [paid(1000, 10)],
         balanceWinc: BigInt.from(5000),
@@ -117,29 +135,24 @@ void main() {
       expect(estimate!.usd, 0);
     });
 
-    test('gifts and rows with no price are left out', () {
+    test('rows with no known price are left out', () {
       final estimate = estimateSpend(
         topUps: [
           paid(1000, 10),
           TurboTopUp(
             wincCredited: BigInt.from(9000),
-            usd: 90,
-            isGift: true,
-          ),
-          TurboTopUp(
-            wincCredited: BigInt.from(9000),
             usd: null,
-            isGift: false,
+            isGrant: false,
           ),
         ],
         balanceWinc: BigInt.zero,
       );
 
       expect(estimate!.usd, 10);
-      expect(estimate.topUpCount, 1);
+      expect(estimate.paidCount, 1);
     });
 
-    test('no paid top-ups is no estimate, not zero', () {
+    test('no top-ups is no estimate, not zero', () {
       // Free uploads, or uploads paid in AR directly: nothing to go on.
       expect(estimateSpend(topUps: [], balanceWinc: BigInt.zero), isNull);
     });
