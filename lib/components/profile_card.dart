@@ -56,6 +56,13 @@ class _ProfileCardState extends State<ProfileCard> {
   /// Whose statistics [_accountStatsFuture] holds.
   String? _accountStatsForWallet;
 
+  /// The last stats that finished, shown while a fresh count runs, so the
+  /// line does not blink out every time the card opens.
+  _AccountStats? _lastAccountStats;
+
+  /// Turbo's prices, fetched once rather than on every open.
+  Future<TurboRates?>? _ratesFuture;
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileCubit, ProfileState>(
@@ -437,6 +444,10 @@ class _ProfileCardState extends State<ProfileCard> {
     // while the profile changes between logged-in and logged-out, so a plain
     // `??=` let a second account read the first one's drive count, file count
     // and size.
+    if (_accountStatsForWallet != walletAddress) {
+      _lastAccountStats = null;
+    }
+
     if (_accountStatsFuture == null ||
         _accountStatsForWallet != walletAddress) {
       _accountStatsForWallet = walletAddress;
@@ -450,61 +461,90 @@ class _ProfileCardState extends State<ProfileCard> {
     return FutureBuilder<_AccountStats>(
       future: _accountStatsFuture,
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox.shrink();
-        final stats = snapshot.data!;
+        if (snapshot.hasData) {
+          _lastAccountStats = snapshot.data;
+        }
+
+        final stats = snapshot.data ?? _lastAccountStats;
+
+        // Nothing synced, or nothing owned: no line saying "0 drives". The
+        // numbers appear once there is something to count.
+        if (stats == null || stats.driveCount == 0) {
+          return const SizedBox.shrink();
+        }
+
         final usdPerGb = stats.usdPerGb;
-        final costToday = usdPerGb == null
+        final costToday = usdPerGb == null || stats.totalSize == 0
             ? null
             : stats.totalSize / (1024 * 1024 * 1024) * usdPerGb;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
-          child: Column(
-            children: [
-              Text(
-                '${stats.driveCount} ${stats.driveCount == 1 ? 'drive' : 'drives'} · ${stats.fileCount} ${stats.fileCount == 1 ? 'file' : 'files'} · ${_formatBytes(stats.totalSize)}',
-                style: typography.caption(
-                  color: colorTokens.textLow,
-                  fontWeight: ArFontWeight.book,
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  '${stats.driveCount} ${stats.driveCount == 1 ? 'drive' : 'drives'} · ${stats.fileCount} ${stats.fileCount == 1 ? 'file' : 'files'} · ${_formatBytes(stats.totalSize)}',
+                  style: typography.caption(
+                    color: colorTokens.textLow,
+                    fontWeight: ArFontWeight.book,
+                  ),
                 ),
-              ),
-              if (costToday != null) ...[
-                const SizedBox(height: 4),
-                ArDriveClickArea(
-                  child: GestureDetector(
-                    onTap: () async {
-                      final bytesByYear = await context
-                          .read<DriveDao>()
-                          .bytesByYearCreated(stats.driveIds);
+                if (costToday != null) ...[
+                  const SizedBox(height: 4),
+                  ArDriveClickArea(
+                    child: GestureDetector(
+                      onTap: () async {
+                        final bytesByYear = await context
+                            .read<DriveDao>()
+                            .bytesByYearCreated(stats.driveIds);
 
-                      if (!context.mounted) return;
+                        if (!context.mounted) return;
 
-                      setState(() {
-                        _showProfileCard = false;
-                      });
+                        // Started here and shown as it arrives: it is a
+                        // signed request, and may ask the wallet to sign.
+                        final rates = stats.rates;
+                        final spend = rates == null
+                            ? null
+                            : loadSpendEstimate(
+                                paymentService: context.read<PaymentService>(),
+                                wallet: context
+                                    .read<ArDriveAuth>()
+                                    .currentUser
+                                    .wallet,
+                                rates: rates,
+                              );
 
-                      showPermanencePanel(
-                        context,
-                        PermanenceSummary(
-                          totalBytes: stats.totalSize,
-                          fileCount: stats.fileCount,
-                          driveCount: stats.driveCount,
-                          bytesByYear: bytesByYear,
-                          usdPerGb: usdPerGb,
+                        setState(() {
+                          _showProfileCard = false;
+                        });
+
+                        showPermanencePanel(
+                          context,
+                          PermanenceSummary(
+                            totalBytes: stats.totalSize,
+                            fileCount: stats.fileCount,
+                            driveCount: stats.driveCount,
+                            bytesByYear: bytesByYear,
+                            usdPerGb: usdPerGb,
+                            spend: spend,
+                          ),
+                        );
+                      },
+                      child: Text(
+                        '\$${costToday.toStringAsFixed(0)} to store it today  ›',
+                        style: typography.caption(
+                          color: colorTokens.textRed,
+                          fontWeight: ArFontWeight.semiBold,
                         ),
-                      );
-                    },
-                    child: Text(
-                      '\$${costToday.toStringAsFixed(0)} to store it today  ›',
-                      style: typography.caption(
-                        color: colorTokens.textRed,
-                        fontWeight: ArFontWeight.semiBold,
                       ),
                     ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
@@ -578,14 +618,14 @@ class _ProfileCardState extends State<ProfileCard> {
     // PROTOTYPE: today's price, from Turbo's public rates.
     final paymentUrl = configService.config.defaultTurboPaymentUrl ??
         'https://payment.ardrive.io';
-    final usdPerGb = await fetchUsdPerGb(paymentUrl);
+    final rates = await (_ratesFuture ??= fetchTurboRates(paymentUrl));
 
     return _AccountStats(
       driveCount: drives.length,
       fileCount: fileCount,
       totalSize: totalSize,
       driveIds: [for (final drive in drives) drive.id],
-      usdPerGb: usdPerGb,
+      rates: rates,
     );
   }
 
@@ -977,6 +1017,12 @@ class _ProfileCardState extends State<ProfileCard> {
       onPressed: () {
         setState(() {
           _showProfileCard = !_showProfileCard;
+
+          // Counted again on every open: a card first opened before the
+          // sync finished otherwise kept saying 0 drives until a reload.
+          if (_showProfileCard) {
+            _accountStatsFuture = null;
+          }
         });
       },
     );
@@ -1560,13 +1606,15 @@ class _AccountStats {
   final int fileCount;
   final int totalSize;
   final List<String> driveIds;
-  final double? usdPerGb;
+  final TurboRates? rates;
+
+  double? get usdPerGb => rates?.usdPerGb;
 
   _AccountStats({
     required this.driveCount,
     required this.fileCount,
     required this.totalSize,
     this.driveIds = const [],
-    this.usdPerGb,
+    this.rates,
   });
 }

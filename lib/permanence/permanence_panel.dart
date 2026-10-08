@@ -1,45 +1,35 @@
-// PROTOTYPE - for design review on a local branch, not for merge.
+// PROTOTYPE - for design review on the preview build, not for release.
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
+import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/permanence/spend_estimate.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart' hide TextDirection;
 
-/// What the permanence panel shows.
-class PermanenceSummary {
-  const PermanenceSummary({
-    required this.totalBytes,
-    required this.fileCount,
-    required this.driveCount,
-    required this.bytesByYear,
-    required this.usdPerGb,
-  });
+/// Turbo's current prices, from its public `GET /v1/rates`.
+class TurboRates {
+  const TurboRates({required this.usdPerGb, required this.usdPerUnit});
 
-  final int totalBytes;
-  final int fileCount;
-  final int driveCount;
+  /// What 1 GB of storage costs, in US dollars.
+  final double usdPerGb;
 
-  /// Bytes uploaded in each year, oldest first.
-  final Map<int, int> bytesByYear;
-
-  /// Turbo's current price for 1 GB, in US dollars. Null when it could not be
-  /// fetched.
-  final double? usdPerGb;
-
-  static const _gb = 1024 * 1024 * 1024;
-
-  double get gb => totalBytes / _gb;
-
-  double? get costToday => usdPerGb == null ? null : gb * usdPerGb!;
-
-  int? get firstYear => bytesByYear.isEmpty ? null : bytesByYear.keys.first;
+  /// What one whole unit of each currency is worth in US dollars, by
+  /// lower-case code. Worked out from the price of a GB in each currency.
+  final Map<String, double> usdPerUnit;
 }
 
-/// Turbo's price for 1 GB of storage, in US dollars.
-Future<double?> fetchUsdPerGb(String paymentUrl) async {
+Future<TurboRates?> fetchTurboRates(String paymentUrl) async {
   try {
     final response = await http
         .get(Uri.parse('$paymentUrl/v1/rates'))
@@ -50,10 +40,92 @@ Future<double?> fetchUsdPerGb(String paymentUrl) async {
     }
 
     final body = jsonDecode(response.body) as Map<String, dynamic>;
-    return (body['fiat'] as Map<String, dynamic>)['usd'] as double?;
+    final fiat = (body['fiat'] as Map<String, dynamic>)
+        .map((code, perGb) => MapEntry(code, (perGb as num).toDouble()));
+    final usdPerGb = fiat['usd'];
+
+    if (usdPerGb == null) {
+      return null;
+    }
+
+    return TurboRates(
+      usdPerGb: usdPerGb,
+      usdPerUnit: {
+        for (final entry in fiat.entries)
+          if (entry.value > 0) entry.key: usdPerGb / entry.value,
+      },
+    );
   } catch (_) {
     return null;
   }
+}
+
+/// What [wallet] has spent on storage, from its Turbo top-ups. See
+/// [estimateSpend]. Null when there is nothing to estimate from, or the
+/// history could not be read.
+Future<SpendEstimate?> loadSpendEstimate({
+  required PaymentService paymentService,
+  required Wallet wallet,
+  required TurboRates rates,
+}) async {
+  try {
+    final history = await paymentService.getPaymentHistory(wallet: wallet);
+
+    if (history.isEmpty) {
+      return null;
+    }
+
+    BigInt balance;
+    try {
+      balance = await paymentService.getBalance(wallet: wallet);
+    } on TurboUserNotFound {
+      balance = BigInt.zero;
+    }
+
+    return estimateSpend(
+      topUps: [
+        for (final row in history)
+          TurboTopUp.fromJson(row, usdPerUnit: rates.usdPerUnit),
+      ],
+      balanceWinc: balance,
+    );
+  } catch (e) {
+    logger.w('Could not read the Turbo payment history: $e');
+    return null;
+  }
+}
+
+/// What the permanence panel shows.
+class PermanenceSummary {
+  const PermanenceSummary({
+    required this.totalBytes,
+    required this.fileCount,
+    required this.driveCount,
+    required this.bytesByYear,
+    required this.usdPerGb,
+    this.spend,
+  });
+
+  final int totalBytes;
+  final int fileCount;
+  final int driveCount;
+
+  /// Bytes uploaded in each year, oldest first.
+  final Map<int, int> bytesByYear;
+
+  /// Turbo's current price for 1 GB, in US dollars.
+  final double? usdPerGb;
+
+  /// What the wallet has spent, still arriving when the panel opens.
+  final Future<SpendEstimate?>? spend;
+
+  static const _gb = 1024 * 1024 * 1024;
+
+  double get gb => totalBytes / _gb;
+
+  double? get costToday => usdPerGb == null ? null : gb * usdPerGb!;
+
+  int? get firstYear => bytesByYear.isEmpty ? null : bytesByYear.keys.first;
 }
 
 final _usd = NumberFormat.currency(symbol: r'$', decimalDigits: 0);
@@ -89,9 +161,6 @@ class PermanencePanel extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final costToday = summary.costToday;
-    // Prototype only: the history endpoint needs a signed request, so this is
-    // a sample figure until that is wired.
-    final spentSample = costToday == null ? null : costToday * 1.12;
 
     Widget tile(String label, String value, String note) => Expanded(
           child: Container(
@@ -124,6 +193,32 @@ class PermanencePanel extends StatelessWidget {
             ),
           ),
         );
+
+    final spentTile = FutureBuilder<SpendEstimate?>(
+      future: summary.spend,
+      builder: (context, snapshot) {
+        if (summary.spend == null) {
+          return tile('SPENT', '-', 'top-up history unavailable');
+        }
+
+        if (snapshot.connectionState != ConnectionState.done) {
+          return tile('SPENT', '...', 'reading your top-ups');
+        }
+
+        final spend = snapshot.data;
+
+        if (spend == null) {
+          return tile('SPENT', '-', 'no top-ups found');
+        }
+
+        return tile(
+          'SPENT',
+          _usd.format(spend.usd),
+          'estimated, from ${spend.topUpCount} '
+              '${spend.topUpCount == 1 ? 'top-up' : 'top-ups'}',
+        );
+      },
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -179,11 +274,7 @@ class PermanencePanel extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              tile(
-                'SPENT',
-                spentSample == null ? '-' : _usd.format(spentSample),
-                'sample until history is wired',
-              ),
+              spentTile,
               const SizedBox(width: 12),
               tile(
                 'COST TODAY',
@@ -226,14 +317,191 @@ class PermanencePanel extends StatelessWidget {
         Align(
           alignment: Alignment.centerLeft,
           child: ArDriveButtonNew(
-            text: 'Share my archive',
+            text: 'Share my permanence',
             typography: typography,
             variant: ButtonVariant.outline,
-            maxWidth: 180,
-            onPressed: () {},
+            maxWidth: 220,
+            onPressed: () => showPermanenceShare(context, summary),
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The text that goes with the share card. No dollar amounts: what someone
+/// spent is theirs to tell.
+String permanenceShareText(PermanenceSummary summary) => [
+      '${_formatGb(summary.gb)} of my files, stored on Arweave for ~200 years',
+      if (summary.firstYear != null) 'Preserving since ${summary.firstYear}.',
+      'ardrive.io',
+    ].join('. ').replaceAll('..', '.');
+
+void showPermanenceShare(BuildContext context, PermanenceSummary summary) {
+  final cardKey = GlobalKey();
+  final typography = ArDriveTypographyNew.of(context);
+
+  showArDriveDialog(
+    context,
+    content: StatefulBuilder(
+      builder: (context, setState) => ArDriveStandardModalNew(
+        width: 560,
+        hasCloseButton: true,
+        titleWidget: Text(
+          'Share your permanence',
+          style: typography.heading3(fontWeight: ArFontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 12),
+            // Drawn at 600 x 315 and saved at twice that: the 1200 x 630
+            // that social sites expect for a link card.
+            FittedBox(
+              child: RepaintBoundary(
+                key: cardKey,
+                child: PermanenceShareCard(summary: summary),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              permanenceShareText(summary),
+              style: typography.paragraphSmall(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+                fontWeight: ArFontWeight.book,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ModalAction(
+            title: 'Copy text',
+            action: () {
+              Clipboard.setData(
+                ClipboardData(text: permanenceShareText(summary)),
+              );
+              Navigator.of(context).pop();
+            },
+          ),
+          ModalAction(
+            title: 'Download image',
+            action: () async {
+              final boundary = cardKey.currentContext?.findRenderObject()
+                  as RenderRepaintBoundary?;
+
+              if (boundary == null) {
+                return;
+              }
+
+              final image = await boundary.toImage(pixelRatio: 2);
+              final png =
+                  await image.toByteData(format: ui.ImageByteFormat.png);
+
+              if (png == null) {
+                return;
+              }
+
+              await ArDriveIO().saveFile(
+                await IOFile.fromData(
+                  png.buffer.asUint8List(),
+                  name: 'my-permanence.png',
+                  lastModifiedDate: DateTime.now(),
+                  contentType: 'image/png',
+                ),
+              );
+
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// The card people share: the size, the years and the strata, on the brand's
+/// dark ground. Always dark, whatever the app's theme, so it looks the same
+/// wherever it is posted.
+class PermanenceShareCard extends StatelessWidget {
+  const PermanenceShareCard({super.key, required this.summary});
+
+  final PermanenceSummary summary;
+
+  static const _ground = Color(0xFF0E0E0F);
+  static const _brand = Color(0xFFFE0230);
+  static const _text = Color(0xFFFAFAFA);
+  static const _muted = Color(0xFFA3A3A3);
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Container(
+      width: 600,
+      height: 315,
+      color: _ground,
+      padding: const EdgeInsets.all(32),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Image.asset(
+                  Resources.images.brand.whiteLogo2,
+                  height: 22,
+                ),
+                const Spacer(),
+                Text(
+                  _formatGb(summary.gb),
+                  style: typography
+                      .display(fontWeight: ArFontWeight.bold)
+                      .copyWith(color: _text, height: 1),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'preserved for ~200 years',
+                  style: typography.paragraphLarge(
+                    color: _text,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  [
+                    if (summary.firstYear != null) 'Since ${summary.firstYear}',
+                    '${NumberFormat.decimalPattern().format(summary.fileCount)} files',
+                  ].join(' · '),
+                  style: typography.paragraphNormal(
+                    color: _muted,
+                    fontWeight: ArFontWeight.book,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            flex: 4,
+            child: CustomPaint(
+              painter: _StrataPainter(
+                bytesByYear: summary.bytesByYear,
+                brand: _brand,
+                base: _ground,
+                label: _text,
+                muted: _muted,
+                labelStyle: typography.caption(fontWeight: ArFontWeight.bold),
+                mutedStyle: typography.caption(fontWeight: ArFontWeight.book),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -261,6 +529,10 @@ class _StrataPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (bytesByYear.isEmpty) {
+      return;
+    }
+
     const labelWidth = 104.0;
     const minBand = 16.0;
     final layers = bytesByYear.entries.toList();
