@@ -1,4 +1,3 @@
-// PROTOTYPE - for design review on the preview build, not for release.
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -7,11 +6,13 @@ import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/permanence/spend_estimate.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:arweave/arweave.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -153,18 +154,44 @@ class PermanenceSummary {
 
   static const _gb = 1024 * 1024 * 1024;
 
-  double get gb => totalBytes / _gb;
-
-  double? get costToday => usdPerGb == null ? null : gb * usdPerGb!;
+  double? get costToday =>
+      usdPerGb == null ? null : totalBytes / _gb * usdPerGb!;
 
   int? get firstYear => bytesByYear.isEmpty ? null : bytesByYear.keys.first;
 }
 
 final _usd = NumberFormat.currency(symbol: r'$', decimalDigits: 0);
 final _usdCents = NumberFormat.currency(symbol: r'$', decimalDigits: 2);
+final _count = NumberFormat.decimalPattern();
 
-String _formatGb(double gb) =>
-    gb >= 10 ? '${gb.toStringAsFixed(0)} GB' : '${gb.toStringAsFixed(1)} GB';
+/// A dollar figure as the permanence panel shows it: whole dollars, with
+/// thousands separated.
+String formatPermanenceUsd(double usd) => _usd.format(usd);
+
+/// Sizes in the units people think in, to one decimal place until that
+/// stops meaning anything.
+String _formatSize(int bytes) {
+  const kb = 1024;
+  const mb = kb * 1024;
+  const gb = mb * 1024;
+  const tb = gb * 1024;
+
+  String scaled(double value, String unit) => value >= 100
+      ? '${_count.format(value.round())} $unit'
+      : '${value.toStringAsFixed(1)} $unit';
+
+  if (bytes >= tb) return scaled(bytes / tb, 'TB');
+  if (bytes >= gb) return scaled(bytes / gb, 'GB');
+  if (bytes >= mb) return scaled(bytes / mb, 'MB');
+  return scaled(bytes / kb, 'KB');
+}
+
+/// Between items in a line of facts. Wavehaus draws its middle dot low and
+/// small, so it read as a full stop; its bullet sits on the line's middle.
+const _separator = '  •  ';
+
+String _plural(int n, String one) =>
+    '${_count.format(n)} $one${n == 1 ? '' : 's'}';
 
 void showPermanencePanel(BuildContext context, PermanenceSummary summary) {
   showArDriveDialog(
@@ -172,6 +199,7 @@ void showPermanencePanel(BuildContext context, PermanenceSummary summary) {
     content: ArDriveStandardModalNew(
       width: 460,
       hasCloseButton: true,
+      scrollableContent: true,
       titleWidget: Text(
         'Your permanence',
         style: ArDriveTypographyNew.of(context).heading3(
@@ -194,106 +222,47 @@ class PermanencePanel extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final costToday = summary.costToday;
 
-    Widget tile(String label, String value, String note) => Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: colors.containerL2,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: typography.caption(
-                      color: colors.textLow,
-                      fontWeight: ArFontWeight.semiBold,
-                    )),
-                const SizedBox(height: 6),
-                Text(value,
-                    style: typography.heading3(
-                      color: colors.textHigh,
-                      fontWeight: ArFontWeight.bold,
-                    )),
-                const SizedBox(height: 2),
-                Text(note,
-                    style: typography.caption(
-                      color: colors.textLow,
-                      fontWeight: ArFontWeight.book,
-                    )),
-              ],
-            ),
-          ),
-        );
-
-    final spentTile = FutureBuilder<SpendLookup>(
-      future: summary.spend,
-      builder: (context, snapshot) {
-        if (summary.spend == null) {
-          return tile('SPENT', '-', "couldn't read your top-ups");
-        }
-
-        if (snapshot.connectionState != ConnectionState.done) {
-          return tile('SPENT', '...', 'reading your top-ups');
-        }
-
-        final lookup = snapshot.data;
-        final spend = lookup?.estimate;
-
-        if (lookup == null || lookup.failed) {
-          return tile('SPENT', '-', "couldn't read your top-ups");
-        }
-
-        if (spend == null) {
-          return tile('SPENT', '-', 'no top-ups found');
-        }
-
-        String plural(int n, String one) => '$n $one${n == 1 ? '' : 's'}';
-
-        if (spend.paidCount == 0) {
-          return tile(
-            'SPENT',
-            _usd.format(0),
-            '${plural(spend.grantCount, 'credit grant')}, nothing bought',
-          );
-        }
-
-        return tile(
-          'SPENT',
-          _usd.format(spend.usd),
-          'estimated, from ${plural(spend.paidCount, 'top-up')}',
-        );
-      },
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(height: 8),
-        Text(
-          '${_formatGb(summary.gb)} preserved',
-          style: typography.heading1(
-            color: colors.textHigh,
-            fontWeight: ArFontWeight.bold,
+        const SizedBox(height: 12),
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: _formatSize(summary.totalBytes),
+                style: typography.heading1(
+                  color: colors.textHigh,
+                  fontWeight: ArFontWeight.bold,
+                ),
+              ),
+              TextSpan(
+                text: '  preserved',
+                style: typography.paragraphXLarge(
+                  color: colors.textMid,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           [
-            '${NumberFormat.decimalPattern().format(summary.fileCount)} files',
-            '${summary.driveCount} drives',
+            _plural(summary.fileCount, 'file'),
+            _plural(summary.driveCount, 'drive'),
             if (summary.firstYear != null) 'since ${summary.firstYear}',
-          ].join(' · '),
+          ].join(_separator),
           style: typography.paragraphNormal(
-            color: colors.textMid,
+            color: colors.textLow,
             fontWeight: ArFontWeight.book,
           ),
         ),
         if (summary.bytesByYear.isNotEmpty) ...[
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           SizedBox(
-            height: 130,
+            height: 136,
             child: CustomPaint(
               painter: _StrataPainter(
                 bytesByYear: summary.bytesByYear,
@@ -306,32 +275,47 @@ class PermanencePanel extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
-            'Each layer is a year of uploads, oldest at the bottom. The redder the layer, the more you uploaded that year.',
+            'Each layer is a year of uploads, oldest at the bottom. The '
+            'redder the layer, the more you uploaded that year.',
             style: typography.caption(
               color: colors.textLow,
               fontWeight: ArFontWeight.book,
             ),
           ),
         ],
-        const SizedBox(height: 20),
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              spentTile,
-              const SizedBox(width: 12),
-              tile(
-                'COST TODAY',
-                costToday == null ? '-' : _usd.format(costToday),
-                'to store it all now',
-              ),
-            ],
-          ),
-        ),
+        const SizedBox(height: 24),
+        LayoutBuilder(builder: (context, box) {
+          final spendTile = _SpendTile(spend: summary.spend);
+          final costTile = _Tile(
+            label: 'COST TODAY',
+            value: costToday == null ? '-' : _usd.format(costToday),
+            note: "at Turbo's current price",
+          );
+
+          // Side by side they are under 120px wide on a phone, and their
+          // notes broke mid-word. Stacked, each keeps its line.
+          if (box.maxWidth < 380) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [spendTile, const SizedBox(height: 12), costTile],
+            );
+          }
+
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: spendTile),
+                const SizedBox(width: 12),
+                Expanded(child: costTile),
+              ],
+            ),
+          );
+        }),
         if (costToday != null) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Text.rich(
             TextSpan(
               style: typography.paragraphNormal(
@@ -339,26 +323,23 @@ class PermanencePanel extends StatelessWidget {
                 fontWeight: ArFontWeight.book,
               ),
               children: [
-                const TextSpan(text: 'Paid once. Stored for ~200 years. '),
+                const TextSpan(text: 'Designed to be permanent: about '),
                 TextSpan(
-                  text: "That's ${_usdCents.format(costToday / 200)} a year.",
+                  text: '${_usdCents.format(costToday / 200)} a year',
                   style: typography.paragraphNormal(
                     color: colors.textHigh,
                     fontWeight: ArFontWeight.bold,
                   ),
                 ),
+                const TextSpan(text: ' over 200 years, at today\'s price.'),
               ],
             ),
           ),
         ],
-        const SizedBox(height: 18),
-        Text(
-          'Across your synced drives. Files you own, counted once.',
-          style: typography.caption(
-            color: colors.textLow,
-            fontWeight: ArFontWeight.book,
-          ),
-        ),
+        const SizedBox(height: 16),
+        const _FinePrint(),
+        const SizedBox(height: 20),
+        Divider(height: 1, color: colors.strokeLow),
         const SizedBox(height: 20),
         Align(
           alignment: Alignment.centerLeft,
@@ -375,13 +356,255 @@ class PermanencePanel extends StatelessWidget {
   }
 }
 
+class _Tile extends StatelessWidget {
+  const _Tile({required this.label, required this.value, required this.note});
+
+  final String label;
+  final String value;
+  final String note;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: colors.containerL2,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: typography
+                .caption(
+                  color: colors.textLow,
+                  fontWeight: ArFontWeight.semiBold,
+                )
+                .copyWith(letterSpacing: 0.6),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: typography.heading3(
+              color: colors.textHigh,
+              fontWeight: ArFontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            note,
+            style: typography.caption(
+              color: colors.textLow,
+              fontWeight: ArFontWeight.book,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What the wallet has spent, as it arrives.
+class _SpendTile extends StatelessWidget {
+  const _SpendTile({required this.spend});
+
+  final Future<SpendLookup>? spend;
+
+  static const _label = 'ESTIMATED SPEND';
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<SpendLookup>(
+      future: spend,
+      builder: (context, snapshot) {
+        if (spend == null) {
+          return const _Tile(
+              label: _label, value: '-', note: "couldn't read your top-ups");
+        }
+
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _Tile(
+              label: _label, value: '...', note: 'reading your top-ups');
+        }
+
+        final lookup = snapshot.data;
+        final estimate = lookup?.estimate;
+
+        if (lookup == null || lookup.failed) {
+          return const _Tile(
+              label: _label, value: '-', note: "couldn't read your top-ups");
+        }
+
+        if (estimate == null) {
+          return const _Tile(
+              label: _label, value: '-', note: 'no top-ups found');
+        }
+
+        if (estimate.paidCount == 0) {
+          return _Tile(
+            label: _label,
+            value: _usd.format(0),
+            note: '${_plural(estimate.grantCount, 'credit grant')}, '
+                'nothing bought',
+          );
+        }
+
+        return _Tile(
+          label: _label,
+          value: _usd.format(estimate.usd),
+          note: 'from ${_plural(estimate.paidCount, 'top-up')}',
+        );
+      },
+    );
+  }
+}
+
+/// How the panel's numbers are made, one tap away. Closed by default, so the
+/// panel stays a summary; open, it says plainly what each figure is and is
+/// not.
+class _FinePrint extends StatefulWidget {
+  const _FinePrint();
+
+  @override
+  State<_FinePrint> createState() => _FinePrintState();
+}
+
+class _FinePrintState extends State<_FinePrint> {
+  bool _open = false;
+
+  static const _duration = Duration(milliseconds: 200);
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final body = typography.caption(
+      color: colors.textMid,
+      fontWeight: ArFontWeight.book,
+    );
+
+    Widget point(InlineSpan text) => Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 5, right: 10),
+                child: Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: colors.textLow,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              Expanded(child: Text.rich(text, style: body)),
+            ],
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ArDriveClickArea(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _open = !_open),
+            child: Semantics(
+              button: true,
+              expanded: _open,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'How these numbers work',
+                    style: typography.caption(
+                      color: colors.textMid,
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  AnimatedRotation(
+                    turns: _open ? 0.5 : 0,
+                    duration: _duration,
+                    child: ArDriveIcons.carretDown(
+                      size: 14,
+                      color: colors.textMid,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: _duration,
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: !_open
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      point(const TextSpan(
+                        text: 'Sizes count the drives synced on this device: '
+                            'data you uploaded, each piece once, once its '
+                            'upload is confirmed. Pinned files are not '
+                            'included.',
+                      )),
+                      point(const TextSpan(
+                        text: 'Estimated spend comes from your Turbo '
+                            "top-ups. It isn't a receipt, and doesn't "
+                            'include uploads paid for directly in AR.',
+                      )),
+                      point(const TextSpan(
+                        text: "Cost today uses Turbo's current price, which "
+                            'changes. It is not a quote.',
+                      )),
+                      point(TextSpan(
+                        children: [
+                          const TextSpan(
+                            text: 'Permanence is provided by the Arweave '
+                                'network, whose storage endowment is '
+                                'designed to fund data for 200+ years. See '
+                                'the ',
+                          ),
+                          TextSpan(
+                            text: 'Terms of Service',
+                            style: body.copyWith(
+                              decoration: TextDecoration.underline,
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap =
+                                  () => openUrl(url: Resources.agreementLink),
+                          ),
+                          const TextSpan(text: '.'),
+                        ],
+                      )),
+                    ],
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
 /// The text that goes with the share card. No dollar amounts: what someone
-/// spent is theirs to tell.
+/// spent is theirs to tell. No promise of a duration, either.
 String permanenceShareText(PermanenceSummary summary) => [
-      '${_formatGb(summary.gb)} of my files, stored on Arweave for ~200 years',
+      '${_formatSize(summary.totalBytes)} of my files, stored to be '
+          'permanent on Arweave.',
       if (summary.firstYear != null) 'Preserving since ${summary.firstYear}.',
       'ardrive.io',
-    ].join('. ').replaceAll('..', '.');
+    ].join(' ');
 
 void showPermanenceShare(BuildContext context, PermanenceSummary summary) {
   final cardKey = GlobalKey();
@@ -389,81 +612,82 @@ void showPermanenceShare(BuildContext context, PermanenceSummary summary) {
 
   showArDriveDialog(
     context,
-    content: StatefulBuilder(
-      builder: (context, setState) => ArDriveStandardModalNew(
-        width: 560,
-        hasCloseButton: true,
-        titleWidget: Text(
-          'Share your permanence',
-          style: typography.heading3(fontWeight: ArFontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 12),
-            // Drawn at 600 x 315 and saved at twice that: the 1200 x 630
-            // that social sites expect for a link card.
-            FittedBox(
+    content: ArDriveStandardModalNew(
+      width: 600,
+      hasCloseButton: true,
+      scrollableContent: true,
+      titleWidget: Text(
+        'Share your permanence',
+        style: typography.heading3(fontWeight: ArFontWeight.bold),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 16),
+          // Drawn at 600 x 315 and saved at twice that: the 1200 x 630 that
+          // social sites expect for a link card.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: FittedBox(
               child: RepaintBoundary(
                 key: cardKey,
                 child: PermanenceShareCard(summary: summary),
               ),
             ),
-            const SizedBox(height: 12),
-            Text(
-              permanenceShareText(summary),
-              style: typography.paragraphSmall(
-                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
-                fontWeight: ArFontWeight.book,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ModalAction(
-            title: 'Copy text',
-            action: () {
-              Clipboard.setData(
-                ClipboardData(text: permanenceShareText(summary)),
-              );
-              Navigator.of(context).pop();
-            },
           ),
-          ModalAction(
-            title: 'Download image',
-            action: () async {
-              final boundary = cardKey.currentContext?.findRenderObject()
-                  as RenderRepaintBoundary?;
-
-              if (boundary == null) {
-                return;
-              }
-
-              final image = await boundary.toImage(pixelRatio: 2);
-              final png =
-                  await image.toByteData(format: ui.ImageByteFormat.png);
-
-              if (png == null) {
-                return;
-              }
-
-              await ArDriveIO().saveFile(
-                await IOFile.fromData(
-                  png.buffer.asUint8List(),
-                  name: 'my-permanence.png',
-                  lastModifiedDate: DateTime.now(),
-                  contentType: 'image/png',
-                ),
-              );
-
-              if (context.mounted) {
-                Navigator.of(context).pop();
-              }
-            },
+          const SizedBox(height: 16),
+          Text(
+            permanenceShareText(summary),
+            style: typography.paragraphSmall(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+              fontWeight: ArFontWeight.book,
+            ),
           ),
         ],
       ),
+      actions: [
+        ModalAction(
+          title: 'Copy text',
+          action: () {
+            Clipboard.setData(
+              ClipboardData(text: permanenceShareText(summary)),
+            );
+            Navigator.of(context).pop();
+          },
+        ),
+        ModalAction(
+          title: 'Download image',
+          action: () async {
+            final boundary = cardKey.currentContext?.findRenderObject()
+                as RenderRepaintBoundary?;
+
+            if (boundary == null) {
+              return;
+            }
+
+            final image = await boundary.toImage(pixelRatio: 2);
+            final png = await image.toByteData(format: ui.ImageByteFormat.png);
+
+            if (png == null) {
+              return;
+            }
+
+            await ArDriveIO().saveFile(
+              await IOFile.fromData(
+                png.buffer.asUint8List(),
+                name: 'my-permanence.png',
+                lastModifiedDate: DateTime.now(),
+                contentType: 'image/png',
+              ),
+            );
+
+            if (context.mounted) {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+      ],
     ),
   );
 }
@@ -479,7 +703,7 @@ class PermanenceShareCard extends StatelessWidget {
   static const _ground = Color(0xFF0E0E0F);
   static const _brand = Color(0xFFFE0230);
   static const _text = Color(0xFFFAFAFA);
-  static const _muted = Color(0xFFA3A3A3);
+  static const _muted = Color(0xFF9A9A9A);
 
   @override
   Widget build(BuildContext context) {
@@ -489,40 +713,37 @@ class PermanenceShareCard extends StatelessWidget {
       width: 600,
       height: 315,
       color: _ground,
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.fromLTRB(36, 32, 32, 32),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            flex: 5,
+            flex: 11,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Image.asset(
-                  Resources.images.brand.whiteLogo2,
-                  height: 22,
-                ),
+                Image.asset(Resources.images.brand.whiteLogo2, height: 24),
                 const Spacer(),
                 Text(
-                  _formatGb(summary.gb),
+                  _formatSize(summary.totalBytes),
                   style: typography
                       .display(fontWeight: ArFontWeight.bold)
-                      .copyWith(color: _text, height: 1),
+                      .copyWith(color: _text, fontSize: 56, height: 1),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 Text(
-                  'preserved for ~200 years',
-                  style: typography.paragraphLarge(
+                  'stored to be permanent',
+                  style: typography.paragraphXLarge(
                     color: _text,
                     fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   [
                     if (summary.firstYear != null) 'Since ${summary.firstYear}',
-                    '${NumberFormat.decimalPattern().format(summary.fileCount)} files',
-                  ].join(' · '),
+                    _plural(summary.fileCount, 'file'),
+                  ].join(_separator),
                   style: typography.paragraphNormal(
                     color: _muted,
                     fontWeight: ArFontWeight.book,
@@ -531,9 +752,9 @@ class PermanenceShareCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 24),
+          const SizedBox(width: 28),
           Expanded(
-            flex: 4,
+            flex: 9,
             child: CustomPaint(
               painter: _StrataPainter(
                 bytesByYear: summary.bytesByYear,
@@ -579,7 +800,7 @@ class _StrataPainter extends CustomPainter {
       return;
     }
 
-    const labelWidth = 104.0;
+    const labelWidth = 112.0;
     const minBand = 16.0;
     final layers = bytesByYear.entries.toList();
     final bandWidth = size.width - labelWidth;
@@ -634,15 +855,15 @@ class _StrataPainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      final gb = TextPainter(
+      final amount = TextPainter(
         text: TextSpan(
-          text: _formatGb(layers[i].value / PermanenceSummary._gb),
+          text: _formatSize(layers[i].value),
           style: mutedStyle.copyWith(color: muted),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      year.paint(canvas, Offset(bandWidth + 12, mid - year.height / 2));
-      gb.paint(canvas, Offset(bandWidth + 52, mid - gb.height / 2));
+      year.paint(canvas, Offset(bandWidth + 14, mid - year.height / 2));
+      amount.paint(canvas, Offset(bandWidth + 54, mid - amount.height / 2));
       below = tops[i];
     }
   }

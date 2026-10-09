@@ -473,10 +473,13 @@ class _ProfileCardState extends State<ProfileCard> {
           return const SizedBox.shrink();
         }
 
+        // What is stored for good - each piece of data once, only what
+        // landed - rather than the size of every file row above.
         final usdPerGb = stats.usdPerGb;
-        final costToday = usdPerGb == null || stats.totalSize == 0
+        final permanentBytes = stats.permanentBytes;
+        final costToday = usdPerGb == null || permanentBytes == 0
             ? null
-            : stats.totalSize / (1024 * 1024 * 1024) * usdPerGb;
+            : permanentBytes / (1024 * 1024 * 1024) * usdPerGb;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
@@ -496,13 +499,7 @@ class _ProfileCardState extends State<ProfileCard> {
                   const SizedBox(height: 4),
                   ArDriveClickArea(
                     child: GestureDetector(
-                      onTap: () async {
-                        final bytesByYear = await context
-                            .read<DriveDao>()
-                            .bytesByYearCreated(stats.driveIds);
-
-                        if (!context.mounted) return;
-
+                      onTap: () {
                         // Started here and shown as it arrives: it is a
                         // signed request, and may ask the wallet to sign.
                         final rates = stats.rates;
@@ -524,21 +521,35 @@ class _ProfileCardState extends State<ProfileCard> {
                         showPermanencePanel(
                           context,
                           PermanenceSummary(
-                            totalBytes: stats.totalSize,
-                            fileCount: stats.fileCount,
+                            totalBytes: permanentBytes,
+                            fileCount: stats.permanentItems,
                             driveCount: stats.driveCount,
-                            bytesByYear: bytesByYear,
+                            bytesByYear: {
+                              for (final year in stats.permanentByYear.entries)
+                                year.key: year.value.bytes,
+                            },
                             usdPerGb: usdPerGb,
                             spend: spend,
                           ),
                         );
                       },
-                      child: Text(
-                        '\$${costToday.toStringAsFixed(0)} to store it today  ›',
-                        style: typography.caption(
-                          color: colorTokens.textRed,
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${formatPermanenceUsd(costToday)} to store '
+                            'today',
+                            style: typography.caption(
+                              color: colorTokens.textRed,
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          ArDriveIcons.carretRight(
+                            size: 14,
+                            color: colorTokens.textRed,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -620,11 +631,15 @@ class _ProfileCardState extends State<ProfileCard> {
         'https://payment.ardrive.io';
     final rates = await (_ratesFuture ??= fetchTurboRates(paymentUrl));
 
+    final permanentByYear = await driveDao.permanentDataByYear(
+      [for (final drive in drives) drive.id],
+    );
+
     return _AccountStats(
       driveCount: drives.length,
       fileCount: fileCount,
       totalSize: totalSize,
-      driveIds: [for (final drive in drives) drive.id],
+      permanentByYear: permanentByYear,
       rates: rates,
     );
   }
@@ -1605,8 +1620,17 @@ class _AccountStats {
   final int driveCount;
   final int fileCount;
   final int totalSize;
-  final List<String> driveIds;
+
+  /// What is stored for good, by the year it was uploaded. See
+  /// [DriveDao.permanentDataByYear].
+  final Map<int, PermanentData> permanentByYear;
   final TurboRates? rates;
+
+  int get permanentBytes =>
+      permanentByYear.values.fold(0, (sum, year) => sum + year.bytes);
+
+  int get permanentItems =>
+      permanentByYear.values.fold(0, (sum, year) => sum + year.items);
 
   double? get usdPerGb => rates?.usdPerGb;
 
@@ -1614,7 +1638,7 @@ class _AccountStats {
     required this.driveCount,
     required this.fileCount,
     required this.totalSize,
-    this.driveIds = const [],
+    this.permanentByYear = const {},
     this.rates,
   });
 }
