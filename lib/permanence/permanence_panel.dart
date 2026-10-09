@@ -207,6 +207,16 @@ void showPermanencePanel(BuildContext context, PermanenceSummary summary) {
         ),
       ),
       content: PermanencePanel(summary: summary),
+      actions: [
+        ModalAction(
+          title: 'Share my permanence',
+          customWidth: 240,
+          action: () {
+            Navigator.of(context).pop();
+            showPermanenceShare(context, summary);
+          },
+        ),
+      ],
     ),
   );
 }
@@ -226,7 +236,6 @@ class PermanencePanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(height: 12),
         Text.rich(
           TextSpan(
             children: [
@@ -260,14 +269,15 @@ class PermanencePanel extends StatelessWidget {
           ),
         ),
         if (summary.bytesByYear.isNotEmpty) ...[
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           SizedBox(
-            height: 136,
+            height: 120,
             child: CustomPaint(
               painter: _StrataPainter(
                 bytesByYear: summary.bytesByYear,
                 brand: colors.buttonPrimaryDefault,
-                base: colors.containerL1,
+                faint: colors.textOnPrimary,
+                outline: colors.strokeLow,
                 label: colors.textHigh,
                 muted: colors.textLow,
                 labelStyle: typography.caption(fontWeight: ArFontWeight.bold),
@@ -275,17 +285,8 @@ class PermanencePanel extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Each layer is a year of uploads, oldest at the bottom. The '
-            'redder the layer, the more you uploaded that year.',
-            style: typography.caption(
-              color: colors.textLow,
-              fontWeight: ArFontWeight.book,
-            ),
-          ),
         ],
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         LayoutBuilder(builder: (context, box) {
           final spendTile = _SpendTile(spend: summary.spend);
           final costTile = _Tile(
@@ -315,7 +316,7 @@ class PermanencePanel extends StatelessWidget {
           );
         }),
         if (costToday != null) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text.rich(
             TextSpan(
               style: typography.paragraphNormal(
@@ -336,21 +337,8 @@ class PermanencePanel extends StatelessWidget {
             ),
           ),
         ],
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         const _FinePrint(),
-        const SizedBox(height: 20),
-        Divider(height: 1, color: colors.strokeLow),
-        const SizedBox(height: 20),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: ArDriveButtonNew(
-            text: 'Share my permanence',
-            typography: typography,
-            variant: ButtonVariant.outline,
-            maxWidth: 220,
-            onPressed: () => showPermanenceShare(context, summary),
-          ),
-        ),
       ],
     );
   }
@@ -371,7 +359,8 @@ class _Tile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
-        color: colors.containerL2,
+        // A step off the modal's own ground (containerL3), in either theme.
+        color: colors.containerL1,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -649,6 +638,7 @@ void showPermanenceShare(BuildContext context, PermanenceSummary summary) {
       actions: [
         ModalAction(
           title: 'Copy text',
+          customWidth: 120,
           action: () {
             Clipboard.setData(
               ClipboardData(text: permanenceShareText(summary)),
@@ -658,6 +648,7 @@ void showPermanenceShare(BuildContext context, PermanenceSummary summary) {
         ),
         ModalAction(
           title: 'Download image',
+          customWidth: 160,
           action: () async {
             final boundary = cardKey.currentContext?.findRenderObject()
                 as RenderRepaintBoundary?;
@@ -703,6 +694,7 @@ class PermanenceShareCard extends StatelessWidget {
   static const _ground = Color(0xFF0E0E0F);
   static const _brand = Color(0xFFFE0230);
   static const _text = Color(0xFFFAFAFA);
+  static const _white = Color(0xFFFFFFFF);
   static const _muted = Color(0xFF9A9A9A);
 
   @override
@@ -759,7 +751,7 @@ class PermanenceShareCard extends StatelessWidget {
               painter: _StrataPainter(
                 bytesByYear: summary.bytesByYear,
                 brand: _brand,
-                base: _ground,
+                faint: _white,
                 label: _text,
                 muted: _muted,
                 labelStyle: typography.caption(fontWeight: ArFontWeight.bold),
@@ -779,7 +771,8 @@ class _StrataPainter extends CustomPainter {
   _StrataPainter({
     required this.bytesByYear,
     required this.brand,
-    required this.base,
+    required this.faint,
+    this.outline,
     required this.label,
     required this.muted,
     required this.labelStyle,
@@ -788,7 +781,13 @@ class _StrataPainter extends CustomPainter {
 
   final Map<int, int> bytesByYear;
   final Color brand;
-  final Color base;
+
+  /// The quietest year's colour: the palette's white.
+  final Color faint;
+
+  /// Drawn round the bands, so a white one still has an edge on a light
+  /// ground.
+  final Color? outline;
   final Color label;
   final Color muted;
   final TextStyle labelStyle;
@@ -806,6 +805,7 @@ class _StrataPainter extends CustomPainter {
     final bandWidth = size.width - labelWidth;
     final total = layers.fold<int>(0, (a, e) => a + e.value);
     final maxBytes = layers.fold<int>(0, (a, e) => math.max(a, e.value));
+    final minBytes = layers.fold<int>(maxBytes, (a, e) => math.min(a, e.value));
     final flex = math.max(0.0, size.height - minBand * layers.length);
 
     final tops = <double>[];
@@ -815,19 +815,22 @@ class _StrataPainter extends CustomPainter {
       tops.add(bottom);
     }
 
-    canvas.save();
-    canvas.clipRRect(RRect.fromRectAndRadius(
+    final frame = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, bandWidth, size.height),
       const Radius.circular(8),
-    ));
+    );
+
+    canvas.save();
+    canvas.clipRRect(frame);
 
     // The newest first, so each older layer is drawn over it.
     for (var i = layers.length - 1; i >= 0; i--) {
-      // A heat map: the year with the most uploaded is the reddest. Position
-      // already says how old a layer is, so colour says how much. Never
-      // fully faded, so a quiet year still shows.
-      final heat = maxBytes == 0 ? 0.0 : layers[i].value / maxBytes;
-      final color = Color.lerp(base, brand, 0.12 + 0.88 * heat)!;
+      // A heat map, the full width of the palette: the quietest year is
+      // white, the busiest the brand red. Position already says how old a
+      // layer is, so colour says how much.
+      final range = maxBytes - minBytes;
+      final heat = range == 0 ? 1.0 : (layers[i].value - minBytes) / range;
+      final color = Color.lerp(faint, brand, heat)!;
       final amp = i == layers.length - 1 ? 0.0 : 3.0;
       final path = Path()
         ..moveTo(0, size.height)
@@ -844,6 +847,17 @@ class _StrataPainter extends CustomPainter {
       canvas.drawPath(path, Paint()..color = color);
     }
     canvas.restore();
+
+    final outline = this.outline;
+    if (outline != null) {
+      canvas.drawRRect(
+        frame.deflate(0.5),
+        Paint()
+          ..color = outline
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
+      );
+    }
 
     var below = size.height;
     for (var i = 0; i < layers.length; i++) {
@@ -870,5 +884,7 @@ class _StrataPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _StrataPainter old) =>
-      old.bytesByYear != bytesByYear || old.brand != brand;
+      old.bytesByYear != bytesByYear ||
+      old.brand != brand ||
+      old.faint != faint;
 }
