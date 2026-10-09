@@ -308,7 +308,7 @@ class PermanencePanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Each layer is a year of uploads. The oldest are at the bottom.',
+            'Each layer is a year of uploads, oldest at the bottom. The redder the layer, the more you uploaded that year.',
             style: typography.caption(
               color: colors.textLow,
               fontWeight: ArFontWeight.book,
@@ -584,6 +584,7 @@ class _StrataPainter extends CustomPainter {
     final layers = bytesByYear.entries.toList();
     final bandWidth = size.width - labelWidth;
     final total = layers.fold<int>(0, (a, e) => a + e.value);
+    final maxBytes = layers.fold<int>(0, (a, e) => math.max(a, e.value));
     final flex = math.max(0.0, size.height - minBand * layers.length);
 
     final tops = <double>[];
@@ -601,8 +602,11 @@ class _StrataPainter extends CustomPainter {
 
     // The newest first, so each older layer is drawn over it.
     for (var i = layers.length - 1; i >= 0; i--) {
-      final t = (i + 1) / layers.length;
-      final color = Color.lerp(base, brand, 0.2 + 0.8 * t * t)!;
+      // A heat map: the year with the most uploaded is the reddest. Position
+      // already says how old a layer is, so colour says how much. Never
+      // fully faded, so a quiet year still shows.
+      final heat = maxBytes == 0 ? 0.0 : layers[i].value / maxBytes;
+      final color = Color.lerp(base, brand, 0.12 + 0.88 * heat)!;
       final amp = i == layers.length - 1 ? 0.0 : 3.0;
       final path = Path()
         ..moveTo(0, size.height)
