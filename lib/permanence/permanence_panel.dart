@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:ardrive/misc/resources.dart';
+import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/permanence/spend_estimate.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -137,6 +138,7 @@ class PermanenceSummary {
     required this.bytesByYear,
     required this.usdPerGb,
     this.spend,
+    this.arSpend,
   });
 
   final int totalBytes;
@@ -152,6 +154,10 @@ class PermanenceSummary {
   /// What the wallet has spent, still arriving when the panel opens.
   final Future<SpendLookup>? spend;
 
+  /// What the wallet paid in AR to upload directly, counted as it arrives.
+  /// Null when it could not be asked.
+  final Future<ArSpendTally>? arSpend;
+
   static const _gb = 1024 * 1024 * 1024;
 
   double? get costToday =>
@@ -161,7 +167,6 @@ class PermanenceSummary {
 }
 
 final _usd = NumberFormat.currency(symbol: r'$', decimalDigits: 0);
-final _usdCents = NumberFormat.currency(symbol: r'$', decimalDigits: 2);
 final _count = NumberFormat.decimalPattern();
 
 /// A dollar figure as the permanence panel shows it: whole dollars, with
@@ -288,7 +293,10 @@ class PermanencePanel extends StatelessWidget {
         ],
         const SizedBox(height: 20),
         LayoutBuilder(builder: (context, box) {
-          final spendTile = _SpendTile(spend: summary.spend);
+          final spendTile = _SpendTile(
+            spend: summary.spend,
+            arSpend: summary.arSpend,
+          );
           final costTile = _Tile(
             label: 'COST TODAY',
             value: costToday == null ? '-' : _usd.format(costToday),
@@ -315,28 +323,6 @@ class PermanencePanel extends StatelessWidget {
             ),
           );
         }),
-        if (costToday != null) ...[
-          const SizedBox(height: 14),
-          Text.rich(
-            TextSpan(
-              style: typography.paragraphNormal(
-                color: colors.textMid,
-                fontWeight: ArFontWeight.book,
-              ),
-              children: [
-                const TextSpan(text: 'Designed to be permanent: about '),
-                TextSpan(
-                  text: '${_usdCents.format(costToday / 200)} a year',
-                  style: typography.paragraphNormal(
-                    color: colors.textHigh,
-                    fontWeight: ArFontWeight.bold,
-                  ),
-                ),
-                const TextSpan(text: ' over 200 years, at today\'s price.'),
-              ],
-            ),
-          ),
-        ],
         const SizedBox(height: 12),
         const _FinePrint(),
       ],
@@ -345,11 +331,19 @@ class PermanencePanel extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile({required this.label, required this.value, required this.note});
+  const _Tile({
+    required this.label,
+    required this.value,
+    required this.note,
+    this.extra,
+  });
 
   final String label;
   final String value;
   final String note;
+
+  /// A second figure under the note: AR paid directly, beside dollars.
+  final String? extra;
 
   @override
   Widget build(BuildContext context) {
@@ -391,61 +385,132 @@ class _Tile extends StatelessWidget {
               fontWeight: ArFontWeight.book,
             ),
           ),
+          if (extra != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              extra!,
+              style: typography.caption(
+                color: colors.textMid,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-/// What the wallet has spent, as it arrives.
+/// AR to four places, without trailing zeros: "1.2345 AR", "0.5 AR".
+String _formatAr(double ar) {
+  if (ar > 0 && ar < 0.0001) {
+    return '<0.0001 AR';
+  }
+
+  final fixed = ar.toStringAsFixed(4).replaceFirst(RegExp(r'\.?0+$'), '');
+  return '$fixed AR';
+}
+
+/// What the wallet has spent, as it arrives: dollars from its Turbo top-ups,
+/// and, apart from them, AR it paid to upload directly. The two are never
+/// added together - AR was paid at prices nobody recorded.
 class _SpendTile extends StatelessWidget {
-  const _SpendTile({required this.spend});
+  const _SpendTile({required this.spend, required this.arSpend});
 
   final Future<SpendLookup>? spend;
+  final Future<ArSpendTally>? arSpend;
 
   static const _label = 'ESTIMATED SPEND';
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<SpendLookup>(
-      future: spend,
-      builder: (context, snapshot) {
-        if (spend == null) {
-          return const _Tile(
-              label: _label, value: '-', note: "couldn't read your top-ups");
+    return FutureBuilder<ArSpendTally>(
+      future: arSpend,
+      builder: (context, arSnapshot) {
+        final arCounting = arSpend != null &&
+            arSnapshot.connectionState != ConnectionState.done;
+        final ar = arSnapshot.data;
+        final paidAr = ar != null && ar.winston > BigInt.zero ? ar : null;
+
+        String? arLine() {
+          if (arCounting) {
+            return 'counting AR paid directly...';
+          }
+
+          if (paidAr == null) {
+            return null;
+          }
+
+          return '+ ${paidAr.complete ? '' : 'at least '}'
+              '${_formatAr(paidAr.ar)} paid directly';
         }
 
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const _Tile(
-              label: _label, value: '...', note: 'reading your top-ups');
-        }
+        // AR on its own, when there are no dollars to show beside it.
+        _Tile arOnly(String note) => _Tile(
+              label: _label,
+              value: '${paidAr!.complete ? '' : '≥ '}${_formatAr(paidAr.ar)}',
+              note: note,
+            );
 
-        final lookup = snapshot.data;
-        final estimate = lookup?.estimate;
+        return FutureBuilder<SpendLookup>(
+          future: spend,
+          builder: (context, snapshot) {
+            if (spend != null &&
+                snapshot.connectionState != ConnectionState.done) {
+              return const _Tile(
+                label: _label,
+                value: '...',
+                note: 'reading your top-ups',
+              );
+            }
 
-        if (lookup == null || lookup.failed) {
-          return const _Tile(
-              label: _label, value: '-', note: "couldn't read your top-ups");
-        }
+            final lookup = snapshot.data;
+            final estimate = lookup?.estimate;
+            final paidDirectly =
+                'paid directly, ${_plural(paidAr?.uploads ?? 0, 'upload')}';
 
-        if (estimate == null) {
-          return const _Tile(
-              label: _label, value: '-', note: 'no top-ups found');
-        }
+            if (spend == null || lookup == null || lookup.failed) {
+              return paidAr != null
+                  ? arOnly(paidDirectly)
+                  : _Tile(
+                      label: _label,
+                      value: '-',
+                      note: "couldn't read your top-ups",
+                      extra: arLine(),
+                    );
+            }
 
-        if (estimate.paidCount == 0) {
-          return _Tile(
-            label: _label,
-            value: _usd.format(0),
-            note: '${_plural(estimate.grantCount, 'credit grant')}, '
-                'nothing bought',
-          );
-        }
+            if (estimate == null) {
+              return paidAr != null
+                  ? arOnly(paidDirectly)
+                  : _Tile(
+                      label: _label,
+                      value: '-',
+                      note: 'no top-ups found',
+                      extra: arLine(),
+                    );
+            }
 
-        return _Tile(
-          label: _label,
-          value: _usd.format(estimate.usd),
-          note: 'from ${_plural(estimate.paidCount, 'top-up')}',
+            if (estimate.paidCount == 0) {
+              return paidAr != null
+                  ? arOnly('$paidDirectly, plus '
+                      '${_plural(estimate.grantCount, 'credit grant')}')
+                  : _Tile(
+                      label: _label,
+                      value: _usd.format(0),
+                      note: '${_plural(estimate.grantCount, 'credit grant')}, '
+                          'nothing bought',
+                      extra: arLine(),
+                    );
+            }
+
+            return _Tile(
+              label: _label,
+              value: _usd.format(estimate.usd),
+              note: 'from ${_plural(estimate.paidCount, 'top-up')}',
+              extra: arLine(),
+            );
+          },
         );
       },
     );
@@ -550,8 +615,11 @@ class _FinePrintState extends State<_FinePrint> {
                       )),
                       point(const TextSpan(
                         text: 'Estimated spend comes from your Turbo '
-                            "top-ups. It isn't a receipt, and doesn't "
-                            'include uploads paid for directly in AR.',
+                            "top-ups, and isn't a receipt. AR paid directly "
+                            'is read from the network: the fees on uploads '
+                            'this wallet sent straight to Arweave with '
+                            'ArDrive, shown in AR because the price paid '
+                            "wasn't recorded.",
                       )),
                       point(const TextSpan(
                         text: "Cost today uses Turbo's current price, which "
@@ -589,8 +657,8 @@ class _FinePrintState extends State<_FinePrint> {
 /// The text that goes with the share card. No dollar amounts: what someone
 /// spent is theirs to tell. No promise of a duration, either.
 String permanenceShareText(PermanenceSummary summary) => [
-      '${_formatSize(summary.totalBytes)} of my files, stored to be '
-          'permanent on Arweave.',
+      '${_formatSize(summary.totalBytes)} of my files, stored permanently '
+          'on Arweave.',
       if (summary.firstYear != null) 'Preserving since ${summary.firstYear}.',
       'ardrive.io',
     ].join(' ');
@@ -724,7 +792,7 @@ class PermanenceShareCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'stored to be permanent',
+                  'stored permanently on Arweave',
                   style: typography.paragraphXLarge(
                     color: _text,
                     fontWeight: ArFontWeight.semiBold,

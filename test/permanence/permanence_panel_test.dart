@@ -1,3 +1,4 @@
+import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/permanence/permanence_panel.dart';
 import 'package:ardrive/permanence/spend_estimate.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -7,7 +8,11 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const gb = 1024 * 1024 * 1024;
 
-  PermanenceSummary summary({Future<SpendLookup>? spend, double? usdPerGb}) =>
+  PermanenceSummary summary({
+    Future<SpendLookup>? spend,
+    Future<ArSpendTally>? arSpend,
+    double? usdPerGb,
+  }) =>
       PermanenceSummary(
         totalBytes: 2 * gb,
         fileCount: 1200,
@@ -15,6 +20,7 @@ void main() {
         bytesByYear: const {2022: gb, 2024: gb},
         usdPerGb: usdPerGb ?? 50,
         spend: spend,
+        arSpend: arSpend,
       );
 
   Future<void> pump(
@@ -50,14 +56,13 @@ void main() {
     expect(find.text(r'$100'), findsOneWidget);
   });
 
-  testWidgets('promises no duration of its own', (tester) async {
-    // "Stored for 200 years" read as a guarantee. The panel says what the
-    // storage is designed for, and leaves the 200 years to Arweave.
+  testWidgets('promises no duration, and no price per year', (tester) async {
+    // "Stored for 200 years" read as a guarantee, and "$6.00 a year over 200
+    // years" was a sum nobody could follow. Neither is said.
     await pump(tester, summary());
 
-    expect(find.textContaining('Stored for'), findsNothing);
-    expect(find.textContaining('Designed to be permanent', findRichText: true),
-        findsOneWidget);
+    expect(find.textContaining('Stored for', findRichText: true), findsNothing);
+    expect(find.textContaining('a year', findRichText: true), findsNothing);
   });
 
   group('the spend', () {
@@ -93,6 +98,66 @@ void main() {
 
       expect(find.text(r'$0'), findsOneWidget);
       expect(find.text('3 credit grants, nothing bought'), findsOneWidget);
+    });
+  });
+
+  group('AR paid directly', () {
+    ArSpendTally ar(double amount, int uploads, {bool complete = true}) =>
+        ArSpendTally(
+          winston: BigInt.from(amount * 1e12),
+          uploads: uploads,
+          lastHeight: 100,
+          runMinHeight: complete ? null : 0,
+          cursor: complete ? null : 'next',
+        );
+
+    // Made inside each test, so it completes on the test's own clock.
+    Future<SpendLookup> bought() => Future.value(const SpendLookup.found(
+          SpendEstimate(usd: 40, paidCount: 2, grantCount: 0),
+        ));
+
+    testWidgets('sits under the dollars, never added to them', (tester) async {
+      await pump(
+        tester,
+        summary(spend: bought(), arSpend: Future.value(ar(1.2345, 7))),
+      );
+
+      expect(find.text(r'$40'), findsOneWidget);
+      expect(find.text('+ 1.2345 AR paid directly'), findsOneWidget);
+    });
+
+    testWidgets('is the figure when nothing was bought', (tester) async {
+      await pump(
+        tester,
+        summary(
+          spend: Future.value(const SpendLookup.none()),
+          arSpend: Future.value(ar(0.5, 3)),
+        ),
+      );
+
+      expect(find.text('0.5 AR'), findsOneWidget);
+      expect(find.text('paid directly, 3 uploads'), findsOneWidget);
+    });
+
+    testWidgets('an unfinished count says it is a lower bound', (tester) async {
+      await pump(
+        tester,
+        summary(
+          spend: bought(),
+          arSpend: Future.value(ar(2, 1000, complete: false)),
+        ),
+      );
+
+      expect(find.text('+ at least 2 AR paid directly'), findsOneWidget);
+    });
+
+    testWidgets('says nothing when there is none', (tester) async {
+      await pump(
+        tester,
+        summary(spend: bought(), arSpend: Future.value(ArSpendTally.empty)),
+      );
+
+      expect(find.textContaining('AR'), findsNothing);
     });
   });
 

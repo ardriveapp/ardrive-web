@@ -12,7 +12,9 @@ import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/presentation/widgets/gateway_input_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/permanence/permanence_panel.dart';
+import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/constants.dart';
@@ -514,6 +516,28 @@ class _ProfileCardState extends State<ProfileCard> {
                                 rates: rates,
                               );
 
+                        // Public, so no signature: what this wallet paid in
+                        // AR to upload directly, counted a page at a time and
+                        // remembered. See [tallyArSpend].
+                        final arweave = context.read<ArweaveService>();
+                        final owner = context
+                            .read<ArDriveAuth>()
+                            .currentUser
+                            .walletAddress;
+                        final arSpend = LocalKeyValueStore.getInstance().then(
+                          (store) => tallyArSpend(
+                            storageKey: 'permanenceArSpend_$owner',
+                            read: store.getString,
+                            write: (key, value) => store.putString(key, value),
+                            fetchPage: ({required minHeight, after}) =>
+                                arweave.getArDriveFeesPage(
+                              owner: owner,
+                              minHeight: minHeight,
+                              after: after,
+                            ),
+                          ),
+                        );
+
                         setState(() {
                           _showProfileCard = false;
                         });
@@ -530,6 +554,7 @@ class _ProfileCardState extends State<ProfileCard> {
                             },
                             usdPerGb: usdPerGb,
                             spend: spend,
+                            arSpend: arSpend,
                           ),
                         );
                       },
