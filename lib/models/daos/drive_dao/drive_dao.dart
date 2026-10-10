@@ -960,6 +960,67 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     };
   }
 
+  /// What [driveIds] hold permanently, by the year it was uploaded, oldest
+  /// first.
+  ///
+  /// Stricter than [driveContentSummaries], which counts every file row,
+  /// because this is a figure somebody may hold us to:
+  ///
+  /// - **Each piece of data once.** A file copied to a second folder is a
+  ///   second row over the same data transaction, stored once and paid for
+  ///   once.
+  /// - **Only data that landed.** An upload still pending, or one that
+  ///   failed, is not preserved. Data with no transaction row at all was
+  ///   synced from the network, so it is there.
+  /// - **Not pinned files.** A pin points at somebody else's data, which
+  ///   they paid to store.
+  ///
+  /// A piece of data in more than one row is dated by its earliest row.
+  Future<Map<int, PermanentData>> permanentDataByYear(
+    Iterable<String> driveIds,
+  ) async {
+    final ids = driveIds.toList();
+
+    if (ids.isEmpty) {
+      return {};
+    }
+
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    final rows = await customSelect(
+      '''
+      SELECT CAST(strftime('%Y', created, 'unixepoch') AS INTEGER) AS year,
+             SUM(size) AS bytes,
+             COUNT(*) AS items
+      FROM (
+        SELECT f.dataTxId, MIN(f.dateCreated) AS created, MAX(f.size) AS size
+        FROM file_entries f
+        WHERE f.driveId IN ($placeholders)
+          AND f.pinnedDataOwnerAddress IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM network_transactions t
+            WHERE t.id = f.dataTxId
+              AND t.status IN ('${TransactionStatus.pending}',
+                               '${TransactionStatus.failed}')
+          )
+        GROUP BY f.dataTxId
+      )
+      GROUP BY year
+      ORDER BY year
+      ''',
+      variables: [for (final id in ids) Variable.withString(id)],
+      readsFrom: {fileEntries, networkTransactions},
+    ).get();
+
+    return {
+      for (final row in rows)
+        if (row.read<int?>('year') != null)
+          row.read<int>('year'): PermanentData(
+            bytes: row.read<int?>('bytes') ?? 0,
+            items: row.read<int>('items'),
+          ),
+    };
+  }
+
   /// Whether any transaction is still waiting to be resolved as confirmed or
   /// failed.
   ///
@@ -1026,4 +1087,17 @@ class DriveNotFoundException implements Exception {
   String toString() {
     return 'Drive with id $driveId not found';
   }
+}
+
+/// Data stored permanently in one year: see [DriveDao.permanentDataByYear].
+class PermanentData extends Equatable {
+  const PermanentData({required this.bytes, required this.items});
+
+  final int bytes;
+
+  /// Pieces of data, each counted once however many files point at it.
+  final int items;
+
+  @override
+  List<Object> get props => [bytes, items];
 }

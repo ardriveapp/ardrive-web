@@ -1,0 +1,29 @@
+query WalletArDriveFees($owner: String!, $minHeight: Int!, $after: String) {
+  transactions(
+    owners: [$owner]
+    bundledIn: null
+    block: { min: $minHeight }
+    sort: HEIGHT_ASC
+    first: 100
+    after: $after
+  ) {
+    edges {
+      node {
+        fee {
+          winston
+        }
+        block {
+          height
+        }
+        tags {
+          name
+          value
+        }
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+    }
+  }
+}

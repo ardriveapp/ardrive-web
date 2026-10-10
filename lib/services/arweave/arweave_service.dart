@@ -16,6 +16,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
@@ -2021,6 +2022,78 @@ class ArweaveService {
     return transactionConfirmations;
   }
 
+  /// One page of the AR [owner] paid to upload with ArDrive directly: its own
+  /// mined, unbundled transactions from [minHeight] up, oldest first.
+  ///
+  /// Unbundled is what makes this cheap. An upload through Turbo is a data
+  /// item inside Turbo's bundle, which Turbo paid for, so a wallet that only
+  /// ever used Turbo has nothing here at all.
+  ///
+  /// Filtered by owner alone on the gateway, and to ArDrive's own here: a tag
+  /// filter on top made the ardrive.net indexer read 40 million rows and
+  /// refuse. Every transaction still moves the page on, so another app's
+  /// uploads are skipped, not read again.
+  Future<ArFeePage> getArDriveFeesPage({
+    required String owner,
+    required int minHeight,
+    String? after,
+  }) async {
+    final query = await graphQLRetry.execute(
+      WalletArDriveFeesQuery(
+        variables: WalletArDriveFeesArguments(
+          owner: owner,
+          minHeight: minHeight,
+          after: after,
+        ),
+      ),
+    );
+
+    final transactions = query.data?.transactions;
+
+    if (transactions == null) {
+      throw ArweaveServiceException(
+        'The query `WalletArDriveFeesQuery` returned no data',
+      );
+    }
+
+    var winston = BigInt.zero;
+    var count = 0;
+    int? lastHeight;
+
+    for (final edge in transactions.edges) {
+      lastHeight = edge.node.block?.height ?? lastHeight;
+
+      final tags = edge.node.tags;
+      final isArDrive = tags.any((tag) =>
+          tag.name == 'ArFS' ||
+          (tag.name == 'App-Name' && arDriveAppNames.contains(tag.value)));
+
+      if (isArDrive) {
+        winston += BigInt.tryParse(edge.node.fee.winston) ?? BigInt.zero;
+        count++;
+      }
+    }
+
+    return ArFeePage(
+      winston: winston,
+      count: count,
+      lastHeight: lastHeight,
+      cursor:
+          transactions.edges.isEmpty ? after : transactions.edges.last.cursor,
+      hasMore: transactions.pageInfo.hasNextPage,
+    );
+  }
+
+  /// The `App-Name` values ArDrive's apps have tagged uploads with.
+  static const arDriveAppNames = [
+    'ArDrive-App',
+    'ArDrive-Web',
+    'ArDrive-CLI',
+    'ArDrive-Core',
+    'ArDrive-Desktop',
+    'ArDrive-Sync',
+  ];
+
   Future<String?> getFirstTxForWallet(String owner) async {
     final firstTxForWalletQuery = await graphQLRetry.execute(
       FirstTxForWalletQuery(
@@ -2352,8 +2425,8 @@ class ArweaveService {
       return DataTxSizeAndType(
         size: size,
         // Mime only, without parameters such as charset.
-        contentType: response.headers['content-type']
-            ?.replaceFirst(RegExp(r';.*$'), ''),
+        contentType:
+            response.headers['content-type']?.replaceFirst(RegExp(r';.*$'), ''),
       );
     } catch (e) {
       logger.w('HEAD for $txId failed: $e');

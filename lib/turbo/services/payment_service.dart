@@ -108,6 +108,48 @@ class PaymentService {
     }
   }
 
+  /// The wallet's own completed top-ups, card and crypto, newest first.
+  ///
+  /// A signed request: the service reads whose history it is from the
+  /// signature, so it can only ever return the signer's own. The signature
+  /// headers are cached per wallet, so a wallet that has already signed for
+  /// Turbo this session is not asked again.
+  ///
+  /// Reads every page up to [maxPages] of up to a hundred rows each.
+  Future<List<Map<String, dynamic>>> getPaymentHistory({
+    required Wallet wallet,
+    int maxPages = 10,
+  }) async {
+    final headers = await turboSignatureHeadersManager.getSignatureHeaders(
+      wallet: wallet,
+    );
+    final payments = <Map<String, dynamic>>[];
+    String? cursor;
+
+    for (var page = 0; page < maxPages; page++) {
+      final query = cursor == null
+          ? 'limit=100'
+          : 'limit=100&cursor=${Uri.encodeQueryComponent(cursor)}';
+      final result = await httpClient.get(
+        url: '$turboPaymentUri/v1/account/payments?$query',
+        headers: headers,
+      );
+      final data = json.decode(result.data) as Map<String, dynamic>;
+
+      payments.addAll(
+        (data['payments'] as List<dynamic>).cast<Map<String, dynamic>>(),
+      );
+
+      cursor = data['cursor'] as String?;
+
+      if (data['hasMore'] != true || cursor == null) {
+        break;
+      }
+    }
+
+    return payments;
+  }
+
   Future<BigInt> getBalance({
     required Wallet wallet,
   }) async {
