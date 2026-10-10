@@ -95,6 +95,33 @@ void main() {
     expect(second.complete, isTrue);
   });
 
+  test(
+      'a cursor that stops working starts its count again, counting nothing '
+      'twice', () async {
+    // A gateway switched, a cursor expired: the unfinished count cannot go on.
+    await tally([page(100, 3, 500)]);
+    await tally(
+      [page(10, 100, 600, cursor: 'stale', hasMore: true)],
+      maxPages: 1,
+    );
+    asked.clear();
+
+    final failed = await tally([], failOnFirst: true);
+    expect(failed.winston, BigInt.from(110), reason: 'shown as it was');
+
+    asked.clear();
+    final restarted = await tally([
+      page(10, 100, 600, cursor: 'fresh', hasMore: true),
+      page(5, 20, 700),
+    ]);
+
+    // From the start of that count, not from the dead cursor.
+    expect(asked.first, (minHeight: 501, after: null));
+    expect(restarted.winston, BigInt.from(115));
+    expect(restarted.uploads, 123);
+    expect(restarted.complete, isTrue);
+  });
+
   test('a failed request keeps what was already counted', () async {
     await tally([page(100, 3, 500)]);
 

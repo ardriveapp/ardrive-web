@@ -35,6 +35,7 @@ class ArSpendTally {
     required this.lastHeight,
     this.runMinHeight,
     this.cursor,
+    this.runBase,
   });
 
   static final empty = ArSpendTally(
@@ -55,6 +56,11 @@ class ArSpendTally {
   final int? runMinHeight;
   final String? cursor;
 
+  /// What had been counted before the unfinished count began, so it can be
+  /// started again cleanly - from its first page, without counting twice -
+  /// when its cursor stops working: a gateway switched, a cursor expired.
+  final ArSpendTally? runBase;
+
   /// Whether everything up to the last count has been counted. When it is
   /// not, the figure is a lower bound.
   bool get complete => cursor == null;
@@ -68,6 +74,7 @@ class ArSpendTally {
         'lastHeight': lastHeight,
         if (runMinHeight != null) 'runMinHeight': runMinHeight,
         if (cursor != null) 'cursor': cursor,
+        if (runBase != null) 'runBase': runBase!.toJson(),
       };
 
   static ArSpendTally? fromJson(String? source) {
@@ -76,18 +83,22 @@ class ArSpendTally {
     }
 
     try {
-      final json = jsonDecode(source) as Map<String, dynamic>;
-      return ArSpendTally(
+      return _fromMap(jsonDecode(source) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static ArSpendTally _fromMap(Map<String, dynamic> json) => ArSpendTally(
         winston: BigInt.parse(json['winston'] as String),
         uploads: json['uploads'] as int,
         lastHeight: json['lastHeight'] as int,
         runMinHeight: json['runMinHeight'] as int?,
         cursor: json['cursor'] as String?,
+        runBase: json['runBase'] == null
+            ? null
+            : _fromMap(json['runBase'] as Map<String, dynamic>),
       );
-    } catch (_) {
-      return null;
-    }
-  }
 }
 
 /// Counts what a wallet has paid in AR, a little at a time.
@@ -99,7 +110,10 @@ class ArSpendTally {
 /// lower bound.
 ///
 /// Any request that fails ends the count with what was already counted,
-/// rather than with nothing.
+/// rather than with nothing. A count that was carrying on from a cursor is
+/// set back to where it began, so the next one starts it again from its
+/// first page: a cursor that has stopped working would otherwise fail every
+/// time, and the figure would say "at least" forever.
 Future<ArSpendTally> tallyArSpend({
   required String storageKey,
   required String? Function(String key) read,
@@ -110,6 +124,13 @@ Future<ArSpendTally> tallyArSpend({
 }) async {
   var tally = ArSpendTally.fromJson(read(storageKey)) ?? ArSpendTally.empty;
 
+  // What this count adds to, kept until it finishes.
+  final base = tally.runBase ??
+      ArSpendTally(
+        winston: tally.winston,
+        uploads: tally.uploads,
+        lastHeight: tally.lastHeight,
+      );
   final minHeight = tally.runMinHeight ?? tally.lastHeight + 1;
   var cursor = tally.cursor;
   var winston = tally.winston;
@@ -122,6 +143,10 @@ Future<ArSpendTally> tallyArSpend({
     try {
       result = await fetchPage(minHeight: minHeight, after: cursor);
     } catch (_) {
+      if (cursor != null) {
+        await write(storageKey, jsonEncode(base.toJson()));
+      }
+
       return tally;
     }
 
@@ -137,6 +162,7 @@ Future<ArSpendTally> tallyArSpend({
       lastHeight: lastHeight,
       runMinHeight: result.hasMore ? minHeight : null,
       cursor: result.hasMore ? result.cursor : null,
+      runBase: result.hasMore ? base : null,
     );
     await write(storageKey, jsonEncode(tally.toJson()));
 

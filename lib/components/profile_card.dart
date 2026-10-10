@@ -656,6 +656,12 @@ class _ProfileCardState extends State<ProfileCard> {
         'https://payment.ardrive.io';
     final rates = await (_ratesFuture ??= fetchTurboRates(paymentUrl));
 
+    // A failed fetch is not kept: the next open asks again, rather than the
+    // cost line staying away until a reload.
+    if (rates == null) {
+      _ratesFuture = null;
+    }
+
     final permanentByYear = await driveDao.permanentDataByYear(
       [for (final drive in drives) drive.id],
     );

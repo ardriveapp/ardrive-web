@@ -95,17 +95,6 @@ Future<SpendLookup> loadSpendEstimate({
     return const SpendLookup.failed();
   }
 
-  // PROTOTYPE: what the rows look like, to check the reading of them against
-  // real accounts. Kinds and amounts only - no ids, no addresses.
-  final rows = history
-      .map((row) => row['type'] == 'crypto'
-          ? 'crypto ${row['tokenType']} usd=${row['usdEquivalent']}'
-          : 'fiat ${row['paymentProvider']} ${row['currencyType']} '
-              'amount=${row['paymentAmount']} '
-              'gift=${row['giftMessage'] != null}')
-      .join('; ');
-  logger.i('Turbo payment history: ${history.length} rows - $rows');
-
   BigInt balance;
   try {
     balance = await paymentService.getBalance(wallet: wallet);
@@ -445,11 +434,12 @@ class _SpendTile extends StatelessWidget {
               '${_formatAr(paidAr.ar)} paid directly';
         }
 
-        // AR on its own, when there are no dollars to show beside it.
+        // AR on its own, when there are no dollars to show beside it. An
+        // unfinished count says so in its note: Wavehaus has no "≥".
         _Tile arOnly(String note) => _Tile(
               label: _label,
-              value: '${paidAr!.complete ? '' : '≥ '}${_formatAr(paidAr.ar)}',
-              note: note,
+              value: _formatAr(paidAr!.ar),
+              note: paidAr.complete ? note : '$note, at least',
             );
 
         return FutureBuilder<SpendLookup>(
@@ -466,8 +456,9 @@ class _SpendTile extends StatelessWidget {
 
             final lookup = snapshot.data;
             final estimate = lookup?.estimate;
-            final paidDirectly =
-                'paid directly, ${_plural(paidAr?.uploads ?? 0, 'upload')}';
+            // Not a count of uploads: one direct upload is two
+            // transactions, its metadata and its data.
+            const paidDirectly = 'paid directly in AR';
 
             if (spend == null || lookup == null || lookup.failed) {
               return paidAr != null
@@ -725,21 +716,27 @@ void showPermanenceShare(BuildContext context, PermanenceSummary summary) {
               return;
             }
 
-            final image = await boundary.toImage(pixelRatio: 2);
-            final png = await image.toByteData(format: ui.ImageByteFormat.png);
+            try {
+              final image = await boundary.toImage(pixelRatio: 2);
+              final png =
+                  await image.toByteData(format: ui.ImageByteFormat.png);
 
-            if (png == null) {
+              if (png == null) {
+                return;
+              }
+
+              await ArDriveIO().saveFile(
+                await IOFile.fromData(
+                  png.buffer.asUint8List(),
+                  name: 'my-permanence.png',
+                  lastModifiedDate: DateTime.now(),
+                  contentType: 'image/png',
+                ),
+              );
+            } catch (e) {
+              logger.w('Could not save the permanence card: $e');
               return;
             }
-
-            await ArDriveIO().saveFile(
-              await IOFile.fromData(
-                png.buffer.asUint8List(),
-                name: 'my-permanence.png',
-                lastModifiedDate: DateTime.now(),
-                contentType: 'image/png',
-              ),
-            );
 
             if (context.mounted) {
               Navigator.of(context).pop();

@@ -136,7 +136,7 @@ void main() {
       );
 
       expect(find.text('0.5 AR'), findsOneWidget);
-      expect(find.text('paid directly, 3 uploads'), findsOneWidget);
+      expect(find.text('paid directly in AR'), findsOneWidget);
     });
 
     testWidgets('an unfinished count says it is a lower bound', (tester) async {
