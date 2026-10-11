@@ -104,10 +104,15 @@ void main() {
 
     expect(lookup.tooMany, isTrue);
     expect(lookup.creditsWinc, isNull);
-    verifyNever(() => payments.getBalance(wallet: any(named: 'wallet')));
+    verifyNever(
+        () => payments.getBalanceAndPaidBy(wallet: any(named: 'wallet')));
   });
 
-  test('credits used are read from the history and the balance', () async {
+  test(
+      'credits used are what came in less the wallet\'s own credits, not '
+      'what it can spend', () async {
+    // 1,000 credited, 250 of its own left, and 4,000 more it can spend that
+    // another wallet shared with it - with no top-up of their own.
     final payments = _MockPaymentService();
     when(() => payments.getPaymentHistory(wallet: any(named: 'wallet')))
         .thenAnswer((_) async => const TurboPaymentHistory(
@@ -116,8 +121,12 @@ void main() {
               ],
               complete: true,
             ));
-    when(() => payments.getBalance(wallet: any(named: 'wallet')))
-        .thenAnswer((_) async => BigInt.from(250));
+    when(() => payments.getBalanceAndPaidBy(wallet: any(named: 'wallet')))
+        .thenAnswer((_) async => TurboBalanceInterface(
+              balance: BigInt.from(4250),
+              paidBy: ['sharer'],
+              controlledWinc: BigInt.from(250),
+            ));
 
     final lookup = await loadCreditsSpent(
       paymentService: payments,

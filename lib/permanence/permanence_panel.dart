@@ -125,9 +125,12 @@ Future<SpendLookup> loadCreditsSpent({
     return const SpendLookup.none();
   }
 
+  // The wallet's own credits: what it can spend would count credits shared
+  // with it, which came with no top-up. See [creditsUsed].
   BigInt balance;
   try {
-    balance = await paymentService.getBalance(wallet: wallet);
+    balance = (await paymentService.getBalanceAndPaidBy(wallet: wallet))
+        .controlledWinc;
   } on TurboUserNotFound {
     balance = BigInt.zero;
   } catch (e) {

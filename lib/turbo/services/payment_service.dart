@@ -22,13 +22,22 @@ class TurboPaymentHistory {
 }
 
 class TurboBalanceInterface {
+  /// What the wallet can spend now: its own credits plus what is left of
+  /// credits other wallets have shared with it (Turbo's `effectiveBalance`).
   final BigInt balance;
   final List<String> paidBy;
+
+  /// The wallet's own credits alone, including any it has shared that have
+  /// not been spent yet (Turbo's `controlledWinc`). Credits shared *to* it
+  /// are not in here. Where only [balance] is known, it is that.
+  BigInt get controlledWinc => _controlledWinc ?? balance;
+  final BigInt? _controlledWinc;
 
   TurboBalanceInterface({
     required this.balance,
     required this.paidBy,
-  });
+    BigInt? controlledWinc,
+  }) : _controlledWinc = controlledWinc;
 
   @override
   String toString() {
@@ -97,6 +106,7 @@ class PaymentService {
 
       final data = json.decode(result.data);
       final balance = BigInt.parse(data['effectiveBalance']);
+      final controlled = BigInt.tryParse('${data['controlledWinc']}');
       final receivedApprovals = data['receivedApprovals'] as List<dynamic>;
       final paidBy = receivedApprovals
           .map((approval) => approval['payingAddress'] as String)
@@ -105,6 +115,7 @@ class PaymentService {
       return TurboBalanceInterface(
         balance: balance,
         paidBy: paidBy,
+        controlledWinc: controlled,
       );
     } catch (error, stackTrace) {
       if (error is ArDriveHTTPException) {
