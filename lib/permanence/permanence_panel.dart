@@ -62,6 +62,59 @@ Future<TurboRates?> fetchTurboRates(String paymentUrl) async {
   }
 }
 
+/// What the Arweave network charges, today, to store a given size for good.
+class NetworkCost {
+  const NetworkCost({required this.winston, required this.usdPerAr});
+
+  /// The network's price, from a gateway's `/price` for the exact size.
+  final BigInt winston;
+
+  /// What one AR is worth in US dollars now. Null when it could not be read,
+  /// and the price is shown in AR alone.
+  final double? usdPerAr;
+
+  double get ar => winston / BigInt.from(10).pow(12);
+
+  double? get usd => usdPerAr == null ? null : ar * usdPerAr!;
+}
+
+/// What one AR is worth in US dollars now, from Turbo's public
+/// `GET /v1/rates/usd`.
+Future<double?> fetchUsdPerAr(String paymentUrl) async {
+  try {
+    final response = await http
+        .get(Uri.parse('$paymentUrl/v1/rates/usd'))
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      return null;
+    }
+
+    final rate = (jsonDecode(response.body) as Map<String, dynamic>)['rate'];
+    return rate is num && rate > 0 ? rate.toDouble() : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/// The network's price for the size, and the dollar rate beside it. Null when
+/// the price itself could not be read.
+Future<NetworkCost?> loadNetworkCost({
+  required Future<BigInt> Function() price,
+  required Future<double?> usdPerAr,
+}) async {
+  final BigInt winston;
+
+  try {
+    winston = await price();
+  } catch (e) {
+    logger.w('Could not read the network price for the permanence panel: $e');
+    return null;
+  }
+
+  return NetworkCost(winston: winston, usdPerAr: await usdPerAr);
+}
+
 /// How reading the wallet's spending went.
 class SpendLookup {
   const SpendLookup._({
@@ -141,7 +194,7 @@ class PermanenceSummary {
     required this.fileCount,
     required this.driveCount,
     required this.bytesByYear,
-    required this.usdPerGb,
+    this.costToday,
     this.spend,
     this.arSpend,
   });
@@ -153,8 +206,8 @@ class PermanenceSummary {
   /// Bytes uploaded in each year, oldest first.
   final Map<int, int> bytesByYear;
 
-  /// Turbo's current price for 1 GB, in US dollars.
-  final double? usdPerGb;
+  /// What the network charges today to store [totalBytes], as it arrives.
+  final Future<NetworkCost?>? costToday;
 
   /// What the wallet has spent, still arriving when the panel opens.
   final Future<SpendLookup>? spend;
@@ -162,11 +215,6 @@ class PermanenceSummary {
   /// What the wallet paid in AR to upload directly, counted as it arrives.
   /// Null when it could not be asked.
   final Future<ArSpendTally>? arSpend;
-
-  static const _gb = 1024 * 1024 * 1024;
-
-  double? get costToday =>
-      usdPerGb == null ? null : totalBytes / _gb * usdPerGb!;
 
   int? get firstYear => bytesByYear.isEmpty ? null : bytesByYear.keys.first;
 }
@@ -241,7 +289,6 @@ class PermanencePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final costToday = summary.costToday;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -303,11 +350,7 @@ class PermanencePanel extends StatelessWidget {
             spend: summary.spend,
             arSpend: summary.arSpend,
           );
-          final costTile = _Tile(
-            label: 'COST TODAY',
-            value: costToday == null ? '-' : _usd.format(costToday),
-            note: "at Turbo's current price",
-          );
+          final costTile = _CostTile(cost: summary.costToday);
 
           // Side by side they are under 120px wide on a phone, and their
           // notes broke mid-word. Stacked, each keeps its line.
@@ -403,6 +446,57 @@ class _Tile extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// What the network charges today: dollars, with the AR they come from
+/// beside them - so it reads as the price of storage, not as ours.
+class _CostTile extends StatelessWidget {
+  const _CostTile({required this.cost});
+
+  final Future<NetworkCost?>? cost;
+
+  static const _label = 'COST TODAY';
+  static const _note = "the network's price to store it";
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<NetworkCost?>(
+      future: cost,
+      builder: (context, snapshot) {
+        if (cost != null && snapshot.connectionState != ConnectionState.done) {
+          return const _Tile(label: _label, value: '...', note: _note);
+        }
+
+        final network = snapshot.data;
+
+        if (network == null) {
+          return const _Tile(
+            label: _label,
+            value: '-',
+            note: "couldn't reach the network",
+          );
+        }
+
+        final usd = network.usd;
+
+        // Without a dollar rate, the AR price alone.
+        if (usd == null) {
+          return _Tile(
+            label: _label,
+            value: _formatAr(network.ar),
+            note: _note,
+          );
+        }
+
+        return _Tile(
+          label: _label,
+          value: _usd.format(usd),
+          note: _note,
+          extra: _formatAr(network.ar),
+        );
+      },
     );
   }
 }
@@ -639,10 +733,12 @@ class _FinePrintState extends State<_FinePrint> {
                             "wasn't recorded.",
                       )),
                       point(const TextSpan(
-                        text: "Cost today is Turbo's current price for the "
-                            'whole size, so it reads high for small files, '
-                            'which Turbo uploads free. The price changes, '
-                            "and this isn't a quote.",
+                        text: 'Cost today is what the Arweave network '
+                            'charges, today, to store this much data '
+                            'permanently: its price in AR, shown in dollars '
+                            'at the current AR price. Both move with the '
+                            "network and the market. It isn't a bill or a "
+                            'quote.',
                       )),
                       point(TextSpan(
                         children: [

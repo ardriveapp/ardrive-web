@@ -11,14 +11,14 @@ void main() {
   PermanenceSummary summary({
     Future<SpendLookup>? spend,
     Future<ArSpendTally>? arSpend,
-    double? usdPerGb,
+    Future<NetworkCost?>? costToday,
   }) =>
       PermanenceSummary(
         totalBytes: 2 * gb,
         fileCount: 1200,
         driveCount: 3,
         bytesByYear: const {2022: gb, 2024: gb},
-        usdPerGb: usdPerGb ?? 50,
+        costToday: costToday,
         spend: spend,
         arSpend: arSpend,
       );
@@ -47,13 +47,65 @@ void main() {
 
   testWidgets('says what is stored, since when, and what it costs today',
       (tester) async {
-    await pump(tester, summary());
+    // 20 AR from the network, at $5 an AR.
+    await pump(
+      tester,
+      summary(
+        costToday: Future.value(NetworkCost(
+          winston: BigInt.from(20) * BigInt.from(10).pow(12),
+          usdPerAr: 5,
+        )),
+      ),
+    );
 
     expect(find.textContaining('2.0 GB'), findsOneWidget);
     expect(find.textContaining('1,200 files'), findsOneWidget);
     expect(find.textContaining('since 2022'), findsOneWidget);
-    // 2 GB at $50 a GB.
     expect(find.text(r'$100'), findsOneWidget);
+    expect(find.text('20 AR'), findsOneWidget, reason: 'the AR it comes from');
+    expect(find.text("the network's price to store it"), findsOneWidget);
+    expect(find.textContaining('Turbo'), findsNothing,
+        reason: 'the price of storage, not of a service');
+  });
+
+  group('the cost today', () {
+    testWidgets('without a dollar rate is the AR price alone', (tester) async {
+      await pump(
+        tester,
+        summary(
+          costToday: Future.value(NetworkCost(
+            winston: BigInt.from(15) * BigInt.from(10).pow(11),
+            usdPerAr: null,
+          )),
+        ),
+      );
+
+      expect(find.text('1.5 AR'), findsOneWidget);
+    });
+
+    testWidgets('says so when the network cannot be reached', (tester) async {
+      await pump(tester, summary(costToday: Future.value(null)));
+
+      expect(find.text("couldn't reach the network"), findsOneWidget);
+    });
+  });
+
+  test('a network price that cannot be read is no cost, not a wrong one',
+      () async {
+    expect(
+      await loadNetworkCost(
+        price: () async => throw Exception('gateway down'),
+        usdPerAr: Future.value(4.0),
+      ),
+      isNull,
+    );
+
+    final cost = await loadNetworkCost(
+      price: () async => BigInt.from(2) * BigInt.from(10).pow(12),
+      usdPerAr: Future.value(4.0),
+    );
+    expect(cost!.ar, 2);
+    expect(cost.usd, 8);
   });
 
   testWidgets('promises no duration, and no price per year', (tester) async {

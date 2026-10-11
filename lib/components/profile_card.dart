@@ -453,11 +453,7 @@ class _ProfileCardState extends State<ProfileCard> {
     if (_accountStatsFuture == null ||
         _accountStatsForWallet != walletAddress) {
       _accountStatsForWallet = walletAddress;
-      _accountStatsFuture = _getAccountStats(
-        driveDao,
-        walletAddress,
-        context.read<ConfigService>(),
-      );
+      _accountStatsFuture = _getAccountStats(driveDao, walletAddress);
     }
 
     return FutureBuilder<_AccountStats>(
@@ -477,7 +473,6 @@ class _ProfileCardState extends State<ProfileCard> {
 
         // What is stored for good - each piece of data once, only what
         // landed - rather than the size of every file row above.
-        final usdPerGb = stats.usdPerGb;
         final permanentBytes = stats.permanentBytes;
 
         return Padding(
@@ -500,24 +495,41 @@ class _ProfileCardState extends State<ProfileCard> {
                   ArDriveClickArea(
                     child: GestureDetector(
                       onTap: () {
-                        // Started here and shown as it arrives: it is a
-                        // signed request, and may ask the wallet to sign.
-                        final rates = stats.rates;
-                        final spend = rates == null
-                            ? null
-                            : loadSpendEstimate(
-                                paymentService: context.read<PaymentService>(),
-                                wallet: context
-                                    .read<ArDriveAuth>()
-                                    .currentUser
-                                    .wallet,
-                                rates: rates,
-                              );
+                        // Everything below is asked for here, when the panel
+                        // opens, and shown as it arrives - never on the card.
+                        final paymentUrl = context
+                                .read<ConfigService>()
+                                .config
+                                .defaultTurboPaymentUrl ??
+                            'https://payment.ardrive.io';
+                        final paymentService = context.read<PaymentService>();
+                        final arweave = context.read<ArweaveService>();
+                        final wallet =
+                            context.read<ArDriveAuth>().currentUser.wallet;
+
+                        // Turbo's rates, for reading top-ups paid in other
+                        // currencies. Kept once they arrive; a failure is
+                        // asked again next time.
+                        final rates =
+                            _ratesFuture ??= fetchTurboRates(paymentUrl);
+
+                        // A signed request, which may ask the wallet to sign.
+                        final spend = rates.then<SpendLookup>((rates) {
+                          if (rates == null) {
+                            _ratesFuture = null;
+                            return const SpendLookup.failed();
+                          }
+
+                          return loadSpendEstimate(
+                            paymentService: paymentService,
+                            wallet: wallet,
+                            rates: rates,
+                          );
+                        });
 
                         // Public, so no signature: what this wallet paid in
                         // AR to upload directly, counted a page at a time and
                         // remembered. See [tallyArSpend].
-                        final arweave = context.read<ArweaveService>();
                         final owner = context
                             .read<ArDriveAuth>()
                             .currentUser
@@ -538,6 +550,14 @@ class _ProfileCardState extends State<ProfileCard> {
                           ),
                         );
 
+                        // What the network charges today for the same size,
+                        // from the configured gateway, with AR's dollar price.
+                        final costToday = loadNetworkCost(
+                          price: () =>
+                              arweave.getPrice(byteSize: permanentBytes),
+                          usdPerAr: fetchUsdPerAr(paymentUrl),
+                        );
+
                         setState(() {
                           _showProfileCard = false;
                         });
@@ -552,7 +572,7 @@ class _ProfileCardState extends State<ProfileCard> {
                               for (final year in stats.permanentByYear.entries)
                                 year.key: year.value.bytes,
                             },
-                            usdPerGb: usdPerGb,
+                            costToday: costToday,
                             spend: spend,
                             arSpend: arSpend,
                           ),
@@ -600,7 +620,6 @@ class _ProfileCardState extends State<ProfileCard> {
   Future<_AccountStats> _getAccountStats(
     DriveDao driveDao,
     String walletAddress,
-    ConfigService configService,
   ) async {
     // Only the drives this wallet owns, and only the ones it is showing.
     //
@@ -623,17 +642,6 @@ class _ProfileCardState extends State<ProfileCard> {
             (drive) => drive.ownerAddress == walletAddress && !drive.isHidden)
         .toList();
 
-    // Today's price, from Turbo's public rates.
-    final paymentUrl = configService.config.defaultTurboPaymentUrl ??
-        'https://payment.ardrive.io';
-    final rates = await (_ratesFuture ??= fetchTurboRates(paymentUrl));
-
-    // A failed fetch is not kept: the next open asks again, rather than the
-    // cost line staying away until a reload.
-    if (rates == null) {
-      _ratesFuture = null;
-    }
-
     final permanentByYear = await driveDao.permanentDataByYear(
       [for (final drive in drives) drive.id],
     );
@@ -641,7 +649,6 @@ class _ProfileCardState extends State<ProfileCard> {
     return _AccountStats(
       driveCount: drives.length,
       permanentByYear: permanentByYear,
-      rates: rates,
     );
   }
 
@@ -1614,7 +1621,6 @@ class _AccountStats {
   /// What is stored for good, by the year it was uploaded. See
   /// [DriveDao.permanentDataByYear].
   final Map<int, PermanentData> permanentByYear;
-  final TurboRates? rates;
 
   int get permanentBytes =>
       permanentByYear.values.fold(0, (sum, year) => sum + year.bytes);
@@ -1622,11 +1628,8 @@ class _AccountStats {
   int get permanentItems =>
       permanentByYear.values.fold(0, (sum, year) => sum + year.items);
 
-  double? get usdPerGb => rates?.usdPerGb;
-
   _AccountStats({
     required this.driveCount,
     this.permanentByYear = const {},
-    this.rates,
   });
 }
