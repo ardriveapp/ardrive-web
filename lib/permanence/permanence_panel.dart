@@ -163,7 +163,10 @@ final _count = NumberFormat.decimalPattern();
 String formatPermanenceUsd(double usd) => _usd.format(usd);
 
 /// Sizes in the units people think in, to one decimal place until that
-/// stops meaning anything.
+/// stops meaning anything. The profile card uses it too, so its line and the
+/// panel always say the same size the same way.
+String formatPermanenceSize(int bytes) => _formatSize(bytes);
+
 String _formatSize(int bytes) {
   const kb = 1024;
   const mb = kb * 1024;
@@ -613,8 +616,10 @@ class _FinePrintState extends State<_FinePrint> {
                             "wasn't recorded.",
                       )),
                       point(const TextSpan(
-                        text: "Cost today uses Turbo's current price, which "
-                            'changes. It is not a quote.',
+                        text: "Cost today is Turbo's current price for the "
+                            'whole size, so it reads high for small files, '
+                            'which Turbo uploads free. The price changes, '
+                            "and this isn't a quote.",
                       )),
                       point(TextSpan(
                         children: [

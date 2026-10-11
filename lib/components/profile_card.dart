@@ -491,7 +491,7 @@ class _ProfileCardState extends State<ProfileCard> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  '${stats.driveCount} ${stats.driveCount == 1 ? 'drive' : 'drives'} · ${stats.fileCount} ${stats.fileCount == 1 ? 'file' : 'files'} · ${_formatBytes(stats.totalSize)}',
+                  '${stats.driveCount} ${stats.driveCount == 1 ? 'drive' : 'drives'} · ${stats.permanentItems} ${stats.permanentItems == 1 ? 'file' : 'files'} · ${formatPermanenceSize(stats.permanentBytes)}',
                   style: typography.caption(
                     color: colorTokens.textLow,
                     fontWeight: ArFontWeight.book,
@@ -587,28 +587,17 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
-  /// What this account holds locally, counted the way the drives list counts
-  /// it.
+  /// What this account keeps on Arweave, as far as this device knows: its own
+  /// drives' data, each piece once, only once its upload is confirmed, and
+  /// not pinned files. See [DriveDao.permanentDataByYear].
   ///
-  /// This used `filesInDriveWithRevisionTransactions`, once per drive, and
-  /// added up the rows it returned. That query inner-joins each file to the
-  /// metadata and data transactions of its latest revision, so **a file whose
-  /// transaction rows have not synced yet is not in the result at all** - it is
-  /// dropped from the count and its bytes from the total. As a sync fills those
-  /// rows in, the same drive reports a larger total than it did before, which
-  /// is what a reader sees as "the same drive, a different number of GB in each
-  /// session".
+  /// The same figure the permanence panel shows, so the two can never
+  /// disagree. It used to be every file row, from the query the drives list
+  /// reads - which counted a copy twice, and an upload that never landed - so
+  /// this line said 13.1 GB beside a panel that said 12.4.
   ///
-  /// [DriveDao.driveContentSummaries] asks the question this line is actually
-  /// asking: how many files are in the local tables, and how big are they. One
-  /// aggregate query for every drive rather than one query per drive returning
-  /// every row, summed in SQL rather than in Dart - and, being the same source
-  /// the drives list reads, it cannot disagree with the per-drive figures shown
-  /// there.
-  ///
-  /// Both numbers still describe this device rather than Arweave: a drive that
-  /// has not been walked contributes nothing, because nothing about it is
-  /// known.
+  /// It describes this device rather than Arweave: a drive that has not been
+  /// walked contributes nothing, because nothing about it is known.
   Future<_AccountStats> _getAccountStats(
     DriveDao driveDao,
     String walletAddress,
@@ -635,23 +624,7 @@ class _ProfileCardState extends State<ProfileCard> {
             (drive) => drive.ownerAddress == walletAddress && !drive.isHidden)
         .toList();
 
-    final summaries = await driveDao.driveContentSummaries();
-
-    var fileCount = 0;
-    var totalSize = 0;
-
-    for (final drive in drives) {
-      final summary = summaries[drive.id];
-
-      if (summary == null) {
-        continue;
-      }
-
-      fileCount += summary.fileCount;
-      totalSize += summary.totalSize;
-    }
-
-    // PROTOTYPE: today's price, from Turbo's public rates.
+    // Today's price, from Turbo's public rates.
     final paymentUrl = configService.config.defaultTurboPaymentUrl ??
         'https://payment.ardrive.io';
     final rates = await (_ratesFuture ??= fetchTurboRates(paymentUrl));
@@ -668,20 +641,9 @@ class _ProfileCardState extends State<ProfileCard> {
 
     return _AccountStats(
       driveCount: drives.length,
-      fileCount: fileCount,
-      totalSize: totalSize,
       permanentByYear: permanentByYear,
       rates: rates,
     );
-  }
-
-  String _formatBytes(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
   Widget _buildIdentityHeader(BuildContext context, ProfileLoggedIn state) {
@@ -1649,8 +1611,6 @@ Color getWalletIndicatorColor(User user) {
 
 class _AccountStats {
   final int driveCount;
-  final int fileCount;
-  final int totalSize;
 
   /// What is stored for good, by the year it was uploaded. See
   /// [DriveDao.permanentDataByYear].
@@ -1667,8 +1627,6 @@ class _AccountStats {
 
   _AccountStats({
     required this.driveCount,
-    required this.fileCount,
-    required this.totalSize,
     this.permanentByYear = const {},
     this.rates,
   });
