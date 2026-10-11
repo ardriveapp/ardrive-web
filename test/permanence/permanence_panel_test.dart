@@ -86,6 +86,16 @@ void main() {
       expect(find.text('no top-ups found'), findsOneWidget);
     });
 
+    testWidgets('of a history too long to read in full shows no figure',
+        (tester) async {
+      await pump(
+        tester,
+        summary(spend: Future.value(const SpendLookup.tooMany())),
+      );
+
+      expect(find.text('more top-ups than we can count here'), findsOneWidget);
+    });
+
     testWidgets('of credits only granted is nothing', (tester) async {
       await pump(
         tester,

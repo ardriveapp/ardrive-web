@@ -11,6 +11,16 @@ import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 
+/// A wallet's top-ups as `GET /v1/account/payments` returned them.
+class TurboPaymentHistory {
+  const TurboPaymentHistory({required this.payments, required this.complete});
+
+  final List<Map<String, dynamic>> payments;
+
+  /// False when there were more pages than were read.
+  final bool complete;
+}
+
 class TurboBalanceInterface {
   final BigInt balance;
   final List<String> paidBy;
@@ -115,8 +125,10 @@ class PaymentService {
   /// headers are cached per wallet, so a wallet that has already signed for
   /// Turbo this session is not asked again.
   ///
-  /// Reads every page up to [maxPages] of up to a hundred rows each.
-  Future<List<Map<String, dynamic>>> getPaymentHistory({
+  /// Reads up to [maxPages] pages of a hundred rows, and says whether that
+  /// was all of it: a history cut short is not a smaller history, and must
+  /// not be read as one.
+  Future<TurboPaymentHistory> getPaymentHistory({
     required Wallet wallet,
     int maxPages = 10,
   }) async {
@@ -125,6 +137,7 @@ class PaymentService {
     );
     final payments = <Map<String, dynamic>>[];
     String? cursor;
+    var complete = false;
 
     for (var page = 0; page < maxPages; page++) {
       final query = cursor == null
@@ -143,11 +156,12 @@ class PaymentService {
       cursor = data['cursor'] as String?;
 
       if (data['hasMore'] != true || cursor == null) {
+        complete = true;
         break;
       }
     }
 
-    return payments;
+    return TurboPaymentHistory(payments: payments, complete: complete);
   }
 
   Future<BigInt> getBalance({

@@ -64,7 +64,11 @@ Future<TurboRates?> fetchTurboRates(String paymentUrl) async {
 
 /// How reading the wallet's spending went.
 class SpendLookup {
-  const SpendLookup._({this.estimate, this.failed = false});
+  const SpendLookup._({
+    this.estimate,
+    this.failed = false,
+    this.tooMany = false,
+  });
 
   /// The history could not be read: a signature the wallet refused, the
   /// service unreachable. Not the same as there being nothing to read.
@@ -73,10 +77,16 @@ class SpendLookup {
   /// The history was read, and holds no top-ups.
   const SpendLookup.none() : this._();
 
+  /// More top-ups than one look reads. An estimate from some of them, set
+  /// against the whole balance, would be wrong and look right, so there is
+  /// none.
+  const SpendLookup.tooMany() : this._(tooMany: true);
+
   const SpendLookup.found(SpendEstimate estimate) : this._(estimate: estimate);
 
   final SpendEstimate? estimate;
   final bool failed;
+  final bool tooMany;
 }
 
 /// What [wallet] has spent on storage, from its Turbo top-ups. See
@@ -89,7 +99,13 @@ Future<SpendLookup> loadSpendEstimate({
   final List<Map<String, dynamic>> history;
 
   try {
-    history = await paymentService.getPaymentHistory(wallet: wallet);
+    final read = await paymentService.getPaymentHistory(wallet: wallet);
+
+    if (!read.complete) {
+      return const SpendLookup.tooMany();
+    }
+
+    history = read.payments;
   } catch (e) {
     logger.w('Could not read the Turbo payment history: $e');
     return const SpendLookup.failed();
@@ -460,6 +476,15 @@ class _SpendTile extends StatelessWidget {
             // Not a count of uploads: one direct upload is two
             // transactions, its metadata and its data.
             const paidDirectly = 'paid directly in AR';
+
+            if (lookup != null && lookup.tooMany) {
+              return _Tile(
+                label: _label,
+                value: '-',
+                note: 'more top-ups than we can count here',
+                extra: arLine(),
+              );
+            }
 
             if (spend == null || lookup == null || lookup.failed) {
               return paidAr != null
