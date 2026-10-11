@@ -524,7 +524,9 @@ class _ProfileCardState extends State<ProfileCard> {
                             .walletAddress;
                         final arSpend = LocalKeyValueStore.getInstance().then(
                           (store) => tallyArSpend(
-                            storageKey: 'permanenceArSpend_$owner',
+                            // v2: counts made before data items were left
+                            // out carry a cursor from a different query.
+                            storageKey: 'permanenceArSpend_v2_$owner',
                             read: store.getString,
                             write: (key, value) => store.putString(key, value),
                             fetchPage: ({required minHeight, after}) =>
