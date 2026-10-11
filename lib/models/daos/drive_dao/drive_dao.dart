@@ -1021,6 +1021,41 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     };
   }
 
+  /// Every transaction [driveIds] are made of, as sync recorded them: the
+  /// metadata and data of every file revision, the metadata of every folder
+  /// and drive revision, and the bundles any of them travelled in.
+  ///
+  /// What makes a wallet's transaction ArDrive storage, for the AR it paid
+  /// directly - the same drives the permanence panel sizes, known the way
+  /// sync knows them rather than guessed from an App-Name tag.
+  Future<Set<String>> arDriveTransactionIds(Iterable<String> driveIds) async {
+    final ids = driveIds.toList();
+
+    if (ids.isEmpty) {
+      return {};
+    }
+
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    final variables = [for (final id in ids) Variable.withString(id)];
+
+    final rows = await customSelect(
+      '''
+      SELECT metadataTxId AS tx FROM file_revisions WHERE driveId IN ($placeholders)
+      UNION SELECT dataTxId FROM file_revisions WHERE driveId IN ($placeholders)
+      UNION SELECT bundledIn FROM file_revisions
+        WHERE driveId IN ($placeholders) AND bundledIn IS NOT NULL
+      UNION SELECT metadataTxId FROM folder_revisions WHERE driveId IN ($placeholders)
+      UNION SELECT metadataTxId FROM drive_revisions WHERE driveId IN ($placeholders)
+      UNION SELECT bundledIn FROM drive_revisions
+        WHERE driveId IN ($placeholders) AND bundledIn IS NOT NULL
+      ''',
+      variables: [for (var i = 0; i < 6; i++) ...variables],
+      readsFrom: {fileRevisions, folderRevisions, driveRevisions},
+    ).get();
+
+    return {for (final row in rows) row.read<String>('tx')};
+  }
+
   /// Whether any transaction is still waiting to be resolved as confirmed or
   /// failed.
   ///

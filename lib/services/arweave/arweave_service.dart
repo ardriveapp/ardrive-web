@@ -2042,6 +2042,7 @@ class ArweaveService {
   Future<ArFeePage> getArDriveFeesPage({
     required String owner,
     required int minHeight,
+    required Set<String> knownTxIds,
     String? after,
   }) =>
       fetchDirectFeesPage(
@@ -2052,6 +2053,7 @@ class ArweaveService {
           minHeight: minHeight,
           after: after,
           bundledIn: bundledIn,
+          knownTxIds: knownTxIds,
         ),
       );
 
@@ -2060,6 +2062,7 @@ class ArweaveService {
     required int minHeight,
     required String? after,
     required List<String>? bundledIn,
+    required Set<String> knownTxIds,
   }) async {
     final query = await graphQLRetry.execute(
       WalletArDriveFeesQuery(
@@ -2096,10 +2099,11 @@ class ArweaveService {
 
       unbundled++;
 
-      final tags = edge.node.tags;
-      final isArDrive = tags.any((tag) =>
-          tag.name == 'ArFS' ||
-          (tag.name == 'App-Name' && arDriveAppNames.contains(tag.value)));
+      final isArDrive = isArDriveTransaction(
+        txId: edge.node.id,
+        tags: {for (final tag in edge.node.tags) tag.name: tag.value},
+        knownTxIds: knownTxIds,
+      );
 
       if (isArDrive) {
         winston += BigInt.tryParse(edge.node.fee.winston) ?? BigInt.zero;
@@ -2120,16 +2124,6 @@ class ArweaveService {
       unbundledRows: unbundled,
     );
   }
-
-  /// The `App-Name` values ArDrive's apps have tagged uploads with.
-  static const arDriveAppNames = [
-    'ArDrive-App',
-    'ArDrive-Web',
-    'ArDrive-CLI',
-    'ArDrive-Core',
-    'ArDrive-Desktop',
-    'ArDrive-Sync',
-  ];
 
   Future<String?> getFirstTxForWallet(String owner) async {
     final firstTxForWalletQuery = await graphQLRetry.execute(

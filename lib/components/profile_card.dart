@@ -517,17 +517,24 @@ class _ProfileCardState extends State<ProfileCard> {
                             .read<ArDriveAuth>()
                             .currentUser
                             .walletAddress;
+                        // The transactions this wallet's synced drives are
+                        // made of: what makes one of its payments ArDrive
+                        // storage. See [isArDriveTransaction].
+                        final knownTxIds = context
+                            .read<DriveDao>()
+                            .arDriveTransactionIds(stats.driveIds);
                         final arSpend = LocalKeyValueStore.getInstance().then(
                           (store) => tallyArSpend(
-                            // v2: counts made before data items were left
-                            // out carry a cursor from a different query.
-                            storageKey: 'permanenceArSpend_v2_$owner',
+                            // v3: counts made before the drives' own
+                            // transactions decided what is ArDrive's.
+                            storageKey: 'permanenceArSpend_v3_$owner',
                             read: store.getString,
                             write: (key, value) => store.putString(key, value),
-                            fetchPage: ({required minHeight, after}) =>
+                            fetchPage: ({required minHeight, after}) async =>
                                 arweave.getArDriveFeesPage(
                               owner: owner,
                               minHeight: minHeight,
+                              knownTxIds: await knownTxIds,
                               after: after,
                             ),
                           ),
@@ -632,6 +639,7 @@ class _ProfileCardState extends State<ProfileCard> {
     return _AccountStats(
       driveCount: drives.length,
       permanentByYear: permanentByYear,
+      driveIds: [for (final drive in drives) drive.id],
     );
   }
 
@@ -1605,6 +1613,9 @@ class _AccountStats {
   /// [DriveDao.permanentDataByYear].
   final Map<int, PermanentData> permanentByYear;
 
+  /// The wallet's own drives that were counted.
+  final List<String> driveIds;
+
   int get permanentBytes =>
       permanentByYear.values.fold(0, (sum, year) => sum + year.bytes);
 
@@ -1614,5 +1625,6 @@ class _AccountStats {
   _AccountStats({
     required this.driveCount,
     this.permanentByYear = const {},
+    this.driveIds = const [],
   });
 }

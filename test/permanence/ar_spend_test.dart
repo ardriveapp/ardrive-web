@@ -252,4 +252,48 @@ void main() {
       expect(asked, hasLength(1));
     });
   });
+
+  group('what counts as ArDrive storage', () {
+    test('a transaction a synced drive is made of, whatever its tags', () {
+      // The data of a direct upload: costly, and with no ArFS tag.
+      expect(
+        isArDriveTransaction(
+          txId: 'data-tx',
+          tags: const {'Content-Type': 'video/mp4'},
+          knownTxIds: const {'data-tx'},
+        ),
+        isTrue,
+      );
+    });
+
+    test('by tag, for what has not synced yet', () {
+      expect(
+        isArDriveTransaction(
+          txId: 'x',
+          tags: const {'ArFS': '0.11'},
+          knownTxIds: const {},
+        ),
+        isTrue,
+      );
+      expect(
+        isArDriveTransaction(
+          txId: 'x',
+          tags: const {'App-Name': 'ArDrive-Web'},
+          knownTxIds: const {},
+        ),
+        isTrue,
+      );
+    });
+
+    test('not another app', () {
+      expect(
+        isArDriveTransaction(
+          txId: 'x',
+          tags: const {'App-Name': 'arkb'},
+          knownTxIds: const {'something-else'},
+        ),
+        isFalse,
+      );
+    });
+  });
 }

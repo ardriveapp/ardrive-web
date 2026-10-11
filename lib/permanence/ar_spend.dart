@@ -237,3 +237,33 @@ Future<ArFeePage> fetchDirectFeesPage({
   // Nothing of its own either way: a wallet that only ever used Turbo.
   return raw.page;
 }
+
+/// Whether a transaction a wallet paid for is ArDrive storage.
+///
+/// First by what sync knows: [knownTxIds] are the transactions the wallet's
+/// synced drives are made of, data and bundles included - see
+/// `DriveDao.arDriveTransactionIds`. Then by tag, for what has not synced
+/// yet: an `ArFS` tag, which every file and folder metadata transaction
+/// carries, or an App-Name one of ArDrive's apps has written.
+///
+/// The tags alone missed what matters most: the data transaction of a direct
+/// upload is the costly part, and it carries an App-Name but no `ArFS` tag.
+bool isArDriveTransaction({
+  required String txId,
+  required Map<String, String> tags,
+  required Set<String> knownTxIds,
+}) =>
+    knownTxIds.contains(txId) ||
+    tags.containsKey('ArFS') ||
+    arDriveAppNames.contains(tags['App-Name']);
+
+/// The App-Name values ArDrive's apps have tagged uploads with: a fallback
+/// for transactions sync has not recorded yet.
+const arDriveAppNames = {
+  'ArDrive-App',
+  'ArDrive-Web',
+  'ArDrive-CLI',
+  'ArDrive-Core',
+  'ArDrive-Desktop',
+  'ArDrive-Sync',
+};
