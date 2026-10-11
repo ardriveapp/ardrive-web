@@ -2086,6 +2086,7 @@ class ArweaveService {
     var winston = BigInt.zero;
     var count = 0;
     var unbundled = 0;
+    final excluded = <String, BigInt>{};
     int? lastHeight;
 
     for (final edge in transactions.edges) {
@@ -2105,9 +2106,14 @@ class ArweaveService {
         knownTxIds: knownTxIds,
       );
 
+      final fee = BigInt.tryParse(edge.node.fee.winston) ?? BigInt.zero;
+
       if (isArDrive) {
-        winston += BigInt.tryParse(edge.node.fee.winston) ?? BigInt.zero;
+        winston += fee;
         count++;
+      } else if (fee > BigInt.zero) {
+        // Perhaps not yet synced: looked at again by the next count.
+        excluded[edge.node.id] = fee;
       }
     }
 
@@ -2119,6 +2125,7 @@ class ArweaveService {
         cursor:
             transactions.edges.isEmpty ? after : transactions.edges.last.cursor,
         hasMore: transactions.pageInfo.hasNextPage,
+        excluded: excluded,
       ),
       rows: transactions.edges.length,
       unbundledRows: unbundled,

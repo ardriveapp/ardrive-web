@@ -524,12 +524,13 @@ class _ProfileCardState extends State<ProfileCard> {
                             .read<DriveDao>()
                             .arDriveTransactionIds(stats.driveIds);
                         final arSpend = LocalKeyValueStore.getInstance().then(
-                          (store) => tallyArSpend(
+                          (store) async => tallyArSpend(
                             // v3: counts made before the drives' own
                             // transactions decided what is ArDrive's.
                             storageKey: 'permanenceArSpend_v3_$owner',
                             read: store.getString,
                             write: (key, value) => store.putString(key, value),
+                            knownTxIds: await knownTxIds,
                             fetchPage: ({required minHeight, after}) async =>
                                 arweave.getArDriveFeesPage(
                               owner: owner,

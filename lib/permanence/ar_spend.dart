@@ -9,6 +9,7 @@ class ArFeePage {
     required this.lastHeight,
     required this.cursor,
     required this.hasMore,
+    this.excluded = const {},
   });
 
   /// The fees on this page.
@@ -24,6 +25,10 @@ class ArFeePage {
   final String? cursor;
 
   final bool hasMore;
+
+  /// Paid transactions on this page that were not taken for ArDrive's, by
+  /// id, with their fees. See [ArSpendTally.excluded].
+  final Map<String, BigInt> excluded;
 }
 
 /// What a wallet has paid in AR to upload with ArDrive directly, counted so
@@ -36,6 +41,7 @@ class ArSpendTally {
     this.runMinHeight,
     this.cursor,
     this.runBase,
+    this.excluded = const {},
   });
 
   static final empty = ArSpendTally(
@@ -61,6 +67,18 @@ class ArSpendTally {
   /// when its cursor stops working: a gateway switched, a cursor expired.
   final ArSpendTally? runBase;
 
+  /// Paid transactions a count left out because nothing yet said they were
+  /// ArDrive's, by id, with their fees.
+  ///
+  /// The count moves on past them, so without this one left out before its
+  /// drive had synced - the data of a direct upload carries no tag that says
+  /// whose it is - would never be counted. Each count looks at these again
+  /// first, against what sync knows by then. At most [maxExcluded], the most
+  /// recent kept.
+  final Map<String, BigInt> excluded;
+
+  static const maxExcluded = 5000;
+
   /// Whether everything up to the last count has been counted. When it is
   /// not, the figure is a lower bound.
   bool get complete => cursor == null;
@@ -75,6 +93,11 @@ class ArSpendTally {
         if (runMinHeight != null) 'runMinHeight': runMinHeight,
         if (cursor != null) 'cursor': cursor,
         if (runBase != null) 'runBase': runBase!.toJson(),
+        if (excluded.isNotEmpty)
+          'excluded': {
+            for (final entry in excluded.entries)
+              entry.key: entry.value.toString(),
+          },
       };
 
   static ArSpendTally? fromJson(String? source) {
@@ -98,7 +121,53 @@ class ArSpendTally {
         runBase: json['runBase'] == null
             ? null
             : _fromMap(json['runBase'] as Map<String, dynamic>),
+        excluded: {
+          for (final entry
+              in ((json['excluded'] as Map<String, dynamic>?) ?? {}).entries)
+            entry.key: BigInt.parse(entry.value as String),
+        },
       );
+
+  /// This tally with whatever it left out that [knownTxIds] now say is
+  /// ArDrive's counted in.
+  ArSpendTally reclaim(Set<String> knownTxIds) {
+    final found = excluded.keys.where(knownTxIds.contains).toList();
+    final base = runBase?.reclaim(knownTxIds);
+
+    if (found.isEmpty && identical(base, runBase)) {
+      return this;
+    }
+
+    return ArSpendTally(
+      winston: found.fold(winston, (sum, id) => sum + excluded[id]!),
+      uploads: uploads + found.length,
+      lastHeight: lastHeight,
+      runMinHeight: runMinHeight,
+      cursor: cursor,
+      runBase: base,
+      excluded: {
+        for (final entry in excluded.entries)
+          if (!knownTxIds.contains(entry.key)) entry.key: entry.value,
+      },
+    );
+  }
+}
+
+/// [current] with [more] added, keeping the most recent
+/// [ArSpendTally.maxExcluded].
+Map<String, BigInt> _withExcluded(
+  Map<String, BigInt> current,
+  Map<String, BigInt> more,
+) {
+  final all = {...current, ...more};
+
+  if (all.length <= ArSpendTally.maxExcluded) {
+    return all;
+  }
+
+  return Map.fromEntries(
+    all.entries.skip(all.length - ArSpendTally.maxExcluded),
+  );
 }
 
 /// Counts what a wallet has paid in AR, a little at a time.
@@ -120,9 +189,12 @@ Future<ArSpendTally> tallyArSpend({
   required Future<void> Function(String key, String value) write,
   required Future<ArFeePage> Function({required int minHeight, String? after})
       fetchPage,
+  Set<String> knownTxIds = const {},
   int maxPages = 10,
 }) async {
-  var tally = ArSpendTally.fromJson(read(storageKey)) ?? ArSpendTally.empty;
+  // What an earlier count left out, before sync knew it was ArDrive's.
+  var tally = (ArSpendTally.fromJson(read(storageKey)) ?? ArSpendTally.empty)
+      .reclaim(knownTxIds);
 
   // What this count adds to, kept until it finishes.
   final base = tally.runBase ??
@@ -130,12 +202,14 @@ Future<ArSpendTally> tallyArSpend({
         winston: tally.winston,
         uploads: tally.uploads,
         lastHeight: tally.lastHeight,
+        excluded: tally.excluded,
       );
   final minHeight = tally.runMinHeight ?? tally.lastHeight + 1;
   var cursor = tally.cursor;
   var winston = tally.winston;
   var uploads = tally.uploads;
   var lastHeight = tally.lastHeight;
+  var excluded = tally.excluded;
 
   for (var page = 0; page < maxPages; page++) {
     final ArFeePage result;
@@ -152,6 +226,7 @@ Future<ArSpendTally> tallyArSpend({
 
     winston += result.winston;
     uploads += result.count;
+    excluded = _withExcluded(excluded, result.excluded);
     if (result.lastHeight != null && result.lastHeight! > lastHeight) {
       lastHeight = result.lastHeight!;
     }
@@ -163,6 +238,7 @@ Future<ArSpendTally> tallyArSpend({
       runMinHeight: result.hasMore ? minHeight : null,
       cursor: result.hasMore ? result.cursor : null,
       runBase: result.hasMore ? base : null,
+      excluded: excluded,
     );
     await write(storageKey, jsonEncode(tally.toJson()));
 

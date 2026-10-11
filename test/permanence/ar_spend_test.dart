@@ -11,19 +11,25 @@ void main() {
   });
 
   ArFeePage page(int winston, int count, int? lastHeight,
-          {String? cursor, bool hasMore = false}) =>
+          {String? cursor,
+          bool hasMore = false,
+          Map<String, int> excluded = const {}}) =>
       ArFeePage(
         winston: BigInt.from(winston),
         count: count,
         lastHeight: lastHeight,
         cursor: cursor,
         hasMore: hasMore,
+        excluded: {
+          for (final e in excluded.entries) e.key: BigInt.from(e.value)
+        },
       );
 
   Future<ArSpendTally> tally(
     List<ArFeePage> pages, {
     int maxPages = 10,
     bool failOnFirst = false,
+    Set<String> known = const {},
   }) {
     var next = 0;
     return tallyArSpend(
@@ -31,6 +37,7 @@ void main() {
       read: (key) => storage[key],
       write: (key, value) async => storage[key] = value,
       maxPages: maxPages,
+      knownTxIds: known,
       fetchPage: ({required int minHeight, String? after}) async {
         asked.add((minHeight: minHeight, after: after));
         if (failOnFirst) throw Exception('gateway down');
@@ -120,6 +127,61 @@ void main() {
     expect(restarted.winston, BigInt.from(115));
     expect(restarted.uploads, 123);
     expect(restarted.complete, isTrue);
+  });
+
+  group('a transaction left out before its drive synced', () {
+    test('is counted once sync knows it, without asking again', () async {
+      // The data of a direct upload: no tag says it is ArDrive's, and its
+      // drive had not synced when this count passed it.
+      await tally([
+        page(100, 1, 500, excluded: {'late-data': 40})
+      ]);
+      asked.clear();
+
+      final later = await tally([page(0, 0, null)], known: {'late-data'});
+
+      expect(later.winston, BigInt.from(140));
+      expect(later.uploads, 2);
+      expect(later.excluded, isEmpty);
+      expect(asked.single.minHeight, 501, reason: 'not counted again');
+    });
+
+    test('is counted only once', () async {
+      await tally([
+        page(0, 0, 500, excluded: {'late-data': 40})
+      ]);
+      await tally([page(0, 0, null)], known: {'late-data'});
+
+      final again = await tally([page(0, 0, null)], known: {'late-data'});
+
+      expect(again.winston, BigInt.from(40));
+    });
+
+    test('one from another app stays left out, and remembered', () async {
+      final result = await tally(
+        [
+          page(0, 0, 500, excluded: {'arkb-upload': 9})
+        ],
+        known: {'something-else'},
+      );
+
+      expect(result.winston, BigInt.zero);
+      expect(ArSpendTally.fromJson(storage['key'])!.excluded.keys,
+          ['arkb-upload']);
+    });
+
+    test('keeps only the most recent of them', () async {
+      final many = {
+        for (var i = 0; i < ArSpendTally.maxExcluded + 10; i++) 'tx-$i': 1
+      };
+
+      final result = await tally([page(0, 0, 500, excluded: many)]);
+
+      expect(result.excluded, hasLength(ArSpendTally.maxExcluded));
+      expect(result.excluded.containsKey('tx-0'), isFalse);
+      expect(result.excluded.containsKey('tx-${ArSpendTally.maxExcluded + 9}'),
+          isTrue);
+    });
   });
 
   test('a failed request keeps what was already counted', () async {
