@@ -479,9 +479,6 @@ class _ProfileCardState extends State<ProfileCard> {
         // landed - rather than the size of every file row above.
         final usdPerGb = stats.usdPerGb;
         final permanentBytes = stats.permanentBytes;
-        final costToday = usdPerGb == null || permanentBytes == 0
-            ? null
-            : permanentBytes / (1024 * 1024 * 1024) * usdPerGb;
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
@@ -497,7 +494,8 @@ class _ProfileCardState extends State<ProfileCard> {
                     fontWeight: ArFontWeight.book,
                   ),
                 ),
-                if (costToday != null) ...[
+                // A way in, not a figure: the panel says what it costs.
+                if (permanentBytes > 0) ...[
                   const SizedBox(height: 4),
                   ArDriveClickArea(
                     child: GestureDetector(
@@ -562,8 +560,7 @@ class _ProfileCardState extends State<ProfileCard> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            '${formatPermanenceUsd(costToday)} to store '
-                            'today',
+                            'Your permanence',
                             style: typography.caption(
                               color: colorTokens.textRed,
                               fontWeight: ArFontWeight.semiBold,

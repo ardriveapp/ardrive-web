@@ -158,10 +158,6 @@ class PermanenceSummary {
 final _usd = NumberFormat.currency(symbol: r'$', decimalDigits: 0);
 final _count = NumberFormat.decimalPattern();
 
-/// A dollar figure as the permanence panel shows it: whole dollars, with
-/// thousands separated.
-String formatPermanenceUsd(double usd) => _usd.format(usd);
-
 /// Sizes in the units people think in, to one decimal place until that
 /// stops meaning anything. The profile card uses it too, so its line and the
 /// panel always say the same size the same way.
@@ -193,27 +189,29 @@ String _plural(int n, String one) =>
 void showPermanencePanel(BuildContext context, PermanenceSummary summary) {
   showArDriveDialog(
     context,
-    content: ArDriveStandardModalNew(
-      width: 460,
-      hasCloseButton: true,
-      scrollableContent: true,
-      titleWidget: Text(
-        'Your permanence',
-        style: ArDriveTypographyNew.of(context).heading3(
-          fontWeight: ArFontWeight.bold,
+    content: _NoScrollbar(
+      child: ArDriveStandardModalNew(
+        width: 460,
+        hasCloseButton: true,
+        scrollableContent: true,
+        titleWidget: Text(
+          'Your permanence',
+          style: ArDriveTypographyNew.of(context).heading3(
+            fontWeight: ArFontWeight.bold,
+          ),
         ),
+        content: PermanencePanel(summary: summary),
+        actions: [
+          ModalAction(
+            title: 'Share my permanence',
+            customWidth: 240,
+            action: () {
+              Navigator.of(context).pop();
+              showPermanenceShare(context, summary);
+            },
+          ),
+        ],
       ),
-      content: PermanencePanel(summary: summary),
-      actions: [
-        ModalAction(
-          title: 'Share my permanence',
-          customWidth: 240,
-          action: () {
-            Navigator.of(context).pop();
-            showPermanenceShare(context, summary);
-          },
-        ),
-      ],
     ),
   );
 }
@@ -650,6 +648,21 @@ class _FinePrintState extends State<_FinePrint> {
   }
 }
 
+/// Hides the scrollbar of the modal's own scroll view, which draws it inside
+/// the modal's padding, over the content. The panel still scrolls on a
+/// screen too short for it - by touch, wheel or keyboard.
+class _NoScrollbar extends StatelessWidget {
+  const _NoScrollbar({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: child,
+      );
+}
+
 /// The text that goes with the share card. No dollar amounts: what someone
 /// spent is theirs to tell. No promise of a duration, either.
 String permanenceShareText(PermanenceSummary summary) => [
@@ -665,90 +678,92 @@ void showPermanenceShare(BuildContext context, PermanenceSummary summary) {
 
   showArDriveDialog(
     context,
-    content: ArDriveStandardModalNew(
-      width: 600,
-      hasCloseButton: true,
-      scrollableContent: true,
-      titleWidget: Text(
-        'Share your permanence',
-        style: typography.heading3(fontWeight: ArFontWeight.bold),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 16),
-          // Drawn at 600 x 315 and saved at twice that: the 1200 x 630 that
-          // social sites expect for a link card.
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: FittedBox(
-              child: RepaintBoundary(
-                key: cardKey,
-                child: PermanenceShareCard(summary: summary),
+    content: _NoScrollbar(
+      child: ArDriveStandardModalNew(
+        width: 600,
+        hasCloseButton: true,
+        scrollableContent: true,
+        titleWidget: Text(
+          'Share your permanence',
+          style: typography.heading3(fontWeight: ArFontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 16),
+            // Drawn at 600 x 315 and saved at twice that: the 1200 x 630 that
+            // social sites expect for a link card.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: FittedBox(
+                child: RepaintBoundary(
+                  key: cardKey,
+                  child: PermanenceShareCard(summary: summary),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            permanenceShareText(summary),
-            style: typography.paragraphSmall(
-              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
-              fontWeight: ArFontWeight.book,
+            const SizedBox(height: 16),
+            Text(
+              permanenceShareText(summary),
+              style: typography.paragraphSmall(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+                fontWeight: ArFontWeight.book,
+              ),
             ),
-          ),
-        ],
-      ),
-      actions: [
-        ModalAction(
-          title: 'Copy text',
-          customWidth: 120,
-          action: () {
-            Clipboard.setData(
-              ClipboardData(text: permanenceShareText(summary)),
-            );
-            Navigator.of(context).pop();
-          },
+          ],
         ),
-        ModalAction(
-          title: 'Download image',
-          customWidth: 160,
-          action: () async {
-            final boundary = cardKey.currentContext?.findRenderObject()
-                as RenderRepaintBoundary?;
+        actions: [
+          ModalAction(
+            title: 'Copy text',
+            customWidth: 120,
+            action: () {
+              Clipboard.setData(
+                ClipboardData(text: permanenceShareText(summary)),
+              );
+              Navigator.of(context).pop();
+            },
+          ),
+          ModalAction(
+            title: 'Download image',
+            customWidth: 160,
+            action: () async {
+              final boundary = cardKey.currentContext?.findRenderObject()
+                  as RenderRepaintBoundary?;
 
-            if (boundary == null) {
-              return;
-            }
-
-            try {
-              final image = await boundary.toImage(pixelRatio: 2);
-              final png =
-                  await image.toByteData(format: ui.ImageByteFormat.png);
-
-              if (png == null) {
+              if (boundary == null) {
                 return;
               }
 
-              await ArDriveIO().saveFile(
-                await IOFile.fromData(
-                  png.buffer.asUint8List(),
-                  name: 'my-permanence.png',
-                  lastModifiedDate: DateTime.now(),
-                  contentType: 'image/png',
-                ),
-              );
-            } catch (e) {
-              logger.w('Could not save the permanence card: $e');
-              return;
-            }
+              try {
+                final image = await boundary.toImage(pixelRatio: 2);
+                final png =
+                    await image.toByteData(format: ui.ImageByteFormat.png);
 
-            if (context.mounted) {
-              Navigator.of(context).pop();
-            }
-          },
-        ),
-      ],
+                if (png == null) {
+                  return;
+                }
+
+                await ArDriveIO().saveFile(
+                  await IOFile.fromData(
+                    png.buffer.asUint8List(),
+                    name: 'my-permanence.png',
+                    lastModifiedDate: DateTime.now(),
+                    contentType: 'image/png',
+                  ),
+                );
+              } catch (e) {
+                logger.w('Could not save the permanence card: $e');
+                return;
+              }
+
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+        ],
+      ),
     ),
   );
 }

@@ -2022,12 +2022,18 @@ class ArweaveService {
     return transactionConfirmations;
   }
 
+  /// Which filter this gateway honours for leaving out bundled data items.
+  /// See [UnbundledFilter].
+  final _unbundledFilter = UnbundledFilter();
+
   /// One page of the AR [owner] paid to upload with ArDrive directly: its own
-  /// mined, unbundled transactions from [minHeight] up, oldest first.
+  /// mined transactions - not data items in bundles - from [minHeight] up,
+  /// oldest first.
   ///
-  /// Unbundled is what makes this cheap. An upload through Turbo is a data
-  /// item inside Turbo's bundle, which Turbo paid for, so a wallet that only
-  /// ever used Turbo has nothing here at all.
+  /// Leaving out data items is what makes this cheap: an upload through
+  /// Turbo is a data item in Turbo's bundle, which Turbo paid for, so a
+  /// wallet that only ever used Turbo has nothing here at all. How to ask a
+  /// gateway for that is not the same everywhere - see [UnbundledFilter].
   ///
   /// Filtered by owner alone on the gateway, and to ArDrive's own here: a tag
   /// filter on top made the ardrive.net indexer read 40 million rows and
@@ -2037,12 +2043,30 @@ class ArweaveService {
     required String owner,
     required int minHeight,
     String? after,
+  }) =>
+      fetchDirectFeesPage(
+        filter: _unbundledFilter,
+        firstPage: after == null,
+        fetch: (bundledIn) => _arDriveFeesPage(
+          owner: owner,
+          minHeight: minHeight,
+          after: after,
+          bundledIn: bundledIn,
+        ),
+      );
+
+  Future<RawFeePage> _arDriveFeesPage({
+    required String owner,
+    required int minHeight,
+    required String? after,
+    required List<String>? bundledIn,
   }) async {
     final query = await graphQLRetry.execute(
       WalletArDriveFeesQuery(
         variables: WalletArDriveFeesArguments(
           owner: owner,
           minHeight: minHeight,
+          bundledIn: bundledIn,
           after: after,
         ),
       ),
@@ -2058,10 +2082,19 @@ class ArweaveService {
 
     var winston = BigInt.zero;
     var count = 0;
+    var unbundled = 0;
     int? lastHeight;
 
     for (final edge in transactions.edges) {
       lastHeight = edge.node.block?.height ?? lastHeight;
+
+      // A data item in a bundle, from a gateway that would not leave them
+      // out: free to the wallet, whatever its tags say.
+      if (edge.node.bundledIn != null) {
+        continue;
+      }
+
+      unbundled++;
 
       final tags = edge.node.tags;
       final isArDrive = tags.any((tag) =>
@@ -2074,13 +2107,17 @@ class ArweaveService {
       }
     }
 
-    return ArFeePage(
-      winston: winston,
-      count: count,
-      lastHeight: lastHeight,
-      cursor:
-          transactions.edges.isEmpty ? after : transactions.edges.last.cursor,
-      hasMore: transactions.pageInfo.hasNextPage,
+    return RawFeePage(
+      page: ArFeePage(
+        winston: winston,
+        count: count,
+        lastHeight: lastHeight,
+        cursor:
+            transactions.edges.isEmpty ? after : transactions.edges.last.cursor,
+        hasMore: transactions.pageInfo.hasNextPage,
+      ),
+      rows: transactions.edges.length,
+      unbundledRows: unbundled,
     );
   }
 

@@ -149,4 +149,107 @@ void main() {
 
     expect(tally.ar, 1.5);
   });
+
+  group('asking only for transactions of the wallet itself', () {
+    RawFeePage raw({required int rows, required int unbundled, int ar = 0}) =>
+        RawFeePage(
+          page: ArFeePage(
+            winston: BigInt.from(ar),
+            count: unbundled,
+            lastHeight: rows == 0 ? null : 10,
+            cursor: null,
+            hasMore: false,
+          ),
+          rows: rows,
+          unbundledRows: unbundled,
+        );
+
+    test('an ar.io gateway, which honours [""], is asked once', () async {
+      final filter = UnbundledFilter();
+      final asked = <List<String>?>[];
+
+      final page = await fetchDirectFeesPage(
+        filter: filter,
+        firstPage: true,
+        fetch: (bundledIn) async {
+          asked.add(bundledIn);
+          return raw(rows: 100, unbundled: 100, ar: 7);
+        },
+      );
+
+      expect(asked, [
+        ['']
+      ]);
+      expect(page.winston, BigInt.from(7));
+      expect(filter.useEmptyId, isTrue);
+    });
+
+    test('a wallet that only used Turbo costs two requests, and is zero',
+        () async {
+      // [""] finds nothing; null on an ar.io gateway brings back only the
+      // wallet's data items, which are not its own transactions.
+      final filter = UnbundledFilter();
+      final asked = <List<String>?>[];
+
+      final page = await fetchDirectFeesPage(
+        filter: filter,
+        firstPage: true,
+        fetch: (bundledIn) async {
+          asked.add(bundledIn);
+          return bundledIn == null
+              ? raw(rows: 100, unbundled: 0)
+              : raw(rows: 0, unbundled: 0);
+        },
+      );
+
+      expect(asked, [
+        [''],
+        null
+      ]);
+      expect(page.winston, BigInt.zero);
+      expect(filter.useEmptyId, isTrue, reason: 'nothing learned about null');
+    });
+
+    test(
+        'a gateway that honours null, not [""], is asked with null from then '
+        'on', () async {
+      final filter = UnbundledFilter();
+      final asked = <List<String>?>[];
+
+      Future<RawFeePage> gateway(List<String>? bundledIn) async {
+        asked.add(bundledIn);
+        return bundledIn == null
+            ? raw(rows: 100, unbundled: 100, ar: 9)
+            : raw(rows: 0, unbundled: 0);
+      }
+
+      final first = await fetchDirectFeesPage(
+          filter: filter, firstPage: true, fetch: gateway);
+      await fetchDirectFeesPage(
+          filter: filter, firstPage: false, fetch: gateway);
+
+      expect(first.winston, BigInt.from(9));
+      expect(filter.useEmptyId, isFalse);
+      expect(asked, [
+        [''],
+        null,
+        null
+      ]);
+    });
+
+    test('an empty page part-way through a count asks nothing more', () async {
+      final asked = <List<String>?>[];
+
+      await fetchDirectFeesPage(
+        filter: UnbundledFilter(),
+        firstPage: false,
+        fetch: (bundledIn) async {
+          asked.add(bundledIn);
+          return raw(rows: 0, unbundled: 0);
+        },
+      );
+
+      expect(asked, hasLength(1));
+    });
+  });
 }

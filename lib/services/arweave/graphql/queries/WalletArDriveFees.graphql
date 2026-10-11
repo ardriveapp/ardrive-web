@@ -1,7 +1,12 @@
-query WalletArDriveFees($owner: String!, $minHeight: Int!, $after: String) {
+query WalletArDriveFees(
+  $owner: String!
+  $minHeight: Int!
+  $bundledIn: [ID!]
+  $after: String
+) {
   transactions(
     owners: [$owner]
-    bundledIn: null
+    bundledIn: $bundledIn
     block: { min: $minHeight }
     sort: HEIGHT_ASC
     first: 100
@@ -14,6 +19,9 @@ query WalletArDriveFees($owner: String!, $minHeight: Int!, $after: String) {
         }
         block {
           height
+        }
+        bundledIn {
+          id
         }
         tags {
           name

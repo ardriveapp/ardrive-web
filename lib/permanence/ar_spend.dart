@@ -175,3 +175,65 @@ Future<ArSpendTally> tallyArSpend({
 
   return tally;
 }
+
+/// One page as the gateway answered it, before deciding what it means.
+class RawFeePage {
+  const RawFeePage({
+    required this.page,
+    required this.rows,
+    required this.unbundledRows,
+  });
+
+  /// What the page adds up to: ArDrive's unbundled transactions only.
+  final ArFeePage page;
+
+  /// Every row the gateway returned, bundled or not.
+  final int rows;
+
+  /// Rows that are transactions of their own, not data items in a bundle.
+  final int unbundledRows;
+}
+
+/// How to ask a gateway for a wallet's own transactions without the data
+/// items in bundles - which are free to the wallet, and for a Turbo user are
+/// every upload they ever made.
+///
+/// The standard filter, `bundledIn: null`, is ignored by ar.io gateways
+/// (ardrive.net among them): they return the data items anyway, so a Turbo
+/// user's count paged through every upload and never finished. Those
+/// gateways do honour `bundledIn: [""]`, which is not in any spec. So that is
+/// asked first, and a gateway that answers it with nothing is asked once the
+/// standard way: if that brings back transactions of their own, this gateway
+/// honours `null`, and is asked that way from then on.
+class UnbundledFilter {
+  /// Whether to ask with `[""]` rather than `null`.
+  bool useEmptyId = true;
+
+  /// The filter to send.
+  List<String>? get bundledIn => useEmptyId ? const [''] : null;
+}
+
+/// A page of [UnbundledFilter]-filtered transactions, learning which filter
+/// the gateway honours on the way. Costs a second request only when the
+/// first page of a count is empty.
+Future<ArFeePage> fetchDirectFeesPage({
+  required UnbundledFilter filter,
+  required bool firstPage,
+  required Future<RawFeePage> Function(List<String>? bundledIn) fetch,
+}) async {
+  final raw = await fetch(filter.bundledIn);
+
+  if (!filter.useEmptyId || !firstPage || raw.rows > 0) {
+    return raw.page;
+  }
+
+  final standard = await fetch(null);
+
+  if (standard.unbundledRows > 0) {
+    filter.useEmptyId = false;
+    return standard.page;
+  }
+
+  // Nothing of its own either way: a wallet that only ever used Turbo.
+  return raw.page;
+}
