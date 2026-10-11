@@ -62,9 +62,6 @@ class _ProfileCardState extends State<ProfileCard> {
   /// line does not blink out every time the card opens.
   _AccountStats? _lastAccountStats;
 
-  /// Turbo's prices, fetched once rather than on every open.
-  Future<TurboRates?>? _ratesFuture;
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileCubit, ProfileState>(
@@ -507,25 +504,11 @@ class _ProfileCardState extends State<ProfileCard> {
                         final wallet =
                             context.read<ArDriveAuth>().currentUser.wallet;
 
-                        // Turbo's rates, for reading top-ups paid in other
-                        // currencies. Kept once they arrive; a failure is
-                        // asked again next time.
-                        final rates =
-                            _ratesFuture ??= fetchTurboRates(paymentUrl);
-
                         // A signed request, which may ask the wallet to sign.
-                        final spend = rates.then<SpendLookup>((rates) {
-                          if (rates == null) {
-                            _ratesFuture = null;
-                            return const SpendLookup.failed();
-                          }
-
-                          return loadSpendEstimate(
-                            paymentService: paymentService,
-                            wallet: wallet,
-                            rates: rates,
-                          );
-                        });
+                        final spend = loadCreditsSpent(
+                          paymentService: paymentService,
+                          wallet: wallet,
+                        );
 
                         // Public, so no signature: what this wallet paid in
                         // AR to upload directly, counted a page at a time and

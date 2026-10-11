@@ -87,24 +87,43 @@ void main() {
     });
   });
 
-  test('a history cut short gives no estimate at all', () async {
+  test('a history cut short gives no figure at all', () async {
     final payments = _MockPaymentService();
     when(() => payments.getPaymentHistory(wallet: any(named: 'wallet')))
         .thenAnswer((_) async => const TurboPaymentHistory(
               payments: [
-                {'type': 'crypto', 'wincCredited': '100', 'usdEquivalent': '9'}
+                {'type': 'crypto', 'wincCredited': '100'}
               ],
               complete: false,
             ));
 
-    final lookup = await loadSpendEstimate(
+    final lookup = await loadCreditsSpent(
       paymentService: payments,
       wallet: wallet,
-      rates: const TurboRates(usdPerGb: 1, usdPerUnit: {'usd': 1}),
     );
 
     expect(lookup.tooMany, isTrue);
-    expect(lookup.estimate, isNull);
+    expect(lookup.creditsWinc, isNull);
     verifyNever(() => payments.getBalance(wallet: any(named: 'wallet')));
+  });
+
+  test('credits used are read from the history and the balance', () async {
+    final payments = _MockPaymentService();
+    when(() => payments.getPaymentHistory(wallet: any(named: 'wallet')))
+        .thenAnswer((_) async => const TurboPaymentHistory(
+              payments: [
+                {'type': 'fiat', 'wincCredited': '1000'}
+              ],
+              complete: true,
+            ));
+    when(() => payments.getBalance(wallet: any(named: 'wallet')))
+        .thenAnswer((_) async => BigInt.from(250));
+
+    final lookup = await loadCreditsSpent(
+      paymentService: payments,
+      wallet: wallet,
+    );
+
+    expect(lookup.creditsWinc, BigInt.from(750));
   });
 }

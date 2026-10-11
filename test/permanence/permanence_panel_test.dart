@@ -1,6 +1,5 @@
 import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/permanence/permanence_panel.dart';
-import 'package:ardrive/permanence/spend_estimate.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -118,11 +117,20 @@ void main() {
   });
 
   group('the spend', () {
-    testWidgets('is labelled an estimate', (tester) async {
-      await pump(tester, summary());
+    // Made inside each test, so it completes on the test's own clock.
+    Future<SpendLookup> credits(double amount) => Future.value(
+          SpendLookup.found(BigInt.from(amount * 1e12)),
+        );
 
-      expect(find.text('ESTIMATED SPEND'), findsOneWidget);
-      expect(find.text('SPENT'), findsNothing);
+    testWidgets('is the credits used, with no dollars beside it',
+        (tester) async {
+      await pump(tester, summary(spend: credits(92.0812)));
+
+      expect(find.text('SPENT'), findsOneWidget);
+      expect(find.text('92.08'), findsOneWidget);
+      expect(find.text('Turbo credits used'), findsOneWidget);
+      expect(find.textContaining('estimated'), findsNothing,
+          reason: 'credits used are exact');
     });
 
     testWidgets('says it could not be read, apart from finding none',
@@ -131,7 +139,7 @@ void main() {
         tester,
         summary(spend: Future.value(const SpendLookup.failed())),
       );
-      expect(find.text("couldn't read your top-ups"), findsOneWidget);
+      expect(find.text("couldn't read your credits"), findsOneWidget);
 
       await pump(
           tester, summary(spend: Future.value(const SpendLookup.none())));
@@ -148,18 +156,10 @@ void main() {
       expect(find.text('more top-ups than we can count here'), findsOneWidget);
     });
 
-    testWidgets('of credits only granted is nothing', (tester) async {
-      await pump(
-        tester,
-        summary(
-          spend: Future.value(const SpendLookup.found(
-            SpendEstimate(usd: 0, paidCount: 0, grantCount: 3),
-          )),
-        ),
-      );
+    testWidgets('of credits not yet used says so', (tester) async {
+      await pump(tester, summary(spend: credits(0)));
 
-      expect(find.text(r'$0'), findsOneWidget);
-      expect(find.text('3 credit grants, nothing bought'), findsOneWidget);
+      expect(find.text('no credits used yet'), findsOneWidget);
     });
   });
 
@@ -174,21 +174,20 @@ void main() {
         );
 
     // Made inside each test, so it completes on the test's own clock.
-    Future<SpendLookup> bought() => Future.value(const SpendLookup.found(
-          SpendEstimate(usd: 40, paidCount: 2, grantCount: 0),
-        ));
+    Future<SpendLookup> used() =>
+        Future.value(SpendLookup.found(BigInt.from(40e12)));
 
-    testWidgets('sits under the dollars, never added to them', (tester) async {
+    testWidgets('sits under the credits, never added to them', (tester) async {
       await pump(
         tester,
-        summary(spend: bought(), arSpend: Future.value(ar(1.2345, 7))),
+        summary(spend: used(), arSpend: Future.value(ar(1.2345, 7))),
       );
 
-      expect(find.text(r'$40'), findsOneWidget);
+      expect(find.text('40.00'), findsOneWidget);
       expect(find.text('+ 1.2345 AR paid directly'), findsOneWidget);
     });
 
-    testWidgets('is the figure when nothing was bought', (tester) async {
+    testWidgets('is the figure when no credits were used', (tester) async {
       await pump(
         tester,
         summary(
@@ -205,7 +204,7 @@ void main() {
       await pump(
         tester,
         summary(
-          spend: bought(),
+          spend: used(),
           arSpend: Future.value(ar(2, 1000, complete: false)),
         ),
       );
@@ -216,7 +215,7 @@ void main() {
     testWidgets('says nothing when there is none', (tester) async {
       await pump(
         tester,
-        summary(spend: bought(), arSpend: Future.value(ArSpendTally.empty)),
+        summary(spend: used(), arSpend: Future.value(ArSpendTally.empty)),
       );
 
       expect(find.textContaining('AR'), findsNothing);
@@ -226,13 +225,13 @@ void main() {
   testWidgets('keeps its fine print one tap away', (tester) async {
     await pump(tester, summary());
 
-    expect(find.textContaining("isn't a receipt", findRichText: true),
-        findsNothing);
+    expect(
+        find.textContaining("isn't a bill", findRichText: true), findsNothing);
 
     await tester.tap(find.text('How these numbers work'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining("isn't a receipt", findRichText: true),
+    expect(find.textContaining("isn't a bill", findRichText: true),
         findsOneWidget);
     expect(find.textContaining('Terms of Service', findRichText: true),
         findsOneWidget);
@@ -241,7 +240,7 @@ void main() {
   testWidgets('stacks its two figures on a phone', (tester) async {
     await pump(tester, summary(), width: 340);
 
-    final spend = tester.getTopLeft(find.text('ESTIMATED SPEND'));
+    final spend = tester.getTopLeft(find.text('SPENT'));
     final cost = tester.getTopLeft(find.text('COST TODAY'));
 
     expect(cost.dy, greaterThan(spend.dy), reason: 'one above the other');

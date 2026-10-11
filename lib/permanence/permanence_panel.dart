@@ -19,49 +19,6 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart' hide TextDirection;
 
-/// Turbo's current prices, from its public `GET /v1/rates`.
-class TurboRates {
-  const TurboRates({required this.usdPerGb, required this.usdPerUnit});
-
-  /// What 1 GB of storage costs, in US dollars.
-  final double usdPerGb;
-
-  /// What one whole unit of each currency is worth in US dollars, by
-  /// lower-case code. Worked out from the price of a GB in each currency.
-  final Map<String, double> usdPerUnit;
-}
-
-Future<TurboRates?> fetchTurboRates(String paymentUrl) async {
-  try {
-    final response = await http
-        .get(Uri.parse('$paymentUrl/v1/rates'))
-        .timeout(const Duration(seconds: 10));
-
-    if (response.statusCode != 200) {
-      return null;
-    }
-
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
-    final fiat = (body['fiat'] as Map<String, dynamic>)
-        .map((code, perGb) => MapEntry(code, (perGb as num).toDouble()));
-    final usdPerGb = fiat['usd'];
-
-    if (usdPerGb == null) {
-      return null;
-    }
-
-    return TurboRates(
-      usdPerGb: usdPerGb,
-      usdPerUnit: {
-        for (final entry in fiat.entries)
-          if (entry.value > 0) entry.key: usdPerGb / entry.value,
-      },
-    );
-  } catch (_) {
-    return null;
-  }
-}
-
 /// What the Arweave network charges, today, to store a given size for good.
 class NetworkCost {
   const NetworkCost({required this.winston, required this.usdPerAr});
@@ -115,10 +72,10 @@ Future<NetworkCost?> loadNetworkCost({
   return NetworkCost(winston: winston, usdPerAr: await usdPerAr);
 }
 
-/// How reading the wallet's spending went.
+/// How reading the wallet's Turbo credits went.
 class SpendLookup {
   const SpendLookup._({
-    this.estimate,
+    this.creditsWinc,
     this.failed = false,
     this.tooMany = false,
   });
@@ -130,24 +87,24 @@ class SpendLookup {
   /// The history was read, and holds no top-ups.
   const SpendLookup.none() : this._();
 
-  /// More top-ups than one look reads. An estimate from some of them, set
+  /// More top-ups than one look reads. Credits used from some of them, set
   /// against the whole balance, would be wrong and look right, so there is
-  /// none.
+  /// no figure.
   const SpendLookup.tooMany() : this._(tooMany: true);
 
-  const SpendLookup.found(SpendEstimate estimate) : this._(estimate: estimate);
+  const SpendLookup.found(BigInt creditsWinc)
+      : this._(creditsWinc: creditsWinc);
 
-  final SpendEstimate? estimate;
+  /// Turbo credits used, in winc. See [creditsUsed].
+  final BigInt? creditsWinc;
   final bool failed;
   final bool tooMany;
 }
 
-/// What [wallet] has spent on storage, from its Turbo top-ups. See
-/// [estimateSpend].
-Future<SpendLookup> loadSpendEstimate({
+/// The Turbo credits [wallet] has used. See [creditsUsed].
+Future<SpendLookup> loadCreditsSpent({
   required PaymentService paymentService,
   required Wallet wallet,
-  required TurboRates rates,
 }) async {
   final List<Map<String, dynamic>> history;
 
@@ -164,6 +121,10 @@ Future<SpendLookup> loadSpendEstimate({
     return const SpendLookup.failed();
   }
 
+  if (history.isEmpty) {
+    return const SpendLookup.none();
+  }
+
   BigInt balance;
   try {
     balance = await paymentService.getBalance(wallet: wallet);
@@ -174,17 +135,9 @@ Future<SpendLookup> loadSpendEstimate({
     return const SpendLookup.failed();
   }
 
-  final estimate = estimateSpend(
-    topUps: [
-      for (final row in history)
-        TurboTopUp.fromJson(row, usdPerUnit: rates.usdPerUnit),
-    ],
-    balanceWinc: balance,
+  return SpendLookup.found(
+    creditsUsed(payments: history, balanceWinc: balance),
   );
-
-  return estimate == null
-      ? const SpendLookup.none()
-      : SpendLookup.found(estimate);
 }
 
 /// What the permanence panel shows.
@@ -511,16 +464,31 @@ String _formatAr(double ar) {
   return '$fixed AR';
 }
 
-/// What the wallet has spent, as it arrives: dollars from its Turbo top-ups,
-/// and, apart from them, AR it paid to upload directly. The two are never
-/// added together - AR was paid at prices nobody recorded.
+/// Credits as a bare number, the unit said in the note beneath: two
+/// places once there is a whole credit, four below that, separated by
+/// thousands. A credit is a trillion winc, as an AR is a trillion winston.
+String _formatCredits(BigInt winc) {
+  final credits = winc / BigInt.from(10).pow(12);
+
+  if (credits > 0 && credits < 0.0001) {
+    return '<0.0001';
+  }
+
+  return NumberFormat.decimalPatternDigits(
+    decimalDigits: credits >= 1 ? 2 : 4,
+  ).format(credits);
+}
+
+/// What the wallet has spent, in what it spent it in: Turbo credits, and AR
+/// paid directly. No dollars - nothing here is a price, so there is nothing
+/// to set against what storage costs today.
 class _SpendTile extends StatelessWidget {
   const _SpendTile({required this.spend, required this.arSpend});
 
   final Future<SpendLookup>? spend;
   final Future<ArSpendTally>? arSpend;
 
-  static const _label = 'ESTIMATED SPEND';
+  static const _label = 'SPENT';
 
   @override
   Widget build(BuildContext context) {
@@ -545,12 +513,13 @@ class _SpendTile extends StatelessWidget {
               '${_formatAr(paidAr.ar)} paid directly';
         }
 
-        // AR on its own, when there are no dollars to show beside it. An
-        // unfinished count says so in its note: Wavehaus has no "≥".
-        _Tile arOnly(String note) => _Tile(
+        // AR on its own, when there are no credits to show beside it.
+        _Tile arOnly() => _Tile(
               label: _label,
               value: _formatAr(paidAr!.ar),
-              note: paidAr.complete ? note : '$note, at least',
+              note: paidAr.complete
+                  ? 'paid directly in AR'
+                  : 'paid directly in AR, at least',
             );
 
         return FutureBuilder<SpendLookup>(
@@ -561,15 +530,12 @@ class _SpendTile extends StatelessWidget {
               return const _Tile(
                 label: _label,
                 value: '...',
-                note: 'reading your top-ups',
+                note: 'reading your credits',
               );
             }
 
             final lookup = snapshot.data;
-            final estimate = lookup?.estimate;
-            // Not a count of uploads: one direct upload is two
-            // transactions, its metadata and its data.
-            const paidDirectly = 'paid directly in AR';
+            final credits = lookup?.creditsWinc;
 
             if (lookup != null && lookup.tooMany) {
               return _Tile(
@@ -582,43 +548,32 @@ class _SpendTile extends StatelessWidget {
 
             if (spend == null || lookup == null || lookup.failed) {
               return paidAr != null
-                  ? arOnly(paidDirectly)
+                  ? arOnly()
                   : _Tile(
                       label: _label,
                       value: '-',
-                      note: "couldn't read your top-ups",
+                      note: "couldn't read your credits",
                       extra: arLine(),
                     );
             }
 
-            if (estimate == null) {
+            if (credits == null || credits == BigInt.zero) {
               return paidAr != null
-                  ? arOnly(paidDirectly)
+                  ? arOnly()
                   : _Tile(
                       label: _label,
                       value: '-',
-                      note: 'no top-ups found',
-                      extra: arLine(),
-                    );
-            }
-
-            if (estimate.paidCount == 0) {
-              return paidAr != null
-                  ? arOnly('$paidDirectly, plus '
-                      '${_plural(estimate.grantCount, 'credit grant')}')
-                  : _Tile(
-                      label: _label,
-                      value: _usd.format(0),
-                      note: '${_plural(estimate.grantCount, 'credit grant')}, '
-                          'nothing bought',
+                      note: credits == null
+                          ? 'no top-ups found'
+                          : 'no credits used yet',
                       extra: arLine(),
                     );
             }
 
             return _Tile(
               label: _label,
-              value: _usd.format(estimate.usd),
-              note: 'from ${_plural(estimate.paidCount, 'top-up')}',
+              value: _formatCredits(credits),
+              note: 'Turbo credits used',
               extra: arLine(),
             );
           },
@@ -725,12 +680,11 @@ class _FinePrintState extends State<_FinePrint> {
                             'included.',
                       )),
                       point(const TextSpan(
-                        text: 'Estimated spend comes from your Turbo '
-                            "top-ups, and isn't a receipt. AR paid directly "
-                            'is read from the network: the fees on uploads '
-                            'this wallet sent straight to Arweave with '
-                            'ArDrive, shown in AR because the price paid '
-                            "wasn't recorded.",
+                        text: 'Spent is your Turbo credits, bought or '
+                            "granted, minus what's left - which also counts "
+                            'credits used on ArNS names or shared with other '
+                            'wallets - and the AR this wallet paid to upload '
+                            'with ArDrive directly, read from the network.',
                       )),
                       point(const TextSpan(
                         text: 'Cost today is what the Arweave network '
