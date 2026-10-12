@@ -308,9 +308,10 @@ class PermanencePanel extends StatelessWidget {
           );
           final costTile = _CostTile(cost: summary.costToday);
 
-          // Side by side they are under 120px wide on a phone, and their
-          // notes broke mid-word. Stacked, each keeps its line.
-          if (box.maxWidth < 380) {
+          // Side by side even on a phone, their notes wrapping by the word:
+          // stacked, the panel no longer fit, and nothing said it scrolled.
+          // Only a screen too narrow for that stacks them.
+          if (box.maxWidth < 280) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [spendTile, const SizedBox(height: 12), costTile],
@@ -414,7 +415,7 @@ class _CostTile extends StatelessWidget {
   final Future<NetworkCost?>? cost;
 
   static const _label = 'COST TODAY';
-  static const _note = "the network's price to store it";
+  static const _note = 'Network price to store it';
 
   @override
   Widget build(BuildContext context) {
@@ -457,14 +458,20 @@ class _CostTile extends StatelessWidget {
   }
 }
 
-/// AR to four places, without trailing zeros: "1.2345 AR", "0.5 AR".
+/// AR as the credits are shown: two places from one AR up, separated by
+/// thousands ("343.40 AR"); below one, up to four, without trailing zeros
+/// ("0.0373 AR", "0.5 AR").
 String _formatAr(double ar) {
   if (ar > 0 && ar < 0.0001) {
     return '<0.0001 AR';
   }
 
-  final fixed = ar.toStringAsFixed(4).replaceFirst(RegExp(r'\.?0+$'), '');
-  return '$fixed AR';
+  if (ar < 1) {
+    final small = ar.toStringAsFixed(4).replaceFirst(RegExp(r'0+$'), '');
+    return '${small.endsWith('.') ? '${small}0' : small} AR';
+  }
+
+  return '${NumberFormat.decimalPatternDigits(decimalDigits: 2).format(ar)} AR';
 }
 
 /// Credits as a bare number, the unit said in the note beneath: two
@@ -991,8 +998,15 @@ class _StrataPainter extends CustomPainter {
       // A heat map, the full width of the palette: the quietest year is
       // white, the busiest the brand red. Position already says how old a
       // layer is, so colour says how much.
-      final range = maxBytes - minBytes;
-      final heat = range == 0 ? 1.0 : (layers[i].value - minBytes) / range;
+      //
+      // On a log scale. Uploads vary by orders of magnitude - 30 MB one
+      // year, 16 GB the next - and on a straight one a single big year left
+      // every other year the same near-white.
+      final logMin = math.log(math.max(minBytes, 1));
+      final logRange = math.log(math.max(maxBytes, 1)) - logMin;
+      final heat = logRange <= 0
+          ? 1.0
+          : (math.log(math.max(layers[i].value, 1)) - logMin) / logRange;
       final color = Color.lerp(faint, brand, heat)!;
       final amp = i == layers.length - 1 ? 0.0 : 3.0;
       final path = Path()

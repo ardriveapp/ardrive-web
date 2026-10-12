@@ -61,8 +61,9 @@ void main() {
     expect(find.textContaining('1,200 files'), findsOneWidget);
     expect(find.textContaining('since 2022'), findsOneWidget);
     expect(find.text(r'$100'), findsOneWidget);
-    expect(find.text('20 AR'), findsOneWidget, reason: 'the AR it comes from');
-    expect(find.text("the network's price to store it"), findsOneWidget);
+    expect(find.text('20.00 AR'), findsOneWidget,
+        reason: 'the AR it comes from');
+    expect(find.text('Network price to store it'), findsOneWidget);
     expect(find.textContaining('Turbo'), findsNothing,
         reason: 'the price of storage, not of a service');
   });
@@ -79,7 +80,7 @@ void main() {
         ),
       );
 
-      expect(find.text('1.5 AR'), findsOneWidget);
+      expect(find.text('1.50 AR'), findsOneWidget);
     });
 
     testWidgets('says so when the network cannot be reached', (tester) async {
@@ -184,7 +185,7 @@ void main() {
       );
 
       expect(find.text('40.00'), findsOneWidget);
-      expect(find.text('+ 1.2345 AR paid directly'), findsOneWidget);
+      expect(find.text('+ 1.23 AR paid directly'), findsOneWidget);
     });
 
     testWidgets('is the figure when no credits were used', (tester) async {
@@ -209,7 +210,7 @@ void main() {
         ),
       );
 
-      expect(find.text('+ at least 2 AR paid directly'), findsOneWidget);
+      expect(find.text('+ at least 2.00 AR paid directly'), findsOneWidget);
     });
 
     testWidgets('says nothing when there is none', (tester) async {
@@ -237,14 +238,25 @@ void main() {
         findsOneWidget);
   });
 
-  testWidgets('stacks its two figures on a phone', (tester) async {
+  testWidgets('keeps its two figures side by side on a phone', (tester) async {
+    // Stacked, the panel did not fit a phone, and nothing said it scrolled.
     await pump(tester, summary(), width: 340);
 
     final spend = tester.getTopLeft(find.text('SPENT'));
     final cost = tester.getTopLeft(find.text('COST TODAY'));
 
-    expect(cost.dy, greaterThan(spend.dy), reason: 'one above the other');
+    expect(cost.dy, spend.dy, reason: 'one beside the other');
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('stacks them only on a screen too narrow for that',
+      (tester) async {
+    await pump(tester, summary(), width: 260);
+
+    final spend = tester.getTopLeft(find.text('SPENT'));
+    final cost = tester.getTopLeft(find.text('COST TODAY'));
+
+    expect(cost.dy, greaterThan(spend.dy));
   });
 
   test('the share text carries no dollar figure and no promised duration', () {
