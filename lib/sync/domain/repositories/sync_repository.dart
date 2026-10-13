@@ -1288,13 +1288,18 @@ class _SyncRepository implements SyncRepository {
     Function(String driveId, int txCount)? txFechedCallback,
   }) {
     _lastSync = DateTime.now();
-    return _syncDrive(
-      driveId,
-      ownerAddress: ownerAddress,
-      lastBlockHeight: 0,
-      currentBlockHeight: 0,
-      transactionParseBatchSize: 200,
-      txFechedCallback: txFechedCallback,
+
+    // The same once-per-device repair as the other ways into a sync: this
+    // can be the first sync on a device. See [_repairMisdecodedNamesOnce].
+    return Stream.fromFuture(_repairMisdecodedNamesOnce()).asyncExpand(
+      (_) => _syncDrive(
+        driveId,
+        ownerAddress: ownerAddress,
+        lastBlockHeight: 0,
+        currentBlockHeight: 0,
+        transactionParseBatchSize: 200,
+        txFechedCallback: txFechedCallback,
+      ),
     );
   }
 
