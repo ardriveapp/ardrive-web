@@ -5,6 +5,7 @@ import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
+import 'package:ardrive/utils/snapshots/misdecoded_text.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/segmented_gql_data.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -47,27 +48,33 @@ abstract class SnapshotItem implements SegmentedGQLData {
     @visibleForTesting String? fakeSource,
   }) {
     final tags = node.tags;
-    final blockStart = tags.firstWhere(
-      (element) => element.name == 'Block-Start',
-      orElse: () => throw MalformedSnapshotException(
-        txId: node.id,
-        reason: 'Missing required tag: Block-Start',
-      ),
-    ).value;
-    final blockEnd = tags.firstWhere(
-      (element) => element.name == 'Block-End',
-      orElse: () => throw MalformedSnapshotException(
-        txId: node.id,
-        reason: 'Missing required tag: Block-End',
-      ),
-    ).value;
-    final driveId = tags.firstWhere(
-      (element) => element.name == 'Drive-Id',
-      orElse: () => throw MalformedSnapshotException(
-        txId: node.id,
-        reason: 'Missing required tag: Drive-Id',
-      ),
-    ).value;
+    final blockStart = tags
+        .firstWhere(
+          (element) => element.name == 'Block-Start',
+          orElse: () => throw MalformedSnapshotException(
+            txId: node.id,
+            reason: 'Missing required tag: Block-Start',
+          ),
+        )
+        .value;
+    final blockEnd = tags
+        .firstWhere(
+          (element) => element.name == 'Block-End',
+          orElse: () => throw MalformedSnapshotException(
+            txId: node.id,
+            reason: 'Missing required tag: Block-End',
+          ),
+        )
+        .value;
+    final driveId = tags
+        .firstWhere(
+          (element) => element.name == 'Drive-Id',
+          orElse: () => throw MalformedSnapshotException(
+            txId: node.id,
+            reason: 'Missing required tag: Drive-Id',
+          ),
+        )
+        .value;
     final timestamp = node.block!.timestamp;
     final txId = node.id;
 
@@ -144,20 +151,24 @@ abstract class SnapshotItem implements SegmentedGQLData {
   }) {
     late Range totalRange;
     List<TransactionCommonMixin$Tag> tags = item.tags;
-    String? maybeBlockHeightStart = tags.firstWhere(
-      (tag) => tag.name == 'Block-Start',
-      orElse: () => throw MalformedSnapshotException(
-        txId: item.id,
-        reason: 'Missing required tag: Block-Start',
-      ),
-    ).value;
-    String? maybeBlockHeightEnd = tags.firstWhere(
-      (tag) => tag.name == 'Block-End',
-      orElse: () => throw MalformedSnapshotException(
-        txId: item.id,
-        reason: 'Missing required tag: Block-End',
-      ),
-    ).value;
+    String? maybeBlockHeightStart = tags
+        .firstWhere(
+          (tag) => tag.name == 'Block-Start',
+          orElse: () => throw MalformedSnapshotException(
+            txId: item.id,
+            reason: 'Missing required tag: Block-Start',
+          ),
+        )
+        .value;
+    String? maybeBlockHeightEnd = tags
+        .firstWhere(
+          (tag) => tag.name == 'Block-End',
+          orElse: () => throw MalformedSnapshotException(
+            txId: item.id,
+            reason: 'Missing required tag: Block-End',
+          ),
+        )
+        .value;
 
     try {
       int blockHeightStart = int.parse(maybeBlockHeightStart);
@@ -238,8 +249,7 @@ class SnapshotItemOnChain implements SnapshotItem {
       txId: txId,
       largeBody: true,
     );
-    final dataBytesAsString = String.fromCharCodes(dataBytes);
-    return _cachedSource = dataBytesAsString;
+    return _cachedSource = _decodeSnapshot(dataBytes);
   }
 
   /// Start downloading the snapshot body without waiting for it.
@@ -249,7 +259,7 @@ class SnapshotItemOnChain implements SnapshotItem {
     logger.d('Prefetching snapshot $txId');
     _prefetchFuture = _arweave
         .getEntityDataFromNetwork(txId: txId, largeBody: true)
-        .then((bytes) => String.fromCharCodes(bytes));
+        .then(_decodeSnapshot);
   }
 
   @override
@@ -308,7 +318,12 @@ class SnapshotItemOnChain implements SnapshotItem {
         // therefore find nothing cached and fetch it from the gateway
         // instead - the one thing the snapshot exists to avoid. Writing
         // first makes the metadata available the moment the transaction is.
-        final String? data = item['jsonMetadata'];
+        // A snapshot that some other tool wrote the way this one used to
+        // read them - UTF-8 misread as Latin-1 - carries the damage in the
+        // metadata itself. Undone here, so it is not stored.
+        final rawData = item['jsonMetadata'] as String?;
+        final String? data =
+            rawData == null ? null : repairMisdecodedUtf8(rawData);
         if (data != null) {
           final TxID txId = node.id;
           final Uint8List dataAsBytes = Uint8List.fromList(utf8.encode(data));
@@ -506,3 +521,10 @@ class SnapshotItemOnChain implements SnapshotItem {
     logger.d('Cleared all cached transaction IDs from snapshots');
   }
 }
+
+/// A snapshot's bytes as text. They are UTF-8: they used to be read a byte
+/// at a time, which turned every character past ASCII in a name into two to
+/// four Latin-1 ones - an em dash into "â" and two control characters.
+/// A malformed byte becomes U+FFFD rather than failing the whole snapshot.
+String _decodeSnapshot(Uint8List bytes) =>
+    utf8.decode(bytes, allowMalformed: true);

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/utils/snapshots/misdecoded_text.dart';
 import 'package:ardrive/utils/preview_byte_cache.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
@@ -959,6 +960,59 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         ),
     };
   }
+
+  /// Undoes names damaged by reading drive snapshots as Latin-1, in every
+  /// table that keeps one: drives, folders and files, and their revisions.
+  /// Returns how many it repaired.
+  ///
+  /// Snapshots were read a byte at a time until the fix beside this, so a
+  /// drive synced from one stored every name with an em dash, an accent or
+  /// any other character past ASCII in damaged form - "A â B" for "A — B".
+  /// Changes only what [repairMisdecodedUtf8] recognises as that damage, so a
+  /// name that was never damaged is left as it is; and the views watching
+  /// these tables update as the names change.
+  Future<int> repairMisdecodedNames() => transaction(() async {
+        var repaired = 0;
+
+        for (final table in <TableInfo>[
+          db.drives,
+          db.driveRevisions,
+          db.folderEntries,
+          db.folderRevisions,
+          db.fileEntries,
+          db.fileRevisions,
+        ]) {
+          final name = table.actualTableName;
+
+          // Only names with something past printable ASCII can be damaged.
+          final rows = await customSelect(
+            "SELECT rowid AS r, name FROM $name WHERE name GLOB '*[^ -~]*'",
+            readsFrom: {table},
+          ).get();
+
+          for (final row in rows) {
+            final stored = row.read<String>('name');
+            final fixed = repairMisdecodedUtf8(stored);
+
+            if (fixed == stored) {
+              continue;
+            }
+
+            await customUpdate(
+              'UPDATE $name SET name = ? WHERE rowid = ?',
+              variables: [
+                Variable.withString(fixed),
+                Variable.withInt(row.read<int>('r')),
+              ],
+              updates: {table},
+              updateKind: UpdateKind.update,
+            );
+            repaired++;
+          }
+        }
+
+        return repaired;
+      });
 
   /// Whether any transaction is still waiting to be resolved as confirmed or
   /// failed.
