@@ -22,6 +22,10 @@ enum ArtifactExportRefusal {
 
   /// The finished artifact is larger than the producer bound.
   tooLarge,
+
+  /// Some of the drive's own changes are still waiting to be confirmed on
+  /// chain. See `unconfirmedMetadataCountSql`.
+  unconfirmedChanges,
 }
 
 class ArtifactExportRefused implements Exception {
@@ -126,6 +130,19 @@ Future<DriveStateArtifact> exportDriveState(
           [driveId],
         );
       }
+
+      final unconfirmed =
+          (await db.customSelect(unconfirmedMetadataCountSql).getSingle())
+              .read<int>('c');
+      if (unconfirmed > 0) {
+        throw ArtifactExportRefused(
+          ArtifactExportRefusal.unconfirmedChanges,
+          '$unconfirmed recent ${unconfirmed == 1 ? 'change' : 'changes'} '
+          'to this drive ${unconfirmed == 1 ? 'is' : 'are'} still being '
+          'confirmed on Arweave. Try again in a few minutes.',
+        );
+      }
+      await db.customStatement(unconfirmedTransactionsSql());
 
       // Entities, not rows: a revision is a version of an entity, not another
       // one. Folders and files plus the drive itself, matching the

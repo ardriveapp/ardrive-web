@@ -4,14 +4,14 @@ import 'package:test/test.dart';
 void main() {
   _bothRegimes();
   group('DriveStateFormatVersion', () {
-    test('this build writes 0.1 — an experiment, not a commitment', () {
+    test('this build writes 0.2 — an experiment, not a commitment', () {
       // 0.x is deliberate. Nothing published under a zero major is a format
       // anyone has committed to, and a later reader refuses it by the ordinary
       // rule rather than by a special case. The bump to 1.0 is the moment this
       // stops being an experiment and should be its own decision.
       expect(DriveStateFormatVersion.current.major, 0);
-      expect(DriveStateFormatVersion.current.minor, 1);
-      expect(DriveStateFormatVersion.current.toString(), '0.1');
+      expect(DriveStateFormatVersion.current.minor, 2);
+      expect(DriveStateFormatVersion.current.toString(), '0.2');
     });
 
     group('tryParse', () {
@@ -184,7 +184,7 @@ void main() {
         // minor is a different format, not an extension of this one. The
         // above-1.0 behaviour is covered by `readableBy` below, which names
         // its reader and so can test both regimes.
-        for (final minor in [0, 2, 9, 10, 999999999]) {
+        for (final minor in [0, 1, 9, 10, 999999999]) {
           final version = DriveStateFormatVersion(
             DriveStateFormatVersion.current.major,
             minor,

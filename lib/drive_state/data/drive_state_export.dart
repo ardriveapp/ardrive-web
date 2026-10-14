@@ -212,6 +212,13 @@ class DriveStateExport extends Equatable {
   /// carries what it declared rather than what this build assumes.
   final DriveStateFormatVersion version;
 
+  /// The transactions behind these rows that the producer had not confirmed,
+  /// by id, with the status it held: `pending` or `failed`.
+  ///
+  /// Everything not listed was confirmed. Only the SQLite container carries
+  /// this; see `transaction_statuses` in `drive_state_artifact_schema.dart`.
+  final Map<String, String> unconfirmedTransactions;
+
   const DriveStateExport({
     required this.drive,
     required this.folders,
@@ -222,6 +229,7 @@ class DriveStateExport extends Equatable {
     required this.licenses,
     required this.coverage,
     this.version = DriveStateFormatVersion.current,
+    this.unconfirmedTransactions = const {},
   });
 
   /// The number of **entities** the payload carries, which the entity's
@@ -410,6 +418,7 @@ class DriveStateExport extends Equatable {
         licenses,
         coverage,
         version,
+        unconfirmedTransactions,
       ];
 }
 

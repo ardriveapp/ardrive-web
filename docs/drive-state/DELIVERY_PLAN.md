@@ -74,6 +74,59 @@ each other.
 | 1.12 | ArNS discovery (D6 deferral — needs an undername convention) | 🔒 |
 | 1.13 | Execute an upload | 🔒 human only — costs money, publishes permanently |
 
+## End-to-end review, 2026-10-14
+
+A pass over the whole feature, every premise checked against code or a live
+gateway. Fixed items are in #2197; open ones are owned below.
+
+| | Finding | Status |
+|---|---|---|
+| R1 | **A failed upload arrived as a confirmed file.** Every regenerated transaction landed `confirmed`, and the confirmation pass never revisits those | ✅ D15, format `0.2` |
+| R2 | Ethereum and Solana sign-ins | ✅ not a gap: both derive an Arweave wallet from a seed phrase (`login_bloc.dart`), and it owns and signs the drive |
+| R3 | **Which signature is the artifact's proof of authorship.** See the open question below | 🔒 decision |
+| R4 | **No way to disown a buggy producer.** A reader tries the next artifact only when one fails a check; a valid but wrong one is adopted by every client. Artifacts carry `App-Version`, so a reader-side refusal list (config) plus a versioning policy in the spec closes it | ⬜ spec + reader |
+| R5 | **App-internal columns in the format**: `path`, `isGhost`, `thumbnail`, `importSource`, `action`, `fallbackTxId`, `assignedNames`. Ghost and placeholder rows are already filtered out (`artifactChainOnlyPredicate`); the columns themselves need a protocol-or-drop call in 2.3 before the first publish | ⬜ 2.3 |
+| R6 | **Library pages cannot verify what they read by range**: a signature covers the whole payload. Uncompressed public artifacts only pay off if a page shows range-read data before verification completes, or trusts the gateway | ⬜ `LIBRARY_PAGES.md` |
+| R7 | **No rollout plan.** Flags exist, but a flag change reaches a user only with a `configVersion` bump and a reload, so there is no fast off switch, and outcomes are only logged | ⬜ below |
+| R8 | Stream B order: with snapshots retiring, core-js may wire artifacts before finishing its own snapshot wiring | ⬜ B1.3 |
+
+### Open question: which signature proves authorship (R3)
+
+Today the payload is signed **inside** the uploaded data item, as well as by
+the upload itself. The outer signature is real, but readers cannot check it
+with the gateways in service. Measured on ardrive.net and turbo-gateway.com
+for a Turbo-bundled data item: no `X-Arweave-Signature` or `X-Arweave-Owner`
+headers, and GraphQL returns `"signature": "<not-found>"` and
+`"owner": { "key": "<not-found>" }`. Release 75 can send those headers, but
+for a bundled item only with `WRITE_ANS104_DATA_ITEM_DB_SIGNATURES=true`,
+which defaults to `false`.
+
+- **Keep the inner signature.** The bytes prove their author however they
+  were found, including through an ArNS name. Costs: Wander signs through the
+  deprecated `arweaveWallet.signature()` with `saltLength: 0`, which no test
+  covers yet; core-js and the CLI must implement data item verification; and
+  R6 stands.
+- **Drop it.** Authorship is the owner GraphQL reports for the upload, which
+  is how every ArFS entity is trusted today; a private drive's artifact is
+  still authenticated by AES-GCM under the drive key. Costs: a name-discovered
+  artifact needs one owner lookup, and a public drive's artifact is as
+  trustworthy as the gateway, no more.
+
+Either way it is a format change, so it is settled before the first publish.
+
+### Rollout (R7)
+
+1. Read artifacts on staging (`enableSyncFromDriveState`), with a
+   `configVersion` bump.
+2. Read in production, the same way.
+3. Publish on staging, with the demo wallet and with Wander.
+4. Publish in production.
+
+Each step records the import outcomes (§7) and the migration result, so a
+step is judged on numbers rather than on the absence of complaints.
+
+---
+
 ## 2. ar-io-docs: the specification
 
 The spec is written from the implementation that exists, and it is the contract

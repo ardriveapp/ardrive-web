@@ -83,6 +83,11 @@ enum DriveStateCreationRefusal {
   /// The codec could not seal the payload — the wallet declined to sign, or
   /// gzip produced nothing.
   sealFailed,
+
+  /// Some of the drive's own changes are not yet confirmed on chain. Waiting
+  /// minutes clears it; publishing now would hand every reader a change it
+  /// cannot safely confirm for itself.
+  unconfirmedChanges,
 }
 
 /// An artifact that has been built and **not sent**.
@@ -310,9 +315,15 @@ class DriveStateCreationService {
       );
     } on sqlite.ArtifactExportRefused catch (e) {
       return DriveStateCreationResult.refused(
-        e.reason == sqlite.ArtifactExportRefusal.tooLarge
-            ? DriveStateCreationRefusal.payloadTooLarge
-            : DriveStateCreationRefusal.sealFailed,
+        switch (e.reason) {
+          sqlite.ArtifactExportRefusal.tooLarge =>
+            DriveStateCreationRefusal.payloadTooLarge,
+          sqlite.ArtifactExportRefusal.unconfirmedChanges =>
+            DriveStateCreationRefusal.unconfirmedChanges,
+          sqlite.ArtifactExportRefusal.noSuchDrive ||
+          sqlite.ArtifactExportRefusal.emptyDrive =>
+            DriveStateCreationRefusal.sealFailed,
+        },
         e.detail,
       );
     }

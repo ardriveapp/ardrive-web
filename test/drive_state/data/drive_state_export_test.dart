@@ -1072,7 +1072,7 @@ void main() {
       // The above-1.0 half is tested in drive_state_format_version_test
       // against `readableBy`, which names its reader and so can exercise both
       // regimes whatever `current` happens to be.
-      for (final minor in [0, 2, 9, 10, 999]) {
+      for (final minor in [0, 1, 9, 10, 999]) {
         final payload = minimalPayload()
           ..['version'] = '${DriveStateFormatVersion.current.major}.$minor';
 

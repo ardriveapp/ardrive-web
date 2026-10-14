@@ -10,6 +10,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/drive_state_sqlite/artifact_sink.dart';
 import 'package:ardrive/drive_state_sqlite/artifact_to_export.dart';
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_import.dart';
+import 'package:ardrive/drive_state_sqlite/drive_state_artifact_schema.dart';
 import 'package:ardrive/sync/utils/network_transaction_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart'
     show DrivePrivacyTag, EntityTag;
@@ -984,6 +985,7 @@ class DriveStateImporter {
       final fileRevisionRows =
           export.fileRevisions.map(_fileRevisionCompanion).toList();
       final licenseRows = export.licenses.map(_licenseCompanion).toList();
+      final dataTxIds = {for (final r in fileRevisionRows) r.dataTxId.value};
 
       // `network_transactions` is derived, never carried: it has no `driveId`
       // to scope it by, so publishing it would publish rows about the user's
@@ -999,7 +1001,7 @@ class DriveStateImporter {
         // so it comes from the licence row, through the same single place the
         // rest of the app derives it: `LicensesCompanionExtensions`.
         ...licenseRows.expand((l) => l.getTransactionCompanions()),
-      ].map(_asMined).toList();
+      ].map((tx) => _withImportedStatus(tx, export, dataTxIds)).toList();
 
       final revisionsBefore = await _revisionRowCount(driveId);
       final licensesBefore = await _rowCount(_driveDao.licenses, driveId);
@@ -1415,54 +1417,6 @@ LicensesCompanion _licenseCompanion(ExportedLicense license) =>
       customGQLTags: Value(license.customGQLTags),
     );
 
-/// A derived `network_transactions` row, marked as what it is: mined.
-///
-/// The sync helpers set a file's **data** transaction to `pending`, and they
-/// are right to. Sync writes a revision the moment it reads the metadata, and
-/// the metadata can be on chain before the data it points at is — so sync
-/// leaves the data transaction to be confirmed by a later pass, which is what
-/// `_updateTransactionStatuses` is for.
-///
-/// An import is not that situation. These rows arrive inside an artifact whose
-/// signed coverage claim is the producer's own sync watermark: the producer
-/// had walked the chain to `Block-End` and these are the transactions it read
-/// there. Carrying them over as `pending` would do two things, both bad and
-/// both certain, to buy a distinction the payload cannot make anyway:
-///
-///  * every file in a restored drive would render with the pending icon
-///    (`fileStatusFromTransactions`) until something confirmed it;
-///  * and that something is a per-transaction gateway query — on a 42,000 file
-///    drive, 42,000 of them, which is precisely the work the artifact exists
-///    to avoid. An artifact that imported in one decryption and then triggered
-///    a full confirmation sweep would have saved nothing.
-///
-/// The residual case is wider than "still unmined", and it is worth stating
-/// exactly, because the export joins nothing to `network_transactions`: a
-/// revision travels whatever status the producer held for it. So this confirms
-/// every transaction the producer had **not** confirmed at publication —
-/// `pending`, and `failed` too. A consumer shows those files as confirmed and
-/// finds out at download time, and nothing re-checks: `pendingTransactions`
-/// (`lib/models/queries/drive_queries.drift`) selects `status = 'pending'`
-/// only, so a row written straight to `confirmed` is never revisited.
-///
-/// Narrowing it would have to happen in the export, by not publishing a
-/// revision whose transaction this client calls `failed`, and that is worse
-/// than the wrong status. `failed` is not an authority: `SyncRepository
-/// ._updateTransactionStatuses` sets it when a gateway reported the id
-/// not-found for longer than a threshold, which a gateway can do about a
-/// transaction that is perfectly well on chain. Dropping such rows would omit
-/// real files from the payload while the import still advances the watermark
-/// past the range their metadata lives in — turning a wrong icon into a file
-/// the consumer can never see. That is the failure this file's row-graph
-/// section exists to prevent, arrived at from the other side.
-///
-/// So the row travels and its status is the thing that is wrong, deliberately:
-/// a recoverable wrong answer about the producer's own unconfirmed uploads,
-/// against a wrong answer about every file in the drive, every time.
-///
-/// The true statuses are in the producer's `network_transactions`, which
-/// cannot travel: it has no `driveId`, so publishing it would publish rows
-/// about the user's other drives to everyone holding this drive's key.
 /// The first `parentFolderId` cycle in [parents], as the path around it, or
 /// null if the graph is acyclic.
 ///
@@ -1505,8 +1459,55 @@ List<String>? _firstFolderCycle(Map<String, String?> parents) {
   return null;
 }
 
-NetworkTransactionsCompanion _asMined(NetworkTransactionsCompanion tx) =>
-    tx.copyWith(status: const Value(TransactionStatus.confirmed));
+/// A derived `network_transactions` row, with the status a reader gives it.
+///
+/// **Confirmed, unless the artifact says otherwise.** The producer synced to
+/// `Block-End`, so a transaction it held as confirmed is one it saw mined.
+/// Carrying those over as `pending`, as sync's own helpers do for file data,
+/// would paint every file in a restored drive as pending and send a gateway
+/// query per transaction: on a 42,000 file drive, the work the artifact exists
+/// to avoid.
+///
+/// **What the producer had not confirmed travels, scoped to this drive.**
+/// `transaction_statuses` lists only transactions this drive's own rows
+/// reference, so it says nothing about the producer's other drives. Without
+/// it an upload that failed would arrive confirmed, render as a good file in
+/// every client that imported the drive, and never be looked at again,
+/// because the confirmation pass only revisits `pending` rows.
+///
+/// The rule is `importedTransactionStatus`'s:
+///
+///  * a **data** transaction becomes `pending`, so this client's confirmation
+///    pass checks it, exactly as it checks every data transaction a sync
+///    reads. That pass finds the owner to ask about through the file's drive
+///    (`pendingDataFileRevisions`), so it is right on an attached drive too;
+///  * any **other** transaction arrives `failed`. The producer refuses to
+///    publish while one is `pending`, because the confirmation pass looks up a
+///    metadata transaction under the signed-in wallet, which on an attached
+///    drive is not the owner, and would mark a good upload failed.
+///
+/// Rows are never dropped for their status. `failed` is what a gateway said
+/// after failing to find a transaction for long enough, which it can say about
+/// one that is on chain; dropping the row would hide a real file behind a
+/// watermark that has already moved past it.
+NetworkTransactionsCompanion _withImportedStatus(
+  NetworkTransactionsCompanion tx,
+  DriveStateExport export,
+  Set<String> dataTxIds,
+) {
+  final carried = export.unconfirmedTransactions[tx.id.value];
+  if (carried == null) {
+    return tx.copyWith(status: const Value(TransactionStatus.confirmed));
+  }
+  // Non-null: `readArtifactAsExport` refuses an artifact carrying a status
+  // this rule cannot apply.
+  return tx.copyWith(
+    status: Value(importedTransactionStatus(
+      carriedStatus: carried,
+      isDataTransaction: dataTxIds.contains(tx.id.value),
+    )!),
+  );
+}
 
 /// Every column of `file_entries`, named.
 FileEntriesCompanion _fileCompanion(ExportedFileEntry file) =>

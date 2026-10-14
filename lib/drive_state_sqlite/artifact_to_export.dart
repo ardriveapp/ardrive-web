@@ -22,6 +22,7 @@ library;
 
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
+import 'package:ardrive/drive_state_sqlite/drive_state_artifact_schema.dart';
 import 'package:drift/drift.dart';
 
 /// Drift stores `DATETIME` as unix **seconds** in this schema (no
@@ -198,5 +199,42 @@ Future<DriveStateExport> readArtifactAsExport(
       'blockEnd': meta.read<int>('blockEnd'),
     }),
     version: DriveStateFormatVersion.parse(meta.read<String>('version')),
+    unconfirmedTransactions: await _unconfirmedTransactions(all),
   );
+}
+
+/// `transaction_statuses`, checked against the rule a reader applies to it.
+///
+/// A row this build could not apply, or a duplicate id, means the artifact
+/// was not written by a producer that follows the format, and the whole
+/// artifact is refused rather than partly believed.
+Future<Map<String, String>> _unconfirmedTransactions(
+  Future<List<QueryRow>> Function(String table) all,
+) async {
+  final dataTxIds = {
+    for (final r in await all('file_revisions')) r.read<String>('dataTxId'),
+  };
+  final statuses = <String, String>{};
+  for (final r in await all('transaction_statuses')) {
+    final id = r.read<String>('id');
+    final status = r.read<String>('status');
+    if (importedTransactionStatus(
+          carriedStatus: status,
+          isDataTransaction: dataTxIds.contains(id),
+        ) ==
+        null) {
+      throw DriveStateFormatException(
+        DriveStateFormatError.malformed,
+        'transaction $id is listed as "$status", which a reader cannot apply',
+      );
+    }
+    if (statuses.containsKey(id)) {
+      throw DriveStateFormatException(
+        DriveStateFormatError.malformed,
+        'transaction $id is listed twice',
+      );
+    }
+    statuses[id] = status;
+  }
+  return statuses;
 }

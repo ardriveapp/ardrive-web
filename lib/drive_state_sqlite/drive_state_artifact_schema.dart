@@ -74,6 +74,10 @@ bool artifactVersionIsReadable(String version) {
 ///   reconstructible from the revisions, and it has no `driveId` — so carrying
 ///   it would publish rows about the producer's *other* drives to everyone
 ///   holding this drive's key.
+///   What does travel is `transaction_statuses`: the transactions **this
+///   drive's own rows** reference that the producer had not confirmed, with
+///   the status it held for each. Scoped through the rows, so it says nothing
+///   about any other drive. See [unconfirmedTransactionsSql].
 /// * `arns_records` / `ant_records` are ARIO state, refetched from ARIO. The
 ///   drive-side fact — which names a file has — travels in `assignedNames`.
 const artifactSchema = <String, String>{
@@ -190,6 +194,9 @@ const artifactSchema = <String, String>{
       'dateCreated INTEGER NOT NULL, '
       'licenseType TEXT NOT NULL, '
       'customGQLTags TEXT)',
+  'transaction_statuses': 'CREATE TABLE transaction_statuses ('
+      'id TEXT NOT NULL, '
+      'status TEXT NOT NULL)',
 };
 
 /// The columns copied out of the local database, per table.
@@ -405,7 +412,16 @@ const withheldDriveColumns = <String>{
 ///
 /// `INSERT OR IGNORE` because the same id legitimately arrives from several
 /// places — a file's metadata and data transactions, a licence, a bundle.
+///
+/// The carried statuses go first, so they win over `confirmed`, and a row
+/// the reader already holds keeps the reader's own status. The rule is
+/// [importedTransactionStatus]'s.
 List<String> regenerateNetworkTransactionsSql(String artifactAlias) => [
+      'INSERT OR IGNORE INTO network_transactions (id, status) '
+          'SELECT s.id, CASE WHEN s.id IN '
+          '(SELECT dataTxId FROM $artifactAlias.file_revisions) '
+          "THEN '$_pending' ELSE s.status END "
+          'FROM $artifactAlias.transaction_statuses s',
       for (final (table, column) in const [
         ('drive_revisions', 'metadataTxId'),
         ('folder_revisions', 'metadataTxId'),
@@ -417,3 +433,77 @@ List<String> regenerateNetworkTransactionsSql(String artifactAlias) => [
             "SELECT DISTINCT $column, 'confirmed', dateCreated "
             'FROM $artifactAlias.$table WHERE $column IS NOT NULL',
     ];
+
+const _pending = 'pending';
+const _failed = 'failed';
+
+/// Every transaction id the artifact's rows reference, as a subquery over
+/// [alias]. Metadata transactions and licences first, then file data.
+String _metadataTxIds(String alias) =>
+    'SELECT metadataTxId FROM $alias.drive_revisions '
+    'UNION SELECT metadataTxId FROM $alias.folder_revisions '
+    'UNION SELECT metadataTxId FROM $alias.file_revisions '
+    'UNION SELECT licenseTxId FROM $alias.licenses';
+
+String _dataTxIds(String alias) => 'SELECT dataTxId FROM $alias.file_revisions';
+
+/// How many metadata or licence transactions behind the artifact's rows the
+/// producer still holds as `pending`, read from `main` after the rows are
+/// copied into `artifact`.
+///
+/// The producer refuses while this is above zero. A pending metadata
+/// transaction is the producer's own upload, not yet seen on chain, and a
+/// reader has no safe way to confirm it: the confirmation pass looks up
+/// metadata transactions by the signed-in wallet, which on an attached drive
+/// is not the owner, so a perfectly good upload would be marked failed. The
+/// wait is minutes, and publishing after it carries nothing unconfirmed of
+/// this kind.
+const unconfirmedMetadataCountSql =
+    'SELECT count(*) AS c FROM main.network_transactions n '
+    "WHERE n.status = '$_pending' AND n.id IN ("
+    'SELECT metadataTxId FROM artifact.drive_revisions '
+    'UNION SELECT metadataTxId FROM artifact.folder_revisions '
+    'UNION SELECT metadataTxId FROM artifact.file_revisions '
+    'UNION SELECT licenseTxId FROM artifact.licenses)';
+
+/// Fills `artifact.transaction_statuses` with every transaction the
+/// artifact's rows reference that the producer does not hold as `confirmed`.
+///
+/// Without it every one of those would arrive `confirmed`, because the
+/// importer derives the rest of `network_transactions` from the revisions:
+/// an upload that failed would show as a good file in every client that
+/// imported the artifact, and nothing would ever check it again.
+///
+/// Rows are never dropped for their status. `failed` is what a gateway said
+/// when it could not find a transaction for long enough, which it can say
+/// about one that is on chain; dropping the row would hide a real file behind
+/// a watermark that has already moved past it. The status travels instead,
+/// and the reader decides what to do with it (see [importedTransactionStatus]).
+String unconfirmedTransactionsSql() =>
+    'INSERT INTO artifact.transaction_statuses (id, status) '
+    'SELECT n.id, n.status FROM main.network_transactions n '
+    "WHERE n.status != 'confirmed' AND n.id IN ("
+    '${_metadataTxIds('artifact')} UNION ${_dataTxIds('artifact')})';
+
+/// The status a reader gives a transaction the artifact listed in
+/// `transaction_statuses`, or null to reject the artifact.
+///
+/// * A **data** transaction becomes `pending`, whatever the producer held, so
+///   the reader's own confirmation pass checks it: the same thing a sync from
+///   GraphQL does with every data transaction it reads. That pass resolves the
+///   owner of a data transaction from its drive, so it is right on attached
+///   drives too, and it costs one lookup per listed transaction, not one per
+///   file.
+/// * Any other transaction keeps `failed`. It is shown as failed, which is
+///   what the producer saw and is never a false green.
+/// * Anything else is not something a correct producer writes: a status that
+///   is neither, or a non-data transaction listed as `pending`, which the
+///   producer refuses to publish (see [unconfirmedMetadataCountSql]).
+String? importedTransactionStatus({
+  required String carriedStatus,
+  required bool isDataTransaction,
+}) {
+  if (carriedStatus != _pending && carriedStatus != _failed) return null;
+  if (isDataTransaction) return _pending;
+  return carriedStatus == _failed ? _failed : null;
+}

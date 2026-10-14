@@ -61,7 +61,7 @@ class DriveStateFormatVersion extends Equatable
   /// constants that must always be equal are two constants that can eventually
   /// differ, and a producer whose tag and payload disagree publishes an
   /// artifact every reader refuses — paid for, permanent, uncorrectable.
-  static const DriveStateFormatVersion current = DriveStateFormatVersion(0, 1);
+  static const DriveStateFormatVersion current = DriveStateFormatVersion(0, 2);
 
   final int major;
   final int minor;

@@ -530,6 +530,135 @@ void main() {
       expect(kept.status, TransactionStatus.failed);
     });
 
+    group('a transaction the producer had not confirmed', () {
+      Future<void> producerHolds(String txId, String status) => producerDb
+          .into(producerDb.networkTransactions)
+          .insertOnConflictUpdate(
+            NetworkTransactionsCompanion.insert(
+              id: txId,
+              status: Value(status),
+            ),
+          );
+
+      Future<List<FileRevision>> producerRevisions() =>
+          (producerDb.select(producerDb.fileRevisions)
+                ..orderBy([(r) => OrderingTerm.asc(r.fileId)]))
+              .get();
+
+      Future<DriveStateImportResult> importFrom(Uint8List payload) async {
+        final artifact = await sealArtifact(payload, blockEnd: 900);
+        return importer.import(
+          candidate: artifact.candidate,
+          body: artifact.body,
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+      }
+
+      Future<String?> statusOf(String txId) async =>
+          (await (db.select(db.networkTransactions)
+                    ..where((t) => t.id.equals(txId)))
+                  .getSingleOrNull())
+              ?.status;
+
+      test('is never marked confirmed: its data is checked again here',
+          () async {
+        // The case a reader must not get wrong: an upload that failed. If it
+        // arrived confirmed, every client that imported the drive would show
+        // a good file and nothing would ever look at it again.
+        final revisions = await producerRevisions();
+        final failedData = revisions[0].dataTxId;
+        final pendingData = revisions[1].dataTxId;
+        await producerHolds(failedData, TransactionStatus.failed);
+        await producerHolds(pendingData, TransactionStatus.pending);
+        await attachDrive(db);
+
+        final result = await importFrom(await exportedPayload());
+
+        expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+        // Pending, not failed: this client's own confirmation pass decides,
+        // the same way it does for every data transaction a sync reads.
+        expect(await statusOf(failedData), TransactionStatus.pending);
+        expect(await statusOf(pendingData), TransactionStatus.pending);
+        expect(
+          (await db.driveDao.pendingTransactions().get()).map((t) => t.id),
+          unorderedEquals([failedData, pendingData]),
+        );
+        // And that pass can find the owner to ask about, attached drive or
+        // not: it maps a pending data transaction to its drive's owner.
+        expect(
+          (await db.driveDao.pendingDataFileRevisions().get())
+              .map((r) => (r.dataTxId, r.driveId)),
+          unorderedEquals([(failedData, driveId), (pendingData, driveId)]),
+        );
+        expect(
+          (await db.driveDao.driveById(driveId: driveId).getSingle())
+              .ownerAddress,
+          ownerAddress,
+        );
+      });
+
+      test('keeps a failed metadata transaction failed, and keeps the file',
+          () async {
+        final revision = (await producerRevisions()).first;
+        await producerHolds(revision.metadataTxId, TransactionStatus.failed);
+        await attachDrive(db);
+
+        final result = await importFrom(await exportedPayload());
+
+        expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+        expect(await statusOf(revision.metadataTxId), TransactionStatus.failed);
+        // Never dropped for its status: `failed` is what a gateway said, and
+        // it can say it about a transaction that is on chain.
+        expect(
+          (await fileRows(db)).map((f) => f.id),
+          contains(revision.fileId),
+        );
+      });
+
+      test('leaves everything the producer confirmed confirmed', () async {
+        final revisions = await producerRevisions();
+        await producerHolds(revisions[0].dataTxId, TransactionStatus.failed);
+        await attachDrive(db);
+
+        await importFrom(await exportedPayload());
+
+        for (final tx in await transactionRows()) {
+          if (tx.id == revisions[0].dataTxId) continue;
+          expect(tx.status, TransactionStatus.confirmed, reason: tx.id);
+        }
+      });
+
+      const listed = 'INSERT INTO transaction_statuses (id, status) SELECT';
+      for (final (label, edits) in [
+        (
+          'a metadata transaction listed as pending',
+          ["$listed metadataTxId, 'pending' FROM file_revisions LIMIT 1"],
+        ),
+        (
+          'a status a reader cannot apply',
+          ["$listed dataTxId, 'confirmed' FROM file_revisions LIMIT 1"],
+        ),
+        (
+          'the same transaction listed twice',
+          [
+            "$listed dataTxId, 'failed' FROM file_revisions LIMIT 1",
+            "$listed dataTxId, 'pending' FROM file_revisions LIMIT 1",
+          ],
+        ),
+      ]) {
+        test('refuses an artifact carrying $label', () async {
+          await attachDrive(db);
+
+          final result =
+              await importFrom(editArtifact(await exportedPayload(), edits));
+
+          expect(result.outcome, DriveStateOutcome.integrityFailed);
+          expect(await fileRows(db), isEmpty);
+        });
+      }
+    });
+
     test('reports what it landed, beside the entities', () async {
       await attachDrive(db);
       final artifact =
@@ -2078,7 +2207,7 @@ void main() {
 
       // The tag is the one this build reads, so step 2 passes and the
       // disagreement is the only thing left to refuse the artifact.
-      for (final declared in ['0.2', '0.9']) {
+      for (final declared in ['0.1', '0.9']) {
         final payload = editArtifact(
           await exportedPayload(),
           ["UPDATE meta SET version = '$declared'"],
