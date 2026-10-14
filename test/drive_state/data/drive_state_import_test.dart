@@ -1254,10 +1254,10 @@ void main() {
       final payload = editArtifact(await exportedPayload(), [
         // The row the filter correctly withheld, put back.
         'INSERT OR REPLACE INTO folder_entries '
-            '(id, driveId, name, parentFolderId, path, dateCreated, '
-            'lastUpdated, isGhost, isHidden) '
+            '(id, driveId, name, parentFolderId, dateCreated, '
+            'lastUpdated, isHidden) '
             "VALUES ('$nestedFolderId', '$driveId', '$nestedFolderId', "
-            "'$rootFolderId', '', 1700000000, 1700000000, 1, 0)",
+            "'$rootFolderId', 1700000000, 1700000000, 0)",
       ]);
 
       final artifact = await sealArtifact(payload, blockEnd: 900);

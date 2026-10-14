@@ -128,7 +128,9 @@ Future<ArtifactImportResult> importDriveState(
         final rows = <String, int>{};
         for (final entry in artifactProjection.entries) {
           final table = entry.key;
-          final columns = entry.value;
+          final constants = artifactImportConstants[table] ?? const {};
+          final columns = [...entry.value, ...constants.keys];
+          final selected = [...entry.value, ...constants.values].join(', ');
           final target = artifactConflictTarget[table]!;
           // An upsert on the projected columns, never INSERT OR REPLACE.
           // REPLACE would delete the conflicting row and reinsert it, resetting
@@ -141,7 +143,7 @@ Future<ArtifactImportResult> importDriveState(
           final joined = columns.join(', ');
           await db.customStatement(
             'INSERT INTO main.$table ($joined) '
-            'SELECT $joined FROM artifact.$table '
+            'SELECT $selected FROM artifact.$table '
             'WHERE true '
             'ON CONFLICT(${target.join(', ')}) DO UPDATE SET $assignments',
           );

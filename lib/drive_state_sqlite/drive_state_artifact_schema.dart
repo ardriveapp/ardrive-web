@@ -107,10 +107,8 @@ const artifactSchema = <String, String>{
       'driveId TEXT NOT NULL, '
       'name TEXT NOT NULL, '
       'parentFolderId TEXT, '
-      'path TEXT NOT NULL, '
       'dateCreated INTEGER NOT NULL, '
       'lastUpdated INTEGER NOT NULL, '
-      'isGhost INTEGER NOT NULL, '
       'customJsonMetadata TEXT, '
       'customGQLTags TEXT, '
       'isHidden INTEGER NOT NULL)',
@@ -119,7 +117,6 @@ const artifactSchema = <String, String>{
       'driveId TEXT NOT NULL, '
       'name TEXT NOT NULL, '
       'parentFolderId TEXT NOT NULL, '
-      'path TEXT NOT NULL, '
       'size INTEGER NOT NULL, '
       'lastModifiedDate INTEGER NOT NULL, '
       'dataContentType TEXT, '
@@ -207,6 +204,13 @@ const artifactSchema = <String, String>{
 /// not what the drive is, and importing a stranger's watermark would advance a
 /// reader past blocks it never saw.
 ///
+/// **What the entry tables withhold, and why.** `path` is written as `''` by
+/// every path in the app and computed by nothing, and `isGhost` is always
+/// false for a row a revision vouches for, which is the only kind that travels
+/// (see [artifactChainOnlyPredicate]). A column in a published format is a
+/// promise every reader keeps for ever, so these two are not carried; a reader
+/// supplies them from [artifactImportConstants].
+///
 /// Every other table travels whole. The order matters: `meta` is written last
 /// by the exporter, from counts taken over the tables above it.
 const artifactProjection = <String, List<String>>{
@@ -229,10 +233,8 @@ const artifactProjection = <String, List<String>>{
     'driveId',
     'name',
     'parentFolderId',
-    'path',
     'dateCreated',
     'lastUpdated',
-    'isGhost',
     'customJsonMetadata',
     'customGQLTags',
     'isHidden',
@@ -242,7 +244,6 @@ const artifactProjection = <String, List<String>>{
     'driveId',
     'name',
     'parentFolderId',
-    'path',
     'size',
     'lastModifiedDate',
     'dataContentType',
@@ -344,6 +345,16 @@ const artifactConflictTarget = <String, List<String>>{
   'folder_revisions': ['folderId', 'driveId', 'dateCreated'],
   'file_revisions': ['fileId', 'driveId', 'dateCreated'],
   'licenses': ['fileId', 'driveId', 'dataTxId', 'licenseTxId'],
+};
+
+/// Values a reader writes for the app's own columns the artifact does not
+/// carry, as SQL expressions. Both are what the app itself would hold for the
+/// same row: `path` is never anything but `''`, and a folder the chain vouches
+/// for is not a ghost, including one this client had been holding as a ghost
+/// until now.
+const artifactImportConstants = <String, Map<String, String>>{
+  'folder_entries': {'path': "''", 'isGhost': '0'},
+  'file_entries': {'path': "''"},
 };
 
 /// An extra condition on the rows a table may publish, beyond belonging to the

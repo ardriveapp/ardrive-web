@@ -567,14 +567,14 @@ void main() {
       // meets the refusal.
       expect(
         crossover,
-        inInclusiveRange(137000, 161000),
-        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 quotes about 149,000 '
+        inInclusiveRange(152000, 176000),
+        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 quotes about 164,000 '
             'files; the exported row shape has moved under it',
       );
       expect(
         headroom,
-        inInclusiveRange(3.3, 3.8),
-        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 quotes roughly 3.5x '
+        inInclusiveRange(3.7, 4.2),
+        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 quotes roughly 3.9x '
             'headroom over the 42k-file drive',
       );
     }, timeout: const Timeout(Duration(minutes: 2)));
@@ -593,8 +593,8 @@ void main() {
       );
       // The measured SQLite figure is the one a reader plans against, and
       // the JSON-era range stays quoted as history so nobody re-derives it.
-      expect(proposal, contains('about 149,000 files'));
-      expect(proposal, contains('roughly 3.5x'));
+      expect(proposal, contains('about 164,000 files'));
+      expect(proposal, contains('roughly 3.9x'));
       expect(proposal, contains('between 70,000 and 80,000 files'));
 
       // And it no longer justifies the bound by the cipher, which is the

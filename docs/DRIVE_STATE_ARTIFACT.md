@@ -253,19 +253,19 @@ files), it grows in a straight line:
 | 3,000 | 2,154,496 B |
 | 6,000 | 4,268,032 B |
 
-That is about 705 bytes a file, revisions included, on roughly 34 KiB of fixed
+That is about 640 bytes a file, revisions included, on roughly 36 KiB of fixed
 schema and metadata. So:
 
-> **The 100 MiB payload boundary is crossed at about 149,000 files.** A
-> 41,767-file drive weighs about 28 MiB, roughly 3.5x under it.
+> **The 100 MiB payload boundary is crossed at about 164,000 files.** A
+> 41,767-file drive weighs about 26 MiB, roughly 3.9x under it.
 > The same figures apply to a public drive: what is weighed is the payload,
 > and the cipher, which a public drive does not have, is downstream of it.
 
 `qa_findings_test.dart` takes this measurement on every run and fails if the
 crossover or the headroom leaves the band quoted here.
 
-Three things still spend the headroom: **longer paths** (every file pays its
-path once in its entry and again in each revision), **`customGQLTags` and
+Three things still spend the headroom: **longer names** (every file pays its
+name once in its entry and again in each revision), **`customGQLTags` and
 `customJsonMetadata`** (absent from the measurement, unbounded in general), and
 **more revisions per entity** (1.05 is one real drive's figure, not a law). They
 spend it more slowly than they did against JSON, but a very large, heavily
@@ -537,7 +537,7 @@ through unchanged and the browser then cannot read ranges at all. ArDrive sets
 no such tag anywhere today.
 
 Producers always compress until Library pages ship. The threshold is then set
-by measuring the real page, starting from 16 MiB of SQLite (about 24,000
+by measuring the real page, starting from 16 MiB of SQLite (about 26,000
 files), and it can change later because no reader depends on it. It is recorded
 in `LIBRARY_PAGES.md`, because §4.5 shows the gain is smaller than it looks on
 a cold object.
@@ -713,8 +713,8 @@ a `rows` array. All seven are required and any may be empty (§6.1).
 | section | carries |
 |---|---|
 | `drives` | exactly one row: the drive itself, including its `privacy`, and minus its key material, sync cursor and watermark |
-| `folder_entries` | current folder rows |
-| `file_entries` | current file rows, including `thumbnail`, `pinnedDataOwnerAddress`, `assignedNames`, `licenseTxId`, `isHidden` and both custom-metadata columns |
+| `folder_entries` | current folder rows, without `path` or `isGhost` (below) |
+| `file_entries` | current file rows, including `thumbnail`, `pinnedDataOwnerAddress`, `assignedNames`, `licenseTxId`, `isHidden` and both custom-metadata columns, without `path` |
 | `drive_revisions` | every drive revision |
 | `folder_revisions` | every folder revision |
 | `file_revisions` | every file revision, not only the newest (D2) |
@@ -731,6 +731,14 @@ a listed data transaction becomes `pending`, so the reader's own confirmation
 pass checks it, and any other listed transaction stays `failed` (D15).
 `arns_records` and `ant_records` are likewise not carried
 (D10); the drive-side fact travels as `assignedNames` on the file rows.
+
+**Two of the app's columns are not carried.** `path` is written as `''`
+everywhere in the app and read by nothing: every path shown is built from
+`parentFolderId`, which any reader can do in one pass. `isGhost` is always
+false for a row a revision vouches for, the only kind that travels. A reader
+writes `''` and false for them. `action` on the revision tables is carried
+although it is derivable from consecutive revisions: it is informational, the
+app's tables require it, and it costs 0.3% of the artifact.
 
 Nothing else in the local database travels. `profiles` never does.
 

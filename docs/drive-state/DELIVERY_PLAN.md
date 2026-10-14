@@ -85,7 +85,7 @@ gateway. Fixed items are in #2197; open ones are owned below.
 | R2 | Ethereum and Solana sign-ins | ✅ not a gap: both derive an Arweave wallet from a seed phrase (`login_bloc.dart`), and it owns and signs the drive |
 | R3 | **Which signature is the artifact's proof of authorship.** The upload's owner, as for every ArFS entity; the inner signature is gone. See below | ✅ D16 |
 | R4 | **No way to disown a buggy producer.** A reader tries the next artifact only when one fails a check; a valid but wrong one is adopted by every client. Artifacts carry `App-Version`, so a reader-side refusal list (config) plus a versioning policy in the spec closes it | ⬜ spec + reader |
-| R5 | **App-internal columns in the format**: `path`, `isGhost`, `thumbnail`, `importSource`, `action`, `fallbackTxId`, `assignedNames`. Ghost and placeholder rows are already filtered out (`artifactChainOnlyPredicate`); the columns themselves need a protocol-or-drop call in 2.3 before the first publish | ⬜ 2.3 |
+| R5 | ✅ **`path` and `isGhost` no longer travel; the rest are chain facts.** `thumbnail`, `importSource`, `originalOwner`, `fallbackTxId` and `assignedNames` are fields of the file's ArFS metadata, so they stay; `action` stays as derived and informational. Original finding: **app-internal columns in the format**: `path`, `isGhost`, `thumbnail`, `importSource`, `action`, `fallbackTxId`, `assignedNames`. Ghost and placeholder rows are already filtered out (`artifactChainOnlyPredicate`); the columns themselves need a protocol-or-drop call in 2.3 before the first publish | ⬜ 2.3 |
 | R6 | **Library pages could not verify what they read by range**, since a signature covered the whole payload | ✅ resolved by D16: a range read is trusted exactly as much as a full one |
 | R7 | **No rollout plan.** Flags exist, but a flag change reaches a user only with a `configVersion` bump and a reload, so there is no fast off switch, and outcomes are only logged | ⬜ below |
 | R8 | Stream B order: with snapshots retiring, core-js may wire artifacts before finishing its own snapshot wiring | ⬜ B1.3 |
@@ -180,7 +180,7 @@ So:
 - **Producers, until Library pages ship:** always gzip, as the code does now.
 - **Producers, when Library pages ship:** a public artifact is published
   identity above a size measured with the real page, not chosen now. 16 MiB of
-  SQLite (about 24,000 files at 705 B each) is the proposed starting point to
+  SQLite (about 26,000 files at 640 B each) is the proposed starting point to
   test against, since below it a whole fetch is a few seconds on an ordinary
   connection and a cold gateway fetches the whole object anyway (§4.5).
 

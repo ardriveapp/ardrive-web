@@ -91,7 +91,32 @@ void main() {
         )
         .getSingle();
     expect(row.read<String>('name'), 'Empty');
-    expect(row.read<String>('path'), '/Empty');
+    // `path` does not travel: every write in the app stores '', and that is
+    // what a reader supplies, whatever the producer's row held.
+    expect(row.read<String>('path'), '');
+  });
+
+  test('a folder this client held as a ghost arrives as a real one',
+      () async {
+    // `isGhost` does not travel; the reader supplies it. A folder the chain
+    // vouches for is not a ghost, so a reader that had been holding a ghost
+    // in its place must come out of the import holding a real folder.
+    await seedDrive(producer, files: 4, folders: 2);
+    await consumer.customStatement(
+      'INSERT INTO folder_entries (id, driveId, name, parentFolderId, path, '
+      'dateCreated, lastUpdated, isGhost, isHidden) '
+      "VALUES ('folder-0', ?, 'folder-0', ?, '', 1, 1, 1, 0)",
+      [testDriveId, 'root-$testDriveId'],
+    );
+
+    await roundTrip();
+
+    final row = await consumer
+        .customSelect(
+          "SELECT isGhost FROM folder_entries WHERE id = 'folder-0'",
+        )
+        .getSingle();
+    expect(row.read<int>('isGhost'), 0);
   });
 
   test('a ghost folder does NOT travel — it is one client\'s guess', () async {
