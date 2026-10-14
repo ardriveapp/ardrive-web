@@ -984,7 +984,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Hidden files are not added into the manifest.',
+                        'Hidden files and folders are not added to the manifest.',
                         style: typography.paragraphNormal(
                           color: colorTokens.textMid,
                           fontWeight: ArFontWeight.semiBold,
