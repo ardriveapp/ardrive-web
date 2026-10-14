@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
@@ -65,7 +66,8 @@ enum DriveStateEnvelopeFailure {
   /// serving bodies that arrived wrong; this is the check that catches them.
   decryptionFailed,
 
-  /// The signed data item's data is not a gzip stream.
+  /// The signed data item's data is neither a gzip stream nor a SQLite file,
+  /// or starts as a gzip stream and does not inflate.
   decompressionFailed,
 
   /// The signed data is a gzip stream that expands past
@@ -255,6 +257,11 @@ class DriveStateOpenResult {
 /// private:  serialise  ->  gzip  ->  sign (ANS-104 data item)  ->  AES256-GCM
 /// public:   serialise  ->  gzip  ->  sign (ANS-104 data item)
 /// ```
+///
+/// [seal] always compresses. [open] also accepts a signed SQLite file that
+/// was never compressed, which a producer may publish for a large public
+/// drive so it can be read by range (D13), and tells the two apart by their
+/// first bytes.
 ///
 /// ## The public path is the same chain minus one layer
 ///
@@ -692,6 +699,27 @@ class DriveStateEnvelopeCodec {
       );
     }
 
+    // Two encodings, told apart by the signed bytes themselves (D13): a
+    // producer compresses a small artifact and may leave a large public one
+    // as a plain SQLite file, so a page can read it by range. Nothing outside
+    // the signature says which, so nothing unsigned can choose for us.
+    if (_startsWith(compressed, _sqliteHeader)) {
+      if (compressed.lengthInBytes > maxPlaintextBytes) {
+        return DriveStateOpenResult.failed(
+          DriveStateEnvelopeFailure.decompressedTooLarge,
+          'The signed SQLite file is ${compressed.lengthInBytes} bytes, past '
+          'the $maxPlaintextBytes byte limit',
+        );
+      }
+      return DriveStateOpenResult.opened(compressed, signerAddress);
+    }
+    if (!_startsWith(compressed, _gzipMagic)) {
+      return const DriveStateOpenResult.failed(
+        DriveStateEnvelopeFailure.decompressionFailed,
+        'The signed data is neither a gzip stream nor a SQLite file',
+      );
+    }
+
     final Uint8List plaintext;
     try {
       plaintext = _inflateBounded(compressed);
@@ -771,6 +799,21 @@ class DriveStateEnvelopeCodec {
     final output = _BoundedOutputStream(maxPlaintextBytes);
     GZipDecoder().decodeStream(InputStream(compressed), output);
     return _asBytes(output.getBytes());
+  }
+
+  /// The first bytes of every gzip stream (RFC 1952).
+  static const _gzipMagic = [0x1f, 0x8b];
+
+  /// The first bytes of every SQLite database file: `SQLite format 3` and a
+  /// NUL.
+  static final _sqliteHeader = [...ascii.encode('SQLite format 3'), 0];
+
+  static bool _startsWith(Uint8List bytes, List<int> prefix) {
+    if (bytes.lengthInBytes < prefix.length) return false;
+    for (var i = 0; i < prefix.length; i++) {
+      if (bytes[i] != prefix[i]) return false;
+    }
+    return true;
   }
 
   /// The ANS-104 signature type: two bytes, little endian, at offset zero.

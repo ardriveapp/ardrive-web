@@ -524,8 +524,12 @@ the wire are a gzip stream, and a slice of a gzip stream cannot be inflated on
 its own. Encryption removes it as well, which is why this applies to public
 artifacts only.
 
-**The rule.** Compression is a `meta` flag, chosen at publish time, and
-permanent per artifact.
+**The rule.** A reader accepts both encodings and tells them apart by the
+first bytes of the signed payload: `1f 8b` is a gzip stream, `SQLite format 3`
+followed by a NUL is an uncompressed file, and anything else is refused. The
+producer chooses per artifact, and that artifact keeps its choice for ever. It
+is not a `meta` flag, because `meta` is inside the compressed bytes it would
+describe.
 
 - **Compressed** below the random-access threshold. A small artifact is fetched
   whole, and gzip recovers most of its bytes. The median drive is two files, so
@@ -539,9 +543,11 @@ effect as envelope compression and is worse, because the gateway passes the tag
 through unchanged and the browser then cannot read ranges at all. ArDrive sets
 no such tag anywhere today.
 
-The threshold itself is a product decision and is recorded in
-`LIBRARY_PAGES.md` rather than here, because §4.5 shows the gain is smaller than
-it looks on a cold object.
+Producers always compress until Library pages ship. The threshold is then set
+by measuring the real page, starting from 16 MiB of SQLite (about 24,000
+files), and it can change later because no reader depends on it. It is recorded
+in `LIBRARY_PAGES.md`, because §4.5 shows the gain is smaller than it looks on
+a cold object.
 
 ### 2.8 The web database moves with it, for every user, on first load
 

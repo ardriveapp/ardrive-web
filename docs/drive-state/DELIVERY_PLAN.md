@@ -87,7 +87,7 @@ instead of the spec would only prove that the two codebases agree.
 | 2.2 | `entity-types.mdx`: a `## Drive State` section beside `## Snapshot`, with its tags (`Entity-Type: drive-state`, `Drive-Id`, `Drive-State-Id`, `State-Version`, `Entity-Count`, `Block-Start`, `Block-End`, `Cipher`, `Cipher-IV`) and the rule that a `Content-Encoding` tag is never set | ⬜ |
 | 2.3 | **The payload, normatively**: the SQLite tables, columns, types and `meta` keys a producer must write and a reader may rely on, with what is excluded by construction (every key). A second producer cannot be written without this, and today it exists only as `drive_state_artifact_schema.dart` | ⬜ |
 | 2.4 | **The envelope, normatively**: serialise, optional gzip, sign as an ANS-104 data item, AES256-GCM with the drive key for a private drive. The signed coverage claim, and the rule that the unsigned `Block-Start` / `Block-End` tags are checked against it before a watermark is adopted | ⬜ |
-| 2.5 | **The encoding rule** (D13, see the pending decision below): a reader accepts both encodings and tells them apart by the first bytes of the signed payload | ⬜ 🔒 D13 |
+| 2.5 | **The encoding rule** (D13, decided below): a reader accepts both encodings and tells them apart by the first bytes of the signed payload | ⬜ |
 | 2.6 | `reading-data.mdx`: the read order (artifact, then snapshots, then GraphQL) and the rule that every failure falls back rather than fails | ⬜ |
 | 2.7 | `privacy.mdx`: one ciphertext under the **drive** key, unlike a snapshot's per-entity ciphertext; and that a snapshot of a private drive publishes its structure in plaintext, which is not stated anywhere | ⬜ |
 | 2.8 | Snapshots: marked as superseded for new drives (D-30). Existing snapshots stay readable for ever, and a reader keeps reading them | ⬜ 🔒 D-30 |
@@ -97,10 +97,10 @@ instead of the spec would only prove that the two codebases agree.
 entire structure in plaintext is true today, undocumented, and something
 implementers should know irrespective of this addition.
 
-### Pending decision: D13, the compression threshold
+### D13, the compression threshold (decided 2026-10-14)
 
-**Recommendation: the threshold is a producer setting, not part of the format.
-Fix only one thing permanently: every reader accepts both encodings.**
+**Decided: the threshold is a producer setting, not part of the format. One
+thing is fixed permanently: every reader accepts both encodings.**
 
 Three facts decide it:
 
@@ -109,7 +109,7 @@ Three facts decide it:
 2. **Only a public artifact served by a Library page gains from identity**, and
    Library pages do not exist yet. Until they do, identity costs about three
    times the upload (17.70 MiB against 5.98 at 41,767 files) and buys nothing.
-3. **D13 as written cannot work as a `meta` flag.** `meta` is inside the
+3. **D13's earlier form, a `meta` flag, cannot work.** `meta` is inside the
    compressed bytes, so a reader would have to decompress to learn whether to
    decompress. The bytes already answer the question: a gzip stream starts with
    `1f 8b`, a SQLite file with `SQLite format 3\0`. Both are inside the
@@ -119,11 +119,8 @@ So:
 
 - **Readers, from the first release, in every implementation:** verify the
   signature, then sniff. gzip is inflated with the existing bound; SQLite is
-  read as is; anything else is `malformed`. The web reader inflates
-  unconditionally today, so this is a small change to land in #2197 before
-  anything is published. An older reader meeting an identity artifact would
-  fall back to GraphQL, which is safe but wasteful, so the earlier it lands the
-  better.
+  read as is; anything else is refused. The web reader does this as of #2197,
+  before any artifact is published.
 - **Producers, until Library pages ship:** always gzip, as the code does now.
 - **Producers, when Library pages ship:** a public artifact is published
   identity above a size measured with the real page, not chosen now. 16 MiB of

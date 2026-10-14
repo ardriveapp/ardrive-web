@@ -132,8 +132,9 @@ Five rules follow, and they are requirements rather than preferences:
    anywhere today, so this costs nothing to honour.
 2. **Compress inside the envelope only below the range-read threshold.** A small
    artifact is fetched whole and compression is free value. A large public one
-   is published identity so the page can read the pages it needs. The choice is
-   a `meta` flag, decided at publish time, and it is permanent per artifact.
+   is published identity so the page can read the pages it needs. Readers tell
+   the two apart by the payload's first bytes, so the choice needs no flag, and
+   it is permanent per artifact.
 3. **Warm the cache at publish.** One full GET against the serving gateway after
    upload, so the first visitor never pays the cold-miss cliff.
 4. **Read in few large blocks.** The gateway's per-resource token bucket is keyed
@@ -291,7 +292,7 @@ the feature rather than polish.
 - What unpublish means, given that clearing the record stops resolution while the
   data stays readable by transaction id for ever.
 - The size threshold at which a public artifact is published identity rather than
-  compressed.
+  compressed: measured with the real page, starting from 16 MiB (D13).
 - Whether the viewer source lives in `assets/` here or in its own repository.
 - Whether republish happens automatically after an upload into a published
   folder, as AutoDeploy does for manifests, or stays explicit.

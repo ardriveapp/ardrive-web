@@ -408,7 +408,103 @@ void main() {
         expect(result.failure, DriveStateEnvelopeFailure.signatureInvalid);
       });
 
-      test('rejects signed data that is not a gzip stream', () async {
+      /// A SQLite file's 16 byte header followed by [body]: the shape of an
+      /// identity artifact, which this codec never inspects past the header.
+      List<int> sqliteFile(List<int> body) =>
+          [...ascii.encode('SQLite format 3'), 0, ...body];
+
+      test('opens a signed SQLite file that was never compressed', () async {
+        final file = sqliteFile(plaintext);
+        final result = await codec.open(
+          envelope: await sealBytes(await signedItemOver(file, owner)),
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.failure, isNull, reason: result.reason);
+        expect(result.plaintext, file);
+        expect(result.ownerAddress, ownerAddress);
+      });
+
+      test('opens a gzip stream and a SQLite file of the same bytes alike',
+          () async {
+        final file = sqliteFile(plaintext);
+        final gzipped = await codec.open(
+          envelope: await sealBytes(
+            await signedItemOver(GZipEncoder().encode(file)!, owner),
+          ),
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+        final identity = await codec.open(
+          envelope: await sealBytes(await signedItemOver(file, owner)),
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(gzipped.plaintext, file, reason: gzipped.reason);
+        expect(identity.plaintext, file, reason: identity.reason);
+      });
+
+      test('refuses an uncompressed SQLite file one byte over the limit',
+          () async {
+        final bounded = DriveStateEnvelopeCodec(maxPlaintextBytes: 64 * 1024);
+        final file = sqliteFile(Uint8List(64 * 1024 - 15));
+
+        final result = await bounded.open(
+          envelope: await sealBytes(await signedItemOver(file, owner)),
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(
+          result.failure,
+          DriveStateEnvelopeFailure.decompressedTooLarge,
+          reason: result.reason,
+        );
+      });
+
+      test('opens an uncompressed SQLite file exactly on the limit', () async {
+        final bounded = DriveStateEnvelopeCodec(maxPlaintextBytes: 64 * 1024);
+        final file = sqliteFile(Uint8List(64 * 1024 - 16));
+
+        final result = await bounded.open(
+          envelope: await sealBytes(await signedItemOver(file, owner)),
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.failure, isNull, reason: result.reason);
+        expect(result.plaintext, hasLength(64 * 1024));
+      });
+
+      test('still refuses an uncompressed file signed by another wallet',
+          () async {
+        final result = await codec.open(
+          envelope: await sealBytes(
+            await signedItemOver(
+                sqliteFile(plaintext), await Wallet.generate()),
+          ),
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.failure, DriveStateEnvelopeFailure.ownerMismatch);
+      });
+
+      test('rejects a gzip header that does not inflate', () async {
+        final result = await codec.open(
+          envelope: await sealBytes(
+            await signedItemOver([0x1f, 0x8b, ...utf8.encode('broken')], owner),
+          ),
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.failure, DriveStateEnvelopeFailure.decompressionFailed);
+      });
+
+      test('rejects signed data that is neither gzip nor SQLite', () async {
         // A real data item, really signed by the owner, whose data is simply
         // not compressed. Authorship is fine; the contents are not.
         final result = await codec.open(
