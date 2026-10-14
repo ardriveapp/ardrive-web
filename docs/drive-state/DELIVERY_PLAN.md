@@ -117,6 +117,46 @@ serious, innovative or revenue-bearing. The options as weighed:
 
 Removed in #2197 before the first publish, under format `0.2`.
 
+### Open decision: carry the entry tables, or derive them (R9)
+
+`folder_entries` and `file_entries` repeat the newest revision of each item.
+Measured on a realistic 3,000-file artifact, they are 42% of the file, and
+dropping them saves 42% even after gzip, because each entry row sits too far
+from its revision for gzip's window to see the repeat. At 41,767 files that is
+about 26 MiB down to 15 MiB uncompressed, or about 10.5 MiB down to 6 MiB on
+the wire.
+
+**Keep them (recommended).**
+
+- The artifact stays drop-in: current state is a table a Library page, core-js
+  or any SQLite tool reads directly, which is the property Ariel built the
+  SQLite container for.
+- Nothing about current state has to be specified as a derivation, and nothing
+  on the import path changes.
+- The saving only matters for the largest drives, and there it is about 4 MiB
+  per publish, against an artifact that exists to replace tens of thousands of
+  metadata fetches.
+
+**Derive them.**
+
+- 42% less to upload, store and download, every publish.
+- One source of truth inside the file, so an entry cannot disagree with its
+  revisions.
+- But the derivation (newest revision by `dateCreated`, how ties break, which
+  revision supplies `dateCreated` and `lastUpdated`) becomes protocol every
+  reader must reproduce exactly, on the sync path, and every reader that wants
+  current state runs a newest-per-item query over a table with no indexes.
+
+**Risk if it is wrong either way.** Keeping them and later wanting the saving
+means a major version: readers depend on the tables. Deriving them and getting
+the rule subtly different from sync shows users the wrong name or folder for a
+renamed or moved item, permanently per artifact. The first is a cost; the
+second is a correctness failure on the path that must not have one.
+
+Revisit if publishing cost becomes a real complaint for large drives, with a
+parity test (export, strip, derive, compare exactly on hidden, moved, renamed
+and multi-revision items) written before the change.
+
 ### Rollout (R7)
 
 1. Read artifacts on staging (`enableSyncFromDriveState`), with a
