@@ -14,17 +14,31 @@
 /// by probing the browser, and on both of this app's deployed origins that
 /// probe answers `sharedIndexedDb` — OPFS needs cross-origin isolation, which
 /// the permaweb build cannot have because its headers belong to whichever
-/// gateway served it. So the tier `open` would choose is IndexedDB-backed
-/// anyway, and choosing it directly keeps the database in the main isolate,
-/// which is exactly where the sql.js backend already ran. Same concurrency
-/// story as today, on a supported engine.
+/// gateway served it. `sharedIndexedDb` runs the database in a shared worker,
+/// and this file runs it in the main isolate instead, where sql.js ran.
+///
+/// **That choice is drift's `unsafeIndexedDb` tier, and tabs are why it is
+/// called unsafe.** `IndexedDbFileSystem` keeps its own in-memory copy of each
+/// file per tab and writes 4 KiB blocks to the shared IndexedDB with no lock
+/// across tabs, so two tabs writing at once interleave blocks of two diverged
+/// databases into one corrupt file. sql.js wrote the whole database as one
+/// blob, so two tabs only ever lost each other's updates. One tab therefore
+/// owns the database through a Web Lock, and any other tab works on a private
+/// copy that never reaches IndexedDB: see [openDatabaseFileSystem].
 library;
+
+import 'dart:async';
+// Web-only: reached through the conditional import in database.dart.
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:js_util' as js_util;
 
 import 'package:ardrive/models/database/web_artifact_vfs.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/wasm.dart';
 import 'package:drift/web.dart' as legacy;
+import 'package:flutter/foundation.dart';
+import 'package:js/js.dart' show allowInterop;
 import 'package:sqlite3/wasm.dart';
 
 /// Where the database lives on the virtual filesystem, and the IndexedDB
@@ -33,6 +47,18 @@ import 'package:sqlite3/wasm.dart';
 const _vfsDatabasePath = '/db.sqlite';
 const _indexedDbName = 'ardrive_sqlite3';
 
+/// Written once the sql.js handoff is settled, and checked instead of the
+/// database file itself.
+///
+/// The database file cannot be the signal. drift creates it on open, so a
+/// start whose migration failed would leave an empty one behind, and the next
+/// start would read its presence as "already migrated" and never look at the
+/// legacy store again.
+const _migratedMarker = '$_vfsDatabasePath.from-sqljs';
+
+/// The Web Lock that makes one tab the owner of the database.
+const _writerLockName = 'ardrive-database';
+
 /// The key the sql.js backend stored its bytes under, and the one thing that
 /// must not change: it is where every existing user's database is.
 const _legacyStorageName = 'db';
@@ -40,20 +66,82 @@ const _legacyStorageName = 'db';
 LazyDatabase openConnection() {
   return LazyDatabase(() async {
     final sqlite3 = await WasmSqlite3.loadFromUrl(Uri.parse('sqlite3.wasm'));
-    final fs = await IndexedDbFileSystem.open(dbName: _indexedDbName);
-    sqlite3.registerVirtualFileSystem(fs, makeDefault: true);
-
-    await _migrateFromSqlJsIfNeeded(sqlite3, fs);
+    final fs = await openDatabaseFileSystem(
+      sqlite3,
+      indexedDbName: _indexedDbName,
+      readLegacy: _readSqlJsDatabase,
+      claimWriter: () => claimWriterLock(_writerLockName),
+    );
 
     webSqlite = (sqlite3: sqlite3, vfs: fs);
 
+    // drift opens the database on the engine's default filesystem, which
+    // openDatabaseFileSystem has set, and uses this one only to flush after
+    // every write. A session copy has nowhere to flush to.
     return WasmDatabase(
       sqlite3: sqlite3,
       path: _vfsDatabasePath,
-      fileSystem: fs,
+      fileSystem: fs is IndexedDbFileSystem ? fs : null,
     );
   });
 }
+
+/// Opens the filesystem this tab's database lives on for the session.
+///
+/// Three outcomes, and only the first one writes to IndexedDB:
+///
+///  * **This tab owns the database.** The IndexedDB-backed filesystem, after
+///    the sql.js handoff has settled.
+///  * **Another tab owns it.** A private in-memory copy of the database as it
+///    stood when this tab opened. This tab works normally and nothing it
+///    changes is kept, which is what two sql.js tabs amounted to anyway,
+///    minus the corruption.
+///  * **The handoff failed in a way that may not fail next time.** An
+///    in-memory session, seeded with the legacy data when it was read. The
+///    database file is left alone and the next start tries again.
+@visibleForTesting
+Future<VirtualFileSystem> openDatabaseFileSystem(
+  WasmSqlite3 sqlite3, {
+  required String indexedDbName,
+  required Future<Uint8List?> Function() readLegacy,
+  required Future<bool> Function() claimWriter,
+  Future<void> Function(IndexedDbFileSystem fs, Uint8List bytes)? promote,
+}) async {
+  final fs = await IndexedDbFileSystem.open(dbName: indexedDbName);
+
+  if (!await claimWriter()) {
+    logger.w('the database is open in another tab; this tab keeps a copy');
+    final copy = _readWholeFile(fs, _vfsDatabasePath);
+    await fs.close();
+    return _sessionFileSystem(sqlite3, 'ardrive-other-tab', seed: copy);
+  }
+
+  final migration = await migrateFromSqlJsIfNeeded(
+    sqlite3,
+    fs,
+    readLegacy: readLegacy,
+    promote: promote ?? _promote,
+  );
+  if (migration.retryNextStart) {
+    await fs.close();
+    return _sessionFileSystem(
+      sqlite3,
+      'ardrive-this-session',
+      seed: migration.sessionSeed,
+    );
+  }
+
+  sqlite3.registerVirtualFileSystem(fs, makeDefault: true);
+  return fs;
+}
+
+/// How the sql.js handoff ended.
+///
+/// [retryNextStart] means nothing was marked and the database file must not
+/// be used this session. [sessionSeed] is the legacy data, when it was read
+/// and proved sound, so that session can still show the user their drives.
+@visibleForTesting
+typedef SqlJsMigration = ({bool retryNextStart, Uint8List? sessionSeed});
 
 /// Moves an existing sql.js database into the WASM filesystem, once.
 ///
@@ -64,102 +152,212 @@ LazyDatabase openConnection() {
 ///
 /// **The legacy copy is deliberately not deleted.** It costs the user some
 /// disk and buys a way back: if this build has to be rolled back, the previous
-/// one finds its database exactly where it left it. Deleting it would make the
-/// migration one-way on the first run, which is not a property worth having
-/// for the sake of a few megabytes.
+/// one finds its database exactly where it left it.
 ///
-/// Every failure here ends with the user on the login screen and their old
-/// data still in place, never with a half-written database: nothing is written
-/// unless a whole, plausible SQLite file was read.
-Future<void> _migrateFromSqlJsIfNeeded(
+/// **The marker is the commit point, and it is written last.** A failure that
+/// could pass on another try (the legacy store would not read, the copy would
+/// not write) leaves no marker, so the next start tries again from the legacy
+/// store, which is untouched. A legacy store that is not a sound SQLite file
+/// never will be, so that is marked as settled and the user starts fresh
+/// rather than being retried forever.
+@visibleForTesting
+Future<SqlJsMigration> migrateFromSqlJsIfNeeded(
   WasmSqlite3 sqlite3,
-  VirtualFileSystem fs,
-) async {
-  if (fs.xAccess(_vfsDatabasePath, 0) != 0) return;
+  IndexedDbFileSystem fs, {
+  required Future<Uint8List?> Function() readLegacy,
+  required Future<void> Function(IndexedDbFileSystem fs, Uint8List bytes)
+      promote,
+}) async {
+  const settled = (retryNextStart: false, sessionSeed: null);
 
-  final Uint8List legacyBytes;
+  if (fs.xAccess(_migratedMarker, 0) != 0) return settled;
+
+  final Uint8List? legacyBytes;
   try {
-    final storage = await legacy.DriftWebStorage.indexedDbIfSupported(
-      _legacyStorageName,
-    );
-    await storage.open();
-    final restored = await storage.restore();
-    await storage.close();
-    if (restored == null) return;
-    legacyBytes = restored;
+    legacyBytes = await readLegacy();
   } catch (e) {
     logger.w('could not read the sql.js database to migrate it: $e');
-    return;
+    return (retryNextStart: true, sessionSeed: null);
   }
 
-  if (legacyBytes.length < 16) return;
+  if (legacyBytes == null) {
+    await _markMigrated(fs);
+    return settled;
+  }
 
+  if (!_isSqliteFile(legacyBytes) || !_passesQuickCheck(sqlite3, legacyBytes)) {
+    logger.w('the stored sql.js database is not a sound SQLite file; '
+        'starting fresh');
+    await _markMigrated(fs);
+    return settled;
+  }
+
+  try {
+    await promote(fs, legacyBytes);
+    await _markMigrated(fs);
+    logger
+        .i('migrated ${legacyBytes.length} bytes from sql.js to sqlite3 wasm');
+    return settled;
+  } catch (e) {
+    // Leave nothing half-written. The legacy copy is untouched and the
+    // marker unwritten, so the next start tries again.
+    logger.e('failed to migrate the sql.js database', e);
+    //
+    // Only a file that exists. `IndexedDbFileSystem` queues a delete for
+    // IndexedDB, and the queued work for a file it never stored fails later,
+    // outside this try, as an uncaught error from the storage layer.
+    try {
+      if (fs.xAccess(_vfsDatabasePath, 0) != 0) fs.xDelete(_vfsDatabasePath, 0);
+    } catch (_) {}
+    return (retryNextStart: true, sessionSeed: legacyBytes);
+  }
+}
+
+/// Writes [bytes] as the database file and waits for IndexedDB to hold them.
+///
+/// `IndexedDbFileSystem` returns from a write before the write is stored. In
+/// sqlite3 2.4.2 its queue stores work for different files in order, so the
+/// marker [_markMigrated] creates next could not land before these bytes
+/// anyway, and no test can tell this flush is here. It stays so that the
+/// marker's meaning does not rest on the private ordering of a dependency's
+/// queue: a tab closed during the first start must never keep a partial
+/// database behind a marker that vouches for it.
+Future<void> _promote(IndexedDbFileSystem fs, Uint8List bytes) async {
+  final file = fs
+      .xOpen(
+        Sqlite3Filename(_vfsDatabasePath),
+        SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE,
+      )
+      .file;
+  try {
+    file.xWrite(bytes, 0);
+    // An earlier attempt may have left a longer file here.
+    file.xTruncate(bytes.length);
+  } finally {
+    file.xClose();
+  }
+  await fs.flush();
+}
+
+Future<void> _markMigrated(IndexedDbFileSystem fs) async {
+  fs
+      .xOpen(
+        Sqlite3Filename(_migratedMarker),
+        SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE,
+      )
+      .file
+      .xClose();
+  await fs.flush();
+}
+
+bool _isSqliteFile(Uint8List bytes) {
+  if (bytes.length < 16) return false;
   // The full 16-byte header, NUL included. A prefix check that stops at 15
   // accepts any sixteenth byte.
   const header = 'SQLite format 3\u0000';
-  if (String.fromCharCodes(legacyBytes.sublist(0, 16)) != header) {
-    logger.w('the stored sql.js database is not a SQLite file; starting fresh');
-    return;
-  }
+  return String.fromCharCodes(bytes.sublist(0, 16)) == header;
+}
 
-  // Staged, not written straight to the real path. Creating _vfsDatabasePath
-  // is what makes this migration a one-shot — the `xAccess` check above skips
-  // it forever after — so the real path must not exist until the bytes have
-  // proved they open. Anything less means one bad read permanently costs the
-  // user a database that was still sitting in the legacy store.
-  const staging = '$_vfsDatabasePath.migrating';
+/// Opens [bytes] on a scratch in-memory filesystem and asks SQLite whether
+/// they hold together, before they become anything this app boots from.
+bool _passesQuickCheck(WasmSqlite3 sqlite3, Uint8List bytes) {
+  final scratch = InMemoryFileSystem(name: 'ardrive-migration-check');
+  sqlite3.registerVirtualFileSystem(scratch);
+  scratch.fileData['/check.sqlite'] = bytes;
   try {
-    if (fs.xAccess(staging, 0) != 0) fs.xDelete(staging, 0);
-
-    final file = fs
-        .xOpen(
-          Sqlite3Filename(staging),
-          SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE,
-        )
-        .file;
+    final db = sqlite3.open('/check.sqlite', vfs: scratch.name);
     try {
-      file.xWrite(legacyBytes, 0);
+      final check = db.select('PRAGMA quick_check');
+      return check.length == 1 && check.first.values.first == 'ok';
     } finally {
-      file.xClose();
+      db.dispose();
     }
-
-    // Prove it opens and is internally consistent before it becomes the
-    // database this app boots from.
-    final probe = sqlite3.open(staging);
-    try {
-      final check = probe.select('PRAGMA quick_check');
-      final verdict = check.isEmpty ? 'no result' : check.first.values.first;
-      if (check.length != 1 || verdict != 'ok') {
-        throw StateError('quick_check said $verdict');
-      }
-    } finally {
-      probe.dispose();
-    }
-
-    // Promote. Copying rather than renaming because the VFS interface has no
-    // rename; the staged copy is deleted either way.
-    final promoted = fs
-        .xOpen(
-          Sqlite3Filename(_vfsDatabasePath),
-          SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE,
-        )
-        .file;
-    try {
-      promoted.xWrite(legacyBytes, 0);
-    } finally {
-      promoted.xClose();
-    }
-    logger.i('migrated ${legacyBytes.length} bytes from sql.js to sqlite3 wasm');
   } catch (e) {
-    // Leave nothing half-written. The legacy copy is untouched, so the next
-    // start tries again rather than opening a database that is missing rows.
-    logger.e('failed to migrate the sql.js database', e);
-    try {
-      fs.xDelete(_vfsDatabasePath, 0);
-    } catch (_) {}
+    logger.w('quick_check could not run on the sql.js database: $e');
+    return false;
   } finally {
-    try {
-      if (fs.xAccess(staging, 0) != 0) fs.xDelete(staging, 0);
-    } catch (_) {}
+    sqlite3.unregisterVirtualFileSystem(scratch);
   }
+}
+
+/// An in-memory filesystem holding [seed] as the database, if there is one.
+VirtualFileSystem _sessionFileSystem(
+  WasmSqlite3 sqlite3,
+  String name, {
+  required Uint8List? seed,
+}) {
+  final session = InMemoryFileSystem(name: name);
+  if (seed != null) session.fileData[_vfsDatabasePath] = seed;
+  sqlite3.registerVirtualFileSystem(session, makeDefault: true);
+  return session;
+}
+
+Uint8List? _readWholeFile(VirtualFileSystem fs, String path) {
+  if (fs.xAccess(path, 0) == 0) return null;
+  final file =
+      fs.xOpen(Sqlite3Filename(path), SqlFlag.SQLITE_OPEN_READONLY).file;
+  try {
+    final bytes = Uint8List(file.xFileSize());
+    file.xRead(bytes, 0);
+    return bytes;
+  } finally {
+    file.xClose();
+  }
+}
+
+Future<Uint8List?> _readSqlJsDatabase() async {
+  final storage = await legacy.DriftWebStorage.indexedDbIfSupported(
+    _legacyStorageName,
+  );
+  await storage.open();
+  try {
+    return await storage.restore();
+  } finally {
+    await storage.close();
+  }
+}
+
+/// Claims [name] for the life of this tab, or reports that another tab holds
+/// it.
+///
+/// A browser without Web Locks, or one that refuses the request, gets `true`:
+/// with nothing to coordinate through, this tab behaves as every tab did
+/// before.
+@visibleForTesting
+Future<bool> claimWriterLock(String name) {
+  final navigator =
+      js_util.getProperty<Object?>(js_util.globalThis, 'navigator');
+  final locks = navigator == null
+      ? null
+      : js_util.getProperty<Object?>(navigator, 'locks');
+  if (locks == null) return Future.value(true);
+
+  final granted = Completer<bool>();
+  try {
+    final request = js_util.callMethod<Object>(locks, 'request', [
+      name,
+      js_util.jsify({'ifAvailable': true}),
+      allowInterop((Object? lock) {
+        if (lock == null) {
+          if (!granted.isCompleted) granted.complete(false);
+          return null;
+        }
+        if (!granted.isCompleted) granted.complete(true);
+        // Held until the tab goes away: a promise that never settles.
+        return js_util.callConstructor<Object>(
+          js_util.getProperty<Object>(js_util.globalThis, 'Promise'),
+          [allowInterop((Object? resolve, Object? reject) {})],
+        );
+      }),
+    ]);
+    js_util.promiseToFuture<Object?>(request).catchError((Object e) {
+      logger.w('the database lock request failed: $e');
+      if (!granted.isCompleted) granted.complete(true);
+      return null;
+    });
+  } catch (e) {
+    logger.w('could not request the database lock: $e');
+    if (!granted.isCompleted) granted.complete(true);
+  }
+  return granted.future;
 }
