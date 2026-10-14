@@ -37,6 +37,7 @@ void main() {
       exportDriveState(
         producer,
         driveId: testDriveId,
+        producer: 'ArDrive-App/test',
         sink: FileArtifactSink(p('artifact.db')),
         blockEnd: 1814228,
         maxBytes: maxBytes,
@@ -134,6 +135,25 @@ void main() {
               "WHERE driveId = 'other-drive-id'")
           .getSingle();
       expect(other.read<int>('c'), 0);
+    });
+  });
+
+  group('the file says what it is and who made it', () {
+    test('carries the ArDrive application_id and its producer', () async {
+      await seedDrive(producer, files: 5, folders: 1);
+      final artifact = await export();
+
+      final path = p('identity.db');
+      await File(path).writeAsBytes(artifact.bytes);
+      final db = raw.sqlite3.open(path);
+      final appId = db.select('PRAGMA application_id').first.values.first;
+      final producedBy = db.select('SELECT producer FROM meta').first.values;
+      db.dispose();
+
+      expect(appId, artifactApplicationId);
+      // 'ArDS' in ASCII, so a hex dump of the header reads as what it is.
+      expect(artifactApplicationId, 0x41724453);
+      expect(producedBy, ['ArDrive-App/test']);
     });
   });
 
@@ -239,6 +259,15 @@ void main() {
       );
     });
 
+    test('a database that is not an ArDrive drive state artifact', () async {
+      // The application_id is the file saying what it is. Anything else that
+      // happens to have the right tables is still not this format.
+      await expectRefused(
+        await tamper('PRAGMA application_id = 0'),
+        ArtifactImportRefusal.unexpectedSchema,
+      );
+    });
+
     test('an extra table', () async {
       await expectRefused(
         await tamper('CREATE TABLE extra (x TEXT)'),
@@ -321,6 +350,7 @@ void main() {
       await expectLater(
         exportDriveState(producer,
             driveId: 'missing',
+            producer: 'ArDrive-App/test',
             sink: FileArtifactSink(p('a.db')),
             blockEnd: 1),
         throwsA(isA<ArtifactExportRefused>().having(

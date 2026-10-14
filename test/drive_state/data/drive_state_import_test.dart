@@ -207,6 +207,7 @@ void main() {
     final artifact = await sqlite.exportDriveState(
       producerDb,
       driveId: id,
+      producer: 'ArDrive-App/test',
       sink: await createArtifactSink('import-test'),
       blockEnd: 0,
     );

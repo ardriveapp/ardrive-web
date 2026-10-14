@@ -135,6 +135,7 @@ void main() {
         service: DriveStateCreationService(
           driveDao: driveDao,
           skipSource: _FixedSkipSource(skipStatus),
+          appVersion: () async => '9.9.9',
         ),
         uploader: uploader,
         costEstimator: costEstimator,

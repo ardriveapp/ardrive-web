@@ -86,6 +86,9 @@ Future<DriveStateArtifact> exportDriveState(
   required String driveId,
   required ArtifactSink sink,
   required int blockEnd,
+
+  /// The client that built the artifact, as `<App-Name>/<App-Version>`.
+  required String producer,
   int? maxBytes,
 }) async {
   final drive = await db
@@ -101,6 +104,9 @@ Future<DriveStateArtifact> exportDriveState(
   try {
     await db.customStatement('ATTACH DATABASE ? AS artifact', [sink.path]);
     try {
+      await db.customStatement(
+        'PRAGMA artifact.application_id = $artifactApplicationId',
+      );
       // One database snapshot for the whole export. Without it a local sync
       // write can commit between the entry copy and the revision copy, and the
       // artifact then carries mismatched state that passes both the schema gate
@@ -161,7 +167,7 @@ Future<DriveStateArtifact> exportDriveState(
       await db.customStatement(
         'INSERT INTO artifact.meta '
         '(version, driveId, ownerAddress, privacy, blockStart, blockEnd, '
-        'entityCount) VALUES (?, ?, ?, ?, 0, ?, ?)',
+        'entityCount, producer) VALUES (?, ?, ?, ?, 0, ?, ?, ?)',
         [
           artifactFormatVersion,
           driveId,
@@ -169,6 +175,7 @@ Future<DriveStateArtifact> exportDriveState(
           drive.single.read<String>('privacy'),
           blockEnd,
           entityCount,
+          producer,
         ],
       );
 

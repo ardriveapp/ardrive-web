@@ -63,8 +63,20 @@ bool artifactVersionIsReadable(String version) {
   }
 }
 
+/// The SQLite `application_id` every artifact carries in its file header:
+/// `ArDS` in ASCII. It identifies the file as an ArDrive drive state artifact
+/// from its bytes alone, to a reader or to any SQLite tool, and a reader
+/// refuses a database that does not carry it.
+const artifactApplicationId = 0x41724453;
+
 /// Every table an artifact carries, in dependency order, with the exact DDL a
 /// reader validates against.
+///
+/// `meta.producer` names the client and version that built the artifact, as
+/// `<App-Name>/<App-Version>`. It is the half of that claim a private drive's
+/// payload authenticates under the drive key, where the `App-Version` tag is
+/// only what an indexer reports, so it is what a reader would refuse a build
+/// with a known defect by.
 ///
 /// Two of the app's tables are deliberately absent, and a reader must not
 /// expect them:
@@ -88,7 +100,8 @@ const artifactSchema = <String, String>{
       'privacy TEXT NOT NULL, '
       'blockStart INTEGER NOT NULL, '
       'blockEnd INTEGER NOT NULL, '
-      'entityCount INTEGER NOT NULL)',
+      'entityCount INTEGER NOT NULL, '
+      'producer TEXT NOT NULL)',
   'drives': 'CREATE TABLE drives ('
       'id TEXT NOT NULL, '
       'rootFolderId TEXT NOT NULL, '

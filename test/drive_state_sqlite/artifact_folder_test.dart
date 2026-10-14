@@ -41,6 +41,7 @@ void main() {
     final artifact = await exportDriveState(
       producer,
       driveId: testDriveId,
+      producer: 'ArDrive-App/test',
       sink: FileArtifactSink('${dir.path}/a.db'),
       blockEnd: 1814228,
     );
@@ -214,6 +215,7 @@ void main() {
     final artifact = await exportDriveState(
       producer,
       driveId: testDriveId,
+      producer: 'ArDrive-App/test',
       sink: FileArtifactSink('${dir.path}/a.db'),
       blockEnd: 1814228,
     );
@@ -305,6 +307,7 @@ void _keyMaterialSurvivesImport() {
     final artifact = await exportDriveState(
       producer,
       driveId: testDriveId,
+      producer: 'ArDrive-App/test',
       sink: FileArtifactSink('${dir.path}/a.db'),
       blockEnd: 1814228,
     );

@@ -81,6 +81,7 @@ void main() {
     final artifact = await sqlite.exportDriveState(
       producerDb,
       driveId: driveId,
+      producer: 'ArDrive-App/test',
       sink: await createArtifactSink('qa-findings'),
       blockEnd: await _watermark(producerDb, driveId),
     );
@@ -531,6 +532,7 @@ void main() {
         final artifact = await sqlite.exportDriveState(
           db,
           driveId: fixture.testDriveId,
+          producer: 'ArDrive-App/test',
           sink: await createArtifactSink('d5-$files'),
           blockEnd: 1814228,
         );

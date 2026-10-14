@@ -732,6 +732,14 @@ pass checks it, and any other listed transaction stays `failed` (D15).
 `arns_records` and `ant_records` are likewise not carried
 (D10); the drive-side fact travels as `assignedNames` on the file rows.
 
+**The file says what it is and who made it.** Its SQLite header carries
+`application_id` `0x41724453` (`ArDS`), and a reader refuses a database
+without it. `meta.producer` names the client that built it, as
+`<App-Name>/<App-Version>` (for this app, for example `ArDrive-App/2.88.1`): on a private
+drive that claim is authenticated under the drive key, where the `App-Version`
+tag is only what an indexer reports, so it is what a reader refuses a build
+with a known defect by (D17).
+
 **Two of the app's columns are not carried.** `path` is written as `''`
 everywhere in the app and read by nothing: every path shown is built from
 `parentFolderId`, which any reader can do in one pass. `isGhost` is always

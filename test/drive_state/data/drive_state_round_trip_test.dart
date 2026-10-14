@@ -389,6 +389,7 @@ void main() {
     final artifact = await sqlite.exportDriveState(
       producerDb,
       driveId: drive,
+      producer: 'ArDrive-App/test',
       sink: await createArtifactSink('round-trip-$drive'),
       blockEnd: await _watermark(producerDb, drive),
     );

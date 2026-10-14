@@ -11,6 +11,7 @@ import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:arweave/arweave.dart' show Wallet;
 import 'package:cryptography/cryptography.dart' show SecretKey;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:uuid/uuid.dart';
 
 /// Preparing one drive's state artifact — and refusing to.
@@ -182,12 +183,24 @@ class DriveStateCreationService {
     required DriveStateSyncSkipSource skipSource,
     DriveStateEnvelopeCodec? codec,
     String Function()? newArtifactId,
+    Future<String> Function()? appVersion,
   })  : _driveDao = driveDao,
         _skipSource = skipSource,
         _codec = codec ?? DriveStateEnvelopeCodec(),
-        _newArtifactId = newArtifactId ?? _uuid;
+        _newArtifactId = newArtifactId ?? _uuid,
+        _appVersion = appVersion ?? _platformVersion;
 
   static String _uuid() => const Uuid().v4();
+
+  /// This build's version, as the `App-Version` tag carries it.
+  final Future<String> Function() _appVersion;
+
+  static Future<String> _platformVersion() async =>
+      (await PackageInfo.fromPlatform()).version;
+
+  /// `meta.producer`: the same `App-Name` and `App-Version` the transaction is
+  /// tagged with, written where a private drive's payload authenticates it.
+  Future<String> _producer() async => 'ArDrive-App/${await _appVersion()}';
 
   /// Exports [driveId], seals it, and returns the entity that [wallet], the
   /// drive's owner, would publish.
@@ -309,6 +322,7 @@ class DriveStateCreationService {
       artifact = await sqlite.exportDriveState(
         _driveDao.attachedDatabase,
         driveId: driveId,
+        producer: await _producer(),
         sink: sink,
         blockEnd: drive.lastBlockHeight ?? 0,
       );

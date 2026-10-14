@@ -199,6 +199,19 @@ Future<ArtifactImportRefused?> validateAttachedArtifact(
     );
   }
 
+  final applicationId = (await db
+          .customSelect('PRAGMA $alias.application_id')
+          .getSingle())
+      .data
+      .values
+      .first;
+  if (applicationId != artifactApplicationId) {
+    return ArtifactImportRefused(
+      ArtifactImportRefusal.unexpectedSchema,
+      'application_id is $applicationId, not an ArDrive drive state artifact',
+    );
+  }
+
   // A view or trigger here would run this reader's own SELECT against
   // attacker-chosen SQL, so the shape is settled before any row is read.
   final objects = await db.customSelect(

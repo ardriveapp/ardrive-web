@@ -156,6 +156,7 @@ void main() {
         skipSource: _FixedSkipSource(skipStatus),
         codec: codec,
         newArtifactId: () => 'artifact-id',
+        appVersion: () async => '9.9.9',
       );
 
   /// The tags as a client reading them back off GraphQL would see them.
@@ -276,6 +277,12 @@ void main() {
     /// takes the claim itself and cannot be passed anything else: this is the
     /// assertion that survives someone deciding the constructor would be
     /// tidier with two integers.
+    test('names this build as the producer, inside the payload', () {
+      // The same App-Name and App-Version the transaction is tagged with,
+      // where a private drive's payload authenticates them.
+      expect(codec.lastPayloadMeta!['producer'], 'ArDrive-App/9.9.9');
+    });
+
     test('tags the block range the sealed payload itself claims', () async {
       final claimed = codec.lastPayloadMeta!;
 

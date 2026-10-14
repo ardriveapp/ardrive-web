@@ -50,6 +50,7 @@ void main() {
     final artifact = await exportDriveState(
       producer,
       driveId: testDriveId,
+      producer: 'ArDrive-App/test',
       sink: FileArtifactSink('${dir.path}/artifact.db'),
       blockEnd: 1814228,
     );
