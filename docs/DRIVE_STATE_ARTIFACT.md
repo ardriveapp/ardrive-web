@@ -8,6 +8,18 @@ replaying the drive's history entity by entity.
 client that does not understand a state artifact, cannot decrypt one, or never
 finds one syncs exactly as it does today.
 
+**Two decisions taken after the first revision of this document, folded in
+below.** The payload is a SQLite file with a frozen schema rather than a
+serialisation of rows (D12, superseding D1): see §2.4. And snapshots are no
+longer the permanent companion this document opened by promising: production of
+them ends once other clients read artifacts, while reading them continues for
+ever, since every snapshot on chain is permanent. See §11.
+
+**A second consumer exists.** A library page is a static page published to
+Arweave that reads an artifact in the browser and renders a drive, with no
+GraphQL and no app. It is specified in `LIBRARY_PAGES.md`, and it is the reason
+§2.7 and §4.5 exist.
+
 **The governing principle: this is a cache, and every failure is a fallback.**
 Unknown version, failed signature, failed decryption, failed integrity check, an
 unexpected section — each means *ignore the artifact and sync normally*, never
@@ -233,113 +245,127 @@ A public drive gets neither cipher and so gets neither property: a body that
 arrived wrong is caught one step later, by the data item signature, which every
 path checks (§2.2).
 
-**The 100 MiB refusal is a bound on the producer, not on the cipher.** D5 was
+**The 100 MiB refusal is a bound on memory, not on the cipher.** D5 was
 originally justified as an AES-GCM constraint — GCM should not authenticate
 more than about this much in one piece — and that justification does not
 survive either of the two things below. It is kept, at the same number, on its
 own reasoning.
 
-**Where that boundary actually is.** An earlier draft of this section put it
-near 120k entities, extrapolating from the 34.63 MiB in §1.1. That
-was wrong twice over: 34.63 MiB is a VACUUMed SQLite file, and `seal` does not
-weigh a SQLite file — it weighs the serialised JSON payload, whose rows are much
-fatter than SQLite's binary encoding. It also counted entities, while the
-payload carries a revision row per revision as well (D2).
+**Where that boundary actually is.** What `seal` weighs is the payload, and
+since D12 the payload is the SQLite file, uncompressed. Measured with rows a
+real drive carries (36-character ids, real-length names and paths, transaction
+ids at their true entropy, 1.05 revisions per file, a folder per hundred
+files), it grows in a straight line:
 
-Two measurements now exist, and they disagree by about 10% for a reason worth
-keeping:
-
-| | method | crossover | headroom at 42k |
-|---|---|---|---|
-| `qa_findings_test.dart` | one row of each type, weighed and multiplied | ~73,000 files | ~1.75× |
-| `drive_state_scale_measurement_test.dart` | the real `exportDriveState` over a 41,767-file database, whole payload weighed | ~80,000 files | ~1.92× |
-
-Neither is wrong. A row's serialised width is dominated by its **name and
-path**, and the two fixtures assume different ones — so the honest answer is a
-range, not a number:
-
-> **The 100 MiB payload boundary is crossed somewhere between 70,000 and 80,000 files, depending on how long that drive's names and paths are.**
-> The same figures apply to a public drive: what is weighed is the serialised
-> payload, and the cipher — which a public drive does not have — is downstream
-> of it.
-
-The end-to-end figure is the one to plan against, because it weighs what `seal`
-weighs: **52.16 MiB for 41,767 files**, 1,306 bytes per entity, of a 100 MiB
-budget.
-
-Headroom under 2× is not much, and three things spend it: **longer paths** (the
-measured drive uses one folder level; a deeply nested drive doubles the path
-and every file pays it twice, in the entry and in each revision),
-**`customGQLTags` and `customJsonMetadata`** (absent from the measured drive,
-unbounded in general), and **more revisions per entity** (1.05 is one real
-drive's figure, not a law — at 2.0 the crossover falls to roughly 55,000
-files). A drive of 50k heavily-revised files with long paths can reach the
-boundary; the D5 refusal is a path users will meet, not a theoretical one.
-
-Note which number the refusal weighs: the **uncompressed** payload — and that
-this is the *only* place that number appears. Measured end to end at 41,767
-files:
-
-| stage | size |
+| files | artifact |
 |---|---|
-| serialised JSON — **what D5 weighs** | 52.16 MiB |
-| gzipped | 9.55 MiB |
-| signed ANS-104 data item | 9.55 MiB + 1,046 B of header |
-| **what AES-GCM encrypts** (private drives only) | 9.55 MiB |
-| what the network carries | 9.55 MiB, either privacy |
+| 1,000 | 741,376 B |
+| 3,000 | 2,154,496 B |
+| 6,000 | 4,268,032 B |
 
-So the 100 MiB bound guards neither the cipher nor the transport: AES-GCM
-holds exactly what the network carries, 5.46× less than the figure being
-checked. An earlier revision of this section claimed the bound was "on what
-AES-GCM must hold in one piece" — that is wrong, and the measurement above is
-what disproves it.
+That is about 705 bytes a file, revisions included, on roughly 34 KiB of fixed
+schema and metadata. So:
 
-**And there is now a path with no cipher in it at all.** A public drive's
-artifact is signed and not encrypted, so a bound inherited from AES-GCM would
-have nothing to inherit from and would have to be dropped for public drives —
-which is plainly the wrong answer, because the cost the bound guards is the
-same on both paths and is spent before any cipher is reached. A justification
-that produces the wrong answer on a case it did not anticipate was never the
-real reason.
+> **The 100 MiB payload boundary is crossed at about 149,000 files.** A
+> 41,767-file drive weighs about 28 MiB, roughly 3.5x under it.
+> The same figures apply to a public drive: what is weighed is the payload,
+> and the cipher, which a public drive does not have, is downstream of it.
 
-What the bound actually guards is the **producer's memory**, which is where
-the cost really lands. Building a payload of this size takes a process from a
-263 MiB baseline to a peak of roughly 950 MiB: the exported object graph adds
-~310 MiB, `jsonEncode` plus UTF-8 another ~175 MiB, and sealing sets a further
-high-water mark before releasing it. The consumer is cheaper — importing never
-set a new peak in the same run. That asymmetry is worth stating plainly:
-**producing an artifact is the expensive half, and it is the half that runs in
-the user's browser tab.**
+`qa_findings_test.dart` takes this measurement on every run and fails if the
+crossover or the headroom leaves the band quoted here.
 
-That cost is **identical for a public drive**. The export, the `jsonEncode` and
-the UTF-8 encoding are the whole of the peak; encryption adds one buffer of the
-*compressed* size, 9.55 MiB, to a figure near 950 MiB. So the bound is the same
-number for both privacies, deliberately. Two numbers would mean the reader's
-inflation limit (§2.4) differed by drive, which is a window in which a payload
-is writable by one path and unreadable by another. One number is checkable; two
+Three things still spend the headroom: **longer paths** (every file pays its
+path once in its entry and again in each revision), **`customGQLTags` and
+`customJsonMetadata`** (absent from the measurement, unbounded in general), and
+**more revisions per entity** (1.05 is one real drive's figure, not a law). They
+spend it more slowly than they did against JSON, but a very large, heavily
+revised drive with long paths can still reach the bound. D5's refusal remains
+a path a user can meet.
+
+**Three earlier figures, and why each was wrong.** The first draft put the
+bound near 120k entities by extrapolating from a VACUUMed SQLite file while the
+container was JSON. Measured against JSON (D1), the honest crossover was
+between 70,000 and 80,000 files, because a JSON row is about twice the width of
+a SQLite one. And the 17.70 MiB for 41,767 files in `SQLITE_ARTIFACT.md` comes
+from a fixture with short ids; realistic ids make the same drive about 1.6x
+larger. That head-to-head is still fair, because both containers were measured
+on the same fixture, but its absolute sizes understate a real drive.
+
+**And there is a path with no cipher in it at all.** A public drive's artifact
+is signed and not encrypted, so a bound inherited from AES-GCM would have
+nothing to inherit from and would have to be dropped for public drives, which
+is plainly the wrong answer, because the cost the bound guards is the same on
+both paths and is spent before any cipher is reached. A justification that
+produces the wrong answer on a case it did not anticipate was never the real
+reason.
+
+What the bound guards is **memory**. It was first re-founded on the
+**producer's memory**, measured on the JSON path at a peak near 950 MiB from a
+263 MiB baseline, almost all of it the exported object graph and `jsonEncode`.
+D12 removes that multiplication: the SQLite producer copies rows inside SQLite,
+and its peak measured +167 MiB from a 182 MiB baseline on the short-id fixture.
+What remains is roughly the artifact itself, held whole in the tab that builds
+it and again in the tab that reads it, because a reader decrypts and attaches
+the entire file. 100 MiB caps that, on both sides.
+
+That cost is **identical for a public drive**, so the bound is the same number
+for both privacies, deliberately. Two numbers would mean the reader's
+inflation limit differed by drive, which is a window in which a payload is
+writable by one path and unreadable by another. One number is checkable; two
 drift.
 
 The private path stays inside AES-GCM's own comfortable range as a
-*consequence* of this bound rather than by construction — 100 MiB of payload is
-9.55 MiB of ciphertext — and `drive_state_envelope_test.dart` asserts the
-constant never grows past `maxSizeSupportedByGCMEncryption` so that consequence
-keeps holding.
+*consequence* of this bound rather than by construction, and
+`drive_state_envelope_test.dart` asserts the constant never grows past
+`maxSizeSupportedByGCMEncryption` so that consequence keeps holding.
 
-Two caveats on those figures. They are VM resident-set size, not a browser
-heap — and a browser is likely worse, because dart2js strings are UTF-16, so
-the 52 MiB of JSON is nearer 104 MB there, and a tab has a hard ceiling where
-this process had the operating system. Reproduce them with
-`test/drive_state/drive_state_scale_measurement_test.dart`.
+The memory figures are VM resident-set size, not a browser heap, and a tab has
+a hard ceiling where this process had the operating system. Reproduce them
+with `test/drive_state_sqlite/artifact_scale_test.dart --run-skipped`.
 
-### 2.4 Never hand an untrusted file to SQLite
+### 2.4 The payload is a SQLite file, and it is never trusted
 
-The payload is a **serialisation of rows**, not a database file. Opening an
-attacker-controlled SQLite file exercises a parser with a history of
-malformed-database CVEs.
+**The payload is a SQLite database file with a frozen artifact schema** (D12,
+superseding D1). An earlier revision of this section made it a serialisation of
+rows, on two arguments. The second one survives and shapes the decision; the
+first one is narrower than it read.
 
-This also stops the wire format being welded to `schemaVersion`: a row format
-the client maps onto whatever schema it runs, rather than a file only one
-version can open. Two independent reasons for the same decision.
+**The surviving argument: never weld the wire format to `schemaVersion`.** The
+artifact's schema is frozen and is *not* Drift's. A reader maps it onto whatever
+schema it runs, so this app's migration history is not inherited by every other
+implementation. Shipping Drift's tables also measured worst of every option
+tried, 10.14 M gzipped against 6.09 M, because the indexes are dead weight a
+reader throws away.
+
+**The narrower argument: the malformed-database CVE history.** It is real, and
+it is why the read gate below is not optional. It is narrower than it reads
+because the artifact is signed by the drive owner and, on a private drive,
+encrypted under the drive key: feeding a hostile file requires the wallet or the
+key, and with either the attacker already owns the drive. The residual is a
+compromised owner attacking someone who accepted a shared drive, and on web the
+parser runs inside the wasm sandbox.
+
+**The read gate, in order. Every refusal is a fallback.**
+
+1. Decrypt, verify the data item signature against the drive owner, inflate.
+2. Open **read-only** with `SQLITE_DBCONFIG_DEFENSIVE` and
+   `SQLITE_DBCONFIG_TRUSTED_SCHEMA=0`.
+3. `PRAGMA integrity_check`.
+4. Refuse unless `sqlite_master` matches the frozen schema exactly: no views, no
+   triggers, no virtual tables, no indexes, every DDL string identical.
+5. Check `meta` against the tags: version, drive id, owner, privacy, entity
+   count, and a range that advances the watermark.
+6. `ATTACH`, then `INSERT INTO main.x SELECT … FROM artifact.x` per table, in one
+   transaction.
+
+**Building up, never tearing down.** An artifact is constructed by selecting
+named columns into an *empty* database, so a column nobody named cannot reach
+one. The inverse, copying the local database and dropping what must not ship,
+does not work: `DROP TABLE` leaves the dropped bytes on the freelist unless
+`secure_delete` is on, and it is **off in the wasm build the browser runs**
+(measured: `0` on wasm, `2` on macOS). This is also what supersedes D7, since
+the `INSERT … SELECT` column list is the typed projection, expressed once, in
+the statement that physically builds the file.
 
 The same suspicion applies one layer down, to the gzip. **Bound the
 decompression, and bound it during inflation rather than after.** A gzip stream
@@ -483,6 +509,69 @@ Every other gate on publishing still applies to a public drive, unchanged: the
 D3 skip precondition, drive ownership, write permissions, a non-empty drive, a
 sync watermark, and the payload size bound. The only condition removed is the
 privacy one.
+
+---
+
+### 2.7 Compression, and the random access it forecloses
+
+Gzip inside the envelope is not free, because it decides whether a reader can
+open an artifact without downloading all of it.
+
+A SQLite file answers a question by touching the pages that hold the answer, and
+a gateway serves byte ranges, so a reader can open a large artifact by fetching
+the pages it needs. Compression inside the envelope removes that: the bytes on
+the wire are a gzip stream, and a slice of a gzip stream cannot be inflated on
+its own. Encryption removes it as well, which is why this applies to public
+artifacts only.
+
+**The rule.** Compression is a `meta` flag, chosen at publish time, and
+permanent per artifact.
+
+- **Compressed** below the random-access threshold. A small artifact is fetched
+  whole, and gzip recovers most of its bytes. The median drive is two files, so
+  this is nearly every artifact.
+- **Identity** above it, for a public artifact a library page will serve. 17.70
+  MiB against 5.98 at 41,767 files, paid once, to make page-level reads possible
+  for ever.
+
+**Never set a `Content-Encoding` tag.** Transport compression has the same
+effect as envelope compression and is worse, because the gateway passes the tag
+through unchanged and the browser then cannot read ranges at all. ArDrive sets
+no such tag anywhere today.
+
+The threshold itself is a product decision and is recorded in
+`LIBRARY_PAGES.md` rather than here, because §4.5 shows the gain is smaller than
+it looks on a cold object.
+
+### 2.8 The web database moves with it, for every user, on first load
+
+D12 has a prerequisite that is not behind any flag. An artifact is built by
+attaching an empty database to the app's own, and the sql.js backend the web
+app ran cannot hand back an attached database's bytes. So the app's web
+database moves to SQLite compiled to WebAssembly, and every web user's local
+database is copied across the first time this build opens. Unlike the artifact
+itself, that is live for everyone from the release.
+
+The handoff is written so that nothing it does can cost a user their data
+(`lib/models/database/web.dart`):
+
+- **A marker file is the commit point**, written after the copy is flushed.
+  A failure that may pass next time runs that session on an in-memory copy,
+  seeded with the user's data when it was read, and the next start tries
+  again. A store that is not a sound SQLite file is settled once, not retried
+  every start.
+- **The legacy store is never deleted**, so a rolled-back build finds its
+  database where it left it.
+- **One tab owns the database**, through a Web Lock. This tier is drift's
+  `unsafeIndexedDb`: each tab caches the file and writes 4 KiB blocks with no
+  lock between tabs, so two writers would interleave diverged pages into one
+  corrupt file. Any other tab works on a private copy that never reaches
+  IndexedDB. Browsers without Web Locks keep the behaviour every tab had
+  before.
+
+`test/models/database/web_database_test.dart` runs each of these against a
+real IndexedDB and a real sql.js store in headless Chrome, through
+`tool/browser_tests.sh`, which CI runs.
 
 ---
 
@@ -809,6 +898,47 @@ produced it to still exist.
 
 ---
 
+### 4.5 What a gateway actually does, measured
+
+Measured in October 2026 against two AR.IO gateways running release 85, in
+Chromium, Firefox and WebKit, with the reading page on a different origin.
+arweave.net rate-limited the test host throughout and was not measured.
+
+| Property | Behaviour |
+|---|---|
+| Range requests | Honoured on `/{txId}`, a bundled data item, a manifest path and an ArNS path, single and multi-range |
+| CORS | `Access-Control-Allow-Origin: *`, `range` allowed, headers exposed |
+| A stored `Content-Encoding` | Passed through unchanged, never decoded |
+| A range of a gzip-stored object | A 206 carrying a slice of the compressed bytes, which no browser can decode |
+| Negotiated compression | Does not happen. No gateway compresses on request |
+| A cold object | The whole object is fetched upstream before the range is answered: 9 to 22 seconds measured |
+| A warm object | About 70 ms per read |
+
+Four consequences for any reader of an artifact, including the app:
+
+1. **Random access does not help the first reader.** On a cache miss the gateway
+   pulls the whole object anyway, and issues a second, uncoalesced ranged fetch
+   after it. A producer that wants fast first reads performs one full GET against
+   the serving gateway after publishing.
+2. **Read in few large blocks.** The per-resource token bucket is keyed
+   `host:method:path` and shared by every reader of the same URL, charged per KiB
+   with a one-token minimum, so hundreds of small reads are the wrong shape.
+3. **Do not verify `Content-Digest` on a partial response.** A gateway returns
+   the whole-object digest on a 206 and signs it, so the check fails on correct
+   data. A reader verifies the artifact's own data item signature, which §2.2
+   already requires.
+4. **Pin the resolved id.** A name is mutable and `If-Range` is not implemented,
+   so a reader takes `x-arns-resolved-id` from the first response and reads the
+   rest against it.
+
+Five defects were found in the gateway while measuring, the first of which
+matters beyond this feature: a cached 206, 416 or 400 carries the whole-object
+`Content-Digest`, and that header is inside the signature, so a verifying client
+receives a valid signature over a false claim. They are reported to the node
+team and none of them blocks this format.
+
+---
+
 ## 5. How a client reads a drive
 
 The artifact becomes the first of three sources. The range arithmetic that
@@ -988,11 +1118,15 @@ actually used one?" gets a wrong denominator if this is only a log line.
 
 *Reasoned from the protocol boundary; those repositories were not read.*
 
-- **Existing readers are unaffected** — a transaction whose `Entity-Type` they
-  never query for, and snapshots keep being produced.
-- **ardrive-core-js** needs the section format, the drive-key decryption path it
-  already has, signature verification, and the merge rules. Reading is far
-  simpler than writing.
+- **Existing readers are unaffected for now** — a transaction whose
+  `Entity-Type` they never query for. This is a transition rather than a
+  permanent arrangement: snapshot production ends once core-js and the CLI read
+  artifacts (§11), so "snapshots keep being produced" is true only until then,
+  and no client should be built on the assumption that it lasts.
+- **ardrive-core-js** needs signature verification, the drive-key decryption
+  path it already has, and the merge rules. It does **not** need a format
+  reimplemented from prose: the payload is a SQLite file, and `node:sqlite` is
+  built into Node. Reading is far simpler than writing.
 - **The CLI is the more interesting producer** — real bandwidth, no browser
   connection limits. A better place to generate an artifact for a very large
   drive than a browser tab.
@@ -1031,24 +1165,36 @@ is not real until it is documented there.
 
 ## 10. Open questions
 
-1. **Section format.** Readable from Dart and TypeScript, stable across
-   `schemaVersion`, cheap to insert in bulk.
+**Closed since the first revision:** 1 (the container, by D12), 4 (revision
+depth, by D2's reversal to full history), and 6 (ArNS, which `LIBRARY_PAGES.md`
+now needs and therefore specifies). They are kept below with their answers
+rather than deleted, because each one's reasoning is still load-bearing.
+
+1. ~~**Section format.**~~ **Closed: a SQLite file with a frozen schema (D12).**
+   Readable from Dart and TypeScript, stable across `schemaVersion`, cheap to
+   insert in bulk.
 2. **Production trigger.** On demand, after a clean sync, or on a cadence —
    coupled to §5's rule that a sync reporting skips must not publish.
 3. **Who pays.** It is an upload, on a drive the user may not be changing —
    and payable in either AR or Turbo credits, since §4.4 requires both
    transports. Cadence and cost interact: cheap increments favour publishing
    often, an L1 wallet-only user favours publishing rarely.
-4. **Revision depth.** Full history, or current state plus a pointer to
-   snapshots for older revisions? Current-state-only is much smaller and covers
+4. ~~**Revision depth.**~~ **Closed: every revision travels (D2).** Full
+   history, or current state plus a pointer to snapshots for older revisions? Current-state-only is much smaller and covers
    what the explorer shows; history matters for the activity view. This is the
    lever that keeps the full copy of §3.4 affordable as a drive grows, and is
    worth deciding before the artifact size is what forces increments.
 5. **Multi-part authentication** above the GCM boundary (§2.3): a manifest of
    authenticated parts is preferred, but the manifest's own integrity needs
    specifying.
-6. **ArNS naming convention.** `state_<driveId>` is placeholder; undername
-   length and readability constraints need checking against the ARIO spec.
+6. ~~**ArNS naming convention.**~~ **Closed by `LIBRARY_PAGES.md`**, which
+   makes a name the point rather than an acceleration, and specifies the human
+   name over `state_<driveId>`. Undername length and readability still need
+   checking against the ARIO spec, and the apex must be offerable from the
+   existing picker, which today drops it.
+
+7. **The random-access threshold** of §2.7: the artifact size above which a
+   public artifact is published identity rather than compressed.
 
 ---
 
@@ -1060,5 +1206,33 @@ is not real until it is documented there.
 | **Snapshots from ancestors** (`SNAPSHOT_CREATION_FROM_SNAPSHOTS.md`) | Producing one re-reads the chain instead of copying what earlier snapshots already hold. | Medium |
 | **This document** | The per-entity decryptions, the plaintext structure leak, and the dependency on the GraphQL indexer. | Largest |
 
-They are complementary and independently shippable. Incremental snapshots is the
-cheapest; this is the largest change and the only one that addresses all three.
+**That table described a world where all three ship. Only one of them will.**
+The artifact replaces the snapshot rather than sitting beside it, so neither
+incremental snapshots nor snapshots from ancestors is worth building beyond
+keeping what exists working. That is the most valuable thing this decision
+settles, because both were scoped as work.
+
+### 11.1 The retirement path
+
+**Stop producing, keep reading, never break what is published.**
+
+1. **Now: stop nudging private drives to snapshot.**
+   `lib/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart` has no privacy
+   gate, so the app asks a private drive's owner to publish the drive's whole
+   shape in the clear, permanently. §1.3 is the argument; the gate is worth
+   adding whether or not anything else here ships.
+2. **Then: Publish writes an artifact, and not a snapshot too.** Writing both
+   doubles the bytes to say the same thing twice. Snapshot creation stays
+   available for anyone who wants the interchange format.
+3. **Then: stop producing snapshots at all**, once ardrive-core-js and the CLI
+   read artifacts and the entity is documented in `ar-io-docs` (§9). Before both
+   are true, retiring production breaks other clients quietly.
+4. **Never stop reading them.** Every snapshot on chain is permanent, and for a
+   drive that has one and no artifact it remains the fastest path. The reader
+   stays for ever.
+
+What the artifact does **not** inherit is the one property a snapshot has:
+entries carry their original `gqlNode`, so a snapshot's contents can in
+principle be checked against chain, while exported rows cannot. §2.5 records
+this as the residual risk, and it is the reason the retirement is sequenced
+behind other clients rather than taken on trust.

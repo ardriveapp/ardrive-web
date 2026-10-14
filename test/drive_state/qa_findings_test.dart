@@ -1,9 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
-import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
@@ -19,6 +17,7 @@ import 'package:cryptography/cryptography.dart' show AesGcm, SecretKey;
 import 'package:drift/drift.dart';
 import 'package:test/test.dart';
 
+import '../drive_state_sqlite/artifact_fixture.dart' as fixture;
 import '../test_utils/utils.dart';
 
 /// The one version this build writes and reads. Tests follow the constant
@@ -516,145 +515,70 @@ void main() {
 
   /// FINDING 3 — the arithmetic behind D5.
   ///
-  /// `DriveStateEnvelopeCodec.seal` refuses at
-  /// `DriveStateEnvelopeCodec.defaultMaxPlaintextBytes` (100 MiB), measured
-  /// against the **uncompressed JSON**. That bound used to be
-  /// `maxSizeSupportedByGCMEncryption` and is no longer justified by the
-  /// cipher — see D11 — but the number, and therefore every figure below, is
-  /// unchanged. The proposal's 34.63 MiB figure is a VACUUMed
-  /// SQLite file, not JSON, and it was computed before `file_revisions`,
-  /// `folder_revisions`, `drive_revisions` and `licenses` were added to the
-  /// payload (decision D2, reversed).
+  /// `DriveStateEnvelopeCodec.seal` refuses above
+  /// `DriveStateEnvelopeCodec.defaultMaxPlaintextBytes` (100 MiB), and since
+  /// D12 what it weighs is the SQLite file. An earlier version of this test
+  /// weighed JSON rows, which described the D1 container and put the
+  /// crossover at about half its real figure.
   ///
-  /// This measures the real thing at the stated target: 41,767 entities,
-  /// 1.05 revisions each.
-  group('payload size against the AES-GCM boundary', () {
-    /// A row's worth of realistic values: uuids are 36 characters, Arweave
-    /// transaction ids are 43, and a name and a path are what a real drive
-    /// carries.
-    const uuid = '0a36156c-6274-41a2-87b0-372f4da7f568';
-    const txId = 'DzvFP9VWdSbznuhbtRNT2g0QKnwxvBcQKcYqCtBd7yQ';
+  /// This builds real artifacts from rows as wide as a real drive's at two
+  /// sizes, so the fixed cost of the schema drops out of the per-file figure
+  /// and the extrapolation is a straight line, measured on every run.
+  group('payload size against the seal boundary', () {
+    Future<int> artifactBytes(int files) async {
+      final db = getTestDb();
+      try {
+        await fixture.seedRealisticDrive(db, files: files);
+        final artifact = await sqlite.exportDriveState(
+          db,
+          driveId: fixture.testDriveId,
+          sink: await createArtifactSink('d5-$files'),
+          blockEnd: 1814228,
+        );
+        return artifact.bytes.length;
+      } finally {
+        await db.close();
+      }
+    }
 
-    test('a 42k-file drive fits under the 100 MiB seal boundary', () {
-      const fileCount = 41767;
-      const revisionsPerFile = 1.05;
-
-      final file = ExportedFileEntry(
-        id: uuid,
-        driveId: uuid,
-        name: 'IMG_20211213_120145.jpg',
-        parentFolderId: uuid,
-        path: '/Photos/2021/12/IMG_20211213_120145.jpg',
-        size: 3457812,
-        lastModifiedDate: DateTime(2021, 12, 13),
-        dataContentType: 'image/jpeg',
-        dataTxId: txId,
-        licenseTxId: null,
-        bundledIn: txId,
-        thumbnail: null,
-        pinnedDataOwnerAddress: null,
-        customJsonMetadata: null,
-        customGQLTags: null,
-        isHidden: false,
-        dateCreated: DateTime(2021, 12, 13),
-        lastUpdated: DateTime(2021, 12, 13),
-        assignedNames: null,
-        fallbackTxId: null,
-        originalOwner: null,
-        importSource: null,
-      );
-
-      final revision = ExportedFileRevision(
-        fileId: uuid,
-        driveId: uuid,
-        name: 'IMG_20211213_120145.jpg',
-        parentFolderId: uuid,
-        size: 3457812,
-        lastModifiedDate: DateTime(2021, 12, 13),
-        dataContentType: 'image/jpeg',
-        metadataTxId: txId,
-        dataTxId: txId,
-        licenseTxId: null,
-        thumbnail: null,
-        bundledIn: txId,
-        dateCreated: DateTime(2021, 12, 13),
-        customJsonMetadata: null,
-        customGQLTags: null,
-        action: 'create',
-        pinnedDataOwnerAddress: null,
-        isHidden: false,
-        assignedNames: null,
-        fallbackTxId: null,
-        originalOwner: null,
-        importSource: null,
-      );
-
-      // What D5 actually weighs. It is no longer `maxSizeSupportedByGCMEncryption`:
-      // the bound is on the producer's memory, not on the cipher, and the
-      // public path has no cipher at all. The number is unchanged, so every
-      // figure below and every figure §2.3 quotes still holds -
-      // `drive_state_envelope_test.dart` is where the two constants are held
-      // in the right relation to each other.
+    test('a 42k-file drive fits under the 100 MiB seal boundary', () async {
+      const target = 41767;
       const payloadLimit = DriveStateEnvelopeCodec.defaultMaxPlaintextBytes;
 
-      // `+ 1` for the comma that separates each row in the JSON array.
-      final perFileEntry = jsonEncode(file.toJson()).length + 1;
-      final perFileRevision = jsonEncode(revision.toJson()).length + 1;
-
-      final estimate = (fileCount * perFileEntry) +
-          (fileCount * revisionsPerFile).round() * perFileRevision;
-
-      // ignore: avoid_print
-      print('file_entries row: $perFileEntry bytes\n'
-          'file_revisions row: $perFileRevision bytes\n'
-          'estimated payload for $fileCount files at $revisionsPerFile '
-          'revisions each: $estimate bytes '
-          '(${(estimate / (1024 * 1024)).toStringAsFixed(1)} MiB) against a '
-          '$payloadLimit byte '
-          '(${payloadLimit ~/ (1024 * 1024)} MiB) limit');
-
-      // The target drive fits, but not with the headroom the proposal implied.
-      expect(estimate, lessThan(payloadLimit));
-
-      // An earlier draft of §2.3 read: "At 34.63 MiB for ~41k entities, that
-      // boundary is somewhere near 120k entities and will be reached." That
-      // figure is a VACUUMed SQLite file, not the JSON `seal` weighs, and it
-      // counted entities rather than the entity *and* revision rows the
-      // payload carries (D2). Measured against the wire format, the crossover
-      // is here — and §2.3 now says so.
-      final crossover = payloadLimit ~/
-          (perFileEntry + (perFileRevision * revisionsPerFile).round());
-      final headroom = payloadLimit / estimate;
+      final small = await artifactBytes(1000);
+      final large = await artifactBytes(3000);
+      final perFile = (large - small) / 2000;
+      final fixed = small - perFile * 1000;
+      final atTarget = fixed + perFile * target;
+      final crossover = ((payloadLimit - fixed) / perFile).floor();
+      final headroom = payloadLimit / atTarget;
 
       // ignore: avoid_print
-      print('the payload boundary is crossed at about $crossover files, '
-          'leaving ${headroom.toStringAsFixed(2)}x headroom over the target '
-          'drive');
+      print('${perFile.toStringAsFixed(1)} B per file on '
+          '${fixed.round()} B fixed; $target files weigh '
+          '${(atTarget / 1048576).toStringAsFixed(1)} MiB; the '
+          '${payloadLimit ~/ 1048576} MiB boundary is crossed at about '
+          '$crossover files, ${headroom.toStringAsFixed(2)}x headroom');
 
+      expect(atTarget, lessThan(payloadLimit));
+
+      // Bands rather than equalities: the point is that the figure the doc
+      // quotes tracks the exported row shape. Widen the rows and this fails,
+      // which is when the doc needs an edit, not a year later when a user
+      // meets the refusal.
       expect(
         crossover,
-        lessThan(120000),
-        reason: 'the ~120k figure would only hold if `seal` weighed a VACUUMed '
-            'SQLite file without revisions; it weighs JSON with them',
-      );
-
-      // A band rather than an equality: these are row sizes, and the point of
-      // the test is that the documented figure tracks the exported row shape.
-      // Widen the row types and this fails, which is when the doc needs an
-      // edit — not a year later when a user meets the refusal.
-      expect(
-        crossover,
-        inInclusiveRange(68000, 78000),
-        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 quotes this fixture at '
-            'about 73,000 files; the exported row shape has moved under it',
+        inInclusiveRange(137000, 161000),
+        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 quotes about 149,000 '
+            'files; the exported row shape has moved under it',
       );
       expect(
         headroom,
-        inInclusiveRange(1.6, 1.9),
-        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 quotes this fixture at '
-            '~1.75x headroom over the 42k-file target drive',
+        inInclusiveRange(3.3, 3.8),
+        reason: 'docs/DRIVE_STATE_ARTIFACT.md §2.3 quotes roughly 3.5x '
+            'headroom over the 42k-file drive',
       );
-    });
+    }, timeout: const Timeout(Duration(minutes: 2)));
 
     test('the proposal states the measured boundary, not the extrapolated one',
         () {
@@ -668,11 +592,10 @@ void main() {
         reason: 'the ~120k extrapolation is wrong by ~1.6x and sizes a '
             'refusal users will actually meet',
       );
-      // Both measurements are quoted, and the range they bracket is what a
-      // reader plans against. Asserting the range rather than either figure
-      // keeps this from breaking every time one fixture's names change.
-      expect(proposal, contains('~73,000 files'));
-      expect(proposal, contains('~80,000 files'));
+      // The measured SQLite figure is the one a reader plans against, and
+      // the JSON-era range stays quoted as history so nobody re-derives it.
+      expect(proposal, contains('about 149,000 files'));
+      expect(proposal, contains('roughly 3.5x'));
       expect(proposal, contains('between 70,000 and 80,000 files'));
 
       // And it no longer justifies the bound by the cipher, which is the

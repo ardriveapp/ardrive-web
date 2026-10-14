@@ -186,3 +186,106 @@ bool bytesContain(Uint8List haystack, String needle) {
   }
   return false;
 }
+
+/// A drive whose rows are the width real ones are: 36-character ids,
+/// real-length names and paths, transaction ids at their true entropy, 1.05
+/// revisions per file and a folder per hundred files.
+///
+/// [seedDrive] uses short ids, which is right for what it tests and would
+/// understate an artifact's size by about 1.6x. This is what sizes D5.
+Future<void> seedRealisticDrive(
+  GeneratedDatabase db, {
+  required int files,
+  String driveId = testDriveId,
+}) async {
+  final rng = Random(20261014);
+  String tx() => base64Url
+      .encode(List<int>.generate(32, (_) => rng.nextInt(256)))
+      .replaceAll('=', '');
+  String id() {
+    final hex = [
+      for (var i = 0; i < 16; i++) rng.nextInt(256).toRadixString(16)
+    ].map((h) => h.padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+        '${hex.substring(12, 16)}-${hex.substring(16, 20)}-'
+        '${hex.substring(20)}';
+  }
+
+  const owner = 'oWnErAdDrEsS-oWnErAdDrEsS-oWnErAdDrEsS-oWnE';
+  final root = id();
+  await db.customStatement(
+    'INSERT INTO drives (id, rootFolderId, ownerAddress, name, privacy, '
+    'lastBlockHeight, isHidden, dateCreated, lastUpdated) '
+    "VALUES (?, ?, ?, 'My Photos', 'private', 1814228, 0, 1700000000, "
+    '1700000000)',
+    [driveId, root, owner],
+  );
+  await db.customStatement(
+    'INSERT INTO drive_revisions (driveId, rootFolderId, ownerAddress, name, '
+    'privacy, metadataTxId, dateCreated, action, isHidden) VALUES (?, ?, ?, '
+    "'My Photos', 'private', ?, 1700000000, 'create', 0)",
+    [driveId, root, owner, tx()],
+  );
+
+  final folders = [for (var i = 0; i < max(1, files ~/ 100); i++) id()];
+  await db.transaction(() async {
+    for (var i = 0; i < folders.length; i++) {
+      final name = '2021-12 Holiday $i';
+      await db.customStatement(
+        'INSERT INTO folder_entries (id, driveId, name, parentFolderId, path, '
+        'dateCreated, lastUpdated, isGhost, isHidden) '
+        'VALUES (?, ?, ?, ?, ?, 1700000000, 1700000000, 0, 0)',
+        [folders[i], driveId, name, root, '/Photos/$name'],
+      );
+      await db.customStatement(
+        'INSERT INTO folder_revisions (folderId, driveId, name, '
+        'parentFolderId, metadataTxId, dateCreated, action, isHidden) '
+        "VALUES (?, ?, ?, ?, ?, 1700000000, 'create', 0)",
+        [folders[i], driveId, name, root, tx()],
+      );
+    }
+    for (var i = 0; i < files; i++) {
+      final fileId = id();
+      final folder = i % folders.length;
+      final name = 'IMG_20211213_${120145 + i}.jpg';
+      final dataTx = tx();
+      await db.customStatement(
+        'INSERT INTO file_entries (id, driveId, name, parentFolderId, path, '
+        'size, lastModifiedDate, dataContentType, dataTxId, bundledIn, '
+        'isHidden, dateCreated, lastUpdated) '
+        "VALUES (?, ?, ?, ?, ?, ?, 1700000000, 'image/jpeg', ?, ?, 0, "
+        '1700000000, 1700000000)',
+        [
+          fileId,
+          driveId,
+          name,
+          folders[folder],
+          '/Photos/2021-12 Holiday $folder/$name',
+          3457812 + i,
+          dataTx,
+          tx(),
+        ],
+      );
+      for (var r = 0; r < (i % 20 == 0 ? 2 : 1); r++) {
+        await db.customStatement(
+          'INSERT INTO file_revisions (fileId, driveId, name, '
+          'parentFolderId, size, lastModifiedDate, dataContentType, '
+          'metadataTxId, dataTxId, bundledIn, dateCreated, action, isHidden) '
+          "VALUES (?, ?, ?, ?, ?, 1700000000, 'image/jpeg', ?, ?, ?, ?, "
+          "'create', 0)",
+          [
+            fileId,
+            driveId,
+            name,
+            folders[folder],
+            3457812 + i,
+            tx(),
+            dataTx,
+            tx(),
+            1700000000 + i * 2 + r,
+          ],
+        );
+      }
+    }
+  });
+}
