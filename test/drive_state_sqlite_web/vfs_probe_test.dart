@@ -18,6 +18,9 @@ import 'package:test/test.dart';
 /// on every `VirtualFileSystem`. So the artifact can be attached as an
 /// ordinary file on whichever VFS the app already uses, and read back through
 /// the same interface SQLite reads it through.
+///
+/// Run with `tool/browser_tests.sh`, which CI runs too. It serves
+/// `sqlite3.wasm` with CORS on 127.0.0.1:8099, which the URL below expects.
 void main() {
   test('a ?vfs= URI is NOT honoured — filenames are literal in this build',
       () async {

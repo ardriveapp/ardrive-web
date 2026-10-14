@@ -4,14 +4,15 @@ library;
 import 'dart:typed_data';
 
 import 'package:ardrive/models/database/web.dart';
+import 'package:drift/web.dart' show DriftWebStorage;
 import 'package:sqlite3/wasm.dart';
 import 'package:test/test.dart';
 
 /// The sql.js handoff and the tab lock, run against a real IndexedDB.
 ///
-/// Needs `sqlite3.wasm` served with CORS on 127.0.0.1:8099, the same as the
-/// other browser tests: `flutter test --platform chrome` serves only the
-/// compiled test bundle.
+/// Run with `tool/browser_tests.sh`, which CI runs too. It serves
+/// `sqlite3.wasm` with CORS on 127.0.0.1:8099, because
+/// `flutter test --platform chrome` serves only the compiled test bundle.
 ///
 /// "A fresh page load" below means opening a new `IndexedDbFileSystem` on the
 /// same database name, which sees only what reached IndexedDB.
@@ -278,6 +279,46 @@ void main() {
       await start(readLegacy: () async => legacy);
 
       expect((await afterReload()).database!.length, legacy.length);
+    });
+  });
+
+  group('the real sql.js store', () {
+    /// Writes [bytes] exactly where and how the sql.js backend persisted
+    /// itself, under a name of this test's own.
+    Future<String> storeAsSqlJs(Uint8List bytes) async {
+      final name = 'sqljs-$dbName';
+      final storage = await DriftWebStorage.indexedDbIfSupported(name);
+      await storage.open();
+      await storage.store(bytes);
+      await storage.close();
+      return name;
+    }
+
+    test('is read back byte for byte', () async {
+      final legacy = sqlJsDatabase('as stored');
+      final name = await storeAsSqlJs(legacy);
+
+      expect(await readSqlJsDatabase(name: name), legacy);
+    });
+
+    test('reads as nothing for a user who never had one', () async {
+      expect(await readSqlJsDatabase(name: 'never-$dbName'), isNull);
+    });
+
+    test(
+        'comes through the whole migration, and is still there afterwards '
+        'for a rollback', () async {
+      final legacy = sqlJsDatabase('through sql.js storage');
+      final name = await storeAsSqlJs(legacy);
+
+      final fs = await start(readLegacy: () => readSqlJsDatabase(name: name));
+
+      expect(fs, isA<IndexedDbFileSystem>());
+      final reloaded = await afterReload();
+      expect(reloaded.marked, isTrue);
+      expect(rowsIn(reloaded.database!), ['through sql.js storage']);
+      expect(await readSqlJsDatabase(name: name), legacy,
+          reason: 'the legacy copy is kept so a rolled-back build finds it');
     });
   });
 

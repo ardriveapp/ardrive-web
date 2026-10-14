@@ -39,3 +39,11 @@ jobs:
 
       - name: Test app
         run: scr test
+
+      # The browser-only tests (`@TestOn('browser')`), which `scr test` skips
+      # because it runs on the VM: the web database migration, and SQLite
+      # running in the browser for the drive state artifact. They need Chrome,
+      # which this runner has, and sqlite3.wasm served locally, which the
+      # script does.
+      - name: Test in the browser
+        run: bash tool/browser_tests.sh

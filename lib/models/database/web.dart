@@ -69,7 +69,7 @@ LazyDatabase openConnection() {
     final fs = await openDatabaseFileSystem(
       sqlite3,
       indexedDbName: _indexedDbName,
-      readLegacy: _readSqlJsDatabase,
+      readLegacy: readSqlJsDatabase,
       claimWriter: () => claimWriterLock(_writerLockName),
     );
 
@@ -305,10 +305,10 @@ Uint8List? _readWholeFile(VirtualFileSystem fs, String path) {
   }
 }
 
-Future<Uint8List?> _readSqlJsDatabase() async {
-  final storage = await legacy.DriftWebStorage.indexedDbIfSupported(
-    _legacyStorageName,
-  );
+/// Reads what the sql.js backend stored, through the same storage it used.
+@visibleForTesting
+Future<Uint8List?> readSqlJsDatabase({String name = _legacyStorageName}) async {
+  final storage = await legacy.DriftWebStorage.indexedDbIfSupported(name);
   await storage.open();
   try {
     return await storage.restore();
