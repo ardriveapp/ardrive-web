@@ -74,46 +74,120 @@ each other.
 | 1.12 | ArNS discovery (D6 deferral — needs an undername convention) | 🔒 |
 | 1.13 | Execute an upload | 🔒 human only — costs money, publishes permanently |
 
-## 2. ar-io-docs — the specification
+## 2. ar-io-docs: the specification
 
-A new entity type is not real until it is specified here.
+The spec is written from the implementation that exists, and it is the contract
+Stream B builds against. Stream B does not start development until 2.2 to 2.8
+are merged, because a second implementation written from the web app's code
+instead of the spec would only prove that the two codebases agree.
 
 | | Item | Status |
 |---|---|---|
-| 2.1 | **Correct the Snapshot spec**: the metadata field is `jsonMetadata`, not `dataJson`, in both prose and the JSON example (`content/build/advanced/arfs/entity-types.mdx`). Independent of this feature and live today — an implementer following the docs reads no metadata from any snapshot. Also corrected in the same pass: `tsSnapshot` was a typo for `txSnapshot`; the field is a sibling of `gqlNode`, not nested in it; and it is a nullable string, not an object | 🔨 committed on `fix/arfs-snapshot-jsonmetadata`, unpushed — needs a human to open the PR |
-| 2.2 | `entity-types.mdx` — a `## Drive State` section beside `## Snapshot`, with `### Drive State Entity Tags` and `### Drive State Entity Data` | ⬜ |
-| 2.3 | `data-model.mdx` — where the artifact sits relative to drives, snapshots and entities | ⬜ |
-| 2.4 | `reading-data.mdx` — the read order (artifact → snapshots → GraphQL) and the rule that every failure falls back rather than fails | ⬜ |
-| 2.5 | `privacy.mdx` — signed and encrypted with the **drive** key as one unit, unlike a snapshot's per-entity ciphertext; and that a snapshot of a private drive is *not* encrypted, which is not currently stated anywhere | ⬜ |
+| 2.1 | **Correct the Snapshot spec**: `jsonMetadata`, not `dataJson`; `txSnapshot`, not `tsSnapshot`; a sibling of `gqlNode`; a nullable string | ✅ ar-io-docs #137 |
+| 2.2 | `entity-types.mdx`: a `## Drive State` section beside `## Snapshot`, with its tags (`Entity-Type: drive-state`, `Drive-Id`, `Drive-State-Id`, `State-Version`, `Entity-Count`, `Block-Start`, `Block-End`, `Cipher`, `Cipher-IV`) and the rule that a `Content-Encoding` tag is never set | ⬜ |
+| 2.3 | **The payload, normatively**: the SQLite tables, columns, types and `meta` keys a producer must write and a reader may rely on, with what is excluded by construction (every key). A second producer cannot be written without this, and today it exists only as `drive_state_artifact_schema.dart` | ⬜ |
+| 2.4 | **The envelope, normatively**: serialise, optional gzip, sign as an ANS-104 data item, AES256-GCM with the drive key for a private drive. The signed coverage claim, and the rule that the unsigned `Block-Start` / `Block-End` tags are checked against it before a watermark is adopted | ⬜ |
+| 2.5 | **The encoding rule** (D13, see the pending decision below): a reader accepts both encodings and tells them apart by the first bytes of the signed payload | ⬜ 🔒 D13 |
+| 2.6 | `reading-data.mdx`: the read order (artifact, then snapshots, then GraphQL) and the rule that every failure falls back rather than fails | ⬜ |
+| 2.7 | `privacy.mdx`: one ciphertext under the **drive** key, unlike a snapshot's per-entity ciphertext; and that a snapshot of a private drive publishes its structure in plaintext, which is not stated anywhere | ⬜ |
+| 2.8 | Snapshots: marked as superseded for new drives (D-30). Existing snapshots stay readable for ever, and a reader keeps reading them | ⬜ 🔒 D-30 |
+| 2.9 | Whether this addition bumps the ArFS version (0.15 today). A reader that ignores an unknown entity type is unaffected either way | ⬜ 🔒 naming |
 
-2.5 is worth its own line: the fact that snapshots publish a private drive's
+2.7 is worth its own line: the fact that snapshots publish a private drive's
 entire structure in plaintext is true today, undocumented, and something
 implementers should know irrespective of this addition.
 
-## 3. ardrive-core-js — the reader every other client inherits
+### Pending decision: D13, the compression threshold
 
-Mirrors the existing `src/snapshots/` module rather than inventing a structure.
+**Recommendation: the threshold is a producer setting, not part of the format.
+Fix only one thing permanently: every reader accepts both encodings.**
+
+Three facts decide it:
+
+1. **A private artifact can never be range-read.** It is encrypted as one unit,
+   so it is always compressed and the threshold never applies to it.
+2. **Only a public artifact served by a Library page gains from identity**, and
+   Library pages do not exist yet. Until they do, identity costs about three
+   times the upload (17.70 MiB against 5.98 at 41,767 files) and buys nothing.
+3. **D13 as written cannot work as a `meta` flag.** `meta` is inside the
+   compressed bytes, so a reader would have to decompress to learn whether to
+   decompress. The bytes already answer the question: a gzip stream starts with
+   `1f 8b`, a SQLite file with `SQLite format 3\0`. Both are inside the
+   signature, so the answer cannot be forged, and no tag is needed.
+
+So:
+
+- **Readers, from the first release, in every implementation:** verify the
+  signature, then sniff. gzip is inflated with the existing bound; SQLite is
+  read as is; anything else is `malformed`. The web reader inflates
+  unconditionally today, so this is a small change to land in #2197 before
+  anything is published. An older reader meeting an identity artifact would
+  fall back to GraphQL, which is safe but wasteful, so the earlier it lands the
+  better.
+- **Producers, until Library pages ship:** always gzip, as the code does now.
+- **Producers, when Library pages ship:** a public artifact is published
+  identity above a size measured with the real page, not chosen now. 16 MiB of
+  SQLite (about 24,000 files at 705 B each) is the proposed starting point to
+  test against, since below it a whole fetch is a few seconds on an ordinary
+  connection and a cold gateway fetches the whole object anyway (§4.5).
+
+The permanent choice is per artifact, as before. What changes is that the
+number stays adjustable, because no reader depends on it.
+
+---
+
+## Stream B: ardrive-core-js and ardrive-cli
+
+A separate stream with its own design, development and test phases, run after
+the spec (§2) is merged. The goal: core-js **reads** artifacts during drive
+sync and **produces** them, and the CLI exposes both, so any ArDrive client can
+open a drive from one artifact and any client can publish one.
+
+core-js is the implementation; the CLI is a thin surface over it. Nothing about
+the format lives in the CLI.
+
+### B1. Design
+
+Exit: a design doc in ardrive-core-js, reviewed by someone who wrote none of
+it, answering every row.
+
+| | Question | Notes |
+|---|---|---|
+| B1.1 | **The SQLite engine** | Must run on Node 18 (both packages' `engines`), with no native build for the CLI's install. `sql.js` (WebAssembly) meets both; `better-sqlite3` is native; `node:sqlite` needs Node 22. Also decides whether core-js can produce in a browser |
+| B1.2 | **Module layout** | `src/drive_state/` beside `src/snapshots/`, mirroring its files: tags, types, query, data, plus envelope and producer |
+| B1.3 | **Where the reader joins sync** | Beside `parseSnapshotData` in `arfsdao_anonymous`, composed with `snapshot_obscuring`, `height_range` and `drive_history_composite`. Not a second range mechanism. Sequenced with core-js's own pending snapshot wiring (`src/snapshots/index.ts`: not yet in the live listing path) |
+| B1.4 | **The CLI's metadata cache** | How an imported artifact populates the persistent ArFS entity cache, and how the watermark is stored so the next run continues from `Block-End` |
+| B1.5 | **Producer inputs** | core-js has no local database, so the producer builds from a fresh full listing of the drive. Define the coverage claim it can honestly sign, and refuse to publish over a gap, the same rule as the web app |
+| B1.6 | **Private drives** | Drive key derivation for every identity type the CLI supports, and the guarantee that no key material reaches the payload |
+| B1.7 | **Failure vocabulary** | The same enumerated outcomes as the web app (§7 of the proposal), mapped to core-js errors, so a failure in either client means the same thing |
+| B1.8 | **Upload path** | Turbo and L1 through core-js's existing uploaders, cost reported before upload, `--dry-run` |
+
+### B2. Develop
 
 | | Item | Status |
 |---|---|---|
-| 3.1 | `src/drive_state/` beside `src/snapshots/`: `drive_state_tags.ts`, `drive_state_types.ts`, `drive_state_query.ts`, `drive_state_data.ts` — same shapes, same naming | ⬜ |
-| 3.2 | Envelope reader: decrypt → parse ANS-104 data item → verify signature → gunzip (**bounded** — gzip reaches 1032:1 and the bytes are verified before they are expanded) → sections. Must match ardrive-web byte for byte | ⬜ |
-| 3.3 | Section deserialisation to core-js's own entity types — **not** a port of this app's column names (proposal §8). Includes the payload's `coverage` claim, which **every** reader must check the `Block-Start` / `Block-End` tags against before adopting a watermark: the tags are unsigned, so anyone can re-publish an owner's verifying bytes under a coverage of their choosing | ⬜ |
-| 3.4 | Reuse `snapshot_obscuring` / `height_range` / `drive_history_composite` for range composition. Do not write a second mechanism | ⬜ |
-| 3.5 | Wire into the live listing path in `arfsdao_anonymous`, beside `parseSnapshotData`. **Sequenced with core-js's own pending snapshot integration** (`src/snapshots/index.ts` notes it is not yet wired in) so drive-state does not overtake it | ⬜ 🔒 coordinate with the desktop work |
-| 3.6 | Cross-implementation test: an artifact produced by ardrive-web opens in core-js and yields identical entities | ⬜ **the acceptance test for the whole feature** |
+| B2.1 | Tags, types and GraphQL discovery, owner-filtered | ⬜ |
+| B2.2 | Envelope reader: decrypt, parse the data item, verify the signature, sniff the encoding, inflate with a bound, open the SQLite | ⬜ |
+| B2.3 | Payload reader into core-js's own entity types, not a port of the web app's column names, including the coverage check against the tags | ⬜ |
+| B2.4 | Wire the reader into drive listing and sync (B1.3, B1.4), behind an option that defaults off until B3 passes | ⬜ |
+| B2.5 | Producer: build the SQLite to the spec's schema (2.3), seal it (2.4), and refuse on any gap | ⬜ |
+| B2.6 | CLI: `ardrive create-drive-state` (with `--dry-run`) and an option on drive listing and sync to use artifacts | ⬜ |
+| B2.7 | CLI docs in ar-io-docs, beside the snapshot command | ⬜ |
 
-3.6 is the one that matters. Until an artifact written by one implementation is
-read by another, "cross-client format" is an assertion, not a fact.
+### B3. Test
 
-## 4. ardrive-cli — production where bandwidth exists
+Exit: every row green in CI, and a reviewer who wrote none of it has signed off.
 
-| | Item | Status |
+| | Test | What it proves |
 |---|---|---|
-| 4.1 | `ardrive create-drive-state` — produce and upload an artifact. The CLI is the better producer for a large drive: real bandwidth, no browser connection limits | ⬜ |
-| 4.2 | Route it through core-js's `src/drive_state/` rather than a CLI-local utility, so production and consumption share one implementation | ⬜ |
-| 4.3 | `--dry-run` that prepares and reports size without uploading, mirroring the existing snapshot command's flag | ⬜ |
-| 4.4 | ~~Correct the stale `parseSnapshotData` comment~~ — withdrawn; the comment is accurate | ✅ n/a |
+| B3.1 | Per-layer unit tests, with every integrity guard mutation-checked | A guard whose removal no test notices is not a guard |
+| B3.2 | **Web produces, core-js reads**: identical entities | The format is real, not two codebases agreeing with themselves |
+| B3.3 | **core-js produces, web reads**: identical entities | The same, in the direction that makes the CLI a trustworthy producer |
+| B3.4 | Golden fixtures checked into both repos: a public and a private artifact, gzip and identity, plus one of each malformed kind | Each repo catches drift without needing the other's toolchain |
+| B3.5 | Composition: artifact plus snapshots plus GraphQL cover the range once, including a snapshot straddling `Block-End` | No entity is lost or doubled |
+| B3.6 | Hostile inputs: forged coverage tags, a wrong owner, a wrong drive, a gzip bomb, truncated data | Every one falls back to GraphQL and none is adopted |
+| B3.7 | Scale: a drive of at least 40,000 files, read and produced, with time and memory recorded | The CLI is the better producer for large drives only if that is measured |
+| B3.8 | End to end on a real gateway with a test wallet, never a production upload in CI | The whole path, once, by a human |
 
 ---
 
@@ -133,8 +207,8 @@ stale enum case that neither branch's own gate could see).
 
 **Per repository** — an independent reviewer who wrote none of the code.
 
-**Across repositories** — 3.6: an artifact produced by one implementation, read
-by another, yielding identical entities. Nothing else proves the format.
+**Across repositories**: B3.2 and B3.3, an artifact produced by one
+implementation, read by another, yielding identical entities. Nothing else proves the format.
 
 **Before anything is published** — a human. The loop never uploads.
 
@@ -142,20 +216,15 @@ by another, yielding identical entities. Nothing else proves the format.
 
 ## Sequencing
 
-1. **2.1 alone, now.** The `dataJson` correction is a live bug against every
-   snapshot on chain and has nothing to do with this feature. It should not wait
-   behind a proposal, and should not ride in on a feature PR.
-2. **Finish ardrive-web** (1.7–1.10), so the reference implementation is real
-   and reviewed before anything is specified as protocol. 1.8a is on the
-   critical path in a way the others are not: it changes what the payload
-   contains, so specifying (step 3) or porting (step 4) before it lands would
-   describe a format that is about to change.
-3. **Specify** (2.2–2.5) from the implementation that exists, not from intent —
-   the `dataJson` divergence is what happens when those drift apart.
-4. **core-js** (3.1–3.6), ending at the cross-implementation test.
-5. **CLI** (4.1–4.4) once core-js can do the work.
-6. **Then** the deferrals: export views (1.11), ArNS (1.12), incremental
-   artifacts, public drives.
+1. **Finish ardrive-web** (#2197), including the two-encoding reader (D13
+   above) so no published artifact can outrun its readers.
+2. **Specify** (2.2 to 2.9) from the implementation that exists, not from
+   intent: the `dataJson` divergence is what happens when those drift apart.
+3. **Stream B**: design (B1), then develop (B2), then test (B3). The cross
+   tests B3.2 and B3.3 gate it; nothing ships in core-js or the CLI until both
+   directions pass.
+4. **Then** the deferrals: export views (1.11), ArNS (1.12), incremental
+   artifacts, Library pages and the identity threshold.
 
-The human decisions on the critical path — the format's names before anything
-is published, and the first upload — are 🔒 and stay that way.
+The human decisions on the critical path, the format's names before anything
+is published and the first upload, are 🔒 and stay that way.
