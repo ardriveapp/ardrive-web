@@ -72,4 +72,19 @@ class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
       ];
 }
 
+/// A drive this device knows only from the drive list.
+///
+/// Reading the drive list stores each drive and a placeholder for its root
+/// folder, and nothing else: no revisions, so no metadata transaction on
+/// record, and nothing under the root to count. The drive itself - its id,
+/// its dates, whether it is private - is known, and worth showing.
+class FsEntryUnsyncedDriveInfo extends FsEntryInfoState {
+  final Drive drive;
+
+  const FsEntryUnsyncedDriveInfo(this.drive);
+
+  @override
+  List<Object?> get props => [drive];
+}
+
 class FsEntryInfoFailure extends FsEntryInfoState {}

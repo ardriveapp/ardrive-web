@@ -1098,7 +1098,7 @@
   "@goToLast": {
     "description": "Action of going to the latest page"
   },
-  "greenCheckMark": "ファイルの横に緑のチェックマークが表示されたら、そのファイルはPermaWebにアップロードされています。",
+  "greenCheckMark": "ファイルの横に緑のチェックマークが表示されたら、そのファイルはpermawebにアップロードされています。",
   "@greenCheckMark": {
     "description": "Describes the indicator of the status of uploaded files"
   },

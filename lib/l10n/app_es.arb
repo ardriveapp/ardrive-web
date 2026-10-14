@@ -1098,7 +1098,7 @@
   "@goToLast": {
     "description": "Action of going to the latest page"
   },
-  "greenCheckMark": "Cuando el punto verde aparece al lado de tu archivo, es cuando ha sido cargado a la PermaWeb.",
+  "greenCheckMark": "Cuando el punto verde aparece al lado de tu archivo, es cuando ha sido cargado a la permaweb.",
   "@greenCheckMark": {
     "description": "Describes the indicator of the status of uploaded files"
   },

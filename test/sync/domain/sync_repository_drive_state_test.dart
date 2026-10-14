@@ -354,7 +354,6 @@ void main() {
         ));
     // `DriveDao` starts its in-memory vaults from its constructor without
     // awaiting them; a test that reaches for one immediately loses that race.
-    await db.driveDao.initVaults();
     await db.driveDao.putDriveKeyInMemory(
       driveID: driveId,
       driveKey: DriveKey(driveKey, false),

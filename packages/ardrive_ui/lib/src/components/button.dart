@@ -421,29 +421,38 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
                         });
                       },
                 style: style,
-                child: widget.hoverIcon == null || isMobile(context)
-                    ? isMobile(context) && buttonH < 45
-                        ? Transform.translate(
-                            offset: const Offset(0, -2), child: text)
-                        : text
-                    : Stack(
-                        fit: StackFit.expand,
-                        alignment: Alignment.center,
-                        children: [
-                          AnimatedPositioned(
-                              // FIXME: this is a hack to make the text align properly
-                              // and will need to be updated for different typography
-                              top: 12 + offsetY * buttonH,
-                              duration: const Duration(milliseconds: 100),
-                              child: SizedBox(height: buttonH, child: text)),
-                          if (widget.hoverIcon != null)
-                            AnimatedSlide(
-                              offset: Offset(0, offsetY + 1),
-                              duration: const Duration(milliseconds: 100),
-                              child: widget.hoverIcon!,
-                            )
-                        ],
-                      )),
+                child: widget.customContent != null
+                    // Declared since this button was written and never drawn,
+                    // so a caller that passed one silently got the plain
+                    // label. Drawn in the TextButton's own centred child,
+                    // which is what makes a spinner and its label read as one
+                    // centred group - `icon` cannot, being pinned to the left
+                    // edge in the stack below.
+                    ? Center(child: widget.customContent!)
+                    : widget.hoverIcon == null || isMobile(context)
+                        ? isMobile(context) && buttonH < 45
+                            ? Transform.translate(
+                                offset: const Offset(0, -2), child: text)
+                            : text
+                        : Stack(
+                            fit: StackFit.expand,
+                            alignment: Alignment.center,
+                            children: [
+                              AnimatedPositioned(
+                                  // FIXME: this is a hack to make the text align properly
+                                  // and will need to be updated for different typography
+                                  top: 12 + offsetY * buttonH,
+                                  duration: const Duration(milliseconds: 100),
+                                  child:
+                                      SizedBox(height: buttonH, child: text)),
+                              if (widget.hoverIcon != null)
+                                AnimatedSlide(
+                                  offset: Offset(0, offsetY + 1),
+                                  duration: const Duration(milliseconds: 100),
+                                  child: widget.hoverIcon!,
+                                )
+                            ],
+                          )),
           ),
           if (widget.icon != null)
             Container(

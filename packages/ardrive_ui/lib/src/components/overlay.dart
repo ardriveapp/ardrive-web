@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 
 export 'package:flutter_portal/flutter_portal.dart'
-    show Anchor, Aligned, Filled;
+    show Anchor, Aligned, AxisFlag, Filled;
 
 class ArDriveDropdown extends StatefulWidget {
   const ArDriveDropdown({
@@ -24,6 +24,7 @@ class ArDriveDropdown extends StatefulWidget {
     this.onClick,
     this.hasDivider = true,
     this.hasBorder = true,
+    this.header,
   });
 
   final double height;
@@ -37,6 +38,12 @@ class ArDriveDropdown extends StatefulWidget {
   final Function? onClick;
   final bool hasDivider;
   final bool hasBorder;
+
+  /// Sits above the items and outside their hover wrapper, for a menu that
+  /// needs to state something rather than offer it. It does not highlight like
+  /// an action; it is still dismissed by the overlay's barrier like the rest of
+  /// the menu.
+  final Widget? header;
 
   // retruns the alignment based if the current widget y coordinate is greater than half the screen height
   final Alignment Function(bool)? calculateVerticalAlignment;
@@ -79,10 +86,28 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
         alignment =
             widget.calculateVerticalAlignment!.call(y > screenHeight / 2);
 
-        _anchor = Aligned(
-          follower: alignment,
-          target: Alignment.bottomLeft,
-        );
+        // Only the follower is the calculation's to decide. Everything else
+        // belongs to the caller and used to be discarded with it: a menu that
+        // asked to hang from its button's bottom-*right*, and to be shifted
+        // back inside the screen, got neither - it was re-anchored to
+        // bottom-left with no shifting, and on a 320px phone it opened 51px
+        // off the left edge with every item's icon outside the viewport.
+        final base = widget.anchor;
+
+        _anchor = base is Aligned
+            ? Aligned(
+                follower: alignment,
+                target: base.target,
+                offset: base.offset,
+                widthFactor: base.widthFactor,
+                heightFactor: base.heightFactor,
+                shiftToWithinBound: base.shiftToWithinBound,
+                backup: base.backup,
+              )
+            : Aligned(
+                follower: alignment,
+                target: Alignment.bottomLeft,
+              );
       }
     });
 
@@ -91,7 +116,12 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    dropdownHeight = widget.maxHeight ?? widget.items.length * widget.height;
+    // The rows grow with the reader's text scale (see ArDriveDropdownItemTile),
+    // so the box that holds them has to as well or it clips them.
+    dropdownHeight = widget.maxHeight ??
+        widget.items.length *
+            widget.height *
+            MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
 
     final dropdownTheme = ArDriveTheme.of(context).themeData.dropdownTheme;
 
@@ -129,6 +159,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
+                    if (widget.header != null) widget.header!,
                     Column(
                       children: List.generate(widget.items.length, (index) {
                         return GestureDetector(
@@ -144,9 +175,22 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                             child: Row(
                               mainAxisSize: MainAxisSize.max,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [widget.items[index]],
+                                // Expanded, so the item is laid out to the
+                                // menu's width. A Row hands its non-flexible
+                                // children an unbounded main axis, so an item
+                                // used to measure itself at whatever width its
+                                // longest word wanted and the menu overflowed
+                                // by the difference - which on a 320px phone
+                                // at text scale 2.0 was 58 pixels off the
+                                // right edge of every menu in the app. A
+                                // bounded width is also what lets a label
+                                // inside the item give at all.
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [widget.items[index]],
+                                  ),
                                 ),
                               ],
                             ),

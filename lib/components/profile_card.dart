@@ -28,6 +28,7 @@ import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/open_urls.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -50,6 +51,9 @@ class ProfileCard extends StatefulWidget {
 class _ProfileCardState extends State<ProfileCard> {
   bool _showProfileCard = false;
   Future<_AccountStats>? _accountStatsFuture;
+
+  /// Whose statistics [_accountStatsFuture] holds.
+  String? _accountStatsForWallet;
 
   @override
   Widget build(BuildContext context) {
@@ -287,17 +291,15 @@ class _ProfileCardState extends State<ProfileCard> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: StreamBuilder<UserPreferences>(
-                        stream: context
-                            .read<UserPreferencesRepository>()
-                            .watch(),
+                        stream:
+                            context.read<UserPreferencesRepository>().watch(),
                         builder: (context, snapshot) {
                           final repo =
                               context.read<UserPreferencesRepository>();
-                          final syncAllDrivesOnLogin =
-                              snapshot.data?.syncAllDrivesOnLogin ??
-                                  repo.currentPreferences
-                                      ?.syncAllDrivesOnLogin ??
-                                  true;
+                          final syncAllDrivesOnLogin = snapshot
+                                  .data?.syncAllDrivesOnLogin ??
+                              repo.currentPreferences?.syncAllDrivesOnLogin ??
+                              false;
                           return ArDriveToggleSwitch(
                             alignRight: true,
                             value: syncAllDrivesOnLogin,
@@ -384,22 +386,39 @@ class _ProfileCardState extends State<ProfileCard> {
                 ),
               ],
             ),
-          // Logout — always at the very bottom
-          const Divider(height: 1, indent: 16, endIndent: 16),
-          _LogoutButton(
-            onLogout: () {
-              _showProfileCard = false;
-              setState(() {});
-            },
-          ),
-          if (isMobile)
-            Expanded(
-              child: Container(
-                color: ArDriveTheme.of(context).themeData.dropdownTheme.backgroundColor,
-              ),
+            // Help, then logout — the two things that are about the account
+            // rather than about a drive. Help moved here from the top bar,
+            // whose slot the way home now holds: that slot is the only one
+            // present on both breakpoints, and the drives list had no door at
+            // all on a phone once the sidebar entry came out.
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            _ProfileMenuRow(
+              label: appLocalizationsOf(context).help,
+              icon: ArDriveIcons.question(size: 21),
+              onTap: () {
+                _showProfileCard = false;
+                setState(() {});
+                openHelp(context);
+              },
             ),
-        ],
-      ),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            _LogoutButton(
+              onLogout: () {
+                _showProfileCard = false;
+                setState(() {});
+              },
+            ),
+            if (isMobile)
+              Expanded(
+                child: Container(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .dropdownTheme
+                      .backgroundColor,
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -408,7 +427,20 @@ class _ProfileCardState extends State<ProfileCard> {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final driveDao = context.read<DriveDao>();
-    _accountStatsFuture ??= _getAccountStats(driveDao);
+
+    // Whose drives these are. A drive somebody else shared is not this
+    // account's storage - it is somebody else's, readable here.
+    final walletAddress = context.read<ArDriveAuth>().currentUser.walletAddress;
+
+    // Keyed to the wallet, not merely computed once. This card stays mounted
+    // while the profile changes between logged-in and logged-out, so a plain
+    // `??=` let a second account read the first one's drive count, file count
+    // and size.
+    if (_accountStatsFuture == null ||
+        _accountStatsForWallet != walletAddress) {
+      _accountStatsForWallet = walletAddress;
+      _accountStatsFuture = _getAccountStats(driveDao, walletAddress);
+    }
 
     return FutureBuilder<_AccountStats>(
       future: _accountStatsFuture,
@@ -431,18 +463,69 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
-  Future<_AccountStats> _getAccountStats(DriveDao driveDao) async {
-    final drives = await driveDao.allDrives().get();
+  /// What this account holds locally, counted the way the drives list counts
+  /// it.
+  ///
+  /// This used `filesInDriveWithRevisionTransactions`, once per drive, and
+  /// added up the rows it returned. That query inner-joins each file to the
+  /// metadata and data transactions of its latest revision, so **a file whose
+  /// transaction rows have not synced yet is not in the result at all** - it is
+  /// dropped from the count and its bytes from the total. As a sync fills those
+  /// rows in, the same drive reports a larger total than it did before, which
+  /// is what a reader sees as "the same drive, a different number of GB in each
+  /// session".
+  ///
+  /// [DriveDao.driveContentSummaries] asks the question this line is actually
+  /// asking: how many files are in the local tables, and how big are they. One
+  /// aggregate query for every drive rather than one query per drive returning
+  /// every row, summed in SQL rather than in Dart - and, being the same source
+  /// the drives list reads, it cannot disagree with the per-drive figures shown
+  /// there.
+  ///
+  /// Both numbers still describe this device rather than Arweave: a drive that
+  /// has not been walked contributes nothing, because nothing about it is
+  /// known.
+  Future<_AccountStats> _getAccountStats(
+    DriveDao driveDao,
+    String walletAddress,
+  ) async {
+    // Only the drives this wallet owns, and only the ones it is showing.
+    //
+    // A drive shared with the account is somebody else's storage, readable
+    // here - counting it made this line describe what the reader can see
+    // rather than what they are keeping, and a shared drive of a million files
+    // would have dwarfed their own.
+    //
+    // A hidden drive is left out because every other surface leaves it out:
+    // `allDrives()` is a plain `SELECT * FROM drives`, while the sidebar's
+    // scopes all exclude hidden drives, so this line could say seventeen
+    // drives beside an All drives that listed fifteen.
+    //
+    // Hidden *files* inside a drive still count, and the show-hidden toggle
+    // does not change these numbers. Hiding is a view preference: it frees
+    // nothing, and a figure for what somebody is keeping must not fall because
+    // they flipped a switch that changed nothing about what is stored.
+    final drives = (await driveDao.allDrives().get())
+        .where(
+            (drive) => drive.ownerAddress == walletAddress && !drive.isHidden)
+        .toList();
+
+    final summaries = await driveDao.driveContentSummaries();
+
     var fileCount = 0;
     var totalSize = 0;
+
     for (final drive in drives) {
-      final files =
-          await driveDao.filesInDriveWithRevisionTransactions(driveId: drive.id).get();
-      fileCount += files.length;
-      for (final file in files) {
-        totalSize += file.size;
+      final summary = summaries[drive.id];
+
+      if (summary == null) {
+        continue;
       }
+
+      fileCount += summary.fileCount;
+      totalSize += summary.totalSize;
     }
+
     return _AccountStats(
       driveCount: drives.length,
       fileCount: fileCount,
@@ -528,8 +611,7 @@ class _ProfileCardState extends State<ProfileCard> {
         child: _WalletAddressLine(
           label: 'AR',
           address: arweaveAddress,
-          explorerUrl:
-              'https://viewblock.io/arweave/address/$arweaveAddress',
+          explorerUrl: 'https://viewblock.io/arweave/address/$arweaveAddress',
         ),
       ),
       if (state.user.profileType != ProfileType.arConnect &&
@@ -635,9 +717,7 @@ class _ProfileCardState extends State<ProfileCard> {
                               onSuccess: () {
                                 // Refresh AR balance (in case user paid with AR)
                                 if (context.mounted) {
-                                  context
-                                      .read<ProfileCubit>()
-                                      .refreshBalance();
+                                  context.read<ProfileCubit>().refreshBalance();
                                 }
                               },
                             );
@@ -843,6 +923,65 @@ class _ProfileCardState extends State<ProfileCard> {
           _showProfileCard = !_showProfileCard;
         });
       },
+    );
+  }
+}
+
+/// A row in the account menu, drawn exactly as the logout row below it is.
+///
+/// Pulled out so Help and Log Out cannot drift apart: they sit together, and a
+/// second hand-built row would have been one hover colour away from looking
+/// like a different kind of thing.
+class _ProfileMenuRow extends StatefulWidget {
+  const _ProfileMenuRow({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final Widget icon;
+  final VoidCallback onTap;
+
+  @override
+  State<_ProfileMenuRow> createState() => _ProfileMenuRowState();
+}
+
+class _ProfileMenuRowState extends State<_ProfileMenuRow> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return MouseRegion(
+      onExit: (_) => setState(() => _isHovering = false),
+      onHover: (_) => setState(() => _isHovering = true),
+      child: InkWell(
+        onTap: widget.onTap,
+        child: Container(
+          color: _isHovering
+              ? ArDriveTheme.of(context).themeData.colors.themeGbMuted
+              : Colors.transparent,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
+            child: Row(
+              children: [
+                Text(
+                  widget.label,
+                  style: typography.paragraphNormal(
+                    color: colorTokens.textMid,
+                    fontWeight: ArFontWeight.semiBold,
+                  ),
+                ),
+                const Spacer(),
+                widget.icon,
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1153,9 +1292,7 @@ class ProfileCardHeader extends StatelessWidget {
                         ),
                         Flexible(
                           child: Text(
-                            isExpanded
-                                ? walletAddress
-                                : truncatedWalletAddress,
+                            isExpanded ? walletAddress : truncatedWalletAddress,
                             overflow: TextOverflow.ellipsis,
                             softWrap: true,
                             maxLines: 1,

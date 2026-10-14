@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/components/turbo_payment_required_dialog.dart';
@@ -704,6 +705,8 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             context.read<ProfileCubit>(),
             context.read<ArDriveUploadPreparationManager>(),
             context.read<ArDriveAuth>(),
+            context.read<PaymentService>(),
+            CreditSharingService.fromConfig(context.read<ConfigService>()),
           )..add(
               PrepareUploadPaymentMethod(
                 params: UploadParams(
@@ -981,7 +984,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Hidden files are not added into the manifest.',
+                        'Hidden files and folders are not added to the manifest.',
                         style: typography.paragraphNormal(
                           color: colorTokens.textMid,
                           fontWeight: ArFontWeight.semiBold,

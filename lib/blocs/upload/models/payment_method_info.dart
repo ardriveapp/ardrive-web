@@ -1,3 +1,4 @@
+import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
 import 'package:ardrive/blocs/upload/models/upload_plan.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
@@ -22,6 +23,16 @@ class UploadPaymentMethodInfo extends Equatable {
   final int totalSize;
   final List<String>? paidBy;
 
+  /// Credits sitting on the wallet this user signed in with, when there are
+  /// any and this upload cannot be paid for.
+  ///
+  /// Null means there is nothing to say, and covers three different cases on
+  /// purpose: the account was never asked (no sign-in wallet, or the balance
+  /// was sufficient), it was asked and holds nothing, or the question could not
+  /// be answered. Only a confirmed non-zero balance is worth interrupting
+  /// somebody with. See [SourceWalletCredits].
+  final SourceWalletCredits? sourceWalletCredits;
+
   const UploadPaymentMethodInfo({
     required this.uploadMethod,
     required this.costEstimateTurbo,
@@ -37,6 +48,7 @@ class UploadPaymentMethodInfo extends Equatable {
     this.uploadPlanForTurbo,
     required this.totalSize,
     this.paidBy,
+    this.sourceWalletCredits,
   });
 
   bool get isFreeThanksToTurbo => freeStatus == FreeUploadStatus.free;
@@ -63,6 +75,7 @@ class UploadPaymentMethodInfo extends Equatable {
     UploadPlan? uploadPlanForTurbo,
     int? totalSize,
     List<String>? paidBy,
+    SourceWalletCredits? sourceWalletCredits,
   }) {
     return UploadPaymentMethodInfo(
       totalSize: totalSize ?? this.totalSize,
@@ -81,6 +94,7 @@ class UploadPaymentMethodInfo extends Equatable {
           sufficentCreditsBalance ?? this.sufficentCreditsBalance,
       freeStatus: freeStatus ?? this.freeStatus,
       paidBy: paidBy ?? this.paidBy,
+      sourceWalletCredits: sourceWalletCredits ?? this.sourceWalletCredits,
     );
   }
 
@@ -97,5 +111,6 @@ class UploadPaymentMethodInfo extends Equatable {
         sufficentCreditsBalance,
         freeStatus,
         paidBy,
+        sourceWalletCredits,
       ];
 }

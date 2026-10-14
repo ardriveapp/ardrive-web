@@ -26,6 +26,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
@@ -64,6 +65,8 @@ class DetailsPanel extends StatefulWidget {
     this.onPreviousImageNavigation,
     this.onNextImageNavigation,
     required this.canNavigateThroughImages,
+    this.onClose,
+    this.onSync,
   });
 
   final ArDriveDataTableItem item;
@@ -71,6 +74,21 @@ class DetailsPanel extends StatefulWidget {
   final Function()? onPreviousImageNavigation;
   final Function()? onNextImageNavigation;
   final bool canNavigateThroughImages;
+
+  /// Closes the panel, for a panel that is not the explorer's.
+  ///
+  /// With it, the toolbar is drawn for [currentDrive] and closes through
+  /// this. Without it, the toolbar follows the explorer's own state, as it
+  /// always has. The drives list keeps that explorer alive holding whichever
+  /// drive was last open, so a panel beside the list reading it would offer
+  /// to share and rename the wrong drive.
+  final VoidCallback? onClose;
+
+  /// Syncs a drive this device has never synced, offered where its size and
+  /// contents would be. Each place the panel lives has its own way to sync -
+  /// the explorer's unsynced card, the drives list's menu - and the panel
+  /// takes whichever it is given. Without one, the panel only says so.
+  final VoidCallback? onSync;
 
   @override
   State<DetailsPanel> createState() => _DetailsPanelState();
@@ -236,19 +254,29 @@ class _DetailsPanelState extends State<DetailsPanel> {
               ScreenTypeLayout.builder(
                 desktop: (context) => Column(
                   children: [
-                    BlocBuilder<DriveDetailCubit, DriveDetailState>(
-                      builder: (context, driveDetailState) {
-                        if (driveDetailState is DriveDetailLoadSuccess) {
-                          return DetailsPanelToolbar(
-                            item: widget.item,
-                            driveDetailLoadSuccess: driveDetailState,
-                          );
-                        }
-                        // For DriveDetailLoadUnsynced or other states,
-                        // don't show the toolbar
-                        return const SizedBox.shrink();
-                      },
-                    ),
+                    if (widget.onClose != null && widget.currentDrive != null)
+                      DetailsPanelToolbar(
+                        item: widget.item,
+                        drive: widget.currentDrive!,
+                        onClose: widget.onClose!,
+                      )
+                    else
+                      BlocBuilder<DriveDetailCubit, DriveDetailState>(
+                        builder: (context, driveDetailState) {
+                          if (driveDetailState is DriveDetailLoadSuccess) {
+                            return DetailsPanelToolbar(
+                              item: widget.item,
+                              drive: driveDetailState.currentDrive,
+                              onClose: () => context
+                                  .read<DriveDetailCubit>()
+                                  .toggleSelectedItemDetails(),
+                            );
+                          }
+                          // For other states, without an onClose of their
+                          // own, don't show the toolbar
+                          return const SizedBox.shrink();
+                        },
+                      ),
                     const SizedBox(
                       height: 24,
                     ),
@@ -383,6 +411,18 @@ class _DetailsPanelState extends State<DetailsPanel> {
       children = _fileDetails(state);
     } else if (state is FsEntryInfoSuccess<Drive>) {
       children = _driveDetails(state);
+    } else if (state is FsEntryUnsyncedDriveInfo) {
+      children = _unsyncedDriveDetails(state);
+    } else if (state is FsEntryInfoFailure) {
+      // Not the spinner: a failure is finished, and a spinner says it is not.
+      children = [
+        Text(
+          appLocalizationsOf(context).detailsCouldNotBeLoaded,
+          style: ArDriveTypographyNew.of(context).paragraphNormal(
+            color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+          ),
+        ),
+      ];
     } else {
       children = [
         const Center(
@@ -534,6 +574,87 @@ class _DetailsPanelState extends State<DetailsPanel> {
           ),
           // TODO: Localize
           itemTitle: 'Signature Type',
+        ),
+      ],
+    ];
+  }
+
+  /// A drive known only from the drive list: everything that is known, and
+  /// where its size and contents would be, why they are not.
+  List<Widget> _unsyncedDriveDetails(FsEntryUnsyncedDriveInfo state) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final onSync = widget.onSync;
+
+    return [
+      DetailsPanelItem(
+        leading: CopyButton(text: widget.item.id),
+        itemTitle: appLocalizationsOf(context).driveID,
+      ),
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Text(
+          appLocalizationsOf(context).driveNeverSynced,
+          style: typography.paragraphNormal(color: colorTokens.textMid),
+        ),
+        itemTitle: appLocalizationsOf(context).size,
+      ),
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Text(
+          formatDateToUtcString(state.drive.lastUpdated),
+          style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
+        ),
+        itemTitle: appLocalizationsOf(context).lastUpdated,
+      ),
+      sizedBoxHeight16px,
+      DetailsPanelItem(
+        leading: Text(
+          formatDateToUtcString(state.drive.dateCreated),
+          style: typography.paragraphNormal(),
+          textAlign: TextAlign.right,
+        ),
+        itemTitle: appLocalizationsOf(context).dateCreated,
+      ),
+      if (state.drive.isPrivate) ...[
+        sizedBoxHeight16px,
+        DetailsPanelItem(
+          leading: Text(
+            widget.item.signatureType ?? '?',
+            textAlign: TextAlign.right,
+          ),
+          // TODO: Localize
+          itemTitle: 'Signature Type',
+        ),
+      ],
+      const SizedBox(height: 24),
+      Text(
+        appLocalizationsOf(context).driveInfoNeverSyncedDetail,
+        style: typography.paragraphNormal(color: colorTokens.textMid),
+      ),
+      if (onSync != null) ...[
+        const SizedBox(height: 16),
+        // Offered, never done for the reader: opening a drive's details is
+        // not asking for it to sync. One sync at a time, so it waits out a
+        // running one - the same rule as the drive's own card.
+        Builder(
+          builder: (context) {
+            final isSyncing =
+                context.watch<SyncCubit>().state is SyncInProgress;
+
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: ArDriveButtonNew(
+                text: appLocalizationsOf(context).syncNow,
+                typography: typography,
+                variant: ButtonVariant.primary,
+                maxWidth: 160,
+                isDisabled: isSyncing,
+                onPressed: isSyncing ? null : onSync,
+              ),
+            );
+          },
         ),
       ],
     ];
@@ -1157,19 +1278,35 @@ void downloadOrPreviewRevision({
   promptToDownloadFileRevision(context: context, revision: revision);
 }
 
+/// Whether the toolbar offers to download [item], given what the panel has
+/// read about it.
+///
+/// A file or a folder is always offered. A drive is offered only once the read
+/// of the local database says this device knows its contents: a drive that has
+/// never synced here has none, and until the read comes back neither has any
+/// other. An offer that may be withdrawn a moment later is worse than one that
+/// arrives late.
+@visibleForTesting
+bool offersDownload(ArDriveDataTableItem item, FsEntryInfoState info) =>
+    item is! DriveDataItem || info is FsEntryDriveInfoSuccess;
+
 class DetailsPanelToolbar extends StatelessWidget {
   const DetailsPanelToolbar({
     super.key,
     required this.item,
-    required this.driveDetailLoadSuccess,
+    required this.drive,
+    required this.onClose,
   });
 
   final ArDriveDataTableItem item;
-  final DriveDetailLoadSuccess driveDetailLoadSuccess;
+
+  /// The drive the item is in. Handed in rather than read off the explorer,
+  /// so a panel that is not the explorer's acts on the right one.
+  final Drive drive;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    final drive = driveDetailLoadSuccess.currentDrive;
     // A local so that type promotion works on it: a widget field cannot be
     // promoted, and the share icon has to ask a folder whether it is a ghost.
     final item = this.item;
@@ -1227,25 +1364,26 @@ class DetailsPanelToolbar extends StatelessWidget {
                 }
               },
             ),
-          _buildActionIcon(
-              tooltip: appLocalizationsOf(context).download,
-              icon: ArDriveIcons.download(size: defaultIconSize),
-              onTap: () {
-                if (item is FileDataTableItem) {
-                  promptToDownloadProfileFile(
-                    context: context,
-                    file: item,
-                  );
-                } else if (item is FolderDataTableItem) {
-                  promptToDownloadMultipleFiles(context,
-                      selectedItems: [item],
-                      zipName: item.name);
-                } else if (item is DriveDataItem) {
-                  promptToDownloadMultipleFiles(context,
-                      selectedItems: [item],
-                      zipName: item.name);
-                }
-              }),
+          // A drive whose contents this device does not know has nothing to
+          // download. Said by the details below it. See [offersDownload].
+          if (offersDownload(item, context.watch<FsEntryInfoCubit>().state))
+            _buildActionIcon(
+                tooltip: appLocalizationsOf(context).download,
+                icon: ArDriveIcons.download(size: defaultIconSize),
+                onTap: () {
+                  if (item is FileDataTableItem) {
+                    promptToDownloadProfileFile(
+                      context: context,
+                      file: item,
+                    );
+                  } else if (item is FolderDataTableItem) {
+                    promptToDownloadMultipleFiles(context,
+                        selectedItems: [item], zipName: item.name);
+                  } else if (item is DriveDataItem) {
+                    promptToDownloadMultipleFiles(context,
+                        selectedItems: [item], zipName: item.name);
+                  }
+                }),
           if (item is FileDataTableItem && drive.isPublic)
             _buildActionIcon(
               tooltip: appLocalizationsOf(context).preview,
@@ -1308,10 +1446,7 @@ class DetailsPanelToolbar extends StatelessWidget {
           _buildActionIcon(
             tooltip: appLocalizationsOf(context).close,
             icon: ArDriveIcons.x(size: defaultIconSize),
-            onTap: () {
-              final bloc = context.read<DriveDetailCubit>();
-              bloc.toggleSelectedItemDetails();
-            },
+            onTap: onClose,
           ),
         ],
       ),

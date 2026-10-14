@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -37,6 +38,30 @@ class _FakeHttpClient extends BaseClient {
 
   @override
   void close() => closed = true;
+}
+
+/// An HTTP client whose [close] aborts the body in flight, the way the real
+/// ones do: `FetchClient` fires its AbortController, `BrowserClient` aborts its
+/// XHRs, `IOClient` force-closes the socket.
+class _AbortableHttpClient extends BaseClient {
+  final StreamController<List<int>> body = StreamController<List<int>>();
+  int sends = 0;
+  bool closed = false;
+
+  @override
+  Future<StreamedResponse> send(BaseRequest request) async {
+    sends += 1;
+    return StreamedResponse(body.stream, 200, contentLength: 100);
+  }
+
+  @override
+  void close() {
+    closed = true;
+    if (!body.isClosed) {
+      body.addError(ClientException('aborted'));
+      body.close();
+    }
+  }
 }
 
 StreamedResponse _streamed(String body, int status) =>
@@ -507,6 +532,270 @@ void main() {
     });
   });
 
+  /// What a preview's progress bar reads. The bar is the difference between
+  /// a large private file that reads as frozen and one that reads as arriving.
+  group('fetchData reports the body as it arrives', () {
+    test('counts every chunk, against the declared length', () async {
+      final chunks = [
+        utf8.encode('aaaa'),
+        utf8.encode('bbbbbb'),
+        utf8.encode('cc'),
+      ];
+      final client = _FakeHttpClient(
+        (_) => StreamedResponse(
+          Stream.fromIterable(chunks),
+          200,
+          contentLength: 12,
+        ),
+      );
+      final heard = <(int, int?)>[];
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(
+        txId,
+        primaryClient,
+        onProgress: (received, total) => heard.add((received, total)),
+      );
+
+      expect(response.body, 'aaaabbbbbbcc');
+      expect(heard, [(0, 12), (4, 12), (10, 12), (12, 12)]);
+    });
+
+    test('says so when the gateway declares no length', () async {
+      final client = _FakeHttpClient((_) => _streamed('metadata', 200));
+      final heard = <(int, int?)>[];
+
+      await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(
+        txId,
+        primaryClient,
+        onProgress: (received, total) => heard.add((received, total)),
+      );
+
+      expect(heard.last, (8, null));
+      expect(heard.every((h) => h.$2 == null), isTrue);
+    });
+
+    Stream<List<int>> partThenReset() async* {
+      yield utf8.encode('partial');
+      throw Exception('connection reset');
+    }
+
+    test('starts over at zero when a fallback gateway takes over', () async {
+      // The configured gateway sends a chunk and then fails mid-body; the
+      // next gateway sends the whole thing. The bytes the first one sent are
+      // thrown away, so the count must say so rather than carry on from them.
+      final client = _FakeHttpClient(
+        (attempt) => attempt == 1
+            ? StreamedResponse(
+                partThenReset(),
+                200,
+                contentLength: 20,
+              )
+            : StreamedResponse(
+                Stream.value(utf8.encode('the whole thing')),
+                200,
+                contentLength: 15,
+              ),
+      );
+      final heard = <(int, int?)>[];
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(
+        txId,
+        primaryClient,
+        onProgress: (received, total) => heard.add((received, total)),
+      );
+
+      expect(response.body, 'the whole thing');
+      expect(heard, [(0, 20), (7, 20), (0, 15), (15, 15)]);
+    });
+
+    test('costs nothing when nobody is listening', () async {
+      final client = _FakeHttpClient((_) => _streamed('metadata', 200));
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(txId, primaryClient);
+
+      expect(response.body, 'metadata');
+    });
+  });
+
+  /// A preview the reader has left must stop downloading, not carry on to the
+  /// end and then try every other gateway.
+  group('fetchData can be abandoned', () {
+    test('aborts the request in flight and tries no other gateway', () async {
+      final client = _AbortableHttpClient();
+      final cancel = Completer<void>();
+
+      final fetch = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(txId, primaryClient, cancelWhen: cancel.future);
+
+      client.body.add(utf8.encode('the first chunk'));
+      await Future<void>.delayed(Duration.zero);
+
+      cancel.complete();
+
+      await expectLater(fetch, throwsA(isA<FetchCancelled>()));
+      expect(client.closed, isTrue);
+      expect(client.sends, 1,
+          reason: 'the waterfall must stop, not move on to the next gateway');
+    });
+
+    test('a fetch abandoned before it reaches a gateway sends nothing',
+        () async {
+      // Cancelled between gateways, or before the first: the check at the top
+      // of the waterfall is what stops it, not an aborted body.
+      final client = _FakeHttpClient((_) => _streamed('metadata', 200));
+
+      await expectLater(
+        DataGatewayFallback(
+          arioSDK: arioSDK,
+          clientFactory: () => client,
+        ).fetchData(txId, primaryClient, cancelWhen: Future<void>.value()),
+        throwsA(isA<FetchCancelled>()),
+      );
+
+      expect(client.sends, 0);
+    });
+
+    test('a fetch nobody cancels finishes as before', () async {
+      final client = _FakeHttpClient((_) => _streamed('metadata', 200));
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchData(txId, primaryClient, cancelWhen: Completer<void>().future);
+
+      expect(response.body, 'metadata');
+    });
+  });
+
+  group('fetchManifestWithFallback can be abandoned', () {
+    test('aborts the request in flight and tries no other gateway', () async {
+      final client = _AbortableHttpClient();
+      final cancel = Completer<void>();
+
+      final fetch = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchManifestWithFallback(
+        txId,
+        primaryClient,
+        cancelWhen: cancel.future,
+      );
+
+      client.body.add(utf8.encode('{"manifest":'));
+      await Future<void>.delayed(Duration.zero);
+
+      cancel.complete();
+
+      // At once: not after the request's own timeout gives up on it.
+      await expectLater(
+        fetch.timeout(const Duration(seconds: 2)),
+        throwsA(isA<FetchCancelled>()),
+      );
+      expect(client.closed, isTrue);
+      expect(client.sends, 1,
+          reason: 'the waterfall must stop, not move on to the next gateway');
+    });
+
+    test('says it was cancelled when the last gateway is the one aborted',
+        () async {
+      // With arweave.net configured there is no gateway after it, so nothing
+      // further along the waterfall would notice the cancel.
+      when(() => primaryApi.gatewayUrl)
+          .thenReturn(Uri.parse('https://arweave.net'));
+      final client = _AbortableHttpClient();
+      final cancel = Completer<void>();
+
+      final fetch = DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchManifestWithFallback(
+        txId,
+        primaryClient,
+        cancelWhen: cancel.future,
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      cancel.complete();
+
+      await expectLater(
+        fetch.timeout(const Duration(seconds: 2)),
+        throwsA(isA<FetchCancelled>()),
+      );
+    });
+
+    test('a fetch abandoned before it reaches a gateway sends nothing',
+        () async {
+      final client = _FakeHttpClient((_) => _streamed('{}', 200));
+
+      await expectLater(
+        DataGatewayFallback(
+          arioSDK: arioSDK,
+          clientFactory: () => client,
+        ).fetchManifestWithFallback(
+          txId,
+          primaryClient,
+          cancelWhen: Future<void>.value(),
+        ),
+        throwsA(isA<FetchCancelled>()),
+      );
+
+      expect(client.sends, 0);
+    });
+
+    test('says it was cancelled when the last gateway answers 404 after it',
+        () async {
+      when(() => primaryApi.gatewayUrl)
+          .thenReturn(Uri.parse('https://arweave.net'));
+      final cancel = Completer<void>();
+      final client = _FakeHttpClient((_) {
+        // The cancel lands while the gateway is answering.
+        cancel.complete();
+        return _streamed('not found', 404);
+      });
+
+      await expectLater(
+        DataGatewayFallback(
+          arioSDK: arioSDK,
+          clientFactory: () => client,
+        ).fetchManifestWithFallback(
+          txId,
+          primaryClient,
+          cancelWhen: cancel.future,
+        ),
+        throwsA(isA<FetchCancelled>()),
+      );
+    });
+
+    test('a fetch nobody cancels finishes as before', () async {
+      final client = _FakeHttpClient((_) => _streamed('{}', 200));
+
+      final response = await DataGatewayFallback(
+        arioSDK: arioSDK,
+        clientFactory: () => client,
+      ).fetchManifestWithFallback(
+        txId,
+        primaryClient,
+        cancelWhen: Completer<void>().future,
+      );
+
+      expect(response.body, '{}');
+    });
+  });
+
   group('ArweaveService.runPooled', () {
     test('writes results positionally when tasks complete out of order',
         () async {
@@ -580,6 +869,68 @@ void main() {
       // The slow item finishes last despite being claimed first.
       expect(completionOrder.last, 0);
       expect(completionOrder.length, 6);
+    });
+
+    test('reports each completion as it happens, not when the run ends',
+        () async {
+      // The whole point of the hook. `createDriveEntityHistoryFromTransactions`
+      // is one HTTP round trip per entity at `maxConcurrentDataFetches` at a
+      // time, and until this existed the only thing the sync could report was
+      // the batch being finished - which for a drive with thousands of
+      // revisions is minutes of a line that does not move.
+      final gates = List.generate(5, (_) => Completer<void>());
+      final reportedAfter = <int>[];
+      var completed = 0;
+
+      final run = ArweaveService.runPooled(
+        concurrency: 2,
+        itemCount: 5,
+        task: (i) async {
+          await gates[i].future;
+          completed++;
+        },
+        // Records how many tasks had finished at the moment it was called, so
+        // a hook that fired on scheduling rather than on completion, or once
+        // at the end, cannot produce this list.
+        onItemDone: () => reportedAfter.add(completed),
+      );
+
+      await pumpEventQueue();
+      expect(reportedAfter, isEmpty, reason: 'nothing has finished yet');
+
+      for (final gate in gates) {
+        gate.complete();
+        await pumpEventQueue();
+      }
+
+      await run;
+
+      expect(reportedAfter, [1, 2, 3, 4, 5]);
+    });
+
+    test('the hook changes neither the window nor the count of work', () async {
+      // It runs between a slot being released and the next index being
+      // claimed, so a hook that cost anything would be concurrency taken away
+      // from the fetches themselves.
+      var inFlight = 0;
+      var maxObserved = 0;
+      var reports = 0;
+
+      await ArweaveService.runPooled(
+        concurrency: 4,
+        itemCount: 20,
+        task: (i) async {
+          inFlight++;
+          maxObserved = inFlight > maxObserved ? inFlight : maxObserved;
+          await Future.delayed(const Duration(milliseconds: 5));
+          inFlight--;
+        },
+        onItemDone: () => reports++,
+      );
+
+      expect(maxObserved, 4);
+      expect(inFlight, 0);
+      expect(reports, 20, reason: 'one per item, and never more than one');
     });
 
     test('clamps worker count to itemCount and handles an empty workload',

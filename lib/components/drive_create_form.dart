@@ -7,6 +7,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -81,6 +82,10 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
         },
         builder: (context, state) {
           if (state is DriveCreateZeroBalance) {
+            // Cancel was the only way out of this, which made the whole
+            // path a dead end: no AR, no Credits, no drive, no next step.
+            // The same offer every other payment refusal makes - see
+            // [showTurboPaymentRequiredDialog].
             return ArDriveStandardModal(
               title: appLocalizationsOf(context).createDriveEmphasized,
               description:
@@ -89,6 +94,13 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                 ModalAction(
                   action: () => Navigator.of(context).pop(),
                   title: appLocalizationsOf(context).cancelEmphasized,
+                ),
+                ModalAction(
+                  action: () {
+                    Navigator.of(context).pop();
+                    showTurboTopupModal(context);
+                  },
+                  title: appLocalizationsOf(context).buyCredits,
                 ),
               ],
             );

@@ -9,7 +9,6 @@ import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
-import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
 
@@ -340,8 +339,8 @@ class BulkImportFiles {
 
       logger.i('Fetching transaction info for ${txIds.length} files');
 
-      // Fetch all transaction details in batches
-      final txDetailsStream = _arweaveService.getInfoOfTxsToBePinned(txIds);
+      // Fetch the size and type of every file's data, in batches
+      final txDetailsStream = _arweaveService.getSizeAndTypeOfDataTxs(txIds);
 
       await for (final txDetails in txDetailsStream) {
         if (_isCancelled) {
@@ -353,6 +352,12 @@ class BulkImportFiles {
         for (final dataTxId in txDetails.keys) {
           try {
             final file = fileDataTxIdToFile[dataTxId]!;
+            // Neither GraphQL nor the gateway could describe this data, so
+            // there is no size to give the file entity. Reported below.
+            final tx = txDetails[dataTxId] ??
+                (throw StateError(
+                  'Could not read the size and type of $dataTxId',
+                ));
             final pathParts = file.path.split('/');
             final fileName = pathParts.removeLast();
             final parentPath = pathParts.join('/');
@@ -363,9 +368,6 @@ class BulkImportFiles {
                     pathParts.every((part) => part.isEmpty))
                 ? parentFolderId
                 : folderPathToId[parentPath]!;
-
-            // Get tx details from the batch results
-            final tx = txDetails[file.dataTxId]!;
 
             final now = DateTime.now();
 
@@ -381,13 +383,10 @@ class BulkImportFiles {
               id: file.existingFileId ?? file.id,
               driveId: driveId,
               name: fileName,
-              size: int.parse(tx.data.size),
+              size: tx.size,
               dataTxId: dataTxId,
               parentFolderId: finalParentId,
-              dataContentType: tx.tags
-                      .firstWhereOrNull((tag) => tag.name == 'Content-Type')
-                      ?.value ??
-                  file.contentType,
+              dataContentType: tx.contentType ?? file.contentType,
               lastModifiedDate: now,
             );
 

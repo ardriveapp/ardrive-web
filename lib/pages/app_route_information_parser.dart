@@ -74,6 +74,13 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       case 'get-started':
         return AppRoutePath.getStarted();
       case 'drives':
+        // Handle '/drives' - the list of the user's drives. Only the bare
+        // segment: every longer shape below addresses a particular drive and
+        // is a link that may already be in the wild.
+        if (uri.pathSegments.length == 1) {
+          return AppRoutePath.drivesList();
+        }
+
         if (uri.pathSegments.length > 1) {
           final driveId = uri.pathSegments[1];
           final name = uri.queryParameters['name'];
@@ -221,6 +228,13 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
     } else if (configuration.getStarted) {
       return RouteInformation(
         uri: Uri.parse('/get-started'),
+      );
+    } else if (configuration.drivesList) {
+      // Checked before [driveId]: a drive stays selected underneath the list -
+      // the sidebar has to show something - so the two are set at once and
+      // this is what says which one the user is looking at.
+      return RouteInformation(
+        uri: Uri.parse('/drives'),
       );
     } else if (configuration.driveId != null) {
       final path = configuration.driveFolderId == null

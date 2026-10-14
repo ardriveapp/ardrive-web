@@ -452,7 +452,6 @@ void main() {
           privacy: DrivePrivacyTag.private,
           lastBlockHeight: const Value(localWatermark),
         ));
-    await db.driveDao.initVaults();
     await db.driveDao.putDriveKeyInMemory(
       driveID: driveId,
       driveKey: DriveKey(driveKey, false),
@@ -536,6 +535,7 @@ void main() {
           driveId: any(named: 'driveId'),
           ownerAddress: any(named: 'ownerAddress'),
           currentBlockHeight: any(named: 'currentBlockHeight'),
+          onEntityFetched: any(named: 'onEntityFetched'),
         )).thenAnswer((invocation) async {
       final txs = invocation.positionalArguments[0]
           as List<DriveEntityHistoryTransactionModel>;

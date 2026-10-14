@@ -9,14 +9,32 @@ class UserPreferences extends Equatable {
   final String? lastSelectedDriveId;
   final bool showHiddenFiles;
   final bool userHasHiddenDrive;
+
+  /// Whether logging in walks every drive's whole history.
+  ///
+  /// Defaults to false: a login should not spend the user's first minute on a
+  /// full sync they did not ask for. A user who turned the setting on keeps
+  /// the old behaviour, and one who turned it off is unaffected - only the
+  /// never-touched case changes. The login path still refreshes the drive list
+  /// either way, and still syncs when a transaction is left unresolved.
   final bool syncAllDrivesOnLogin;
+
+  /// When each drive was last walked to the end, by drive id.
+  ///
+  /// It lives here rather than in a `drives` column because it is a fact about
+  /// this device, not about the drive: two browsers signed into one wallet have
+  /// two different answers and both are right. A drive absent from the map has
+  /// never been synced on this device, which is a different thing from a drive
+  /// that was synced and found to be empty - the drives list says so.
+  final Map<String, DateTime> driveLastSyncedAt;
 
   const UserPreferences({
     required this.currentTheme,
     required this.lastSelectedDriveId,
     this.showHiddenFiles = false,
     this.userHasHiddenDrive = false,
-    this.syncAllDrivesOnLogin = true,
+    this.syncAllDrivesOnLogin = false,
+    this.driveLastSyncedAt = const {},
   });
 
   @override
@@ -26,6 +44,7 @@ class UserPreferences extends Equatable {
         showHiddenFiles,
         userHasHiddenDrive,
         syncAllDrivesOnLogin,
+        driveLastSyncedAt,
       ];
 
   UserPreferences copyWith({
@@ -34,6 +53,7 @@ class UserPreferences extends Equatable {
     bool? showHiddenFiles,
     bool? userHasHiddenDrive,
     bool? syncAllDrivesOnLogin,
+    Map<String, DateTime>? driveLastSyncedAt,
   }) {
     return UserPreferences(
       currentTheme: currentTheme ?? this.currentTheme,
@@ -43,6 +63,7 @@ class UserPreferences extends Equatable {
       showHiddenFiles: showHiddenFiles ?? this.showHiddenFiles,
       userHasHiddenDrive: userHasHiddenDrive ?? this.userHasHiddenDrive,
       syncAllDrivesOnLogin: syncAllDrivesOnLogin ?? this.syncAllDrivesOnLogin,
+      driveLastSyncedAt: driveLastSyncedAt ?? this.driveLastSyncedAt,
     );
   }
 }

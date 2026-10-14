@@ -22,7 +22,8 @@ void showAudioPreview(
   final blobUrl = html.Url.createObjectUrlFromBlob(blob);
 
   // Use unique viewType to avoid registration conflicts on repeated previews
-  final viewType = 'audio-preview-${attachment.id}-${DateTime.now().microsecondsSinceEpoch}';
+  final viewType =
+      'audio-preview-${attachment.id}-${DateTime.now().microsecondsSinceEpoch}';
 
   try {
     // ignore: undefined_prefixed_name
@@ -113,7 +114,8 @@ void showVideoPreview(
   final blobUrl = html.Url.createObjectUrlFromBlob(blob);
 
   // Use unique viewType to avoid registration conflicts on repeated previews
-  final viewType = 'video-preview-${attachment.id}-${DateTime.now().microsecondsSinceEpoch}';
+  final viewType =
+      'video-preview-${attachment.id}-${DateTime.now().microsecondsSinceEpoch}';
 
   try {
     // ignore: undefined_prefixed_name

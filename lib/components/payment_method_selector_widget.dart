@@ -1,3 +1,7 @@
+import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
+import 'package:ardrive/components/copy_button.dart';
+import 'package:ardrive/utils/truncate_string.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
@@ -9,6 +13,15 @@ import 'package:flutter/material.dart';
 class PaymentMethodSelector extends StatefulWidget {
   final UploadPaymentMethodInfo uploadMethodInfo;
   final void Function() onTurboTopupSucess;
+
+  /// Grants this account's derived Arweave wallet the right to spend credits
+  /// held on the wallet the reader signed in with.
+  ///
+  /// Returns whether the grant went through. Optional, and null wherever the
+  /// sheet has no way to sign: the notice then says where the credits are and
+  /// leaves the reader to share them in Turbo, which is what it did before this
+  /// control existed.
+  final Future<bool> Function()? onShareCredits;
   final void Function() onArSelect;
   final void Function() onTurboSelect;
   final bool useNewArDriveUI;
@@ -19,6 +32,7 @@ class PaymentMethodSelector extends StatefulWidget {
     super.key,
     required this.uploadMethodInfo,
     required this.onTurboTopupSucess,
+    this.onShareCredits,
     required this.onArSelect,
     required this.onTurboSelect,
     this.useNewArDriveUI = false,
@@ -254,53 +268,65 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                         color: colorTokens.textHigh,
                         fontWeight: ArFontWeight.bold)
                     : ArDriveTypography.body.buttonLargeBold(),
-                content: widget.uploadMethodInfo.hasNoTurboBalance
-                    ? GestureDetector(
-                        onTap: () {
-                          showTurboTopupModal(context, onSuccess: () {
-                            widget.onTurboTopupSucess();
-                          });
-                        },
-                        child: ArDriveClickArea(
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                // TODO: use text with multiple styles
-                                TextSpan(
-                                  text: 'Use Turbo Credits', // TODO: localize
-                                  style: widget.useNewArDriveUI
-                                      ? typography.paragraphLarge(
-                                          color: colorTokens.textMid,
-                                          fontWeight: ArFontWeight.bold,
-                                        )
-                                      : ArDriveTypography.body.buttonLargeBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgDefault,
-                                        ),
+                // No top-up offer for somebody whose credits are on the wallet
+                // they signed in with: offering to sell more to a person who has
+                // just paid is the worst answer available, and it is the one this
+                // sheet gave. The notice saying where the credits are is drawn
+                // under the sheet by [_getInsufficientBalanceMessage] instead,
+                // because that is the one place every mode renders - the dropdown
+                // most uploads use has no radio row to put it in.
+                content: widget.uploadMethodInfo.sourceWalletCredits != null
+                    ? null
+                    : widget.uploadMethodInfo.hasNoTurboBalance
+                        ? GestureDetector(
+                            onTap: () {
+                              showTurboTopupModal(context, onSuccess: () {
+                                widget.onTurboTopupSucess();
+                              });
+                            },
+                            child: ArDriveClickArea(
+                              child: RichText(
+                                text: TextSpan(
+                                  children: [
+                                    // TODO: use text with multiple styles
+                                    TextSpan(
+                                      text:
+                                          'Use Turbo Credits', // TODO: localize
+                                      style: widget.useNewArDriveUI
+                                          ? typography.paragraphLarge(
+                                              color: colorTokens.textMid,
+                                              fontWeight: ArFontWeight.bold,
+                                            )
+                                          : ArDriveTypography.body
+                                              .buttonLargeBold(
+                                              color: ArDriveTheme.of(context)
+                                                  .themeData
+                                                  .colors
+                                                  .themeFgDefault,
+                                            ),
+                                    ),
+                                    TextSpan(
+                                      text:
+                                          ' for faster uploads.', // TODO: localize
+                                      style: widget.useNewArDriveUI
+                                          ? typography.paragraphLarge(
+                                              color: colorTokens.textMid,
+                                              fontWeight: ArFontWeight.bold,
+                                            )
+                                          : ArDriveTypography.body
+                                              .buttonLargeBold(
+                                              color: ArDriveTheme.of(context)
+                                                  .themeData
+                                                  .colors
+                                                  .themeFgDefault,
+                                            ),
+                                    ),
+                                  ],
                                 ),
-                                TextSpan(
-                                  text:
-                                      ' for faster uploads.', // TODO: localize
-                                  style: widget.useNewArDriveUI
-                                      ? typography.paragraphLarge(
-                                          color: colorTokens.textMid,
-                                          fontWeight: ArFontWeight.bold,
-                                        )
-                                      : ArDriveTypography.body.buttonLargeBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgDefault,
-                                        ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
-                      )
-                    : null,
+                          )
+                        : null,
               )
           ],
           builder: (index, radioButton) => Column(
@@ -348,6 +374,59 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
   Widget _getInsufficientBalanceMessage({
     required BuildContext context,
   }) {
+    final info = widget.uploadMethodInfo;
+    final credits = info.sourceWalletCredits;
+
+    // Where the credits are, in place of an offer to sell more. Drawn here
+    // because this message is the one thing every mode renders: the radio row
+    // used to carry it, and the dropdown the main upload sheet uses had no
+    // radio row, so the reader this was built for never saw it.
+    //
+    // Only while the sheet is refusing, which is the same test the branches
+    // below use. A reader who can pay with AR is not stuck, and a call to share
+    // credits beside a working upload button is noise.
+    if (credits != null) {
+      final arShort =
+          info.uploadMethod == UploadMethod.ar && !info.sufficientArBalance;
+      final turboShort = info.uploadMethod == UploadMethod.turbo &&
+          !info.sufficentCreditsBalance &&
+          info.sufficientArBalance;
+      final bothShort =
+          !info.sufficentCreditsBalance && !info.sufficientArBalance;
+
+      if (!arShort && !turboShort && !bothShort) {
+        return const SizedBox();
+      }
+
+      final notice = _SourceWalletCreditsNotice(
+        credits: credits,
+        useNewArDriveUI: widget.useNewArDriveUI,
+        onShare: widget.onShareCredits,
+      );
+
+      // Short of AR while paying with AR is still worth saying: it is true, and
+      // it is not a sales pitch. The notice beside it is the way out.
+      if (arShort) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Insufficient AR balance for purchase.',
+              style: ArDriveTypography.body.captionBold(
+                color:
+                    ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
+              ),
+            ),
+            const SizedBox(height: 8),
+            notice,
+          ],
+        );
+      }
+
+      return notice;
+    }
+
     if (widget.uploadMethodInfo.uploadMethod == UploadMethod.turbo &&
         !widget.uploadMethodInfo.sufficentCreditsBalance &&
         widget.uploadMethodInfo.sufficientArBalance) {
@@ -454,7 +533,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 
   Widget _buildCongestionWarning(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -471,7 +550,8 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           Icon(
             Icons.warning_amber_rounded,
             size: 16,
-            color: ArDriveTheme.of(context).themeData.colors.themeWarningEmphasis,
+            color:
+                ArDriveTheme.of(context).themeData.colors.themeWarningEmphasis,
           ),
           const SizedBox(width: 8),
           Flexible(
@@ -479,16 +559,174 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
               appLocalizationsOf(context).congestionWarningShort,
               style: widget.useNewArDriveUI
                   ? typography.paragraphSmall(
-                      color: ArDriveTheme.of(context).themeData.colors.themeWarningFg,
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeWarningFg,
                       fontWeight: ArFontWeight.semiBold,
                     )
                   : ArDriveTypography.body.smallBold(
-                      color: ArDriveTheme.of(context).themeData.colors.themeWarningFg,
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeWarningFg,
                     ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Says where the credits are, instead of offering to sell more.
+///
+/// Shown when the wallet somebody signed in with holds Turbo credits that this
+/// upload cannot spend. Signing in with Phantom or MetaMask derives a
+/// deterministic Arweave wallet, and that derived address is what ArDrive bills;
+/// credits bought in Turbo's own console land on the sign-in wallet's own
+/// account instead. Both balances are real and neither system used to mention
+/// the other.
+///
+/// It names both addresses rather than explaining the derivation. Somebody who
+/// has just been refused an upload wants to know where their money is, and the
+/// account menu already explains how the two wallets relate.
+class _SourceWalletCreditsNotice extends StatefulWidget {
+  const _SourceWalletCreditsNotice({
+    required this.credits,
+    required this.useNewArDriveUI,
+    this.onShare,
+  });
+
+  final SourceWalletCredits credits;
+  final bool useNewArDriveUI;
+
+  /// See [PaymentMethodSelector.onShareCredits].
+  final Future<bool> Function()? onShare;
+
+  @override
+  State<_SourceWalletCreditsNotice> createState() =>
+      _SourceWalletCreditsNoticeState();
+}
+
+class _SourceWalletCreditsNoticeState
+    extends State<_SourceWalletCreditsNotice> {
+  bool _sharing = false;
+  bool _failed = false;
+
+  Future<void> _share() async {
+    final onShare = widget.onShare;
+
+    if (onShare == null || _sharing) {
+      return;
+    }
+
+    setState(() {
+      _sharing = true;
+      _failed = false;
+    });
+
+    // Never throws out of here. A wallet extension that is gone, or a reader
+    // who declines the prompt, leaves the sheet exactly as it was with the
+    // instructions still on it - which is a worse outcome than one press, and a
+    // much better one than a dead end.
+    var shared = false;
+
+    try {
+      shared = await onShare();
+    } catch (_) {
+      shared = false;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _sharing = false;
+      _failed = !shared;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    final chain = switch (widget.credits.walletType) {
+      WalletType.ethereum => 'Ethereum',
+      WalletType.solana => 'Solana',
+      WalletType.arweave => 'Arweave',
+    };
+
+    final muted = widget.useNewArDriveUI
+        ? typography.paragraphNormal(color: colorTokens.textMid)
+        : ArDriveTypography.body.captionRegular();
+
+    // With no way to sign, the sheet says where the money is and stops. Also
+    // where a failed attempt lands, because the instruction is still true.
+    final canShare = widget.onShare != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '${winstonToAr(widget.credits.balance)} Credits are on your $chain '
+          'wallet ${truncateString(widget.credits.sourceAddress, offsetStart: 6, offsetEnd: 4)}.',
+          style: widget.useNewArDriveUI
+              ? typography.paragraphNormal(
+                  color: colorTokens.textHigh,
+                  fontWeight: ArFontWeight.semiBold,
+                )
+              : ArDriveTypography.body.captionBold(),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          canShare && !_failed
+              ? 'Uploads are paid from your Arweave address. Share the credits '
+                  'across to use them here.'
+              : 'Uploads are paid from your Arweave address. Share the credits '
+                  'to it in Turbo to use them here.',
+          style: muted,
+        ),
+        // Whole, and copyable, wherever the reader may have to do this by hand.
+        // A shortened address cannot be pasted into Turbo.
+        if (!canShare || _failed) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Flexible(
+                child: Text(widget.credits.arweaveAddress, style: muted),
+              ),
+              CopyButton(text: widget.credits.arweaveAddress, size: 16),
+            ],
+          ),
+        ],
+        if (_failed) ...[
+          const SizedBox(height: 2),
+          // Just the fact. The retry is the button below and the manual route
+          // is the address above; saying either again here only repeats what is
+          // already on screen.
+          Text(
+            'That did not go through.',
+            style: widget.useNewArDriveUI
+                ? typography.paragraphNormal(color: colorTokens.textRed)
+                : ArDriveTypography.body.captionRegular(),
+          ),
+        ],
+        if (canShare) ...[
+          const SizedBox(height: 8),
+          ArDriveButtonNew(
+            text: _sharing ? 'Sharing...' : 'Share credits',
+            typography: typography,
+            variant: ButtonVariant.primary,
+            maxHeight: 36,
+            isDisabled: _sharing,
+            onPressed: _share,
+          ),
+        ],
+      ],
     );
   }
 }

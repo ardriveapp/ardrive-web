@@ -5,17 +5,16 @@ import 'package:ardrive/components/migrate_private_drives_modal.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/sync_failure_test_panel.dart';
-import 'package:ardrive/components/topbar/help_button.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/services/config/config_service.dart';
+import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
-import 'package:ardrive/sync/domain/sync_progress.dart';
+import 'package:ardrive/sync/presentation/sync_overlay.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
-import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/foundation.dart';
@@ -27,10 +26,7 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'blocs/blocs.dart';
 import 'components/app_top_bar.dart';
 import 'components/banners/app_announcement_banner.dart';
-import 'components/components.dart';
-import 'components/progress_bar.dart';
 import 'components/wallet_switch_dialog.dart';
-import 'utils/app_localizations_wrapper.dart';
 
 class AppShell extends StatefulWidget {
   final Widget page;
@@ -84,6 +80,16 @@ class AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) => BlocBuilder<DrivesCubit, DrivesState>(
         builder: (context, drivesState) {
+          // The page, and nothing wrapped around it for the sake of a sync.
+          //
+          // A banner above every screen used to live here. It reported the
+          // running sync in full, permanently, to everyone - which is level-2
+          // detail forced on a user who has not asked a question. What a sync
+          // is doing is one tap away instead, on the top bar's indicator, and
+          // the record of what it did is one more tap after that. In a working
+          // app there is nothing to read, so there is nothing on screen.
+          final page = widget.page;
+
           Widget buildPage(scaffold) => Material(
                 child: BlocConsumer<SyncCubit, SyncState>(
                   listener: (context, syncState) async {
@@ -101,469 +107,7 @@ class AppShellState extends State<AppShell> {
                   builder: (context, syncState) {
                     return Stack(children: [
                       scaffold,
-                      // Show loading modal for metadata-only sync
-                      if (syncState is SyncLoadingDrives)
-                        Stack(
-                          children: [
-                            SizedBox.expand(
-                              child: Container(
-                                color: Colors.black.withOpacity(0.5),
-                              ),
-                            ),
-                            Align(
-                              alignment: Alignment.center,
-                              child: Material(
-                                borderRadius: BorderRadius.circular(8),
-                                child: ProgressDialog(
-                                  useNewArDriveUI: true,
-                                  title: appLocalizationsOf(context)
-                                      .loadingYourDrives,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      if (syncState is SyncInProgress ||
-                          syncState is SyncCancelled ||
-                          syncState is SyncCompleteWithErrors)
-                        Stack(
-                          children: [
-                            SizedBox.expand(
-                              child: Container(
-                                color: Colors.black.withOpacity(0.5),
-                              ),
-                            ),
-                            BlocBuilder<ProfileCubit, ProfileState>(
-                              builder: (context, state) {
-                                final typography =
-                                    ArDriveTypographyNew.of(context);
-                                return FutureBuilder(
-                                  future: context
-                                      .read<ProfileCubit>()
-                                      .isCurrentProfileArConnect(),
-                                  builder: (BuildContext context,
-                                      AsyncSnapshot snapshot) {
-                                    final isCurrentProfileArConnect =
-                                        snapshot.data == true;
-
-                                    if (syncState is SyncCancelled) {
-                                      return Align(
-                                        alignment: Alignment.center,
-                                        child: Material(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          child: ArDriveStandardModalNew(
-                                            title: appLocalizationsOf(context)
-                                                .syncCancelled,
-                                            content: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  appLocalizationsOf(context)
-                                                      .syncProgressSaved,
-                                                  style: typography
-                                                      .paragraphNormal(),
-                                                ),
-                                                const SizedBox(height: 12),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.all(12),
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        ArDriveTheme.of(context)
-                                                            .themeData
-                                                            .colors
-                                                            .themeWarningSubtle,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            6),
-                                                    border: Border.all(
-                                                      color: ArDriveTheme.of(
-                                                              context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeWarningEmphasis,
-                                                      width: 1,
-                                                    ),
-                                                  ),
-                                                  child: Row(
-                                                    children: [
-                                                      Icon(
-                                                        Icons
-                                                            .warning_amber_rounded,
-                                                        size: 16,
-                                                        color: ArDriveTheme.of(
-                                                                context)
-                                                            .themeData
-                                                            .colors
-                                                            .themeWarningEmphasis,
-                                                      ),
-                                                      const SizedBox(width: 8),
-                                                      Expanded(
-                                                        child: Text(
-                                                          appLocalizationsOf(
-                                                                  context)
-                                                              .syncCancelledDetails(
-                                                            syncState
-                                                                .drivesCompleted,
-                                                            syncState
-                                                                .totalDrives,
-                                                          ),
-                                                          style: typography
-                                                              .paragraphSmall(
-                                                            color: ArDriveTheme
-                                                                    .of(context)
-                                                                .themeData
-                                                                .colors
-                                                                .themeWarningEmphasis,
-                                                            fontWeight:
-                                                                ArFontWeight
-                                                                    .semiBold,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            actions: [
-                                              ModalAction(
-                                                action: () {
-                                                  context
-                                                      .read<SyncCubit>()
-                                                      .clearCancelledState();
-                                                },
-                                                title:
-                                                    appLocalizationsOf(context)
-                                                        .ok,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }
-
-                                    if (syncState is SyncCompleteWithErrors) {
-                                      return Align(
-                                        alignment: Alignment.center,
-                                        child: Material(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          child: ArDriveStandardModalNew(
-                                            title: appLocalizationsOf(context)
-                                                .syncCompleteWithErrors,
-                                            content: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  appLocalizationsOf(context)
-                                                      .syncPartialSuccessMessage(
-                                                    syncState.failedDrives,
-                                                    syncState.totalDrives,
-                                                  ),
-                                                  style: typography
-                                                      .paragraphNormal(),
-                                                ),
-                                                if (syncState.errorMessages
-                                                    .isNotEmpty) ...[
-                                                  const SizedBox(height: 16),
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            12),
-                                                    decoration: BoxDecoration(
-                                                      color: ArDriveTheme.of(
-                                                              context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeBgSubtle,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                      border: Border.all(
-                                                        color: ArDriveTheme.of(
-                                                                context)
-                                                            .themeData
-                                                            .colors
-                                                            .themeErrorDefault,
-                                                        width: 1,
-                                                      ),
-                                                    ),
-                                                    constraints:
-                                                        const BoxConstraints(
-                                                      maxHeight: 200,
-                                                    ),
-                                                    child:
-                                                        SingleChildScrollView(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: syncState
-                                                            .errorMessages
-                                                            .entries
-                                                            .map((entry) =>
-                                                                Padding(
-                                                                  padding:
-                                                                      const EdgeInsets
-                                                                          .only(
-                                                                          bottom:
-                                                                              4),
-                                                                  child: Text(
-                                                                    '• ${entry.value}',
-                                                                    style: typography
-                                                                        .paragraphSmall(),
-                                                                  ),
-                                                                ))
-                                                            .toList(),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                            actions: [
-                                              ModalAction(
-                                                action: () {
-                                                  context
-                                                      .read<SyncCubit>()
-                                                      .clearErrorState();
-                                                },
-                                                title:
-                                                    appLocalizationsOf(context)
-                                                        .close,
-                                              ),
-                                              ModalAction(
-                                                action: () {
-                                                  final failedIds = syncState
-                                                      .failedDriveIds;
-                                                  context
-                                                      .read<SyncCubit>()
-                                                      .clearErrorState();
-                                                  context
-                                                      .read<SyncCubit>()
-                                                      .retryFailedDrives(
-                                                          failedIds);
-                                                },
-                                                title:
-                                                    appLocalizationsOf(context)
-                                                        .retryFailedDrives,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }
-
-                                    return Align(
-                                      alignment: Alignment.center,
-                                      child: Material(
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: ProgressDialog(
-                                          useNewArDriveUI: true,
-                                          progressBar: ProgressBar(
-                                            percentage: context
-                                                .read<SyncCubit>()
-                                                .syncProgressController
-                                                .stream,
-                                          ),
-                                          percentageDetails: _syncStreamBuilder(
-                                            builderWithData: (syncProgress) =>
-                                                Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                if (syncProgress
-                                                        .statusMessage !=
-                                                    null)
-                                                  Text(
-                                                    syncProgress.statusMessage!,
-                                                    style: typography
-                                                        .paragraphNormal(
-                                                      fontWeight:
-                                                          ArFontWeight.semiBold,
-                                                    ),
-                                                  )
-                                                else
-                                                  Text(
-                                                    appLocalizationsOf(context)
-                                                        .syncProgressPercentage(
-                                                      (syncProgress.progress *
-                                                              100)
-                                                          .roundToDouble()
-                                                          .toString(),
-                                                    ),
-                                                    style: typography
-                                                        .paragraphNormal(
-                                                      fontWeight:
-                                                          ArFontWeight.bold,
-                                                    ),
-                                                  ),
-                                                // Elapsed time — only shown
-                                                // after 5s to avoid clutter
-                                                // on fast syncs
-                                                StreamBuilder<int>(
-                                                  stream: Stream.periodic(
-                                                    const Duration(seconds: 1),
-                                                    (i) => i,
-                                                  ),
-                                                  builder: (context, _) {
-                                                    final elapsed = DateTime
-                                                            .now()
-                                                        .difference(context
-                                                            .read<SyncCubit>()
-                                                            .syncStartTime);
-                                                    if (elapsed.inSeconds < 5) {
-                                                      return const SizedBox
-                                                          .shrink();
-                                                    }
-                                                    return Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              top: 4),
-                                                      child: Text(
-                                                        appLocalizationsOf(
-                                                                context)
-                                                            .syncElapsedTime(
-                                                          elapsed.inSeconds
-                                                              .toString(),
-                                                        ),
-                                                        style: typography
-                                                            .paragraphSmall(
-                                                          color: ArDriveTheme.of(
-                                                                  context)
-                                                              .themeData
-                                                              .colorTokens
-                                                              .textMid,
-                                                        ),
-                                                      ),
-                                                    );
-                                                  },
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          progressDescription:
-                                              _syncStreamBuilder(
-                                            builderWithData: (syncProgress) =>
-                                                Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  _getSyncProgressDescription(
-                                                    context,
-                                                    syncProgress,
-                                                  ),
-                                                  style: typography
-                                                      .paragraphNormal(
-                                                    fontWeight:
-                                                        ArFontWeight.bold,
-                                                  ),
-                                                ),
-                                                // ArConnect tab warning removed — unnecessary UX friction
-                                                if (syncProgress.hasErrors) ...[
-                                                  const SizedBox(height: 8),
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.all(8),
-                                                    decoration: BoxDecoration(
-                                                      color: ArDriveTheme.of(
-                                                              context)
-                                                          .themeData
-                                                          .colors
-                                                          .themeWarningSubtle,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              4),
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisSize:
-                                                          MainAxisSize.min,
-                                                      children: [
-                                                        Icon(
-                                                          Icons
-                                                              .warning_amber_rounded,
-                                                          size: 16,
-                                                          color: ArDriveTheme
-                                                                  .of(context)
-                                                              .themeData
-                                                              .colors
-                                                              .themeWarningEmphasis,
-                                                        ),
-                                                        const SizedBox(
-                                                            width: 4),
-                                                        Text(
-                                                          appLocalizationsOf(
-                                                                  context)
-                                                              .syncErrorsDetected(
-                                                                  syncProgress
-                                                                      .failedQueries),
-                                                          style: typography
-                                                              .paragraphSmall(
-                                                            color: ArDriveTheme
-                                                                    .of(context)
-                                                                .themeData
-                                                                .colors
-                                                                .themeWarningEmphasis,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                          ),
-                                          titleWidget: _syncStreamBuilder(
-                                            builderWithData: (syncProgress) =>
-                                                Text(
-                                              _getSyncTitle(
-                                                context,
-                                                syncProgress,
-                                                isCurrentProfileArConnect,
-                                              ),
-                                              style: typography.heading5(
-                                                fontWeight: ArFontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                          actions: [
-                                            ModalAction(
-                                              action: () {
-                                                context
-                                                    .read<SyncCubit>()
-                                                    .cancelSync();
-                                              },
-                                              title: appLocalizationsOf(context)
-                                                  .cancelEmphasized,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                            if (context.read<ConfigService>().flavor !=
-                                Flavor.production)
-                              Positioned(
-                                bottom: 0,
-                                right: 20,
-                                child: Text(
-                                  'Using gateway: ${context.read<ConfigService>().config.arweaveGatewayForDataRequest.url}',
-                                  style: ArDriveTypographyNew.of(context)
-                                      .paragraphLarge(
-                                    fontWeight: ArFontWeight.semiBold,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
+                      SyncOverlay(syncState: syncState),
                       // Add the sync failure test panel (only visible in debug mode)
                       if (kDebugMode) const SyncFailureTestPanel(),
                     ]);
@@ -579,9 +123,9 @@ class AppShellState extends State<AppShell> {
                     return Column(
                       children: [
                         _buildAnnouncementBanner(
-                        context,
-                        message: '', // Configure message when enabling banner
-                      ),
+                          context,
+                          message: '', // Configure message when enabling banner
+                        ),
                         if (state is! PrivateDriveMigrationHidden)
                           _updatePrivateDrivesBanner(context, true),
                         Flexible(
@@ -599,7 +143,7 @@ class AppShellState extends State<AppShell> {
                                   backgroundColor: ArDriveTheme.of(context)
                                       .themeData
                                       .backgroundColor,
-                                  body: widget.page,
+                                  body: page,
                                 ),
                               ),
                             ],
@@ -631,7 +175,7 @@ class AppShellState extends State<AppShell> {
                                 color: ArDriveTheme.of(context)
                                     .themeData
                                     .backgroundColor,
-                                child: widget.page,
+                                child: page,
                               ),
                             ),
                           ],
@@ -746,135 +290,173 @@ class AppShellState extends State<AppShell> {
     );
   }
 
-  Widget _syncStreamBuilder({
-    required Widget Function(SyncProgress s) builderWithData,
-  }) =>
-      StreamBuilder<SyncProgress>(
-        stream: context.read<SyncCubit>().syncProgressController.stream,
-        // Use current sync progress as initial data to prevent empty state flash
-        initialData: context.read<SyncCubit>().syncProgress,
-        builder: (context, snapshot) =>
-            snapshot.hasData ? builderWithData(snapshot.data!) : Container(),
-      );
-
-  /// Returns the appropriate title for the sync modal based on sync type.
-  /// ArConnect warning is handled separately in the modal content.
-  String _getSyncTitle(
-    BuildContext context,
-    SyncProgress syncProgress,
-    bool isArConnect,
-  ) {
-    // Always show sync-specific title regardless of ArConnect status
-    if (syncProgress.isSingleDriveSync) {
-      return appLocalizationsOf(context).syncingSingleDrive;
-    } else {
-      return appLocalizationsOf(context).syncingAllDrives;
-    }
-  }
-
-  /// Returns the appropriate progress description for the sync modal.
-  String _getSyncProgressDescription(
-    BuildContext context,
-    SyncProgress syncProgress,
-  ) {
-    if (syncProgress.isSingleDriveSync) {
-      // Single drive sync - show drive name if available, otherwise fallback
-      if (syncProgress.driveName != null) {
-        return appLocalizationsOf(context).syncingDriveWithName(
-          syncProgress.driveName!,
-        );
-      } else {
-        return appLocalizationsOf(context).syncingOnlyOneDrive;
-      }
-    } else if (syncProgress.drivesCount > 1) {
-      // Multiple drives - show "X of Y Drives Synced"
-      return appLocalizationsOf(context).driveSyncedOfDrivesCount(
-        syncProgress.drivesSynced,
-        syncProgress.drivesCount,
-      );
-    } else if (syncProgress.drivesCount == 1) {
-      // Single drive in all-drives sync
-      return appLocalizationsOf(context).syncingOnlyOneDrive;
-    } else {
-      // drivesCount == 0, initial state
-      return '';
-    }
-  }
-
   void toggleProfileOverlay() =>
       setState(() => _showProfileOverlay = !_showProfileOverlay);
 }
 
+/// The bar's own row, which is all of it.
+const double _mobileAppBarRowHeight = 80;
+
+/// One size for every control in the mobile bar.
+const double _mobileAppBarIconSize = 24;
+
+/// Exposed so a test can hold every control in the bar to it.
+const double mobileAppBarIconSize = _mobileAppBarIconSize;
+
 // TODO: add the gift icon
+/// Search, as an icon that opens the sheet the field used to open.
+///
+/// The field it replaces did nothing until it was submitted - it opened this
+/// same modal and handed the typed query over - so nothing is lost by starting
+/// from the modal instead. What is gained is the band it occupied, on the one
+/// layout where vertical space is the scarce thing.
+///
+/// A controller per press rather than one held for the life of the bar: the
+/// modal owns the text while it is open and there is nothing to remember once
+/// it closes.
+class _MobileSearchButton extends StatelessWidget {
+  const _MobileSearchButton({this.onNavigateToFolder});
+
+  /// See [MobileAppBar.onSearchNavigateToFolder].
+  final void Function(String driveId, String folderId, {String? itemId})?
+      onNavigateToFolder;
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveIconButton(
+      // The same glyph the field carried, at the size every other control in
+      // this bar uses.
+      icon: ArDriveIcon(
+        icon: Icons.search,
+        size: _mobileAppBarIconSize,
+        color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+      ),
+      tooltip: appLocalizationsOf(context).searchFiles,
+      onPressed: () {
+        showSearchModalBottomSheet(
+          context: context,
+          driveDetailCubit: context.read<DriveDetailCubit>(),
+          drivesCubit: context.read<DrivesCubit>(),
+          controller: TextEditingController(),
+          onNavigateToFolder: onNavigateToFolder,
+        );
+      },
+    );
+  }
+}
+
 class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   const MobileAppBar({
     super.key,
     this.leading,
     this.showDrawerButton = true,
+    this.showSearch = false,
+    this.onSearchNavigateToFolder,
   });
 
   final Widget? leading;
   final bool showDrawerButton;
 
+  /// Whether this screen offers search from the bar.
+  ///
+  /// Off by default and asked for explicitly, because the modal reads a
+  /// `DriveDetailCubit` and not every screen wearing this bar has a meaningful
+  /// one. The drives list has a cubit built against the root path rather than
+  /// a chosen drive, and the no-drives page has nothing to search - so a bar
+  /// that offered search everywhere would be offering it where it could only
+  /// disappoint.
+  final bool showSearch;
+
+  /// How a search result reaches its folder from this screen.
+  ///
+  /// Null on the explorer, where the modal's own `DriveDetailCubit` is
+  /// long-lived and can be told to open a folder in another drive. The drives
+  /// list passes one, because selecting a drive there replaces the subtree and
+  /// tears that cubit down mid-navigation. See [FileSearchModal.onNavigateToFolder].
+  final void Function(String driveId, String folderId, {String? itemId})?
+      onSearchNavigateToFolder;
+
   @override
-  Size get preferredSize =>
-      const Size.fromHeight(80); // Set the height of the appbar
+  // Its own row and nothing else. Nothing about a sync is laid out here: a
+  // `Scaffold` sizes its app bar to a `preferredSize` a const widget cannot
+  // change, so anything that came and went with a sync could only live in this
+  // bar as a permanently reserved slot - an empty band on every screen for the
+  // whole of the time no sync is running, which is nearly all of it. The
+  // indicator in the row reports a sync in the space it already occupies.
+  Size get preferredSize => const Size.fromHeight(_mobileAppBarRowHeight);
 
   @override
   Widget build(BuildContext context) {
     final isLightMode = ArDriveTheme.of(context).themeData.name == 'light';
     return SafeArea(
       child: Container(
-        height: 80,
         color: ArDriveTheme.of(context).themeData.tableTheme.cellColor,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 7.0),
-              child: leading ??
-                  (showDrawerButton
-                      ? ArDriveIconButton(
-                          icon: ArDriveIcons.menu(
-                            size: defaultIconSize,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                          ),
-                          onPressed: () => Scaffold.of(context).openDrawer(),
-                        )
-                      : Container()),
-            ),
-            if (!showDrawerButton)
+        child: SizedBox(
+          height: _mobileAppBarRowHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
               Padding(
-                padding: const EdgeInsets.only(
-                  left: 24.0,
-                ),
-                child: ArDriveImage(
-                  image: AssetImage(
-                    isLightMode
-                        ? Resources.images.brand.blackLogo1
-                        : Resources.images.brand.whiteLogo1,
-                  ),
-                  width: 128,
-                  height: 28,
-                ),
+                padding: const EdgeInsets.only(left: 7.0),
+                child: leading ??
+                    (showDrawerButton
+                        ? ArDriveIconButton(
+                            icon: ArDriveIcons.menu(
+                              // The size every other control in this bar is:
+                              // the hide toggle, the sync indicator and the
+                              // way home all take ArDriveIcon's default, and
+                              // this was the only one at 20.
+                              size: _mobileAppBarIconSize,
+                              color: ArDriveTheme.of(context)
+                                  .themeData
+                                  .colors
+                                  .themeFgDefault,
+                            ),
+                            onPressed: () => Scaffold.of(context).openDrawer(),
+                          )
+                        : Container()),
               ),
-            const Spacer(),
-            const GlobalHideToggleButton(),
-            const SizedBox(width: 8),
-            const SyncButton(),
-            const SizedBox(width: 8),
-            const HelpButtonTopBar(),
-            const SizedBox(
-              width: 24,
-            ),
-            const Padding(
-              padding: EdgeInsets.only(right: 12.0),
-              child: ProfileCard(),
-            ),
-          ],
+              if (!showDrawerButton)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: 24.0,
+                  ),
+                  child: ArDriveImage(
+                    image: AssetImage(
+                      isLightMode
+                          ? Resources.images.brand.blackLogo1
+                          : Resources.images.brand.whiteLogo1,
+                    ),
+                    width: 128,
+                    height: 28,
+                  ),
+                ),
+              const Spacer(),
+              // Search sits with the other controls that are about the whole
+              // view rather than one item in it - the hide toggle beside it is
+              // the same kind of thing. As a field it took a 60px band above
+              // the file list on the screen with the least vertical room to
+              // give; as an icon it takes the space that was already empty
+              // here.
+              if (showSearch) ...[
+                _MobileSearchButton(
+                  onNavigateToFolder: onSearchNavigateToFolder,
+                ),
+                const SizedBox(width: 8),
+              ],
+              const GlobalHideToggleButton(),
+              const SizedBox(width: 8),
+              const SyncButton(),
+              const SizedBox(width: 8),
+              const SizedBox(
+                width: 24,
+              ),
+              const Padding(
+                padding: EdgeInsets.only(right: 12.0),
+                child: ProfileCard(),
+              ),
+            ],
+          ),
         ),
       ),
     );

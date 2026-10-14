@@ -1,3 +1,5 @@
+import 'package:ardrive/turbo/services/credit_sharing_service.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'dart:async';
 import 'dart:math';
@@ -7,6 +9,7 @@ import 'package:ardrive/turbo/topup/views/topup_modal.dart';
 import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/upload/enums/conflicting_files_actions.dart';
 import 'package:ardrive/blocs/upload/limits.dart';
@@ -151,6 +154,8 @@ Future<void> _showUploadForm(
       context.read<ProfileCubit>(),
       context.read<ArDriveUploadPreparationManager>(),
       context.read<ArDriveAuth>(),
+      context.read<PaymentService>(),
+      CreditSharingService.fromConfig(context.read<ConfigService>()),
     ),
   );
 
@@ -215,8 +220,18 @@ class _UploadFormState extends State<UploadForm> {
               if (!_isShowingCancelDialog) {
                 Navigator.pop(context);
                 context.read<ActivityTracker>().setUploading(false);
-                // No sync needed — local DB already has the uploaded file.
-                // Background periodic sync will update lastBlockHeight naturally.
+
+                // The file is already in the local database, so nothing needs
+                // syncing for it to be *seen*. What it does need is
+                // confirming: this asks again every few minutes until the
+                // transaction is mined, and then stops.
+                //
+                // The comment that used to sit here said a background periodic
+                // sync would take care of it. It would not: that timer is
+                // gated on `autoSync`, which ships false in all three
+                // flavours, so an uploaded file stayed unconfirmed until the
+                // reader pressed sync or logged in again.
+                context.read<SyncCubit>().watchForPendingConfirmations();
               }
 
               widget.driveDetailCubit.refreshDriveDataTable();
@@ -1256,6 +1271,8 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                             context.read<ProfileCubit>(),
                             context.read<ArDriveUploadPreparationManager>(),
                             context.read<ArDriveAuth>(),
+                            context.read<PaymentService>(),
+                            CreditSharingService.fromConfig(context.read<ConfigService>()),
                           )..add(PrepareUploadPaymentMethod(
                               params: state.params,
                             )),
@@ -1320,6 +1337,8 @@ class _SelectPaymentMethodManifestUploadState
         context.read<ProfileCubit>(),
         context.read<ArDriveUploadPreparationManager>(),
         context.read<ArDriveAuth>(),
+        context.read<PaymentService>(),
+        CreditSharingService.fromConfig(context.read<ConfigService>()),
       )..add(
           PrepareUploadPaymentMethod(
             params: UploadParams(

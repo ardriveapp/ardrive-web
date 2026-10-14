@@ -32,17 +32,35 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:http/http.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:retry/retry.dart';
 import 'package:stash_shared_preferences/stash_shared_preferences.dart';
 
 import 'error/gateway_response_handler.dart';
 
 typedef SnapshotEntityTransaction
     = SnapshotEntityHistory$Query$TransactionConnection$TransactionEdge$Transaction;
-typedef TxInfo
-    = InfoOfTransactionsToBePinned$Query$TransactionConnection$TransactionEdge$Transaction;
 const byteCountPerChunk = 262144; // 256 KiB
 const defaultMaxRetries = 8;
 const kMaxNumberOfTransactionsPerPage = 100;
+
+/// How many transaction ids may go into one GraphQL query's `ids` argument.
+///
+/// Nine, because that is what the fallback endpoint accepts, and every query
+/// that chunks ids can end up there: `GraphQLRetry` falls back to Goldsky on a
+/// 429 or a 5xx, and Goldsky answers a longer list with
+/// `Too many ids in 'ids' argument: N provided, maximum 9 allowed`.
+///
+/// So a hundred was not merely wrong when Goldsky is configured as the primary
+/// endpoint. It made the fallback decorative for these queries on *every*
+/// configuration: the sync hits a rate limit on the primary, switches to the
+/// endpoint that exists to rescue it, and is refused for the shape of the
+/// request rather than for anything the endpoint could not answer.
+///
+/// The cost of the smaller batch is small where it is paid. Statuses are only
+/// asked for transactions not already known to be confirmed, so the list is
+/// short in an ordinary sync - the report that found this was 31 ids, which is
+/// four requests rather than one.
+const int maxGraphQLIdsPerQuery = 9;
 
 class ArweaveService {
   Arweave client;
@@ -52,6 +70,10 @@ class ArweaveService {
   late ArtemisClient _gql;
   late DataGatewayFallback _gatewayFallback;
   DataGatewayFallback get gatewayFallback => _gatewayFallback;
+
+  /// For the requests this service makes itself rather than through [client]
+  /// or GraphQL. Injectable so they can be tested without a network.
+  final Client _httpClient;
 
   static String _graphqlUrlFromGateway(String gatewayUrl) {
     final uri = Uri.parse(gatewayUrl);
@@ -75,7 +97,9 @@ class ArweaveService {
     this._driveDao,
     this._configService, {
     ArtemisClient? artemisClient,
-  }) : _gql = artemisClient ??
+    Client? httpClient,
+  })  : _httpClient = httpClient ?? Client(),
+        _gql = artemisClient ??
             ArtemisClient(_graphqlUrlFromGateway(
                 _configService.config.arweaveGatewayUrl ??
                     defaultGraphqlGateway)) {
@@ -627,10 +651,9 @@ class ArweaveService {
     Iterable<String> licenseAssertionTxIds, {
     String? owner,
   }) async* {
-    const chunkSize = 100;
+    const chunkSize = maxGraphQLIdsPerQuery;
     final chunks = licenseAssertionTxIds.slices(chunkSize);
     for (final chunk in chunks) {
-      // Get a page of 100 transactions
       final licenseAssertionsQuery = await graphQLRetry.execute(
         LicenseAssertionsQuery(
           variables: LicenseAssertionsArguments(
@@ -653,10 +676,9 @@ class ArweaveService {
     Iterable<String> licenseComposedTxIds, {
     String? owner,
   }) async* {
-    const chunkSize = 100;
+    const chunkSize = maxGraphQLIdsPerQuery;
     final chunks = licenseComposedTxIds.slices(chunkSize);
     for (final chunk in chunks) {
-      // Get a page of 100 transactions
       final licenseComposedQuery = await graphQLRetry.execute(
         LicenseComposedQuery(
           variables: LicenseComposedArguments(
@@ -684,11 +706,24 @@ class ArweaveService {
   /// one slow or failing item costs the whole chunk its duration.
   ///
   /// [task] owns its error handling — a task that throws aborts the run.
+  ///
+  /// [onItemDone] is called once for every task that returns, at the moment it
+  /// returns, before its worker claims the next index. It is the only thing
+  /// inside this loop that a caller can see move: the run itself reports
+  /// nothing until all of it is over, and for metadata fetches that is one
+  /// HTTP round trip per item at [concurrency] at a time — the longest silence
+  /// in a sync. Counting is the caller's job; this says only "one more is
+  /// done", so the hook cannot be read as a total the pool does not own.
+  ///
+  /// It must not throw and it must not await: it runs between a slot being
+  /// released and the next index being claimed, so anything slow here is
+  /// concurrency taken away from the fetches.
   @visibleForTesting
   static Future<void> runPooled({
     required int concurrency,
     required int itemCount,
     required Future<void> Function(int index) task,
+    void Function()? onItemDone,
   }) async {
     if (itemCount <= 0) return;
 
@@ -706,6 +741,7 @@ class ArweaveService {
         if (i >= itemCount) return;
         nextIndex++;
         await task(i);
+        onItemDone?.call();
       }
     }
 
@@ -717,6 +753,13 @@ class ArweaveService {
   /// mounts the `blockHistory`
   ///
   /// returns DriveEntityHistory object
+  ///
+  /// [onEntityFetched] fires once per entity in [entityTxs], as each one is
+  /// finished with rather than when the batch is. It is the sync's only view
+  /// into this loop: every entity's metadata body is one HTTP round trip, run
+  /// `maxConcurrentDataFetches` at a time, and a drive with three thousand
+  /// revisions spends nearly the whole of its "reading the drive history" here
+  /// with nothing else to report.
   Future<DriveEntityHistory> createDriveEntityHistoryFromTransactions(
     List<DriveEntityHistoryTransactionModel> entityTxs,
     SecretKey? driveKey,
@@ -724,6 +767,7 @@ class ArweaveService {
     required String ownerAddress,
     required DriveID driveId,
     int? currentBlockHeight,
+    void Function()? onEntityFetched,
   }) async {
     // Limit concurrent data fetches to avoid overwhelming the gateway.
     //
@@ -745,6 +789,12 @@ class ArweaveService {
     await runPooled(
       concurrency: maxConcurrent,
       itemCount: entityTxs.length,
+      // One per entity, whether its body was fetched, skipped or already in
+      // hand - the caller is counting how much of the batch is behind it, not
+      // how many requests were made, so an entity that costs no request still
+      // has to land. Without that the count would stop short of the total on
+      // any batch holding a snapshot or a broken private entity.
+      onItemDone: onEntityFetched,
       task: (i) async {
         final entity = entityTxs[i].transactionCommonMixin;
         final tags = HashMap.fromIterable(
@@ -1134,11 +1184,39 @@ class ArweaveService {
   /// Gets the unique drive entities for a particular user.
   Future<Map<DriveEntity, DriveKey?>> getUniqueUserDriveEntities(
     Wallet wallet,
-    String password,
-  ) async {
+    String password, {
+    /// Called as each drive's metadata comes back, with how many have arrived
+    /// and how many were listed. Fires once with `(0, total)` as soon as the
+    /// listing is known, so a reader waiting on this learns the size of the
+    /// job before any of it is done.
+    void Function(int read, int found)? onDriveRead,
+
+    /// Called as each private drive is unlocked, with how many have been done
+    /// and how many there are. The work after the fetch is serial and, for a
+    /// private drive, expensive - a signature read over the network, a key
+    /// derivation against the wallet, then a decrypt - so a wallet with
+    /// several of them sits on a finished fetch count for a long time with
+    /// nothing said. Never fires when there are none.
+    void Function(int unlocked, int total)? onDriveUnlocked,
+  }) async {
     try {
       final userAddress = await wallet.getAddress();
       final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
+
+      // Distinct drives, not transactions. `getUniqueUserDriveEntityTxs`
+      // dedupes per GQL page only, so a wallet whose drive entities span more
+      // than one page has more rows here than it has drives - and the count
+      // read "43 of 137" for twelve drives.
+      final distinctDriveIds = <String>{};
+      for (final tx in driveTxs) {
+        final id = tx.getTag(EntityTag.driveId);
+        if (id != null) distinctDriveIds.add(id);
+      }
+
+      final driveCount = distinctDriveIds.length;
+      final readDriveIds = <String>{};
+
+      onDriveRead?.call(0, driveCount);
 
       // Sync's drive-discovery phase, and its only caller is
       // `_SyncRepository.updateUserDrives`. It reads the configured gateway
@@ -1167,7 +1245,15 @@ class ArweaveService {
           } catch (_) {
             // A drive we cannot read is dropped from this pass, as before.
           }
+
+          // Counted per drive, so a drive with several revisions on several
+          // pages advances the figure once.
+          final id = driveTxs[i].getTag(EntityTag.driveId);
+          if (id != null && readDriveIds.add(id)) {
+            onDriveRead?.call(readDriveIds.length, driveCount);
+          }
         },
+        onItemDone: null,
       );
 
       // Cache raw bytes for reuse by getLatestDriveEntityWithId (e.g., during
@@ -1189,6 +1275,24 @@ class ArweaveService {
       /// revision take its place and write stale metadata - worse than the
       /// drive simply being late.
       final handledDriveIds = <String?>{};
+
+      // Distinct private drives, which is what the loop below will actually
+      // unlock - `driveTxs` holds every revision, so counting rows would
+      // promise more work than there is.
+      final privateDriveIds = <String>{};
+      for (final tx in driveTxs) {
+        if (tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
+          final id = tx.getTag(EntityTag.driveId);
+          if (id != null) privateDriveIds.add(id);
+        }
+      }
+
+      final unlockedDriveIds = <String>{};
+
+      if (privateDriveIds.isNotEmpty) {
+        onDriveUnlocked?.call(0, privateDriveIds.length);
+      }
+
       for (var i = 0; i < driveTxs.length; i++) {
         if (driveResponses[i] == null) continue;
         final driveTx = driveTxs[i];
@@ -1207,6 +1311,24 @@ class ArweaveService {
           driveKey = await _driveDao.getDriveKeyFromMemory(
             driveTx.getTag(EntityTag.driveId)!,
           );
+
+          // Settled, however it settles. Counting only the drives whose keys
+          // were derived here left the figure short of its total whenever a
+          // signature could not be read - and stuck at "0 of 5" for a whole
+          // second pass, because by then every key is already in memory and
+          // the branch below never runs.
+          void settled() {
+            if (unlockedDriveIds.add(driveTx.getTag(EntityTag.driveId)!)) {
+              onDriveUnlocked?.call(
+                unlockedDriveIds.length,
+                privateDriveIds.length,
+              );
+            }
+          }
+
+          if (driveKey != null) {
+            settled();
+          }
 
           if (driveKey == null) {
             final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
@@ -1232,6 +1354,7 @@ class ArweaveService {
                 // Claim the id so an older transaction for the same drive on
                 // a later page cannot quietly stand in for the newest one.
                 handledDriveIds.add(txDriveId);
+                settled();
                 continue;
               }
             }
@@ -1247,6 +1370,8 @@ class ArweaveService {
               driveID: driveTx.getTag(EntityTag.driveId)!,
               driveKey: driveKey,
             );
+
+            settled();
           }
         }
         try {
@@ -1621,7 +1746,6 @@ class ArweaveService {
     }
 
     while (true) {
-      // Get a page of 100 transactions
       final allFileEntitiesQuery = await graphQLRetry.execute(
         AllFileEntitiesWithIdQuery(
           variables: AllFileEntitiesWithIdArguments(
@@ -1785,7 +1909,7 @@ class ArweaveService {
     // [owner] is provided, the query is scoped to that owner so the gateway can
     // prune its search space.
     Future<void> queryConfirmations(List<String?> ids, {String? owner}) async {
-      const chunkSize = 100;
+      const chunkSize = maxGraphQLIdsPerQuery;
       // Cap how many chunk queries hit the gateway at once so a large page
       // doesn't fan out into a burst of concurrent GraphQL retries (and a
       // potential rate-limit storm), matching the throttling used by the other
@@ -2177,9 +2301,23 @@ class ArweaveService {
     return metadata;
   }
 
-  /// Fetches transaction info for multiple transactions in batches.
-  /// Returns a stream of transaction info batches.
-  Stream<Map<String, TxInfo>> getInfoOfTxsToBePinned(
+  /// The size and content type of each data transaction, in batches.
+  ///
+  /// Every batch yielded has a key for every id in it. A value is `null` only
+  /// when neither source below could say anything about that id, so a caller
+  /// can report the file as failed rather than lose it without a word.
+  ///
+  /// GraphQL is asked first, because one query answers a whole batch. An id it
+  /// does not answer for - its batch failed, or the index simply did not
+  /// return it - is asked of the data gateway with a HEAD on `/raw/{id}`,
+  /// which carries the transaction's exact size and its `Content-Type` tag.
+  ///
+  /// That second source is not a nicety. The query here filters by id alone,
+  /// and a gateway's index can refuse it outright for reading too many rows
+  /// (#2222), for every batch, deterministically. Before the HEAD, such a
+  /// batch was logged and skipped, so an import of a manifest found nothing to
+  /// import and could not say which files, or why.
+  Stream<Map<String, DataTxSizeAndType?>> getSizeAndTypeOfDataTxs(
     List<String> transactionIds, {
     int batchSize = 5,
   }) async* {
@@ -2189,7 +2327,9 @@ class ArweaveService {
           : transactionIds.length;
       final batch = transactionIds.sublist(i, end);
 
-      logger.i('Fetching transaction info for batch ${batch.length}');
+      logger.i('Fetching size and type for batch of ${batch.length}');
+
+      final results = <String, DataTxSizeAndType?>{};
 
       try {
         final query = await graphQLRetry.execute(
@@ -2200,21 +2340,102 @@ class ArweaveService {
           ),
         );
 
-        if (query.data != null) {
-          final batchResults = <String, TxInfo>{};
-          for (final edge in query.data!.transactions.edges) {
-            final tx = edge.node;
-            batchResults[tx.id] = tx;
-          }
-          logger.d('Batch results length: ${batchResults.length}');
-          yield batchResults;
+        final edges = query.data?.transactions.edges ??
+            const <InfoOfTransactionsToBePinned$Query$TransactionConnection$TransactionEdge>[];
+
+        for (final edge in edges) {
+          final tx = edge.node;
+          final size = int.tryParse(tx.data.size);
+          if (size == null) continue;
+
+          results[tx.id] = DataTxSizeAndType(
+            size: size,
+            contentType: tx.tags
+                .firstWhereOrNull((tag) => tag.name == 'Content-Type')
+                ?.value,
+          );
         }
       } catch (e) {
-        logger.e('Failed to fetch transaction info batch', e);
-        // Continue with next batch even if one fails
+        logger.w('GraphQL could not describe a batch, asking the gateway: $e');
       }
+
+      final unanswered = batch.where((id) => !results.containsKey(id));
+      final fromGateway = await Future.wait(
+        unanswered.map((id) async => MapEntry(id, await _headDataTx(id))),
+      );
+      results.addEntries(fromGateway);
+
+      yield results;
     }
   }
+
+  /// The size and content type of [txId] from the data gateway's headers, or
+  /// `null` when the gateway does not answer with both a 200 and a length.
+  Future<DataTxSizeAndType?> _headDataTx(String txId) async {
+    final gateway = _configService.config.arweaveGatewayForDataRequest.url;
+    final uri = Uri.parse('$gateway/raw/$txId');
+    try {
+      final response = await retry(
+        () async {
+          final response =
+              await _httpClient.head(uri).timeout(const Duration(seconds: 15));
+
+          // `retry` retries only what throws, and an answer is not a throw. A
+          // busy or unwell gateway has to be one, or the second attempt is
+          // never spent on the very answers it exists for. A 404 is left as
+          // an answer: asking again will not make the data exist.
+          if (_isTransientStatus(response.statusCode)) {
+            throw _TransientHeadStatus(response.statusCode);
+          }
+
+          return response;
+        },
+        maxAttempts: 2,
+      );
+
+      if (response.statusCode != 200) {
+        logger.w('HEAD for $txId answered ${response.statusCode}');
+        return null;
+      }
+
+      final size = int.tryParse(response.headers['content-length'] ?? '');
+      if (size == null) return null;
+
+      return DataTxSizeAndType(
+        size: size,
+        // Mime only, without parameters such as charset.
+        contentType: response.headers['content-type']
+            ?.replaceFirst(RegExp(r';.*$'), ''),
+      );
+    } catch (e) {
+      logger.w('HEAD for $txId failed: $e');
+      return null;
+    }
+  }
+}
+
+/// A status worth asking the gateway again for: it timed the request out, is
+/// rate limiting, or is unwell.
+bool _isTransientStatus(int status) =>
+    status == 408 || status == 429 || status >= 500;
+
+class _TransientHeadStatus implements Exception {
+  final int statusCode;
+
+  const _TransientHeadStatus(this.statusCode);
+
+  @override
+  String toString() => 'Gateway answered $statusCode';
+}
+
+/// What a file entity needs from its data transaction.
+class DataTxSizeAndType {
+  final int size;
+
+  /// The `Content-Type` tag, when the transaction has one.
+  final String? contentType;
+
+  const DataTxSizeAndType({required this.size, this.contentType});
 }
 
 /// The entity history of a particular drive, chunked by block height.

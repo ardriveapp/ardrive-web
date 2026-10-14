@@ -67,7 +67,7 @@ void main() {
             lastSelectedDriveId: null,
             showHiddenFiles: false,
             userHasHiddenDrive: false,
-            syncAllDrivesOnLogin: true,
+            syncAllDrivesOnLogin: false,
           ));
     });
 
@@ -87,7 +87,7 @@ void main() {
             lastSelectedDriveId: null,
             showHiddenFiles: false,
             userHasHiddenDrive: false,
-            syncAllDrivesOnLogin: true,
+            syncAllDrivesOnLogin: false,
           ));
     });
 
@@ -145,7 +145,7 @@ void main() {
             lastSelectedDriveId: 'drive_id',
             showHiddenFiles: false,
             userHasHiddenDrive: false,
-            syncAllDrivesOnLogin: true,
+            syncAllDrivesOnLogin: false,
           ));
     });
 
@@ -183,7 +183,48 @@ void main() {
       verify(() => mockStore.putBool('userHasHiddenDrive', true)).called(1);
     });
 
-    test('should save sync all drives on login preference to storage', () async {
+    group('the shipped default for syncing every drive on login', () {
+      // A login should not walk every drive's whole history unasked. The
+      // default moved to false; a stored value stays an explicit choice.
+      test('is not to sync, before any storage is involved at all', () {
+        const preferences = UserPreferences(
+          currentTheme: ArDriveThemes.light,
+          lastSelectedDriveId: null,
+        );
+
+        expect(preferences.syncAllDrivesOnLogin, false);
+      });
+
+      test('is not to sync when the user never touched the toggle', () async {
+        when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+        when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+        when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+        when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+        // Nothing stored: the case every existing user who never opened
+        // settings, and every new user, lands in.
+        when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(null);
+
+        final result = await repository.load();
+
+        expect(result.syncAllDrivesOnLogin, false);
+      });
+
+      test('is still to sync for a user who opted in', () async {
+        when(() => mockStore.getString('currentTheme')).thenReturn('dark');
+        when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
+        when(() => mockStore.getBool('showHiddenFiles')).thenReturn(false);
+        when(() => mockStore.getBool('userHasHiddenDrive')).thenReturn(false);
+        when(() => mockStore.getBool('syncAllDrivesOnLogin')).thenReturn(true);
+
+        final result = await repository.load();
+
+        // An explicit yes is not quietly downgraded by the new default.
+        expect(result.syncAllDrivesOnLogin, true);
+      });
+    });
+
+    test('should save sync all drives on login preference to storage',
+        () async {
       // Setup initial load
       when(() => mockStore.getString('currentTheme')).thenReturn('dark');
       when(() => mockStore.getString('lastSelectedDriveId')).thenReturn(null);
@@ -200,7 +241,8 @@ void main() {
       verify(() => mockStore.putBool('syncAllDrivesOnLogin', false)).called(1);
     });
 
-    test('should clear preferences but preserve syncAllDrivesOnLogin', () async {
+    test('should clear preferences but preserve syncAllDrivesOnLogin',
+        () async {
       // Setup initial load
       when(() => mockStore.getString('currentTheme')).thenReturn('dark');
       when(() => mockStore.getString('lastSelectedDriveId'))
@@ -214,6 +256,11 @@ void main() {
           .thenAnswer((_) async => true);
       when(() => mockStore.remove('showHiddenFiles'))
           .thenAnswer((_) async => true);
+      // Logging out drops every local table, so a per-drive sync time kept
+      // across it would sit over an empty drive.
+      when(() => mockStore.remove('syncHistory')).thenAnswer((_) async => true);
+      when(() => mockStore.remove('driveLastSyncedAt'))
+          .thenAnswer((_) async => true);
       when(() => mockStore.remove('userHasHiddenDrive'))
           .thenAnswer((_) async => true);
 
@@ -223,6 +270,10 @@ void main() {
       verify(() => mockStore.remove('lastSelectedDriveId')).called(1);
       verify(() => mockStore.remove('showHiddenFiles')).called(1);
       verify(() => mockStore.remove('userHasHiddenDrive')).called(1);
+      verify(() => mockStore.remove('driveLastSyncedAt')).called(1);
+      // The record of what this wallet's syncs did goes with everything else
+      // local: the next user to log in on this device has no business in it.
+      verify(() => mockStore.remove('syncHistory')).called(1);
       // Verify syncAllDrivesOnLogin is NOT removed (should persist)
       verifyNever(() => mockStore.remove('syncAllDrivesOnLogin'));
 
@@ -295,5 +346,98 @@ void main() {
         await queue.cancel();
       },
     );
+
+    /// Per-drive sync times, which the drives list is built on.
+    ///
+    /// Stored here rather than as a `drives` column because it is a fact about
+    /// this device: two browsers signed into one wallet have two different
+    /// answers and both are right.
+    group('when each drive was last synced', () {
+      test('is empty for a store that has never held one', () async {
+        when(() => mockStore.getString('driveLastSyncedAt')).thenReturn(null);
+
+        final result = await repository.load();
+
+        expect(result.driveLastSyncedAt, isEmpty);
+      });
+
+      test('reads back what was stored', () async {
+        when(() => mockStore.getString('driveLastSyncedAt'))
+            .thenReturn('{"drive-a":1700000000000}');
+
+        final result = await repository.load();
+
+        expect(
+          result.driveLastSyncedAt['drive-a'],
+          DateTime.fromMillisecondsSinceEpoch(1700000000000),
+        );
+      });
+
+      test('an unreadable value reads as never synced, not as a crash',
+          () async {
+        when(() => mockStore.getString('driveLastSyncedAt'))
+            .thenReturn('not json at all');
+
+        final result = await repository.load();
+
+        expect(result.driveLastSyncedAt, isEmpty);
+      });
+
+      test('records the drives a sync covered', () async {
+        when(() => mockStore.getString('driveLastSyncedAt')).thenReturn(null);
+        when(() => mockStore.putString('driveLastSyncedAt', any()))
+            .thenAnswer((_) async => true);
+        await repository.load();
+
+        final at = DateTime.fromMillisecondsSinceEpoch(1700000000000);
+        await repository.saveDrivesLastSynced(['drive-a', 'drive-b'], at: at);
+
+        verify(
+          () => mockStore.putString(
+            'driveLastSyncedAt',
+            '{"drive-a":1700000000000,"drive-b":1700000000000}',
+          ),
+        ).called(1);
+
+        expect(repository.currentPreferences!.driveLastSyncedAt, {
+          'drive-a': at,
+          'drive-b': at,
+        });
+      });
+
+      test('a single-drive sync leaves the other drives as stale as they were',
+          () async {
+        when(() => mockStore.getString('driveLastSyncedAt'))
+            .thenReturn('{"drive-a":1700000000000}');
+        when(() => mockStore.putString('driveLastSyncedAt', any()))
+            .thenAnswer((_) async => true);
+        await repository.load();
+
+        await repository.saveDrivesLastSynced(
+          ['drive-b'],
+          at: DateTime.fromMillisecondsSinceEpoch(1800000000000),
+        );
+
+        final stored = repository.currentPreferences!.driveLastSyncedAt;
+
+        expect(
+          stored['drive-a'],
+          DateTime.fromMillisecondsSinceEpoch(1700000000000),
+        );
+        expect(
+          stored['drive-b'],
+          DateTime.fromMillisecondsSinceEpoch(1800000000000),
+        );
+      });
+
+      test('a sync that covered nothing writes nothing', () async {
+        when(() => mockStore.getString('driveLastSyncedAt')).thenReturn(null);
+        await repository.load();
+
+        await repository.saveDrivesLastSynced(const []);
+
+        verifyNever(() => mockStore.putString('driveLastSyncedAt', any()));
+      });
+    });
   });
 }

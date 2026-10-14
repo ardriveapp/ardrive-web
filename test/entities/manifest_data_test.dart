@@ -425,4 +425,258 @@ void main() {
       });
     });
   });
+
+  group('ManifestDataBuilder, what is published and at which path', () {
+    const driveId = '00000000-0000-0000-0000-000000000000';
+    final now = DateTime(2026, 10, 14);
+
+    late MockFileRepository files;
+    late MockFolderRepository folders;
+    late ManifestDataBuilder builder;
+
+    FolderEntry folder(String id, {bool isHidden = false}) => FolderEntry(
+          id: id,
+          dateCreated: now,
+          driveId: driveId,
+          isGhost: false,
+          parentFolderId: driveId,
+          name: id,
+          lastUpdated: now,
+          isHidden: isHidden,
+          path: '',
+        );
+
+    FileEntry file(
+      String id,
+      String name, {
+      bool isHidden = false,
+      DateTime? created,
+    }) =>
+        FileEntry(
+          dataTxId: 'data-$id',
+          dateCreated: created ?? now,
+          size: 10,
+          name: name,
+          parentFolderId: driveId,
+          lastUpdated: now,
+          lastModifiedDate: now,
+          id: id,
+          driveId: driveId,
+          isHidden: isHidden,
+          path: '',
+        );
+
+    FolderNode node(
+      FolderEntry entry, {
+      List<FileEntry> children = const [],
+      List<FolderNode> subfolders = const [],
+    }) =>
+        FolderNode(
+          folder: entry,
+          subfolders: subfolders,
+          files: {for (final f in children) f.id: f},
+        );
+
+    /// Places [entry] at [path] under the root folder, which is `root`.
+    void at(FileEntry entry, String path) =>
+        when(() => files.getFilePath(driveId, entry.id))
+            .thenAnswer((_) async => 'root/$path');
+
+    /// Each published path, and the data transaction it serves.
+    Map<String, String> published(ManifestData manifest) =>
+        {for (final e in manifest.paths.entries) e.key: e.value.id};
+
+    setUp(() {
+      files = MockFileRepository();
+      folders = MockFolderRepository();
+      builder = ManifestDataBuilder(
+        fileRepository: files,
+        folderRepository: folders,
+      );
+      when(() => folders.getFolderPath(driveId, 'root'))
+          .thenAnswer((_) async => 'root');
+    });
+
+    group('hidden items', () {
+      test('leaves out everything inside a hidden folder, however deep',
+          () async {
+        final readme = file('readme', 'readme.txt');
+        final notes = file('notes', 'notes.txt');
+        final deep = file('deep', 'deep.txt');
+        at(readme, 'readme.txt');
+        at(notes, 'secret/notes.txt');
+        at(deep, 'secret/deeper/deep.txt');
+
+        final manifest = await builder.build(
+          folderNode: node(
+            folder('root'),
+            children: [readme],
+            subfolders: [
+              node(
+                folder('secret', isHidden: true),
+                children: [notes],
+                subfolders: [
+                  node(folder('deeper'), children: [deep])
+                ],
+              ),
+            ],
+          ),
+        );
+
+        expect(published(manifest), {'readme.txt': 'data-readme'});
+      });
+
+      test('still leaves out a hidden file in a visible folder', () async {
+        final shown = file('shown', 'shown.txt');
+        final hidden = file('hidden', 'hidden.txt', isHidden: true);
+        at(shown, 'shown.txt');
+        at(hidden, 'hidden.txt');
+
+        final manifest = await builder.build(
+          folderNode: node(folder('root'), children: [shown, hidden]),
+        );
+
+        expect(published(manifest), {'shown.txt': 'data-shown'});
+      });
+
+      test('never makes a hidden index.html the index', () async {
+        final index = file('index', 'index.html', isHidden: true);
+        final page = file('page', 'page.html');
+        at(index, 'index.html');
+        at(page, 'page.html');
+
+        final manifest = await builder.build(
+          folderNode: node(folder('root'), children: [index, page]),
+        );
+
+        expect(manifest.index.path, 'page.html');
+        expect(published(manifest), {'page.html': 'data-page'});
+      });
+
+      test('makes a visible index.html the index over the first file',
+          () async {
+        final first = file('first', 'a.txt');
+        final index = file('index', 'index.html');
+        at(first, 'a.txt');
+        at(index, 'index.html');
+
+        final manifest = await builder.build(
+          folderNode: node(folder('root'), children: [first, index]),
+        );
+
+        expect(manifest.index.path, 'index.html');
+      });
+
+      test('refuses a folder with nothing left to publish', () async {
+        final onlyHidden = file('only', 'only.txt', isHidden: true);
+        final insideHiddenFolder = file('inside', 'inside.txt');
+
+        expect(
+          () => builder.build(
+            folderNode: node(folder('root'), children: [onlyHidden]),
+          ),
+          throwsA(isA<ManifestHasNoFilesException>()),
+        );
+        expect(
+          () => builder.build(
+            folderNode: node(
+              folder('root'),
+              subfolders: [
+                node(
+                  folder('secret', isHidden: true),
+                  children: [insideHiddenFolder],
+                ),
+              ],
+            ),
+          ),
+          throwsA(isA<ManifestHasNoFilesException>()),
+        );
+      });
+    });
+
+    group('paths', () {
+      test('keeps the underscored path for a name that collides with nothing',
+          () async {
+        final photo = file('photo', 'holiday photo.jpg');
+        at(photo, 'holiday photo.jpg');
+
+        final manifest = await builder.build(
+          folderNode: node(folder('root'), children: [photo]),
+        );
+
+        expect(published(manifest), {'holiday_photo.jpg': 'data-photo'});
+      });
+
+      test(
+          'keeps both files whose names differ only by a space and an '
+          'underscore, in either order', () async {
+        final spaced = file('spaced', 'my file.txt');
+        final scored = file('scored', 'my_file.txt');
+        at(spaced, 'my file.txt');
+        at(scored, 'my_file.txt');
+
+        for (final order in [
+          [spaced, scored],
+          [scored, spaced],
+        ]) {
+          final manifest = await builder.build(
+            folderNode: node(folder('root'), children: order),
+          );
+
+          expect(published(manifest), {
+            'my_file.txt': 'data-scored',
+            'my file.txt': 'data-spaced',
+          });
+        }
+      });
+
+      test('gives each file its raw path when neither owns the underscored one',
+          () async {
+        final one = file('one', 'a b_c.txt');
+        final two = file('two', 'a_b c.txt');
+        at(one, 'a b_c.txt');
+        at(two, 'a_b c.txt');
+
+        final manifest = await builder.build(
+          folderNode: node(folder('root'), children: [one, two]),
+        );
+
+        expect(published(manifest), {
+          'a b_c.txt': 'data-one',
+          'a_b c.txt': 'data-two',
+        });
+      });
+
+      test('keeps two files at exactly the same path, the earliest first',
+          () async {
+        final older = file('older-file-id', 'dup.txt', created: DateTime(2025));
+        final newer = file('newer-file-id', 'dup.txt', created: DateTime(2026));
+        at(older, 'dup.txt');
+        at(newer, 'dup.txt');
+
+        final manifest = await builder.build(
+          folderNode: node(folder('root'), children: [newer, older]),
+        );
+
+        expect(published(manifest), {
+          'dup.txt': 'data-older-file-id',
+          'dup~newer-fi.txt': 'data-newer-file-id',
+        });
+      });
+
+      test('points the index at the path its file was given', () async {
+        final spaced = file('spaced', 'index page.html');
+        final scored = file('scored', 'index_page.html');
+        at(spaced, 'index page.html');
+        at(scored, 'index_page.html');
+
+        final manifest = await builder.build(
+          folderNode: node(folder('root'), children: [spaced, scored]),
+        );
+
+        expect(manifest.index.path, 'index page.html');
+        expect(published(manifest).keys, contains(manifest.index.path));
+      });
+    });
+  });
 }

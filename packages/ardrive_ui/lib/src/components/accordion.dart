@@ -65,6 +65,13 @@ class _ArDriveAccordionState extends State<ArDriveAccordion> {
         padding: EdgeInsets.zero,
         key: widget.key,
         shrinkWrap: true,
+        // Sized to its content, so it never has anything of its own to
+        // scroll - but with the default physics it still claimed the gesture,
+        // and a wheel over the accordion did nothing at all instead of
+        // scrolling whatever it sits in. In the sidebar that meant a drive
+        // list taller than the window could only be reached by collapsing a
+        // section.
+        physics: const NeverScrollableScrollPhysics(),
         itemCount: tiles.length,
         itemBuilder: (context, index) {
           final tile = tiles[index];

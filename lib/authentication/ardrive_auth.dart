@@ -278,6 +278,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       }
 
       await _databaseHelpers.deleteAllTables();
+      await _databaseHelpers.clearSessionMemory();
       currentUser = null;
       _userStreamController.add(null);
     } catch (e, stacktrace) {

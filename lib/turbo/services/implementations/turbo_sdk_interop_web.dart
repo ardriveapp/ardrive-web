@@ -140,6 +140,25 @@ class TopUpWithTokensParamsJS {
   external String? get turboCreditDestinationAddress;
 }
 
+/// Arguments for `shareCredits`, which grants another address permission to
+/// spend this account's credits.
+///
+/// `expiresBySeconds` is deliberately never set by ArDrive. An approval a user
+/// makes to their own derived wallet has no reason to lapse, and one that
+/// silently did would strand them in exactly the state this feature exists to
+/// get them out of.
+@JS()
+@anonymous
+class ShareCreditsParamsJS {
+  external factory ShareCreditsParamsJS({
+    String approvedAddress,
+    String approvedWincAmount,
+  });
+
+  external String get approvedAddress;
+  external String get approvedWincAmount;
+}
+
 @JS()
 @anonymous
 class GetWincForTokenParamsJS {
@@ -309,6 +328,32 @@ Future<BigInt> getWincForToken(Object turboClient, Object tokenAmount) async {
   // Extract winc string from result
   final wincString = getProperty(wincResult, 'winc').toString();
   return BigInt.parse(wincString);
+}
+
+/// Grants [approvedAddress] permission to spend [approvedWinc] of this
+/// account's credits.
+///
+/// [turboClient] must be authenticated as the account that *holds* the credits,
+/// not the one that will spend them: an approval is the holder's decision. For
+/// the case this exists for that means a client built by
+/// [createAuthenticatedTurboWithSolanaAdapter], so the signature comes from the
+/// wallet the reader signed in with.
+///
+/// Turbo carries this as `x-approve-payment`. Once granted, the spending side
+/// needs no further change: the balance endpoint reports the approval in
+/// `receivedApprovals`, and uploads already send `x-paid-by`.
+Future<void> shareCredits(
+  Object turboClient, {
+  required String approvedAddress,
+  required BigInt approvedWinc,
+}) async {
+  final params = ShareCreditsParamsJS(
+    approvedAddress: approvedAddress,
+    approvedWincAmount: approvedWinc.toString(),
+  );
+  final result = callMethod(turboClient, 'shareCredits', [params]);
+
+  await promiseToFuture(result);
 }
 
 /// Execute top up with tokens
