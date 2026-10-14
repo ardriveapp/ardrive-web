@@ -330,6 +330,13 @@ void main() {
       expect(await claimWriterLock(name), isFalse);
     });
 
+    test('a lock request that fails is treated as another tab owning it',
+        () async {
+      // The Web Locks spec reserves names starting with '-', so the browser
+      // must reject this request: a real failure, not a simulated one.
+      expect(await claimWriterLock('-reserved-$counter'), isFalse);
+    });
+
     test(
         'a second tab works on a copy, and nothing it writes reaches the '
         'database the first tab owns', () async {

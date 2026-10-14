@@ -320,9 +320,13 @@ Future<Uint8List?> readSqlJsDatabase({String name = _legacyStorageName}) async {
 /// Claims [name] for the life of this tab, or reports that another tab holds
 /// it.
 ///
-/// A browser without Web Locks, or one that refuses the request, gets `true`:
-/// with nothing to coordinate through, this tab behaves as every tab did
-/// before.
+/// A browser without Web Locks gets `true`: with nothing to coordinate
+/// through, this tab behaves as every tab did before.
+///
+/// A request that *fails* gets `false`. Another tab may already own the
+/// database, and owning it anyway is the one outcome here that can corrupt
+/// it. A private copy only costs this session's changes; the user still sees
+/// their data, and the next start asks again.
 @visibleForTesting
 Future<bool> claimWriterLock(String name) {
   final navigator =
@@ -352,12 +356,12 @@ Future<bool> claimWriterLock(String name) {
     ]);
     js_util.promiseToFuture<Object?>(request).catchError((Object e) {
       logger.w('the database lock request failed: $e');
-      if (!granted.isCompleted) granted.complete(true);
+      if (!granted.isCompleted) granted.complete(false);
       return null;
     });
   } catch (e) {
     logger.w('could not request the database lock: $e');
-    if (!granted.isCompleted) granted.complete(true);
+    if (!granted.isCompleted) granted.complete(false);
   }
   return granted.future;
 }
