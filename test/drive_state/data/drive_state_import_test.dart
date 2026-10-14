@@ -1631,6 +1631,55 @@ void main() {
       expect((await driveRow(db)).lastBlockHeight, 500);
     });
 
+    test('rejects a coverage range that runs backwards, tags and all',
+        () async {
+      // The tags and the signed claim agree, so the cross-check passes and
+      // only the range itself is wrong. It used to reach the merge.
+      await attachDrive(db, lastBlockHeight: 500);
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockStart: 1000,
+        blockEnd: 900,
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.integrityFailed);
+      expect(await folderRows(db), isEmpty);
+      expect(await fileRows(db), isEmpty);
+      expect((await driveRow(db)).lastBlockHeight, 500);
+    });
+
+    test('rejects a coverage range that starts below the genesis block',
+        () async {
+      // The worse of the two: a negative start sits under every watermark,
+      // so this artifact used to move the watermark to 900 across blocks
+      // nobody read.
+      await attachDrive(db, lastBlockHeight: 500);
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockStart: -5,
+        blockEnd: 900,
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.integrityFailed);
+      expect(await folderRows(db), isEmpty);
+      expect(await fileRows(db), isEmpty);
+      expect((await driveRow(db)).lastBlockHeight, 500);
+    });
+
     test('rejects an absent Block-Start tag against a payload that has one',
         () async {
       // A missing tag reads as 0, which is what every v1 artifact publishes.

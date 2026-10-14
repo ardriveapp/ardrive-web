@@ -282,6 +282,20 @@ void main() {
           syncedToBlock: 1814228);
     });
 
+    test('a coverage range that runs backwards', () async {
+      await expectRefused(
+        await tamper('UPDATE meta SET blockStart = blockEnd + 1'),
+        ArtifactImportRefusal.malformedMeta,
+      );
+    });
+
+    test('a coverage range that starts below the genesis block', () async {
+      await expectRefused(
+        await tamper('UPDATE meta SET blockStart = -1'),
+        ArtifactImportRefusal.malformedMeta,
+      );
+    });
+
     test('a drive id that is not the one being synced', () async {
       await expectRefused(
         await tamper("UPDATE meta SET driveId = 'other-drive'"),

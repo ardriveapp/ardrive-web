@@ -189,10 +189,14 @@ Future<DriveStateExport> readArtifactAsExport(
           customGQLTags: r.readNullable<String>('customGQLTags'),
         ),
     ],
-    coverage: DriveStateCoverage(
-      blockStart: meta.read<int>('blockStart'),
-      blockEnd: meta.read<int>('blockEnd'),
-    ),
+    // Through fromJson, not the constructor: it is the one place a coverage
+    // claim is checked to be a real block range, and a reversed or negative
+    // range from here would otherwise reach the merge. The caller turns the
+    // throw into a refusal before anything is written.
+    coverage: DriveStateCoverage.fromJson({
+      'blockStart': meta.read<int>('blockStart'),
+      'blockEnd': meta.read<int>('blockEnd'),
+    }),
     version: DriveStateFormatVersion.parse(meta.read<String>('version')),
   );
 }

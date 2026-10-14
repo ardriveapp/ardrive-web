@@ -8,6 +8,7 @@
 /// Dart object on the way.
 library;
 
+import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_schema.dart';
 import 'package:drift/drift.dart';
 
@@ -293,6 +294,18 @@ Future<void> _validate(
       ArtifactImportRefusal.entityCountMismatch,
       'meta says ${meta.read<int>('entityCount')}, body has $actual',
     );
+  }
+
+  // The same rule readArtifactAsExport applies, from the same place. Without
+  // it a reversed range merges rows, and a negative start with a high end
+  // advances the watermark over blocks nobody read.
+  try {
+    DriveStateCoverage.fromJson({
+      'blockStart': meta.read<int>('blockStart'),
+      'blockEnd': meta.read<int>('blockEnd'),
+    });
+  } on DriveStateFormatException catch (e) {
+    throw ArtifactImportRefused(ArtifactImportRefusal.malformedMeta, '$e');
   }
 
   if (meta.read<int>('blockEnd') <= syncedToBlock) {
