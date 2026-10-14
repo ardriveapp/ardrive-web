@@ -36,11 +36,11 @@ permanent objects to Arweave, costs an upload, and cannot be undone.
 
 A library page invents no data format. The drive state artifact already carries
 what the explorer renders: the drive, both entry tables, all three revision
-tables and licenses (`DECISIONS.md` D2), signed as a data item, gzipped, and
-encrypted under the drive key when the drive is private. Its read path is
-already the one a static page needs: resolve a name, fetch bytes, verify the
-signature, decrypt, read, with GraphQL nowhere in it (`DRIVE_STATE_ARTIFACT.md`
-§4.1).
+tables and licenses (`DECISIONS.md` D2), gzipped, and encrypted under the
+drive key when the drive is private. Its read path is already the one a static
+page needs: resolve a name, check the artifact's owner, fetch bytes, decrypt,
+read (`DRIVE_STATE_ARTIFACT.md` §4.1). The owner check is one lookup by
+transaction id, the same attribution every ArFS entity gets (D16).
 
 Three consequences:
 
@@ -142,8 +142,10 @@ Five rules follow, and they are requirements rather than preferences:
    KiB with a one-token minimum, so hundreds of 4 KB reads are the wrong shape.
 5. **Ignore `Content-Digest` on a partial response.** A gateway returns the
    whole-object digest on a 206 and signs it, so verifying it always fails. The
-   page verifies the artifact's own data item signature instead, which is the
-   trust model the artifact specifies anyway.
+   page relies on the artifact's owner check, and on GCM for a private drive,
+   which is the trust model the artifact specifies anyway (D16). With no
+   signature over the whole payload, a range read is no less trusted than a
+   full one.
 
 The page also pins `x-arns-resolved-id` from the first response and reads the
 rest against that id, because a name is mutable and `If-Range` is not

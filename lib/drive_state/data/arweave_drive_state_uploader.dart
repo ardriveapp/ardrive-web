@@ -110,9 +110,9 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
     }
 
     // The wallet may have been switched in the extension between preparing
-    // the artifact and confirming it. The artifact is signed with the wallet
-    // that prepared it, so publishing under a different one would pay for an
-    // artifact whose signature no importer accepts.
+    // the artifact and confirming it. Readers only accept an artifact the
+    // drive's owner uploaded, so publishing under a different wallet would
+    // pay for an artifact no importer accepts.
     if (await _profileCubit.logoutIfWalletMismatch()) {
       logger.w('[drive-state] refusing to publish: wallet mismatch');
       return const DriveStateUploadResult.failed(

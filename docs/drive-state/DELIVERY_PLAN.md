@@ -55,11 +55,11 @@ each other.
 | | Item | Status |
 |---|---|---|
 | 1.1 | Export one drive's current state; key material excluded by construction; schema-drift guard | ✅ |
-| 1.2 | Envelope: gzip → signed ANS-104 data item → AES-GCM, and the inverse | ✅ |
+| 1.2 | Envelope: gzip → AES-GCM (private only), and the inverse. The inner signed data item was removed by D16 | ✅ |
 | 1.3 | ArFS entity + tags (§3.2) | ✅ |
 | 1.4 | Discovery by GraphQL, owner-filtered, behind an interface | ✅ |
 | 1.5 | Enumerated outcome vocabulary (§7) | ✅ |
-| 1.6 | Import + merge, validate-before-write, watermark from the payload's **signed** coverage claim (the `Block-End` tag is cross-checked against it, never believed on its own) | ✅ |
+| 1.6 | Import + merge, validate-before-write, watermark from the payload's coverage claim (the `Block-End` tag is cross-checked against it, never believed on its own) | ✅ |
 | 1.7 | Sync composition behind an `AppConfig` flag defaulting to false | ✅ |
 | 1.8 | Creation service + confirmation UI | ✅ |
 | 1.8a | **Carry revisions, licences and derived `network_transactions`** (D2 reversal). Entry rows alone render an empty drive: `filesInFolderWithLicenseAndRevisionTransactions` INNER JOINs `network_transactions` through the newest `file_revisions` row, so a restored drive with no revisions shows zero files | ✅ |
@@ -83,23 +83,26 @@ gateway. Fixed items are in #2197; open ones are owned below.
 |---|---|---|
 | R1 | **A failed upload arrived as a confirmed file.** Every regenerated transaction landed `confirmed`, and the confirmation pass never revisits those | ✅ D15, format `0.2` |
 | R2 | Ethereum and Solana sign-ins | ✅ not a gap: both derive an Arweave wallet from a seed phrase (`login_bloc.dart`), and it owns and signs the drive |
-| R3 | **Which signature is the artifact's proof of authorship.** See the open question below | 🔒 decision |
+| R3 | **Which signature is the artifact's proof of authorship.** The upload's owner, as for every ArFS entity; the inner signature is gone. See below | ✅ D16 |
 | R4 | **No way to disown a buggy producer.** A reader tries the next artifact only when one fails a check; a valid but wrong one is adopted by every client. Artifacts carry `App-Version`, so a reader-side refusal list (config) plus a versioning policy in the spec closes it | ⬜ spec + reader |
 | R5 | **App-internal columns in the format**: `path`, `isGhost`, `thumbnail`, `importSource`, `action`, `fallbackTxId`, `assignedNames`. Ghost and placeholder rows are already filtered out (`artifactChainOnlyPredicate`); the columns themselves need a protocol-or-drop call in 2.3 before the first publish | ⬜ 2.3 |
-| R6 | **Library pages cannot verify what they read by range**: a signature covers the whole payload. Uncompressed public artifacts only pay off if a page shows range-read data before verification completes, or trusts the gateway | ⬜ `LIBRARY_PAGES.md` |
+| R6 | **Library pages could not verify what they read by range**, since a signature covered the whole payload | ✅ resolved by D16: a range read is trusted exactly as much as a full one |
 | R7 | **No rollout plan.** Flags exist, but a flag change reaches a user only with a `configVersion` bump and a reload, so there is no fast off switch, and outcomes are only logged | ⬜ below |
 | R8 | Stream B order: with snapshots retiring, core-js may wire artifacts before finishing its own snapshot wiring | ⬜ B1.3 |
 
-### Open question: which signature proves authorship (R3)
+### Decided: the upload's owner proves authorship (R3, D16)
 
-Today the payload is signed **inside** the uploaded data item, as well as by
-the upload itself. The outer signature is real, but readers cannot check it
+The payload was signed **inside** the uploaded data item, as well as by the
+upload itself. The outer signature is real, but readers cannot check it
 with the gateways in service. Measured on ardrive.net and turbo-gateway.com
 for a Turbo-bundled data item: no `X-Arweave-Signature` or `X-Arweave-Owner`
 headers, and GraphQL returns `"signature": "<not-found>"` and
 `"owner": { "key": "<not-found>" }`. Release 75 can send those headers, but
 for a bundled item only with `WRITE_ANS104_DATA_ITEM_DB_SIGNATURES=true`,
 which defaults to `false`.
+
+Phil chose to drop the inner signature on 2026-10-14: it bought nothing
+serious, innovative or revenue-bearing. The options as weighed:
 
 - **Keep the inner signature.** The bytes prove their author however they
   were found, including through an ArNS name. Costs: Wander signs through the
@@ -112,7 +115,7 @@ which defaults to `false`.
   artifact needs one owner lookup, and a public drive's artifact is as
   trustworthy as the gateway, no more.
 
-Either way it is a format change, so it is settled before the first publish.
+Removed in #2197 before the first publish, under format `0.2`.
 
 ### Rollout (R7)
 
@@ -139,8 +142,8 @@ instead of the spec would only prove that the two codebases agree.
 | 2.1 | **Correct the Snapshot spec**: `jsonMetadata`, not `dataJson`; `txSnapshot`, not `tsSnapshot`; a sibling of `gqlNode`; a nullable string | ✅ ar-io-docs #137 |
 | 2.2 | `entity-types.mdx`: a `## Drive State` section beside `## Snapshot`, with its tags (`Entity-Type: drive-state`, `Drive-Id`, `Drive-State-Id`, `State-Version`, `Entity-Count`, `Block-Start`, `Block-End`, `Cipher`, `Cipher-IV`) and the rule that a `Content-Encoding` tag is never set | ⬜ |
 | 2.3 | **The payload, normatively**: the SQLite tables, columns, types and `meta` keys a producer must write and a reader may rely on, with what is excluded by construction (every key). A second producer cannot be written without this, and today it exists only as `drive_state_artifact_schema.dart` | ⬜ |
-| 2.4 | **The envelope, normatively**: serialise, optional gzip, sign as an ANS-104 data item, AES256-GCM with the drive key for a private drive. The signed coverage claim, and the rule that the unsigned `Block-Start` / `Block-End` tags are checked against it before a watermark is adopted | ⬜ |
-| 2.5 | **The encoding rule** (D13, decided below): a reader accepts both encodings and tells them apart by the first bytes of the signed payload | ⬜ |
+| 2.4 | **The envelope, normatively**: serialise, optional gzip, AES256-GCM with the drive key for a private drive. Authorship is the upload's owner (D16). The coverage claim, and the rule that the indexer-reported `Block-Start` / `Block-End` tags are checked against it before a watermark is adopted | ⬜ |
+| 2.5 | **The encoding rule** (D13, decided below): a reader accepts both encodings and tells them apart by the first bytes of the payload | ⬜ |
 | 2.6 | `reading-data.mdx`: the read order (artifact, then snapshots, then GraphQL) and the rule that every failure falls back rather than fails | ⬜ |
 | 2.7 | `privacy.mdx`: one ciphertext under the **drive** key, unlike a snapshot's per-entity ciphertext; and that a snapshot of a private drive publishes its structure in plaintext, which is not stated anywhere | ⬜ |
 | 2.8 | Snapshots: marked as superseded for new drives (D-30). Existing snapshots stay readable for ever, and a reader keeps reading them | ⬜ 🔒 D-30 |
@@ -165,13 +168,13 @@ Three facts decide it:
 3. **D13's earlier form, a `meta` flag, cannot work.** `meta` is inside the
    compressed bytes, so a reader would have to decompress to learn whether to
    decompress. The bytes already answer the question: a gzip stream starts with
-   `1f 8b`, a SQLite file with `SQLite format 3\0`. Both are inside the
-   signature, so the answer cannot be forged, and no tag is needed.
+   `1f 8b`, a SQLite file with `SQLite format 3\0`. The bytes carry the answer,
+   so no tag is needed and none can lie about it.
 
 So:
 
-- **Readers, from the first release, in every implementation:** verify the
-  signature, then sniff. gzip is inflated with the existing bound; SQLite is
+- **Readers, from the first release, in every implementation:** check the
+  owner, decrypt if private, then sniff. gzip is inflated with the existing bound; SQLite is
   read as is; anything else is refused. The web reader does this as of #2197,
   before any artifact is published.
 - **Producers, until Library pages ship:** always gzip, as the code does now.
@@ -217,7 +220,7 @@ it, answering every row.
 | | Item | Status |
 |---|---|---|
 | B2.1 | Tags, types and GraphQL discovery, owner-filtered | ⬜ |
-| B2.2 | Envelope reader: decrypt, parse the data item, verify the signature, sniff the encoding, inflate with a bound, open the SQLite | ⬜ |
+| B2.2 | Envelope reader: check the upload's owner, decrypt (private), sniff the encoding, inflate with a bound, open the SQLite through the read gate | ⬜ |
 | B2.3 | Payload reader into core-js's own entity types, not a port of the web app's column names, including the coverage check against the tags | ⬜ |
 | B2.4 | Wire the reader into drive listing and sync (B1.3, B1.4), behind an option that defaults off until B3 passes | ⬜ |
 | B2.5 | Producer: build the SQLite to the spec's schema (2.3), seal it (2.4), and refuse on any gap | ⬜ |

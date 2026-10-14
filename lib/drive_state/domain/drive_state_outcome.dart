@@ -72,14 +72,13 @@ enum DriveStateOutcome {
     description: 'State-Version names a format this build does not read',
   ),
 
-  /// The payload signature did not verify against the drive owner (§2.2).
-  /// Authorship travels with the payload, not the transaction header, so this
-  /// is the check that holds for a bundled data item as well as an L1
-  /// transaction (§4.4).
-  signatureFailed(
-    code: 'signature-failed',
+  /// The artifact was not uploaded by the drive's owner, as the indexer
+  /// reports the transaction's owner (§2.2). Discovery already filters on the
+  /// owner; this is the same check again at the point the bytes are trusted.
+  ownerMismatch(
+    code: 'owner-mismatch',
     kind: DriveStateOutcomeKind.rejected,
-    description: 'the payload signature did not verify for the drive owner',
+    description: 'the artifact was not uploaded by the drive owner',
   ),
 
   /// AES256-GCM decryption failed — wrong key, or the ciphertext did not
@@ -119,7 +118,7 @@ enum DriveStateOutcome {
   coverageMismatch(
     code: 'coverage-mismatch',
     kind: DriveStateOutcomeKind.rejected,
-    description: 'the coverage tags disagreed with the signed payload',
+    description: 'the coverage tags disagreed with the payload',
   ),
 
   /// The artifact's cipher-presence contradicts the privacy of the drive it

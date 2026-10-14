@@ -24,8 +24,8 @@ const driveStateEntityType = 'drive-state-test';
 ///
 /// `Drive-State-Id` mirrors `Snapshot-Id`. `State-Version` mirrors the
 /// payload's `meta.version`, and a reader refuses an artifact whose two
-/// disagree: the tag is chosen by whoever posts the transaction, the payload
-/// is what the owner signed.
+/// disagree: the tag is what an indexer reports, the payload is what is
+/// imported.
 ///
 /// `Entity-Count` is an integrity check rather than a statistic. It proves the
 /// body meant what its own header promised, and it is cheap to verify after

@@ -21,8 +21,8 @@ import 'package:flutter/foundation.dart';
 ///
 ///  * **It finds, it does not trust.** §4.2 is explicit that verification must
 ///    not live in the discovery path. A candidate here is a transaction id and
-///    the tags an untrusted indexer reported for it; the signature, the
-///    `Drive-Id` and the coverage tags decide whether to use it, elsewhere.
+///    the tags an untrusted indexer reported for it; the importer decides
+///    whether to use it, from its owner, its payload and those tags.
 ///  * **Transport is irrelevant.** §4.4 requires L1 transactions and bundled
 ///    data items to be read without preference, so nothing here filters on
 ///    `bundledIn`.
@@ -48,9 +48,9 @@ class DriveStateArtifactCandidate extends Equatable {
   /// recorded but never required.
   final String txId;
 
-  /// The address the indexer attributes the transaction to. Kept so a caller
-  /// can see what was matched; it is not proof of authorship — the payload
-  /// signature is (§2.2, §4.4).
+  /// The address the indexer attributes the transaction to: the artifact's
+  /// author, as far as any reader can tell (§2.2). Discovery queries by it and
+  /// filters on it, and the importer checks it again before opening anything.
   final String ownerAddress;
 
   /// Set when the artifact was uploaded through a bundler. Informational: a

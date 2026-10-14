@@ -40,8 +40,7 @@ enum ArtifactImportRefusal {
   driveIdMismatch,
 
   /// The owner in the payload is not the owner this client knows. The payload
-  /// is what the owner signed; the tags are chosen by whoever posted the
-  /// transaction.
+  /// is what is imported; the tags are what an indexer reported.
   ownerMismatch,
 
   /// The privacy in the payload contradicts the drive being synced.
@@ -91,7 +90,7 @@ class ArtifactImportResult {
 ///
 /// [knownOwner] and [knownPrivacy] are what this client already believes about
 /// the drive. They are checked against the payload rather than the tags,
-/// because the payload is the half somebody signed.
+/// because the payload is what is imported.
 ///
 /// [syncedToBlock] is this client's current watermark; an artifact that covers
 /// no more than it is refused rather than applied.

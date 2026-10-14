@@ -260,7 +260,6 @@ void main() {
     final sealed = await codec.seal(
       plaintext: artifact.bytes,
       protection: protectionFor(sealedWith ?? driveKey),
-      wallet: owner,
     );
     expect(sealed.isSealed, isTrue, reason: sealed.toString());
 

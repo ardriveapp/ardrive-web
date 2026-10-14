@@ -117,7 +117,10 @@ void main() {
     /// No `State-Version` tag at all. Distinct from a null [stateVersion],
     /// which means "whatever a correct producer would write".
     bool omitStateVersionTag = false,
-    Wallet? signer,
+
+    /// The owner the indexer reports for the transaction. Defaults to the
+    /// drive's owner, which is the only thing a correct discovery returns.
+    String? uploadedBy,
 
     /// What the *payload* claims about its own coverage, which is the half of
     /// the claim the owner signs. It defaults to whatever the tags say,
@@ -158,7 +161,6 @@ void main() {
       plaintext: payload,
       protection:
           protection ?? (key == null ? privateDrive : protectionFor(key)),
-      wallet: signer ?? owner,
     );
     expect(sealed.isSealed, isTrue, reason: sealed.toString());
     final envelope = sealed.envelope!;
@@ -166,7 +168,7 @@ void main() {
     return (
       candidate: DriveStateArtifactCandidate(
         txId: 'artifact-tx-id',
-        ownerAddress: ownerAddress,
+        ownerAddress: uploadedBy ?? ownerAddress,
         tags: {
           EntityTag.arFs: '0.15',
           EntityTag.entityType: EntityTypeTag.driveState,
@@ -1984,19 +1986,45 @@ void main() {
       expect(result.outcome, DriveStateOutcome.decryptFailed);
     });
 
-    test('an artifact signed by someone other than the drive owner', () async {
+    test('an artifact uploaded by someone other than the drive owner',
+        () async {
+      // The owner's own bytes, so they decrypt and every other check would
+      // pass. Who uploaded them is what is wrong, and it is checked first.
       await attachDrive(db);
-      final artifact =
-          await sealArtifact(await exportedPayload(), blockEnd: 900);
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        uploadedBy: 'someone-else',
+      );
 
       final result = await importer.import(
         candidate: artifact.candidate,
         body: artifact.body,
         protection: privateDrive,
-        expectedOwnerAddress: 'not-the-owner',
+        expectedOwnerAddress: ownerAddress,
       );
 
-      expect(result.outcome, DriveStateOutcome.signatureFailed);
+      expect(result.outcome, DriveStateOutcome.ownerMismatch);
+      expect(result.detail, contains('someone-else'));
+      expect(await fileRows(db), isEmpty);
+    });
+
+    test('an artifact when there is no owner to check against', () async {
+      await attachDrive(db);
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        uploadedBy: '',
+      );
+
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: '',
+      );
+
+      expect(result.outcome, DriveStateOutcome.ownerMismatch);
       expect(await fileRows(db), isEmpty);
     });
 
@@ -2464,21 +2492,17 @@ void main() {
       expect(result.outcome.kind, DriveStateOutcomeKind.rejected);
     });
 
-    test('a signature this build cannot check is an authorship failure', () {
-      // Not `unknownVersion`. Nothing about the artifact's authorship was
-      // established - the check could not be run at all - and reporting that
-      // as "your client is old" would file an unverifiable artifact under the
-      // same code as a legitimately newer one, which is the distinction §7
-      // exists to keep.
-      expect(
-        DriveStateEnvelopeFailure.unsupportedSignatureType.outcome,
-        DriveStateOutcome.signatureFailed,
-      );
-      // The cipher case above it is the genuine forward-compatibility one and
-      // stays where it is.
+    test('a cipher this build does not know is forward compatibility', () {
       expect(
         DriveStateEnvelopeFailure.unsupportedCipher.outcome,
         DriveStateOutcome.unknownVersion,
+      );
+    });
+
+    test('a codec that threw instead of refusing is still a rejection', () {
+      expect(
+        DriveStateEnvelopeFailure.unexpectedError.outcome,
+        DriveStateOutcome.integrityFailed,
       );
     });
 

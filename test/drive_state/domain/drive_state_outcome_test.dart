@@ -36,7 +36,7 @@ void main() {
           'used',
           'none-found',
           'unknown-version',
-          'signature-failed',
+          'owner-mismatch',
           'decrypt-failed',
           'integrity-failed',
           'count-mismatch',
@@ -87,7 +87,7 @@ void main() {
 
       for (final outcome in [
         DriveStateOutcome.unknownVersion,
-        DriveStateOutcome.signatureFailed,
+        DriveStateOutcome.ownerMismatch,
         DriveStateOutcome.decryptFailed,
         DriveStateOutcome.integrityFailed,
         DriveStateOutcome.countMismatch,
@@ -196,13 +196,13 @@ void main() {
 
       const DriveStateOutcomeReporter().report(
         driveId: driveId,
-        outcome: DriveStateOutcome.signatureFailed,
+        outcome: DriveStateOutcome.ownerMismatch,
         txId: 'TX_ID_2',
       );
 
       expect(
         logger.inMemoryLogs.where(
-          (line) => line.contains('outcome=signature-failed'),
+          (line) => line.contains('outcome=owner-mismatch'),
         ),
         hasLength(1),
       );

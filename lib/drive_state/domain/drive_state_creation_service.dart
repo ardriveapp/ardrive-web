@@ -60,13 +60,13 @@ enum DriveStateCreationRefusal {
   /// [DriveStateProtectionResult.reason], which becomes this refusal's
   /// sentence verbatim.
   ///
-  /// Public drives are *not* refused. They publish an artifact that is signed
-  /// and not encrypted; see [DriveStateProtection].
+  /// Public drives are *not* refused. They publish an artifact that is not
+  /// encrypted; see [DriveStateProtection].
   protectionUnavailable,
 
-  /// The signing wallet is not the drive's owner. The artifact would be sealed
-  /// with a signature every importer rejects (`ownerMismatch`), so the money
-  /// would buy an artifact nothing can use.
+  /// The uploading wallet is not the drive's owner. Discovery only finds
+  /// artifacts the owner uploaded, and every importer rejects any other
+  /// (`ownerMismatch`), so the money would buy an artifact nothing can use.
   notDriveOwner,
 
   /// The drive has no sync watermark, so there is no honest `Block-End` to
@@ -80,8 +80,7 @@ enum DriveStateCreationRefusal {
   /// public drive's artifact as much as a private one's.
   payloadTooLarge,
 
-  /// The codec could not seal the payload — the wallet declined to sign, or
-  /// gzip produced nothing.
+  /// The codec could not seal the payload: gzip produced nothing.
   sealFailed,
 
   /// Some of the drive's own changes are not yet confirmed on chain. Waiting
@@ -112,7 +111,7 @@ class PreparedDriveStateArtifact {
 
   /// The transaction body's size in bytes — the number an upload is billed on,
   /// after compression, and after encryption when there is any. A public
-  /// drive's body is the signed data item itself.
+  /// drive's body is the compressed payload itself.
   final int sizeInBytes;
 
   const PreparedDriveStateArtifact({
@@ -169,7 +168,7 @@ class DriveStateCreationResult {
 /// Builds a drive state artifact from the local database, and nothing else.
 ///
 /// Public and private drives both. The privacy of the drive decides only
-/// whether the signed payload is encrypted afterwards, and that decision is
+/// whether the payload is encrypted afterwards, and that decision is
 /// taken here from the drive row — see [DriveStateProtection] for why it is a
 /// type and not an argument.
 class DriveStateCreationService {
@@ -190,8 +189,8 @@ class DriveStateCreationService {
 
   static String _uuid() => const Uuid().v4();
 
-  /// Exports [driveId], seals it with [wallet]'s signature, and returns the
-  /// entity that would be published.
+  /// Exports [driveId], seals it, and returns the entity that [wallet], the
+  /// drive's owner, would publish.
   ///
   /// [driveKey] is nullable and is *not* how the privacy of the result is
   /// decided. This method reads the drive row and resolves the protection from
@@ -281,7 +280,7 @@ class DriveStateCreationService {
     // the watermark in the same transaction as the rows it carries. This read
     // is a separate one, and a sync batch can land between the two - tagging
     // the earlier value would put a `Block-End` on the transaction that the
-    // signed payload contradicts, which every importer rejects. Paid for,
+    // payload contradicts, which every importer rejects. Paid for,
     // permanent, and useless.
     if ((drive.lastBlockHeight ?? 0) <= 0) {
       return const DriveStateCreationResult.refused(
@@ -348,14 +347,11 @@ class DriveStateCreationService {
 
     final plaintext = artifact.bytes;
 
-    // The signature happens inside `seal`, so a wallet that never answers
-    // stops between this line and the next.
-    _stage(driveId, 'sealing (gzip, sign, encrypt)', clock);
+    _stage(driveId, 'sealing (gzip, encrypt)', clock);
 
     final sealed = await _codec.seal(
       plaintext: plaintext,
       protection: protection,
-      wallet: wallet,
     );
 
     if (sealed.isRefused) {
@@ -440,8 +436,6 @@ class DriveStateCreationService {
         // future seal-side use of either value stops here for a decision.
         return 'The artifact could not be prepared for this drive\'s privacy. '
             'Try again.';
-      case DriveStateEnvelopeFailure.signingFailed:
-        return 'Your wallet did not sign the artifact. Try again.';
       default:
         return 'The artifact could not be prepared. Try again.';
     }

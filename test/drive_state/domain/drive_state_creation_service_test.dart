@@ -100,8 +100,8 @@ void main() {
     // fixture's own, which is what drift warns about and is not a race here.
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
 
-    // The fixed test JWK rather than a generated wallet: this suite signs
-    // once, and key generation would dominate its runtime.
+    // The fixed test JWK rather than a generated wallet: key generation would
+    // dominate this suite's runtime, and it only needs an owner address.
     wallet = getTestWallet();
     ownerAddress = await wallet.getAddress();
     driveKey = SecretKey(List.filled(32, 7));
@@ -685,25 +685,19 @@ class _RecordingCodec implements DriveStateEnvelopeCodec {
   Future<DriveStateSealResult> seal({
     required Uint8List plaintext,
     required DriveStateProtection protection,
-    required Wallet wallet,
   }) async {
     sealCalls++;
     lastPlaintext = plaintext;
     lastProtection = protection;
 
     return result ??
-        await _real.seal(
-          plaintext: plaintext,
-          protection: protection,
-          wallet: wallet,
-        );
+        await _real.seal(plaintext: plaintext, protection: protection);
   }
 
   @override
   Future<DriveStateOpenResult> open({
     required DriveStateEnvelope envelope,
     required DriveStateProtection protection,
-    required String expectedOwnerAddress,
   }) =>
       throw UnimplementedError('the creation path never opens an artifact');
 }

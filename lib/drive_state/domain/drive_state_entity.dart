@@ -24,7 +24,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 ///
 /// The body is already encrypted when it reaches this class. Unlike the other
 /// entities, whose JSON is encrypted on the way into a transaction, a drive
-/// state artifact is signed before it is compressed and encrypted, so sealing
+/// state artifact is compressed before it is encrypted, so sealing
 /// belongs to the codec and this class only carries the result and its tags.
 ///
 /// ## Why there is no `Content-Encoding` tag
@@ -33,7 +33,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 ///
 /// `Content-Encoding` describes the transferred representation, and this
 /// transaction's data is AES-GCM ciphertext. gzip is two layers inside it —
-/// `serialise → gzip → sign → encrypt` — so a reader that acted on the tag
+/// `serialise → gzip → encrypt` — so a reader that acted on the tag
 /// would be gunzipping ciphertext.
 ///
 /// Readers do act on it. An AR.IO gateway indexes the tag off both L1
@@ -63,11 +63,11 @@ class DriveStateEntity extends Entity {
   /// `State-Version`, as `major.minor` — see [DriveStateFormatVersion].
   ///
   /// The same value the payload declares in its own `version` field, from the
-  /// same constant, so a producer cannot tag one version and sign another. An
-  /// importer cross-checks the two and refuses an artifact whose tag and
-  /// signed payload disagree, exactly as it does for `Block-Start`/`Block-End`
-  /// — the tag is chosen by whoever posts the transaction and nobody signs it,
-  /// so it is a hint and the payload is the claim.
+  /// same constant, so a producer cannot tag one version and write another.
+  /// An importer cross-checks the two and refuses an artifact whose tag and
+  /// payload disagree, exactly as it does for `Block-Start`/`Block-End`: the
+  /// tag is what an indexer reports, so it is a hint and the payload is the
+  /// claim.
   DriveStateFormatVersion stateVersion;
 
   /// `Block-Start`.
@@ -78,16 +78,16 @@ class DriveStateEntity extends Entity {
   /// It is read from the tag rather than assumed, because that is a policy for
   /// v1 and not a limitation of the format.
   ///
-  /// **A producer must take this from the payload's signed
+  /// **A producer must take this from the payload's
   /// `DriveStateCoverage`, not from anywhere else.** An importer rejects an
   /// artifact whose coverage tags disagree with the claim inside the
-  /// signature, so a tag invented here is an artifact nobody can use — and
+  /// payload, so a tag invented here is an artifact nobody can use — and
   /// nothing published can be corrected.
   int blockStart;
 
   /// `Block-End`, the highest block height the export accounted for.
   ///
-  /// The signed coverage claim's upper bound; see [blockStart].
+  /// The payload's coverage claim's upper bound; see [blockStart].
   int? blockEnd;
 
   /// `Data-Start`, the first block in which data was found.
@@ -107,7 +107,7 @@ class DriveStateEntity extends Entity {
   /// one; see [DriveStateEnvelopeCodec].
   ///
   /// Its absence is the discriminator between the two chains, not an omission:
-  /// a public drive has no key, so its artifact is signed and not encrypted,
+  /// a public drive has no key, so its artifact is not encrypted,
   /// and a reader tells the two apart by whether this tag is on the
   /// transaction at all. [cipher] and [cipherIv] are therefore always both
   /// present or both absent — enforced by [_requireTags], and structurally
@@ -145,7 +145,7 @@ class DriveStateEntity extends Entity {
   ///
   /// The coverage object rather than two integers, because an importer
   /// refuses any artifact whose `Block-Start`/`Block-End` tags do not match
-  /// the claim inside the signed payload. Passing the numbers separately
+  /// the claim inside the payload. Passing the numbers separately
   /// leaves a caller free to read the watermark a second time and tag a
   /// height the payload does not support - a self-rejecting artifact, paid
   /// for and permanent. Taking the claim itself makes that unexpressible.

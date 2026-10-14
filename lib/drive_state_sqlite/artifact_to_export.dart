@@ -40,11 +40,12 @@ bool _bool(QueryRow row, String column) => row.read<int>(column) != 0;
 /// that check passed.
 ///
 /// **Coverage and version come from the artifact's own `meta` row, never from
-/// the tags.** They are the half the owner signed, and the importer's whole
-/// reason for comparing them against the tags is that a tag is chosen by
-/// whoever posted the transaction and nobody signs it. Filling them in from
-/// the tags would make that comparison compare a value with itself, and a
-/// re-tagged artifact — the attack the check exists for — would pass.
+/// the tags.** The payload is what is imported, and for a private drive it is
+/// authenticated under the drive key; the tags are what an indexer reported.
+/// The importer's whole reason for comparing the two is that difference.
+/// Filling them in from the tags would make that comparison compare a value
+/// with itself, and a mis-tagged artifact, the case the check exists for,
+/// would pass.
 Future<DriveStateExport> readArtifactAsExport(
   GeneratedDatabase db, {
   required String alias,

@@ -5,16 +5,17 @@ import 'package:cryptography/cryptography.dart' show SecretKey;
 /// all — and the only place that decision is made.
 ///
 /// ```
-/// private:  serialise -> gzip -> sign as a data item -> AES256-GCM
-/// public:   serialise -> gzip -> sign as a data item
+/// private:  serialise -> gzip -> AES256-GCM
+/// public:   serialise -> gzip
 /// ```
 ///
 /// The public path is the private one minus a layer. `Cipher` and `Cipher-IV`
 /// are absent from a public artifact, and their absence is the discriminator
-/// (`docs/DRIVE_STATE_ARTIFACT.md` §2.6, §3.2). Everything else — the ArFS
-/// tags, the coverage claim, the entity count, the signature — is identical,
-/// and the signature matters *more* without a key rather than less: it is the
-/// only thing binding a public artifact to the drive's owner.
+/// (`docs/DRIVE_STATE_ARTIFACT.md` §2.6, §3.2). Everything else (the ArFS
+/// tags, the coverage claim, the entity count, the owner it was uploaded by)
+/// is identical. Without a key, the upload's owner is the only thing binding
+/// a public artifact to the drive, exactly as it is for the drive's own
+/// entities.
 ///
 /// ## Why this is a type and not a boolean
 ///
@@ -98,7 +99,7 @@ sealed class DriveStateProtection {
   }
 }
 
-/// A private drive's artifact: signed, then encrypted under the drive key.
+/// A private drive's artifact: encrypted under the drive key.
 final class DriveStateEncrypted extends DriveStateProtection {
   const DriveStateEncrypted._(this.driveKey) : super._();
 
@@ -112,7 +113,7 @@ final class DriveStateEncrypted extends DriveStateProtection {
   String toString() => 'DriveStateEncrypted(AES256-GCM under the drive key)';
 }
 
-/// A public drive's artifact: signed, and not encrypted.
+/// A public drive's artifact: not encrypted.
 ///
 /// Only [DriveStateProtection.forDrive]'s `public` arm can produce one.
 final class DriveStateUnencrypted extends DriveStateProtection {
@@ -122,7 +123,7 @@ final class DriveStateUnencrypted extends DriveStateProtection {
   bool get isEncrypted => false;
 
   @override
-  String toString() => 'DriveStateUnencrypted(signed, not encrypted)';
+  String toString() => 'DriveStateUnencrypted(not encrypted)';
 }
 
 /// Why a drive's protection could not be resolved.

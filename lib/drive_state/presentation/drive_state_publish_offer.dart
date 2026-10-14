@@ -46,8 +46,8 @@ enum DriveStatePublishOffer {
 ///   cannot grant themselves write access, and in practice this travels with
 ///   ownership. Hidden. (The neighbouring snapshot item merely disables on
 ///   this; a snapshot is a public read of the chain, whereas an artifact is
-///   signed as the owner and, for a private drive, sealed with the drive key,
-///   so the two are not the same question.)
+///   only found when the owner uploads it and, for a private drive, is sealed
+///   with the drive key, so the two are not the same question.)
 /// - **[driveIsEmpty]** — this one the user *can* fix, by uploading a file.
 ///   Disabled and visible, so the menu explains why it is not available yet
 ///   instead of the entry silently appearing later.

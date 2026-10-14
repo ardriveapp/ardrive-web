@@ -25,7 +25,7 @@ import 'package:drift/drift.dart';
 ///
 /// Three rules from `docs/DRIVE_STATE_ARTIFACT.md` shape all of it.
 ///
-///  * **Validate before merging** (§2.5). Signature first, then drive
+///  * **Validate before merging** (§2.5). Owner first, then drive
 ///    identity, then `Entity-Count`, then coverage. Every check runs before
 ///    the first write, and the writes are a single transaction, because a half
 ///    imported drive is worse than one that never imported at all.
@@ -85,7 +85,7 @@ class DriveStateImportStats {
   final int rowsKeptLocallyNewer;
 
   /// The `lastBlockHeight` the drive was left on. Normally the end of the
-  /// payload's signed coverage claim; see [DriveStateImporter] for the one
+  /// payload's coverage claim; see [DriveStateImporter] for the one
   /// case where it is not, and for why it never comes from a tag alone.
   final int watermark;
 
@@ -190,8 +190,6 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
         // file stops the build until someone decides what it means here.
         DriveStateEnvelopeFailure.plaintextTooLarge =>
           DriveStateOutcome.integrityFailed,
-        DriveStateEnvelopeFailure.signingFailed =>
-          DriveStateOutcome.integrityFailed,
         DriveStateEnvelopeFailure.compressionFailed =>
           DriveStateOutcome.integrityFailed,
 
@@ -213,14 +211,6 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
         DriveStateEnvelopeFailure.ciphertextForPublicDrive =>
           DriveStateOutcome.privacyMismatch,
 
-        // A signature scheme this build cannot verify is *not* that. Nothing
-        // about the artifact's authorship has been established - the check
-        // simply could not be run - and reporting it as "your client is old"
-        // would put an unverifiable artifact in the same log line as a
-        // legitimately newer one. It is a rejection for want of a signature,
-        // which is what `signatureFailed` says.
-        DriveStateEnvelopeFailure.unsupportedSignatureType =>
-          DriveStateOutcome.signatureFailed,
         DriveStateEnvelopeFailure.decryptionFailed =>
           DriveStateOutcome.decryptFailed,
 
@@ -229,15 +219,8 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
           DriveStateOutcome.integrityFailed,
         DriveStateEnvelopeFailure.decompressedTooLarge =>
           DriveStateOutcome.integrityFailed,
-        DriveStateEnvelopeFailure.malformedFrame =>
+        DriveStateEnvelopeFailure.unexpectedError =>
           DriveStateOutcome.integrityFailed,
-
-        // Signed by the wrong wallet, or not by the wallet it names. Both mean
-        // the same thing to a caller: do not trust these bytes.
-        DriveStateEnvelopeFailure.ownerMismatch =>
-          DriveStateOutcome.signatureFailed,
-        DriveStateEnvelopeFailure.signatureInvalid =>
-          DriveStateOutcome.signatureFailed,
       };
 }
 
@@ -325,15 +308,15 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
 ///
 /// ## The watermark
 ///
-/// `lastBlockHeight` comes from the payload's **signed** coverage claim
+/// `lastBlockHeight` comes from the **payload's** coverage claim
 /// ([DriveStateCoverage]), and the `Block-Start` / `Block-End` tags have to
 /// agree with it or the artifact is refused outright.
 ///
-/// The tags alone cannot carry this. A transaction tag is chosen by whoever
-/// submits the transaction, so a third party can take an owner's artifact
-/// bytes unchanged — they verify, they decrypt, their `Drive-Id` and
-/// `Entity-Count` match, because they are the owner's bytes — re-publish them
-/// under `Block-End: 9999999`, and have every check but this one pass. The
+/// The tags alone cannot carry this. They reach a reader as an indexer reports
+/// them, and the indexer is not trusted; the payload is what is imported, and
+/// for a private drive it is authenticated under the drive key. A tag that
+/// said `Block-End: 9999999` over the owner's own bytes would pass every
+/// other check. The
 /// watermark would jump to a height nothing was ever synced to and that range
 /// would never be queried again: the silent drop in
 /// `SYNC_SKIPPED_ENTITY_PERSISTENCE.md`, which is the failure this whole line
@@ -356,9 +339,9 @@ class DriveStateImporter {
     DriveStateEnvelopeCodec? codec,
   }) : _codec = codec ?? DriveStateEnvelopeCodec();
 
-  /// Opens [body] — the artifact transaction's data — under [protection],
-  /// checks it was signed by [expectedOwnerAddress], and merges it into the
-  /// drive named by [candidate]'s `Drive-Id` tag.
+  /// Checks [candidate] was uploaded by [expectedOwnerAddress], opens [body]
+  /// (the artifact transaction's data) under [protection], and merges it into
+  /// the drive named by [candidate]'s `Drive-Id` tag.
   ///
   /// [candidate] is the discovery lane's product: a transaction id and the
   /// tags an untrusted indexer reported for it. Nothing it says is believed
@@ -409,7 +392,7 @@ class DriveStateImporter {
     final driveId = candidate.driveId;
     final blockEnd = candidate.blockEnd;
     // Absent reads as 0: §3.4's v1 artifacts all start there, and a tag that
-    // disagrees with the signed claim is caught below either way.
+    // disagrees with the payload's claim is caught below either way.
     final blockStart = candidate.blockStart ?? 0;
     final declaredCount = candidate.entityCount;
     final cipher = candidate.cipher;
@@ -421,6 +404,21 @@ class DriveStateImporter {
         'a required tag is missing or unreadable on ${candidate.txId}: '
         'Drive-Id=$driveId Block-End=${candidate.tag(EntityTag.blockEnd)} '
         'Entity-Count=${candidate.tag(EntityTag.entityCount)}',
+      );
+    }
+
+    // 1a. Who uploaded it (§2.2). The transaction's owner, as the indexer
+    //     reports it, is the artifact's author: the same attribution every
+    //     ArFS entity gets. Discovery queries by owner and filters again, so
+    //     this never drops anything a correct indexer returns; it is here
+    //     because this is where the bytes start being trusted, and a caller
+    //     that found a candidate some other way must meet the same rule.
+    if (expectedOwnerAddress.isEmpty ||
+        candidate.ownerAddress != expectedOwnerAddress) {
+      return DriveStateImportResult.rejected(
+        DriveStateOutcome.ownerMismatch,
+        '${candidate.txId} was uploaded by ${candidate.ownerAddress}, and '
+        'the drive is owned by $expectedOwnerAddress',
       );
     }
 
@@ -472,12 +470,12 @@ class DriveStateImporter {
     //    read is skipped, never guessed at — and the three ways that can
     //    happen are reported as three different things, because they are.
     //
-    //    This is the tag, which nobody signs; the payload repeats the claim
-    //    inside the signature and step 5 cross-checks the two. Reading it here
-    //    is still worth it: it is the only version available before the body
-    //    is decrypted, so it settles the common forward-compatibility case
-    //    without spending a signature verification on an artifact this build
-    //    was never going to read.
+    //    This is the tag, as the indexer reports it; the payload repeats the
+    //    claim and step 5 cross-checks the two. Reading it here is still worth
+    //    it: it is the only version available before the body is fetched and
+    //    decrypted, so it settles the common forward-compatibility case
+    //    without spending either on an artifact this build was never going to
+    //    read.
     const currentVersion = DriveStateFormatVersion.current;
     final taggedVersion = DriveStateFormatVersion.tryParse(
       candidate.stateVersion,
@@ -486,9 +484,8 @@ class DriveStateImporter {
     if (taggedVersion == null) {
       // Not `unknownVersion`. A version that cannot be parsed is not a version
       // that can be compared, so nothing has been established about whether
-      // this build could have read the artifact — the same distinction the
-      // envelope's `unsupportedSignatureType` draws when it declines to report
-      // an unverifiable artifact as a merely newer one.
+      // this build could have read the artifact, and reporting it as merely
+      // newer would say something nobody established.
       final raw = candidate.stateVersion;
 
       return DriveStateImportResult.rejected(
@@ -545,14 +542,11 @@ class DriveStateImporter {
       envelope = DriveStateEnvelope.inTheClear(body: body);
     }
 
-    // 3. Signature first (§2.5). Nothing the payload claims is examined until
-    //    the drive's owner is known to have signed it. For a public drive
-    //    that check carries the whole weight: there is no key whose absence
-    //    would have stopped a stranger's bytes here.
+    // 3. Open it: decrypt (authenticated, for a private drive), then
+    //    decompress under the bound. Who uploaded it was settled in step 1.
     final opened = await _codec.open(
       envelope: envelope,
       protection: protection,
-      expectedOwnerAddress: expectedOwnerAddress,
     );
 
     if (opened.isFailed) {
@@ -621,30 +615,27 @@ class DriveStateImporter {
     }
 
     // 5. Version agreement. Step 2 read the `State-Version` tag; this is the
-    //    same claim from inside the signature, and the two have to match.
+    //    same claim from inside the payload, and the two have to match.
     //
     //    Exactly the shape `Block-Start`/`Block-End` already has, and settled
-    //    the same way (§3.3): the tag is chosen by whoever posts the
-    //    transaction and nobody signs it, the payload field is the owner's,
-    //    and a reader that met them half way would be trusting the half
-    //    anybody can rewrite. A correct producer cannot trip this — both come
-    //    from [DriveStateFormatVersion.current] — so the only artifacts it
-    //    turns away are ones whose tag was written by something other than the
-    //    wallet that signed the body.
+    //    the same way (§3.3): the tag is what an indexer reported, the payload
+    //    field is what is imported, and a reader that met them half way would
+    //    be trusting the half nobody authenticated. A correct producer cannot
+    //    trip this, since both come from [DriveStateFormatVersion.current].
     //
     //    Any disagreement, including one only in the minor. "The minor changes
     //    nothing this reader dispatches on" is true and is not a reason to
-    //    accept a tag that contradicts a signature; it is the reasoning §6.1
+    //    accept a tag that contradicts the payload; it is the reasoning §6.1
     //    is a case study in.
     //
     //    Not `unknownVersion`: nothing here says this client is old. It says
-    //    the artifact's tag and its signed body disagree, which is
+    //    the artifact's tag and its body disagree, which is
     //    [DriveStateOutcome.integrityFailed] — the payload did not match the
     //    shape its tags declared.
     if (export.version != taggedVersion) {
       return DriveStateImportResult.rejected(
         DriveStateOutcome.integrityFailed,
-        'State-Version is tagged $taggedVersion and the signed payload '
+        'State-Version is tagged $taggedVersion and the payload '
         'declares ${export.version}',
       );
     }
@@ -674,10 +665,9 @@ class DriveStateImporter {
     }
 
     // 8. Coverage. The last of the claims a tag makes about the body, and the
-    //    only one that sets a value the drive keeps after the import. Nothing
-    //    signed said anything about coverage until it moved into the payload,
-    //    so this is the check that stops an artifact's own bytes being
-    //    re-published under a range their owner never claimed.
+    //    only one that sets a value the drive keeps after the import, so the
+    //    value kept is the payload's, and a tag that disagrees with it stops
+    //    the import rather than moving the watermark.
     //
     //    An absent `Block-Start` tag reads as 0, which is what every v1
     //    artifact publishes; a payload claiming otherwise is rejected rather
@@ -686,8 +676,8 @@ class DriveStateImporter {
     if (coverage.blockEnd != blockEnd || coverage.blockStart != blockStart) {
       return DriveStateImportResult.rejected(
         DriveStateOutcome.coverageMismatch,
-        'the tags claim coverage [$blockStart, $blockEnd] and the signed '
-        'payload claims $coverage',
+        'the tags claim coverage [$blockStart, $blockEnd] and the payload '
+        'claims $coverage',
       );
     }
 
@@ -696,8 +686,8 @@ class DriveStateImporter {
     return _merge(
       export: export,
       driveId: driveId,
-      // The signed values, now that the tags are known to agree with them:
-      // the watermark is set from what the owner signed, not from what a
+      // The payload's values, now that the tags are known to agree with them:
+      // the watermark is set from what was imported, not from what a
       // transaction was labelled with.
       blockStart: coverage.blockStart,
       blockEnd: coverage.blockEnd,
@@ -744,8 +734,8 @@ class DriveStateImporter {
 
     // The cipher/privacy cross-check again, one layer in: step 1c compared the
     // drive's privacy against what the *tags* claimed, and this compares it
-    // against what the **signed payload** claims. They are different claims by
-    // different authors, and this is the one that would be written to disk —
+    // against what the **payload** claims. They are different claims, and
+    // this is the one that would be written to disk —
     // `_driveCompanion` copies the payload's `privacy` onto the local drive
     // row, so a payload that said `public` for a private drive would relabel
     // the user's own drive while its key material sat untouched beside it.
@@ -759,21 +749,20 @@ class DriveStateImporter {
     if (export.drive.privacy != expectedPrivacy) {
       return DriveStateImportResult.rejected(
         DriveStateOutcome.privacyMismatch,
-        'the signed payload says drive $driveId is '
+        'the payload says drive $driveId is '
         '${export.drive.privacy}, and this client holds it as '
         '$expectedPrivacy',
       );
     }
 
     if (export.drive.ownerAddress != expectedOwnerAddress) {
-      // The signature verified, so the owner really did publish this. Their
-      // own drive row disagreeing with the address it verified against means
-      // the payload is not internally consistent, and merging it would write
-      // that disagreement into the database.
+      // The owner uploaded this. Their own drive row disagreeing with that
+      // address means the payload is not internally consistent, and merging
+      // it would write that disagreement into the database.
       return DriveStateImportResult.rejected(
         DriveStateOutcome.integrityFailed,
         'the payload names owner ${export.drive.ownerAddress} and the '
-        'artifact verified against $expectedOwnerAddress',
+        'artifact was uploaded by $expectedOwnerAddress',
       );
     }
 

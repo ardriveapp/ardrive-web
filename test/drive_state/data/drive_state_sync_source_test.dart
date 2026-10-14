@@ -437,7 +437,7 @@ void main() {
     for (final outcome in [
       DriveStateOutcome.decryptFailed,
       DriveStateOutcome.countMismatch,
-      DriveStateOutcome.signatureFailed,
+      DriveStateOutcome.ownerMismatch,
       DriveStateOutcome.unknownVersion,
       DriveStateOutcome.integrityFailed,
     ]) {
@@ -680,8 +680,8 @@ void main() {
             as DriveStateArtifactCandidate;
         return c.txId == 'newest'
             ? const DriveStateImportResult.rejected(
-                DriveStateOutcome.signatureFailed,
-                'the payload was not signed by the owner',
+                DriveStateOutcome.ownerMismatch,
+                'the artifact was not uploaded by the owner',
               )
             : importedThrough(800);
       });

@@ -5,10 +5,7 @@ import 'package:archive/archive.dart';
 import 'package:ardrive/core/crypto/crypto.dart' show ArDriveCrypto;
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive_crypto/ardrive_crypto.dart' show Cipher;
-import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' as utils;
-import 'package:cryptography/cryptography.dart' show Sha256;
-import 'package:flutter/foundation.dart' show visibleForTesting;
 
 /// Why a drive state artifact could not be produced, or could not be opened.
 ///
@@ -26,9 +23,6 @@ enum DriveStateEnvelopeFailure {
   /// applies to a public drive's artifact exactly as it does to a private
   /// one, even though nothing in the public path is encrypted at all.
   plaintextTooLarge,
-
-  /// The owner's wallet did not produce a signed data item.
-  signingFailed,
 
   /// gzip produced nothing for a payload it was given.
   compressionFailed,
@@ -66,52 +60,28 @@ enum DriveStateEnvelopeFailure {
   /// serving bodies that arrived wrong; this is the check that catches them.
   decryptionFailed,
 
-  /// The signed data item's data is neither a gzip stream nor a SQLite file,
+  /// The payload is neither a gzip stream nor a SQLite file,
   /// or starts as a gzip stream and does not inflate.
   decompressionFailed,
 
-  /// The signed data is a gzip stream that expands past
+  /// The payload is a gzip stream that expands past
   /// [DriveStateEnvelopeCodec.maxPlaintextBytes].
   ///
   /// Not the same thing as [decompressionFailed]: the stream is valid, and
   /// that is the problem. gzip reaches about 1032:1, so an artifact of a few
   /// megabytes — well under anything a size check on the body would catch —
-  /// expands to gigabytes. Verification cannot help, because the owner really
-  /// did sign it, or the bytes are the owner's own and somebody re-published
-  /// them; a browser tab has no memory pressure signal to recover from, it
+  /// expands to gigabytes. Knowing who uploaded it cannot help, because the
+  /// owner may really have, or the bytes are the owner's own and somebody
+  /// re-published them; a browser tab has no memory pressure signal to recover from, it
   /// simply dies. And an artifact is immutable and sorts newest, so the same
   /// bomb would be chosen again on the next sync, and the next: the one shape
   /// of failure that is not a fallback unless it is caught here.
   decompressedTooLarge,
 
-  /// The decrypted bytes cannot be an ANS-104 data item at all: too short to
-  /// hold one, or carrying an owner key that cannot be read back out. Bytes
-  /// that are the right shape but do not verify are [signatureInvalid], not
-  /// this.
-  malformedFrame,
-
-  /// The data item is signed with a scheme this client cannot verify. ANS-104
-  /// numbers these in the first two bytes of an item; only 1 (Arweave) can be
-  /// checked here.
-  unsupportedSignatureType,
-
-  /// The data item is signed by a wallet that is not the drive's owner. The
-  /// signature may well be valid — it is simply not the owner's.
-  ownerMismatch,
-
-  /// The signature does not verify: these are not the bytes the owner signed.
-  signatureInvalid,
+  /// Reading the artifact threw where it should have refused. A bug, never
+  /// a reason to fail a drive: the caller falls back like any other failure.
+  unexpectedError,
 }
-
-/// The shape of [processDataItem], so that [DriveStateEnvelopeCodec] can take
-/// it as a collaborator. See [DriveStateEnvelopeCodec._parseDataItem] for why
-/// it is a collaborator at all.
-typedef DriveStateDataItemParser = Future<ProcessedDataItem> Function({
-  required DataStreamGenerator dataItemStreamGenerator,
-  required String id,
-  required int length,
-  required SignatureConfig signatureConfig,
-});
 
 /// A sealed artifact body, together with the tag values needed to read it back
 /// off chain.
@@ -130,8 +100,8 @@ class DriveStateEnvelope {
   /// this codebase's long-standing convention; see
   /// [ArDriveCrypto.secretBoxFromDataWithMacConcatenation].
   ///
-  /// For a public drive: the signed ANS-104 data item itself, with no
-  /// encryption layer around it.
+  /// For a public drive: the compressed payload itself, with no encryption
+  /// layer around it.
   final Uint8List body;
 
   /// The 12 byte GCM nonce, travelling in the `Cipher-IV` tag as base64.
@@ -159,7 +129,7 @@ class DriveStateEnvelope {
     String cipher = Cipher.aes256gcm,
   }) : this._(body, cipher, cipherIv);
 
-  /// A public drive's artifact: signed, and not encrypted.
+  /// A public drive's artifact: not encrypted.
   ///
   /// There is no cipher parameter and no IV parameter, which is the point.
   const DriveStateEnvelope.inTheClear({required Uint8List body})
@@ -204,18 +174,12 @@ class DriveStateSealResult {
       : 'DriveStateSealResult(${failure!.name}, $reason)';
 }
 
-/// The outcome of opening an artifact body: the plaintext the owner signed, or
-/// a typed reason it could not be trusted.
+/// The outcome of opening an artifact body: the plaintext, or a typed reason
+/// it could not be read.
 class DriveStateOpenResult {
-  /// The verified plaintext, byte for byte as it was handed to
+  /// The plaintext, byte for byte as it was handed to
   /// [DriveStateEnvelopeCodec.seal]. `null` when the artifact was rejected.
   final Uint8List? plaintext;
-
-  /// The address that signed [plaintext]. `null` when the artifact was
-  /// rejected. Always equal to the expected owner address when set — it is
-  /// returned so a caller can log what it verified rather than what it asked
-  /// for.
-  final String? ownerAddress;
 
   /// Why the artifact was rejected. `null` when [isOpened].
   final DriveStateEnvelopeFailure? failure;
@@ -223,30 +187,22 @@ class DriveStateOpenResult {
   /// Detail for the log, never for the user. `null` when [isOpened].
   final String? reason;
 
-  const DriveStateOpenResult._(
-    this.plaintext,
-    this.ownerAddress,
-    this.failure,
-    this.reason,
-  );
+  const DriveStateOpenResult._(this.plaintext, this.failure, this.reason);
 
-  const DriveStateOpenResult.opened(
-    Uint8List plaintext,
-    String ownerAddress,
-  ) : this._(plaintext, ownerAddress, null, null);
+  const DriveStateOpenResult.opened(Uint8List plaintext)
+      : this._(plaintext, null, null);
 
   const DriveStateOpenResult.failed(
     DriveStateEnvelopeFailure failure,
     String reason,
-  ) : this._(null, null, failure, reason);
+  ) : this._(null, failure, reason);
 
   bool get isOpened => plaintext != null;
   bool get isFailed => failure != null;
 
   @override
   String toString() => isOpened
-      ? 'DriveStateOpenResult(opened, ${plaintext!.length} bytes, '
-          'signed by $ownerAddress)'
+      ? 'DriveStateOpenResult(opened, ${plaintext!.length} bytes)'
       : 'DriveStateOpenResult(${failure!.name}, $reason)';
 }
 
@@ -254,14 +210,23 @@ class DriveStateOpenResult {
 /// and opens one again.
 ///
 /// ```
-/// private:  serialise  ->  gzip  ->  sign (ANS-104 data item)  ->  AES256-GCM
-/// public:   serialise  ->  gzip  ->  sign (ANS-104 data item)
+/// private:  serialise  ->  gzip  ->  AES256-GCM
+/// public:   serialise  ->  gzip
 /// ```
 ///
-/// [seal] always compresses. [open] also accepts a signed SQLite file that
-/// was never compressed, which a producer may publish for a large public
-/// drive so it can be read by range (D13), and tells the two apart by their
-/// first bytes.
+/// [seal] always compresses. [open] also accepts a SQLite file that was never
+/// compressed, which a producer may publish for a large public drive so it can
+/// be read by range (D13), and tells the two apart by their first bytes.
+///
+/// ## Who wrote it is not this codec's question
+///
+/// Authorship is the owner of the transaction that carries the body, as the
+/// indexer reports it: discovery filters on the drive owner, and the importer
+/// checks the candidate's owner again before it opens anything. That is how
+/// every ArFS entity is attributed. The body carries no signature of its own
+/// (D16): the upload is already a signed data item, and a second signature
+/// inside it bought nothing a reader could use, while costing a wallet prompt,
+/// a deprecated extension API, and range reads (§2.2).
 ///
 /// ## The public path is the same chain minus one layer
 ///
@@ -269,78 +234,23 @@ class DriveStateOpenResult {
 /// nothing worth hiding: its contents are already readable by anyone, and a
 /// snapshot of a public drive is already the same enumeration of every name,
 /// size and relationship, unencrypted, published today (§2.6). What a public
-/// drive still gets is the expensive half — the ~420 GraphQL queries and
-/// ~42,000 metadata fetches an artifact replaces (§1.2) — of which the
-/// per-entity decryption it skips is a small fraction.
+/// drive still gets is the expensive half: the ~420 GraphQL queries and
+/// ~42,000 metadata fetches an artifact replaces (§1.2).
 ///
 /// Which path runs is decided by [DriveStateProtection] and nothing else. The
 /// plaintext variant cannot be constructed for a private drive, so this codec
 /// has no branch, flag or argument that could publish one in the clear.
 ///
-/// **The signature matters more here, not less.** Without a key it is the only
-/// thing binding a public artifact to the drive's owner: anyone can post bytes
-/// tagged with a `Drive-Id`, and for a private drive the drive key is a second
-/// filter that a public drive does not have. Every check below the signature
-/// runs identically on both paths.
+/// A private drive's body is authenticated by AES-GCM under the drive key, so
+/// bytes nobody holding that key wrote never reach the decompressor. A public
+/// drive's body is not authenticated by anything here, which is why the bound
+/// on decompression ([maxPlaintextBytes]) applies to it in full.
 ///
-/// ## Why a data item, and not a bare signature
-///
-/// The owner's signature has to travel *inside* the artifact. A reader that
-/// fetches `GET https://gateway/<txid>` receives the data and nothing else,
-/// and `GET /tx/<id>` is a 404 for anything that arrived bundled — so an
-/// artifact whose authorship lived in the L1 header could only be attributed
-/// through a GraphQL indexer, which this design will not depend on
-/// (`docs/DRIVE_STATE_ARTIFACT.md` §4.2).
-///
-/// The carrier for that signature is an ANS-104 data item, signed through the
-/// same seam every ArDrive upload already uses: [DataItem.sign] with an
-/// [ArweaveSigner], the shape of `ArweaveService.prepareBundledDataItem` and
-/// `BDISigner`. That choice is not decoration. ArConnect and Wander have
-/// deprecated arbitrary-data signing, so a codec that called `wallet.sign` on
-/// a payload of its own devising would never produce an artifact at all for an
-/// extension user, while data item signing is the one path those wallets still
-/// grant.
-///
-/// Being a real data item rather than a bespoke frame also means the bytes are
-/// checkable by anything that speaks ANS-104, and that the parsing and the
-/// verification are the package's rather than ours.
-///
-/// What signing before compressing does *not* buy is any protection from the
-/// decompressor: a verified signature says the owner produced these bytes, not
-/// that they are safe to expand. Anyone can re-publish the owner's own bytes
-/// verbatim, so the bomb described by
-/// [DriveStateEnvelopeFailure.decompressedTooLarge] reaches the decompressor
-/// by design. [maxPlaintextBytes] is what stops it, and it is the same
-/// boundary [seal] refuses to cross in the other direction.
-///
-/// ## Why gzip is inside the signature
-///
-/// The item's data is the *compressed* payload, so the signature covers the
-/// bytes a reader is holding before it has decompressed anything. Authorship
-/// is settled before any of the payload is expanded, and a body the owner did
-/// not sign never reaches the decompressor at all. Compressing before
-/// encrypting remains the only order that compresses.
-///
-/// The item carries no tags, no target and no anchor: the ArFS tags that make
-/// an artifact discoverable live on the enclosing transaction, and the less
-/// this signature covers beyond the payload, the fewer ways there are for the
-/// two to disagree.
-///
-/// Opening runs the exact inverse — decrypt, parse and verify the data item,
-/// confirm the signer is the drive's owner, decompress — and rejects rather
-/// than throws. Serialising the payload is not this codec's job: it is handed
-/// bytes and hands bytes back.
+/// Opening runs the exact inverse, and rejects rather than throws.
+/// Serialising the payload is not this codec's job: it is handed bytes and
+/// hands bytes back.
 class DriveStateEnvelopeCodec {
   final ArDriveCrypto _crypto;
-
-  /// The signature-checking ANS-104 parse [open] runs.
-  ///
-  /// Injectable only so a test can hand back an item whose data stream fails,
-  /// which is the one branch of [open]'s "never throws" contract that no
-  /// artifact reachable through [seal] can reach. Production is always
-  /// [processDataItem]; nothing but a test may pass anything else, because
-  /// anything else is a way to skip the signature check.
-  final DriveStateDataItemParser _parseDataItem;
 
   /// The most payload this format will seal, and the most [open] will inflate.
   ///
@@ -355,12 +265,12 @@ class DriveStateEnvelopeCodec {
   /// Two things falsify that reading.
   ///
   /// First, it was already measured wrong. What GCM encrypts is the
-  /// *compressed, signed* item, not the payload this number weighs: at 41,767
+  /// *compressed* payload, not the payload this number weighs: at 41,767
   /// files that is 9.55 MiB against a 52.16 MiB payload, 5.46x less than the
   /// figure being checked (§2.3). The cipher was never near its limit.
   ///
   /// Second, there is now a path with no cipher in it at all. A public drive's
-  /// artifact is signed and not encrypted, so a bound inherited from GCM would
+  /// artifact is not encrypted, so a bound inherited from GCM would
   /// have nothing to inherit from and would have to be dropped — which is
   /// plainly wrong, because the cost the bound guards is real and is the same
   /// on both paths.
@@ -404,38 +314,13 @@ class DriveStateEnvelopeCodec {
     // Injectable only so a test can prove the bound holds without allocating
     // 100 MiB to watch it hold.
     int? maxPlaintextBytes,
-    @visibleForTesting DriveStateDataItemParser? parseDataItem,
   })  : _crypto = crypto ?? ArDriveCrypto(),
-        _parseDataItem = parseDataItem ?? processDataItem,
         maxPlaintextBytes = maxPlaintextBytes ?? defaultMaxPlaintextBytes;
 
-  /// The only ANS-104 signature scheme this codec writes, and the only one it
-  /// can check: every other [SignatureConfig] in the package throws
-  /// `UnimplementedError` out of its verifier.
-  static final SignatureConfig _signatureConfig = SignatureConfig.arweave;
-
-  /// The ANS-104 signature type field: the first two bytes of a data item,
-  /// little endian.
-  static const int _signatureTypeLength = 2;
-
-  /// The shortest run of bytes that could be an Arweave signed data item:
-  /// signature type, signature, owner, an absent target and anchor, and the
-  /// two eight byte tag counts. Anything below this is not a small data item,
-  /// it is not a data item.
-  static final int _minimumDataItemLength = _signatureTypeLength +
-      _signatureConfig.signatureLength +
-      _signatureConfig.publicKeyLength +
-      1 + // target present flag
-      1 + // anchor present flag
-      8 + // number of tags
-      8; // number of tag bytes
-
-  /// Compresses [plaintext], signs it with [wallet] as an ANS-104 data item,
-  /// and — for a private drive only — encrypts that item under the drive key
-  /// [protection] carries.
+  /// Compresses [plaintext] and, for a private drive only, encrypts it under
+  /// the drive key [protection] carries.
   ///
-  /// Refuses, rather than throws, when the payload is too large or the wallet
-  /// will not sign.
+  /// Refuses, rather than throws, when the payload is too large.
   ///
   /// There is no way to ask for the unencrypted form. [protection] is resolved
   /// from the drive's own `privacy` column by
@@ -446,7 +331,6 @@ class DriveStateEnvelopeCodec {
   Future<DriveStateSealResult> seal({
     required Uint8List plaintext,
     required DriveStateProtection protection,
-    required Wallet wallet,
   }) async {
     // D5, weighed against this format's own bound rather than the cipher's:
     // what it guards is the producer's memory, which is spent identically
@@ -469,27 +353,11 @@ class DriveStateEnvelopeCodec {
       );
     }
 
-    final Uint8List signedItem;
-    try {
-      final item = DataItem.withBlobData(data: _asBytes(compressed))
-        ..setOwner(await wallet.getOwner());
-
-      // The upload path's seam, unchanged: a data item signature, which is
-      // what ArConnect and Wander still grant, rather than arbitrary bytes,
-      // which they no longer do.
-      await item.sign(ArweaveSigner(wallet));
-
-      signedItem = (await item.asBinary()).takeBytes();
-    } catch (e) {
-      return DriveStateSealResult.refused(
-        DriveStateEnvelopeFailure.signingFailed,
-        'The owner wallet did not sign a data item for the payload: $e',
-      );
-    }
+    final body = _asBytes(compressed);
 
     switch (protection) {
       case DriveStateEncrypted(driveKey: final driveKey):
-        final secretBox = await _crypto.encrypt(signedItem, driveKey);
+        final secretBox = await _crypto.encrypt(body, driveKey);
 
         return DriveStateSealResult.sealed(
           DriveStateEnvelope.encrypted(
@@ -500,17 +368,16 @@ class DriveStateEnvelopeCodec {
         );
 
       case DriveStateUnencrypted():
-        // The signed data item *is* the transaction body. No cipher, so no
-        // `Cipher` and no `Cipher-IV` tag — and their absence is what tells a
+        // The compressed payload *is* the transaction body. No cipher, so no
+        // `Cipher` and no `Cipher-IV` tag, and their absence is what tells a
         // reader which of the two chains produced this.
         return DriveStateSealResult.sealed(
-          DriveStateEnvelope.inTheClear(body: signedItem),
+          DriveStateEnvelope.inTheClear(body: body),
         );
     }
   }
 
-  /// Opens [envelope] under [protection] and returns its payload only if the
-  /// data item inside verifies and was signed by [expectedOwnerAddress].
+  /// Opens [envelope] under [protection] and returns its payload.
   ///
   /// [protection] comes from the drive row in the caller's own database, which
   /// is trustworthy; the envelope's cipher tags come from an indexer, which is
@@ -527,17 +394,12 @@ class DriveStateEnvelopeCodec {
   Future<DriveStateOpenResult> open({
     required DriveStateEnvelope envelope,
     required DriveStateProtection protection,
-    required String expectedOwnerAddress,
   }) async {
     try {
-      return await _openOrThrow(
-        envelope: envelope,
-        protection: protection,
-        expectedOwnerAddress: expectedOwnerAddress,
-      );
+      return await _openOrThrow(envelope: envelope, protection: protection);
     } catch (e) {
       return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.malformedFrame,
+        DriveStateEnvelopeFailure.unexpectedError,
         'Reading the artifact threw where it should have refused, which is a '
         'bug; the drive falls back to an ordinary sync: $e',
       );
@@ -547,7 +409,6 @@ class DriveStateEnvelopeCodec {
   Future<DriveStateOpenResult> _openOrThrow({
     required DriveStateEnvelope envelope,
     required DriveStateProtection protection,
-    required String expectedOwnerAddress,
   }) async {
     // The cipher/privacy cross-check, before anything else is looked at.
     //
@@ -589,13 +450,6 @@ class DriveStateEnvelopeCodec {
       );
     }
 
-    if (expectedOwnerAddress.isEmpty) {
-      return const DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.ownerMismatch,
-        'No expected owner address to verify against',
-      );
-    }
-
     final unwrapped = await _unwrap(envelope, protection);
     if (unwrapped.failure != null) {
       return DriveStateOpenResult.failed(
@@ -603,120 +457,26 @@ class DriveStateEnvelopeCodec {
         unwrapped.reason!,
       );
     }
-    final binary = unwrapped.bytes!;
+    final compressed = unwrapped.bytes!;
 
-    if (binary.lengthInBytes < _minimumDataItemLength) {
-      return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.malformedFrame,
-        '${binary.lengthInBytes} bytes cannot hold an ANS-104 data item, '
-        'which is at least $_minimumDataItemLength',
-      );
-    }
-
-    // Read before parsing, because the signature type is what says how long
-    // the signature and owner fields are. Handing the parser a config that
-    // disagrees would not fail loudly; it would read the item at the wrong
-    // offsets.
-    final int signatureType;
-    try {
-      signatureType = _readSignatureType(binary);
-    } catch (e) {
-      return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.malformedFrame,
-        'The decrypted bytes do not begin with a readable ANS-104 signature '
-        'type: $e',
-      );
-    }
-
-    if (signatureType != _signatureConfig.signatureType) {
-      return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.unsupportedSignatureType,
-        'Signature type $signatureType cannot be verified by this client',
-      );
-    }
-
-    final ProcessedDataItem item;
-    try {
-      // Parses the item and checks its signature in one pass, throwing when
-      // the signature does not verify. Nothing downstream of here is reached
-      // by bytes nobody signed.
-      item = await _parseDataItem(
-        dataItemStreamGenerator: () => Stream.value(binary),
-        id: await _idOf(binary),
-        length: binary.lengthInBytes,
-        signatureConfig: _signatureConfig,
-      );
-    } catch (e) {
-      // Everything this can throw past the checks above says the same thing:
-      // whatever these bytes are, the owner did not sign them. That covers a
-      // signature that verifies to false, and equally a structure that never
-      // got far enough to be checked — RSA-PSS verification raises an `Error`
-      // rather than returning false on a signature it cannot even decode, so
-      // there is no honest line to draw between "damaged" and "unsigned"
-      // here, and drawing one on exception messages would be worse than not
-      // drawing it. The structural failures this codec *can* name for the log
-      // are the two checks above, which run first for exactly that reason.
-      return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.signatureInvalid,
-        'The data item does not carry a valid owner signature over these '
-        'bytes: $e',
-      );
-    }
-
-    final String signerAddress;
-    try {
-      signerAddress = await utils.ownerToAddress(item.owner);
-    } catch (e) {
-      return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.malformedFrame,
-        'The data item does not carry a readable owner key: $e',
-      );
-    }
-
-    // The signature has already been checked by this point, so a mismatch
-    // here means exactly one thing and the log can say it: somebody else's
-    // perfectly valid artifact.
-    if (signerAddress != expectedOwnerAddress) {
-      return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.ownerMismatch,
-        'Signed by $signerAddress, but the drive is owned by '
-        '$expectedOwnerAddress',
-      );
-    }
-
-    final Uint8List compressed;
-    try {
-      compressed = await _collect(item.dataStreamGenerator);
-    } catch (e) {
-      // Not `on Error`. Draining someone else's stream is the one step here
-      // whose failure modes belong to another package: a range that does not
-      // fit the item raises an `Error`, but a stream is equally free to carry
-      // an `Exception`, and an `on Error` clause lets that one straight past
-      // the caller's fallback and into a failed sync.
-      return DriveStateOpenResult.failed(
-        DriveStateEnvelopeFailure.malformedFrame,
-        'The data item\'s data could not be read back: $e',
-      );
-    }
-
-    // Two encodings, told apart by the signed bytes themselves (D13): a
-    // producer compresses a small artifact and may leave a large public one
-    // as a plain SQLite file, so a page can read it by range. Nothing outside
-    // the signature says which, so nothing unsigned can choose for us.
+    // Two encodings, told apart by the bytes themselves (D13): a producer
+    // compresses a small artifact and may leave a large public one as a plain
+    // SQLite file, so a page can read it by range. No tag says which, so no
+    // tag can be made to lie about it.
     if (_startsWith(compressed, _sqliteHeader)) {
       if (compressed.lengthInBytes > maxPlaintextBytes) {
         return DriveStateOpenResult.failed(
           DriveStateEnvelopeFailure.decompressedTooLarge,
-          'The signed SQLite file is ${compressed.lengthInBytes} bytes, past '
+          'The SQLite file is ${compressed.lengthInBytes} bytes, past '
           'the $maxPlaintextBytes byte limit',
         );
       }
-      return DriveStateOpenResult.opened(compressed, signerAddress);
+      return DriveStateOpenResult.opened(compressed);
     }
     if (!_startsWith(compressed, _gzipMagic)) {
       return const DriveStateOpenResult.failed(
         DriveStateEnvelopeFailure.decompressionFailed,
-        'The signed data is neither a gzip stream nor a SQLite file',
+        'The payload is neither a gzip stream nor a SQLite file',
       );
     }
 
@@ -726,20 +486,20 @@ class DriveStateEnvelopeCodec {
     } on _PlaintextLimitExceeded catch (e) {
       return DriveStateOpenResult.failed(
         DriveStateEnvelopeFailure.decompressedTooLarge,
-        'The signed data expands past the $maxPlaintextBytes byte limit '
+        'The payload expands past the $maxPlaintextBytes byte limit '
         '(${compressed.lengthInBytes} compressed bytes reached ${e.reached})',
       );
     } catch (e) {
       return DriveStateOpenResult.failed(
         DriveStateEnvelopeFailure.decompressionFailed,
-        'The signed data is not a gzip stream: $e',
+        'The payload is not a gzip stream: $e',
       );
     }
 
-    return DriveStateOpenResult.opened(plaintext, signerAddress);
+    return DriveStateOpenResult.opened(plaintext);
   }
 
-  /// The signed data item inside [envelope]: decrypted for a private drive,
+  /// The compressed payload inside [envelope]: decrypted for a private drive,
   /// and the body itself for a public one.
   ///
   /// An exhaustive switch over the sealed [DriveStateProtection] rather than
@@ -779,10 +539,10 @@ class DriveStateEnvelopeCodec {
         }
 
       case DriveStateUnencrypted():
-        // No authenticated envelope around these bytes at all, which is why
-        // the data item signature below is not merely one check among several
-        // here — it is the only one standing between an anonymous upload and
-        // this drive's rows.
+        // No authenticated envelope around these bytes at all. Who uploaded
+        // them was settled before this codec was called (the candidate's
+        // owner); what stands between them and this drive's rows from here is
+        // the bounded decompression and every check the importer runs.
         return (bytes: envelope.body, failure: null, reason: null);
     }
   }
@@ -814,36 +574,6 @@ class DriveStateEnvelopeCodec {
       if (bytes[i] != prefix[i]) return false;
     }
     return true;
-  }
-
-  /// The ANS-104 signature type: two bytes, little endian, at offset zero.
-  int _readSignatureType(Uint8List binary) => utils.byteArrayToLong(
-        Uint8List.sublistView(binary, 0, _signatureTypeLength),
-      );
-
-  /// A data item's id is *defined* as the SHA-256 of its signature, so it is
-  /// derived here rather than carried alongside: there is no bundle header to
-  /// read one out of, and a value stored next to the body would be a value an
-  /// attacker could choose. [processDataItem] asks for it so it can reject
-  /// items whose bundle header and body disagree, a check that does not apply
-  /// to an item travelling alone — the authorship question is settled by the
-  /// signature check that follows it, not by this.
-  Future<String> _idOf(Uint8List binary) async {
-    final signature = Uint8List.sublistView(
-      binary,
-      _signatureTypeLength,
-      _signatureTypeLength + _signatureConfig.signatureLength,
-    );
-
-    return utils.encodeBytesToBase64((await Sha256().hash(signature)).bytes);
-  }
-
-  Future<Uint8List> _collect(DataStreamGenerator generator) async {
-    final builder = BytesBuilder(copy: false);
-    await for (final chunk in generator()) {
-      builder.add(chunk);
-    }
-    return builder.takeBytes();
   }
 
   static Uint8List _asBytes(List<int> bytes) =>

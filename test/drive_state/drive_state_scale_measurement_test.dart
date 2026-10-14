@@ -446,7 +446,6 @@ gzip                      ${gzipWatch.elapsedMilliseconds} ms
     final sealed = await codec.seal(
       plaintext: plaintext,
       protection: privateDrive,
-      wallet: owner,
     );
     sealWatch.stop();
     final rssSealed = rss();

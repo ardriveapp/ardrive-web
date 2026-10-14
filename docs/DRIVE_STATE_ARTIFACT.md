@@ -1,7 +1,7 @@
 # The drive state artifact
 
-A published, signed blob of a drive's parsed state — encrypted under the drive
-key when the drive is private — which a client imports in bulk instead of
+A published blob of a drive's parsed state, uploaded by the drive's owner and
+encrypted under the drive key when the drive is private, which a client imports in bulk instead of
 replaying the drive's history entity by entity.
 
 **Additive.** Snapshots remain an ArFS interchange format and the fallback. A
@@ -21,7 +21,7 @@ GraphQL and no app. It is specified in `LIBRARY_PAGES.md`, and it is the reason
 §2.7 and §4.5 exist.
 
 **The governing principle: this is a cache, and every failure is a fallback.**
-Unknown version, failed signature, failed decryption, failed integrity check, an
+Unknown version, wrong owner, failed decryption, failed integrity check, an
 unexpected section — each means *ignore the artifact and sync normally*, never
 *fail the drive*. The worst outcome of anything going wrong is today's
 behaviour. Every design decision below follows from that.
@@ -83,7 +83,7 @@ Producing one is cheap in the way snapshots are not. A snapshot stores chain
 data, so producing it re-reads the chain: ~420 paginated GraphQL queries plus
 ~42,000 metadata fetches for this drive, which does not complete on a throttled
 connection (`SNAPSHOT_CREATION_FROM_SNAPSHOTS.md`). An artifact is already in
-the local database — export, sign, compress, encrypt, upload.
+the local database — export, compress, encrypt, upload.
 
 ### 1.3 Privacy — an improvement, not a cost
 
@@ -161,69 +161,59 @@ failure mode, and would still leave one drive being exported from a database
 holding all of them. Worth doing on its own security merits — browser storage is
 readable by any XSS in the origin — but as separate hardening work.
 
-### 2.2 The payload is signed
+### 2.2 Authorship is the upload's owner (D16)
 
-The artifact carries a signature over its plaintext payload, made with the drive
-owner's wallet.
+An artifact is the drive owner's because the drive owner uploaded it. That is
+the attribution every ArFS entity gets: a reader trusts the owner the indexer
+reports for the transaction, and ignores any entity whose owner is not the
+drive's. Discovery queries by that owner and filters on it again, and the
+importer checks it once more before it opens anything (outcome
+`owner-mismatch`).
 
-This is what lets discovery be cheap without being credulous (§4). A client
-verifies the signature against the drive's known owner address **regardless of
-how the artifact arrived** — resolved from a name, found by GraphQL, handed over
-directly. Authorship stops depending on the lookup path.
-
-It also removes a practical problem: a bundled data item has no L1 transaction
-header, so `GET /tx/<id>` returns **404** for it, and the transaction's owner is
-knowable only through the GraphQL indexer. A signed payload makes bundled and
-top-level artifacts verify identically.
-
-Order of operations, and it matters:
+The order of operations:
 
 ```
-private:  serialise → compress → sign → encrypt
-public:   serialise → compress → sign
+private:  serialise → compress → encrypt
+public:   serialise → compress
 ```
 
-The public path is the same chain with the last step absent, because a public
-drive has no drive key. **The signature is therefore load-bearing in a way it
-is not for a private drive**: it is the only thing binding a public artifact to
-the drive's owner. A private drive's artifact has a second filter — a stranger's
-bytes will not decrypt under the drive key, whatever they claim — and a public
-drive's has none, so anyone can post bytes tagged with a `Drive-Id` and the
-signature check is the whole of what turns them away. This is an argument for
-signing more carefully, not for signing less.
-
-Compressing *before* signing rather than after, because the signature is an
-ANS-104 **data item** signature and not a signature over raw bytes. That is not
-a stylistic choice: wallet extensions no longer grant arbitrary-byte signing,
-and a data item is what ArConnect and Wander still sign. A data item wraps the
-bytes it authenticates, so the signed object is itself the container — sign
-first and the gzip layer would sit *outside* the data item, where a reader must
-decompress before it can even parse the thing that would have told it whether
-the bytes were worth decompressing.
-
-The order the implementation uses inverts that, and gives a reader a chain in
-which every step's input has already been vouched for by the step before:
+and its inverse:
 
 ```
-private:  decrypt (GCM, authenticated)  →  parse data item  →  verify owner  →  gunzip
-public:                                    parse data item  →  verify owner  →  gunzip
+private:  check owner  →  decrypt (GCM, authenticated)  →  detect encoding  →  inflate (bounded)
+public:   check owner  →                                   detect encoding  →  inflate (bounded)
 ```
 
-**Only a payload the owner signed is ever inflated**, on both paths. That is
-the property that makes a bound on the decompressed size meaningful rather than
-decorative (§2.4), and it is the same discipline as never handing an untrusted
-file to SQLite: spend nothing on input until something has attested to it.
+**A private drive's payload is authenticated by AES-GCM under the drive key.**
+Bytes nobody holding that key wrote never reach the decompressor, whatever the
+indexer says about them. **A public drive's payload is not authenticated by
+anything in the format.** It is as trustworthy as the gateway that served it
+and the owner it reported, which is exactly how trustworthy that drive's own
+files and folders are. The bounded decompression (§2.4) is what stops a bad
+public payload doing harm, and it applies to both paths in full.
 
-What the private path has in addition is an earlier and cheaper filter. GCM
-authenticates before an ANS-104 parse is attempted at all, so a body that
-arrived wrong — or was never this drive's — is turned away before any parser
-sees it. A public drive reaches the parser with unverified bytes and rejects
-them a step later. That is a difference in how much work a bad artifact costs,
-not in what is accepted.
+**Why there is no second signature inside the payload.** An earlier revision
+signed the payload as an ANS-104 data item inside the upload, so the bytes
+would prove their author however they were found. It was removed before
+anything was published, because no reader could use what it bought:
 
-Compressing before encrypting remains, as ever, the only order that compresses
-at all — and on the public path compression is simply the last thing that
-happens to the payload before it is signed.
+- The upload is already a signed data item, and its signature is on chain
+  inside its bundle. What a reader cannot do cheaply is fetch it: measured in
+  October 2026 against ardrive.net and turbo-gateway.com for a Turbo-bundled
+  item, no `X-Arweave-Signature` or `X-Arweave-Owner` headers are served, and
+  GraphQL returns `"signature": "<not-found>"` and
+  `"owner": { "key": "<not-found>" }`. AR.IO release 75 can send those headers,
+  but for a bundled item only with `WRITE_ANS104_DATA_ITEM_DB_SIGNATURES=true`,
+  which defaults to `false`.
+- The inner signature cost a wallet prompt at publish, routed Wander and
+  ArConnect through the deprecated `arweaveWallet.signature()` with
+  `saltLength: 0`, made every reader implement data item verification, and
+  made range reads of a public artifact unverifiable, since a signature covers
+  the whole payload (`LIBRARY_PAGES.md`).
+
+A reader that wants independent proof of authorship later can fetch the
+upload's own signed data item from its bundle. Nothing in this format prevents
+that, and nothing in it depends on it.
 
 ### 2.3 AES-GCM, and never CTR — and the size bound is not the cipher's
 
@@ -242,8 +232,8 @@ observed serving wrong data — a truncated GraphQL response under an open
 GCM detects a body that arrived wrong; CTR would import it as state.
 
 A public drive gets neither cipher and so gets neither property: a body that
-arrived wrong is caught one step later, by the data item signature, which every
-path checks (§2.2).
+arrived wrong is caught only if it fails to decompress or fails the payload
+checks (§2.4), the same exposure that drive's own entities have (§2.2).
 
 **The 100 MiB refusal is a bound on memory, not on the cipher.** D5 was
 originally justified as an AES-GCM constraint — GCM should not authenticate
@@ -292,7 +282,7 @@ larger. That head-to-head is still fair, because both containers were measured
 on the same fixture, but its absolute sizes understate a real drive.
 
 **And there is a path with no cipher in it at all.** A public drive's artifact
-is signed and not encrypted, so a bound inherited from AES-GCM would have
+is not encrypted, so a bound inherited from AES-GCM would have
 nothing to inherit from and would have to be dropped for public drives, which
 is plainly the wrong answer, because the cost the bound guards is the same on
 both paths and is spent before any cipher is reached. A justification that
@@ -338,16 +328,20 @@ tried, 10.14 M gzipped against 6.09 M, because the indexes are dead weight a
 reader throws away.
 
 **The narrower argument: the malformed-database CVE history.** It is real, and
-it is why the read gate below is not optional. It is narrower than it reads
-because the artifact is signed by the drive owner and, on a private drive,
-encrypted under the drive key: feeding a hostile file requires the wallet or the
-key, and with either the attacker already owns the drive. The residual is a
-compromised owner attacking someone who accepted a shared drive, and on web the
-parser runs inside the wasm sandbox.
+it is why the read gate below is not optional. On a private drive it is narrower than it
+reads, because the payload is authenticated under the drive key: feeding a
+hostile file requires the key, and with it the attacker already owns the drive.
+On a **public** drive the payload is not authenticated (§2.2), so a gateway that
+lies about an artifact's owner, or the owner's own wallet, can hand a reader a
+hostile file. That is the same exposure the app already has to every file a
+gateway serves it for preview, and the read gate below is what stands in front
+of it. On web the parser runs inside the wasm sandbox; on mobile and desktop it
+is the native library, which makes the gate the whole defence there.
 
 **The read gate, in order. Every refusal is a fallback.**
 
-1. Decrypt, verify the data item signature against the drive owner, inflate.
+1. Check the upload's owner is the drive's, decrypt (private), detect the
+   encoding, inflate under the bound.
 2. Open **read-only** with `SQLITE_DBCONFIG_DEFENSIVE` and
    `SQLITE_DBCONFIG_TRUSTED_SCHEMA=0`.
 3. `PRAGMA integrity_check`.
@@ -379,17 +373,16 @@ limit. Reuse the payload boundary from §2.3, unchanged for either privacy: a
 payload that inflates past what a producer is allowed to seal is, by
 construction, not a payload this format produced.
 
-This check is cheap because of the ordering in §2.2 — the signature has already
-verified by the time anything is inflated, so the bound is a backstop against a
-*compromised or buggy owner client*, not the front line against anonymous
-input. That holds for a public drive too, where the signature is the only thing
-that ran before it.
+On a private drive GCM has authenticated the bytes before anything is
+inflated, so the bound is a backstop against a *compromised or buggy owner
+client*. On a public drive nothing authenticated them, so the bound is the
+front line, and it is the same bound.
 
 ### 2.5 Trust, replay and failure
 
-- **Signature first.** An artifact whose signature does not verify against the
-  drive owner is discarded before anything else is examined.
-- **Newest wins** by the signed coverage claim — cross-checked against the
+- **Owner first.** An artifact not uploaded by the drive owner is discarded
+  before anything else is examined.
+- **Newest wins** by the payload's coverage claim — cross-checked against the
   tags before it is believed (§3.3) — and never by arrival order.
 - **No rollback.** An artifact covering less than what is already synced is a
   no-op, never a regression.
@@ -403,17 +396,17 @@ that ran before it.
 
 ### 2.6 Public drives — supported, and the earlier recommendation was wrong
 
-A public drive has no drive key, so its artifact is **signed and not
-encrypted**. The chain is the private one minus a layer, and inverted on read:
+A public drive has no drive key, so its artifact is **not encrypted**. The
+chain is the private one minus a layer, and inverted on read:
 
 ```
-private:  serialise → gzip → sign as a data item → AES256-GCM
-public:   serialise → gzip → sign as a data item
+private:  serialise → gzip → AES256-GCM
+public:   serialise → gzip
 ```
 
 `Cipher` and `Cipher-IV` are absent for a public artifact, and **their absence
 is the discriminator**. Everything else about the entity — the ArFS tags, the
-coverage claim, `Entity-Count`, the signature, the size bound, the section
+coverage claim, `Entity-Count`, the owner check, the size bound, the section
 rules — is unchanged.
 
 #### The earlier recommendation, and why it does not hold
@@ -485,7 +478,7 @@ trustworthy, here the privacy of the drive in the reader's own database. It is
 checked twice for the same reason the size bound is: once against the tags,
 before the body is touched, and once in the codec, which is the layer that
 decides whether to decrypt and must not decide it from anything else. The
-signed payload's own `privacy` field is checked against the same trustworthy
+payload's own `privacy` field is checked against the same trustworthy
 value a step later — that one matters because the merge writes the payload's
 `privacy` onto the local drive row.
 
@@ -525,7 +518,7 @@ its own. Encryption removes it as well, which is why this applies to public
 artifacts only.
 
 **The rule.** A reader accepts both encodings and tells them apart by the
-first bytes of the signed payload: `1f 8b` is a gzip stream, `SQLite format 3`
+first bytes of the payload: `1f 8b` is a gzip stream, `SQLite format 3`
 followed by a NUL is an uncompressed file, and anything else is refused. The
 producer chooses per artifact, and that artifact keeps its choice for ever. It
 is not a `meta` flag, because `meta` is inside the compressed bytes it would
@@ -649,8 +642,8 @@ One tag is specific to this entity:
 
 - **`Entity-Count`** — an integrity check, not a statistic. On a private drive
   GCM proves the ciphertext arrived intact and the count proves the body meant
-  what the tags promised; on a public drive the data item signature proves the
-  first and the count still proves the second. A mismatch after import is
+  what the tags promised; on a public drive nothing proves the first, and the
+  count still proves the second. A mismatch after import is
   decisive and cheap, and it is the same check on both paths.
 
 **Never set `Content-Encoding: gzip` on this entity.** An earlier draft of this
@@ -665,19 +658,18 @@ documentation — it is an instruction to the transport:
   `res.header('Content-Encoding', dataAttributes.contentEncoding)` in
   `src/routes/data/handlers.ts`.
 - What the gateway then serves is **GCM ciphertext** for a private drive, and
-  for a public drive a **signed ANS-104 data item** whose framing wraps the
-  gzip stream; the gzip layer is two steps further in on one path and one step
-  further in on the other (§3.3), and never the outermost thing. A browser
+  for a public drive the gzip stream itself, which a transport layer would
+  then decode before the reader's own bounded inflation could run (§2.4). On
+  the private path the gzip layer is one step further in (§3.3). A browser
   `fetch` will try to gunzip whichever of those arrives, at the network layer,
   and fail with `ERR_CONTENT_DECODING_FAILED`. There is no opt-out in the
   browser, and `dart:io` auto-decompresses by default.
 - **Tags are immutable.** An artifact published with this tag is unfetchable
   for as long as it exists, by every client, with no remedy but republishing.
 
-Compression stays an internal detail of the payload, discovered by decompressing
-it after the signature verifies — on both paths, since it is the signature and
-not the cipher that gates inflation (§2.2). A reader must bound that
-decompression (§2.4);
+Compression stays an internal detail of the payload, detected from its first
+bytes (§2.7) after the owner check and, for a private drive, decryption. A
+reader must bound that decompression (§2.4);
 the ratio here is roughly 5.2× on real data (34.63 → 6.65 MiB), and a payload
 that inflates past the AES-GCM size boundary is refused rather than buffered.
 
@@ -690,31 +682,30 @@ files? superseded revisions?); a candidate for §6 instead.
 ### 3.3 Payload
 
 ```
-private:  serialise rows → gzip → sign as a data item (owner's wallet) → AES256-GCM
-public:   serialise rows → gzip → sign as a data item (owner's wallet)
+private:  serialise rows → gzip → AES256-GCM
+public:   serialise rows → gzip
 ```
 
 The payload is a container of **named sections**, plus a top-level `version`
-and a top-level `coverage` object. The signature covers the whole container —
-sections, version and coverage alike. See §2.2 for why the gzip step comes
-before the signature and not after, and §2.6 for why the last step is absent
-for a public drive.
+and a top-level `coverage` object. On a private drive GCM authenticates the
+whole container, sections, version and coverage alike. See §2.2 for
+authorship, and §2.6 for why the last step is absent for a public drive.
 
 The container itself is **identical between the two privacies**. Nothing in it
 is conditioned on the drive's privacy, no section appears or disappears, and
 the `drives` section carries the drive's own `privacy` value on both paths —
 which a reader checks against the privacy of the drive it holds locally, for
 the same reason it checks the coverage tags: the merge writes that value onto
-the local drive row, and the payload is the half somebody signed.
+the local drive row, and the payload is the half that is imported.
 
 `version` is the same `major.minor` string the `State-Version` tag carries, and
 a producer writes both from one constant. **A reader must refuse an artifact
 whose tag and payload version disagree**, for the same reason it refuses one
-whose `Block-*` tags disagree with the signed coverage: the tag is chosen by
-whoever posts the transaction and the payload is what the owner signed. Any
-disagreement, including one only in the minor — "the minor changes nothing this
-reader dispatches on" is true, and is not a reason to believe the half anybody
-can rewrite.
+whose `Block-*` tags disagree with the payload's coverage: the tag is what an
+indexer reports and the payload is what is imported. Any disagreement,
+including one only in the minor — "the minor changes nothing this reader
+dispatches on" is true, and is not a reason to believe the half nobody
+authenticated.
 
 **The sections.** Seven, named for the tables they carry, each an object with
 a `rows` array. All seven are required and any may be empty (§6.1).
@@ -753,16 +744,16 @@ It states the block range the rows in *this* payload account for, and it is the
 value a reader adopts as its own sync watermark. The same numbers appear in the
 `Block-Start` / `Block-End` tags, which is deliberate duplication: the tags let
 discovery order candidates without downloading them, and the payload copy is
-the one that is signed.
+the one that is imported.
 
 **A reader must refuse any artifact whose tags disagree with the payload's
-claim, on either end.** Tags are chosen by whoever posts the transaction and
-nobody signs them. Re-tagging a genuine artifact with a higher `Block-End` and
-re-posting it would have every client that imports it advance its watermark
-across blocks whose rows the artifact never carried — the entities in that gap
+claim, on either end.** Tags reach a reader as an indexer reports them, and the
+indexer is not trusted. A tag reporting a higher `Block-End` than the payload
+claims would have every client that believed it advance its watermark across
+blocks whose rows the artifact never carried — the entities in that gap
 are then never queried, and the drive is quietly missing files with no error
 anywhere. `Block-Start` matters for the same reason and is not the lesser half:
-re-tagging a `[700, 900]` artifact as starting at 0 jumps the watermark across
+reporting a `[700, 900]` artifact as starting at 0 jumps the watermark across
 200 blocks of unread history.
 
 A producer must therefore read its watermark and its rows in **one database
@@ -795,7 +786,7 @@ property that matters most: it is **self-contained**. Any single artifact is
 sufficient on its own. There is no ancestor to locate, no ancestor to still be
 retrievable, and no way for one missing link to invalidate a chain — which is
 precisely the residual risk that hangs over snapshot chains
-(`SNAPSHOT_CREATION_FROM_SNAPSHOTS.md`). One fetch, one signature to verify, one
+(`SNAPSHOT_CREATION_FROM_SNAPSHOTS.md`). One fetch, one owner check, one
 decryption, and either it works or the client falls back.
 
 The format does not forbid the alternative. `Block-Start` is a tag, not a
@@ -846,11 +837,12 @@ state_<driveId>.myname   →   latest drive-state transaction
 ```
 
 ```
-resolve name  →  GET the bytes  →  verify signature  →  decrypt  →  import
+resolve name  →  look up the owner  →  GET the bytes  →  decrypt  →  import
                                          GraphQL only for the recent tail
 ```
 
-For the ~99% of history an artifact covers, no indexer is involved at all. On a
+For the ~99% of history an artifact covers, one indexer lookup replaces the
+walk. On a
 connection being throttled or served by a struggling gateway, that is a
 reliability gain before it is a performance one.
 
@@ -865,10 +857,13 @@ transferred or compromised. GraphQL discovery filtered on
 `owners: [ownerAddress]` at least proved authorship as a side effect of the
 query; a name proves nothing.
 
-This is why §2.2 signs the payload. **Verification must not live in the
-discovery path.** A resolved name yields bytes; the signature, the `Drive-Id`
-tag and the coverage tags decide whether to trust them. A compromised name can
-waste a download. It cannot introduce hostile state.
+So a resolved name yields a transaction id and nothing more. The reader looks
+up that transaction's owner, by id, and applies the same owner check as GraphQL
+discovery (§2.2), then the `Drive-Id` tag and the coverage tags. On a private
+drive a compromised name also meets GCM: bytes not sealed under the drive key
+do not open. A compromised name can waste a download and one lookup. It cannot
+introduce state from anyone but the drive's owner, as far as the indexer can
+tell.
 
 ### 4.3 Discovery order
 
@@ -890,17 +885,15 @@ remaining available and willing. A user with only an Arweave wallet must be able
 to publish and read artifacts with no Turbo involvement at all — the same
 guarantee the rest of ArFS gives.
 
-This is affordable precisely because §2.2 signs the payload. Authorship is
-carried by the signature rather than by the transaction header, so:
+Authorship is the upload's owner as the indexer reports it (§2.2), which the
+indexer reports identically for both:
 
-- a **top-level (L1) transaction** verifies from its own signature;
-- a **bundled data item** verifies identically, even though `GET /tx/<id>`
-  returns 404 for one and its owner is otherwise knowable only through the
-  GraphQL indexer.
+- a **top-level (L1) transaction**, whose owner is in its header;
+- a **bundled data item**, whose owner is in the item, and for which
+  `GET /tx/<id>` returns 404.
 
-The transport therefore becomes a purely operational choice — cost, size,
-whichever upload path the user already has — with no bearing on trust,
-discovery or verification. Clients must read either without preference.
+The transport is therefore a purely operational choice — cost, size, whichever
+upload path the user already has — with no bearing on trust or discovery. Clients must read either without preference.
 
 Reading has the same rule: an artifact is fetched by transaction id over
 ordinary HTTP, which works for both, and never requires the bundler that
@@ -935,8 +928,8 @@ Four consequences for any reader of an artifact, including the app:
    with a one-token minimum, so hundreds of small reads are the wrong shape.
 3. **Do not verify `Content-Digest` on a partial response.** A gateway returns
    the whole-object digest on a 206 and signs it, so the check fails on correct
-   data. A reader verifies the artifact's own data item signature, which §2.2
-   already requires.
+   data. A reader relies on the owner check and, on a private drive, GCM
+   (§2.2).
 4. **Pin the resolved id.** A name is mutable and `If-Range` is not implemented,
    so a reader takes `x-arns-resolved-id` from the first response and reads the
    rest against it.
@@ -1065,10 +1058,10 @@ whenever a producer meant the first.
 
 This is not hypothetical; it is how this format nearly shipped. An early
 revision carried three sections — the drive row and its folder and file
-entries — with no revisions. A producer built from that revision signs a
+entries — with no revisions. A producer built from that revision publishes a
 payload that:
 
-- verifies against the drive owner's wallet;
+- is uploaded by the drive owner's wallet;
 - carries a correct `Entity-Count`, which counts entities, not revisions;
 - claims coverage its tags agree with.
 
@@ -1099,7 +1092,7 @@ Per drive, per sync:
 - whether an artifact was used;
 - if not, an **enumerated reason** — `none found`, `unknown State-Version`
   (a major this build does not read, in either direction),
-  `signature failed`, `decrypt failed`, `integrity failed`, `entity count
+  `owner mismatch`, `decrypt failed`, `integrity failed`, `entity count
   mismatch`, `coverage mismatch`, `privacy mismatch` (the artifact's
   cipher-presence contradicts the drive's privacy, §2.6), `range already
   covered`, `fetch failed`;
@@ -1133,10 +1126,11 @@ actually used one?" gets a wrong denominator if this is only a log line.
   permanent arrangement: snapshot production ends once core-js and the CLI read
   artifacts (§11), so "snapshots keep being produced" is true only until then,
   and no client should be built on the assumption that it lasts.
-- **ardrive-core-js** needs signature verification, the drive-key decryption
-  path it already has, and the merge rules. It does **not** need a format
-  reimplemented from prose: the payload is a SQLite file, and `node:sqlite` is
-  built into Node. Reading is far simpler than writing.
+- **ardrive-core-js** needs the owner check, the drive-key decryption path it
+  already has, and the merge rules. It does **not** need a format
+  reimplemented from prose: the payload is a SQLite file, and a SQLite library
+  reads it (`node:sqlite` needs Node 22, while core-js supports Node 18; see
+  the delivery plan, B1.1). Reading is far simpler than writing.
 - **The CLI is the more interesting producer** — real bandwidth, no browser
   connection limits. A better place to generate an artifact for a very large
   drive than a browser tab.
@@ -1158,9 +1152,9 @@ is not real until it is documented there.
   entities.
 - `reading-data.mdx` — the read order in §5, discovery in §4, and the rule that
   any failure falls back rather than fails.
-- `privacy.mdx` — that a private drive's payload is signed and encrypted with
-  the **drive** key as a single unit, unlike a snapshot's per-entity
-  ciphertext; that a public drive's is signed and not encrypted, with `Cipher`
+- `privacy.mdx` — that a private drive's payload is encrypted with the
+  **drive** key as a single unit, unlike a snapshot's per-entity ciphertext;
+  that a public drive's is not encrypted, with `Cipher`
   and `Cipher-IV` absent; and that a reader refuses an artifact whose
   cipher-presence contradicts the privacy of the drive it names (§2.6).
 

@@ -110,18 +110,17 @@ class DriveStateFormatException implements Exception {
 ///
 /// This is the artifact's **coverage claim**, and it lives in the payload
 /// rather than only in the `Block-Start` / `Block-End` tags because the
-/// payload is what the owner signs (§2.2). The tags are not: a transaction
-/// tag is chosen by whoever submits the transaction, so anyone who copies an
-/// owner's artifact bytes verbatim can re-publish them under any coverage
-/// they like. Those bytes still verify - they are the owner's - and an
-/// importer that took its watermark from the tag would advance the drive past
-/// a range nothing ever synced, which is the silent drop in
+/// payload is what is imported, and for a private drive it is authenticated
+/// under the drive key. The tags reach a reader as an indexer reports them,
+/// and the indexer is not trusted: an importer that took its watermark from a
+/// tag would advance the drive past whatever range the tag named, including
+/// one nothing ever synced, which is the silent drop in
 /// `SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
 ///
 /// So the tags stay, because discovery has to order candidates without
 /// downloading them, and the importer cross-checks them against this before
 /// believing either. Same shape as `Drive-Id` and `Entity-Count`: the tag says
-/// what to expect, the signed body decides.
+/// what to expect, the body decides.
 class DriveStateCoverage extends Equatable {
   /// The lowest block height accounted for. Always 0 for anything this client
   /// publishes (§3.4) - carried rather than assumed, because an incremental
@@ -194,13 +193,13 @@ class DriveStateExport extends Equatable {
   /// The licences the user attached to their own files.
   final List<ExportedLicense> licenses;
 
-  /// What range of the drive's history the rows above account for. Signed
+  /// What range of the drive's history the rows above account for. Carried
   /// with them; see [DriveStateCoverage].
   final DriveStateCoverage coverage;
 
   /// The format version this payload declares, `major.minor` (§6).
   ///
-  /// Inside the signature, unlike the `State-Version` tag that repeats it, so
+  /// Inside the payload, unlike the `State-Version` tag that repeats it, so
   /// this is the copy an importer trusts and the tag is the hint it
   /// cross-checks — the same split, for the same reason, as
   /// [DriveStateCoverage] against `Block-Start`/`Block-End`.
@@ -286,7 +285,7 @@ class DriveStateExport extends Equatable {
   ///
   /// The second half is not hypothetical. Before revisions travelled, this
   /// payload had three sections and the same version number. A producer built
-  /// from that commit would sign a payload that verifies, carries a correct
+  /// from that commit would publish a payload that opens, carries a correct
   /// `Entity-Count`, claims honest coverage — and imports into a drive whose
   /// file list renders **empty**, because the file rows are joined through
   /// revisions that were never there. Every check would pass and the user
@@ -428,8 +427,7 @@ class DriveStateExport extends Equatable {
 /// drive, but the database holds every drive the user has attached.
 ///
 /// Rows come back ordered by primary key so that two exports of the same state
-/// serialise to the same bytes. The payload is signed (§2.2), and a signature
-/// over a non-deterministic encoding is a signature nobody can reproduce.
+/// serialise to the same bytes, which is what lets two exports be compared.
 Future<DriveStateExport> exportDriveState(
   DriveDao driveDao,
   String driveId,

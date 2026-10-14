@@ -2403,7 +2403,7 @@ class _SyncRepository implements SyncRepository {
   ///    it is switched on;
   ///  * a resolvable [DriveStateProtection]. Both privacies read artifacts:
   ///    a private drive needs its key, and a public drive needs no key at all
-  ///    because a public drive's artifact is signed and not encrypted (§2.6).
+  ///    because a public drive's artifact is not encrypted (§2.6).
   ///    What the resolution refuses is a private drive whose key is missing -
   ///    which used to be indistinguishable from a public drive here, since
   ///    both arrive as a null key;

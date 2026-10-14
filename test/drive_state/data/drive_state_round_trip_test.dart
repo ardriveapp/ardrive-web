@@ -396,7 +396,6 @@ void main() {
     final sealed = await codec.seal(
       plaintext: artifact.bytes,
       protection: protection ?? privateDrive,
-      wallet: owner,
     );
     expect(sealed.isSealed, isTrue, reason: sealed.toString());
     final envelope = sealed.envelope!;
