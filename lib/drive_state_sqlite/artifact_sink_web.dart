@@ -63,18 +63,28 @@ Future<ArtifactSource> createArtifactSource(
   final vfs = _vfs;
   if (vfs.xAccess(path, 0) != 0) vfs.xDelete(path, 0);
 
+  // Delete-on-close, and held open until the source is disposed. The
+  // database's filesystem persists every file to IndexedDB except one opened
+  // this way, which it keeps in memory only. A received artifact is read once
+  // and thrown away, and persisting it cost about 14 s at 41,767 files in a
+  // release build: 26 MiB written block by block on attach, and deleted again
+  // on detach. SQLite opens the same path to attach it, and finds it in
+  // memory.
   final file = vfs
       .xOpen(
         Sqlite3Filename(path),
-        SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE,
+        SqlFlag.SQLITE_OPEN_CREATE |
+            SqlFlag.SQLITE_OPEN_READWRITE |
+            SqlFlag.SQLITE_OPEN_DELETEONCLOSE,
       )
       .file;
   try {
     file.xWrite(Uint8List.fromList(bytes), 0);
-  } finally {
+  } catch (_) {
     file.xClose();
+    rethrow;
   }
-  return _VfsSource(path, vfs);
+  return _VfsSource(path, vfs, file);
 }
 
 class _VfsSink implements ArtifactSink {
@@ -85,8 +95,8 @@ class _VfsSink implements ArtifactSink {
 
   @override
   Future<int> size() async {
-    final file = _fs.xOpen(Sqlite3Filename(path), SqlFlag.SQLITE_OPEN_READONLY)
-        .file;
+    final file =
+        _fs.xOpen(Sqlite3Filename(path), SqlFlag.SQLITE_OPEN_READONLY).file;
     try {
       return file.xFileSize();
     } finally {
@@ -96,8 +106,8 @@ class _VfsSink implements ArtifactSink {
 
   @override
   Future<Uint8List> read() async {
-    final file = _fs.xOpen(Sqlite3Filename(path), SqlFlag.SQLITE_OPEN_READONLY)
-        .file;
+    final file =
+        _fs.xOpen(Sqlite3Filename(path), SqlFlag.SQLITE_OPEN_READONLY).file;
     try {
       final bytes = Uint8List(file.xFileSize());
       file.xRead(bytes, 0);
@@ -117,10 +127,14 @@ class _VfsSource implements ArtifactSource {
   @override
   final String path;
   final VirtualFileSystem _fs;
-  _VfsSource(this.path, this._fs);
+  final VirtualFileSystemFile _held;
+  _VfsSource(this.path, this._fs, this._held);
 
   @override
   Future<void> dispose() async {
-    if (_fs.xAccess(path, 0) != 0) _fs.xDelete(path, 0);
+    // Closing deletes it from memory; the delete clears the filesystem's
+    // record that it was never to be persisted.
+    _held.xClose();
+    _fs.xDelete(path, 0);
   }
 }

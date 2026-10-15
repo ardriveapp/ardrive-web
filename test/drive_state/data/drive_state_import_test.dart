@@ -14,6 +14,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart' show AesGcm, SecretKey;
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:test/test.dart';
 
 import '../../test_utils/utils.dart';
@@ -1953,6 +1954,251 @@ void main() {
     });
   });
 
+  group('the bulk tables, copied by SQLite rather than read into Dart', () {
+    // A licence, so the licence table has a row for a test to break.
+    Future<void> addLicenceToProducer() async {
+      final fileId = (await producerDb.select(producerDb.fileRevisions).get())
+          .first
+          .fileId;
+      await producerDb.into(producerDb.licenses).insert(
+            LicensesCompanion.insert(
+              fileId: fileId,
+              driveId: driveId,
+              dataTxId: 'a-data-tx',
+              licenseTxType: 'assertion',
+              licenseTxId: 'a-license-tx',
+              licenseType: 'udl',
+            ),
+          );
+    }
+
+    Future<DriveStateImportResult> importEdited(List<String> edits) async {
+      final artifact = await sealArtifact(
+        editArtifact(await exportedPayload(), edits),
+        blockEnd: 900,
+      );
+      return importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+    }
+
+    // SQLite stores whatever a column is given, whatever the file declares.
+    // Reading through Dart refused a value of the wrong type by throwing, and
+    // the copy has to refuse it too, or it lands in the database and throws
+    // every time the row is read.
+    for (final (label, edit) in [
+      // A column declared TEXT turns a number into text as it is written, so
+      // bytes are the one wrong type a text column can hold.
+      (
+        'bytes where a file\'s name should be text',
+        "UPDATE file_entries SET name = x'00'",
+      ),
+      (
+        'text where a revision\'s size should be a number',
+        "UPDATE file_revisions SET size = 'large'",
+      ),
+      (
+        'a time no date can hold',
+        'UPDATE file_revisions SET dateCreated = 9000000000000',
+      ),
+      (
+        'bytes where an optional text field should be',
+        "UPDATE licenses SET bundledIn = x'00' "
+            'WHERE rowid = (SELECT MIN(rowid) FROM licenses)',
+      ),
+      (
+        'a fraction where a hidden flag should be',
+        'UPDATE folder_revisions SET isHidden = 0.5',
+      ),
+    ]) {
+      test('refuses $label', () async {
+        await attachDrive(db);
+        await addLicenceToProducer();
+
+        final result = await importEdited([edit]);
+
+        expect(result.outcome, DriveStateOutcome.integrityFailed);
+        expect(result.detail, contains('format declares'));
+        expect(await fileRows(db), isEmpty);
+        expect((await driveRow(db)).lastBlockHeight, 0);
+      });
+    }
+
+    test('refuses a file listed twice, which an upsert would settle silently',
+        () async {
+      await attachDrive(db);
+
+      final result = await importEdited([
+        'INSERT INTO file_entries SELECT * FROM file_entries '
+            'WHERE rowid = (SELECT MIN(rowid) FROM file_entries)',
+        'UPDATE meta SET entityCount = entityCount + 1',
+      ]);
+
+      expect(result.outcome, DriveStateOutcome.integrityFailed);
+      expect(result.detail, contains('listed twice'));
+      expect(await fileRows(db), isEmpty);
+    });
+
+    test('lands any non-zero hidden flag as hidden, the way Dart read it',
+        () async {
+      await attachDrive(db);
+
+      final result = await importEdited([
+        'UPDATE file_entries SET isHidden = 2',
+        'UPDATE file_revisions SET isHidden = 7',
+      ]);
+
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      for (final table in ['file_entries', 'file_revisions']) {
+        final stored = await db
+            .customSelect('SELECT DISTINCT isHidden AS h FROM $table')
+            .get();
+        expect(stored.map((r) => r.read<int>('h')), [1], reason: table);
+      }
+    });
+
+    test('lands the licence of a file it carries', () async {
+      await attachDrive(db);
+      await addLicenceToProducer();
+
+      final result = await importEdited([]);
+
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      expect(result.stats!.licensesWritten, 1);
+      final landed = (await db.select(db.licenses).get()).single;
+      expect(landed.licenseTxId, 'a-license-tx');
+      expect(landed.licenseType, 'udl');
+    });
+
+    test('imports two artifacts at once, each attached under its own name',
+        () async {
+      // Drives sync in parallel, and the web database waits on IndexedDB
+      // after a write, so another drive's import can attach in that gap. When
+      // every import attached as `artifact`, the second failed with "database
+      // is already in use" and its drive fell back to a full sync. The test
+      // database is synchronous, so the wait is made here.
+      final yielding = Database(
+        NativeDatabase.memory().interceptWith(_WaitsAfterEveryStatement()),
+      );
+      addTearDown(yielding.close);
+      await attachDrive(yielding);
+      final concurrent = DriveStateImporter(yielding.driveDao, codec: codec);
+      final artifact =
+          await sealArtifact(await exportedPayload(), blockEnd: 900);
+
+      final results = await Future.wait([
+        for (var i = 0; i < 2; i++)
+          concurrent.import(
+            candidate: artifact.candidate,
+            body: artifact.body,
+            protection: privateDrive,
+            expectedOwnerAddress: ownerAddress,
+          ),
+      ]);
+
+      for (final result in results) {
+        expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+      }
+      final attached =
+          await yielding.customSelect('PRAGMA database_list').get();
+      expect(
+        attached.map((r) => r.read<String>('name')),
+        isNot(contains(startsWith('artifact'))),
+        reason: 'every artifact is detached when its import ends',
+      );
+    });
+  });
+
+  group('the record of an imported artifact', () {
+    Future<
+        ({
+          DriveStateArtifactCandidate candidate,
+          DriveStateImportResult result
+        })> importOnce() async {
+      final artifact =
+          await sealArtifact(await exportedPayload(), blockEnd: 900);
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+      return (candidate: artifact.candidate, result: result);
+    }
+
+    test('survives a restart: a new importer knows the drive holds it',
+        () async {
+      await attachDrive(db);
+      final imported = await importOnce();
+      expect(imported.result.outcome, DriveStateOutcome.used);
+
+      final afterRestart = DriveStateImporter(db.driveDao, codec: codec);
+
+      expect(await afterRestart.hasAlreadyImported(imported.candidate), isTrue);
+      expect((await driveRow(db)).importedArtifactTxId, 'artifact-tx-id');
+    });
+
+    test('does not cover a different artifact at the same height', () async {
+      // A different artifact over the same range can carry entities this
+      // client's own sync skipped, and importing it is how those get repaired.
+      await attachDrive(db);
+      final imported = await importOnce();
+
+      final other = DriveStateArtifactCandidate(
+        txId: 'a-different-artifact',
+        ownerAddress: ownerAddress,
+        tags: imported.candidate.tags,
+        minedAtHeight: imported.candidate.minedAtHeight,
+      );
+
+      expect(await importer.hasAlreadyImported(other), isFalse);
+    });
+
+    test('does not cover a drive whose watermark moved back below it',
+        () async {
+      await attachDrive(db);
+      final imported = await importOnce();
+      await db.driveDao.writeToDrive(const DrivesCompanion(
+        id: Value(driveId),
+        lastBlockHeight: Value(899),
+      ));
+
+      expect(await importer.hasAlreadyImported(imported.candidate), isFalse);
+    });
+
+    test('is not written by an import that was refused', () async {
+      await attachDrive(db);
+      final artifact = await sealArtifact(
+        await exportedPayload(),
+        blockEnd: 900,
+        entityCount: 99,
+      );
+      final result = await importer.import(
+        candidate: artifact.candidate,
+        body: artifact.body,
+        protection: privateDrive,
+        expectedOwnerAddress: ownerAddress,
+      );
+
+      expect(result.outcome, DriveStateOutcome.countMismatch);
+      expect((await driveRow(db)).importedArtifactTxId, equals(null));
+      expect(await importer.hasAlreadyImported(artifact.candidate), isFalse);
+    });
+
+    test('goes with the drive when it is detached', () async {
+      await attachDrive(db);
+      final imported = await importOnce();
+
+      await db.driveDao.detachDrive(driveId);
+      await attachDrive(db, lastBlockHeight: 900);
+
+      expect(await importer.hasAlreadyImported(imported.candidate), isFalse);
+    });
+  });
+
   group('every failure is an outcome, never a throw', () {
     test('a drive key that does not open the body', () async {
       await attachDrive(db);
@@ -2528,4 +2774,18 @@ void main() {
       }
     });
   });
+}
+
+/// Waits on the event loop after every statement, the way the web database
+/// waits on IndexedDB after a write, so concurrent work can interleave.
+class _WaitsAfterEveryStatement extends QueryInterceptor {
+  @override
+  Future<void> runCustom(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) async {
+    await executor.runCustom(statement, args);
+    await Future<void>.delayed(const Duration(milliseconds: 1));
+  }
 }

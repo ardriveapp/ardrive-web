@@ -420,6 +420,7 @@ const withheldDriveColumns = <String>{
   'keyEncryptionIv',
   'syncCursor',
   'lastBlockHeight',
+  'importedArtifactTxId',
 };
 
 /// Rebuilds `network_transactions` from the revisions an artifact carried.

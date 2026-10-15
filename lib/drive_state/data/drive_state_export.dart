@@ -857,6 +857,9 @@ List<GeneratedColumn> _withheldDriveColumns(Drives t) => [
       // SYNC_SKIPPED_ENTITY_PERSISTENCE.md.
       t.syncCursor,
       t.lastBlockHeight,
+      // Which artifact this client last imported: a fact about this client,
+      // not about the drive.
+      t.importedArtifactTxId,
     ];
 
 List<GeneratedColumn> _exportedDriveColumns(Drives t) => [

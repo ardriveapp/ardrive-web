@@ -5,13 +5,10 @@ import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
 import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
-import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/drive_state_sqlite/artifact_sink.dart';
-import 'package:ardrive/drive_state_sqlite/artifact_to_export.dart';
+import 'package:ardrive/drive_state_sqlite/artifact_for_merge.dart';
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_import.dart';
-import 'package:ardrive/drive_state_sqlite/drive_state_artifact_schema.dart';
-import 'package:ardrive/sync/utils/network_transaction_utils.dart';
 import 'package:ardrive_utils/ardrive_utils.dart'
     show DrivePrivacyTag, EntityTag;
 import 'package:arweave/utils.dart' as utils;
@@ -334,10 +331,46 @@ class DriveStateImporter {
   final DriveDao _driveDao;
   final DriveStateEnvelopeCodec _codec;
 
+  /// How many artifacts this process has attached, so each gets a name of
+  /// its own.
+  static int _attachments = 0;
+
   DriveStateImporter(
     this._driveDao, {
     DriveStateEnvelopeCodec? codec,
   }) : _codec = codec ?? DriveStateEnvelopeCodec();
+
+  /// Whether [candidate] is the artifact this drive last imported, and the
+  /// drive is still synced through its `Block-End`.
+  ///
+  /// If so, everything in it is already in the database: the import wrote its
+  /// rows and this record in one transaction, and rows only leave with the
+  /// drive row that holds the record (`DriveDao.detachDrive`) or with the
+  /// whole database at logout. Importing it again would download it and
+  /// write nothing.
+  ///
+  /// The watermark half covers a drive whose watermark moved back below the
+  /// artifact since: its range is no longer covered, so the artifact is
+  /// worth reading again rather than leaving the range to a full sync.
+  ///
+  /// Kept in the database rather than in memory, so it survives a restart.
+  /// An in-memory record made every launch pay one download and import per
+  /// drive that has an artifact.
+  Future<bool> hasAlreadyImported(
+    DriveStateArtifactCandidate candidate,
+  ) async {
+    final driveId = candidate.driveId;
+    final blockEnd = candidate.blockEnd;
+    if (driveId == null || blockEnd == null) return false;
+
+    final drive = await (_driveDao.select(_driveDao.drives)
+          ..where((d) => d.id.equals(driveId)))
+        .getSingleOrNull();
+
+    return drive != null &&
+        drive.importedArtifactTxId == candidate.txId &&
+        (drive.lastBlockHeight ?? 0) >= blockEnd;
+  }
 
   /// Checks [candidate] was uploaded by [expectedOwnerAddress], opens [body]
   /// (the artifact transaction's data) under [protection], and merges it into
@@ -563,11 +596,11 @@ class DriveStateImporter {
     //    views, no triggers, no virtual tables, no indexes, nothing but the
     //    eight tables this reader agreed to. Only then is a row read.
     //
-    //    The rows then travel through the same [DriveStateExport] the JSON
-    //    reader produced, so every guard below — identity, coverage, ghost
-    //    folders, cycle detection, newer-row-wins — is the one that was
-    //    already reviewed and tested. The container changed; the merge did
-    //    not.
+    //    The bulk tables are then copied by SQLite itself, after every value
+    //    in them has been checked for the type the format declares
+    //    (`artifact_for_merge.dart`). The drive row and the folders still come
+    //    into Dart, because the guards below — identity, coverage, ghost
+    //    folders, cycle detection, newer-row-wins — are decided there.
     if (!artifactSinkSupported) {
       return const DriveStateImportResult.rejected(
         DriveStateOutcome.integrityFailed,
@@ -575,45 +608,94 @@ class DriveStateImporter {
       );
     }
 
-    final DriveStateExport export;
+    // Attached under a name of its own. Drives sync in parallel, and two
+    // imports attaching the same name collide: the second fails with
+    // "database is already in use" and its drive falls back to a full sync.
+    final alias = 'artifact_${_attachments++}';
     final source = await createArtifactSource(driveId, opened.plaintext!);
     try {
-      await _driveDao.customStatement(
-        'ATTACH DATABASE ? AS artifact',
-        [source.path],
-      );
+      final ArtifactForMerge artifact;
       try {
-        final refusal = await validateAttachedArtifact(
-          _driveDao.attachedDatabase,
-          alias: 'artifact',
+        await _driveDao.customStatement(
+          'ATTACH DATABASE ? AS $alias',
+          [source.path],
         );
-        if (refusal != null) {
-          // Both arms are integrityFailed on purpose: §7's vocabulary
-          // distinguishes *why a drive did not use its artifact*, and "the
-          // bytes were not the thing they claimed" is one answer whether the
-          // file was corrupt or carried a schema nobody agreed to. The detail
-          // carries the distinction for the log.
+      } catch (e) {
+        return DriveStateImportResult.rejected(
+          DriveStateOutcome.integrityFailed,
+          'the payload is not a readable drive state container: $e',
+        );
+      }
+      try {
+        try {
+          final refusal = await validateAttachedArtifact(
+            _driveDao.attachedDatabase,
+            alias: alias,
+          );
+          if (refusal != null) {
+            // Both arms are integrityFailed on purpose: §7's vocabulary
+            // distinguishes *why a drive did not use its artifact*, and "the
+            // bytes were not the thing they claimed" is one answer whether the
+            // file was corrupt or carried a schema nobody agreed to. The
+            // detail carries the distinction for the log.
+            return DriveStateImportResult.rejected(
+              DriveStateOutcome.integrityFailed,
+              refusal.detail,
+            );
+          }
+          artifact = await readArtifactForMerge(
+            _driveDao.attachedDatabase,
+            alias: alias,
+          );
+        } catch (e) {
           return DriveStateImportResult.rejected(
             DriveStateOutcome.integrityFailed,
-            refusal.detail,
+            'the payload is not a readable drive state container: $e',
           );
         }
-        export = await readArtifactAsExport(
-          _driveDao.attachedDatabase,
-          alias: 'artifact',
+
+        return await _checkAndMerge(
+          artifact: artifact,
+          artifactTxId: candidate.txId,
+          alias: alias,
+          driveId: driveId,
+          taggedVersion: taggedVersion,
+          declaredCount: declaredCount,
+          blockStart: blockStart,
+          blockEnd: blockEnd,
+          protection: protection,
+          expectedOwnerAddress: expectedOwnerAddress,
+          stopwatch: stopwatch,
         );
       } finally {
-        await _driveDao.customStatement('DETACH DATABASE artifact');
+        // Through the select path on purpose. The web database waits for
+        // every pending IndexedDB write after a statement run outside a
+        // transaction, and at this point that is the whole merge: 9.7 s at
+        // 41,767 files in a release build. Detaching writes nothing of its
+        // own, and the merge's rows are already committed and readable, so
+        // the writes finish in the background, as they did when the artifact
+        // was detached before the merge.
+        await _driveDao.customSelect('DETACH DATABASE $alias').get();
       }
-    } catch (e) {
-      return DriveStateImportResult.rejected(
-        DriveStateOutcome.integrityFailed,
-        'the payload is not a readable drive state container: $e',
-      );
     } finally {
       await source.dispose();
     }
+  }
 
+  /// Steps 5 to 8, then the merge, while the artifact is attached as [alias].
+  Future<DriveStateImportResult> _checkAndMerge({
+    required ArtifactForMerge artifact,
+    required String artifactTxId,
+    required String alias,
+    required String driveId,
+    required DriveStateFormatVersion taggedVersion,
+    required int declaredCount,
+    required int blockStart,
+    required int blockEnd,
+    required DriveStateProtection protection,
+    required String expectedOwnerAddress,
+    required Stopwatch stopwatch,
+  }) async {
     // 5. Version agreement. Step 2 read the `State-Version` tag; this is the
     //    same claim from inside the payload, and the two have to match.
     //
@@ -632,11 +714,11 @@ class DriveStateImporter {
     //    the artifact's tag and its body disagree, which is
     //    [DriveStateOutcome.integrityFailed] — the payload did not match the
     //    shape its tags declared.
-    if (export.version != taggedVersion) {
+    if (artifact.version != taggedVersion) {
       return DriveStateImportResult.rejected(
         DriveStateOutcome.integrityFailed,
         'State-Version is tagged $taggedVersion and the payload '
-        'declares ${export.version}',
+        'declares ${artifact.version}',
       );
     }
 
@@ -645,7 +727,7 @@ class DriveStateImporter {
     //    a drive nobody named — the one mistake a merge across a shared
     //    database must never make.
     final identity = _checkIdentity(
-      export: export,
+      artifact: artifact,
       driveId: driveId,
       protection: protection,
       expectedOwnerAddress: expectedOwnerAddress,
@@ -655,12 +737,12 @@ class DriveStateImporter {
     // 7. `Entity-Count`. GCM proved the ciphertext arrived intact; this proves
     //    the body meant what the tags promised (§3.2). Decisive and cheap, and
     //    it runs before a single row is written.
-    if (export.entityCount != declaredCount) {
+    if (artifact.entityCount != declaredCount) {
       return DriveStateImportResult.rejected(
         DriveStateOutcome.countMismatch,
         'Entity-Count declared $declaredCount and the payload holds '
-        '${export.entityCount} (${export.folders.length} folders, '
-        '${export.files.length} files, 1 drive)',
+        '${artifact.entityCount} (${artifact.folders.length} folders, '
+        '${artifact.fileCount} files, 1 drive)',
       );
     }
 
@@ -672,7 +754,7 @@ class DriveStateImporter {
     //    An absent `Block-Start` tag reads as 0, which is what every v1
     //    artifact publishes; a payload claiming otherwise is rejected rather
     //    than met half way.
-    final coverage = export.coverage;
+    final coverage = artifact.coverage;
     if (coverage.blockEnd != blockEnd || coverage.blockStart != blockStart) {
       return DriveStateImportResult.rejected(
         DriveStateOutcome.coverageMismatch,
@@ -684,7 +766,9 @@ class DriveStateImporter {
     final parseDuration = stopwatch.elapsed;
 
     return _merge(
-      export: export,
+      artifact: artifact,
+      artifactTxId: artifactTxId,
+      alias: alias,
       driveId: driveId,
       // The payload's values, now that the tags are known to agree with them:
       // the watermark is set from what was imported, not from what a
@@ -699,16 +783,17 @@ class DriveStateImporter {
   /// The four ways a payload can be about something other than the drive it
   /// was fetched for. Returns null when it is about the right one.
   DriveStateImportResult? _checkIdentity({
-    required DriveStateExport export,
+    required ArtifactForMerge artifact,
     required String driveId,
     required DriveStateProtection protection,
     required String expectedOwnerAddress,
   }) {
-    if (export.drive.id != driveId) {
+    final drive = artifact.drive;
+    if (drive.id != driveId) {
       return DriveStateImportResult.rejected(
         DriveStateOutcome.integrityFailed,
         'the Drive-Id tag says $driveId and the payload holds '
-        '${export.drive.id}',
+        '${drive.id}',
       );
     }
 
@@ -716,20 +801,12 @@ class DriveStateImporter {
     // its own `driveId` and is written by primary key, so a payload smuggling
     // one for another drive would rewrite that drive's history — the same
     // mistake as an entry row, on a table an importer is likelier to forget.
-    for (final rowDriveId in [
-      ...export.folders.map((f) => f.driveId),
-      ...export.files.map((f) => f.driveId),
-      ...export.driveRevisions.map((r) => r.driveId),
-      ...export.folderRevisions.map((r) => r.driveId),
-      ...export.fileRevisions.map((r) => r.driveId),
-      ...export.licenses.map((l) => l.driveId),
-    ]) {
-      if (rowDriveId != driveId) {
-        return DriveStateImportResult.rejected(
-          DriveStateOutcome.integrityFailed,
-          'the payload for $driveId carries rows belonging to $rowDriveId',
-        );
-      }
+    final foreign = artifact.foreignDriveId;
+    if (foreign != null) {
+      return DriveStateImportResult.rejected(
+        DriveStateOutcome.integrityFailed,
+        'the payload for $driveId carries rows belonging to $foreign',
+      );
     }
 
     // The cipher/privacy cross-check again, one layer in: step 1c compared the
@@ -746,22 +823,22 @@ class DriveStateImporter {
     final expectedPrivacy = protection.isEncrypted
         ? DrivePrivacyTag.private
         : DrivePrivacyTag.public;
-    if (export.drive.privacy != expectedPrivacy) {
+    if (drive.privacy != expectedPrivacy) {
       return DriveStateImportResult.rejected(
         DriveStateOutcome.privacyMismatch,
         'the payload says drive $driveId is '
-        '${export.drive.privacy}, and this client holds it as '
+        '${drive.privacy}, and this client holds it as '
         '$expectedPrivacy',
       );
     }
 
-    if (export.drive.ownerAddress != expectedOwnerAddress) {
+    if (drive.ownerAddress != expectedOwnerAddress) {
       // The owner uploaded this. Their own drive row disagreeing with that
       // address means the payload is not internally consistent, and merging
       // it would write that disagreement into the database.
       return DriveStateImportResult.rejected(
         DriveStateOutcome.integrityFailed,
-        'the payload names owner ${export.drive.ownerAddress} and the '
+        'the payload names owner ${drive.ownerAddress} and the '
         'artifact was uploaded by $expectedOwnerAddress',
       );
     }
@@ -772,7 +849,9 @@ class DriveStateImporter {
   /// Everything that touches the database, in one transaction, after every
   /// check has passed.
   Future<DriveStateImportResult> _merge({
-    required DriveStateExport export,
+    required ArtifactForMerge artifact,
+    required String artifactTxId,
+    required String alias,
     required String driveId,
     required int blockStart,
     required int blockEnd,
@@ -781,7 +860,6 @@ class DriveStateImporter {
   }) {
     final drives = _driveDao.drives;
     final folderEntries = _driveDao.folderEntries;
-    final fileEntries = _driveDao.fileEntries;
 
     return _driveDao.transaction(() async {
       final local = await (_driveDao.select(drives)
@@ -819,27 +897,25 @@ class DriveStateImporter {
 
       final localFolders =
           await _lastUpdatedById(folderEntries, driveId: driveId);
-      final localFiles = await _lastUpdatedById(fileEntries, driveId: driveId);
 
       // Which folder rows a revision vouches for, on each side. The payload's
       // half is read from the payload rather than assumed from the export's
       // filter: an importer checks what arrived, it does not trust the
       // producer to have run the code it was supposed to.
       final localVouchedFolders = await _folderIdsWithRevisions(driveId);
-      final artifactVouchedFolders =
-          export.folderRevisions.map((r) => r.folderId).toSet();
+      final artifactVouchedFolders = artifact.vouchedFolderIds;
 
       // The drive's own row follows the same rule as every other row, and the
       // answer is needed here rather than at the write because it decides
       // which `rootFolderId` the drive ends the import with — which is the
       // one that has to resolve.
       final overwriteDriveMetadata =
-          !local.lastUpdated.isAfter(export.drive.lastUpdated);
+          !local.lastUpdated.isAfter(artifact.drive.lastUpdated);
       final rootFolderId = overwriteDriveMetadata
-          ? export.drive.rootFolderId
+          ? artifact.drive.rootFolderId
           : local.rootFolderId;
 
-      final carriedFolderIds = export.folders.map((f) => f.id).toSet();
+      final carriedFolderIds = artifact.folders.map((f) => f.id).toSet();
 
       /// Whether a folder id names a row that will exist when this merge ends,
       /// without anything being invented for it.
@@ -880,7 +956,7 @@ class DriveStateImporter {
         return true;
       }
 
-      final folders = export.folders
+      final folders = artifact.folders
           .where((f) => artifactWins(
                 f.id,
                 f.lastUpdated,
@@ -893,17 +969,28 @@ class DriveStateImporter {
               ))
           .toList();
 
-      final files = export.files
-          .where((f) => artifactWins(f.id, f.lastUpdated, localFiles))
-          .toList();
+      // Files are decided in SQL, by the same rule: the artifact's row is
+      // written unless the local one is newer. Counted before the write,
+      // against the database as it was, which is what [artifactWins] read.
+      final filesKeptLocal = await _count(
+        'SELECT count(*) AS c FROM $alias.file_entries a '
+        'WHERE NOT $artifactFileWinsSql',
+      );
+      kept += filesKeptLocal;
+      final filesWritten = artifact.fileCount - filesKeptLocal;
 
       final folderRows = folders.map(_folderCompanion).toList();
-      final fileRows = files.map(_fileCompanion).toList();
 
       // Every parent this merge is about to write, that resolves nowhere.
       final unresolvedParents = <String>{
         ...folders.map((f) => f.parentFolderId).whereType<String>(),
-        ...files.map((f) => f.parentFolderId),
+        for (final row in await _driveDao
+            .customSelect(
+              'SELECT DISTINCT a.parentFolderId AS id '
+              'FROM $alias.file_entries a WHERE $artifactFileWinsSql',
+            )
+            .get())
+          row.read<String>('id'),
       }..removeWhere(resolves);
 
       // A stand-in is parented to the drive's root folder, exactly as
@@ -920,7 +1007,7 @@ class DriveStateImporter {
               ? _rootFolderStandIn(
                   driveId: driveId,
                   rootFolderId: id,
-                  name: export.drive.name,
+                  name: artifact.drive.name,
                 )
               : _ghostFolderStandIn(
                   driveId: driveId,
@@ -964,69 +1051,34 @@ class DriveStateImporter {
         );
       }
 
-      // The revisions the entries above are versions of, and the licences
-      // attached to them. Built before the write because the derivation of
-      // `network_transactions` reads them.
-      final driveRevisionRows =
-          export.driveRevisions.map(_driveRevisionCompanion).toList();
-      final folderRevisionRows =
-          export.folderRevisions.map(_folderRevisionCompanion).toList();
-      final fileRevisionRows =
-          export.fileRevisions.map(_fileRevisionCompanion).toList();
-      final licenseRows = export.licenses.map(_licenseCompanion).toList();
-      final dataTxIds = {for (final r in fileRevisionRows) r.dataTxId.value};
-
-      // `network_transactions` is derived, never carried: it has no `driveId`
-      // to scope it by, so publishing it would publish rows about the user's
-      // other drives to everyone holding this drive's key. These are the same
-      // helpers `SyncRepository` derives it with, so there is one derivation
-      // with one set of tests rather than a second one here that drifts.
-      final transactionRows = [
-        ...createNetworkTransactionsCompanionsForDrives(driveRevisionRows),
-        ...createNetworkTransactionsCompanionsForFolders(folderRevisionRows),
-        ...createNetworkTransactionsCompanionsForFiles(fileRevisionRows),
-        // A licence transaction is not derivable from a revision - a composed
-        // licence shares the data transaction's id, an assertion has its own -
-        // so it comes from the licence row, through the same single place the
-        // rest of the app derives it: `LicensesCompanionExtensions`.
-        ...licenseRows.expand((l) => l.getTransactionCompanions()),
-      ].map((tx) => _withImportedStatus(tx, export, dataTxIds)).toList();
-
       final revisionsBefore = await _revisionRowCount(driveId);
       final licensesBefore = await _rowCount(_driveDao.licenses, driveId);
       final transactionsBefore = await _transactionRowCount();
 
+      // Transactions first: the revision tables carry foreign keys onto them.
+      // SQLite is not enforcing those here - no `PRAGMA foreign_keys` is set -
+      // but writing in an order that would satisfy them if it were costs
+      // nothing and stops this being the statement that breaks the day
+      // somebody turns them on.
+      //
+      // `network_transactions` is derived, never carried: it has no `driveId`
+      // to scope it by, so publishing it would publish rows about the user's
+      // other drives to everyone holding this drive's key. The derivation is
+      // the one `lib/sync/utils/` and the licence model apply; see
+      // [artifactNetworkTransactionsSql].
+      await _driveDao.customStatement(artifactNetworkTransactionsSql(alias));
+      for (final table in const [
+        'drive_revisions',
+        'folder_revisions',
+        'file_revisions',
+        'licenses',
+      ]) {
+        await _driveDao.customStatement(
+          artifactInsertOrIgnoreSql(alias, table),
+        );
+      }
+
       await _driveDao.batch((b) {
-        // Transactions first: the revision tables carry foreign keys onto
-        // them. SQLite is not enforcing those here - no `PRAGMA foreign_keys`
-        // is set - but writing in an order that would satisfy them if it were
-        // costs nothing and stops this being the statement that breaks the day
-        // somebody turns them on.
-        b.insertAll(
-          _driveDao.networkTransactions,
-          transactionRows,
-          mode: InsertMode.insertOrIgnore,
-        );
-        b.insertAll(
-          _driveDao.driveRevisions,
-          driveRevisionRows,
-          mode: InsertMode.insertOrIgnore,
-        );
-        b.insertAll(
-          _driveDao.folderRevisions,
-          folderRevisionRows,
-          mode: InsertMode.insertOrIgnore,
-        );
-        b.insertAll(
-          _driveDao.fileRevisions,
-          fileRevisionRows,
-          mode: InsertMode.insertOrIgnore,
-        );
-        b.insertAll(
-          _driveDao.licenses,
-          licenseRows,
-          mode: InsertMode.insertOrIgnore,
-        );
         b.insertAllOnConflictUpdate(folderEntries, folderRows);
         // `insertOrIgnore`, never an upsert: a stand-in is this client's guess
         // and must lose to anything real, including a row another statement in
@@ -1036,8 +1088,8 @@ class DriveStateImporter {
           standInFolderRows,
           mode: InsertMode.insertOrIgnore,
         );
-        b.insertAllOnConflictUpdate(fileEntries, fileRows);
       });
+      await _driveDao.customStatement(artifactFileEntriesUpsertSql(alias));
 
       // Counted rather than assumed. `insertOrIgnore` leaves a row the client
       // already had alone, so the number of rows offered is not the number of
@@ -1060,8 +1112,9 @@ class DriveStateImporter {
       await (_driveDao.update(drives)..where((d) => d.id.equals(driveId)))
           .write(
         _driveCompanion(
-          export.drive,
+          artifact.drive,
           watermark: watermark,
+          artifactTxId: artifactTxId,
           overwriteMetadata: overwriteDriveMetadata,
         ),
       );
@@ -1070,7 +1123,7 @@ class DriveStateImporter {
         DriveStateImportStats(
           foldersWritten: folderRows.length,
           foldersMaterialised: standInFolderRows.length,
-          filesWritten: fileRows.length,
+          filesWritten: filesWritten,
           revisionsWritten: revisionsWritten,
           licensesWritten: licensesWritten,
           transactionsWritten: transactionsWritten,
@@ -1091,6 +1144,9 @@ class DriveStateImporter {
   /// Read separately from [_lastUpdatedById] rather than widening it, because
   /// only the cycle check needs parents and every other caller would carry the
   /// column for nothing.
+  Future<int> _count(String sql) async =>
+      (await _driveDao.customSelect(sql).getSingle()).read<int>('c');
+
   Future<Map<String, String?>> _parentFolderIdById(String driveId) async {
     final folders = _driveDao.folderEntries;
 
@@ -1191,9 +1247,15 @@ class DriveStateImporter {
 DrivesCompanion _driveCompanion(
   ExportedDrive drive, {
   required int watermark,
+  required String artifactTxId,
   required bool overwriteMetadata,
 }) {
-  final watermarkOnly = DrivesCompanion(lastBlockHeight: Value(watermark));
+  // Recorded in the same transaction as the rows, so the record can never
+  // claim an import whose rows did not land. See [hasAlreadyImported].
+  final watermarkOnly = DrivesCompanion(
+    lastBlockHeight: Value(watermark),
+    importedArtifactTxId: Value(artifactTxId),
+  );
 
   if (!overwriteMetadata) return watermarkOnly;
 
@@ -1333,79 +1395,6 @@ FolderEntriesCompanion _rootFolderStandIn({
       path: '',
     );
 
-/// Every column of `drive_revisions`, named.
-DriveRevisionsCompanion _driveRevisionCompanion(ExportedDriveRevision rev) =>
-    DriveRevisionsCompanion(
-      driveId: Value(rev.driveId),
-      rootFolderId: Value(rev.rootFolderId),
-      ownerAddress: Value(rev.ownerAddress),
-      name: Value(rev.name),
-      privacy: Value(rev.privacy),
-      metadataTxId: Value(rev.metadataTxId),
-      dateCreated: Value(rev.dateCreated),
-      action: Value(rev.action),
-      bundledIn: Value(rev.bundledIn),
-      customJsonMetadata: Value(rev.customJsonMetadata),
-      customGQLTags: Value(rev.customGQLTags),
-      isHidden: Value(rev.isHidden),
-    );
-
-/// Every column of `folder_revisions`, named.
-FolderRevisionsCompanion _folderRevisionCompanion(ExportedFolderRevision rev) =>
-    FolderRevisionsCompanion(
-      folderId: Value(rev.folderId),
-      driveId: Value(rev.driveId),
-      name: Value(rev.name),
-      parentFolderId: Value(rev.parentFolderId),
-      metadataTxId: Value(rev.metadataTxId),
-      dateCreated: Value(rev.dateCreated),
-      action: Value(rev.action),
-      customJsonMetadata: Value(rev.customJsonMetadata),
-      customGQLTags: Value(rev.customGQLTags),
-      isHidden: Value(rev.isHidden),
-    );
-
-/// Every column of `file_revisions`, named.
-FileRevisionsCompanion _fileRevisionCompanion(ExportedFileRevision rev) =>
-    FileRevisionsCompanion(
-      fileId: Value(rev.fileId),
-      driveId: Value(rev.driveId),
-      name: Value(rev.name),
-      parentFolderId: Value(rev.parentFolderId),
-      size: Value(rev.size),
-      lastModifiedDate: Value(rev.lastModifiedDate),
-      dataContentType: Value(rev.dataContentType),
-      metadataTxId: Value(rev.metadataTxId),
-      dataTxId: Value(rev.dataTxId),
-      licenseTxId: Value(rev.licenseTxId),
-      thumbnail: Value(rev.thumbnail),
-      bundledIn: Value(rev.bundledIn),
-      dateCreated: Value(rev.dateCreated),
-      customJsonMetadata: Value(rev.customJsonMetadata),
-      customGQLTags: Value(rev.customGQLTags),
-      action: Value(rev.action),
-      pinnedDataOwnerAddress: Value(rev.pinnedDataOwnerAddress),
-      isHidden: Value(rev.isHidden),
-      assignedNames: Value(rev.assignedNames),
-      fallbackTxId: Value(rev.fallbackTxId),
-      originalOwner: Value(rev.originalOwner),
-      importSource: Value(rev.importSource),
-    );
-
-/// Every column of `licenses`, named.
-LicensesCompanion _licenseCompanion(ExportedLicense license) =>
-    LicensesCompanion(
-      fileId: Value(license.fileId),
-      driveId: Value(license.driveId),
-      dataTxId: Value(license.dataTxId),
-      licenseTxType: Value(license.licenseTxType),
-      licenseTxId: Value(license.licenseTxId),
-      bundledIn: Value(license.bundledIn),
-      dateCreated: Value(license.dateCreated),
-      licenseType: Value(license.licenseType),
-      customGQLTags: Value(license.customGQLTags),
-    );
-
 /// The first `parentFolderId` cycle in [parents], as the path around it, or
 /// null if the graph is acyclic.
 ///
@@ -1447,80 +1436,3 @@ List<String>? _firstFolderCycle(Map<String, String?> parents) {
 
   return null;
 }
-
-/// A derived `network_transactions` row, with the status a reader gives it.
-///
-/// **Confirmed, unless the artifact says otherwise.** The producer synced to
-/// `Block-End`, so a transaction it held as confirmed is one it saw mined.
-/// Carrying those over as `pending`, as sync's own helpers do for file data,
-/// would paint every file in a restored drive as pending and send a gateway
-/// query per transaction: on a 42,000 file drive, the work the artifact exists
-/// to avoid.
-///
-/// **What the producer had not confirmed travels, scoped to this drive.**
-/// `transaction_statuses` lists only transactions this drive's own rows
-/// reference, so it says nothing about the producer's other drives. Without
-/// it an upload that failed would arrive confirmed, render as a good file in
-/// every client that imported the drive, and never be looked at again,
-/// because the confirmation pass only revisits `pending` rows.
-///
-/// The rule is `importedTransactionStatus`'s:
-///
-///  * a **data** transaction becomes `pending`, so this client's confirmation
-///    pass checks it, exactly as it checks every data transaction a sync
-///    reads. That pass finds the owner to ask about through the file's drive
-///    (`pendingDataFileRevisions`), so it is right on an attached drive too;
-///  * any **other** transaction arrives `failed`. The producer refuses to
-///    publish while one is `pending`, because the confirmation pass looks up a
-///    metadata transaction under the signed-in wallet, which on an attached
-///    drive is not the owner, and would mark a good upload failed.
-///
-/// Rows are never dropped for their status. `failed` is what a gateway said
-/// after failing to find a transaction for long enough, which it can say about
-/// one that is on chain; dropping the row would hide a real file behind a
-/// watermark that has already moved past it.
-NetworkTransactionsCompanion _withImportedStatus(
-  NetworkTransactionsCompanion tx,
-  DriveStateExport export,
-  Set<String> dataTxIds,
-) {
-  final carried = export.unconfirmedTransactions[tx.id.value];
-  if (carried == null) {
-    return tx.copyWith(status: const Value(TransactionStatus.confirmed));
-  }
-  // Non-null: `readArtifactAsExport` refuses an artifact carrying a status
-  // this rule cannot apply.
-  return tx.copyWith(
-    status: Value(importedTransactionStatus(
-      carriedStatus: carried,
-      isDataTransaction: dataTxIds.contains(tx.id.value),
-    )!),
-  );
-}
-
-/// Every column of `file_entries`, named.
-FileEntriesCompanion _fileCompanion(ExportedFileEntry file) =>
-    FileEntriesCompanion(
-      id: Value(file.id),
-      driveId: Value(file.driveId),
-      name: Value(file.name),
-      parentFolderId: Value(file.parentFolderId),
-      path: Value(file.path),
-      size: Value(file.size),
-      lastModifiedDate: Value(file.lastModifiedDate),
-      dataContentType: Value(file.dataContentType),
-      dataTxId: Value(file.dataTxId),
-      licenseTxId: Value(file.licenseTxId),
-      bundledIn: Value(file.bundledIn),
-      thumbnail: Value(file.thumbnail),
-      pinnedDataOwnerAddress: Value(file.pinnedDataOwnerAddress),
-      customJsonMetadata: Value(file.customJsonMetadata),
-      customGQLTags: Value(file.customGQLTags),
-      isHidden: Value(file.isHidden),
-      dateCreated: Value(file.dateCreated),
-      lastUpdated: Value(file.lastUpdated),
-      assignedNames: Value(file.assignedNames),
-      fallbackTxId: Value(file.fallbackTxId),
-      originalOwner: Value(file.originalOwner),
-      importSource: Value(file.importSource),
-    );

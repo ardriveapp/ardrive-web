@@ -86,6 +86,8 @@ void main() {
     arweave = MockArweaveService();
     importer = _MockImporter();
 
+    when(() => importer.hasAlreadyImported(any()))
+        .thenAnswer((_) async => false);
     when(() => importer.import(
           candidate: any(named: 'candidate'),
           body: any(named: 'body'),
