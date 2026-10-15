@@ -105,6 +105,13 @@ sound.
 | import, end to end | 7,444 ms | **584 ms** | 12.7x |
 | process RSS | 787 MiB baseline, 1,003 MiB peak | 182 MiB baseline, 349 MiB peak | |
 
+**On the import figure.** 584 ms is `importDriveState`, a bulk copy that
+`artifact_scale_test.dart` measures and the app has never called. The app's
+importer read every row into Dart and ran `#2188`'s merge, and took 5.4 s at
+41,767 files (measured 2026-10-14). D18 moved its bulk tables into SQLite: 2.1 s
+on the VM, of which about 1.5 s is decrypting and decompressing;
+in an optimised browser build, 0.93 s to 0.43 s at 3,000 files and 26.8 s to 19.2 s at 41,767, where most of what remains is the web database's storage layer.
+
 **On the producer figure.** `#2188`'s PR reports "seal 4 s", which is its
 `jsonEncode` plus `gzip` — 3,893 ms here, matching. Its **export** step is a
 separate 9,111 ms that the headline does not include. Comparing like with like

@@ -990,11 +990,14 @@ Three rules a reader has to get right, each of which cost time to learn here:
   leaves the artifact's `Block-End` and the drive's watermark **equal**, and
   the no-rollback rule refuses only `Block-End < watermark` — so nothing stops
   the next sync doing all of it again, forever. Measured at 41,767 files, that
-  repeat costs a 9.55 MiB download, ~173,000 statements and about 8.5 seconds,
-  and writes **zero** rows. Key the check on the artifact's transaction id and
-  not on its range: a *different* artifact covering the same range can still
-  carry entities a consumer's own sync skipped, and importing it is how those
-  get repaired.
+  repeat costs a download of about 10 MiB and over 6 seconds, and writes
+  **zero** rows. Key the check on the artifact's transaction id and not on its
+  range: a *different* artifact covering the same range can still carry
+  entities a consumer's own sync skipped, and importing it is how those get
+  repaired. Keep the record where the rows are, so it survives a restart and
+  cannot outlive them: ArDrive web writes it to the drive row in the import's
+  own transaction, and skips only while the drive's watermark is still at or
+  past the artifact's `Block-End`.
 
 - **Skip snapshots the artifact has already covered — before validating
   them.** Once the artifact's range seeds the obscuring accumulator, a
