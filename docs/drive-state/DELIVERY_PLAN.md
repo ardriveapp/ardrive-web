@@ -71,7 +71,7 @@ each other.
 | 1.16 | Localisation — every string the feature adds is hardcoded English by decision, pending a single `.arb` pass across all six locales at ship time | ⬜ ship-time |
 | 1.17 | 🔨 The imported-artifact record is persisted on the drive row (D19), so a restart no longer re-downloads and re-imports. The sync skip ledger (`SYNC_SKIPPED_ENTITY_PERSISTENCE.md`) is still in memory, so a restart forgets one refusal | ⬜ skip ledger |
 | 1.18 | ✅ **Import speed (D18).** The bulk tables are copied by SQLite, not through Dart: 5.4 s to 2.1 s at 41,767 files on the VM; in an optimised browser build 0.93 s to 0.43 s at 3,000 files and 26.8 s to 19.2 s at 41,767, where the rest is the web database's storage layer. Behaviour proved identical by a twelve-scenario table-by-table harness, and concurrent imports no longer collide on one attach name | ✅ |
-| 1.19 | **The web database's storage layer is now the import's cost, and every sync's.** At 41,767 files about 18 s of a 19.2 s browser import is SQLite writing through package:sqlite3's IndexedDB filesystem: its in-memory copy grows a file by allocating a new buffer and copying the whole file (`vfs/memory.dart`, `xWrite`), and each 4 KB block is persisted with its own cursor and put. To check first: whether the cost grows with the size of the database already on disk, which would make it worst for the users with the most drives. Candidates: a storage layer that grows in chunks, or OPFS. A change to how every user's database is stored, so decided separately | ⬜ |
+| 1.19 | **The web database's storage.** Measured 2026-10-15, below. Recommended: SQLite on OPFS in a dedicated worker, decided before #2197's web migration ships, so every user migrates once | ⬜ decision |
 | 1.11 | Export views replacing the typed projection (D7 deferral — needs a schema migration) | 🔒 |
 | 1.12 | ArNS discovery (D6 deferral — needs an undername convention) | 🔒 |
 | 1.13 | Execute an upload | 🔒 human only — costs money, publishes permanently |
@@ -158,6 +158,49 @@ second is a correctness failure on the path that must not have one.
 Revisit if publishing cost becomes a real complaint for large drives, with a
 parity test (export, strip, derive, compare exactly on hidden, moved, renamed
 and multi-revision items) written before the change.
+
+### The web database's storage (1.19), measured
+
+#2197 moves the web database from sql.js to SQLite in wasm on the main thread,
+saved block by block to IndexedDB (package:sqlite3 2.4.2 `IndexedDbFileSystem`).
+That migration has not shipped (#2264 only removed an unused wasm file), so the
+target can still change and every user migrate once.
+
+Release builds (dart2js), the app's real schema, the rows a 41,767-file import
+writes in one transaction, 2026-10-15:
+
+| Browser | Storage | Committed | Saved | Reopen |
+|---|---|---|---|---|
+| Chromium 151 | #2197 as is (main thread, IndexedDB) | 15.5 s | +7.4 s after | 3.5 s |
+| Chromium 151 | drift 2.16 shared worker, IndexedDB | 14.6 s | up to ~30 s after; lost if the tab closes sooner | 3.7 s |
+| Chromium 151 | drift 2.16 OPFS (`opfsLocks`), needs COOP/COEP | 1.8 s | at commit | 0.25 s |
+| Chromium 151 | **OPFS in a dedicated worker, no headers** | **0.69 s** | at commit | 0.06 s |
+| Firefox 131 | #2197 as is | 15.4 s | +16.8 s after | 3.2 s |
+| Firefox 131 | drift 2.16 OPFS (`opfsShared`), no headers | 3.5 s | at commit | 0.9 s |
+| Firefox 131 | **OPFS in a dedicated worker, no headers** | 5.5 s | at commit | 0.07 s |
+
+Safari/WebKit was not measured: its test browser needs system libraries this
+machine lacks.
+
+**The headers break the app.** Served with `Cross-Origin-Opener-Policy:
+same-origin`, the demo wallet logged in, synced, and showed gateway images and
+thumbnails, but:
+
+- with `Cross-Origin-Embedder-Policy: require-corp`, audio (and so video)
+  previews fail: gateways send no `Cross-Origin-Resource-Policy` header;
+- with either `require-corp` or `credentialless`, Stripe's iframes are blocked
+  and the card field does not render, so card top-ups break;
+- the app is also served from AR.IO gateways, where headers cannot be set.
+
+So drift's built-in OPFS needs headers on Chrome and is out. OPFS from a
+dedicated worker needs none and was the fastest measured. Its costs: drift
+2.16 has no such mode, so the worker is ours (drift's remote protocol on the
+main side); `SimpleOpfsFileSystem` holds only the database and its journal,
+so a received artifact is attached from an in-memory filesystem in the same
+worker; and an OPFS file takes one writer, so a second tab needs the
+read-only copy #2197 already builds for that case. Newer drift (2.33 and
+later, Dart 3.10, so a Flutter upgrade) fixes IndexedDB persistence and adds
+an IndexedDB-to-OPFS mover, but not a header-free OPFS mode for Chrome.
 
 ### Rollout (R7)
 
