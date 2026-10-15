@@ -170,6 +170,24 @@ and multi-revision items) written before the change.
 Each step records the import outcomes (§7) and the migration result, so a
 step is judged on numbers rather than on the absence of complaints.
 
+**Rehearsal, 2026-10-15, before step 1.** A release build of #2197 with the
+staging config and both flags on, the demo wallet (21 drives), headless
+Chromium. One drive, My Private Drive (`8d81a9db-…`), end to end:
+
+| Step | Result |
+|---|---|
+| Ordinary GraphQL sync, no artifact on chain | `outcome=none-found`; 20.8 s |
+| Publish | 792 entities, 174.22 KiB sealed (AES256-GCM), 0.0023 Credits; `xk_N9vGYgTuLUgyWlVbdHCkl_js_Bo35M2miM6porK4`, indexed at once with the expected tags |
+| Fresh client (logout), sync | `outcome=used`, 791 entities, decrypt and checks 59 ms, merge 27 ms; the sync took 40.8 s, of which 39.8 s was the gateway's first answer for the unbundled item, a few minutes after the upload (later reads: 0.2 s) |
+| Reload, sync again | skipped as already imported (D19) without a download; the sync took 0.93 s |
+| Parity | 773 files, 9.58 GiB in the drives list after the import and after a GraphQL-only sync on a fresh client |
+
+Two things to watch at step 1: the first read of a newly published artifact
+can wait on the gateway, and the profile card's totals are computed once per
+session, so they can show a figure from partway through a sync (397 files and
+3.7 MB here, against 773 and 9.58 GiB in the drives list). The second predates
+this feature.
+
 ---
 
 ## 2. ar-io-docs: the specification
