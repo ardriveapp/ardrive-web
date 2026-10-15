@@ -2060,6 +2060,32 @@ void main() {
       }
     });
 
+    test('a folder open during the import shows its files without reopening',
+        () async {
+      // Drift refreshes a live query only for the tables it is told were
+      // written. The copies once ran as bare statements, so an open folder
+      // listed its folders, which still go through drift's batch, and none of
+      // its files until the user navigated away and back.
+      await attachDrive(db);
+      final shown = <FolderWithContents>[];
+      final open = db.driveDao
+          .watchFolderContents(driveId, folderId: rootFolderId)
+          .listen(shown.add);
+      addTearDown(open.cancel);
+
+      final result = await importEdited([]);
+      expect(result.outcome, DriveStateOutcome.used, reason: result.detail);
+
+      final deadline = DateTime.now().add(const Duration(seconds: 5));
+      while ((shown.isEmpty || shown.last.files.isEmpty) &&
+          DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      expect(shown, isNotEmpty, reason: 'the open folder never updated');
+      expect(shown.last.files, hasLength(2));
+      expect(shown.last.subfolders, isNotEmpty);
+    });
+
     test('lands the licence of a file it carries', () async {
       await attachDrive(db);
       await addLicenceToProducer();

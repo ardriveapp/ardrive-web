@@ -1066,15 +1066,27 @@ class DriveStateImporter {
       // other drives to everyone holding this drive's key. The derivation is
       // the one `lib/sync/utils/` and the licence model apply; see
       // [artifactNetworkTransactionsSql].
-      await _driveDao.customStatement(artifactNetworkTransactionsSql(alias));
-      for (final table in const [
-        'drive_revisions',
-        'folder_revisions',
-        'file_revisions',
-        'licenses',
+      //
+      // Every copy names the table it writes. Drift refreshes a live query
+      // only for the tables it is told were written, and a bare
+      // `customStatement` tells it nothing: the folder a user has open went
+      // on listing its folders, written through the batch below, and none of
+      // its files until they navigated away and back.
+      await _driveDao.customUpdate(
+        artifactNetworkTransactionsSql(alias),
+        updates: {_driveDao.networkTransactions},
+        updateKind: UpdateKind.insert,
+      );
+      for (final (table, info) in <(String, TableInfo)>[
+        ('drive_revisions', _driveDao.driveRevisions),
+        ('folder_revisions', _driveDao.folderRevisions),
+        ('file_revisions', _driveDao.fileRevisions),
+        ('licenses', _driveDao.licenses),
       ]) {
-        await _driveDao.customStatement(
+        await _driveDao.customUpdate(
           artifactInsertOrIgnoreSql(alias, table),
+          updates: {info},
+          updateKind: UpdateKind.insert,
         );
       }
 
@@ -1089,7 +1101,11 @@ class DriveStateImporter {
           mode: InsertMode.insertOrIgnore,
         );
       });
-      await _driveDao.customStatement(artifactFileEntriesUpsertSql(alias));
+      await _driveDao.customUpdate(
+        artifactFileEntriesUpsertSql(alias),
+        updates: {_driveDao.fileEntries},
+        updateKind: UpdateKind.insert,
+      );
 
       // Counted rather than assumed. `insertOrIgnore` leaves a row the client
       // already had alone, so the number of rows offered is not the number of
