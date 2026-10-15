@@ -16,6 +16,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
 import 'package:ardrive/utils/arfs_txs_filter.dart';
 import 'package:ardrive/utils/constants.dart';
+import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/utils/graphql_retry.dart';
 import 'package:ardrive/utils/http_retry.dart';
 import 'package:ardrive/utils/internet_checker.dart';
@@ -2021,6 +2022,116 @@ class ArweaveService {
     return transactionConfirmations;
   }
 
+  /// Which filter this gateway honours for leaving out bundled data items.
+  /// See [UnbundledFilter].
+  final _unbundledFilter = UnbundledFilter();
+
+  /// One page of the AR [owner] paid to upload with ArDrive directly: its own
+  /// mined transactions - not data items in bundles - from [minHeight] up,
+  /// oldest first.
+  ///
+  /// Leaving out data items is what makes this cheap: an upload through
+  /// Turbo is a data item in Turbo's bundle, which Turbo paid for, so a
+  /// wallet that only ever used Turbo has nothing here at all. How to ask a
+  /// gateway for that is not the same everywhere - see [UnbundledFilter].
+  ///
+  /// Filtered by owner alone on the gateway, and to ArDrive's own here: a tag
+  /// filter on top made the ardrive.net indexer read 40 million rows and
+  /// refuse. Every transaction still moves the page on, so another app's
+  /// uploads are skipped, not read again.
+  Future<ArFeePage> getArDriveFeesPage({
+    required String owner,
+    required int minHeight,
+    required Set<String> knownTxIds,
+    String? after,
+  }) =>
+      fetchDirectFeesPage(
+        filter: _unbundledFilter,
+        firstPage: after == null,
+        fetch: (bundledIn) => _arDriveFeesPage(
+          owner: owner,
+          minHeight: minHeight,
+          after: after,
+          bundledIn: bundledIn,
+          knownTxIds: knownTxIds,
+        ),
+      );
+
+  Future<RawFeePage> _arDriveFeesPage({
+    required String owner,
+    required int minHeight,
+    required String? after,
+    required List<String>? bundledIn,
+    required Set<String> knownTxIds,
+  }) async {
+    final query = await graphQLRetry.execute(
+      WalletArDriveFeesQuery(
+        variables: WalletArDriveFeesArguments(
+          owner: owner,
+          minHeight: minHeight,
+          bundledIn: bundledIn,
+          after: after,
+        ),
+      ),
+    );
+
+    final transactions = query.data?.transactions;
+
+    if (transactions == null) {
+      throw ArweaveServiceException(
+        'The query `WalletArDriveFeesQuery` returned no data',
+      );
+    }
+
+    var winston = BigInt.zero;
+    var count = 0;
+    var unbundled = 0;
+    final excluded = <String, BigInt>{};
+    int? lastHeight;
+
+    for (final edge in transactions.edges) {
+      lastHeight = edge.node.block?.height ?? lastHeight;
+
+      // A data item in a bundle, from a gateway that would not leave them
+      // out: free to the wallet, whatever its tags say.
+      if (edge.node.bundledIn != null) {
+        continue;
+      }
+
+      unbundled++;
+
+      final isArDrive = isArDriveTransaction(
+        txId: edge.node.id,
+        tags: {for (final tag in edge.node.tags) tag.name: tag.value},
+        knownTxIds: knownTxIds,
+      );
+
+      final fee = BigInt.tryParse(edge.node.fee.winston) ?? BigInt.zero;
+
+      if (isArDrive) {
+        winston += fee;
+        count++;
+      } else if (fee > BigInt.zero) {
+        // Perhaps not yet synced: looked at again by the next count.
+        excluded[edge.node.id] = fee;
+      }
+    }
+
+    return RawFeePage(
+      page: ArFeePage(
+        winston: winston,
+        count: count,
+        lastHeight: lastHeight,
+        cursor:
+            transactions.edges.isEmpty ? after : transactions.edges.last.cursor,
+        hasMore: transactions.pageInfo.hasNextPage,
+        excluded: excluded,
+      ),
+      rows: transactions.edges.length,
+      unbundledRows: unbundled,
+    );
+  }
+
   Future<String?> getFirstTxForWallet(String owner) async {
     final firstTxForWalletQuery = await graphQLRetry.execute(
       FirstTxForWalletQuery(
@@ -2352,8 +2463,8 @@ class ArweaveService {
       return DataTxSizeAndType(
         size: size,
         // Mime only, without parameters such as charset.
-        contentType: response.headers['content-type']
-            ?.replaceFirst(RegExp(r';.*$'), ''),
+        contentType:
+            response.headers['content-type']?.replaceFirst(RegExp(r';.*$'), ''),
       );
     } catch (e) {
       logger.w('HEAD for $txId failed: $e');
