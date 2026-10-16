@@ -46,12 +46,15 @@ enum DriveStateOutcome {
     description: 'the artifact verified and its rows were imported',
   ),
 
-  /// Discovery found no artifact for this drive. The common case today, and
-  /// the one that must never be confused with a rejection.
+  /// Discovery found no artifact for this drive at or above the block the
+  /// sync starts from. For a drive never synced that is block 0, so none
+  /// exists; for one already held, an older artifact may well exist and have
+  /// nothing to add. The common case, and the one that must never be confused
+  /// with a rejection.
   noneFound(
     code: 'none-found',
     kind: DriveStateOutcomeKind.nothingFound,
-    description: 'no drive-state artifact exists for this drive',
+    description: 'no drive-state artifact at or above where this sync starts',
   ),
 
   /// `State-Version` names a major this build does not read (§6) — in either
