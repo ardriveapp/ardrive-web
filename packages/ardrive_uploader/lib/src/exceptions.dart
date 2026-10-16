@@ -165,3 +165,18 @@ class TurboRateLimitException implements ArDriveUploaderExceptions {
   @override
   Object? error;
 }
+
+/// A direct-to-network transaction whose header the gateway refused, so the
+/// transaction never reached the network: nothing was posted or paid for.
+class TransactionHeaderNotPostedException implements ArDriveUploaderExceptions {
+  TransactionHeaderNotPostedException({this.error});
+
+  @override
+  String get message => 'The transaction header was not posted';
+  @override
+  final Object? error;
+
+  @override
+  String toString() =>
+      'TransactionHeaderNotPostedException: $message. Error: $error';
+}

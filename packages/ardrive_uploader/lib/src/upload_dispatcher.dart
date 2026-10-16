@@ -12,6 +12,13 @@ class UploadDispatcher {
   final UploadFolderStructureStrategy _uploadFolderStrategy;
   final UploadThumbnailStrategy _uploadThumbnailStrategy;
 
+  /// The signed data items of each direct-to-network upload that has not yet
+  /// succeeded, by task id. A retry sends them again, in the transaction it
+  /// was already given, rather than signing new ones: that transaction's
+  /// header may be on the network and paid for, and signing again would leave
+  /// it without data and charge for a second one.
+  final Map<String, UploadFilePreparation> _d2nPreparations = {};
+
   UploadDispatcher({
     required UploadFileStrategy uploadStrategy,
     required DataBundler dataBundler,
@@ -37,23 +44,34 @@ class UploadDispatcher {
           ),
         );
 
-        final uploadPreparation = await prepareDataItems(
-          file: task.file,
-          metadata: task.metadata,
-          wallet: wallet,
-          addThumbnail: task.uploadThumbnail,
-          driveKey: task.encryptionKey,
-          onStartMetadataCreation: () {
-            controller.updateProgress(
-              task: task.copyWith(
-                status: UploadStatus.creatingMetadata,
-              ),
-            );
-          },
-        );
+        final previousPreparation =
+            task.type == UploadType.d2n ? _d2nPreparations[task.id] : null;
+        final isRetryOfSignedUpload = previousPreparation != null &&
+            task.uploadItem is TransactionUploadItem;
+
+        final uploadPreparation = isRetryOfSignedUpload
+            ? previousPreparation
+            : await prepareDataItems(
+                file: task.file,
+                metadata: task.metadata,
+                wallet: wallet,
+                addThumbnail: task.uploadThumbnail,
+                driveKey: task.encryptionKey,
+                onStartMetadataCreation: () {
+                  controller.updateProgress(
+                    task: task.copyWith(
+                      status: UploadStatus.creatingMetadata,
+                    ),
+                  );
+                },
+              );
 
         logger.d(
             'Uploading task ${task.id} with strategy: ${_uploadFileStrategy.runtimeType}');
+
+        if (task.type == UploadType.d2n) {
+          _d2nPreparations[task.id] = uploadPreparation;
+        }
 
         await _uploadFileStrategy.upload(
           dataItems: uploadPreparation.dataItemFiles,
@@ -62,7 +80,10 @@ class UploadDispatcher {
           controller: controller,
           verifyCancel: verifyCancel,
           signedDataItemResults: uploadPreparation.signedDataItemResults,
+          resendSignedTransaction: isRetryOfSignedUpload,
         );
+
+        _d2nPreparations.remove(task.id);
 
         var updatedTask = controller.tasks[task.id]! as FileUploadTask;
 
