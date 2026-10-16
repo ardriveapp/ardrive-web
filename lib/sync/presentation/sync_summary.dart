@@ -1,4 +1,5 @@
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:clock/clock.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 /// How long a finished sync's summary stays on screen before it takes itself
@@ -34,8 +35,13 @@ Duration syncSummaryRemaining(SyncComplete state, {DateTime? now}) =>
 
 /// [syncSummaryRemaining] for anything that carries a finish time - a failure
 /// announces itself on the same terms a result does.
+///
+/// Reads [clock] rather than [DateTime.now]: the same time in the app, but a
+/// widget test's own clock in a test, which is the one its timers run on.
+/// Against the real clock, what a test saw depended on how fast the machine
+/// ran it.
 Duration syncSummaryRemainingSince(DateTime completedAt, {DateTime? now}) {
-  final elapsed = (now ?? DateTime.now()).difference(completedAt);
+  final elapsed = (now ?? clock.now()).difference(completedAt);
   final remaining = syncSummaryDuration - elapsed;
   return remaining.isNegative ? Duration.zero : remaining;
 }
