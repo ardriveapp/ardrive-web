@@ -19,6 +19,7 @@ import 'package:ardrive/blocs/upload/upload_file_checker.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/components/help_info_modals.dart';
+import 'package:ardrive/components/inline_warning.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license/view_license_definition.dart';
@@ -2421,7 +2422,7 @@ class _UploadFailureWidget extends StatelessWidget {
       title: 'Problem with Upload',
       description: appLocalizationsOf(context).yourUploadFailed,
       content: state.failedTasks != null
-          ? _failedUploadList(state.failedTasks!)
+          ? _failedUploadList(context, state.failedTasks!)
           : null,
       actions: state.failedTasks == null
           ? null
@@ -2440,7 +2441,11 @@ class _UploadFailureWidget extends StatelessWidget {
     );
   }
 
-  Widget _failedUploadList(List<UploadTask> tasks) {
+  Widget _failedUploadList(BuildContext context, List<UploadTask> tasks) {
+    // Paid from the wallet, these files' transactions may already be paid
+    // for, and only this tab can finish them.
+    final isWalletPaid = tasks.any((t) => t.type == UploadType.d2n);
+
     return ConstrainedBox(
       constraints: const BoxConstraints(
           maxHeight: 256 * 1.5, minWidth: kLargeDialogWidth),
@@ -2450,8 +2455,16 @@ class _UploadFailureWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-                'It seems there was a partial failure uploading the following file(s). The file(s) will show as failed in your drive. Please re-upload to fix.',
+                isWalletPaid
+                    ? appLocalizationsOf(context).uploadFailedWalletFiles
+                    : 'It seems there was a partial failure uploading the following file(s). The file(s) will show as failed in your drive. Please re-upload to fix.',
                 style: ArDriveTypography.body.buttonLargeBold()),
+            if (isWalletPaid) ...[
+              const SizedBox(height: 12),
+              InlineWarning(
+                text: appLocalizationsOf(context).uploadFailedWalletKeepTabOpen,
+              ),
+            ],
             const SizedBox(height: 8),
             Expanded(
               child: ArDriveScrollBar(
@@ -2923,6 +2936,12 @@ class _UploadInProgressWidget extends StatelessWidget {
                 color: colorTokens.textMid,
               ),
             ),
+          if (state.uploadMethod == UploadMethod.ar) ...[
+            const SizedBox(height: 12),
+            InlineWarning(
+              text: appLocalizationsOf(context).uploadInProgressKeepTabOpen,
+            ),
+          ],
         ],
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
 import 'package:ardrive/components/copy_button.dart';
+import 'package:ardrive/components/inline_warning.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
@@ -63,6 +64,16 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           Padding(
             padding: const EdgeInsets.only(top: 12.0),
             child: _buildCongestionWarning(context),
+          ),
+        // The bloc's method, not [_selectedMethod]: the radio buttons change
+        // only the bloc's.
+        if (widget.uploadMethodInfo.uploadMethod == UploadMethod.ar)
+          Padding(
+            padding: const EdgeInsets.only(top: 12.0),
+            child: InlineWarning(
+              text: appLocalizationsOf(context).uploadWithWalletKeepTabOpen,
+              useNewArDriveUI: widget.useNewArDriveUI,
+            ),
           ),
         _getInsufficientBalanceMessage(context: context),
       ],
@@ -532,49 +543,9 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
   }
 
   Widget _buildCongestionWarning(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: ArDriveTheme.of(context).themeData.colors.themeWarningSubtle,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: ArDriveTheme.of(context).themeData.colors.themeWarningEmphasis,
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.warning_amber_rounded,
-            size: 16,
-            color:
-                ArDriveTheme.of(context).themeData.colors.themeWarningEmphasis,
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              appLocalizationsOf(context).congestionWarningShort,
-              style: widget.useNewArDriveUI
-                  ? typography.paragraphSmall(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeWarningFg,
-                      fontWeight: ArFontWeight.semiBold,
-                    )
-                  : ArDriveTypography.body.smallBold(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeWarningFg,
-                    ),
-            ),
-          ),
-        ],
-      ),
+    return InlineWarning(
+      text: appLocalizationsOf(context).congestionWarningShort,
+      useNewArDriveUI: widget.useNewArDriveUI,
     );
   }
 }

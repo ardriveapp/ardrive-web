@@ -3566,6 +3566,22 @@
   "@uploadFailed": {
     "description": "Upload Failed dialog title"
   },
+  "uploadWithWalletKeepTabOpen": "Keep this tab open until your upload finishes. If you close it early, you may be charged for files that don't upload.",
+  "@uploadWithWalletKeepTabOpen": {
+    "description": "Warning under the payment choice when paying for an upload from the wallet balance (AR). Paying this way charges before the files are sent, so closing the tab midway can cost money for nothing."
+  },
+  "uploadInProgressKeepTabOpen": "Keep this tab open until your upload finishes.",
+  "@uploadInProgressKeepTabOpen": {
+    "description": "Warning in the upload progress dialog while an upload paid from the wallet balance (AR) is running"
+  },
+  "uploadFailedWalletFiles": "Some files didn't finish uploading. Select Re-Upload to finish them.",
+  "@uploadFailedWalletFiles": {
+    "description": "Explanation in the upload problem dialog when files paid for from the wallet balance (AR) failed"
+  },
+  "uploadFailedWalletKeepTabOpen": "Keep this tab open. If you leave now, you won't be able to finish these files.",
+  "@uploadFailedWalletKeepTabOpen": {
+    "description": "Warning in the upload problem dialog when files paid for from the wallet balance (AR) failed and can still be re-uploaded from this tab only"
+  },
   "uploadFiles": "Upload File(s)",
   "@uploadFiles": {
     "description": "Upload files to the Weave"
