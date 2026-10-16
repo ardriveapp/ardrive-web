@@ -11,8 +11,14 @@
 /// the database and the artifact would be threading a singleton by hand.
 library;
 
+import 'package:ardrive/models/database/web_worker/web_database_worker.dart';
 import 'package:sqlite3/wasm.dart';
 
 /// The loaded module and the filesystem its databases live on, or null before
 /// the database has been opened.
 ({WasmSqlite3 sqlite3, VirtualFileSystem vfs})? webSqlite;
+
+/// The database worker, when the web database runs in one (docs/WEB_DATABASE.md).
+/// Drive state artifacts then live in its memory rather than in [webSqlite]'s
+/// filesystem. At most one of the two is set.
+WebDatabaseWorker? webDatabaseWorker;

@@ -793,31 +793,49 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       (update(folderEntries)..whereSamePrimaryKey(folder)).write(folder);
 
   /// Constructs a tree of folders and files that are children of the specified folder.
+  /// The folder tree under [rootFolderId], with every file in it.
+  ///
+  /// Two queries for the whole drive, grouped by parent here, rather than two
+  /// per folder: on the web the database runs in a worker and every query is
+  /// a round trip (docs/WEB_DATABASE.md). Both read in the order the
+  /// per-folder queries did, a scan of the table, so each folder's children
+  /// come out in the same order as before.
   Future<FolderNode> getFolderTree(String driveId, String rootFolderId) async {
     final rootFolder = await folderById(folderId: rootFolderId).getSingle();
 
-    Future<FolderNode> getFolderChildren(FolderEntry parentFolder) async {
-      final subfolders = await foldersInFolder(
-              driveId: driveId, parentFolderId: parentFolder.id)
-          .get();
+    final subfoldersByParent = <String, List<FolderEntry>>{};
+    for (final folder in await (select(folderEntries)
+          ..where((f) => f.driveId.equals(driveId)))
+        .get()) {
+      final parent = folder.parentFolderId;
+      if (parent == null) continue;
+      (subfoldersByParent[parent] ??= []).add(folder);
+    }
+    final filesByParent = <String, List<FileEntry>>{};
+    for (final file in await (select(fileEntries)
+          ..where((f) => f.driveId.equals(driveId)))
+        .get()) {
+      (filesByParent[file.parentFolderId] ??= []).add(file);
+    }
 
+    // A folder already on the path is not entered again: a cycle in the
+    // rows, which no sync or import writes, would otherwise recurse for ever.
+    FolderNode build(FolderEntry folder, Set<String> path) {
+      final onPath = {...path, folder.id};
       return FolderNode(
-        folder: parentFolder,
-        // Get the children of this folder's subfolders.
-        subfolders:
-            await Future.wait(subfolders.map((f) => getFolderChildren(f))),
+        folder: folder,
+        subfolders: [
+          for (final child in subfoldersByParent[folder.id] ?? <FolderEntry>[])
+            if (!onPath.contains(child.id)) build(child, onPath),
+        ],
         files: {
-          await for (var f in filesInFolder(
-                  driveId: driveId, parentFolderId: parentFolder.id)
-              .get()
-              .asStream()
-              .expand((f) => f))
-            f.id: f
+          for (final file in filesByParent[folder.id] ?? <FileEntry>[])
+            file.id: file,
         },
       );
     }
 
-    return getFolderChildren(rootFolder);
+    return build(rootFolder, const {});
   }
 
   UpdateStatement<FileEntries, FileEntry> updateFileById(

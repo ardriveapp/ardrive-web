@@ -33,6 +33,7 @@ import 'dart:async';
 import 'dart:js_util' as js_util;
 
 import 'package:ardrive/models/database/web_artifact_vfs.dart';
+import 'package:ardrive/models/database/web_worker/web_database_worker.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/wasm.dart';
@@ -63,14 +64,39 @@ const _writerLockName = 'ardrive-database';
 /// must not change: it is where every existing user's database is.
 const _legacyStorageName = 'db';
 
+/// The worker script that holds the database on OPFS, and its database name
+/// there. See docs/WEB_DATABASE.md.
+const _workerScript = 'db_worker.js';
+const _opfsDatabaseName = 'ardrive';
+
 LazyDatabase openConnection() {
   return LazyDatabase(() async {
+    // Claimed once, for the life of the tab, and shared by both paths below:
+    // a second request from the same tab would find the lock taken.
+    final isWriter = await claimWriterLock(_writerLockName);
+
+    final viaWorker = await openThroughWorker(
+      scriptUrl: _workerScript,
+      name: _opfsDatabaseName,
+      sqlite3Url: Uri.base.resolve('sqlite3.wasm').toString(),
+      isWriter: isWriter,
+      readMigrationSource: readMigrationSource,
+      log: (message) => logger.i('[web-db] $message'),
+    );
+    if (viaWorker != null) {
+      webDatabaseWorker = viaWorker.worker;
+      logger.i('[web-db] the database is on OPFS, in a worker '
+          '(${isWriter ? 'writer' : 'session copy'})');
+      return viaWorker.connection;
+    }
+
+    logger.i('[web-db] the database is on IndexedDB, on this page');
     final sqlite3 = await WasmSqlite3.loadFromUrl(Uri.parse('sqlite3.wasm'));
     final fs = await openDatabaseFileSystem(
       sqlite3,
       indexedDbName: _indexedDbName,
       readLegacy: readSqlJsDatabase,
-      claimWriter: () => claimWriterLock(_writerLockName),
+      claimWriter: () async => isWriter,
     );
 
     webSqlite = (sqlite3: sqlite3, vfs: fs);
@@ -86,19 +112,24 @@ LazyDatabase openConnection() {
   });
 }
 
-/// Opens the filesystem this tab's database lives on for the session.
-///
-/// Three outcomes, and only the first one writes to IndexedDB:
-///
-///  * **This tab owns the database.** The IndexedDB-backed filesystem, after
-///    the sql.js handoff has settled.
-///  * **Another tab owns it.** A private in-memory copy of the database as it
-///    stood when this tab opened. This tab works normally and nothing it
-///    changes is kept, which is what two sql.js tabs amounted to anyway,
-///    minus the corruption.
-///  * **The handoff failed in a way that may not fail next time.** An
-///    in-memory session, seeded with the legacy data when it was read. The
-///    database file is left alone and the next start tries again.
+/// The store a new OPFS database is filled from: #2197's IndexedDB database
+/// if this browser has one, which supersedes sql.js where it exists, or
+/// otherwise the sql.js database every earlier build kept.
+@visibleForTesting
+Future<Uint8List?> readMigrationSource({
+  String indexedDbName = _indexedDbName,
+  Future<Uint8List?> Function() readLegacy = readSqlJsDatabase,
+}) async {
+  final fs = await IndexedDbFileSystem.open(dbName: indexedDbName);
+  try {
+    final bytes = _readWholeFile(fs, _vfsDatabasePath);
+    if (bytes != null && bytes.isNotEmpty) return bytes;
+  } finally {
+    await fs.close();
+  }
+  return readLegacy();
+}
+
 @visibleForTesting
 Future<VirtualFileSystem> openDatabaseFileSystem(
   WasmSqlite3 sqlite3, {

@@ -1,7 +1,9 @@
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/drive_state/presentation/drive_state_creation_modal.dart';
+import 'package:ardrive/drive_state/presentation/drive_state_publish_offer.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -43,6 +45,26 @@ class PromptToSnapshotDialog extends StatefulWidget {
 class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
   bool _dontAskAgain = false;
 
+  /// The same gate as the drive menu's entry, [driveStatePublishOffer], so
+  /// the nudge never offers what the menu would hide: the flag, ownership,
+  /// write access and an empty drive all decide it. Anything else keeps the
+  /// snapshot nudge.
+  bool _offersDriveState(BuildContext context) {
+    final profile = context.read<ProfileCubit>().state;
+    final detail = context.read<DriveDetailCubit>().state;
+    if (profile is! ProfileLoggedIn || detail is! DriveDetailLoadSuccess) {
+      return false;
+    }
+    return driveStatePublishOffer(
+          publishingEnabled:
+              context.read<ConfigService>().config.enableDriveStatePublishing,
+          isDriveOwner: widget.drive.ownerAddress == profile.user.walletAddress,
+          hasWritePermissions: detail.hasWritePermissions,
+          driveIsEmpty: detail.driveIsEmpty,
+        ) ==
+        DriveStatePublishOffer.offered;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Where publishing is on, the nudge offers a drive state artifact rather
@@ -50,8 +72,7 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
     // the same "don't ask again" setting, a different thing to make.
     // Hardcoded English, matching `drive_state_creation_modal.dart`, until
     // the feature's strings move into the `.arb` files in one pass.
-    final offersDriveState =
-        context.read<ConfigService>().config.enableDriveStatePublishing;
+    final offersDriveState = _offersDriveState(context);
     final localizations = appLocalizationsOf(context);
 
     final String title;

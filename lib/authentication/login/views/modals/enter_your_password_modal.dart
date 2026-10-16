@@ -78,6 +78,9 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _getWalletAddress().then((walletAddress) {
+      // The address can come from the database, and the modal can be gone by
+      // the time it does: `context` then throws.
+      if (!mounted) return;
       logger.d('Loading profile name for anonymous user $walletAddress');
 
       context

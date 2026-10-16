@@ -19,13 +19,15 @@ import 'package:ardrive/drive_state_sqlite/artifact_sink.dart';
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_export.dart';
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_import.dart';
 import 'package:ardrive/models/database/web_artifact_vfs.dart';
+import 'package:ardrive/models/database/web_worker/web_database_worker.dart';
 import 'package:sqlite3/wasm.dart';
 
 /// False until the database has been opened, because the sqlite3 instance an
 /// artifact must be attached to is the one the database created. Callers check
 /// this before offering to publish, so a user is told the platform is not
 /// ready rather than shown a failure.
-bool get artifactSinkSupported => webSqlite != null;
+bool get artifactSinkSupported =>
+    webSqlite != null || webDatabaseWorker != null;
 
 VirtualFileSystem get _vfs {
   final held = webSqlite;
@@ -47,6 +49,14 @@ int _sequence = 0;
 String _pathFor(String label) => '/drive_state_${label}_${_sequence++}.db';
 
 Future<ArtifactSink> createArtifactSink(String label) async {
+  final worker = webDatabaseWorker;
+  if (worker != null) {
+    // In the worker's memory: the export attaches this path inside the
+    // worker, where the database is. See docs/WEB_DATABASE.md §5.
+    final path = _pathFor(label);
+    await worker.deleteFile(path);
+    return _WorkerSink(path, worker);
+  }
   final path = _pathFor(label);
   final vfs = _vfs;
   // A leftover from an interrupted run would otherwise be attached and
@@ -59,6 +69,12 @@ Future<ArtifactSource> createArtifactSource(
   String label,
   List<int> bytes,
 ) async {
+  final worker = webDatabaseWorker;
+  if (worker != null) {
+    final path = _pathFor('received_$label');
+    await worker.putFile(path, Uint8List.fromList(bytes));
+    return _WorkerSource(path, worker);
+  }
   final path = _pathFor('received_$label');
   final vfs = _vfs;
   if (vfs.xAccess(path, 0) != 0) vfs.xDelete(path, 0);
@@ -137,4 +153,34 @@ class _VfsSource implements ArtifactSource {
     _held.xClose();
     _fs.xDelete(path, 0);
   }
+}
+
+/// An artifact being built in the database worker's memory.
+class _WorkerSink implements ArtifactSink {
+  @override
+  final String path;
+  final WebDatabaseWorker _worker;
+  _WorkerSink(this.path, this._worker);
+
+  @override
+  Future<int> size() async => (await _worker.readFile(path))?.length ?? 0;
+
+  @override
+  Future<Uint8List> read() async =>
+      await _worker.readFile(path) ??
+      (throw StateError('the artifact $path is not in the worker'));
+
+  @override
+  Future<void> dispose() => _worker.deleteFile(path);
+}
+
+/// A received artifact, handed to the database worker's memory to attach.
+class _WorkerSource implements ArtifactSource {
+  @override
+  final String path;
+  final WebDatabaseWorker _worker;
+  _WorkerSource(this.path, this._worker);
+
+  @override
+  Future<void> dispose() => _worker.deleteFile(path);
 }

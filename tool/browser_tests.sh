@@ -10,7 +10,8 @@
 # resolved `sqlite3` package, serves web/ on that port, runs the tests, and
 # stops the server again, whatever the tests did.
 #
-# Set FLUTTER to use a Flutter other than the one on PATH.
+# Set FLUTTER to use a Flutter other than the one on PATH, and DART for the
+# Dart that compiles the database worker.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -19,6 +20,7 @@ FLUTTER="${FLUTTER:-flutter}"
 PORT=8099
 
 tool/check_wasm_version.sh
+tool/build_db_worker.sh
 
 mapfile -t tests < <(grep -rl --include='*_test.dart' "@TestOn('browser')" test | sort)
 if [ "${#tests[@]}" -eq 0 ]; then

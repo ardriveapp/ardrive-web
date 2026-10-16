@@ -1,6 +1,6 @@
 # The web database: SQLite on OPFS in a dedicated worker
 
-Status: plan, 2026-10-15. Decided by measurement (below), to be built on
+Status: built on `PE-9205-drive-state-sqlite`, 2026-10-15; §10 records what building it found. Decided by measurement (below), to be built on
 `PE-9205-drive-state-sqlite` before #2197 ships, so every web user migrates
 once.
 
@@ -198,3 +198,32 @@ this machine lacks.
 5. The round-trip audit (§6) with measurements.
 6. Build wiring (§7), the full suite, release-build e2e with the demo wallet,
    then Safari by hand.
+
+## 10. What building it found
+
+- **A reload looked like a second tab.** A worker's OPFS handles are released
+  some time after the worker goes, and a new worker opening 200 ms after one
+  was killed was refused as busy. A reload is exactly that, and the new tab
+  would have been handed a session copy whose writes are thrown away. A tab
+  holding the writer lock knows no other live tab writes, so it now retries a
+  busy open for about five seconds. The crash test goes through this path.
+- **A race the slower read exposed.** The password modal read its
+  `BuildContext` after awaiting the wallet address from the database, and the
+  modal could be gone by then (`State.context` is `_element!` in release
+  builds). On the main thread the read returned before that could happen; in
+  the worker it takes a round trip, and the error appeared after a reload in
+  Chromium and Firefox. Guarded with `mounted`. The same pattern elsewhere is
+  the main thing a staging soak should look for.
+- **`getFolderTree`** read two queries per folder; it now reads two for the
+  whole drive, held to the old version by a parity test that keeps it as the
+  oracle.
+- **Every column type** comes back across the worker as written: blobs of
+  every byte value, Unicode, 2^53 - 1, booleans, dates, reals, nulls.
+- **The app, end to end** (release build, demo wallet, the same build with
+  and without the worker script, so the same network): login, an artifact
+  sync of a 773-file private drive, an ordinary sync of a public drive, a
+  reload, a second tab. Sync times were the same either way (4.4 s and 24.6 s
+  in Chromium, 4.7 s and 24.4 s in Firefox) because for drives this size the
+  network sets them; the data survived the reload; the second tab got a
+  session copy. Without the worker script the app opened on IndexedDB within
+  two seconds.

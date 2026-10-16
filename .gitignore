@@ -84,3 +84,7 @@ packages/ario_sdk/web/package-lock.json
 
 # Claude Code session state and agent worktrees
 .claude/
+
+# Compiled by tool/build_db_worker.sh
+web/db_worker.js
+web/db_worker.js.deps
