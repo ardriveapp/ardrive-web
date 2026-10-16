@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/fs_entry_snapshots/models/snapshot_display_item.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
+import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
+import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/snapshot_events.dart';
@@ -16,10 +18,19 @@ part 'fs_entry_snapshots_state.dart';
 ///
 /// Fetches snapshots from Arweave and listens to [SnapshotEventBus]
 /// for optimistic updates when new snapshots are created.
+///
+/// Users see one term for both kinds of snapshot, so the list holds both: the
+/// older snapshots, and the drive's drive state artifacts where the build
+/// reads or publishes them.
 class FsEntrySnapshotsCubit extends Cubit<FsEntrySnapshotsState> {
   final String driveId;
   final String ownerAddress;
   final ArweaveService _arweaveService;
+
+  /// Finds the drive's drive state artifacts. Null where the build neither
+  /// reads nor publishes them, and the list then holds the older snapshots
+  /// only.
+  final DriveStateDiscovery? _driveStateDiscovery;
 
   StreamSubscription<SnapshotCreatedEvent>? _eventBusSubscription;
   List<SnapshotDisplayItem> _snapshots = [];
@@ -28,7 +39,9 @@ class FsEntrySnapshotsCubit extends Cubit<FsEntrySnapshotsState> {
     required this.driveId,
     required this.ownerAddress,
     required ArweaveService arweaveService,
+    DriveStateDiscovery? driveStateDiscovery,
   })  : _arweaveService = arweaveService,
+        _driveStateDiscovery = driveStateDiscovery,
         super(const FsEntrySnapshotsInitial()) {
     _init();
   }
@@ -162,6 +175,17 @@ class FsEntrySnapshotsCubit extends Cubit<FsEntrySnapshotsState> {
         }
       }
 
+      // Never throws: a lookup that fails lists what it found, if anything,
+      // beside the older snapshots.
+      final discovery = _driveStateDiscovery;
+      if (discovery != null) {
+        final found = await discovery.findCandidates(
+          driveId: driveId,
+          ownerAddress: ownerAddress,
+        );
+        snapshots.addAll(found.candidates.map(_fromDriveStateArtifact));
+      }
+
       // Sort by createdAt descending (most recent first)
       snapshots.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
@@ -188,6 +212,24 @@ class FsEntrySnapshotsCubit extends Cubit<FsEntrySnapshotsState> {
       if (isClosed) return;
       emit(FsEntrySnapshotsFailure(errorMessage: e.toString()));
     }
+  }
+
+  /// A drive state artifact as a row of the list. Discovery has already
+  /// checked it names this drive and its owner.
+  SnapshotDisplayItem _fromDriveStateArtifact(DriveStateArtifactCandidate c) {
+    final seconds = c.minedAtTimestamp ?? c.unixTime;
+    return SnapshotDisplayItem(
+      txId: c.txId,
+      driveId: driveId,
+      blockStart: c.blockStart ?? 0,
+      blockEnd: c.blockEnd ?? 0,
+      createdAt: seconds != null
+          ? DateTime.fromMillisecondsSinceEpoch(seconds * 1000)
+          : DateTime.now(),
+      status: c.minedAtHeight == null
+          ? TransactionStatus.pending
+          : TransactionStatus.confirmed,
+    );
   }
 
   /// Refreshes the list of snapshots from Arweave, bypassing cache.

@@ -13,6 +13,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/snapshot_events.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart' hide Cipher;
@@ -125,6 +126,15 @@ void main() {
   });
 
   tearDown(() => db.close());
+
+  // The Snapshots tab's bus is a singleton, and tests here publish: a listing
+  // left behind by one would pass for the next one's.
+  setUp(() {
+    final stale = SnapshotEventBus.instance.getPendingSnapshot(driveId);
+    if (stale != null) {
+      SnapshotEventBus.instance.consumePendingSnapshot(driveId, stale.txId);
+    }
+  });
 
   DriveStateCreationCubit cubitWith({
     DriveStateSyncSkipStatus skipStatus =
@@ -384,7 +394,7 @@ void main() {
         isA<DriveStateCreationFailure>().having(
           (s) => s.message,
           'message',
-          contains('cost of publishing could not be determined'),
+          contains('cost of this snapshot could not be determined'),
         ),
       ],
       verify: (_) => verifyNever(
@@ -697,7 +707,8 @@ void main() {
         // cancelled — it is paid for the moment it is posted — it simply has
         // nowhere left to report to.
         await cubit.close();
-        hung.upload.complete(const DriveStateUploadResult.published('tx-id'));
+        hung.upload
+            .complete(const DriveStateUploadResult.published('tx-dismissed'));
 
         await publishing;
       });
@@ -709,6 +720,45 @@ void main() {
       );
       verify(() => uploader.publish(any(), method: any(named: 'method')))
           .called(1);
+      // The Snapshots tab still hears about it: what was paid for is listed.
+      final listed = SnapshotEventBus.instance.getPendingSnapshot(driveId);
+      expect(listed?.txId, 'tx-dismissed');
+    });
+
+    test('a published artifact is listed in the Snapshots tab as pending',
+        () async {
+      final cubit = cubitWith();
+      await cubit.prepare();
+      when(() => uploader.publish(any(), method: any(named: 'method')))
+          .thenAnswer(
+        (_) async => const DriveStateUploadResult.published('tx-listed'),
+      );
+      final announced = SnapshotEventBus.instance.stream.first;
+
+      await cubit.publish();
+
+      final listed = (await announced).snapshot;
+      expect(listed.txId, 'tx-listed');
+      expect(listed.driveId, driveId);
+      expect(listed.isPending, isTrue);
+      final ready = cubit.state as DriveStateCreationPublished;
+      expect(listed.blockEnd, ready.artifact.blockEnd);
+      await cubit.close();
+    });
+
+    test('nothing is listed when the upload fails', () async {
+      final cubit = cubitWith();
+      await cubit.prepare();
+      when(() => uploader.publish(any(), method: any(named: 'method')))
+          .thenAnswer(
+        (_) async => const DriveStateUploadResult.failed('declined'),
+      );
+
+      await cubit.publish();
+
+      expect(cubit.state, isA<DriveStateCreationFailure>());
+      expect(SnapshotEventBus.instance.getPendingSnapshot(driveId), isNull);
+      await cubit.close();
     });
 
     test('a publish that fails after the modal closed is not emitted either',
@@ -786,4 +836,3 @@ PreparedDriveStateArtifact _anyArtifact() => PreparedDriveStateArtifact(
       entityCount: 1,
       sizeInBytes: 1,
     );
-

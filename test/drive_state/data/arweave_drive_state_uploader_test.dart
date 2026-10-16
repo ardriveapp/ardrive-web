@@ -381,7 +381,7 @@ void main() {
       );
 
       expect(result.isFailed, isTrue);
-      expect(result.reason, contains('could not be published'));
+      expect(result.reason, contains('could not be created'));
     });
   });
 

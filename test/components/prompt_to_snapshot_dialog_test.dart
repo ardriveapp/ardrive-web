@@ -16,8 +16,9 @@ import '../test_utils/utils.dart';
 
 class _LoadedDrive extends Mock implements DriveDetailLoadSuccess {}
 
-/// The nudge a slow drive's owner sees. Where publishing is on it offers a
-/// drive state artifact rather than a snapshot (D14).
+/// The nudge a slow drive's owner sees. Where publishing is on, the snapshot
+/// it offers is a drive state artifact (D14), and it says so in the same
+/// words as every other "Create snapshot": users see one term.
 void main() {
   late MockConfigService configService;
   final user = getTestUser();
@@ -88,22 +89,26 @@ void main() {
     );
   }
 
+  /// The older snapshot's nudge, worded from the `.arb` files.
   Future<void> expectSnapshotPrompt(WidgetTester tester) async {
     await tester.pumpAndSettle();
     expect(find.text('Create snapshot'), findsOneWidget);
-    expect(find.text('Publish drive state'), findsNothing);
+    expect(find.text('Snapshot Recommended'), findsOneWidget);
+    expect(find.text('Make this drive load faster'), findsNothing);
   }
 
-  testWidgets('offers to publish the drive state where publishing is on',
+  testWidgets('offers a drive state snapshot where publishing is on',
       (tester) async {
     await tester.pumpWidget(host(publishing: true));
     await tester.pumpAndSettle();
 
     expect(find.text('Make this drive load faster'), findsOneWidget);
-    expect(find.text('Publish drive state'), findsOneWidget);
-    expect(find.text('Create snapshot'), findsNothing);
-    expect(find.textContaining('napshot'), findsNothing,
-        reason: 'nothing on the prompt mentions snapshots any more');
+    expect(find.text('Create snapshot'), findsOneWidget);
+    expect(find.text('Snapshot Recommended'), findsNothing);
+    for (final word in ['rive state', 'rtifact', 'ublish']) {
+      expect(find.textContaining(word), findsNothing,
+          reason: 'users see one term, snapshot, not "$word"');
+    }
   });
 
   testWidgets('offers a snapshot, as before, where publishing is off',

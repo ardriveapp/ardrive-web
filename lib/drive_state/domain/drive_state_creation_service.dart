@@ -1,4 +1,3 @@
-
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_entity.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
@@ -280,7 +279,7 @@ class DriveStateCreationService {
     if (await wallet.getAddress() != drive.ownerAddress) {
       return const DriveStateCreationResult.refused(
         DriveStateCreationRefusal.notDriveOwner,
-        'Only the owner of this drive can publish its state.',
+        'Only the owner of this drive can create a snapshot of it.',
       );
     }
 
@@ -297,7 +296,7 @@ class DriveStateCreationService {
     if ((drive.lastBlockHeight ?? 0) <= 0) {
       return const DriveStateCreationResult.refused(
         DriveStateCreationRefusal.noWatermark,
-        'This drive has not synced far enough to publish its state. Sync it, '
+        'This drive has not synced far enough to create a snapshot. Sync it, '
         'then try again.',
       );
     }
@@ -309,7 +308,7 @@ class DriveStateCreationService {
     if (!artifactSinkSupported) {
       return const DriveStateCreationResult.refused(
         DriveStateCreationRefusal.sealFailed,
-        'Publishing a drive state is not available on this platform yet.',
+        'Creating a snapshot is not available on this platform yet.',
       );
     }
 
@@ -353,7 +352,7 @@ class DriveStateCreationService {
     if (blockEnd <= 0) {
       return const DriveStateCreationResult.refused(
         DriveStateCreationRefusal.noWatermark,
-        'This drive has not synced far enough to publish its state. Sync it, '
+        'This drive has not synced far enough to create a snapshot. Sync it, '
         'then try again.',
       );
     }
@@ -439,18 +438,18 @@ class DriveStateCreationService {
   static String _sealRefusalMessage(DriveStateEnvelopeFailure failure) {
     switch (failure) {
       case DriveStateEnvelopeFailure.plaintextTooLarge:
-        return 'This drive is too large to publish as a single artifact. It '
-            'will keep syncing from snapshots as it does today.';
+        return 'This drive is too large for a single snapshot. It keeps '
+            'loading the way it does today.';
       case DriveStateEnvelopeFailure.plaintextForPrivateDrive:
       case DriveStateEnvelopeFailure.ciphertextForPublicDrive:
         // Unreachable from `seal`, which never produces an envelope that
         // contradicts the protection it was handed - the protection is what
         // chooses the chain. Named rather than left to the default so that a
         // future seal-side use of either value stops here for a decision.
-        return 'The artifact could not be prepared for this drive\'s privacy. '
+        return 'The snapshot could not be prepared for this drive\'s privacy. '
             'Try again.';
       default:
-        return 'The artifact could not be prepared. Try again.';
+        return 'The snapshot could not be prepared. Try again.';
     }
   }
 }

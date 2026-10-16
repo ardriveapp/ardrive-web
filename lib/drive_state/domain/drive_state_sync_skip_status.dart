@@ -177,7 +177,7 @@ DriveStateSyncSkipStatus driveStateSyncSkipStatus({
     return DriveStateSyncSkipStatus.skipped(
       skippedEntityCount: skipped.length,
       reason: 'The last sync of this drive could not read ${skipped.length} '
-          '${skipped.length == 1 ? 'item' : 'items'}. Publishing now would '
+          '${skipped.length == 1 ? 'item' : 'items'}. A snapshot now would '
           'record that gap permanently. Sync this drive again, then try '
           'again.',
     );
