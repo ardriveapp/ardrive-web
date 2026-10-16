@@ -342,14 +342,20 @@ is the native library, which makes the gate the whole defence there.
 
 1. Check the upload's owner is the drive's, decrypt (private), detect the
    encoding, inflate under the bound.
-2. Open **read-only** with `SQLITE_DBCONFIG_DEFENSIVE` and
-   `SQLITE_DBCONFIG_TRUSTED_SCHEMA=0`.
+2. `ATTACH` the decrypted copy under a name of its own, and read nothing from
+   it until steps 3 and 4 pass.
 3. `PRAGMA integrity_check`.
-4. Refuse unless `sqlite_master` matches the frozen schema exactly: no views, no
-   triggers, no virtual tables, no indexes, every DDL string identical.
+4. Refuse unless `application_id` is `ArDS` (D17) and `sqlite_master` matches
+   the frozen schema exactly: no views, no triggers, no virtual tables, no
+   indexes, every DDL string identical. This is what stands between a reader
+   and SQL an attacker wrote: with only the frozen tables present, no view,
+   trigger, default or check constraint of theirs exists to run, which is the
+   exposure `SQLITE_DBCONFIG_DEFENSIVE` and `TRUSTED_SCHEMA=0` address. The app
+   sets neither, because the connection is the app's own database. A reader on
+   its own connection can set both as well.
 5. Check `meta` against the tags: version, drive id, owner, privacy, entity
    count, and a range that advances the watermark.
-6. `ATTACH`, then `INSERT INTO main.x SELECT … FROM artifact.x` per table, in one
+6. `INSERT INTO main.x SELECT … FROM artifact.x` per table, in one
    transaction.
 
 **Building up, never tearing down.** An artifact is constructed by selecting
@@ -490,13 +496,14 @@ shade of "the payload did not match its tags".
 
 #### What does not change
 
-`State-Version` stays at **1.0**. Public support is folded into the initial
-format rather than added as a minor bump, because nothing has been published to
-chain — so there is never a fragmented world in which some 1.0 readers handle
-public drives and others do not. Had anything been published this would have
-been a clean minor bump under §6: a 1.0 reader meeting a cipher-less artifact
-finds no `Cipher` tag and refuses it, which is a correct refusal rather than a
-misread. That fallback exists and is not needed.
+Public support did not change `State-Version`. It was folded into the format
+of the day (`0.1`; the published format is `0.2`, see D15 to D17) rather than
+added as a version bump, because nothing had been published to chain, so there
+is never a fragmented world in which some readers of one version handle public
+drives and others do not. Had anything been published this would have been a
+version bump under §6: an older reader meeting a cipher-less artifact finds no
+`Cipher` tag and refuses it, which is a correct refusal rather than a misread.
+That fallback exists and is not needed.
 
 Every other gate on publishing still applies to a public drive, unchanged: the
 D3 skip precondition, drive ownership, write permissions, a non-empty drive, a
@@ -608,7 +615,7 @@ ArFS:             "0.15"
 Entity-Type:      "drive-state"
 Drive-Id:         "<drive uuid this state belongs to>"
 Drive-State-Id:   "<uuid of this drive-state entity>"
-State-Version:    "1.0"       (major.minor — see 6)
+State-Version:    "0.2"       (major.minor — see 6)
 Content-Type:     "application/octet-stream"
 Block-Start:      "0"          (always — see 3.4)
 Block-End:        "<maximum block height accounted for, eg 1814228>"
@@ -617,8 +624,11 @@ Data-End:         "<last block in which data was found>"
 Entity-Count:     "<number of entities in the payload>"
 Unix-Time:        "<seconds since unix epoch>"
 Cipher:           "AES256-GCM"                      (private drives only)
-Cipher-IV:        "<12 byte IV as Base64>"          (private drives only)
+Cipher-IV:        "<12 byte IV as base64url>"       (private drives only)
 ```
+
+`Cipher-IV` is base64url without padding, as on every ArFS entity this app
+encrypts. A reader also accepts standard base64.
 
 **`Cipher` and `Cipher-IV` are present together or absent together**, and a
 public drive's artifact carries neither, because nothing about it is encrypted

@@ -288,13 +288,12 @@ class DriveStateCreationService {
     // coverage claim an importer adopts as its starting point, so it may only
     // be a height this client actually synced to.
     //
-    // Checked here to refuse before paying for an export, but *not* used: the
-    // number that goes on the wire comes from the export below, which reads
-    // the watermark in the same transaction as the rows it carries. This read
-    // is a separate one, and a sync batch can land between the two - tagging
-    // the earlier value would put a `Block-End` on the transaction that the
-    // payload contradicts, which every importer rejects. Paid for,
-    // permanent, and useless.
+    // Read here, before the export, and passed to it. The export reads the
+    // rows in its own transaction afterwards, so a sync batch that lands in
+    // between puts rows in the artifact newer than this `Block-End` and never
+    // the reverse: the claim can only understate what the rows cover, and an
+    // importer re-reads from below `Block-End` anyway. Tag and payload carry
+    // the same number because both come from the export's result.
     if ((drive.lastBlockHeight ?? 0) <= 0) {
       return const DriveStateCreationResult.refused(
         DriveStateCreationRefusal.noWatermark,

@@ -78,9 +78,10 @@ class DriveStateArtifact {
 /// Copies one drive out of [db] into a fresh artifact database at [sink].
 ///
 /// [maxBytes] is a bound on the **producer**, not on any cipher: it is what
-/// stops a browser tab trying to build something it cannot hold. A CLI can
-/// pass a much larger value, or none, which is the point of the parameter
-/// existing rather than being a constant.
+/// stops a browser tab trying to build something it cannot hold. It can be
+/// lower than the format's own bound but never usefully higher: every reader
+/// refuses a payload over `DriveStateEnvelopeCodec`'s 100 MiB (D5), so an
+/// artifact built past it would be paid for and unreadable.
 Future<DriveStateArtifact> exportDriveState(
   GeneratedDatabase db, {
   required String driveId,
