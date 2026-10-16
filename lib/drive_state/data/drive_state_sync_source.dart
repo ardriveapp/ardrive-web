@@ -168,7 +168,10 @@ class DriveStateSyncSource {
           ? DriveStateSyncResult.none
           : DriveStateSyncResult._rejected(
               DriveStateOutcome.noneFound,
-              'discovery returned no candidate for this drive',
+              lastBlockHeight > 0
+                  ? 'discovery returned no candidate at or above block '
+                      '$lastBlockHeight'
+                  : 'discovery returned no candidate for this drive',
             );
     }
 
