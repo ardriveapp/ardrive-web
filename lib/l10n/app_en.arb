@@ -174,6 +174,20 @@
   "@actionFailedTryAgain": {
     "description": "Generic failure message for metadata operations (rename, move, create, etc.)"
   },
+  "closeAnyway": "Close Anyway",
+  "@closeAnyway": {
+    "description": "Closes the upload problem dialog, leaving wallet-paid files unfinished"
+  },
+  "costCredits": "Cost: {credits} Credits",
+  "@costCredits": {
+    "description": "The total cost estimation of the upload quoted in Turbo Credits",
+    "placeholders": {
+      "credits": {
+        "type": "String",
+        "example": "0.0041"
+      }
+    }
+  },
   "freeAllowanceUsedUpTitle": "Free allowance used up",
   "@freeAllowanceUsedUpTitle": {
     "description": "Title of the dialog shown when a Turbo action is rejected because the free allowance is exhausted"
@@ -413,6 +427,26 @@
         "example": "Curious Cat"
       }
     }
+  },
+  "goBack": "Go Back",
+  "@goBack": {
+    "description": "Returns to the previous dialog"
+  },
+  "leaveFilesUnfinishedDescription": "You may already have been charged for these files. If you close now, they won't finish uploading, and you'd need to upload them again.",
+  "@leaveFilesUnfinishedDescription": {
+    "description": "Asks before closing the upload problem dialog with wallet-paid files unfinished"
+  },
+  "leaveFilesUnfinishedTitle": "Leave these files unfinished?",
+  "@leaveFilesUnfinishedTitle": {
+    "description": "Title of the confirmation before closing the upload problem dialog with wallet-paid files unfinished"
+  },
+  "reUpload": "Re-Upload",
+  "@reUpload": {
+    "description": "Uploads the files that did not finish again"
+  },
+  "replace": "Replace",
+  "@replace": {
+    "description": "Replaces an existing file with the one being uploaded"
   },
   "syncThisDrive": "Sync This Drive",
   "@syncThisDrive": {
@@ -690,6 +724,38 @@
         "example": "Photos"
       }
     }
+  },
+  "turboCreditsAvailable": "Turbo Credits, {balance} available",
+  "@turboCreditsAvailable": {
+    "description": "Payment method line under the upload cost: the Turbo Credits balance",
+    "placeholders": {
+      "balance": {
+        "type": "String",
+        "example": "2.0370"
+      }
+    }
+  },
+  "uploadFailedPartial": "Some files didn't finish uploading. They'll show as failed in your drive. Select Re-Upload to try them again.",
+  "@uploadFailedPartial": {
+    "description": "Upload problem dialog text when some Turbo uploads did not finish"
+  },
+  "uploadProblemTitle": "Problem with Upload",
+  "@uploadProblemTitle": {
+    "description": "Title of the dialog listing files that did not finish uploading"
+  },
+  "walletBalanceAvailable": "Wallet balance, {balance} AR available",
+  "@walletBalanceAvailable": {
+    "description": "Payment method line under the upload cost: the wallet AR balance",
+    "placeholders": {
+      "balance": {
+        "type": "String",
+        "example": "1.0619"
+      }
+    }
+  },
+  "warning": "Warning",
+  "@warning": {
+    "description": "Title of a warning dialog"
   },
   "yourDrives": "Your Drives",
   "@yourDrives": {

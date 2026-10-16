@@ -6,9 +6,9 @@ import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:arweave/utils.dart';
 import 'package:flutter/material.dart';
 
 class PaymentMethodSelector extends StatefulWidget {
@@ -188,13 +188,15 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateAr.totalCost)} AR',
+            appLocalizationsOf(context).cost(convertWinstonToCostString(
+                widget.uploadMethodInfo.costEstimateAr.totalCost)),
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
           Text(
-            'Payment Method: Wallet Balance: ${widget.uploadMethodInfo.arBalance} AR',
+            appLocalizationsOf(context)
+                .walletBalanceAvailable(widget.uploadMethodInfo.arBalance),
             style: typography.paragraphSmall(
               color: colorTokens.textLow,
             ),
@@ -206,13 +208,15 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateTurbo!.totalCost)} Credits',
+            appLocalizationsOf(context).costCredits(convertWinstonToCostString(
+                widget.uploadMethodInfo.costEstimateTurbo!.totalCost)),
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
             ),
           ),
           Text(
-            'Payment Method: Turbo Credits: ${widget.uploadMethodInfo.turboCredits} Credits',
+            appLocalizationsOf(context)
+                .turboCreditsAvailable(widget.uploadMethodInfo.turboCredits),
             style: typography.paragraphSmall(
               color: colorTokens.textLow,
             ),
@@ -256,9 +260,8 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
             // FIXME: rename to RadioButtonOption
             RadioButtonOptions(
               value: widget.uploadMethodInfo.uploadMethod == UploadMethod.ar,
-              // TODO: Localization
-              text:
-                  'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateAr.totalCost)} AR',
+              text: appLocalizationsOf(context).cost(convertWinstonToCostString(
+                  widget.uploadMethodInfo.costEstimateAr.totalCost)),
               textStyle: widget.useNewArDriveUI
                   ? typography.paragraphLarge(
                       fontWeight: ArFontWeight.bold,
@@ -270,10 +273,11 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
               RadioButtonOptions(
                 value:
                     widget.uploadMethodInfo.uploadMethod == UploadMethod.turbo,
-                // TODO: Localization
                 text: widget.uploadMethodInfo.hasNoTurboBalance
                     ? ''
-                    : 'Cost: ${winstonToAr(widget.uploadMethodInfo.costEstimateTurbo!.totalCost)} Credits',
+                    : appLocalizationsOf(context).costCredits(
+                        convertWinstonToCostString(widget
+                            .uploadMethodInfo.costEstimateTurbo!.totalCost)),
                 textStyle: widget.useNewArDriveUI
                     ? typography.paragraphLarge(
                         color: colorTokens.textHigh,
@@ -643,7 +647,7 @@ class _SourceWalletCreditsNoticeState
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          '${winstonToAr(widget.credits.balance)} Credits are on your $chain '
+          '${convertWinstonToLiteralString(widget.credits.balance)} Credits are on your $chain '
           'wallet ${truncateString(widget.credits.sourceAddress, offsetStart: 6, offsetEnd: 4)}.',
           style: widget.useNewArDriveUI
               ? typography.paragraphNormal(
