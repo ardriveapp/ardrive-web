@@ -153,6 +153,19 @@ void main() {
 
   /// `B` in the notes below: the last block the artifact accounts for.
   const artifactBlockEnd = 1500;
+
+  /// Where the sources below the artifact resume: the look-back below `B`,
+  /// as the ordinary path resumes below its own watermark. `B` is the
+  /// producer's watermark, the node's height at its last sync rather than a
+  /// height the GraphQL index is known to have reached, so the artifact can
+  /// lack an entity mined just below it and indexed late.
+  const artifactResumesFrom = artifactBlockEnd - kBlockHeightLookBack;
+
+  /// The blocks both the artifact and what follows it account for: the
+  /// look-back band, read twice on purpose.
+  final lookBackBand = {
+    for (var b = artifactResumesFrom; b <= artifactBlockEnd; b++) b,
+  };
   const currentBlockHeight = 2000;
   const artifactTxId = 'artifact-tx-id';
 
@@ -620,8 +633,12 @@ void main() {
 
       expect(
         gqlRanges(),
-        [Range(start: 1500, end: 1599), Range(start: 1701, end: 2000)],
-        reason: 'the artifact covered through 1500 and the snapshot 1600-1700',
+        [
+          Range(start: artifactResumesFrom, end: 1599),
+          Range(start: 1701, end: 2000),
+        ],
+        reason: 'the artifact covered through 1500, re-read from 1260, and '
+            'the snapshot 1600-1700',
       );
     });
 
@@ -640,13 +657,11 @@ void main() {
         to: currentBlockHeight,
       );
 
-      // `Range` is inclusive at both ends, and the GraphQL range is built as
-      // `Range(start: syncFromBlockHeight, ...)` - so block 1500 is both the
-      // last block the artifact covered and the first the GraphQL pass is
-      // asked for. One block re-walked, in line with the look-back the
-      // ordinary path already applies, and idempotent: the revision writers
+      // The look-back band, 1260-1500, is both the artifact's and the
+      // GraphQL pass's: re-walked on purpose, as the ordinary path re-walks
+      // below its own watermark, and idempotent, since the revision writers
       // find the rows already present and record nothing.
-      expect(overlaps, {artifactBlockEnd});
+      expect(overlaps, lookBackBand);
     });
 
     test('lands a file from each of the three sources', () async {
@@ -670,29 +685,54 @@ void main() {
     test('narrows the snapshot search to what the artifact left', () async {
       await sync();
 
-      expect(snapshotQueryMins, [artifactBlockEnd],
+      expect(snapshotQueryMins, [artifactResumesFrom],
           reason: 'without the artifact this drive would have asked from '
               '$startsFromWithoutArtifact');
     });
   });
 
-  group('a snapshot that straddles the artifact\'s last block', () {
-    // The case with the most room to be wrong: [1400, 1600] against an
-    // artifact covering [0, 1500]. Either the half above 1500 is still used,
-    // or the snapshot is dropped whole and 1501-1600 falls through to
+  group('an entity the artifact\'s producer had not yet indexed', () {
+    // `Block-End` is the producer's watermark: the node's height at its last
+    // sync, not a height its GraphQL index had reached. A file mined at 1450
+    // and indexed after that sync is in no artifact, and its producer only
+    // finds it on its own next sync, through the look-back. A reader that
+    // started GraphQL at 1500 would skip it, and once its own watermark
+    // moved more than the look-back past 1500, would never read 1450 again.
+    const indexedLate = _PlantedTx(fileId: 'file-indexed-late', height: 1450);
+
+    setUp(() async {
+      await publishArtifact();
+      plantedInGql.add(indexedLate);
+    });
+
+    test('is found by re-reading the look-back below `Block-End`', () async {
+      await sync();
+
+      expect(await fileIds(), contains(indexedLate.fileId));
+      expect(outcomeLines().single,
+          contains('outcome=${DriveStateOutcome.used.code}'),
+          reason: 'the artifact was still used for everything below 1260');
+      expect(gqlRanges(), [Range(start: artifactResumesFrom, end: 2000)]);
+    });
+  });
+
+  group('a snapshot that straddles where the artifact hands over', () {
+    // The case with the most room to be wrong: [1160, 1360] against an
+    // artifact handing over at 1260. Either the half above 1260 is still
+    // used, or the snapshot is dropped whole and 1261-1360 falls through to
     // GraphQL (correct but slow) or to nothing at all (a hole).
     const aboveTheBoundary =
-        _PlantedTx(fileId: 'file-above-boundary', height: 1550);
+        _PlantedTx(fileId: 'file-above-boundary', height: 1310);
     const belowTheBoundary =
-        _PlantedTx(fileId: 'file-below-boundary', height: 1450);
+        _PlantedTx(fileId: 'file-below-boundary', height: 1210);
 
     setUp(() async {
       await publishArtifact();
       publishSnapshot(const _SnapshotFixture(
         txId: 'snapshot-straddling',
-        blockStart: 1400,
-        blockEnd: 1600,
-        minedAt: 1605,
+        blockStart: 1160,
+        blockEnd: 1360,
+        minedAt: 1365,
         contains: [belowTheBoundary, aboveTheBoundary],
       ));
     });
@@ -702,9 +742,12 @@ void main() {
 
       expect(
         gqlRanges(),
-        [Range(start: 1500, end: 1500), Range(start: 1601, end: 2000)],
-        reason: 'the snapshot was kept and obscured 1501-1600; had it been '
-            'dropped whole, GraphQL would have been asked for 1500-2000',
+        [
+          Range(start: artifactResumesFrom, end: artifactResumesFrom),
+          Range(start: 1361, end: 2000),
+        ],
+        reason: 'the snapshot was kept and obscured 1261-1360; had it been '
+            'dropped whole, GraphQL would have been asked for 1260-2000',
       );
     });
 
@@ -719,12 +762,12 @@ void main() {
         'artifact\'s to account for', () async {
       await sync();
 
-      // Not a hole. The artifact's signed claim is that every entity through
-      // block 1500 is already in the database, so the snapshot re-serving
-      // 1400-1500 would be duplicate work, and the GraphQL pass not being
-      // asked for it is the saving the artifact exists to make. The file is
-      // absent here only because this fixture put it in the snapshot and not
-      // in the artifact.
+      // Not a hole. The artifact's claim is that every entity through block
+      // 1500 is already in the database, and only the top of that is re-read,
+      // so the snapshot re-serving 1160-1260 would be duplicate work, and the
+      // GraphQL pass not being asked for it is the saving the artifact exists
+      // to make. The file is absent here only because this fixture put it in
+      // the snapshot and not in the artifact.
       expect(await fileIds(), isNot(contains(belowTheBoundary.fileId)));
     });
 
@@ -736,30 +779,29 @@ void main() {
         [
           Range(start: 0, end: artifactBlockEnd),
           // What the snapshot was actually left responsible for: its own
-          // range less the artifact's.
-          Range(start: 1501, end: 1600),
+          // range above where the artifact hands over.
+          Range(start: 1261, end: 1360),
           ...gqlRanges(),
         ],
         from: 0,
         to: currentBlockHeight,
       );
 
-      // Again only the boundary block itself - but here it costs a whole
-      // GraphQL round trip of its own for one already-covered block. Cheap,
-      // and the same overlap the ordinary look-back path has always had, but
-      // worth naming.
-      expect(overlaps, {artifactBlockEnd});
+      // The look-back band again. The handover block itself costs a GraphQL
+      // round trip of its own for one block. Cheap, and the same overlap the
+      // ordinary look-back path has always had, but worth naming.
+      expect(overlaps, lookBackBand);
     });
   });
 
-  group('a snapshot that starts exactly where the artifact ends', () {
+  group('a snapshot that starts exactly where the artifact hands over', () {
     setUp(() async {
       await publishArtifact();
       publishSnapshot(const _SnapshotFixture(
         txId: 'snapshot-abutting',
-        blockStart: artifactBlockEnd,
-        blockEnd: 1600,
-        minedAt: 1605,
+        blockStart: artifactResumesFrom,
+        blockEnd: 1360,
+        minedAt: 1365,
         contains: [],
       ));
     });
@@ -767,13 +809,16 @@ void main() {
     test('does not have both of them serve the shared block', () async {
       await sync();
 
-      // `Range` is inclusive at both ends, so an artifact through 1500 and a
-      // snapshot from 1500 both name block 1500. The snapshot yields: the
-      // obscuring accumulator is seeded with [0, 1500], so the snapshot is
-      // left 1501-1600 and block 1500 is not read from it.
+      // `Range` is inclusive at both ends, so the handover at 1260 and a
+      // snapshot from 1260 both name block 1260. The snapshot yields: the
+      // obscuring accumulator is seeded with [0, 1260], so the snapshot is
+      // left 1261-1360 and block 1260 is not read from it.
       expect(
         gqlRanges(),
-        [Range(start: 1500, end: 1500), Range(start: 1601, end: 2000)],
+        [
+          Range(start: artifactResumesFrom, end: artifactResumesFrom),
+          Range(start: 1361, end: 2000),
+        ],
       );
     });
   });
@@ -792,11 +837,11 @@ void main() {
 
       await sync();
 
-      // The query's own `block: {min}` filter does the work: the min is the
-      // artifact's last block, and this snapshot was mined below it.
-      expect(snapshotQueryMins, [artifactBlockEnd]);
+      // The query's own `block: {min}` filter does the work: the min is
+      // where the artifact hands over, and this snapshot was mined below it.
+      expect(snapshotQueryMins, [artifactResumesFrom]);
       expect(validation.asked, isEmpty);
-      expect(gqlRanges(), [Range(start: 1500, end: 2000)]);
+      expect(gqlRanges(), [Range(start: artifactResumesFrom, end: 2000)]);
     });
 
     test('contributes nothing when the batched prefetch hands one over',
@@ -818,7 +863,7 @@ void main() {
       expect(progress.last.failedDriveIds, isEmpty);
       // It obscures nothing, so the GraphQL range is exactly what it would
       // have been with no snapshot at all - correct, and no gap.
-      expect(gqlRanges(), [Range(start: 1500, end: 2000)]);
+      expect(gqlRanges(), [Range(start: artifactResumesFrom, end: 2000)]);
       expect(await fileIds(), isNot(contains('file-below-artifact')));
     });
 
@@ -851,7 +896,10 @@ void main() {
           reason: 'the one below the artifact can serve no block');
       expect(
         gqlRanges(),
-        [Range(start: 1500, end: 1599), Range(start: 1701, end: 2000)],
+        [
+          Range(start: artifactResumesFrom, end: 1599),
+          Range(start: 1701, end: 2000),
+        ],
         reason: 'dropping it must not change what anything else is asked for',
       );
     });
@@ -896,7 +944,10 @@ void main() {
       // 1600-1649 would appear here.
       expect(
         gqlRanges(),
-        [Range(start: 1500, end: 1599), Range(start: 1801, end: 2000)],
+        [
+          Range(start: artifactResumesFrom, end: 1599),
+          Range(start: 1801, end: 2000),
+        ],
       );
       expect(validation.asked, ['snapshot-newer', 'snapshot-older'],
           reason: 'both still serve blocks, so both are worth probing');
@@ -930,7 +981,7 @@ void main() {
         from: 0,
         to: currentBlockHeight,
       );
-      expect(overlaps, {artifactBlockEnd});
+      expect(overlaps, lookBackBand);
     });
   });
 

@@ -2480,6 +2480,19 @@ class _SyncRepository implements SyncRepository {
         lastBlockHeight: lastBlockHeight,
       );
 
+      // Resumed [kBlockHeightLookBack] blocks below `Block-End`, as the
+      // ordinary path resumes below its own watermark. `Block-End` is the
+      // producer's watermark, which is the node's `/info` height at its last
+      // sync, not a height the GraphQL index had reached: the producer's copy
+      // can lack an entity mined just below it and indexed late. The
+      // producer's own next sync finds it in its look-back; the artifact keeps
+      // the gap, and a reader starting at `Block-End` would never re-read it
+      // once its watermark moved on. Re-reading the band costs one query and
+      // records nothing twice: revisions no newer than the latest are skipped.
+      final covered = result.coveredThroughBlock;
+      final resumeFrom =
+          covered > 0 ? max(covered - kBlockHeightLookBack, 0) : 0;
+
       // Never past the tip. The range below is built as
       // `Range(start: <this>, end: currentBlockHeight)`, and `Range` throws
       // when start runs past end - which would fail the drive, the one thing
@@ -2487,7 +2500,7 @@ class _SyncRepository implements SyncRepository {
       // has to trust, so an artifact claiming more than this node has seen is
       // an ordinary thing to meet, not a malformed one.
       return min(
-        max(lastBlockHeight, result.coveredThroughBlock),
+        max(lastBlockHeight, resumeFrom),
         max(lastBlockHeight, currentBlockHeight),
       );
     } catch (e) {

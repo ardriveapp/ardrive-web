@@ -964,10 +964,14 @@ The artifact becomes the first of three sources. The range arithmetic that
 composes them already exists.
 
 ```
-1. state artifact   [0 → Block-End]        one decryption, bulk insert
-2. snapshots        (Block-End → newest]   existing path
-3. GraphQL          (newest → current]     existing path
+1. state artifact   [0 → Block-End]               one decryption, bulk insert
+2. snapshots        [Block-End − 240 → newest]    existing path
+3. GraphQL          (newest → current]            existing path
 ```
+
+The sources after the artifact resume 240 blocks below its `Block-End`
+(`kBlockHeightLookBack`), the same margin an ordinary sync re-reads below its
+own watermark.
 
 - **`SyncRepository`** gains an artifact lookup before the snapshot prefetch.
 - **`HeightRange`/`obscuredBy` need no change.** The accumulator in
@@ -998,6 +1002,18 @@ Three rules a reader has to get right, each of which cost time to learn here:
   cannot outlive them: ArDrive web writes it to the drive row in the import's
   own transaction, and skips only while the drive's watermark is still at or
   past the artifact's `Block-End`.
+
+- **Resume the look-back below `Block-End`, not at it.** `Block-End` is the
+  producer's watermark, and a watermark is the node's height at that sync, not
+  a height the GraphQL index is known to have reached. An entity mined just
+  below it and indexed late is in no artifact; the producer finds it on its
+  own next sync, through its look-back. A reader that starts at `Block-End`
+  skips it, and once its own watermark has moved more than the look-back past
+  `Block-End` it never reads those blocks again. Re-reading the band costs one
+  query and records nothing twice, since revisions no newer than the latest
+  held are skipped. ArDrive web applies this from the import onward, so every
+  source after the artifact, snapshots included, starts at
+  `Block-End − 240`.
 
 - **Skip snapshots the artifact has already covered — before validating
   them.** Once the artifact's range seeds the obscuring accumulator, a

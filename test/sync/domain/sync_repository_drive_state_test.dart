@@ -96,6 +96,11 @@ void main() {
 
   /// Comfortably above the watermark, so the artifact has something to add.
   const artifactBlockEnd = 1500;
+
+  /// Where GraphQL resumes after an import: the look-back below `Block-End`,
+  /// which is the producer's node height rather than a height the index is
+  /// known to have reached.
+  const artifactResumesFrom = artifactBlockEnd - kBlockHeightLookBack;
   const currentBlockHeight = 2000;
   const artifactTxId = 'artifact-tx-id';
 
@@ -431,12 +436,13 @@ void main() {
       expectExactlyOneOutcome(DriveStateOutcome.used);
     });
 
-    test('starts GraphQL above what the artifact covered', () async {
+    test('resumes GraphQL the look-back below what the artifact covered',
+        () async {
       await publish();
 
       await sync();
 
-      expect(gqlStartedAt(), artifactBlockEnd);
+      expect(gqlStartedAt(), artifactResumesFrom);
       expect((await driveRow()).lastBlockHeight, artifactBlockEnd);
     });
 
@@ -604,7 +610,7 @@ void main() {
       await sync();
 
       expect(discovery.calls, hasLength(1));
-      expect(gqlStartedAt(), artifactBlockEnd);
+      expect(gqlStartedAt(), artifactResumesFrom);
     });
 
     test('is exempt through syncAllDrives too, not just syncSingleDrive',
@@ -671,11 +677,12 @@ void main() {
       expect((await driveRow()).privacy, DrivePrivacyTag.public);
     });
 
-    test('starts GraphQL above what the artifact covered', () async {
+    test('resumes GraphQL the look-back below what the artifact covered',
+        () async {
       await publishPublicly();
       await sync();
 
-      expect(gqlStartedAt(), artifactBlockEnd);
+      expect(gqlStartedAt(), artifactResumesFrom);
     });
 
     test('rejects an encrypted artifact offered to it', () async {
