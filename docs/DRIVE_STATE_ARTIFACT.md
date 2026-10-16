@@ -970,8 +970,8 @@ composes them already exists.
 ```
 
 The sources after the artifact resume 240 blocks below its `Block-End`
-(`kBlockHeightLookBack`), the same margin an ordinary sync re-reads below its
-own watermark.
+(`kBlockHeightLookBack`), the same margin the first sync of each app session
+re-reads below the drive's own watermark.
 
 - **`SyncRepository`** gains an artifact lookup before the snapshot prefetch.
 - **`HeightRange`/`obscuredBy` need no change.** The accumulator in
@@ -1006,8 +1006,8 @@ Three rules a reader has to get right, each of which cost time to learn here:
 - **Resume the look-back below `Block-End`, not at it.** `Block-End` is the
   producer's watermark, and a watermark is the node's height at that sync, not
   a height the GraphQL index is known to have reached. An entity mined just
-  below it and indexed late is in no artifact; the producer finds it on its
-  own next sync, through its look-back. A reader that starts at `Block-End`
+  below it and indexed late is in no artifact; the producer finds it on a
+  later sync, through its look-back. A reader that starts at `Block-End`
   skips it, and once its own watermark has moved more than the look-back past
   `Block-End` it never reads those blocks again. Re-reading the band costs one
   query and records nothing twice, since revisions no newer than the latest

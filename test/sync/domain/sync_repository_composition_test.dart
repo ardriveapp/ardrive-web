@@ -97,6 +97,24 @@ class _SpyDiscovery implements DriveStateDiscovery {
 /// assertion target: each item here costs a network probe against the gateway,
 /// so a snapshot that reaches this list and then contributes no blocks is
 /// measurable waste.
+/// A [DriveDao] whose file-entry write fails on one chosen call, the way a
+/// full disk or a closed tab ends a sync partway through. Each page of a sync
+/// writes its file entries once, so the call number picks the page.
+class _FailingDriveDao extends DriveDao {
+  _FailingDriveDao(super.db, {required this.failOnCall});
+
+  final int failOnCall;
+  int _calls = 0;
+
+  @override
+  Future<void> updateFileEntries(List<FileEntriesCompanion> entries) {
+    if (++_calls == failOnCall) {
+      throw StateError('the write failed on call $failOnCall');
+    }
+    return super.updateFileEntries(entries);
+  }
+}
+
 class _AcceptingValidation implements SnapshotValidationService {
   final asked = <String>[];
 
@@ -155,7 +173,7 @@ void main() {
   const artifactBlockEnd = 1500;
 
   /// Where the sources below the artifact resume: the look-back below `B`,
-  /// as the ordinary path resumes below its own watermark. `B` is the
+  /// as the first sync of a session resumes below the drive's own watermark. `B` is the
   /// producer's watermark, the node's height at its last sync rather than a
   /// height the GraphQL index is known to have reached, so the artifact can
   /// lack an entity mined just below it and indexed late.
@@ -210,6 +228,10 @@ void main() {
 
   /// Transactions the GraphQL pass will find, if it asks for their block.
   late List<_PlantedTx> plantedInGql;
+
+  /// File ids among [plantedInGql] whose metadata does not parse, so their
+  /// page holds fewer entities than transactions.
+  late Set<String> undecodable;
 
   /// Every transaction id handed to the parse stage, in order and with
   /// repeats. This is where "covered exactly once" stops being arithmetic
@@ -388,7 +410,10 @@ void main() {
       .map((f) => f.id)
       .toSet();
 
-  void buildRepository({required bool enableSyncFromDriveState}) {
+  void buildRepository({
+    required bool enableSyncFromDriveState,
+    DriveDao? driveDao,
+  }) {
     when(() => configService.config).thenReturn(AppConfig(
       allowedDataItemSizeForTurbo: 0,
       stripePublishableKey: '',
@@ -399,7 +424,7 @@ void main() {
 
     syncRepository = SyncRepository(
       arweave: arweave,
-      driveDao: db.driveDao,
+      driveDao: driveDao ?? db.driveDao,
       configService: configService,
       batchProcessor: BatchProcessor(),
       snapshotValidationService: validation,
@@ -425,6 +450,7 @@ void main() {
     bodies = {};
     publishedSnapshots = [];
     plantedInGql = [];
+    undecodable = {};
     deliveredTxIds = [];
     snapshotQueryMins = [];
     gatewayHonoursMinBlockHeight = true;
@@ -564,7 +590,7 @@ void main() {
       for (final tx in txs) {
         deliveredTxIds.add(tx.transactionCommonMixin.id);
         final planted = known[tx.transactionCommonMixin.id];
-        if (planted == null) continue;
+        if (planted == null || undecodable.contains(planted.fileId)) continue;
         final height = tx.transactionCommonMixin.block?.height ?? 0;
         if (blocks.isEmpty || blocks.last.blockHeight != height) {
           blocks.add(BlockEntities(height));
@@ -695,7 +721,7 @@ void main() {
     // `Block-End` is the producer's watermark: the node's height at its last
     // sync, not a height its GraphQL index had reached. A file mined at 1450
     // and indexed after that sync is in no artifact, and its producer only
-    // finds it on its own next sync, through the look-back. A reader that
+    // finds it on a later sync, through the look-back. A reader that
     // started GraphQL at 1500 would skip it, and once its own watermark
     // moved more than the look-back past 1500, would never read 1450 again.
     const indexedLate = _PlantedTx(fileId: 'file-indexed-late', height: 1450);
@@ -1033,6 +1059,66 @@ void main() {
         to: currentBlockHeight,
       );
       expect(overlaps, isEmpty);
+    });
+  });
+
+  group('the watermark', () {
+    // The drive's watermark says every row below it is stored: later syncs
+    // re-read only the look-back below it, and an artifact publishes it as
+    // `Block-End`. So a sync that stops partway must leave it where it was.
+
+    Future<int> watermark() async =>
+        (await (db.select(db.drives)..where((d) => d.id.equals(driveId)))
+                .getSingle())
+            .lastBlockHeight!;
+
+    Future<void> syncFailingOn(int call) async {
+      final failing = _FailingDriveDao(db, failOnCall: call);
+      await failing.putDriveKeyInMemory(
+        driveID: driveId,
+        driveKey: DriveKey(driveKey, false),
+      );
+      buildRepository(enableSyncFromDriveState: false, driveDao: failing);
+      final progress = await sync();
+      expect(progress.last.failedDriveIds, contains(driveId),
+          reason: 'the injected failure ends this drive\'s sync');
+    }
+
+    test('stays put when the last page fails to store', () async {
+      plantedInGql.add(const _PlantedTx(fileId: 'file-at-1900', height: 1900));
+
+      await syncFailingOn(1);
+
+      expect(await watermark(), localWatermark,
+          reason: 'raised before the page was written, it claimed 2000');
+
+      buildRepository(enableSyncFromDriveState: false);
+      await sync();
+      expect(await fileIds(), contains('file-at-1900'));
+      expect(await watermark(), currentBlockHeight);
+    });
+
+    test('stays put when a long sync stops after its first chunk', () async {
+      // 1100 transactions: a chunk of 1000 in five pages of 200, then one of
+      // 100. One entity in the first page does not parse, so that page holds
+      // 199 entities, which the old rule read as the last page and raised the
+      // watermark on. The write fails on the sixth page, the second chunk's
+      // first.
+      for (var i = 0; i < 1100; i++) {
+        plantedInGql.add(_PlantedTx(fileId: 'file-$i', height: 800 + i));
+      }
+      undecodable.add('file-0');
+
+      await syncFailingOn(6);
+
+      expect(await watermark(), localWatermark,
+          reason: 'the second chunk was never stored');
+
+      buildRepository(enableSyncFromDriveState: false);
+      await sync();
+      expect(await fileIds(), hasLength(1099),
+          reason: 'every file that parses lands once the sync completes');
+      expect(await watermark(), currentBlockHeight);
     });
   });
 }

@@ -2481,11 +2481,11 @@ class _SyncRepository implements SyncRepository {
       );
 
       // Resumed [kBlockHeightLookBack] blocks below `Block-End`, as the
-      // ordinary path resumes below its own watermark. `Block-End` is the
+      // first sync of a session resumes below the drive's own watermark. `Block-End` is the
       // producer's watermark, which is the node's `/info` height at its last
       // sync, not a height the GraphQL index had reached: the producer's copy
-      // can lack an entity mined just below it and indexed late. The
-      // producer's own next sync finds it in its look-back; the artifact keeps
+      // can lack an entity mined just below it and indexed late. A later
+      // sync of the producer's finds it in its look-back; the artifact keeps
       // the gap, and a reader starting at `Block-End` would never re-read it
       // once its watermark moved on. Re-reading the band costs one query and
       // records nothing twice: revisions no newer than the latest are skipped.
@@ -2827,6 +2827,34 @@ class _SyncRepository implements SyncRepository {
       logger.d(
           'Done processing all $totalTransactionsProcessed transactions - ${gqlDriveHistory.driveId}');
 
+      // The watermark says every row below it is stored, so it is raised once,
+      // here, after the last chunk has committed. It used to be raised inside
+      // the parse, on any page shorter than the batch: the last page of every
+      // 1000-transaction chunk whenever the batch size does not divide 1000
+      // (it is 200 shared between the drives left to sync), or any page with
+      // a skipped entity, and before that page's own rows were written. A sync
+      // that stopped after that point - a closed tab, a cancel, a failed
+      // fetch - left the drive claiming the tip without the rest of its
+      // history, and later syncs re-read only the look-back below it. A drive
+      // state artifact published from such a drive carried the same claim.
+      //
+      // Only when something was processed, as before: a sync that found no
+      // transactions leaves the watermark where it was. Counted as received:
+      // every one received went into a chunk, and every chunk has committed
+      // by here. `totalTransactionsProcessed` undercounts, since the batch
+      // processor empties the final chunk's list before it is added. `isHidden` is no
+      // longer rewritten with the value from the start of this sync, which
+      // could only undo a hide or unhide applied since. The sync cursor is
+      // reset to pick up files from other instances of the app (a different
+      // tab, window or device).
+      if (totalTransactionsReceived > 0) {
+        await _driveDao.writeToDrive(DrivesCompanion(
+          id: Value(drive.id),
+          lastBlockHeight: Value(currentBlockHeight),
+          syncCursor: const Value(null),
+        ));
+      }
+
       txFechedCallback?.call(drive.id, gqlDriveHistory.txCount);
 
       final fetchPhaseTotalTime =
@@ -3113,18 +3141,6 @@ class _SyncRepository implements SyncRepository {
           numberOfDriveEntitiesParsed += items.length - newEntities.length;
 
           yield driveEntityParseProgress();
-
-          // Handle the last page of newEntities, i.e; There's nothing more to sync
-          if (newEntities.length < batchSize) {
-            // Reset the sync cursor after every sync to pick up files from other instances of the app.
-            // (Different tab, different window, mobile, desktop etc)
-            await _driveDao.writeToDrive(DrivesCompanion(
-              id: Value(drive.id),
-              lastBlockHeight: Value(currentBlockHeight),
-              syncCursor: const Value(null),
-              isHidden: Value(drive.isHidden),
-            ));
-          }
 
           // The tally only counts what committed - see
           // [_pendingSyncedEntityIdsByDrive].
