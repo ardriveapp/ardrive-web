@@ -116,7 +116,7 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
     if (await _profileCubit.logoutIfWalletMismatch()) {
       logger.w('[drive-state] refusing to publish: wallet mismatch');
       return const DriveStateUploadResult.failed(
-        'Your wallet changed while this artifact was being prepared. Nothing '
+        'Your wallet changed while this snapshot was being prepared. Nothing '
         'was uploaded and nothing was spent.',
       );
     }
@@ -183,24 +183,24 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
         );
         return DriveStateUploadResult.uncertain(
           txId: txId,
-          reason: 'The transaction for this artifact ($txId) reached the '
+          reason: 'The transaction for this snapshot ($txId) reached the '
               'network before the upload failed, so it has been paid for, but '
               'its data may be incomplete. Look it up on a gateway before '
-              'publishing again — a second attempt creates a second '
+              'trying again. A second attempt creates a second '
               'transaction and pays for it a second time.',
         );
       }
 
       if (isTurboPaymentError(e)) {
         return const DriveStateUploadResult.failed(
-          'Turbo declined the payment for this artifact. Add Credits or '
-          'publish with AR, then try again.',
+          'Turbo declined the payment for this snapshot. Add Credits or '
+          'pay with AR, then try again.',
         );
       }
 
       return const DriveStateUploadResult.failed(
-        'The artifact could not be published. If nothing was posted, nothing '
-        'was spent — check your drive before trying again.',
+        'The snapshot could not be created. If nothing was posted, nothing '
+        'was spent. Check your drive before trying again.',
       );
     }
   }

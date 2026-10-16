@@ -1,17 +1,23 @@
-/// Whether the New menu offers to publish this drive's state.
+/// Whether "Create snapshot" makes a drive state artifact for this drive.
+///
+/// Users see one term, snapshot, for both kinds. Where this is [offered],
+/// every "Create snapshot" in the app makes an artifact
+/// (`createsDriveStateSnapshot`); otherwise it makes the older snapshot, as
+/// it always did.
 ///
 /// A pure function, deliberately, because it is the guard on the only path in
 /// the app that spends money on an artifact, and a guard buried in a widget's
 /// build method is a guard nobody can enumerate. Every combination is a row in
 /// `test/drive_state/presentation/drive_state_publish_offer_test.dart`.
 enum DriveStatePublishOffer {
-  /// Not in the menu at all.
+  /// Not available here: "Create snapshot" makes the older snapshot.
   hidden,
 
-  /// In the menu, greyed out.
+  /// Available once the drive has something in it. Until then "Create
+  /// snapshot" makes the older snapshot, as before.
   disabled,
 
-  /// In the menu, and it opens the confirmation modal.
+  /// "Create snapshot" opens the artifact's confirmation modal.
   offered,
 }
 
@@ -31,26 +37,18 @@ enum DriveStatePublishOffer {
 /// question nobody is asking, and leaving it in place would leave two call
 /// sites free to answer it differently.
 ///
-/// ## Hidden versus disabled
+/// ## The four conditions
 ///
-/// A disabled item is a promise that something could be done here; it is worth
-/// showing only when the user can plausibly make it true. That splits the
-/// conditions cleanly:
+/// Any one of them unmet and "Create snapshot" makes the older snapshot:
 ///
-/// - **[publishingEnabled]** — the feature is off for this build. Advertising
-///   a greyed-out entry for something unreleased is noise with no remedy.
-///   Hidden.
-/// - **[isDriveOwner]** — `DriveStateCreationRefusal.notDriveOwner`. Not
-///   something the user can become. Hidden.
-/// - **[hasWritePermissions]** — on someone else's shared drive. The user
-///   cannot grant themselves write access, and in practice this travels with
-///   ownership. Hidden. (The neighbouring snapshot item merely disables on
-///   this; a snapshot is a public read of the chain, whereas an artifact is
-///   only found when the owner uploads it and, for a private drive, is sealed
-///   with the drive key, so the two are not the same question.)
-/// - **[driveIsEmpty]** — this one the user *can* fix, by uploading a file.
-///   Disabled and visible, so the menu explains why it is not available yet
-///   instead of the entry silently appearing later.
+/// - **[publishingEnabled]**: the feature is off for this build.
+/// - **[isDriveOwner]**: `DriveStateCreationRefusal.notDriveOwner`. An
+///   artifact is only found when the owner uploads it.
+/// - **[hasWritePermissions]**: someone else's shared drive. In practice this
+///   travels with ownership.
+/// - **[driveIsEmpty]**: nothing to load faster yet. The one the user can fix,
+///   by uploading a file, which is why it is [DriveStatePublishOffer.disabled]
+///   rather than hidden.
 ///
 /// The gates the service still applies behind this — the D3 skip
 /// precondition, the watermark, ownership again, and the payload size — are

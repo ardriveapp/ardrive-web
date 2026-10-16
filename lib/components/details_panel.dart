@@ -6,6 +6,7 @@ import 'package:ardrive/arns/utils/arns_address_utils.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/snapshots_tab/snapshots_tab.dart';
+import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/dotted_line.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
@@ -229,10 +230,20 @@ class _DetailsPanelState extends State<DetailsPanel> {
           ),
           BlocProvider(
             create: (context) {
+              final config = context.read<ConfigService>().config;
+              final arweave = context.read<ArweaveService>();
               return FsEntrySnapshotsCubit(
                 driveId: widget.item.driveId,
                 ownerAddress: widget.currentDrive!.ownerAddress,
-                arweaveService: context.read<ArweaveService>(),
+                arweaveService: arweave,
+                // Drive state artifacts are snapshots to the user too, so the
+                // tab lists them wherever the build reads or publishes them.
+                driveStateDiscovery: config.enableSyncFromDriveState ||
+                        config.enableDriveStatePublishing
+                    ? GraphQLDriveStateDiscovery(
+                        graphQLRetry: arweave.graphQLRetry,
+                      )
+                    : null,
               );
             },
             child: SnapshotsTab(drive: widget.currentDrive!),

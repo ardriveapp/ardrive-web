@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/fs_entry_snapshots/models/snapshot_display_item.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/drive_state/domain/drive_state_creation_service.dart';
 import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
 import 'package:ardrive/drive_state/domain/drive_state_uploader.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/snapshot_events.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -97,8 +99,8 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
       if (profile is! ProfileLoggedIn) {
         emit(DriveStateCreationRefused(
           refusal: DriveStateCreationRefusal.notDriveOwner,
-          reason: 'Log in with the drive owner\'s wallet to publish its '
-              'state.',
+          reason: 'Log in with the drive owner\'s wallet to create a '
+              'snapshot of it.',
         ));
         return;
       }
@@ -170,8 +172,8 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
                   '${_costEstimateTimeout.inSeconds} seconds, so nothing is '
                   'being offered for confirmation. Nothing was uploaded and '
                   'nothing was spent. Try again in a moment.'
-              : 'The cost of publishing could not be determined, so nothing is '
-                  'being offered for confirmation. Nothing was uploaded and '
+              : 'The cost of this snapshot could not be determined, so nothing '
+                  'is being offered for confirmation. Nothing was uploaded and '
                   'nothing was spent.',
         ));
         return;
@@ -190,7 +192,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
 
       logger.e('[drive-state] preparing an artifact failed', e, stackTrace);
       emit(DriveStateCreationFailure(
-        'The artifact could not be prepared. Try again.',
+        'The snapshot could not be prepared. Try again.',
       ));
     }
   }
@@ -276,6 +278,22 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
         method: ready.effectiveMethod,
       );
 
+      // Before the closed check: the artifact is on its way whether or not
+      // the modal is still open, and the Snapshots tab lists it as pending
+      // straight away, as it does an older snapshot.
+      if (result.isPublished) {
+        SnapshotEventBus.instance.emitSnapshotCreated(
+          SnapshotDisplayItem(
+            txId: result.txId!,
+            driveId: ready.artifact.driveId,
+            blockStart: ready.artifact.blockStart,
+            blockEnd: ready.artifact.blockEnd,
+            createdAt: DateTime.now(),
+            status: TransactionStatus.pending,
+          ),
+        );
+      }
+
       if (isClosed) {
         logger.i(
           '[drive-state] the publish of an artifact for $driveId finished '
@@ -297,7 +315,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
       if (isClosed) return;
 
       emit(DriveStateCreationFailure(
-        'The artifact could not be published. Nothing was spent.',
+        'The snapshot could not be created. Nothing was spent.',
       ));
     }
   }

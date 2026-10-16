@@ -142,7 +142,7 @@ class DriveStateCreationModal extends StatelessWidget {
   }
 }
 
-const _title = 'Publish drive state';
+const _title = 'Create snapshot';
 
 // Every state below passes `scrollableContent: true`, and none of them is free
 // to stop.
@@ -171,7 +171,7 @@ Widget _preparingModal(BuildContext context, String driveName) {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Preparing an artifact for $driveName. Nothing has been uploaded '
+          'Preparing a snapshot of $driveName. Nothing has been uploaded '
           'yet.',
           style: typography.paragraphNormal(color: colorTokens.textMid),
         ),
@@ -223,8 +223,8 @@ Widget _refusedModal(BuildContext context, DriveStateCreationRefused state) {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'A drive state artifact is permanent. Publishing one from '
-                    'an incomplete drive would record the gap forever.',
+                    'A snapshot is permanent. Creating one from an incomplete '
+                    'drive would record the gap forever.',
                     style:
                         typography.paragraphSmall(color: colorTokens.textMid),
                   ),
@@ -293,7 +293,7 @@ Widget _confirmModal(
             const SizedBox(height: 12),
             Text(
               'Neither your AR balance nor your Turbo Credits cover this '
-              'artifact, so it cannot be published yet.',
+              'snapshot, so it cannot be created yet.',
               style: typography.paragraphSmall(color: colorTokens.textRed),
             ),
           ],
@@ -311,7 +311,7 @@ Widget _confirmModal(
         action: () => Navigator.of(context).pop(),
       ),
       ModalAction(
-        title: 'Publish',
+        title: 'Create',
         // The one place in the app that spends money on an artifact, and it
         // is off unless the chosen method can actually pay for it. The cubit
         // refuses independently; this is the half the user can see.
@@ -337,10 +337,11 @@ Widget _confirmModal(
 /// What the modal shows is therefore identical for both: the drive, the entity
 /// count, the size, the block range and the price.
 String _whatThisDoes(bool isEncrypted) => isEncrypted
-    ? 'This publishes a snapshot of this drive\'s current state to Arweave, '
-        'encrypted with your drive key. It is permanent and cannot be removed.'
-    : 'This publishes a snapshot of this drive\'s current state to Arweave. '
-        'It is permanent and cannot be removed.';
+    ? 'This saves a snapshot of this drive to Arweave, encrypted with your '
+        'drive key, so it loads much faster wherever you sign in. It is '
+        'permanent and cannot be removed.'
+    : 'This saves a snapshot of this drive to Arweave, so it loads much '
+        'faster wherever you sign in. It is permanent and cannot be removed.';
 
 /// Feeds the shared [PaymentMethodSelector] rather than restating its layout.
 ///
@@ -377,7 +378,7 @@ Widget _summary(BuildContext context, DriveStateCreationReady state) {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _summaryRow(context, 'Drive', artifact.driveName),
-        _summaryRow(context, 'Entities', '${artifact.entityCount}'),
+        _summaryRow(context, 'Items', '${artifact.entityCount}'),
         _summaryRow(context, 'Size', filesize(artifact.sizeInBytes)),
         _summaryRow(
           context,
@@ -451,7 +452,7 @@ Widget _publishingModal(BuildContext context) {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Publishing...',
+          'Creating snapshot...',
           style: typography.paragraphNormal(color: colorTokens.textMid),
         ),
         const SizedBox(height: 16),
@@ -476,8 +477,8 @@ Widget _publishedModal(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${state.artifact.driveName} published its state as '
-          '${state.txId}.',
+          'Created a snapshot of ${state.artifact.driveName}. Its '
+          'transaction ID is ${state.txId}.',
           style: typography.paragraphNormal(color: colorTokens.textMid),
         ),
       ],

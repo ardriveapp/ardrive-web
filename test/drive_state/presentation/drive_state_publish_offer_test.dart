@@ -1,7 +1,8 @@
 import 'package:ardrive/drive_state/presentation/drive_state_publish_offer.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// The visibility matrix for the New menu's "Publish Drive State" item.
+/// The matrix that decides whether "Create snapshot" makes a drive state
+/// artifact (`createsDriveStateSnapshot`).
 ///
 /// Enumerated rather than sampled. This is the guard on the only path in the
 /// app that spends money on an artifact, so "the conditions I thought of" is

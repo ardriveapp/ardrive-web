@@ -9,8 +9,6 @@ import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/arfs/use_cases/bulk_import_files.dart';
 import 'package:ardrive/core/arfs/use_cases/check_folder_conflicts.dart';
 import 'package:ardrive/core/download_service.dart';
-import 'package:ardrive/drive_state/presentation/drive_state_creation_modal.dart';
-import 'package:ardrive/drive_state/presentation/drive_state_publish_offer.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/models/enums.dart';
@@ -18,7 +16,6 @@ import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/bulk_import_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
-import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/upload_entry/domain/drive_wait.dart';
 import 'package:ardrive/upload_entry/domain/upload_start.dart';
@@ -337,10 +334,6 @@ class NewButton extends StatelessWidget {
         minimumWalletBalance: minimumWalletBalance,
       );
 
-      final driveStateOffer = driveDetailState is DriveDetailLoadSuccess
-          ? _driveStatePublishOffer(context, driveDetailState, profile)
-          : DriveStatePublishOffer.hidden;
-
       return [
         if (driveDetailState is DriveDetailLoadSuccess && drive != null) ...[
           if (driveDetailState.currentDrive.privacy == 'public')
@@ -382,16 +375,6 @@ class NewButton extends StatelessWidget {
             name: appLocalizations.newSnapshot,
             icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
           ),
-          // Hardcoded English, matching `drive_state_creation_modal.dart`:
-          // the feature is not published to chain yet, and its strings move
-          // into the `.arb` files in one pass when it ships.
-          if (driveStateOffer != DriveStatePublishOffer.hidden)
-            ArDriveNewButtonItem(
-              onClick: () => promptToCreateDriveState(context, drive: drive!),
-              isDisabled: driveStateOffer == DriveStatePublishOffer.disabled,
-              name: 'Publish Drive State',
-              icon: ArDriveIcons.iconCreateSnapshot(size: defaultIconSize),
-            ),
           if (driveDetailState.currentDrive.privacy == 'public')
             _getImportFromManifestItem(
               context,
@@ -713,28 +696,6 @@ class NewButton extends StatelessWidget {
         ),
       ];
     }
-  }
-
-  /// Whether "Publish Drive State" appears, and whether it is usable.
-  ///
-  /// The decision itself is [driveStatePublishOffer], which is pure and
-  /// exhaustively tested; this only reads the four conditions out of the
-  /// widget tree. Ownership is compared against the signed-in wallet because
-  /// `DriveStateCreationService` refuses on `notDriveOwner`, and a menu entry
-  /// that can only ever open a refusal is worse than no menu entry.
-  DriveStatePublishOffer _driveStatePublishOffer(
-    BuildContext context,
-    DriveDetailLoadSuccess driveDetailState,
-    ProfileLoggedIn profile,
-  ) {
-    return driveStatePublishOffer(
-      publishingEnabled:
-          context.read<ConfigService>().config.enableDriveStatePublishing,
-      isDriveOwner: driveDetailState.currentDrive.ownerAddress ==
-          profile.user.walletAddress,
-      hasWritePermissions: driveDetailState.hasWritePermissions,
-      driveIsEmpty: driveDetailState.driveIsEmpty,
-    );
   }
 
   ArDriveNewButtonItem _getImportFromManifestItem(

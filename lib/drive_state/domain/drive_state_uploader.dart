@@ -109,7 +109,7 @@ class UnwiredDriveStateUploader implements DriveStateUploader {
     required UploadMethod method,
   }) async =>
       const DriveStateUploadResult.failed(
-        'Publishing a drive state artifact is not enabled in this build. '
+        'Creating snapshots this way is not enabled in this build. '
         'Nothing was uploaded and nothing was spent.',
       );
 }
