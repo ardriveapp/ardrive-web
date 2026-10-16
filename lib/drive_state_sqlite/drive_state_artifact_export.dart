@@ -5,7 +5,6 @@
 /// written here is only which columns move.
 library;
 
-
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_schema.dart';
 import 'package:drift/drift.dart';
 
@@ -78,9 +77,10 @@ class DriveStateArtifact {
 /// Copies one drive out of [db] into a fresh artifact database at [sink].
 ///
 /// [maxBytes] is a bound on the **producer**, not on any cipher: it is what
-/// stops a browser tab trying to build something it cannot hold. A CLI can
-/// pass a much larger value, or none, which is the point of the parameter
-/// existing rather than being a constant.
+/// stops a browser tab trying to build something it cannot hold. It can be
+/// lower than the format's own bound but never usefully higher: every reader
+/// refuses a payload over `DriveStateEnvelopeCodec`'s 100 MiB (D5), so an
+/// artifact built past it would be paid for and unreadable.
 Future<DriveStateArtifact> exportDriveState(
   GeneratedDatabase db, {
   required String driveId,
@@ -91,12 +91,10 @@ Future<DriveStateArtifact> exportDriveState(
   required String producer,
   int? maxBytes,
 }) async {
-  final drive = await db
-      .customSelect(
-        'SELECT ownerAddress, privacy FROM drives WHERE id = ?',
-        variables: [Variable<String>(driveId)],
-      )
-      .get();
+  final drive = await db.customSelect(
+    'SELECT ownerAddress, privacy FROM drives WHERE id = ?',
+    variables: [Variable<String>(driveId)],
+  ).get();
   if (drive.isEmpty) {
     throw ArtifactExportRefused(ArtifactExportRefusal.noSuchDrive, driveId);
   }
@@ -153,12 +151,14 @@ Future<DriveStateArtifact> exportDriveState(
       // Entities, not rows: a revision is a version of an entity, not another
       // one. Folders and files plus the drive itself, matching the
       // `Entity-Count` tag the proposal specifies.
-      final counted = await db.customSelect(
-        'SELECT ('
-        '(SELECT count(*) FROM artifact.folder_entries) + '
-        '(SELECT count(*) FROM artifact.file_entries) + '
-        '(SELECT count(*) FROM artifact.drives)) AS c',
-      ).getSingle();
+      final counted = await db
+          .customSelect(
+            'SELECT ('
+            '(SELECT count(*) FROM artifact.folder_entries) + '
+            '(SELECT count(*) FROM artifact.file_entries) + '
+            '(SELECT count(*) FROM artifact.drives)) AS c',
+          )
+          .getSingle();
       final entityCount = counted.read<int>('c');
       if (entityCount == 0) {
         throw ArtifactExportRefused(ArtifactExportRefusal.emptyDrive, driveId);
