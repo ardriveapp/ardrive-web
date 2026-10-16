@@ -11,6 +11,7 @@ import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/arweave/arweave_service_exception.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
+import 'package:ardrive/services/arweave/fragment_free_graphql.dart';
 import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
@@ -100,7 +101,7 @@ class ArweaveService {
     Client? httpClient,
   })  : _httpClient = httpClient ?? Client(),
         _gql = artemisClient ??
-            ArtemisClient(_graphqlUrlFromGateway(
+            fragmentFreeArtemisClient(_graphqlUrlFromGateway(
                 _configService.config.arweaveGatewayUrl ??
                     defaultGraphqlGateway)) {
     graphQLRetry = GraphQLRetry(
@@ -145,7 +146,7 @@ class ArweaveService {
   void updateGraphQLEndpoint(String gatewayUrl) {
     final previousClient = _gql;
     final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
-    _gql = ArtemisClient(graphqlUrl);
+    _gql = fragmentFreeArtemisClient(graphqlUrl);
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
