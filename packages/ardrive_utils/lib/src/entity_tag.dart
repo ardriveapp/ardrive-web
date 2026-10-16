@@ -17,6 +17,7 @@ class EntityTag {
   static const parentFolderId = 'Parent-Folder-Id';
   static const fileId = 'File-Id';
   static const snapshotId = 'Snapshot-Id';
+  static const driveStateId = 'Drive-State-Id';
 
   static const drivePrivacy = 'Drive-Privacy';
   static const driveAuthMode = 'Drive-Auth-Mode';
@@ -28,6 +29,10 @@ class EntityTag {
   static const action = 'Action';
   static const input = 'Input';
   static const contract = 'Contract';
+
+  static const contentEncoding = 'Content-Encoding';
+  static const stateVersion = 'State-Version';
+  static const entityCount = 'Entity-Count';
 
   static const blockStart = 'Block-Start';
   static const blockEnd = 'Block-End';
@@ -57,6 +62,11 @@ class EntityTypeTag {
   static const file = 'file';
   static const snapshot = 'snapshot';
   static const driveSignature = 'drive-signature';
+  static const driveState = 'drive-state';
+}
+
+class ContentEncodingTag {
+  static const gzip = 'gzip';
 }
 
 class CipherTag {

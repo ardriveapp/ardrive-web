@@ -18,7 +18,7 @@ script_runner:
     linux: /bin/sh
   line_length: 80
   scripts:
-    - setup: flutter clean && flutter pub get && cd packages/ario_sdk && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && flutter pub run build_runner build --delete-conflicting-outputs
+    - setup: flutter clean && flutter pub get && cd packages/ario_sdk && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && flutter pub run build_runner build --delete-conflicting-outputs && bash tool/build_db_worker.sh
     - test: scripts/run_tests.sh
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
@@ -74,6 +74,13 @@ dependencies:
   json_annotation: ^4.8.0
   mime: ^1.0.0
   drift: ^2.12.1
+  # The web database runs sqlite3 compiled to WebAssembly, and the artifact
+  # code reaches its VirtualFileSystem directly to read an attached database
+  # back out. web/sqlite3.wasm must match this version — see tool/check_wasm_version.sh.
+  sqlite3: ^2.4.2
+  # drift's remote protocol between the page and the web database worker
+  # (lib/models/database/web_worker/). Already resolved through drift.
+  stream_channel: ^2.1.2
   path_provider: ^2.0.2
   reactive_forms: ^14.1.0
   rxdart: ^0.27.1

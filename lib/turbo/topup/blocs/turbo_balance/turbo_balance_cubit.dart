@@ -22,6 +22,9 @@ class TurboBalanceCubit extends Cubit<TurboBalanceState> {
 
       final balance = await paymentService.getBalance(wallet: wallet);
 
+      // The card that asked can close while the request is out, and a closed
+      // cubit throws on emit.
+      if (isClosed) return;
       emit(TurboBalanceSuccessState(balance: balance));
     } catch (e) {
       logger.e('Error getting balance', e);
@@ -29,6 +32,7 @@ class TurboBalanceCubit extends Cubit<TurboBalanceState> {
       /// Wait for the animation to finish
       await Future.delayed(const Duration(milliseconds: 500));
 
+      if (isClosed) return;
       if (e is TurboUserNotFound) {
         emit(NewTurboUserState());
       } else {

@@ -81,3 +81,10 @@ packages/ario_sdk/web/node_modules/
 packages/ario_sdk/web/package-lock.json
 
 .cursorignore
+
+# Claude Code session state and agent worktrees
+.claude/
+
+# Compiled by tool/build_db_worker.sh
+web/db_worker.js
+web/db_worker.js.deps

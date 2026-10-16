@@ -921,6 +921,12 @@ class _ProfileCardState extends State<ProfileCard> {
       onPressed: () {
         setState(() {
           _showProfileCard = !_showProfileCard;
+          // Counted afresh each time the card opens. The card's content is
+          // built while it is closed too, so a figure kept from the first
+          // build was whatever the database held then - partway through a
+          // sync, it showed 397 files and 3.7 MB for a drive the drives list
+          // showed at 773 and 9.58 GiB.
+          if (_showProfileCard) _accountStatsFuture = null;
         });
       },
     );
