@@ -8,6 +8,7 @@ import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/presentation/sync_summary.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -56,7 +57,7 @@ void main() {
     );
     when(() => syncCubit.syncProgressController).thenReturn(progressController);
     when(() => syncCubit.syncProgress).thenReturn(SyncProgress.initial());
-    when(() => syncCubit.syncStartTime).thenReturn(DateTime.now());
+    when(() => syncCubit.syncStartTime).thenReturn(clock.now());
     // Null is "no single-drive sync is running", which is every case but the
     // ones that say otherwise.
     when(() => syncCubit.syncingDriveId).thenReturn(null);
@@ -152,7 +153,7 @@ void main() {
         isSingleDriveSync: isSingleDriveSync,
         driveName: driveName,
         trigger: trigger,
-        completedAt: completedAt ?? DateTime.now(),
+        completedAt: completedAt ?? clock.now(),
         sequence: sequence ?? ++nextSequence,
       );
 
@@ -489,7 +490,7 @@ void main() {
 
     stateController.add(finished(
       entitiesSynced: 12,
-      completedAt: DateTime.now().subtract(const Duration(hours: 1)),
+      completedAt: clock.now().subtract(const Duration(hours: 1)),
     ));
     await tester.pump(const Duration(milliseconds: 10));
 
@@ -770,7 +771,7 @@ void main() {
 
       stateController.add(SyncFailure(
         error: Exception('the gateway said no'),
-        failedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        failedAt: clock.now().subtract(const Duration(minutes: 5)),
       ));
       await tester.pump(const Duration(milliseconds: 10));
 
@@ -848,7 +849,7 @@ void main() {
         SyncCancelled(
           drivesCompleted: 1,
           totalDrives: 3,
-          cancelledAt: DateTime.now(),
+          cancelledAt: clock.now(),
         ),
       );
       await tester.pump(const Duration(milliseconds: 10));
@@ -876,7 +877,7 @@ void main() {
         SyncCancelled(
           drivesCompleted: 1,
           totalDrives: 3,
-          cancelledAt: DateTime.now(),
+          cancelledAt: clock.now(),
         ),
       );
       await tester.pump(const Duration(milliseconds: 10));
