@@ -239,21 +239,18 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
         throw UploadCanceledException('Upload canceled');
       }
 
+      // Only ever this transaction, whatever went wrong. A failed header post
+      // does not show that the header missed the network: a gateway can
+      // store it and still time out, drop the connection or answer with an
+      // error. Signing a new transaction then would pay twice and leave this
+      // one paid with nothing in it. A later retry sends this one again.
       final result = await _send(task, wallet, controller);
       if (result.success) return;
 
-      // A header the gateway refused never reached the network, so nothing
-      // was paid for and a new transaction can carry the same signed items.
-      // Any other failure is that transaction's own, which a later retry
-      // sends again.
-      if (result.error is! TransactionHeaderNotPostedException) {
-        throw BundleUploadException(
-          message: 'Failed to upload file bundle ${previous.data.id} again',
-          error: result.error,
-        );
-      }
-      logger.w('The header of ${previous.data.id} was refused. '
-          'Sending its signed data items in a new transaction.');
+      throw BundleUploadException(
+        message: 'Failed to upload file bundle ${previous.data.id} again',
+        error: result.error,
+      );
     }
 
     final bundle = await _dataBundler.createDataBundle(
@@ -401,14 +398,12 @@ class UploadFolderStructureAsBundleStrategy
         );
         return;
       }
-      if (result.error is! TransactionHeaderNotPostedException) {
-        throw BundleUploadException(
-          message: 'Failed to upload folder bundle ${previous.data.id} again',
-          error: result.error,
-        );
-      }
-      logger.w('The header of ${previous.data.id} was refused. '
-          'Signing the folders into a new transaction.');
+
+      // Only ever this transaction; see UploadFileUsingBundleStrategy.
+      throw BundleUploadException(
+        message: 'Failed to upload folder bundle ${previous.data.id} again',
+        error: result.error,
+      );
     }
 
     // creates the bundle for folders

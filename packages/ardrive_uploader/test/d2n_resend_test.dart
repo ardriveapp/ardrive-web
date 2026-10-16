@@ -158,28 +158,21 @@ void main() {
     });
 
     test(
-        'a refused header, which never reached the network, '
-        'is replaced by a new transaction of the same signed items', () async {
-      final replacement = MockTransactionResult();
-      when(() => replacement.id).thenReturn('replacement-tx');
-      when(() => replacement.dataSize).thenReturn(10);
-      when(whenBundled()).thenAnswer((_) async => replacement);
-      var sends = 0;
-      when(whenSent()).thenAnswer((_) async => sends++ == 0
-          ? StreamedUploadResult(
-              success: false,
-              error: TransactionHeaderNotPostedException(),
-            )
-          : StreamedUploadResult(success: true));
+        'a failed header post is not replaced by a new transaction: '
+        'the header may have landed anyway', () async {
+      when(whenSent()).thenAnswer((_) async => StreamedUploadResult(
+            success: false,
+            error: TransactionHeaderNotPostedException(),
+          ));
 
-      await retry();
+      await expectLater(retry(), throwsA(isA<BundleUploadException>()));
 
       final sent = verify(() => streamedUpload.send(captureAny(), any(), any()))
           .captured
           .cast<TransactionUploadItem>()
           .map((item) => item.data.id);
-      expect(sent, ['previous-tx', 'replacement-tx']);
-      verify(whenBundled()).called(1);
+      expect(sent, ['previous-tx']);
+      verifyNever(whenBundled());
     });
 
     test('a first attempt builds its transaction as before', () async {

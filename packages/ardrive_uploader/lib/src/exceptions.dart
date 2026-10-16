@@ -166,13 +166,16 @@ class TurboRateLimitException implements ArDriveUploaderExceptions {
   Object? error;
 }
 
-/// A direct-to-network transaction whose header the gateway refused, so the
-/// transaction never reached the network: nothing was posted or paid for.
+/// A direct-to-network transaction whose header post did not succeed.
+///
+/// It does not show that the header missed the network: the gateway may have
+/// stored it and still timed out, dropped the connection or answered with an
+/// error. So it is never a reason to sign a new transaction for the same data.
 class TransactionHeaderNotPostedException implements ArDriveUploaderExceptions {
   TransactionHeaderNotPostedException({this.error});
 
   @override
-  String get message => 'The transaction header was not posted';
+  String get message => 'The transaction header post did not succeed';
   @override
   final Object? error;
 
