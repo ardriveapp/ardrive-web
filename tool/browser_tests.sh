@@ -20,7 +20,7 @@ FLUTTER="${FLUTTER:-flutter}"
 PORT=8099
 
 tool/check_wasm_version.sh
-tool/build_db_worker.sh
+bash tool/build_db_worker.sh
 
 mapfile -t tests < <(grep -rl --include='*_test.dart' "@TestOn('browser')" test | sort)
 if [ "${#tests[@]}" -eq 0 ]; then
