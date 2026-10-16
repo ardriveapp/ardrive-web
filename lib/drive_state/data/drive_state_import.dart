@@ -1,3 +1,4 @@
+
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
@@ -206,6 +207,7 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
           DriveStateOutcome.privacyMismatch,
         DriveStateEnvelopeFailure.ciphertextForPublicDrive =>
           DriveStateOutcome.privacyMismatch,
+
         DriveStateEnvelopeFailure.decryptionFailed =>
           DriveStateOutcome.decryptFailed,
 
@@ -590,10 +592,10 @@ class DriveStateImporter {
     // 4. Open the payload. It is a SQLite database, so the danger §2.4 warns
     //    about is real and is met head on rather than avoided: the file is a
     //    throwaway copy attached under its own name, `PRAGMA integrity_check`
-    //    must pass, and its
-    //    `sqlite_master` must match the frozen schema byte for byte — no
-    //    views, no triggers, no virtual tables, no indexes, nothing but the
-    //    eight tables this reader agreed to. Only then is a row read.
+    //    must pass, and its `sqlite_master` must match the frozen schema byte
+    //    for byte — no views, no triggers, no virtual tables, no indexes,
+    //    nothing but the eight tables this reader agreed to. Only then is a row
+    //    read.
     //
     //    The bulk tables are then copied by SQLite itself, after every value
     //    in them has been checked for the type the format declares

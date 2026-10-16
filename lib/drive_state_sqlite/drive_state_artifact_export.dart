@@ -5,6 +5,7 @@
 /// written here is only which columns move.
 library;
 
+
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_schema.dart';
 import 'package:drift/drift.dart';
 
@@ -91,10 +92,12 @@ Future<DriveStateArtifact> exportDriveState(
   required String producer,
   int? maxBytes,
 }) async {
-  final drive = await db.customSelect(
-    'SELECT ownerAddress, privacy FROM drives WHERE id = ?',
-    variables: [Variable<String>(driveId)],
-  ).get();
+  final drive = await db
+      .customSelect(
+        'SELECT ownerAddress, privacy FROM drives WHERE id = ?',
+        variables: [Variable<String>(driveId)],
+      )
+      .get();
   if (drive.isEmpty) {
     throw ArtifactExportRefused(ArtifactExportRefusal.noSuchDrive, driveId);
   }
@@ -151,14 +154,12 @@ Future<DriveStateArtifact> exportDriveState(
       // Entities, not rows: a revision is a version of an entity, not another
       // one. Folders and files plus the drive itself, matching the
       // `Entity-Count` tag the proposal specifies.
-      final counted = await db
-          .customSelect(
-            'SELECT ('
-            '(SELECT count(*) FROM artifact.folder_entries) + '
-            '(SELECT count(*) FROM artifact.file_entries) + '
-            '(SELECT count(*) FROM artifact.drives)) AS c',
-          )
-          .getSingle();
+      final counted = await db.customSelect(
+        'SELECT ('
+        '(SELECT count(*) FROM artifact.folder_entries) + '
+        '(SELECT count(*) FROM artifact.file_entries) + '
+        '(SELECT count(*) FROM artifact.drives)) AS c',
+      ).getSingle();
       final entityCount = counted.read<int>('c');
       if (entityCount == 0) {
         throw ArtifactExportRefused(ArtifactExportRefusal.emptyDrive, driveId);
