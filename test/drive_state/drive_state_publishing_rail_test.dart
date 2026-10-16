@@ -138,7 +138,7 @@ void main() {
   /// the key is asserted as its own property, because a flag defaulting to
   /// false with nothing naming it reads identically to a flag that ships off
   /// deliberately, and only one of those can be switched on.
-  group('the flags ship off', () {
+  group('where the flags ship', () {
     const flags = <String, bool Function(AppConfig)>{
       'enableSyncFromDriveState': _syncFromDriveState,
       'enableDriveStatePublishing': _publishing,
@@ -180,10 +180,14 @@ void main() {
 
       // Read off disk rather than asserted from memory: the shipped default is
       // whatever these files say, and a flavour switched on by accident is the
-      // failure this whole rail exists to prevent.
+      // failure this whole rail exists to prevent. Staging is on by decision
+      // (2026-10-16), so staging.ardrive.io exercises the artifact path before
+      // production does; production stays off until staging has soaked.
       for (final flavour in ['dev', 'staging', 'prod']) {
-        test('$flavour.json ships with $name off', () {
-          expect(read(AppConfig.fromJson(flavourJson(flavour))), isFalse);
+        final on = flavour == 'staging';
+
+        test('$flavour.json ships with $name ${on ? 'on' : 'off'}', () {
+          expect(read(AppConfig.fromJson(flavourJson(flavour))), on);
         });
 
         // A key that is absent is not a key that is off. It deserialises the
@@ -191,7 +195,7 @@ void main() {
         // release decides what ships, and a flag they do not mention is one
         // nobody reviewing them knows exists.
         test('$flavour.json says so explicitly, rather than by omission', () {
-          expect(flavourJson(flavour), containsPair(name, false));
+          expect(flavourJson(flavour), containsPair(name, on));
         });
       }
 
