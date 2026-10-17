@@ -9,6 +9,8 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/payment_method_selector_widget.dart';
+import 'package:ardrive/drive_state/presentation/drive_state_creation_modal.dart';
+import 'package:ardrive/drive_state/presentation/drive_state_publish_offer.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/config_service.dart';
@@ -26,10 +28,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pst/pst.dart';
 
+/// Whether "Create snapshot" makes a drive state artifact for [drive] rather
+/// than the older kind of snapshot.
+///
+/// Users see one word for both. Wherever publishing an artifact is offered for
+/// this drive ([driveStatePublishOffer]: the flag, ownership, write access and
+/// a drive with something in it), a snapshot is an artifact. Anywhere else,
+/// including before the drive has loaded, it is the older snapshot, as before.
+bool createsDriveStateSnapshot(BuildContext context, Drive drive) {
+  try {
+    final profile = context.read<ProfileCubit>().state;
+    final detail = context.read<DriveDetailCubit>().state;
+    if (profile is! ProfileLoggedIn || detail is! DriveDetailLoadSuccess) {
+      return false;
+    }
+    return driveStatePublishOffer(
+          publishingEnabled:
+              context.read<ConfigService>().config.enableDriveStatePublishing,
+          isDriveOwner: drive.ownerAddress == profile.user.walletAddress,
+          hasWritePermissions: detail.hasWritePermissions,
+          driveIsEmpty: detail.driveIsEmpty,
+        ) ==
+        DriveStatePublishOffer.offered;
+  } on ProviderNotFoundException {
+    return false;
+  }
+}
+
+/// Opens whichever snapshot [drive] gets - see [createsDriveStateSnapshot].
 Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
 ) async {
+  if (createsDriveStateSnapshot(context, drive)) {
+    return promptToCreateDriveState(context, drive: drive);
+  }
+
   final PromptToSnapshotBloc promptToSnapshotBloc =
       context.read<PromptToSnapshotBloc>();
   promptToSnapshotBloc.add(DriveSnapshotting(driveId: drive.id));

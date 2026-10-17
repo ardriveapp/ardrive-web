@@ -11,6 +11,7 @@ import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/arweave/arweave_service_exception.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
+import 'package:ardrive/services/arweave/fragment_free_graphql.dart';
 import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
@@ -100,7 +101,7 @@ class ArweaveService {
     Client? httpClient,
   })  : _httpClient = httpClient ?? Client(),
         _gql = artemisClient ??
-            ArtemisClient(_graphqlUrlFromGateway(
+            fragmentFreeArtemisClient(_graphqlUrlFromGateway(
                 _configService.config.arweaveGatewayUrl ??
                     defaultGraphqlGateway)) {
     graphQLRetry = GraphQLRetry(
@@ -145,7 +146,7 @@ class ArweaveService {
   void updateGraphQLEndpoint(String gatewayUrl) {
     final previousClient = _gql;
     final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
-    _gql = ArtemisClient(graphqlUrl);
+    _gql = fragmentFreeArtemisClient(graphqlUrl);
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
@@ -208,11 +209,25 @@ class ArweaveService {
     return blockHeight;
   }
 
+  /// How long one price request may take before the attempt is abandoned.
+  ///
+  /// Without this the retry loop below cannot do its job: `client.api.get` has
+  /// no deadline, so an attempt that hangs rather than fails hangs for ever and
+  /// the second and third attempts are never reached. The loop reads as if it
+  /// were resilient while being exactly as fragile as a single call.
+  ///
+  /// Six seconds so the three bounded calls behind one AR cost estimate - this,
+  /// the community tip and the AR/USD rate - still fit inside that estimate's
+  /// own 20-second budget.
+  static const _priceAttemptTimeout = Duration(seconds: 6);
+
   Future<BigInt> getPrice({required int byteSize}) async {
     const maxRetries = 3;
     for (var attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        final res = await client.api.get('price/$byteSize');
+        final res = await client.api
+            .get('price/$byteSize')
+            .timeout(_priceAttemptTimeout);
         if (res.statusCode == 200) {
           return BigInt.parse(res.body);
         }
@@ -2205,18 +2220,56 @@ class ArweaveService {
   /// header then chunks with [maxConcurrentUploadCount] (default 1) to avoid
   /// gateway 400s from data_root propagation when many chunk requests hit
   /// before the tx is indexed.
+  ///
+  /// [onTransactionPosted] fires once the transaction **header** has been
+  /// accepted, before any chunk is sent. That ordering is
+  /// `TransactionUploader`'s (arweave-dart v4.0.2): `upload()` awaits
+  /// `_postTransactionHeader()` and only then yields its first event, so a
+  /// caller that never sees the callback knows nothing reached the network,
+  /// and one that does knows a transaction now exists and will be paid for
+  /// whether or not its chunks follow. Without it a chunk failure and a
+  /// refused header are the same exception, and a caller can only guess which
+  /// of the two it is holding.
   Future<void> uploadTx(
     Transaction transaction, {
     int maxConcurrentUploadCount = 1,
     bool dryRun = false,
-  }) async {
-    await client.transactions
-        .upload(
+    void Function()? onTransactionPosted,
+  }) =>
+      drainUpload(
+        client.transactions.upload(
           transaction,
           maxConcurrentUploadCount: maxConcurrentUploadCount,
           dryRun: dryRun,
-        )
-        .drain();
+        ),
+        dryRun: dryRun,
+        onTransactionPosted: onTransactionPosted,
+      );
+
+  /// Drains an upload's event stream, reporting the header post the first time
+  /// the stream says anything.
+  ///
+  /// Separate from [uploadTx], and typed on `Object?` rather than on the
+  /// uploader, because `ArweaveTransactionsApi` is not exported by
+  /// `package:arweave` and so cannot be named - or mocked - from here. This is
+  /// the whole rule, and it is the part that can be got wrong: firing eagerly
+  /// would invent a charge that never happened, and firing on every event
+  /// would report one transaction many times.
+  @visibleForTesting
+  static Future<void> drainUpload(
+    Stream<Object?> events, {
+    required bool dryRun,
+    void Function()? onTransactionPosted,
+  }) async {
+    var posted = false;
+
+    await for (final _ in events) {
+      // A dry run yields the uploader without posting anything, so it must not
+      // be reported as a transaction that exists.
+      if (posted || dryRun) continue;
+      posted = true;
+      onTransactionPosted?.call();
+    }
   }
 
   // TODO: replace with the method on ardrive_utils

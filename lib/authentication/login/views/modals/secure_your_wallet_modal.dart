@@ -62,11 +62,12 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
           .read<ProfileNameBloc>()
           .add(LoadProfileNameBeforeLogin(displayAddress));
     } else {
+      // Taken before the wait: the modal can close before the address
+      // arrives, and `context` goes with it.
+      final profileNameBloc = context.read<ProfileNameBloc>();
       widget.wallet.getAddress().then((walletAddress) {
         logger.d('Loading profile name for anonymous user $walletAddress');
-        context
-            .read<ProfileNameBloc>()
-            .add(LoadProfileNameBeforeLogin(walletAddress));
+        profileNameBloc.add(LoadProfileNameBeforeLogin(walletAddress));
       });
     }
   }

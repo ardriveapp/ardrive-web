@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -47,17 +49,27 @@ class UploadCostEstimate extends Equatable {
 }
 
 class UploadCostEstimateCalculatorForAR extends ArDriveUploadCostCalculator {
+  /// How long to wait for the community tip before giving up on it.
+  ///
+  /// The fee is already optional - the `catch` below proceeds without it - so
+  /// this only decides how long "optional" is allowed to block a price the
+  /// user is waiting on.
+  static const kPstFeeTimeout = Duration(seconds: 6);
+
   final ArweaveService _arweaveService;
   final PstService _pstService;
   final ConvertArToUSD _arCostToUsd;
+  final Duration _pstFeeTimeout;
 
   UploadCostEstimateCalculatorForAR({
     required ArweaveService arweaveService,
     required PstService pstService,
     required ConvertArToUSD arCostToUsd,
+    Duration pstFeeTimeout = kPstFeeTimeout,
   })  : _arweaveService = arweaveService,
         _arCostToUsd = arCostToUsd,
-        _pstService = pstService;
+        _pstService = pstService,
+        _pstFeeTimeout = pstFeeTimeout;
 
   @override
   Future<UploadCostEstimate> calculateCost({
@@ -67,7 +79,17 @@ class UploadCostEstimateCalculatorForAR extends ArDriveUploadCostCalculator {
 
     Winston pstFee = Winston(BigInt.zero);
     try {
-      pstFee = await _pstService.getPSTFee(costInAR);
+      pstFee = await _pstService.getPSTFee(costInAR).timeout(_pstFeeTimeout);
+    } on TimeoutException {
+      // The same outcome as the `catch` below, for the case that `catch` never
+      // sees. Reading the community contract goes through a chain of oracles
+      // and retries, none of which has a deadline, so a request that hangs
+      // rather than fails hangs this call for ever - and the fee is already
+      // treated as optional here, so waiting for it indefinitely buys nothing.
+      logger.e(
+        'The community tip could not be read within '
+        '${_pstFeeTimeout.inSeconds}s. Proceeding without it.',
+      );
     } catch (e) {
       logger.e('Error adding community tip to transaction. Proceeding.', e);
     }
@@ -128,15 +150,40 @@ abstract class ConvertForUSD<T> {
 }
 
 class ConvertArToUSD implements ConvertForUSD<double> {
-  final ArweaveService arweave;
+  /// How long to wait for the AR/USD rate before giving up on it.
+  ///
+  /// The rate comes from CoinGecko through `ArDriveHTTP(retries: 3)`, and
+  /// neither the request nor the retries have a deadline of their own.
+  static const kUsdRateTimeout = Duration(seconds: 6);
 
-  ConvertArToUSD({required this.arweave});
+  final ArweaveService arweave;
+  final Duration _usdRateTimeout;
+
+  ConvertArToUSD({
+    required this.arweave,
+    Duration usdRateTimeout = kUsdRateTimeout,
+  }) : _usdRateTimeout = usdRateTimeout;
 
   @override
   Future<double?> convertForUSD(
     double arCost,
   ) async {
-    final arUsdConversionRate = await arweave.getArUsdConversionRateOrNull();
+    final double? arUsdConversionRate;
+    try {
+      arUsdConversionRate =
+          await arweave.getArUsdConversionRateOrNull().timeout(_usdRateTimeout);
+    } on TimeoutException {
+      // `getArUsdConversionRateOrNull` already answers "no rate available" with
+      // null, and its `catch` covers a request that fails. It cannot cover one
+      // that never returns, which is the same gap the community tip had: the
+      // USD figure is a convenience beside a price quoted in AR, so waiting on
+      // it indefinitely trades the whole estimate for a nicety.
+      logger.e(
+        'The AR/USD rate did not arrive within ${_usdRateTimeout.inSeconds}s. '
+        'Pricing without a USD figure.',
+      );
+      return null;
+    }
 
     if (arUsdConversionRate == null) {
       return null;

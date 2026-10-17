@@ -42,17 +42,42 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Where publishing is on, the snapshot the nudge offers is a drive state
+    // artifact (D14), with the same gate as every "Create snapshot" item -
+    // see [createsDriveStateSnapshot]. Hardcoded English, matching
+    // `drive_state_creation_modal.dart`, until the feature's strings move into
+    // the `.arb` files in one pass.
+    final offersDriveState = createsDriveStateSnapshot(context, widget.drive);
+    final localizations = appLocalizationsOf(context);
+
+    final String title;
+    final String body;
+    if (offersDriveState) {
+      title = _dontAskAgain
+          ? 'You won\'t be asked again'
+          : 'Make this drive load faster';
+      body = _dontAskAgain
+          ? 'You can create a snapshot at any time from the drive\'s menu.'
+          : 'This drive takes a while to sync because its history is read '
+              'one change at a time. A snapshot saves the whole drive as one '
+              'file on Arweave, so it loads much faster wherever you sign in. '
+              'You see the size and the cost before anything is uploaded.';
+    } else {
+      title = _dontAskAgain
+          ? localizations.weWontRemindYou
+          : localizations.snapshotRecommended;
+      body = _dontAskAgain
+          ? localizations.snapshotRecommendedDontAskAgain
+          : localizations.snapshotRecommendedBody;
+    }
+
     return ArDriveStandardModal(
       hasCloseButton: true,
-      title: _dontAskAgain
-          ? appLocalizationsOf(context).weWontRemindYou
-          : appLocalizationsOf(context).snapshotRecommended,
+      title: title,
       content: SizedBox(
         width: kMediumDialogWidth,
         child: Text(
-          _dontAskAgain
-              ? appLocalizationsOf(context).snapshotRecommendedDontAskAgain
-              : appLocalizationsOf(context).snapshotRecommendedBody,
+          body,
           style: ArDriveTypography.body.buttonNormalRegular(),
         ),
       ),
@@ -70,8 +95,8 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
             }
           },
           title: _dontAskAgain
-              ? appLocalizationsOf(context).okEmphasized
-              : appLocalizationsOf(context).dontAskMeAgain,
+              ? localizations.okEmphasized
+              : localizations.dontAskMeAgain,
         ),
         if (!_dontAskAgain)
           ModalAction(
@@ -79,7 +104,7 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
               Navigator.of(context).pop();
               promptToCreateSnapshot(context, widget.drive);
             },
-            title: appLocalizationsOf(context).createSnapshot,
+            title: localizations.createSnapshot,
           ),
       ],
     );

@@ -70,19 +70,51 @@ jobs:
     # write the repository contents. It needs nothing else.
     permissions:
       contents: write
+    # Two pushes in quick succession each ran a deploy, and whichever finished
+    # last owned gh-pages: an older commit whose tests ran longer overwrote a
+    # newer one. Publishing is now one run at a time, and only the commit dev
+    # points at publishes (the check below). Never cancel: cancelling a
+    # running or waiting deploy for dev's head, say because an older run was
+    # re-run, would leave nothing to publish it.
+    concurrency:
+      group: staging-deploy
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v3
         with:
           persist-credentials: false
 
+      # Deploys run in the order they were queued, not by commit, so a late or
+      # re-run older dev run would still publish its old build over a newer
+      # one. Publish only the commit dev points at now. Manual runs on other
+      # refs are left alone: deploying one is their point.
+      - name: Check this is still the dev head
+        id: fresh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/dev ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          head=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/dev" --jq .object.sha)
+          if [ "$head" = "$GITHUB_SHA" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Not publishing $GITHUB_SHA: dev is at $head, which deploys in its own run."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Download the built web app
+        if: steps.fresh.outputs.publish == 'true'
         uses: actions/download-artifact@v4
         with:
           name: web-build
           path: build/web
 
       # Deploy to github pages
-      - uses: JamesIves/github-pages-deploy-action@4.1.1
+      - if: steps.fresh.outputs.publish == 'true'
+        uses: JamesIves/github-pages-deploy-action@4.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: gh-pages
