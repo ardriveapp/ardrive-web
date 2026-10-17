@@ -329,5 +329,54 @@ void main() {
         isA<FsEntryMoveSuccess>(),
       ],
     );
+
+    group('a name conflict names the destination', () {
+      FsEntryMoveBloc buildWithFileNamed(String name) => FsEntryMoveBloc(
+            crypto: ArDriveCrypto(),
+            arweave: arweave,
+            turboUploadService: turboUploadService,
+            syncCubit: syncBloc,
+            driveId: driveId,
+            driveDao: driveDao,
+            profileCubit: profileCubit,
+            selectedItems: [
+              createMockFileDataTableItem(driveId: driveId, name: name),
+            ],
+            platform: FakePlatform(operatingSystem: 'android'),
+          );
+
+      Future<void> submitTo(FsEntryMoveBloc bloc, String folderId) async {
+        bloc.add(FsEntryMoveSubmit(
+          folderInView:
+              await driveDao.folderById(folderId: folderId).getSingle(),
+          showHiddenItems: false,
+        ));
+      }
+
+      blocTest<FsEntryMoveBloc, FsEntryMoveState>(
+        'by the drive\'s name for its root folder, as after Rename Drive',
+        setUp: () async {
+          // Rename Drive writes the drive row only.
+          await (db.update(db.drives)..where((d) => d.id.equals(driveId)))
+              .write(const DrivesCompanion(name: Value('renamed')));
+        },
+        build: () => buildWithFileNamed('${rootFolderId}0'),
+        act: (bloc) => submitTo(bloc, rootFolderId),
+        expect: () => [
+          isA<FsEntryMoveNameConflict>()
+              .having((s) => s.destinationName, 'destinationName', 'renamed'),
+        ],
+      );
+
+      blocTest<FsEntryMoveBloc, FsEntryMoveState>(
+        'by the folder\'s own name for a folder with a parent',
+        build: () => buildWithFileNamed('${conflictTestFolderId}0'),
+        act: (bloc) => submitTo(bloc, conflictTestFolderId),
+        expect: () => [
+          isA<FsEntryMoveNameConflict>().having((s) => s.destinationName,
+              'destinationName', conflictTestFolderId),
+        ],
+      );
+    });
   });
 }
