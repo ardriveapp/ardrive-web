@@ -1739,6 +1739,10 @@
   "@rowsPerPage": {
     "description": "How many rows per page to use"
   },
+  "tableNextPage": "下一頁",
+  "tablePageNumber": "第 {page} 頁",
+  "tablePageRange": "第 {first}-{last} 項，共 {total} 項",
+  "tablePreviousPage": "上一頁",
   "secondsFromForeverEmphasized": "幾秒之間, 就能恒永留存",
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"

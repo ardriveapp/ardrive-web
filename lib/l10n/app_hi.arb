@@ -1739,6 +1739,10 @@
   "@rowsPerPage": {
     "description": "How many rows per page to use"
   },
+  "tableNextPage": "अगला पेज",
+  "tablePageNumber": "पेज {page}",
+  "tablePageRange": "{total} में से {first}-{last}",
+  "tablePreviousPage": "पिछला पेज",
   "secondsFromForeverEmphasized": "हमेशा के लिए होने से कुछ सेकंड दूर",
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"
