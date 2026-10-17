@@ -759,7 +759,11 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                 desktop: (context) => ConstrainedBox(
                   constraints: BoxConstraints(
                     minHeight: 185,
-                    maxHeight: 580,
+                    // Fits its content, up to most of the window: a fixed
+                    // 580 pushed the warnings under the payment choice out
+                    // of sight once there were a few files.
+                    maxHeight:
+                        max(580, MediaQuery.of(context).size.height * 0.85),
                     maxWidth: (state is UploadReady) && (state.showSettings)
                         ? widget.width * 2
                         : widget.width,
@@ -875,13 +879,20 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                                       ],
                                     ),
                                     const SizedBox(height: 20),
-                                    Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: widget.children,
+                                    // Content taller than the dialog can
+                                    // grow scrolls, rather than running into
+                                    // the buttons.
+                                    Flexible(
+                                      child: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: widget.children,
+                                        ),
+                                      ),
                                     ),
-                                    const Spacer(),
+                                    const SizedBox(height: 20),
                                     Padding(
                                       padding:
                                           const EdgeInsets.only(bottom: 24.0),
@@ -1504,16 +1515,17 @@ class _UploadFolderNameConflictWidget extends StatelessWidget {
           ],
         ),
       ),
+      // Cancel first, so that Skip, the way on, is the primary button.
       actions: [
+        ModalAction(
+          action: () => Navigator.of(context).pop(false),
+          title: appLocalizationsOf(context).cancel,
+        ),
         if (!state.areAllFilesConflicting)
           ModalAction(
             action: () => context.read<UploadCubit>().checkConflictingFiles(),
             title: appLocalizationsOf(context).skip,
           ),
-        ModalAction(
-          action: () => Navigator.of(context).pop(false),
-          title: appLocalizationsOf(context).cancel,
-        ),
       ],
     );
   }
@@ -1599,6 +1611,9 @@ class _UploadFileConflictWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveStandardModalNew(
+      // Wide enough for its content and for Skip, Cancel and Replace on one
+      // row; at the standard width the third button wrapped.
+      width: kMediumDialogWidth + 48,
       title: appLocalizationsOf(context)
           .duplicateFiles(state.conflictingFileNames.length),
       content: SizedBox(
@@ -1647,7 +1662,13 @@ class _UploadFileConflictWidget extends StatelessWidget {
           ],
         ),
       ),
+      // Cancel first and the main action last, as in the other upload
+      // dialogs: the last button is the primary one.
       actions: [
+        ModalAction(
+          action: () => Navigator.of(context).pop(false),
+          title: appLocalizationsOf(context).cancel,
+        ),
         if (!state.areAllFilesConflicting)
           ModalAction(
             action: () => context
@@ -1656,10 +1677,6 @@ class _UploadFileConflictWidget extends StatelessWidget {
                     uploadAction: UploadActions.skip),
             title: appLocalizationsOf(context).skip,
           ),
-        ModalAction(
-          action: () => Navigator.of(context).pop(false),
-          title: appLocalizationsOf(context).cancel,
-        ),
         ModalAction(
           action: () => context
               .read<UploadCubit>()
