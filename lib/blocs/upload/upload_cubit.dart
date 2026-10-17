@@ -356,6 +356,9 @@ class UploadCubit extends Cubit<UploadState> {
     _uploadThumbnail = uploadThumbnail;
   }
 
+  /// Whether this upload will make thumbnails for its images.
+  bool get uploadThumbnail => _uploadThumbnail;
+
   /// Settings
   void showSettings() {
     emit((state as UploadReady).copyWith(showSettings: true));
@@ -571,8 +574,8 @@ class UploadCubit extends Cubit<UploadState> {
     int size = 0;
 
     for (final file in _files) {
-      size += _fileLengthCache[file.getIdentifier()] ??
-          await file.ioFile.length;
+      size +=
+          _fileLengthCache[file.getIdentifier()] ?? await file.ioFile.length;
     }
 
     return size;
