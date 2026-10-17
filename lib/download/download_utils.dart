@@ -30,12 +30,16 @@ class MultiDownloadFolder extends MultiDownloadItem {
   MultiDownloadFolder(this.folderPath);
 }
 
+/// [folderName] replaces [folderNode]'s own name for this folder only, not
+/// its subfolders. Pass the drive's name for a root folder: Rename Drive
+/// writes a new drive entity and leaves the root folder's name as it was, so
+/// after a rename the root folder's name is the drive's old one.
 Future<List<MultiDownloadItem>> convertFolderToMultidownloadFileList(
     DriveDao driveDao, FolderNode folderNode,
-    {String path = ''}) async {
+    {String path = '', String? folderName}) async {
   final multiDownloadFileList = <MultiDownloadItem>[];
 
-  final folderPath = '$path${folderNode.folder.name}/';
+  final folderPath = '$path${folderName ?? folderNode.folder.name}/';
 
   multiDownloadFileList.add(MultiDownloadFolder(folderPath));
 
@@ -75,13 +79,20 @@ Future<List<MultiDownloadItem>> convertSelectionToMultiDownloadFileList(
 
       multiDownloadFileList.addAll(await convertFolderToMultidownloadFileList(
           driveDao, folderNode,
-          path: path));
+          path: path, folderName: drive.name));
     } else if (item is FolderDataTableItem) {
       final folderNode = await driveDao.getFolderTree(item.driveId, item.id);
 
+      // A root folder can be downloaded from the explorer as well as as a
+      // drive, and its zip is named after the drive either way.
+      final isRootFolder = folderNode.folder.parentFolderId == null;
+      final folderName = isRootFolder
+          ? (await arfsRepository.getDriveById(item.driveId)).name
+          : null;
+
       multiDownloadFileList.addAll(await convertFolderToMultidownloadFileList(
           driveDao, folderNode,
-          path: path));
+          path: path, folderName: folderName));
     } else if (item is FileDataTableItem) {
       multiDownloadFileList.add(MultiDownloadFile(
         driveId: item.driveId,

@@ -774,6 +774,63 @@ void main() {
     });
   });
 
+  /// Rename Drive writes the drive row and nothing in the folder, so the tick
+  /// carrying the new name arrives with exactly the contents already drawn.
+  /// The no-op check compared only the contents and dropped it: the sidebar,
+  /// which watches the drives list, showed the new name, and the breadcrumb,
+  /// which reads `currentDrive`, kept the old one until the folder changed.
+  group('a change to the drive row alone', () {
+    test('reaches the drive on screen, as after Rename Drive', () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect((cubit.state as DriveDetailLoadSuccess).currentDrive.name,
+          'Test Drive',
+          reason: 'precondition: the drive is on screen');
+
+      await (db.update(db.drives)..where((d) => d.id.equals(driveId)))
+          .write(const DrivesCompanion(name: Value('Renamed Drive')));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).currentDrive.name,
+        'Renamed Drive',
+        reason: 'the breadcrumb shows currentDrive.name, so this is the old '
+            'name staying on screen',
+      );
+    });
+
+    test('while a write that changes nothing still redraws nothing', () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(cubit.state, isA<DriveDetailLoadSuccess>(),
+          reason: 'precondition: the folder is on screen');
+
+      final emitted = <DriveDetailState>[];
+      final subscription = cubit.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+
+      // Drift re-runs both watched queries on any write to their tables, so
+      // this ticks the subscription with a drive and contents both unchanged.
+      await (db.update(db.drives)..where((d) => d.id.equals(driveId)))
+          .write(const DrivesCompanion(name: Value('Test Drive')));
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+
+      expect(emitted, isEmpty,
+          reason: 'comparing the drive as well must not turn every identical '
+              'tick back into a redraw');
+    });
+  });
+
   /// What an empty local database means, which is three different things.
   ///
   /// The app used to render all three as one: "Getting Started", two
