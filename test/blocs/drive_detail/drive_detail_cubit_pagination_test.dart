@@ -8,6 +8,7 @@ import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
+import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
@@ -209,6 +210,26 @@ void main() {
     await Future<void>.delayed(settle);
 
     expect(loaded(cubit).rowsPerPage, 25);
+    await cubit.close();
+  });
+
+  // The table is built from the state; a choice kept only in the store was
+  // undone by the next folder.
+  test('a hidden column stays hidden in the next folder', () async {
+    await insertDriveWithFolders(3);
+    final cubit = buildCubit();
+    await Future<void>.delayed(settle);
+    expect(loaded(cubit).columnVisibility[2], isTrue);
+
+    await cubit.updateTableColumnVisibility(
+      TableColumn('Last updated', 3, index: 2, isVisible: false),
+    );
+
+    expect(loaded(cubit).columnVisibility[2], isFalse);
+    expect(
+      (await store()).getBool('drive_detail_column_2'),
+      isFalse,
+    );
     await cubit.close();
   });
 

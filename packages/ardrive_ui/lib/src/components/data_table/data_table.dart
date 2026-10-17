@@ -153,6 +153,11 @@ class _ArDriveDataTableState<T extends IndexedItem>
 
   late final ScrollController _scrollController;
 
+  /// A row [ArDriveDataTable.revealRow] opened on, until it is scrolled into
+  /// view: its page is shown from the top, and the row can be below the fold.
+  T? _scrollToRow;
+  final _scrollToRowKey = GlobalKey(debugLabel: 'revealed row');
+
   late int _selectedPage;
   late int _numberOfItemsPerPage;
   int? _sortedColumn;
@@ -216,8 +221,11 @@ class _ArDriveDataTableState<T extends IndexedItem>
       // Told even when the row was not found, so a caller waiting to hear
       // that the reveal was handled is never left waiting.
       final page = _selectedPage;
+      _scrollToRow = revealing ? widget.revealRow : null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) widget.onChangePage?.call(page);
+        if (!mounted) return;
+        widget.onChangePage?.call(page);
+        _scrollRevealedRowIntoView();
       });
     }
 
@@ -225,7 +233,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
     HardwareKeyboard.instance.addHandler(_handleEscapeKey);
     HardwareKeyboard.instance.addHandler(_handleSelectAllShortcut);
 
-    _columns = widget.columns;
+    _columns = List.of(widget.columns);
   }
 
   // These handlers are global, so without this they outlived the table: the
@@ -332,6 +340,21 @@ class _ArDriveDataTableState<T extends IndexedItem>
     );
   }
 
+  static bool _sameColumns(List<TableColumn> a, List<TableColumn> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].title != b[i].title ||
+          a[i].isVisible != b[i].isVisible ||
+          a[i].index != b[i].index ||
+          a[i].size != b[i].size) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   int _validRowsPerPage(int? rowsPerPage) {
     if (rowsPerPage != null && rowsPerPage > 0) {
       return rowsPerPage;
@@ -426,6 +449,14 @@ class _ArDriveDataTableState<T extends IndexedItem>
   @override
   void didUpdateWidget(oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // The columns follow the caller. They were read once, when the table was
+    // built, so a column the caller hid as the table narrowed - opening the
+    // details panel, or a smaller window - stayed in every row, and the rows
+    // squeezed their cells into a letter's width while the header hid it.
+    if (!_sameColumns(widget.columns, _columns)) {
+      _columns = List.of(widget.columns);
+    }
 
     if (widget.rowsPerPage != oldWidget.rowsPerPage &&
         widget.rowsPerPage != null) {
@@ -697,6 +728,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
                         return ArDriveClickArea(
                           key: ValueKey(_currentPage[index]),
                           child: _HoverableRow(
+                            key: _currentPage[index] == _scrollToRow
+                                ? _scrollToRowKey
+                                : null,
                             child: Padding(
                               padding: const EdgeInsets.only(top: 5),
                               child: _buildRowSpacing(
@@ -1029,6 +1063,46 @@ class _ArDriveDataTableState<T extends IndexedItem>
     _afterBuild(() => widget.onChangePage?.call(target));
   }
 
+  /// Brings [_scrollToRow] on screen, moving as little as it can.
+  ///
+  /// The list only builds the rows it shows, so a row further down has no
+  /// context to scroll to yet: the list jumps to about where it will be, and
+  /// looks again once that frame has built it.
+  void _scrollRevealedRowIntoView([int attempt = 0]) {
+    final row = _scrollToRow;
+    if (!mounted || row == null || !_scrollController.hasClients) {
+      return;
+    }
+
+    final rowContext = _scrollToRowKey.currentContext;
+    if (rowContext != null) {
+      _scrollToRow = null;
+      Scrollable.ensureVisible(
+        rowContext,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      );
+      Scrollable.ensureVisible(
+        rowContext,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+      );
+      return;
+    }
+
+    final index = _currentPage.indexOf(row);
+    if (index < 0 || attempt >= 3) {
+      _scrollToRow = null;
+      return;
+    }
+
+    final position = _scrollController.position;
+    _scrollController.jumpTo(
+      position.maxScrollExtent * index / max(1, _currentPage.length - 1),
+    );
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _scrollRevealedRowIntoView(attempt + 1),
+    );
+  }
+
   /// Runs [action] now, or after this frame when called during one: a
   /// listener told of a page change mid-build must not rebuild in it.
   void _afterBuild(VoidCallback action) {
@@ -1317,10 +1391,15 @@ class _PagerButton extends StatefulWidget {
     required this.onPressed,
     required this.builder,
     this.selected = false,
+    this.onKeyboardPressed,
   });
 
   final String label;
   final VoidCallback? onPressed;
+
+  /// Pressed with Enter or Space rather than the pointer, when that should
+  /// do more: a menu opened from the keyboard puts focus in itself.
+  final VoidCallback? onKeyboardPressed;
   final bool selected;
   final Widget Function(BuildContext context, bool hovered) builder;
 
@@ -1356,7 +1435,7 @@ class _PagerButtonState extends State<_PagerButton> {
         actions: {
           ActivateIntent: CallbackAction<ActivateIntent>(
             onInvoke: (_) {
-              widget.onPressed?.call();
+              (widget.onKeyboardPressed ?? widget.onPressed)?.call();
               return null;
             },
           ),
@@ -1511,6 +1590,20 @@ class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
   final _controller = MenuController();
   final _focusNodes = <int, FocusNode>{};
 
+  /// Whether the menu was opened from the keyboard, and so takes focus. Not
+  /// when opened with the pointer, where a focused item would show as a
+  /// highlight nothing is hovering.
+  bool _focusOnOpen = false;
+
+  void _toggle({required bool fromKeyboard}) {
+    if (_controller.isOpen) {
+      _controller.close();
+      return;
+    }
+    _focusOnOpen = fromKeyboard;
+    _controller.open();
+  }
+
   FocusNode _nodeFor(int option) => _focusNodes.putIfAbsent(
         option,
         () => FocusNode(debugLabel: 'rows per page $option'),
@@ -1547,7 +1640,13 @@ class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
         const SizedBox(width: 6),
         MenuAnchor(
           controller: _controller,
+          // The menu lines up with the button's face, inside the room its
+          // focus ring keeps.
+          alignmentOffset: const Offset(4, 0),
           onOpen: () {
+            if (!_focusOnOpen) {
+              return;
+            }
             WidgetsBinding.instance.addPostFrameCallback((_) {
               _focusNodes[widget.rowsPerPage]?.requestFocus();
             });
@@ -1598,8 +1697,8 @@ class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
           builder: (context, controller, child) => _PagerButton(
             key: const ValueKey('rows-per-page'),
             label: '${widget.label}: ${widget.rowsPerPage}',
-            onPressed: () =>
-                controller.isOpen ? controller.close() : controller.open(),
+            onPressed: () => _toggle(fromKeyboard: false),
+            onKeyboardPressed: () => _toggle(fromKeyboard: true),
             builder: (context, hovered) => Container(
               height: 32,
               padding: const EdgeInsets.only(left: 10, right: 6),
@@ -1666,7 +1765,7 @@ class MultiSelectBox<T> {
 /// the app was affected, which is why this belongs here rather than in any one
 /// of them.
 class _HoverableRow extends StatefulWidget {
-  const _HoverableRow({required this.child});
+  const _HoverableRow({super.key, required this.child});
 
   final Widget child;
 

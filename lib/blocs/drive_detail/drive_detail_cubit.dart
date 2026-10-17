@@ -1273,6 +1273,18 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   Future<void> updateTableColumnVisibility(TableColumn column) async {
+    // Into the state as well as the store: the table is built from the state,
+    // and a choice kept only in the store was undone by the next folder.
+    final state = this.state;
+    if (state is DriveDetailLoadSuccess && !isClosed) {
+      emit(state.copyWith(
+        columnVisibility: {
+          ...state.columnVisibility,
+          column.index: column.isVisible,
+        },
+      ));
+    }
+
     (await _store()).putBool(
       'drive_detail_column_${column.index}',
       column.isVisible,

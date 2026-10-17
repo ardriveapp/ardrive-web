@@ -87,10 +87,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     Key? forceRebuildKey,
     List<BreadCrumbRowInfo>? pathSegments,
     bool? revealSelectedItem,
+    Map<int, bool>? columnVisibility,
   }) =>
       DriveDetailLoadSuccess(
         revealSelectedItem: revealSelectedItem ?? this.revealSelectedItem,
-        columnVisibility: columnVisibility,
+        columnVisibility: columnVisibility ?? this.columnVisibility,
         forceRebuildKey: forceRebuildKey ?? this.forceRebuildKey,
         selectedItem: selectedItem ?? this.selectedItem,
         hasFoldersSelected: hasFoldersSelected ?? this.hasFoldersSelected,

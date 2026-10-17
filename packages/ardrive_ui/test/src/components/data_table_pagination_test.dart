@@ -70,6 +70,7 @@ void main() {
       int? rowsPerPage,
       int? initialPage,
       _Row? revealRow,
+      bool? sizeColumnVisible,
     }) async {
       tester.view.physicalSize = Size(width, height);
       tester.view.devicePixelRatio = 1;
@@ -85,9 +86,21 @@ void main() {
               ),
               child: Scaffold(
                 body: ArDriveDataTable<_Row>(
-                  columns: [TableColumn('Name', 1, index: 0)],
+                  columns: [
+                    TableColumn('Name', 1, index: 0),
+                    if (sizeColumnVisible != null)
+                      TableColumn(
+                        'Size',
+                        1,
+                        index: 1,
+                        isVisible: sizeColumnVisible,
+                      ),
+                  ],
                   rows: _rows(rows),
-                  buildRow: (row) => TableRowWidget([Text(row.name)]),
+                  buildRow: (row) => TableRowWidget([
+                    Text(row.name),
+                    if (sizeColumnVisible != null) Text('size ${row.index}'),
+                  ]),
                   rowsPerPageText: 'Rows per page',
                   rowsPerPage: rowsPerPage,
                   initialPage: initialPage,
@@ -234,6 +247,54 @@ void main() {
       expect(pagesReported, [2]);
     });
 
+    testWidgets('scrolls a revealed row below the fold into view',
+        (tester) async {
+      await pumpTable(
+        tester,
+        rows: 60,
+        height: 400,
+        revealRow: const _Row(48),
+      );
+
+      expect(range(tester), '26-50 of 60');
+      final row = tester.getRect(find.text('row 48'));
+      final list = tester.getRect(
+        find
+            .descendant(
+              of: find.byType(ArDriveDataTable<_Row>),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      expect(list.top <= row.top && row.bottom <= list.bottom, isTrue,
+          reason: 'row 48 at $row, list at $list');
+    });
+
+    // The caller hides columns as the table narrows. The table used to read
+    // them once, so its rows kept every cell and squeezed them to a letter.
+    testWidgets('follows the caller when a column is hidden', (tester) async {
+      await pumpTable(tester, rows: 10, sizeColumnVisible: true);
+      expect(find.text('size 3'), findsOneWidget);
+
+      await pumpTable(tester, rows: 10, sizeColumnVisible: false);
+      expect(find.text('size 3'), findsNothing);
+      expect(find.text('row 3'), findsOneWidget);
+    });
+
+    testWidgets('a menu opened with the pointer does not take focus',
+        (tester) async {
+      await pumpTable(tester, rows: 120);
+
+      await tester.tap(button('rows-per-page'));
+      await tester.pumpAndSettle();
+
+      expect(button('rows-per-page-50'), findsOneWidget);
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        isNot(startsWith('rows per page')),
+      );
+    });
+
     testWidgets('sorting goes back to the first page', (tester) async {
       await pumpTable(tester, rows: 60);
       await tester.tap(button('pagination-page-2'));
@@ -290,6 +351,11 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
       expect(button('rows-per-page-100'), findsOneWidget);
+      expect(
+        FocusManager.instance.primaryFocus?.debugLabel,
+        'rows per page 25',
+        reason: 'opened from the keyboard, the menu focuses the current size',
+      );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
