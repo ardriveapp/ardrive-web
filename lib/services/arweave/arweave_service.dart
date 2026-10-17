@@ -1149,7 +1149,10 @@ class ArweaveService {
       return tx.getCommitTime().millisecondsSinceEpoch;
     } on FormatException {
       return 0;
-    } on RangeError {
+    } on ArgumentError {
+      // Not RangeError: the VM throws one for a value DateTime cannot hold,
+      // but the web build throws a plain ArgumentError. RangeError is a
+      // subclass, so this catches both.
       return 0;
     }
   }
@@ -1392,8 +1395,9 @@ class ArweaveService {
                   'Could not read the drive signature for $txDriveId; '
                   'skipping this drive for this pass: $e',
                 );
-                // Claim the id so an older transaction for the same drive on
-                // a later page cannot quietly stand in for the newest one.
+                // Claim the id, so that if it ever appeared twice an older
+                // transaction could not quietly stand in for the newest one.
+                // See [handledDriveIds].
                 handledDriveIds.add(txDriveId);
                 settled();
                 continue;
