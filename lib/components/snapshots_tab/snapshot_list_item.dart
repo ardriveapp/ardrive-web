@@ -27,7 +27,9 @@ class SnapshotListItem extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header row with status dot and date as title
+        // Header row with status dot and date. The date is a value, so it is
+        // book weight like every date in the Details tab; the bold label is
+        // "Transaction ID" below, one per entry as in the other tabs.
         Row(
           children: [
             // Status indicator dot with tooltip
@@ -36,9 +38,7 @@ class SnapshotListItem extends StatelessWidget {
             Expanded(
               child: Text(
                 formatDateToUtcString(snapshot.createdAt),
-                style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.bold,
-                ),
+                style: typography.paragraphNormal(),
               ),
             ),
             // Block range info icon with tooltip

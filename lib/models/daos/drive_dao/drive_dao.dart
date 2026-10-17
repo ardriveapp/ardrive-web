@@ -943,6 +943,33 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return (select(folderEntries).table.count()).getSingle();
   }
 
+  /// Whether this drive has anything in it on this device: a file, or a
+  /// folder other than its root.
+  ///
+  /// Asked of the drive, not of a folder, so the answer is the same from the
+  /// list of drives as from inside an empty subfolder of a full drive.
+  Future<bool> driveHasEntries({
+    required String driveId,
+    required String rootFolderId,
+  }) async {
+    final file = await (selectOnly(fileEntries)
+          ..addColumns([fileEntries.id])
+          ..where(fileEntries.driveId.equals(driveId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (file != null) {
+      return true;
+    }
+
+    final folder = await (selectOnly(folderEntries)
+          ..addColumns([folderEntries.id])
+          ..where(folderEntries.driveId.equals(driveId) &
+              folderEntries.id.equals(rootFolderId).not())
+          ..limit(1))
+        .getSingleOrNull();
+    return folder != null;
+  }
+
   Future<bool> userHasHiddenItems() {
     return hasHiddenItems().getSingle();
   }

@@ -13,11 +13,20 @@ Future<void> promptToSnapshot(
   required Drive drive,
   required PromptToSnapshotBloc promptToSnapshotBloc,
 }) async {
+  // Decided once, before the prompt opens, so its wording cannot disagree
+  // with the snapshot its button goes on to create.
+  final offersDriveState = await createsDriveStateSnapshot(context, drive);
+  if (!context.mounted) {
+    promptToSnapshotBloc.add(const ClosePromptToSnapshot());
+    return;
+  }
+
   return showArDriveDialog(
     context,
     content: PromptToSnapshotDialog(
       promptToSnapshotBloc: promptToSnapshotBloc,
       drive: drive,
+      offersDriveState: offersDriveState,
     ),
   ).then((value) => promptToSnapshotBloc.add(const ClosePromptToSnapshot()));
 }
@@ -27,10 +36,15 @@ class PromptToSnapshotDialog extends StatefulWidget {
 
   final Drive drive;
 
+  /// Whether the snapshot offered is a drive state artifact. See
+  /// [createsDriveStateSnapshot].
+  final bool offersDriveState;
+
   const PromptToSnapshotDialog({
     super.key,
     required this.drive,
     required this.promptToSnapshotBloc,
+    required this.offersDriveState,
   });
 
   @override
@@ -47,7 +61,7 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
     // see [createsDriveStateSnapshot]. Hardcoded English, matching
     // `drive_state_creation_modal.dart`, until the feature's strings move into
     // the `.arb` files in one pass.
-    final offersDriveState = createsDriveStateSnapshot(context, widget.drive);
+    final offersDriveState = widget.offersDriveState;
     final localizations = appLocalizationsOf(context);
 
     final String title;
