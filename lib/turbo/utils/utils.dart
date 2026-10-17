@@ -5,6 +5,15 @@ String convertWinstonToLiteralString(BigInt credits) {
   return creditsString;
 }
 
+/// A cost for display, to the same 4 decimal places as the balance beside it.
+/// A cost too small to show at that precision reads "< 0.0001", not 0.0000.
+String convertWinstonToCostString(BigInt winston) {
+  if (winston > BigInt.zero && winston < BigInt.from(100000000)) {
+    return '< 0.0001';
+  }
+  return convertWinstonToLiteralString(winston);
+}
+
 double convertWinstonToAr(BigInt winston) {
   return winston / BigInt.from(1000000000000);
 }
