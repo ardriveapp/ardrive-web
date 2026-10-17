@@ -718,6 +718,13 @@ class _ActionCard {
 }
 
 /// The largest file Turbo uploads free, as the uploader checks it: the limit
-/// Turbo reports, or the configured one until it has.
-String _freeUploadLimit(BuildContext context) =>
-    filesize(context.read<TurboUploadService>().maxFreeItemSizeBytes);
+/// Turbo reports, or the configured one until it has. With Turbo uploads
+/// turned off in config, the service provided reports no limit at all, so
+/// this reads the configured one.
+String _freeUploadLimit(BuildContext context) {
+  final turboUploadService = context.read<TurboUploadService>();
+
+  return filesize(turboUploadService is DontUseUploadService
+      ? context.read<ConfigService>().config.allowedDataItemSizeForTurbo
+      : turboUploadService.maxFreeItemSizeBytes);
+}

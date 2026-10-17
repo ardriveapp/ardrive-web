@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -14,6 +15,10 @@ import 'package:mocktail/mocktail.dart';
 class _MockDrivesCubit extends MockCubit<DrivesState> implements DrivesCubit {}
 
 class _MockTurboUploadService extends Mock implements TurboUploadService {}
+
+class _MockConfigService extends Mock implements ConfigService {}
+
+class _MockAppConfig extends Mock implements AppConfig {}
 
 Drive _drive(String id) => Drive(
       id: id,
@@ -33,7 +38,8 @@ Drive _drive(String id) => Drive(
 /// were 283px squares stacked under a heading and a paragraph.
 void main() {
   late _MockDrivesCubit drivesCubit;
-  late _MockTurboUploadService turboUploadService;
+  late TurboUploadService turboUploadService;
+  late _MockConfigService configService;
 
   void withDrives(List<Drive> drives) => whenListen(
         drivesCubit,
@@ -49,10 +55,16 @@ void main() {
 
   setUp(() {
     drivesCubit = _MockDrivesCubit();
-    turboUploadService = _MockTurboUploadService();
+    final turbo = _MockTurboUploadService();
+    turboUploadService = turbo;
 
     // What Turbo reports today: 105 KiB.
-    when(() => turboUploadService.maxFreeItemSizeBytes).thenReturn(107520);
+    when(() => turbo.maxFreeItemSizeBytes).thenReturn(107520);
+
+    final appConfig = _MockAppConfig();
+    when(() => appConfig.allowedDataItemSizeForTurbo).thenReturn(100000);
+    configService = _MockConfigService();
+    when(() => configService.config).thenReturn(appConfig);
 
     // Exactly one drive is what makes this the new-user page rather than the
     // existing-user one.
@@ -87,8 +99,12 @@ void main() {
             child: child!,
           ),
           home: Scaffold(
-            body: RepositoryProvider<TurboUploadService>.value(
-              value: turboUploadService,
+            body: MultiRepositoryProvider(
+              providers: [
+                RepositoryProvider<TurboUploadService>.value(
+                    value: turboUploadService),
+                RepositoryProvider<ConfigService>.value(value: configService),
+              ],
               child: BlocProvider<DrivesCubit>.value(
                 value: drivesCubit,
                 child: const DriveDetailFolderEmptyCard(
@@ -232,6 +248,17 @@ void main() {
       await pumpAt(tester, const Size(1280, 800));
 
       expect(find.textContaining('Files up to 200 KiB each'), findsOneWidget);
+    });
+
+    /// The service provided when config turns Turbo uploads off throws for
+    /// its limit, and the page must still draw.
+    testWidgets('with the configured limit when Turbo uploads are off',
+        (tester) async {
+      turboUploadService = DontUseUploadService();
+
+      await pumpAt(tester, const Size(1280, 800));
+
+      expect(find.textContaining('Files up to 97.66 KiB each'), findsOneWidget);
     });
   });
 }
