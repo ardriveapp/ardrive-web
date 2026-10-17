@@ -248,8 +248,8 @@ class _NewUserEmptyRootFolder extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     const String headerText = 'You\'re on chain!';
-    const String descriptionText =
-        'You have just made your first blockchain interaction, congratulations! You can now use your new drive to manage, share, and organize just about any multimedia file. Uploads collectively under 100KB are free!';
+    final String descriptionText = appLocalizationsOf(context)
+        .newUserEmptyDriveDescription(_freeUploadLimit(context));
 
     return PlausiblePageViewWrapper(
       pageView: PlausiblePageView.newUserDriveEmptyPage,
@@ -388,9 +388,8 @@ class _ExistingUserEmptyRootFolder extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final width = MediaQuery.of(context).size.width;
     const String headerText = 'Your brand new drive!';
-    // add gesture and link to turbo
-    const String descriptionText =
-        'When you are ready to benefit from blazingly fast, unlimited uploading you can try out Turbo. Until then, if your upload is collectively under 100KB, here are some of the awesome FREE things you can do next.';
+    final String descriptionText = appLocalizationsOf(context)
+        .existingUserEmptyDriveDescription(_freeUploadLimit(context));
 
     return PlausiblePageViewWrapper(
       pageView: PlausiblePageView.existingUserDriveEmptyPage,
@@ -717,3 +716,8 @@ class _ActionCard {
     );
   }
 }
+
+/// The largest file Turbo uploads free, as the uploader checks it: the limit
+/// Turbo reports, or the configured one until it has.
+String _freeUploadLimit(BuildContext context) =>
+    filesize(context.read<TurboUploadService>().maxFreeItemSizeBytes);

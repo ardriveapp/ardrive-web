@@ -1,6 +1,7 @@
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -8,8 +9,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 class _MockDrivesCubit extends MockCubit<DrivesState> implements DrivesCubit {}
+
+class _MockTurboUploadService extends Mock implements TurboUploadService {}
+
+Drive _drive(String id) => Drive(
+      id: id,
+      rootFolderId: 'root',
+      ownerAddress: 'owner',
+      name: 'My Drive',
+      privacy: 'public',
+      dateCreated: DateTime(2026, 3, 1),
+      lastUpdated: DateTime(2026, 3, 1),
+      isHidden: false,
+    );
 
 /// The page a brand new drive opens on: "You're on chain!".
 ///
@@ -18,34 +33,30 @@ class _MockDrivesCubit extends MockCubit<DrivesState> implements DrivesCubit {}
 /// were 283px squares stacked under a heading and a paragraph.
 void main() {
   late _MockDrivesCubit drivesCubit;
+  late _MockTurboUploadService turboUploadService;
+
+  void withDrives(List<Drive> drives) => whenListen(
+        drivesCubit,
+        const Stream<DrivesState>.empty(),
+        initialState: DrivesLoadSuccess(
+          selectedDriveId: 'drive-a',
+          userDrives: drives,
+          sharedDrives: const [],
+          drivesWithAlerts: const [],
+          canCreateNewDrive: true,
+        ),
+      );
 
   setUp(() {
     drivesCubit = _MockDrivesCubit();
+    turboUploadService = _MockTurboUploadService();
+
+    // What Turbo reports today: 105 KiB.
+    when(() => turboUploadService.maxFreeItemSizeBytes).thenReturn(107520);
 
     // Exactly one drive is what makes this the new-user page rather than the
     // existing-user one.
-    whenListen(
-      drivesCubit,
-      const Stream<DrivesState>.empty(),
-      initialState: DrivesLoadSuccess(
-        selectedDriveId: 'drive-a',
-        userDrives: [
-          Drive(
-            id: 'drive-a',
-            rootFolderId: 'root',
-            ownerAddress: 'owner',
-            name: 'My Drive',
-            privacy: 'public',
-            dateCreated: DateTime(2026, 3, 1),
-            lastUpdated: DateTime(2026, 3, 1),
-            isHidden: false,
-          ),
-        ],
-        sharedDrives: const [],
-        drivesWithAlerts: const [],
-        canCreateNewDrive: true,
-      ),
-    );
+    withDrives([_drive('drive-a')]);
   });
 
   Future<void> pumpAt(
@@ -76,12 +87,15 @@ void main() {
             child: child!,
           ),
           home: Scaffold(
-            body: BlocProvider<DrivesCubit>.value(
-              value: drivesCubit,
-              child: const DriveDetailFolderEmptyCard(
-                driveId: 'drive-a',
-                parentFolderId: 'root',
-                isRootFolder: true,
+            body: RepositoryProvider<TurboUploadService>.value(
+              value: turboUploadService,
+              child: BlocProvider<DrivesCubit>.value(
+                value: drivesCubit,
+                child: const DriveDetailFolderEmptyCard(
+                  driveId: 'drive-a',
+                  parentFolderId: 'root',
+                  isRootFolder: true,
+                ),
               ),
             ),
           ),
@@ -173,5 +187,51 @@ void main() {
       );
       expect(find.widgetWithText(ArDriveButtonNew, label), findsOneWidget);
     }
+  });
+
+  /// The page used to say "collectively under 100KB", which is neither check
+  /// the uploader makes: each file must be under the limit Turbo reports, and
+  /// the upload must fit the wallet's free allowance.
+  group('states the free upload rule the uploader applies', () {
+    testWidgets('on a first drive', (tester) async {
+      await pumpAt(tester, const Size(1280, 800));
+
+      expect(
+        find.textContaining(
+            'Files up to 105 KiB each upload free, while your free allowance '
+            'lasts.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('100KB'), findsNothing);
+    });
+
+    testWidgets('on a later drive', (tester) async {
+      withDrives([_drive('drive-a'), _drive('drive-b')]);
+
+      // At full scale the test font overflows this page's 221px action cards,
+      // on dev's card as much as this one. That is a separate defect; this
+      // test is about the copy above them, so it renders smaller.
+      await pumpAt(tester, const Size(375, 667), textScale: 0.5);
+
+      expect(find.textContaining("You're on chain!"), findsNothing);
+      expect(
+        find.textContaining(
+            'Files up to 105 KiB each upload free, while your free allowance '
+            'lasts. For larger files, you can pay with Credits.'),
+        findsOneWidget,
+      );
+      for (final gone in ['100KB', 'blazingly', 'unlimited', 'FREE']) {
+        expect(find.textContaining(gone), findsNothing, reason: gone);
+      }
+    });
+
+    testWidgets('with the limit Turbo reports, not a fixed one',
+        (tester) async {
+      when(() => turboUploadService.maxFreeItemSizeBytes).thenReturn(204800);
+
+      await pumpAt(tester, const Size(1280, 800));
+
+      expect(find.textContaining('Files up to 200 KiB each'), findsOneWidget);
+    });
   });
 }
