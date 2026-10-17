@@ -254,8 +254,9 @@ injecting failures when testing recovery paths.
 ### End-user testing in the browser
 `docs/WEB_E2E_TESTING.md` covers testing a real web build in headless Chromium, logged in with the
 team's test wallet: login, uploads (Turbo and wallet-paid), dialogs, screenshots, network log.
-Use it to prove anything that touches upload, payment, login or a dialog's layout. The tools are
-in `tool/web_e2e/`. `launch.js` blocks spending by default: wallet-paid uploads go to a local fake
+Use it to prove anything that touches upload, payment, login or a dialog's layout: `/web-e2e <PR>`
+(skill in `.claude/skills/web-e2e/`) tests a PR's preview from a plan written from its diff, and
+`/web-e2e release` runs the release checklist on staging. The tools are in `tool/web_e2e/`. `launch.js` blocks spending by default: wallet-paid uploads go to a local fake
 gateway, paid Turbo uploads and top-ups are refused. The test wallet's keyfile and password live
 only in `~/.config/ardrive-e2e/env`. Never commit, print or upload them, or any private drive
 password.

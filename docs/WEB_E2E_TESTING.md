@@ -244,6 +244,56 @@ it accepts headers and chunks and forwards nothing to Arweave.
 3. Upload. `launch.js` re-checks that ar-io.dev is still in dry-run mode
    before every header, and blocks the header if it isn't.
 
+## What to test
+
+Don't try to test everything. There are three kinds of run:
+
+### Testing a change
+
+This is the usual run, for a pull request: `/web-e2e <PR number>`, or
+"test PR #N per docs/WEB_E2E_TESTING.md". The skill in
+`.claude/skills/web-e2e/` walks through it:
+
+1. Read the PR and its diff, and write a short test plan before testing.
+2. Cover each user-visible change: its normal path, and every state the code
+   distinguishes (errors, empty, not enough balance, cancel, retry, free
+   versus paid). Check light and dark mode where it's visual.
+3. Add the checklist journeys below that touch the same area.
+4. Run the plan on the PR's preview, then report each item with a
+   screenshot, plus any bugs and the spending check.
+
+The plan comes from the diff, not from a list, because a list can't know
+what a change might break.
+
+### Release checklist
+
+Run on https://staging.ardrive.io before `dev` is merged to `master` for a
+production release: `/web-e2e release`. Each line is a journey and what a user
+should see. Keep it short: it's the floor, not every case.
+
+| # | Journey | Expected |
+|---|---|---|
+| 1 | Log in from a new profile (`login.js`) | The drive list shows the wallet's drives |
+| 2 | Sync all drives | Every drive says *Synced just now*; no error |
+| 3 | Open a public drive, then *Private Drive Test* | Files are listed; private file names are readable |
+| 4 | Create a folder in a test drive | It appears in the list |
+| 5 | Upload a file under 100 KiB with Turbo | The dialog says it's free; the file appears |
+| 6 | Upload a file over 105 KiB | The dialog shows both payment cards, each with its cost and balance. On Turbo the guard blocks it: *Problem with Upload*, a `BLOCKED` line |
+| 7 | Wallet-paid upload through the fake gateway at failure rate 0.3 | *Problem with Upload*; Re-Upload until it completes; `chaos_report.py` says OK. Closing with unfinished wallet-paid files asks to confirm |
+| 8 | Upload a file the wallet can't afford (72 MB with the test wallet) | The wallet card says *Not enough AR*; Upload is disabled; no keep-tab-open warning |
+| 9 | Preview an image and a PDF, then download a file | The previews render; the download starts (`await page.waitForEvent('download')` in the step) |
+| 10 | Copy a file's share link and open it | The shared file page shows the file |
+| 11 | Rename a file, then move it to another folder | The new name and place show, and still do after a sync |
+| 12 | Switch to dark mode and back | The drive list and upload dialog are readable in both |
+| 13 | Log out and log back in | Login works; the drives are listed |
+
+### When a bug reaches users
+
+Add a journey for it to the release checklist, in the same change as the fix
+if you can. Journey 7 is there because wallet-paid uploads whose chunks
+failed were never retried (October 2026). The checklist grows from real
+failures, not guesses.
+
 ## Known quirks
 
 - **Deep link to an unsynced drive.** On a new profile, a link straight to a
