@@ -119,6 +119,33 @@ void main() {
     expect(find.textContaining(keepTabOpen), findsOneWidget);
   });
 
+  /// The wallet card is the default when there are no credits. It says AR is
+  /// short; the way forward, adding credits, has to be offered as well.
+  testWidgets('offers credits when neither balance can pay, wallet chosen',
+      (tester) async {
+    await pump(tester,
+        info(method: UploadMethod.ar, arFine: false, creditsFine: false));
+
+    expect(find.text('Not enough AR, 1.0619 available'), findsOneWidget);
+    expect(
+      find.textContaining('Add Credits to upload', findRichText: true),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('with Turbo chosen and short, only offers to add credits',
+      (tester) async {
+    await pump(tester, info(creditsFine: false));
+
+    expect(find.text('Not enough Credits, 2.0370 available'), findsOneWidget);
+    expect(find.text('Add Credits to upload.'), findsOneWidget);
+    expect(
+      find.textContaining('Insufficient Credit balance', findRichText: true),
+      findsNothing,
+      reason: 'the Turbo card already says it',
+    );
+  });
+
   /// There is no upload to keep the tab open for.
   testWidgets('not while the wallet cannot pay', (tester) async {
     await pump(tester, info(method: UploadMethod.ar, arFine: false));

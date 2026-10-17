@@ -364,9 +364,36 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
       return notice;
     }
 
+    final bothShort = !widget.uploadMethodInfo.sufficentCreditsBalance &&
+        !widget.uploadMethodInfo.sufficientArBalance;
+
     if (widget.uploadMethodInfo.uploadMethod == UploadMethod.turbo &&
         !widget.uploadMethodInfo.sufficentCreditsBalance &&
         widget.uploadMethodInfo.sufficientArBalance) {
+      // The Turbo card already says the credits are short; what is left to
+      // offer is the way to add some.
+      if (widget.useOptionCards) {
+        return GestureDetector(
+          onTap: () {
+            showTurboTopupModal(context, onSuccess: () {
+              widget.onTurboTopupSucess();
+            });
+          },
+          child: ArDriveClickArea(
+            child: Text(
+              appLocalizationsOf(context).addCreditsToUpload,
+              style: ArDriveTypography.body
+                  .captionBold(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colors
+                        .themeErrorDefault,
+                  )
+                  .copyWith(decoration: TextDecoration.underline),
+            ),
+          ),
+        );
+      }
       return GestureDetector(
         onTap: () {
           showTurboTopupModal(context, onSuccess: () {
@@ -407,9 +434,14 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           ),
         ),
       );
-    } else if (widget.uploadMethodInfo.uploadMethod == UploadMethod.ar &&
-        !widget.uploadMethodInfo.sufficientArBalance) {
-      // The option cards already say it on the wallet card.
+    }
+
+    // With the option cards, the wallet card already says AR is short. When
+    // the credits are short too, the message below still has to say so,
+    // because it carries the only way forward: adding credits.
+    if (widget.uploadMethodInfo.uploadMethod == UploadMethod.ar &&
+        !widget.uploadMethodInfo.sufficientArBalance &&
+        !(widget.useOptionCards && bothShort)) {
       if (widget.useOptionCards) {
         return const SizedBox();
       }
@@ -419,8 +451,9 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
         ),
       );
-    } else if (!widget.uploadMethodInfo.sufficentCreditsBalance &&
-        !widget.uploadMethodInfo.sufficientArBalance) {
+    }
+
+    if (bothShort) {
       return GestureDetector(
         onTap: () {
           showTurboTopupModal(context, onSuccess: () {
