@@ -33,9 +33,7 @@ Widget _tableWithContent(BuildContext context) {
       context.knobs.number(label: 'Space 3 column', initialValue: 1).toInt();
 
   return ArDriveDataTable<File>(
-    maxItemsPerPage: 100,
     rowsPerPageText: 'Rows per page',
-    pageItemsDivisorFactor: 25,
     leading: context.knobs.boolean(label: 'With leading')
         ? (row) {
             return const Icon(Icons.folder_copy);

@@ -99,6 +99,44 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   bool checkboxEnabled = false;
   final _scrollController = ScrollController();
 
+  /// How far down the phone's list each folder visited was scrolled.
+  ///
+  /// The list is one widget for every folder, so without this a folder opened
+  /// from halfway down its parent opened halfway down too, and going back to
+  /// the parent started it from wherever the child had been left. A folder
+  /// now opens at its top, and the one gone back to opens where it was.
+  final _mobileScrollOffsets = <String, double>{};
+  String? _mobileFolderId;
+
+  void _onMobileFolderShown(String folderId) {
+    if (_mobileFolderId == folderId) {
+      return;
+    }
+
+    final previous = _mobileFolderId;
+    if (previous != null && _scrollController.hasClients) {
+      _mobileScrollOffsets[previous] = _scrollController.offset;
+    }
+    _mobileFolderId = folderId;
+
+    final target = _mobileScrollOffsets[folderId] ?? 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) {
+        return;
+      }
+      final position = _scrollController.position;
+      _scrollController.jumpTo(
+        target.clamp(position.minScrollExtent, position.maxScrollExtent),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1075,6 +1113,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     GlobalHideState globalHideState,
   ) {
     final isShowingHiddenFiles = globalHideState is ShowingHiddenItems;
+
+    _onMobileFolderShown(state.folderInView.folder.id);
 
     final List<ArDriveDataTableItem> filteredItems;
 
