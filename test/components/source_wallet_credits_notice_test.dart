@@ -11,7 +11,6 @@ import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -59,34 +58,31 @@ void main() {
     WidgetTester tester,
     UploadPaymentMethodInfo i, {
     Future<bool> Function()? onShare,
-    bool useDropdown = false,
+    bool useOptionCards = false,
   }) async {
     await tester.binding.setSurfaceSize(const Size(900, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
-      // The dropdown is built on flutter_portal and needs one above it.
-      Portal(
-        child: ArDriveTheme(
-          themeData: lightTheme(),
-          child: MaterialApp(
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: const [Locale('en', '')],
-            home: Scaffold(
-              body: SingleChildScrollView(
-                child: PaymentMethodSelector(
-                  uploadMethodInfo: i,
-                  onTurboTopupSucess: () {},
-                  onArSelect: () {},
-                  onTurboSelect: () {},
-                  onShareCredits: onShare,
-                  useDropdown: useDropdown,
-                ),
+      ArDriveTheme(
+        themeData: lightTheme(),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('en', '')],
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: PaymentMethodSelector(
+                uploadMethodInfo: i,
+                onTurboTopupSucess: () {},
+                onArSelect: () {},
+                onTurboSelect: () {},
+                onShareCredits: onShare,
+                useOptionCards: useOptionCards,
               ),
             ),
           ),
@@ -210,12 +206,12 @@ void main() {
     });
   });
 
-  /// The main upload sheet uses the dropdown. The notice used to live in the
-  /// radio row, which the dropdown does not have, so the reader this was built
+  /// The main upload sheet uses the option cards. The notice used to live in
+  /// the radio row, which the sheet does not have, so the reader this was built
   /// for - on the main upload sheet - saw no notice, no share button, and the
   /// same upsell as before. Every assertion below runs in both modes.
-  for (final dropdown in [false, true]) {
-    final mode = dropdown ? 'dropdown' : 'radio';
+  for (final cards in [false, true]) {
+    final mode = cards ? 'option card' : 'radio';
 
     group('in $mode mode, with credits on the sign-in wallet', () {
       testWidgets('says where they are, once', (tester) async {
@@ -223,7 +219,7 @@ void main() {
           tester,
           info(credits: credits),
           onShare: () async => true,
-          useDropdown: dropdown,
+          useOptionCards: cards,
         );
 
         expect(find.textContaining('Solana wallet'), findsOneWidget);
@@ -233,7 +229,7 @@ void main() {
       /// Both refusal branches used to end in a tappable top-up. The second is
       /// the exact message in the support ticket that started this.
       testWidgets('offers no top-up of any kind', (tester) async {
-        await pump(tester, info(credits: credits), useDropdown: dropdown);
+        await pump(tester, info(credits: credits), useOptionCards: cards);
 
         for (final upsell in [
           'Use Turbo Credits',
@@ -253,7 +249,7 @@ void main() {
         await pump(
           tester,
           info(credits: credits, arFine: true),
-          useDropdown: dropdown,
+          useOptionCards: cards,
         );
 
         expect(find.textContaining('Solana wallet'), findsOneWidget);
@@ -266,11 +262,18 @@ void main() {
         await pump(
           tester,
           info(credits: credits, method: UploadMethod.ar),
-          useDropdown: dropdown,
+          useOptionCards: cards,
         );
 
+        // The cards say it on the wallet card, so it is said once either way.
         expect(
-            find.text('Insufficient AR balance for purchase.'), findsOneWidget);
+          find.text(cards
+              ? 'Not enough AR, 0 available'
+              : 'Insufficient AR balance for purchase.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Insufficient AR'),
+            cards ? findsNothing : findsOneWidget);
         expect(find.textContaining('Solana wallet'), findsOneWidget);
       });
 
@@ -281,7 +284,7 @@ void main() {
           info(credits: credits, method: UploadMethod.ar, arFine: true),
           // Something that could sign, so a missing button means withheld.
           onShare: () async => true,
-          useDropdown: dropdown,
+          useOptionCards: cards,
         );
 
         expect(find.textContaining('Solana wallet'), findsNothing);
@@ -292,7 +295,7 @@ void main() {
     /// Somebody who genuinely has no credits anywhere keeps every top-up route.
     group('in $mode mode, with no credits anywhere', () {
       testWidgets('keeps "Add Credits" when Turbo is chosen', (tester) async {
-        await pump(tester, info(arFine: true), useDropdown: dropdown);
+        await pump(tester, info(arFine: true), useOptionCards: cards);
 
         expect(find.textContaining('Add Credits', findRichText: true),
             findsWidgets);
@@ -300,7 +303,7 @@ void main() {
 
       testWidgets('keeps "add Turbo credits" when both are short',
           (tester) async {
-        await pump(tester, info(), useDropdown: dropdown);
+        await pump(tester, info(), useOptionCards: cards);
 
         expect(
           find.textContaining('add Turbo credits', findRichText: true),

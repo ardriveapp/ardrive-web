@@ -1279,7 +1279,7 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                               params: state.params,
                             )),
                           child: UploadPaymentMethodView(
-                            useDropdown: true,
+                            useOptionCards: true,
                             onError: () {
                               context
                                   .read<UploadCubit>()
@@ -1377,7 +1377,7 @@ class _SelectPaymentMethodManifestUploadState
               ),
               const SizedBox(height: 16),
               UploadPaymentMethodView(
-                useDropdown: true,
+                useOptionCards: true,
                 onUploadMethodChanged: (method, methodInfo, canUpload) {
                   context
                       .read<UploadCubit>()
@@ -1967,7 +1967,7 @@ class _UploadReadyWidget extends StatelessWidget {
                 RepositoryProvider.value(
                   value: context.read<ArDriveUploadPreparationManager>(),
                   child: UploadPaymentMethodView(
-                    useDropdown: true,
+                    useOptionCards: true,
                     onError: () {
                       context.read<UploadCubit>().emitErrorFromPreparation();
                     },
