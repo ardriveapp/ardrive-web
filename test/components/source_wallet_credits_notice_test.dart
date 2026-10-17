@@ -301,13 +301,17 @@ void main() {
             findsWidgets);
       });
 
-      testWidgets('keeps "add Turbo credits" when both are short',
-          (tester) async {
+      testWidgets('keeps "Add Credits" when both are short', (tester) async {
         await pump(tester, info(), useOptionCards: cards);
 
         expect(
-          find.textContaining('add Turbo credits', findRichText: true),
+          find.textContaining('Add Credits to upload', findRichText: true),
           findsWidgets,
+        );
+        expect(
+          find.textContaining('or use AR', findRichText: true),
+          findsNothing,
+          reason: 'the wallet cannot pay either',
         );
       });
     });

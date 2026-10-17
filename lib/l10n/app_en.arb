@@ -725,6 +725,10 @@
       }
     }
   },
+  "addCreditsToUpload": "Add Credits to upload.",
+  "@addCreditsToUpload": {
+    "description": "Link under the upload payment options, when neither balance can pay, that opens the Turbo Credits top-up"
+  },
   "amountInAr": "{amount} AR",
   "@amountInAr": {
     "description": "What an upload costs in AR, on the wallet payment option",
@@ -788,6 +792,10 @@
         "example": "0.0012"
       }
     }
+  },
+  "notEnoughCreditsOrAr": "You don't have enough Credits or AR for this upload.",
+  "@notEnoughCreditsOrAr": {
+    "description": "Under the upload payment options when neither the Turbo Credits nor the wallet's AR can pay for the upload"
   },
   "paymentOptionTurboCredits": "Turbo Credits",
   "@paymentOptionTurboCredits": {

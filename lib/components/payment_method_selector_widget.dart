@@ -432,8 +432,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
             text: TextSpan(
               children: [
                 TextSpan(
-                  text:
-                      'Insufficient balance to pay for this upload. You can either',
+                  text: '${appLocalizationsOf(context).notEnoughCreditsOrAr} ',
                   style: ArDriveTypography.body.captionBold(
                     color: ArDriveTheme.of(context)
                         .themeData
@@ -442,7 +441,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                   ),
                 ),
                 TextSpan(
-                  text: ' add Turbo credits to your profile',
+                  text: appLocalizationsOf(context).addCreditsToUpload,
                   style: ArDriveTypography.body
                       .captionBold(
                         color: ArDriveTheme.of(context)
@@ -453,15 +452,6 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                       .copyWith(
                         decoration: TextDecoration.underline,
                       ),
-                ),
-                TextSpan(
-                  text: ' or use AR',
-                  style: ArDriveTypography.body.captionBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeErrorDefault,
-                  ),
                 ),
               ],
             ),
