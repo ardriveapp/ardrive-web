@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -388,6 +389,28 @@ abstract class SyncRepository {
 }
 
 class _SyncRepository implements SyncRepository {
+  static const _misdecodedNamesRepairedKey = 'misdecodedNamesRepaired_v1';
+
+  /// Runs [DriveDao.repairMisdecodedNames] the first time a sync starts on
+  /// this device, and never again. A failure is logged and tried again on the
+  /// next sync: it must never stop one.
+  Future<void> _repairMisdecodedNamesOnce() async {
+    try {
+      final store = await LocalKeyValueStore.getInstance();
+
+      if (store.getBool(_misdecodedNamesRepairedKey) == true) {
+        return;
+      }
+
+      final repaired = await _driveDao.repairMisdecodedNames();
+      logger.i('Repaired $repaired names damaged by misread snapshots');
+
+      await store.putBool(_misdecodedNamesRepairedKey, true);
+    } catch (e) {
+      logger.w('Could not repair names damaged by misread snapshots: $e');
+    }
+  }
+
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ConfigService _configService;
@@ -581,6 +604,11 @@ class _SyncRepository implements SyncRepository {
     _syncedEntityIdsByDrive.clear();
     _pendingSyncedEntityIdsByDrive.clear();
     _resetMetadataFetchCounts();
+
+    // Names a snapshot damaged before snapshots were read as UTF-8 - see
+    // [DriveDao.repairMisdecodedNames]. Once per device, before anything
+    // reads them.
+    await _repairMisdecodedNamesOnce();
 
     // Every emission of this sync, from the first to the last, goes out
     // through one sink, so the number it reports can only ever climb.
@@ -1310,6 +1338,11 @@ class _SyncRepository implements SyncRepository {
     _syncedEntityIdsByDrive.clear();
     _pendingSyncedEntityIdsByDrive.clear();
     _resetMetadataFetchCounts();
+
+    // Names a snapshot damaged before snapshots were read as UTF-8 - see
+    // [DriveDao.repairMisdecodedNames]. Once per device, before anything
+    // reads them.
+    await _repairMisdecodedNamesOnce();
 
     // Every emission of this sync, from the first to the last, goes out
     // through one sink, so the number it reports can only ever climb.

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/utils/snapshots/misdecoded_text.dart';
 import 'package:ardrive/utils/preview_byte_cache.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
@@ -1004,6 +1005,67 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         ),
     };
   }
+
+  /// Undoes names damaged by reading drive snapshots as Latin-1, in every
+  /// table that keeps one: drives, folders and files, and their revisions.
+  /// Returns how many it repaired.
+  ///
+  /// Snapshots were read a byte at a time until the fix beside this, so a
+  /// drive synced from one stored every name with an em dash, an accent or
+  /// any other character past ASCII in damaged form - "A â B" for "A — B".
+  /// Changes only what [repairMisdecodedUtf8] recognises as that damage, so a
+  /// name that was never damaged is left as it is; and the views watching
+  /// these tables update as the names change.
+  Future<int> repairMisdecodedNames() => transaction(() async {
+        // Read everything first and write it in one batch: on the web every
+        // statement is a round trip to the database worker
+        // (docs/WEB_DATABASE.md), and this runs before a sync shows any
+        // progress, so a drive of thousands of non-ASCII names must not cost
+        // thousands of awaited updates. The views watching these tables hear
+        // about it once per table rather than once per row.
+        final repairs = <({TableInfo table, int rowId, String name})>[];
+
+        for (final table in <TableInfo>[
+          db.drives,
+          db.driveRevisions,
+          db.folderEntries,
+          db.folderRevisions,
+          db.fileEntries,
+          db.fileRevisions,
+        ]) {
+          // Only names with something past printable ASCII can be damaged.
+          final rows = await customSelect(
+            'SELECT rowid AS r, name FROM ${table.actualTableName} '
+            "WHERE name GLOB '*[^ -~]*'",
+            readsFrom: {table},
+          ).get();
+
+          for (final row in rows) {
+            final stored = row.read<String>('name');
+            final fixed = repairMisdecodedUtf8(stored);
+
+            if (fixed != stored) {
+              repairs
+                  .add((table: table, rowId: row.read<int>('r'), name: fixed));
+            }
+          }
+        }
+
+        if (repairs.isNotEmpty) {
+          await batch((b) {
+            for (final repair in repairs) {
+              b.customStatement(
+                'UPDATE ${repair.table.actualTableName} '
+                'SET name = ? WHERE rowid = ?',
+                [repair.name, repair.rowId],
+                [TableUpdate.onTable(repair.table, kind: UpdateKind.update)],
+              );
+            }
+          });
+        }
+
+        return repairs.length;
+      });
 
   /// Whether any transaction is still waiting to be resolved as confirmed or
   /// failed.
