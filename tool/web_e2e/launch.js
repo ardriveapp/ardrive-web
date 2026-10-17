@@ -29,10 +29,6 @@
 // - wallet-paid failures come from chaos_gateway.py's failure rate (see
 //   there).
 //
-// DEVICE_SCALE=2 takes screenshots at twice the resolution, for reading
-// small text; click coordinates stay the same. Don't change the scale with
-// CDP while the app runs: Flutter's layout breaks until a reload.
-//
 // FAKE_AR_BALANCE=<winston> answers wallet balance lookups with that amount,
 // so the app allows an AR-paid upload the test wallet can't afford. Only
 // with AR_UPLOADS=chaos or block, so nothing is ever really sent.
@@ -53,7 +49,6 @@ const CHAOS_URL = process.env.CHAOS_URL || 'http://127.0.0.1:8850';
 const TURBO_FREE_BYTES = Number(process.env.TURBO_FREE_BYTES || 107520);
 const TURBO_PAID = process.env.TURBO_PAID === '1';
 const FAKE_AR_BALANCE = process.env.FAKE_AR_BALANCE;
-const DEVICE_SCALE = Number(process.env.DEVICE_SCALE || 1);
 const DRY_RUN_GATEWAY = 'https://ar-io.dev';
 const AR_UPLOAD_PATHS = /^https?:\/\/[^/]+\/(tx|chunk|tx\/[^/]+\/status)$/;
 // The Turbo services that cost real money, read from the app's own config so
@@ -190,7 +185,6 @@ async function guardTurbo(route) {
     headless: true,
     executablePath: chromePath(),
     viewport: { width: 1440, height: 900 },
-    deviceScaleFactor: DEVICE_SCALE,
     args: ['--no-sandbox', `--remote-debugging-port=${CDP_PORT}`],
   });
 
@@ -239,6 +233,10 @@ async function guardTurbo(route) {
   page.on('pageerror', (e) => consoleLog.write(`${new Date().toISOString()} PAGEERROR ${e.message.slice(0, 400)}\n`));
   page.on('dialog', (d) => { log({ ev: 'dialog', type: d.type(), message: d.message() }); d.dismiss().catch(() => {}); });
 
+  // A start line in both logs, since they collect every run.
+  const start = `===== launch ${new Date().toISOString()} ${APP_URL} ar_uploads=${AR_UPLOADS}`;
+  log({ ev: 'launch', app: APP_URL, ar_uploads: AR_UPLOADS, turbo_paid: TURBO_PAID });
+  consoleLog.write(`${start}\n`);
   await page.goto(APP_URL);
   console.log(`READY ${APP_URL} cdp=${CDP_PORT} ar_uploads=${AR_UPLOADS} turbo_paid=${TURBO_PAID} dir=${E2E_DIR}`);
   console.log(`guarding Turbo ${[...TURBO_UPLOAD_ORIGINS, ...TURBO_PAYMENT_ORIGINS].join(' ')}`);

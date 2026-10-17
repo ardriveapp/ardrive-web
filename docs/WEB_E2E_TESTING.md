@@ -134,8 +134,17 @@ The app asks for the password each time the browser starts, so after a
 restart use `unlock`. Check the last screenshot,
 `~/.cache/ardrive-e2e/shots/login-4-done.png`: it should show the drive list.
 
-A new profile has synced nothing. Open *All drives* and choose
-**Sync All Drives** once (about two minutes) before opening a drive.
+A new profile has synced nothing. *All drives* shows a banner with a
+**Sync All Drives** button: use it once (about two minutes) before opening a
+drive.
+
+**Test drives.** Open them by double-clicking their row in *All drives*.
+- **New Test Drive** (public): use it for anything public-only, such as
+  thumbnails, manifests, or converting a file to a manifest.
+- **Private Drive Test** (private): for private uploads. The example link
+  below points into it.
+- **The three `UAT-TESTONLY-DELETEME` drives**: also fine to use, but they
+  share a name, so check which one opened.
 
 ### 4. Drive the app
 
@@ -156,23 +165,29 @@ decide the next step.
 - **Choosing files.** `queueFiles([paths])` sets what the next file chooser
   receives. Use it before the click that opens the chooser. Files of any
   size work.
-- **Small text.** Screenshots are 1440×900. To read small text, start
-  `DEVICE_SCALE=2 node launch.js` for double-resolution screenshots; click
-  coordinates don't change. Don't change the scale with CDP while the app is
-  open: Flutter's layout breaks until you reload and log in again.
+- **Small text.** Screenshots are 1440×900. To read small text, crop: in a
+  step, `await page.screenshot({ path, clip: { x, y, width, height } })`.
+  Don't change the device scale: Flutter's layout breaks until a reload, and
+  each `step.js` connection resets it anyway.
+- **Hover.** `step.js` moves the mouse to a corner before its screenshot. A
+  hovered primary button looks like a disabled one.
+- **Phone width.** `await page.setViewportSize({ width: 390, height: 844 })`
+  switches the app to its phone layout, and it lasts across steps. Set
+  1440×900 back afterwards.
 - **Waiting.** `await wait(ms)` pauses. The upload dialog needs about 15 s to
   price a small file and 30–45 s for files of 50 MB and up.
 
-Example: open the test drive and start an upload.
+Example: open Private Drive Test and start an upload.
 
 ```bash
 node step.js open-drive "await page.evaluate(() => { location.hash = '#/drives/7cea4056-3cd0-47ab-85f6-529fcfbe4c53/folders/884d1508-c9ec-463f-8519-679564aa8498'; }); await wait(8000);"
 node step.js upload-dialog "queueFiles(['$HOME/.cache/ardrive-e2e/files/e2e-free-50k.bin']); await page.mouse.click(120, 132); await wait(1500); await page.mouse.move(290, 137); await wait(300); await page.mouse.click(290, 137); await wait(15000);"
 ```
 
-These positions held in October 2026, for a one-file upload. Confirm them on
-a screenshot, since layout changes and content move them. With two files,
-Upload sits at about y=708, for example.
+These positions held in October 2026. Only the first two and the last are
+stable. The dialog rows are a rough guide: the dialog fits its content, so
+its buttons and payment rows move with the number of files, the options
+shown, and warnings. Always read them off the latest screenshot.
 
 | What | x, y |
 |---|---|
@@ -197,6 +212,8 @@ Upload sits at about y=708, for example.
   - `INJECTED`: a failure made on purpose (see *Failing on purpose*)
   - `post`: any other POST
   - `filechooser`: a file chooser was answered
+  - `launch`: the start of a run. Both logs collect every run, so read from
+    the last `launch` line (`===== launch` in `console.log`)
 - **`python3 -I chaos_report.py ~/.cache/ardrive-e2e/chaos-state.json`**
   checks every AR transaction the app sent: was every byte stored, was every
   proof valid. It prints `OK`, `PROBLEMS`, or `NOTHING STORED` when no
@@ -233,6 +250,15 @@ preview it goes to testnet, shown as `post` lines to
 105 KiB on Turbo Credits. The app shows *Problem with Upload*, and `net.log`
 shows `BLOCKED`. The small metadata item may already have gone through, which
 leaves a failed entry for that file in the drive.
+
+**Checking thumbnails were made.** Count the upload POSTs in `net.log`
+(`turbo` or `turbo-testnet`): an image with thumbnails makes three (data,
+thumbnail, metadata), and without makes two.
+
+**Manifests.** Make one with New → Advanced → New Manifest (free on a
+preview). Uploading into a folder that has one opens the *Update Manifest(s)*
+panel beside the dialog. It closes with "Close «" in the header, and Options
+→ Update manifests opens it again. The phone layout has no panel.
 
 **Payment choice on a preview.** Testnet Turbo makes files up to 5 MiB free,
 so the payment cards, and with them wallet-paid upload, only appear for
@@ -320,6 +346,10 @@ failed were never retried (October 2026). The checklist grows from real
 failures, not guesses.
 
 ## Known quirks
+
+- **On a preview, uploads stay pending.** Testnet data never reaches the
+  gateways the app reads from, so previews and thumbnails of files uploaded
+  there 404, with a `PAGEERROR` in the console. That's not a bug.
 
 - **Deep link to an unsynced drive.** On a new profile, a link straight to a
   drive that hasn't been synced opens a different drive (the first in the

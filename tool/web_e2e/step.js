@@ -55,6 +55,10 @@ const { E2E_DIR, CDP_PORT, ensureDirs } = require('./config');
     failed = true;
     console.log('STEP ERROR', e.message);
   }
+  // Off every control, so the screenshot shows no hover state: a hovered
+  // primary button looks like a disabled one.
+  await page.mouse.move(1439, 899);
+  await page.waitForTimeout(300);
   await shot(name);
   console.log('SHOT', `${E2E_DIR}/shots/${name}.png`);
   process.exit(failed ? 1 : 0);
