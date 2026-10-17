@@ -153,6 +153,11 @@ class _ArDriveDataTableState<T extends IndexedItem>
   T? _selectedItem;
   List<TableColumn> _columns = [];
 
+  /// A copy of the columns the caller last passed. A copy, because a caller
+  /// that changes its list in place passes the same list again, and the old
+  /// widget's list would already hold the change.
+  List<TableColumn> _callerColumns = [];
+
   late final ScrollController _scrollController;
 
   /// A row [ArDriveDataTable.revealRow] opened on, until it is scrolled into
@@ -236,6 +241,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
     HardwareKeyboard.instance.addHandler(_handleSelectAllShortcut);
 
     _columns = List.of(widget.columns);
+    _callerColumns = List.of(widget.columns);
   }
 
   // These handlers are global, so without this they outlived the table: the
@@ -464,8 +470,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
     // Only a change in what the caller passes counts: a column the reader
     // hid from the table's own menu stays hidden for a caller that does not
     // pass it back.
-    if (!_sameColumns(widget.columns, oldWidget.columns)) {
+    if (!_sameColumns(widget.columns, _callerColumns)) {
       _columns = List.of(widget.columns);
+      _callerColumns = List.of(widget.columns);
     }
 
     if (widget.rowsPerPage != oldWidget.rowsPerPage &&

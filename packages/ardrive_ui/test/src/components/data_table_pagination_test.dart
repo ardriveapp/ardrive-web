@@ -73,6 +73,7 @@ void main() {
       int? initialPage,
       _Row? revealRow,
       bool? sizeColumnVisible,
+      List<TableColumn>? columns,
       Key? tableKey,
     }) async {
       tester.view.physicalSize = Size(width, height);
@@ -90,16 +91,17 @@ void main() {
               child: Scaffold(
                 body: ArDriveDataTable<_Row>(
                   key: tableKey,
-                  columns: [
-                    TableColumn('Name', 1, index: 0),
-                    if (sizeColumnVisible != null)
-                      TableColumn(
-                        'Size',
-                        1,
-                        index: 1,
-                        isVisible: sizeColumnVisible,
-                      ),
-                  ],
+                  columns: columns ??
+                      [
+                        TableColumn('Name', 1, index: 0),
+                        if (sizeColumnVisible != null)
+                          TableColumn(
+                            'Size',
+                            1,
+                            index: 1,
+                            isVisible: sizeColumnVisible,
+                          ),
+                      ],
                   rows: _rows(rows),
                   buildRow: (row) => TableRowWidget([
                     Text(row.name),
@@ -301,6 +303,30 @@ void main() {
       expect(find.text('size 3'), findsNothing);
 
       await pumpTable(tester, rows: 10, sizeColumnVisible: true);
+      expect(find.text('size 3'), findsNothing);
+    });
+
+    testWidgets('follows a caller that changes its column list in place',
+        (tester) async {
+      final columns = [
+        TableColumn('Name', 1, index: 0),
+        TableColumn('Size', 1, index: 1),
+      ];
+      await pumpTable(
+        tester,
+        rows: 10,
+        sizeColumnVisible: true,
+        columns: columns,
+      );
+      expect(find.text('size 3'), findsOneWidget);
+
+      columns[1] = TableColumn('Size', 1, index: 1, isVisible: false);
+      await pumpTable(
+        tester,
+        rows: 10,
+        sizeColumnVisible: true,
+        columns: columns,
+      );
       expect(find.text('size 3'), findsNothing);
     });
 
