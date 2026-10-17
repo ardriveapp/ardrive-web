@@ -10,9 +10,12 @@ StreamSubscription<html.Event>? _beforeUnload;
 void holdLeavePageGuard(Object holder) {
   _holders.add(holder);
   _beforeUnload ??= html.window.onBeforeUnload.listen((event) {
-    // Both are needed for every browser to ask; the text is not shown.
+    // Both are needed for every browser to ask. Browsers that go by
+    // returnValue only ask when it is not empty; none of them show the text.
     event.preventDefault();
-    if (event is html.BeforeUnloadEvent) event.returnValue = '';
+    if (event is html.BeforeUnloadEvent) {
+      event.returnValue = 'Your upload is still in progress.';
+    }
   });
 }
 
