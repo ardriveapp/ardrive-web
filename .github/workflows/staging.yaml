@@ -82,14 +82,37 @@ jobs:
         with:
           persist-credentials: false
 
+      # The concurrency group orders runs by when they were queued, not by
+      # commit, so a re-run of an older dev run would still publish its old
+      # build over a newer one. Publish only the commit dev points at now.
+      # Manual runs on other refs are left alone: deploying one is their point.
+      - name: Check this is still the dev head
+        id: fresh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/dev ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          head=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/dev" --jq .object.sha)
+          if [ "$head" = "$GITHUB_SHA" ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Not publishing $GITHUB_SHA: dev is at $head, which deploys in its own run."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Download the built web app
+        if: steps.fresh.outputs.publish == 'true'
         uses: actions/download-artifact@v4
         with:
           name: web-build
           path: build/web
 
       # Deploy to github pages
-      - uses: JamesIves/github-pages-deploy-action@4.1.1
+      - if: steps.fresh.outputs.publish == 'true'
+        uses: JamesIves/github-pages-deploy-action@4.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: gh-pages
