@@ -119,29 +119,43 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
             color: colors.themeFgMuted,
           ),
         ),
-        const SizedBox(height: 12),
-        if (turboPossible) ...[
-          _PaymentOptionCard(
-            title: l10n.paymentOptionTurboCredits,
-            balance: turboBalance,
-            isShort: !info.sufficentCreditsBalance,
-            cost: l10n.amountInCredits(
-                convertWinstonToCostString(info.costEstimateTurbo!.totalCost)),
-            isSelected: _selectedMethod == UploadMethod.turbo,
-            onTap: () => select(UploadMethod.turbo),
+        const SizedBox(height: 8),
+        // One bordered group, a row per way to pay: the same choice as two
+        // separate cards, in about two thirds of the height.
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colors.themeBorderDefault),
           ),
-          const SizedBox(height: 8),
-        ],
-        _PaymentOptionCard(
-          title: l10n.paymentOptionWallet,
-          balance: info.sufficientArBalance
-              ? l10n.arAvailable(info.arBalance)
-              : l10n.notEnoughAr(info.arBalance),
-          isShort: !info.sufficientArBalance,
-          cost: l10n.amountInAr(
-              convertWinstonToCostString(info.costEstimateAr.totalCost)),
-          isSelected: _selectedMethod == UploadMethod.ar,
-          onTap: () => select(UploadMethod.ar),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (turboPossible) ...[
+                _PaymentOptionCard(
+                  title: l10n.paymentOptionTurboCredits,
+                  balance: turboBalance,
+                  isShort: !info.sufficentCreditsBalance,
+                  cost: l10n.amountInCredits(convertWinstonToCostString(
+                      info.costEstimateTurbo!.totalCost)),
+                  isSelected: _selectedMethod == UploadMethod.turbo,
+                  onTap: () => select(UploadMethod.turbo),
+                ),
+                Divider(height: 1, color: colors.themeBorderDefault),
+              ],
+              _PaymentOptionCard(
+                title: l10n.paymentOptionWallet,
+                balance: info.sufficientArBalance
+                    ? l10n.arAvailable(info.arBalance)
+                    : l10n.notEnoughAr(info.arBalance),
+                isShort: !info.sufficientArBalance,
+                cost: l10n.amountInAr(
+                    convertWinstonToCostString(info.costEstimateAr.totalCost)),
+                isSelected: _selectedMethod == UploadMethod.ar,
+                onTap: () => select(UploadMethod.ar),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -655,8 +669,8 @@ class _SourceWalletCreditsNoticeState
   }
 }
 
-/// One way to pay, as the Turbo top-up draws it: a radio dot, the method, what
-/// is left, and on the right what this upload costs with it.
+/// One way to pay, a row in the group: a radio dot, the method, what is left,
+/// and on the right what this upload costs with it.
 class _PaymentOptionCard extends StatelessWidget {
   const _PaymentOptionCard({
     required this.title,
@@ -689,28 +703,19 @@ class _PaymentOptionCard extends StatelessWidget {
       button: true,
       inMutuallyExclusiveGroup: true,
       selected: isSelected,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: isSelected ? colors.themeBgSubtle : colors.themeBgSurface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? colors.themeFgMuted : colors.themeBorderDefault,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
+      // The chosen row is lifted to the surface colour; the other stays the
+      // dialog's own.
+      child: Material(
+        color: isSelected ? colors.themeBgSurface : Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
           child: Padding(
-            // One pixel less inside the thicker selected border, so the
-            // contents do not shift when the selection moves.
-            padding: EdgeInsets.all(isSelected ? 13 : 14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Row(
               children: [
                 Container(
-                  width: 20,
-                  height: 20,
+                  width: 18,
+                  height: 18,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -723,8 +728,8 @@ class _PaymentOptionCard extends StatelessWidget {
                   child: isSelected
                       ? Center(
                           child: Container(
-                            width: 10,
-                            height: 10,
+                            width: 8,
+                            height: 8,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: colors.themeFgDefault,
