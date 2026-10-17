@@ -854,28 +854,16 @@ class ArDriveStandardModalNew extends StatelessWidget {
               typography: typography,
             ),
           ),
+        // Sized and styled like the other two. It had no width limit, so it
+        // wrapped onto a full-width row of its own, in a smaller font.
         if (actions.length > 2)
           Padding(
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButtonNew(
               typography: typography,
               variant: ButtonVariant.primary,
-              maxHeight: 40,
-              fontStyle: ArDriveTypography.body
-                  .buttonNormalRegular(
-                    color: actions.length > 2
-                        ? ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault
-                        : ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeAccentSubtle,
-                  )
-                  .copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              maxHeight: actions[2].customHeight ?? 40,
+              maxWidth: actions[2].customWidth ?? 110,
               isDisabled: !actions[2].isEnable,
               text: actions[2].title,
               onPressed: actions[2].action,
