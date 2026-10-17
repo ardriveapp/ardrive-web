@@ -2442,9 +2442,48 @@
   "@rootFolderTxID": {
     "description": "The transaction ID of the Root Folder entity"
   },
-  "rowsPerPage": "Rows Per Page",
+  "rowsPerPage": "Rows per page",
   "@rowsPerPage": {
     "description": "How many rows per page to use"
+  },
+  "tableNextPage": "Next page",
+  "@tableNextPage": {
+    "description": "Accessible name of the file table's next page button"
+  },
+  "tablePageNumber": "Page {page}",
+  "@tablePageNumber": {
+    "description": "Accessible name of a page button in the file table's pager, e.g. 'Page 3'",
+    "placeholders": {
+      "page": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "tablePageRange": "{first}-{last} of {total}",
+  "@tablePageRange": {
+    "description": "The rows on screen in the file table's footer, e.g. '26-50 of 312'",
+    "placeholders": {
+      "first": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "26"
+      },
+      "last": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "50"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "312"
+      }
+    }
+  },
+  "tablePreviousPage": "Previous page",
+  "@tablePreviousPage": {
+    "description": "Accessible name of the file table's previous page button"
   },
   "secondsFromForeverEmphasized": "SECONDS FROM FOREVER",
   "@secondsFromForeverEmphasized": {

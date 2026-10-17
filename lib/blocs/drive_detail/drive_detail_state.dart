@@ -14,7 +14,12 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final bool driveIsEmpty;
   final bool multiselect;
   final bool hasFoldersSelected;
-  final int? selectedPage;
+
+  /// Whether the table, when next built, opens on the page holding
+  /// [selectedItem] rather than the page last seen in this folder. Set when a
+  /// file is picked out from elsewhere, such as search; cleared once the table
+  /// has shown it.
+  final bool revealSelectedItem;
 
   final FolderWithContents folderInView;
 
@@ -60,7 +65,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.columnVisibility,
     this.forceRebuildKey,
     required this.pathSegments,
-    this.selectedPage,
+    this.revealSelectedItem = false,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -81,10 +86,10 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     List<ArDriveDataTableItem>? currentFolderContents,
     Key? forceRebuildKey,
     List<BreadCrumbRowInfo>? pathSegments,
-    int? selectedPage,
+    bool? revealSelectedItem,
   }) =>
       DriveDetailLoadSuccess(
-        selectedPage: selectedPage ?? this.selectedPage,
+        revealSelectedItem: revealSelectedItem ?? this.revealSelectedItem,
         columnVisibility: columnVisibility,
         forceRebuildKey: forceRebuildKey ?? this.forceRebuildKey,
         selectedItem: selectedItem ?? this.selectedItem,
@@ -126,7 +131,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         multiselect,
         forceRebuildKey,
         selectedItem,
-        selectedPage,
+        revealSelectedItem,
       ];
   SelectedItem? maybeSelectedItem() =>
       selectedItems.isNotEmpty ? selectedItems.first : null;

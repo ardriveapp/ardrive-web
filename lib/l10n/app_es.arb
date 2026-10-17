@@ -1739,6 +1739,10 @@
   "@rowsPerPage": {
     "description": "How many rows per page to use"
   },
+  "tableNextPage": "Página siguiente",
+  "tablePageNumber": "Página {page}",
+  "tablePageRange": "{first}-{last} de {total}",
+  "tablePreviousPage": "Página anterior",
   "secondsFromForeverEmphasized": "A SEGUNDOS DE LA ETERNIDAD",
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"

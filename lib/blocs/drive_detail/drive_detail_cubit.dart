@@ -83,6 +83,27 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   int _folderLoadGeneration = 0;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
+  /// The page sizes the file table offers.
+  static const rowsPerPageOptions = [25, 50, 100];
+  static const _rowsPerPageKey = 'drive_detail_rows_per_page';
+
+  int _rowsPerPage = rowsPerPageOptions.first;
+
+  /// The first row on screen in each folder visited this session, and how far
+  /// down its page the list was scrolled.
+  ///
+  /// The table is rebuilt whenever its folder is left and whenever something
+  /// refreshes it in place - a rename, a hide, an upload, a sync finishing -
+  /// and a new table starts on page 1 at the top. Kept here, so the reader is
+  /// put back where they were rather than sent to the start each time. A row
+  /// rather than a page, so a change of page size keeps the same rows in view.
+  final _firstRowByFolder = <String, int>{};
+  final _scrollOffsetByFolder = <String, double>{};
+
+  /// Set when a folder is opened to show one item in it, such as a search
+  /// result: the next state asks the table to open on that item's page.
+  bool _revealSelectedItem = false;
+
   List<ArDriveDataTableItem> _selectedItems = [];
   List<ArDriveDataTableItem> get selectedItems => _selectedItems;
 
@@ -501,6 +522,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // previous folder is stale from here on even when the drive is unchanged.
     final loadGeneration = ++_folderLoadGeneration;
 
+    // Whether [selectedItemId] has been found and shown. Once it has, later
+    // ticks of this folder leave the selection to the reader.
+    var revealedSelectedItem = false;
+
     // A new folder redraws immediately whatever the last one did: the throttle
     // exists to stop a folder flickering as it fills, not to delay one being
     // opened.
@@ -795,7 +820,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             isOwner: isDriveOwner(_auth, drive.ownerAddress),
           );
 
-          if (selectedItemId != null) {
+          // Only for the first draw of the folder: later ticks are the folder
+          // changing under the reader, who may have moved on from the item.
+          var revealSelectedItem = false;
+
+          if (selectedItemId != null && !revealedSelectedItem) {
             // `firstWhere` without `orElse` throws when it finds nothing, and
             // there are ordinary reasons for it to find nothing here: the file
             // was moved or deleted between the search and the tap, or hidden
@@ -804,6 +833,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             _selectedItem = currentFolderContents
                 .where((element) => element.id == selectedItemId)
                 .firstOrNull;
+
+            // Not found can mean not synced yet, so a later tick may still
+            // find it.
+            if (_selectedItem != null) {
+              revealedSelectedItem = true;
+              revealSelectedItem = true;
+              _revealSelectedItem = true;
+            }
           }
 
           final List<BreadCrumbRowInfo> pathSegments =
@@ -829,16 +866,21 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 folderInView: folderContents,
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,
-                rowsPerPage: availableRowsPerPage.first,
+                rowsPerPage: _rowsPerPage,
                 availableRowsPerPage: availableRowsPerPage,
                 currentFolderContents: currentFolderContents,
                 pathSegments: pathSegments,
                 driveIsEmpty: driveIsEmpty,
                 showSelectedItemDetails: _selectedItem != null,
+                revealSelectedItem: _revealSelectedItem,
+                // The table is kept when the folder is unchanged, so one
+                // already on screen has to be rebuilt to go to the item.
+                forceRebuildKey: revealSelectedItem ? UniqueKey() : null,
               ),
             );
           } else {
             final columnsVisibility = await getTableColumnVisibility();
+            _rowsPerPage = await _storedRowsPerPage();
 
             if (isClosed ||
                 driveId != _driveId ||
@@ -856,13 +898,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 folderInView: folderContents,
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,
-                rowsPerPage: availableRowsPerPage.first,
+                rowsPerPage: _rowsPerPage,
                 availableRowsPerPage: availableRowsPerPage,
                 driveIsEmpty: driveIsEmpty,
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,
                 showSelectedItemDetails: _selectedItem != null,
+                revealSelectedItem: _revealSelectedItem,
               ),
             );
           }
@@ -942,21 +985,79 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _selectedItem = item;
 
-    int? selectedPage;
-
     if (openSelectedPage) {
-      selectedPage =
-          state.currentFolderContents.indexOf(item) ~/ state.rowsPerPage;
+      _revealSelectedItem = true;
     }
 
     emit(
       state.copyWith(
         selectedItem: item,
         showSelectedItemDetails: true,
-        selectedPage: selectedPage,
-        forceRebuildKey: selectedPage != null ? UniqueKey() : null,
+        revealSelectedItem: openSelectedPage ? true : null,
+        forceRebuildKey: openSelectedPage ? UniqueKey() : null,
       ),
     );
+  }
+
+  /// The page the file table last showed in [folderId], if it has been
+  /// visited this session.
+  int? pageForFolder(String folderId) {
+    final firstRow = _firstRowByFolder[folderId];
+    return firstRow == null ? null : firstRow ~/ _rowsPerPage;
+  }
+
+  /// How far down that page the list was scrolled.
+  double? scrollOffsetForFolder(String folderId) =>
+      _scrollOffsetByFolder[folderId];
+
+  /// The file table moved to [page] in [folderId].
+  void rememberPage(String folderId, int page) {
+    final firstRow = page * _rowsPerPage;
+
+    if (_firstRowByFolder[folderId] != firstRow) {
+      _firstRowByFolder[folderId] = firstRow;
+      // A new page is shown from its top.
+      _scrollOffsetByFolder.remove(folderId);
+    }
+
+    // The table reports the page it opened on when asked to show an item, so
+    // this is also where that request is known to be done.
+    if (_revealSelectedItem) {
+      _revealSelectedItem = false;
+      final state = this.state;
+      if (state is DriveDetailLoadSuccess && !isClosed) {
+        emit(state.copyWith(revealSelectedItem: false));
+      }
+    }
+  }
+
+  void rememberScrollOffset(String folderId, double offset) {
+    _scrollOffsetByFolder[folderId] = offset;
+  }
+
+  /// A page size chosen in the file table, kept on this device.
+  Future<void> setRowsPerPage(int rowsPerPage) async {
+    if (rowsPerPage == _rowsPerPage) {
+      return;
+    }
+
+    _rowsPerPage = rowsPerPage;
+
+    final state = this.state;
+    if (state is DriveDetailLoadSuccess && !isClosed) {
+      emit(state.copyWith(rowsPerPage: rowsPerPage));
+    }
+
+    await (await _store()).putString(_rowsPerPageKey, '$rowsPerPage');
+  }
+
+  Future<int> _storedRowsPerPage() async {
+    final stored =
+        int.tryParse((await _store()).getString(_rowsPerPageKey) ?? '');
+
+    return rowsPerPageOptions.contains(stored)
+        ? stored!
+        : rowsPerPageOptions.first;
   }
 
   ArDriveDataTableItem? _selectedItem;
