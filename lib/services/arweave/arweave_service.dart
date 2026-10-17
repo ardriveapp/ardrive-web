@@ -1046,7 +1046,13 @@ class ArweaveService {
     return data.bodyBytes;
   }
 
-  // Gets the unique drive entity transactions for a particular user.
+  /// Gets the newest drive entity transaction for each of a user's drives.
+  ///
+  /// One transaction per Drive-Id, across every page. The query sorts
+  /// `HEIGHT_DESC`, but the gateway orders the transactions inside one block
+  /// however it likes, so taking the first one per drive could pick a rename
+  /// over the hide that followed it in the same block - and bring a hidden
+  /// drive back. See [_isNewerDriveEntityTx] for the rule.
   Future<List<TransactionCommonMixin>> getUniqueUserDriveEntityTxs(
     String userAddress, {
     int maxRetries = defaultMaxRetries,
@@ -1061,7 +1067,9 @@ class ArweaveService {
       return _cachedUserDriveTxs!;
     }
 
-    List<TransactionCommonMixin> drives = [];
+    // Insertion-ordered, and replacing a value keeps its key's place, so the
+    // list comes out in the order each drive was first seen.
+    final newestByDriveId = <String?, TransactionCommonMixin>{};
     String cursor = '';
 
     while (true) {
@@ -1084,22 +1092,13 @@ class ArweaveService {
 
       cursor = queryEdges.isNotEmpty ? queryEdges.last.cursor : '';
 
-      final drivesInThisPage = filteredEdges
-          .map((e) => e.node)
-          .fold<Map<String?, TransactionCommonMixin>>(
-            {},
-            (map, tx) {
-              final driveId = tx.getTag('Drive-Id');
-              if (!map.containsKey(driveId)) {
-                map[driveId] = tx;
-              }
-              return map;
-            },
-          )
-          .values
-          .toList();
-
-      drives.addAll(drivesInThisPage);
+      for (final tx in filteredEdges.map((e) => e.node)) {
+        final driveId = tx.getTag(EntityTag.driveId);
+        final seen = newestByDriveId[driveId];
+        if (seen == null || _isNewerDriveEntityTx(tx, than: seen)) {
+          newestByDriveId[driveId] = tx;
+        }
+      }
 
       final hasNextPage =
           userDriveEntitiesQuery.data!.transactions.pageInfo.hasNextPage;
@@ -1108,11 +1107,48 @@ class ArweaveService {
       }
     }
 
+    final drives = newestByDriveId.values.toList();
+
     // Cache the result — cleared by clearUserDriveTxsCache()
     _cachedUserDriveTxsAddress = userAddress;
     _cachedUserDriveTxs = drives;
 
     return drives;
+  }
+
+  /// Whether [tx] is a later revision of its drive than [than].
+  ///
+  /// A higher block wins, and a pending transaction, with no block yet, is
+  /// above every mined one. Inside one block, the later `Unix-Time` wins: the
+  /// same order sync applies in [createDriveEntityHistoryFromTransactions],
+  /// so the drive list and a full sync settle on the same revision. A tie on
+  /// both keeps [than], the one the gateway listed first.
+  static bool _isNewerDriveEntityTx(
+    TransactionCommonMixin tx, {
+    required TransactionCommonMixin than,
+  }) {
+    final height = tx.block?.height;
+    final otherHeight = than.block?.height;
+
+    if (height != otherHeight) {
+      if (height == null) return true;
+      if (otherHeight == null) return false;
+      return height > otherHeight;
+    }
+
+    return _commitTimeOrZero(tx) > _commitTimeOrZero(than);
+  }
+
+  /// A transaction's `Unix-Time` in milliseconds, or 0 when it has none or it
+  /// does not parse, so a malformed tag loses a tie rather than throwing out
+  /// of the drive list.
+  static int _commitTimeOrZero(TransactionCommonMixin tx) {
+    if (tx.getTag(EntityTag.unixTime) == null) return 0;
+    try {
+      return tx.getCommitTime().millisecondsSinceEpoch;
+    } on FormatException {
+      return 0;
+    }
   }
 
   Future<TransactionCommonMixin?> getFirstPrivateDriveTx(
@@ -1204,10 +1240,10 @@ class ArweaveService {
       final userAddress = await wallet.getAddress();
       final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
 
-      // Distinct drives, not transactions. `getUniqueUserDriveEntityTxs`
-      // dedupes per GQL page only, so a wallet whose drive entities span more
-      // than one page has more rows here than it has drives - and the count
-      // read "43 of 137" for twelve drives.
+      // Distinct drives, not transactions. `getUniqueUserDriveEntityTxs` now
+      // returns one transaction per drive, but it used to dedupe per GQL page
+      // only, and the count then read "43 of 137" for twelve drives. Counting
+      // ids keeps the figure right whatever the list holds.
       final distinctDriveIds = <String>{};
       for (final tx in driveTxs) {
         final id = tx.getTag(EntityTag.driveId);
@@ -1270,11 +1306,11 @@ class ArweaveService {
 
       /// Drives whose newest transaction was reached but could not be used.
       ///
-      /// `getUniqueUserDriveEntityTxs` dedupes **per page**, so the same
-      /// Drive-Id can appear on more than one page and the list is newest
-      /// first. Skipping the newest without recording it would let an older
-      /// revision take its place and write stale metadata - worse than the
-      /// drive simply being late.
+      /// `getUniqueUserDriveEntityTxs` returns only the newest transaction per
+      /// drive, so this guards the invariant rather than a case it produces:
+      /// if a drive's id ever appears twice, skipping the newest without
+      /// recording it would let an older revision take its place and write
+      /// stale metadata - worse than the drive simply being late.
       final handledDriveIds = <String?>{};
 
       // Distinct private drives, which is what the loop below will actually
