@@ -23,7 +23,8 @@ quirks. Read all of it before you start. Its rules beat anything here.
 - **A PR:** its preview. The URL is in the github-actions comment:
   `gh api repos/ardriveapp/ardrive-web/issues/<n>/comments --jq '.[] | select(.user.login=="github-actions[bot]") | .body'`.
   If the comment is missing or older than the PR's last commit, the preview
-  isn't ready: say so and stop.
+  isn't ready: say so and stop. A PR already merged into another branch can
+  still be tested, if its preview matches its last commit.
 - **`release`:** https://staging.ardrive.io.
 
 ## 3. Write the test plan before you test
@@ -63,7 +64,7 @@ Reply with:
 - **Spending:**
   - `BLOCKED` lines from `net.log`, if any;
   - `chaos_report.py` output, if any wallet-paid uploads ran;
-  - the wallet's AR balance before and after.
+  - the wallet's AR balance before and after (`node balance.js`).
 
 Send the key screenshots to the requester. Post on the PR only if asked to.
 

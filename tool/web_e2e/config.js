@@ -50,10 +50,19 @@ function credentials() {
   return { keyfile, password };
 }
 
+// The test wallet's address (public, not a secret): ARDRIVE_E2E_ADDRESS in
+// the credentials file or the environment.
+function address() {
+  if (process.env.ARDRIVE_E2E_ADDRESS) return process.env.ARDRIVE_E2E_ADDRESS;
+  if (!fs.existsSync(CREDENTIALS)) return null;
+  const m = fs.readFileSync(CREDENTIALS, 'utf8').match(/^\s*ARDRIVE_E2E_ADDRESS\s*=\s*['"]?([A-Za-z0-9_-]{43})['"]?\s*$/m);
+  return m ? m[1] : null;
+}
+
 // The keyfile's path alone, or null, for guards that must not fail when no
 // credentials are set up.
 function keyfilePath() {
   try { return credentials().keyfile; } catch (e) { return null; }
 }
 
-module.exports = { E2E_DIR, APP_URL, CDP_PORT, CREDENTIALS, ensureDirs, chromePath, credentials, keyfilePath };
+module.exports = { E2E_DIR, APP_URL, CDP_PORT, CREDENTIALS, ensureDirs, chromePath, credentials, keyfilePath, address };

@@ -7,7 +7,10 @@ launch.js sends the app's POST /tx, POST /chunk and GET /tx/{id}/status here
 (AR_UPLOADS=chaos). It records what it accepted in state.json;
 chaos_report.py summarises that.
 
-failure_rate (default 0) is the chance that a request misbehaves on purpose:
+failure_rate (default 0) is the chance that a request misbehaves on purpose.
+To change it without a restart (a restart loses everything recorded), write
+the new rate to <state.json>.rate; it is read on every request. 1.0 fails
+every request, for when a test needs a guaranteed failure:
 a 400 broadcast failure, a 502/504, a 20 s stall, a dropped connection, or
 (for POST /tx only) the header is stored but the client is told it failed.
 0.2 to 0.5 exercises the uploader's retries.
@@ -101,7 +104,13 @@ class H(BaseHTTPRequestHandler):
 
     def chaos(self, allow_ghost=False):
         """Returns a fault name to apply, or None."""
-        if random.random() >= RATE:
+        rate = RATE
+        try:
+            with open(STATE + '.rate') as f:
+                rate = float(f.read().strip())
+        except (OSError, ValueError):
+            pass
+        if random.random() >= rate:
             return None
         kinds = ['400', '502', '504', 'stall', 'drop']
         if allow_ghost:

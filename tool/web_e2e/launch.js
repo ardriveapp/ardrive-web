@@ -22,6 +22,17 @@
 //   after a few days. Their uploads and payments are not guarded.
 // A refused request is answered with a 503 and logged as BLOCKED.
 //
+// Failing on purpose, switched while running (no restart):
+// - while $E2E_DIR/fail-turbo exists, every Turbo upload POST (real or
+//   testnet) is answered with a 503, so the app's Turbo failure handling
+//   can be tested;
+// - wallet-paid failures come from chaos_gateway.py's failure rate (see
+//   there).
+//
+// DEVICE_SCALE=2 takes screenshots at twice the resolution, for reading
+// small text; click coordinates stay the same. Don't change the scale with
+// CDP while the app runs: Flutter's layout breaks until a reload.
+//
 // FAKE_AR_BALANCE=<winston> answers wallet balance lookups with that amount,
 // so the app allows an AR-paid upload the test wallet can't afford. Only
 // with AR_UPLOADS=chaos or block, so nothing is ever really sent.
@@ -42,6 +53,7 @@ const CHAOS_URL = process.env.CHAOS_URL || 'http://127.0.0.1:8850';
 const TURBO_FREE_BYTES = Number(process.env.TURBO_FREE_BYTES || 107520);
 const TURBO_PAID = process.env.TURBO_PAID === '1';
 const FAKE_AR_BALANCE = process.env.FAKE_AR_BALANCE;
+const DEVICE_SCALE = Number(process.env.DEVICE_SCALE || 1);
 const DRY_RUN_GATEWAY = 'https://ar-io.dev';
 const AR_UPLOAD_PATHS = /^https?:\/\/[^/]+\/(tx|chunk|tx\/[^/]+\/status)$/;
 // The Turbo services that cost real money, read from the app's own config so
@@ -70,6 +82,7 @@ const TURBO_UPLOAD_ORIGINS = guardedOrigins('defaultTurboUploadUrl');
 const TURBO_PAYMENT_ORIGINS = guardedOrigins('defaultTurboPaymentUrl');
 const TURBO_TESTNET_ORIGINS = [...testnetOrigins('defaultTurboUploadUrl'), ...testnetOrigins('defaultTurboPaymentUrl')];
 const TURBO_UPLOAD = originMatcher(TURBO_UPLOAD_ORIGINS);
+const TURBO_UPLOAD_ANY = originMatcher([...TURBO_UPLOAD_ORIGINS, ...testnetOrigins('defaultTurboUploadUrl')]);
 const TURBO_PAYMENT = originMatcher(TURBO_PAYMENT_ORIGINS);
 
 if (!['chaos', 'dryrun', 'block'].includes(AR_UPLOADS)) {
@@ -152,6 +165,15 @@ async function guardArUpload(route) {
 
 async function guardTurbo(route) {
   const req = route.request();
+  if (['POST', 'PUT'].includes(req.method()) && fs.existsSync(`${E2E_DIR}/fail-turbo`)) {
+    log({ ev: 'INJECTED', method: req.method(), url: req.url().slice(0, 160), why: 'fail-turbo is set' });
+    return route.fulfill({ status: 503, headers: cors, body: 'Service Unavailable (injected by e2e fail-turbo)' });
+  }
+  // Testnet Turbo is free: only the failure switch above applies to it.
+  if (!TURBO_UPLOAD.test(req.url())) {
+    if (req.method() === 'POST') log({ ev: 'turbo-testnet', path: new URL(req.url()).pathname.slice(0, 60) });
+    return route.continue();
+  }
   if (!['POST', 'PUT'].includes(req.method()) || TURBO_PAID) return route.continue();
   const urlPath = new URL(req.url()).pathname;
   if (urlPath.includes('/chunks/')) return refuse(route, 'multipart Turbo upload (too big to be free); set TURBO_PAID=1');
@@ -168,11 +190,12 @@ async function guardTurbo(route) {
     headless: true,
     executablePath: chromePath(),
     viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: DEVICE_SCALE,
     args: ['--no-sandbox', `--remote-debugging-port=${CDP_PORT}`],
   });
 
   await ctx.route(AR_UPLOAD_PATHS, failClosed(guardArUpload));
-  await ctx.route((url) => TURBO_UPLOAD.test(url.href), failClosed(guardTurbo));
+  await ctx.route((url) => TURBO_UPLOAD_ANY.test(url.href), failClosed(guardTurbo));
   await ctx.route((url) => TURBO_PAYMENT.test(url.href), (route) =>
     route.request().method() === 'GET' ? route.continue() : refuse(route, 'Turbo top-ups are never automated'));
   if (FAKE_AR_BALANCE) {
@@ -184,7 +207,7 @@ async function guardTurbo(route) {
 
   // Every other POST, for the record. Requests the guard handles are logged
   // by the guard, with where they really went.
-  const guarded = [AR_UPLOAD_PATHS, TURBO_UPLOAD, TURBO_PAYMENT];
+  const guarded = [AR_UPLOAD_PATHS, TURBO_UPLOAD_ANY, TURBO_PAYMENT];
   ctx.on('request', (req) => {
     if (req.method() !== 'POST' || guarded.some((re) => re.test(req.url()))) return;
     const u = new URL(req.url());

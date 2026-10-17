@@ -54,11 +54,13 @@ mkdir -p ~/.config/ardrive-e2e && chmod 700 ~/.config/ardrive-e2e
 cat > ~/.config/ardrive-e2e/env <<'EOF'
 ARDRIVE_E2E_KEYFILE=/absolute/path/to/the/test-wallet-keyfile.json
 ARDRIVE_E2E_PASSWORD=<the password>
+ARDRIVE_E2E_ADDRESS=<the wallet's 43-character address>
 EOF
 chmod 600 ~/.config/ardrive-e2e/env
 ```
 
-Environment variables of the same names override the file. `CREDENTIALS`
+The address isn't a secret. `balance.js` uses it, since the app only shows a
+shortened one. Environment variables of the same names override the file. `CREDENTIALS`
 points the scripts at a different file.
 
 ## Which build to test
@@ -154,6 +156,10 @@ decide the next step.
 - **Choosing files.** `queueFiles([paths])` sets what the next file chooser
   receives. Use it before the click that opens the chooser. Files of any
   size work.
+- **Small text.** Screenshots are 1440×900. To read small text, start
+  `DEVICE_SCALE=2 node launch.js` for double-resolution screenshots; click
+  coordinates don't change. Don't change the scale with CDP while the app is
+  open: Flutter's layout breaks until you reload and log in again.
 - **Waiting.** `await wait(ms)` pauses. The upload dialog needs about 15 s to
   price a small file and 30–45 s for files of 50 MB and up.
 
@@ -164,8 +170,9 @@ node step.js open-drive "await page.evaluate(() => { location.hash = '#/drives/7
 node step.js upload-dialog "queueFiles(['$HOME/.cache/ardrive-e2e/files/e2e-free-50k.bin']); await page.mouse.click(120, 132); await wait(1500); await page.mouse.move(290, 137); await wait(300); await page.mouse.click(290, 137); await wait(15000);"
 ```
 
-These positions held in October 2026. Confirm them on a screenshot, since
-layout changes move them:
+These positions held in October 2026, for a one-file upload. Confirm them on
+a screenshot, since layout changes and content move them. With two files,
+Upload sits at about y=708, for example.
 
 | What | x, y |
 |---|---|
@@ -184,18 +191,22 @@ layout changes move them:
   per other POST:
   - `chaos`: an AR request answered by the fake gateway
   - `dryrun`: an AR request sent to ar-io.dev in dry-run mode
-  - `turbo`: a free Turbo upload, with its size in bytes
+  - `turbo`: a free upload to real Turbo, with its size in bytes
+  - `turbo-testnet`: an upload to testnet Turbo (PR previews)
   - `BLOCKED`: something refused, with the reason
+  - `INJECTED`: a failure made on purpose (see *Failing on purpose*)
   - `post`: any other POST
   - `filechooser`: a file chooser was answered
 - **`python3 -I chaos_report.py ~/.cache/ardrive-e2e/chaos-state.json`**
   checks every AR transaction the app sent: was every byte stored, was every
-  proof valid. It prints `OK` or `PROBLEMS`.
+  proof valid. It prints `OK`, `PROBLEMS`, or `NOTHING STORED` when no
+  header reached the gateway. `NOTHING STORED` isn't a pass, unless the test
+  failed every header on purpose.
 - **`~/.cache/ardrive-e2e/console.log`** is the app's console output, for
   errors.
-- **The wallet's AR balance** should be unchanged after a run:
-  `curl https://arweave.net/wallet/<address>/balance`, using the address shown
-  on the profile button.
+- **The wallet's AR balance** should be unchanged after a run. Run
+  `node balance.js` before and after. It asks turbo-gateway.com, then
+  arweave.net, which rate-limits some connections.
 
 ### 6. Clean up
 
@@ -223,19 +234,33 @@ preview it goes to testnet, shown as `post` lines to
 shows `BLOCKED`. The small metadata item may already have gone through, which
 leaves a failed entry for that file in the drive.
 
+**Payment choice on a preview.** Testnet Turbo makes files up to 5 MiB free,
+so the payment cards, and with them wallet-paid upload, only appear for
+bigger files. Use 6 MB or more on a preview for any recipe below that needs
+them.
+
 **Wallet-paid upload.** Choose the *Wallet (AR)* card, then **Upload**.
 `net.log` shows `chaos` lines for `/tx` and `/chunk`, and `chaos_report.py`
 prints `OK`. Nothing reaches Arweave, so the file stays pending in the drive.
 
-**Uploads that keep failing and retrying.** Start the gateway with a failure
-rate, for example `python3 -I chaos_gateway.py 8850 <state> 0.3`. The gateway
-then randomly answers with errors, stalls and dropped connections. Re-Upload
-from the problem dialog until it finishes, then run `chaos_report.py`.
+**Failing on purpose.** Both switches work while everything runs:
+- **Wallet-paid failures.** Write a failure rate to the gateway's rate file,
+  for example `echo 0.3 > ~/.cache/ardrive-e2e/chaos-state.json.rate`. The
+  gateway then randomly answers with errors, stalls and dropped connections.
+  - Re-Upload from the problem dialog until it finishes, then run
+    `chaos_report.py`.
+  - `1.0` fails every request, for a guaranteed problem dialog; `0` stops.
+  - Don't restart the gateway to change the rate: a restart loses what it
+    has recorded.
+- **Turbo failures.** `touch ~/.cache/ardrive-e2e/fail-turbo` answers every
+  Turbo upload with an error, on real and testnet Turbo alike; delete the
+  file to stop. The metadata upload fails too, so the file may not appear in
+  the drive at all.
 
-**A file the test wallet can't afford.** Start
-`FAKE_AR_BALANCE=100000000000000 node launch.js` (100 AR, in winston) and
-upload through the fake gateway. This only works with `AR_UPLOADS=chaos` or
-`block`.
+**An upload bigger than the test wallet can pay for.** Start
+`FAKE_AR_BALANCE=100000000000000 node launch.js`. That's 100 AR in winston,
+reported as the wallet's balance, so the app lets the upload through to the
+fake gateway. This only works with `AR_UPLOADS=chaos` or `block`.
 
 **Against a real gateway, without mainnet.** ar-io.dev runs in dry-run mode:
 it accepts headers and chunks and forwards nothing to Arweave.
@@ -279,7 +304,7 @@ should see. Keep it short: it's the floor, not every case.
 | 4 | Create a folder in a test drive | It appears in the list |
 | 5 | Upload a file under 100 KiB with Turbo | The dialog says it's free; the file appears |
 | 6 | Upload a file over 105 KiB | The dialog shows both payment cards, each with its cost and balance. On Turbo the guard blocks it: *Problem with Upload*, a `BLOCKED` line |
-| 7 | Wallet-paid upload through the fake gateway at failure rate 0.3 | *Problem with Upload*; Re-Upload until it completes; `chaos_report.py` says OK. Closing with unfinished wallet-paid files asks to confirm |
+| 7 | Wallet-paid upload through the fake gateway, failure rate 0.3 (*Failing on purpose*) | *Problem with Upload*; Re-Upload until it completes; `chaos_report.py` says OK. Closing with unfinished wallet-paid files asks to confirm |
 | 8 | Upload a file the wallet can't afford (72 MB with the test wallet) | The wallet card says *Not enough AR*; Upload is disabled; no keep-tab-open warning |
 | 9 | Preview an image and a PDF, then download a file | The previews render; the download starts (`await page.waitForEvent('download')` in the step) |
 | 10 | Copy a file's share link and open it | The shared file page shows the file |
@@ -303,6 +328,8 @@ failures, not guesses.
 - **A file name the drive already has** brings up *A duplicate file found*
   (Cancel or Replace) before the upload dialog. Earlier test runs leave
   names behind, so read the screenshot before clicking Upload.
+- **`launch.js` reads which Turbo services are real** from the checkout it
+  runs in, not the build under test. Keep the checkout current with `dev`.
 - **Two launchers** can't share the profile. The second fails with
   `SingletonLock: File exists`. Stop the first.
 - **Accessibility on.** Turning on Flutter's accessibility mode changes what
