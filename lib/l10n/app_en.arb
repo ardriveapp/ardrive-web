@@ -174,6 +174,20 @@
   "@actionFailedTryAgain": {
     "description": "Generic failure message for metadata operations (rename, move, create, etc.)"
   },
+  "closeAnyway": "Close Anyway",
+  "@closeAnyway": {
+    "description": "Closes the upload problem dialog, leaving wallet-paid files unfinished"
+  },
+  "costCredits": "Cost: {credits} Credits",
+  "@costCredits": {
+    "description": "The total cost estimation of the upload quoted in Turbo Credits",
+    "placeholders": {
+      "credits": {
+        "type": "String",
+        "example": "0.0041"
+      }
+    }
+  },
   "freeAllowanceUsedUpTitle": "Free allowance used up",
   "@freeAllowanceUsedUpTitle": {
     "description": "Title of the dialog shown when a Turbo action is rejected because the free allowance is exhausted"
@@ -413,6 +427,26 @@
         "example": "Curious Cat"
       }
     }
+  },
+  "goBack": "Go Back",
+  "@goBack": {
+    "description": "Returns to the previous dialog"
+  },
+  "leaveFilesUnfinishedDescription": "You may already have been charged for these files. If you close now, they won't finish uploading, and you'd need to upload them again.",
+  "@leaveFilesUnfinishedDescription": {
+    "description": "Asks before closing the upload problem dialog with wallet-paid files unfinished"
+  },
+  "leaveFilesUnfinishedTitle": "Leave these files unfinished?",
+  "@leaveFilesUnfinishedTitle": {
+    "description": "Title of the confirmation before closing the upload problem dialog with wallet-paid files unfinished"
+  },
+  "reUpload": "Re-Upload",
+  "@reUpload": {
+    "description": "Uploads the files that did not finish again"
+  },
+  "replace": "Replace",
+  "@replace": {
+    "description": "Replaces an existing file with the one being uploaded"
   },
   "syncThisDrive": "Sync This Drive",
   "@syncThisDrive": {
@@ -690,6 +724,98 @@
         "example": "Photos"
       }
     }
+  },
+  "addCreditsToUpload": "Add Credits to upload.",
+  "@addCreditsToUpload": {
+    "description": "Link under the upload payment options, when neither balance can pay, that opens the Turbo Credits top-up"
+  },
+  "amountInAr": "{amount} AR",
+  "@amountInAr": {
+    "description": "What an upload costs in AR, on the wallet payment option",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "0.0079"
+      }
+    }
+  },
+  "amountInCredits": "{amount} Credits",
+  "@amountInCredits": {
+    "description": "What an upload costs in Turbo Credits, on the Turbo payment option",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "0.0041"
+      }
+    }
+  },
+  "arAvailable": "{balance} AR available",
+  "@arAvailable": {
+    "description": "The wallet balance, under the wallet payment option",
+    "placeholders": {
+      "balance": {
+        "type": "String",
+        "example": "1.0619"
+      }
+    }
+  },
+  "creditsAvailable": "{balance} Credits available",
+  "@creditsAvailable": {
+    "description": "The Turbo Credits balance, under the Turbo payment option",
+    "placeholders": {
+      "balance": {
+        "type": "String",
+        "example": "2.0370"
+      }
+    }
+  },
+  "noCreditsYet": "No credits yet",
+  "@noCreditsYet": {
+    "description": "Under the Turbo payment option when the account has no Turbo Credits"
+  },
+  "notEnoughAr": "Not enough AR, {balance} available",
+  "@notEnoughAr": {
+    "description": "Under the wallet payment option when the wallet cannot pay for the upload",
+    "placeholders": {
+      "balance": {
+        "type": "String",
+        "example": "0.0012"
+      }
+    }
+  },
+  "notEnoughCredits": "Not enough Credits, {balance} available",
+  "@notEnoughCredits": {
+    "description": "Under the Turbo payment option when the Turbo Credits cannot pay for the upload",
+    "placeholders": {
+      "balance": {
+        "type": "String",
+        "example": "0.0012"
+      }
+    }
+  },
+  "notEnoughCreditsOrAr": "You don't have enough Credits or AR for this upload.",
+  "@notEnoughCreditsOrAr": {
+    "description": "Under the upload payment options when neither the Turbo Credits nor the wallet's AR can pay for the upload"
+  },
+  "paymentOptionTurboCredits": "Turbo Credits",
+  "@paymentOptionTurboCredits": {
+    "description": "Upload payment option: pay with Turbo Credits"
+  },
+  "paymentOptionWallet": "Wallet (AR)",
+  "@paymentOptionWallet": {
+    "description": "Upload payment option: pay with AR from the wallet"
+  },
+  "uploadFailedPartial": "Some files didn't finish uploading. They'll show as failed in your drive. Select Re-Upload to try them again.",
+  "@uploadFailedPartial": {
+    "description": "Upload problem dialog text when some Turbo uploads did not finish"
+  },
+  "uploadProblemTitle": "Problem with Upload",
+  "@uploadProblemTitle": {
+    "description": "Title of the dialog listing files that did not finish uploading"
+  },
+  "warning": "Warning",
+  "@warning": {
+    "description": "Title of a warning dialog"
   },
   "yourDrives": "Your Drives",
   "@yourDrives": {
@@ -3565,6 +3691,22 @@
   "uploadFailed": "Upload Failed",
   "@uploadFailed": {
     "description": "Upload Failed dialog title"
+  },
+  "uploadWithWalletKeepTabOpen": "Keep this tab open until your upload finishes. If you close it early, you may be charged for files that don't upload.",
+  "@uploadWithWalletKeepTabOpen": {
+    "description": "Warning under the payment choice when paying for an upload from the wallet balance (AR). Paying this way charges before the files are sent, so closing the tab midway can cost money for nothing."
+  },
+  "uploadInProgressKeepTabOpen": "Keep this tab open until your upload finishes.",
+  "@uploadInProgressKeepTabOpen": {
+    "description": "Warning in the upload progress dialog while an upload paid from the wallet balance (AR) is running"
+  },
+  "uploadFailedWalletFiles": "Some files didn't finish uploading. Select Re-Upload to finish them.",
+  "@uploadFailedWalletFiles": {
+    "description": "Explanation in the upload problem dialog when files paid for from the wallet balance (AR) failed"
+  },
+  "uploadFailedWalletKeepTabOpen": "Keep this tab open. If you leave now, you won't be able to finish these files.",
+  "@uploadFailedWalletKeepTabOpen": {
+    "description": "Warning in the upload problem dialog when files paid for from the wallet balance (AR) failed and can still be re-uploaded from this tab only"
   },
   "uploadFiles": "Upload File(s)",
   "@uploadFiles": {
