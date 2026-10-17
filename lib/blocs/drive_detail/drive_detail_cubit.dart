@@ -68,6 +68,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// What was last drawn, so a tick that changes nothing can be recognised.
   FolderWithContents? _lastFolderContents;
 
+  /// The drive row last drawn, for the same reason. A rename or a hide
+  /// changes only this, and the folder contents arrive identical.
+  Drive? _lastDrive;
+
   /// The drive whose root revision this screen is waiting on, if any.
   ///
   /// Only a sync writing that drive can end the wait, so a sync that ends
@@ -507,6 +511,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _lastFolderRedraw = null;
     _droppedFolderRedraw = false;
     _lastFolderContents = null;
+    _lastDrive = null;
 
     if (isClosed) {
       return;
@@ -597,11 +602,25 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           // Those redraws are pure waste: they parse the same rows, rebuild
           // the same breadcrumb and emit the same list.
           //
-          // FolderWithContents is Equatable, so this is exact rather than a
-          // heuristic: skip only when nothing a reader could see has changed.
-          // Unlike the interval below it, this never delays anything - a tick
-          // that carries a real change is never the one dropped here.
+          // FolderWithContents is Equatable and Drive is a Drift data class,
+          // so this is exact rather than a heuristic: skip only when neither
+          // has changed at all. Unlike the interval below it, this never
+          // delays anything - a tick that carries a real change is never the
+          // one dropped here.
+          //
+          // The drive is compared as well as the contents. Rename Drive writes
+          // only the drive row, so comparing contents alone dropped the one
+          // tick carrying the new name, and the breadcrumb kept the old one.
+          //
+          // The cost is a redraw for drive-row writes nobody sees: the
+          // watermark at the end of each drive's sync, and, for a private
+          // drive, the key re-encrypted with a fresh nonce when
+          // `updateUserDrives` runs at the start of a sync. A few per sync,
+          // not one per batch. Comparing only the fields this page shows
+          // would save them, at the price of a list to keep in step with the
+          // page.
           if (_lastFolderContents == folderContents &&
+              _lastDrive == drive &&
               this.state is DriveDetailLoadSuccess) {
             return;
           }
@@ -667,6 +686,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           // matched what had been recorded and was skipped as a no-op. The
           // file did not appear until something else changed the folder.
           _lastFolderContents = folderContents;
+          _lastDrive = drive;
 
           final state = this.state is DriveDetailLoadSuccess
               ? this.state as DriveDetailLoadSuccess

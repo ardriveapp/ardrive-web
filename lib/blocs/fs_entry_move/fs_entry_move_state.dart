@@ -50,11 +50,17 @@ class FsEntryMoveNameConflict extends FsEntryMoveState {
   final List<ArDriveDataTableItem> conflictingItems;
   final FolderEntry folderInView;
 
+  /// The name to show for [folderInView]. For a drive's root folder this is
+  /// the drive's name: Rename Drive leaves the root folder's own name as it
+  /// was, so after a rename that name is the drive's old one.
+  final String destinationName;
+
   final List<ArDriveDataTableItem> allItems;
 
   const FsEntryMoveNameConflict({
     required this.conflictingItems,
     required this.folderInView,
+    required this.destinationName,
     required this.allItems,
   }) : super();
 
@@ -71,5 +77,5 @@ class FsEntryMoveNameConflict extends FsEntryMoveState {
       .toList();
 
   @override
-  List<Object> get props => [conflictingItems, folderInView];
+  List<Object> get props => [conflictingItems, folderInView, destinationName];
 }
