@@ -694,7 +694,7 @@ class ConfiguringLicenseScreen extends StatelessWidget {
       title = 'Next';
       customWidth = 160;
     } else {
-      title = appLocalizationsOf(context).nextEmphasized;
+      title = appLocalizationsOf(context).next;
     }
 
     return [
@@ -702,7 +702,7 @@ class ConfiguringLicenseScreen extends StatelessWidget {
         onPressed: () => {
           context.read<UploadCubit>().configuringLicenseBack(),
         },
-        text: appLocalizationsOf(context).backEmphasized,
+        text: appLocalizationsOf(context).back,
         variant: ButtonVariant.secondary,
         typography: typography,
         maxWidth: customWidth,
@@ -1256,7 +1256,7 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                     modalActions: [
                       ArDriveButtonNew(
                         onPressed: () => Navigator.of(context).pop(false),
-                        text: appLocalizationsOf(context).cancelEmphasized,
+                        text: appLocalizationsOf(context).cancel,
                         typography: typography,
                         maxWidth: 100,
                         maxHeight: 40,
@@ -1273,12 +1273,13 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                             context.read<ArDriveUploadPreparationManager>(),
                             context.read<ArDriveAuth>(),
                             context.read<PaymentService>(),
-                            CreditSharingService.fromConfig(context.read<ConfigService>()),
+                            CreditSharingService.fromConfig(
+                                context.read<ConfigService>()),
                           )..add(PrepareUploadPaymentMethod(
                               params: state.params,
                             )),
                           child: UploadPaymentMethodView(
-                            useDropdown: true,
+                            useOptionCards: true,
                             onError: () {
                               context
                                   .read<UploadCubit>()
@@ -1376,7 +1377,7 @@ class _SelectPaymentMethodManifestUploadState
               ),
               const SizedBox(height: 16),
               UploadPaymentMethodView(
-                useDropdown: true,
+                useOptionCards: true,
                 onUploadMethodChanged: (method, methodInfo, canUpload) {
                   context
                       .read<UploadCubit>()
@@ -1412,7 +1413,7 @@ class _SelectPaymentMethodManifestUploadState
               action: () {
                 context.read<UploadCubit>().cancelManifestsUpload();
               },
-              title: appLocalizationsOf(context).cancelEmphasized,
+              title: appLocalizationsOf(context).cancel,
             ),
             ModalAction(
               isEnable: _buttonEnabled,
@@ -1421,7 +1422,7 @@ class _SelectPaymentMethodManifestUploadState
                     .read<UploadCubit>()
                     .uploadManifests(widget.state.manifestModels);
               },
-              title: appLocalizationsOf(context).uploadEmphasized,
+              title: appLocalizationsOf(context).upload,
             ),
           ],
         ),
@@ -1507,11 +1508,11 @@ class _UploadFolderNameConflictWidget extends StatelessWidget {
         if (!state.areAllFilesConflicting)
           ModalAction(
             action: () => context.read<UploadCubit>().checkConflictingFiles(),
-            title: appLocalizationsOf(context).skipEmphasized,
+            title: appLocalizationsOf(context).skip,
           ),
         ModalAction(
           action: () => Navigator.of(context).pop(false),
-          title: appLocalizationsOf(context).cancelEmphasized,
+          title: appLocalizationsOf(context).cancel,
         ),
       ],
     );
@@ -1573,7 +1574,7 @@ class _UploadConflictWithFailedFilesWidget extends StatelessWidget {
           action: () => context
               .read<UploadCubit>()
               .checkConflictingFiles(checkFailedFiles: false),
-          title: appLocalizationsOf(context).skipEmphasized,
+          title: appLocalizationsOf(context).skip,
         ),
         ModalAction(
           action: () => context
@@ -1653,18 +1654,18 @@ class _UploadFileConflictWidget extends StatelessWidget {
                 .read<UploadCubit>()
                 .prepareUploadPlanAndCostEstimates(
                     uploadAction: UploadActions.skip),
-            title: appLocalizationsOf(context).skipEmphasized,
+            title: appLocalizationsOf(context).skip,
           ),
         ModalAction(
           action: () => Navigator.of(context).pop(false),
-          title: appLocalizationsOf(context).cancelEmphasized,
+          title: appLocalizationsOf(context).cancel,
         ),
         ModalAction(
           action: () => context
               .read<UploadCubit>()
               .prepareUploadPlanAndCostEstimates(
                   uploadAction: UploadActions.replace),
-          title: appLocalizationsOf(context).replaceEmphasized,
+          title: appLocalizationsOf(context).replace,
         ),
       ],
     );
@@ -1712,14 +1713,14 @@ class _UploadFileTooLargeWidget extends StatelessWidget {
       actions: [
         ModalAction(
           action: () => Navigator.of(context).pop(false),
-          title: appLocalizationsOf(context).cancelEmphasized,
+          title: appLocalizationsOf(context).cancel,
         ),
         if (state.hasFilesToUpload)
           ModalAction(
             action: () => context
                 .read<UploadCubit>()
                 .skipLargeFilesAndCheckForConflicts(),
-            title: appLocalizationsOf(context).skipEmphasized,
+            title: appLocalizationsOf(context).skip,
           ),
       ],
     );
@@ -1807,7 +1808,7 @@ class _UploadReadyWidget extends StatelessWidget {
             modalActions: [
               ArDriveButtonNew(
                 onPressed: () => Navigator.of(context).pop(false),
-                text: appLocalizationsOf(context).cancelEmphasized,
+                text: appLocalizationsOf(context).cancel,
                 typography: typography,
                 maxWidth: 100,
                 maxHeight: 40,
@@ -1966,7 +1967,7 @@ class _UploadReadyWidget extends StatelessWidget {
                 RepositoryProvider.value(
                   value: context.read<ArDriveUploadPreparationManager>(),
                   child: UploadPaymentMethodView(
-                    useDropdown: true,
+                    useOptionCards: true,
                     onError: () {
                       context.read<UploadCubit>().emitErrorFromPreparation();
                     },
@@ -2071,7 +2072,7 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
           onPressed: () => {
             context.read<UploadCubit>().reviewBack(),
           },
-          text: appLocalizationsOf(context).backEmphasized,
+          text: appLocalizationsOf(context).back,
           typography: typography,
           maxWidth: 100,
           maxHeight: 40,
@@ -2081,7 +2082,7 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
           onPressed: () {
             context.read<UploadCubit>().reviewUpload();
           },
-          text: appLocalizationsOf(context).uploadEmphasized,
+          text: appLocalizationsOf(context).upload,
           typography: typography,
           maxWidth: 100,
           maxHeight: 40,
@@ -2224,7 +2225,7 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
           onPressed: () => {
             context.read<UploadCubit>().reviewBack(),
           },
-          text: appLocalizationsOf(context).backEmphasized,
+          text: appLocalizationsOf(context).back,
           typography: typography,
           maxWidth: 100,
           maxHeight: 40,
@@ -2234,7 +2235,7 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
           onPressed: () {
             context.read<UploadCubit>().reviewUpload();
           },
-          text: appLocalizationsOf(context).uploadEmphasized,
+          text: appLocalizationsOf(context).upload,
           typography: typography,
           maxWidth: 100,
           maxHeight: 40,
@@ -2388,7 +2389,7 @@ class _UploadFailureWidget extends StatelessWidget {
         actions: [
           ModalAction(
             action: () => Navigator.of(context).pop(false),
-            title: appLocalizationsOf(context).okEmphasized,
+            title: appLocalizationsOf(context).ok,
           ),
         ],
       );
@@ -2416,36 +2417,84 @@ class _UploadFailureWidget extends StatelessWidget {
       );
     }
 
+    // Paid from the wallet, these files' transactions may already be paid
+    // for, and only this tab can finish them.
+    final isWalletPaid =
+        state.failedTasks?.any((t) => t.type == UploadType.d2n) ?? false;
+
     return ArDriveStandardModalNew(
       hasCloseButton: true,
+      close: () => _close(context, isWalletPaid: isWalletPaid),
       width: state.failedTasks != null ? kLargeDialogWidth : kMediumDialogWidth,
-      title: 'Problem with Upload',
+      title: appLocalizationsOf(context).uploadProblemTitle,
       description: appLocalizationsOf(context).yourUploadFailed,
       content: state.failedTasks != null
-          ? _failedUploadList(context, state.failedTasks!)
+          ? _failedUploadList(context, state.failedTasks!, isWalletPaid)
           : null,
       actions: state.failedTasks == null
           ? null
           : [
               ModalAction(
-                action: () => Navigator.of(context).pop(false),
-                title: 'Do Not Fix',
+                action: () => _close(context, isWalletPaid: isWalletPaid),
+                title: appLocalizationsOf(context).close,
               ),
               ModalAction(
                 action: () {
                   context.read<UploadCubit>().retryUploads();
                 },
-                title: 'Re-Upload',
+                title: appLocalizationsOf(context).reUpload,
               ),
             ],
     );
   }
 
-  Widget _failedUploadList(BuildContext context, List<UploadTask> tasks) {
-    // Paid from the wallet, these files' transactions may already be paid
-    // for, and only this tab can finish them.
-    final isWalletPaid = tasks.any((t) => t.type == UploadType.d2n);
+  /// Closes the dialog, after asking first when the files were paid from the
+  /// wallet: closing leaves them unfinished, and they may be paid for.
+  Future<void> _close(
+    BuildContext context, {
+    required bool isWalletPaid,
+  }) async {
+    if (!isWalletPaid) {
+      Navigator.of(context).pop(false);
+      return;
+    }
 
+    var leave = false;
+    await showArDriveDialog(
+      context,
+      content: Builder(
+        builder: (dialogContext) => ArDriveStandardModalNew(
+          title: appLocalizationsOf(dialogContext).leaveFilesUnfinishedTitle,
+          description:
+              appLocalizationsOf(dialogContext).leaveFilesUnfinishedDescription,
+          actions: [
+            ModalAction(
+              action: () {
+                leave = true;
+                Navigator.of(dialogContext).pop();
+              },
+              title: appLocalizationsOf(dialogContext).closeAnyway,
+              customWidth: 140,
+            ),
+            ModalAction(
+              action: () => Navigator.of(dialogContext).pop(),
+              title: appLocalizationsOf(dialogContext).goBack,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (leave && context.mounted) {
+      Navigator.of(context).pop(false);
+    }
+  }
+
+  Widget _failedUploadList(
+    BuildContext context,
+    List<UploadTask> tasks,
+    bool isWalletPaid,
+  ) {
     return ConstrainedBox(
       constraints: const BoxConstraints(
           maxHeight: 256 * 1.5, minWidth: kLargeDialogWidth),
@@ -2457,7 +2506,7 @@ class _UploadFailureWidget extends StatelessWidget {
             Text(
                 isWalletPaid
                     ? appLocalizationsOf(context).uploadFailedWalletFiles
-                    : 'It seems there was a partial failure uploading the following file(s). The file(s) will show as failed in your drive. Please re-upload to fix.',
+                    : appLocalizationsOf(context).uploadFailedPartial,
                 style: ArDriveTypography.body.buttonLargeBold()),
             if (isWalletPaid) ...[
               const SizedBox(height: 12),
@@ -2466,7 +2515,9 @@ class _UploadFailureWidget extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 8),
-            Expanded(
+            // Sized to the files listed, up to the box's height, rather than
+            // always filling it: one file left a large empty space.
+            Flexible(
               child: ArDriveScrollBar(
                 child: ListView.builder(
                   shrinkWrap: true,
@@ -2557,7 +2608,7 @@ class _UploadShowingWarningWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveStandardModalNew(
-      title: appLocalizationsOf(context).warningEmphasized,
+      title: appLocalizationsOf(context).warning,
       content: SizedBox(
         width: kMediumDialogWidth,
         child: Column(
@@ -2576,7 +2627,7 @@ class _UploadShowingWarningWidget extends StatelessWidget {
       actions: [
         ModalAction(
           action: () => Navigator.of(context).pop(false),
-          title: appLocalizationsOf(context).cancelEmphasized,
+          title: appLocalizationsOf(context).cancel,
         ),
         ModalAction(
           action: () {
@@ -2607,7 +2658,7 @@ class _UploadCanceledWidget extends StatelessWidget {
       actions: [
         ModalAction(
           action: () => Navigator.of(context).pop(false),
-          title: appLocalizationsOf(context).okEmphasized,
+          title: appLocalizationsOf(context).ok,
         ),
       ],
     );
@@ -2692,7 +2743,7 @@ class _UploadInProgressWidget extends StatelessWidget {
             // TODO: localize
             title: state.isCanceling
                 ? 'Canceling...'
-                : appLocalizationsOf(context).cancelEmphasized,
+                : appLocalizationsOf(context).cancel,
           ),
       ],
       width: kLargeDialogWidth,
@@ -3037,7 +3088,7 @@ List<ArDriveButtonNew> getModalActions(
       onPressed: () {
         context.read<UploadCubit>().initialScreenUpload();
       },
-      text: appLocalizationsOf(context).uploadEmphasized,
+      text: appLocalizationsOf(context).upload,
       typography: typography,
       maxWidth: 100,
       maxHeight: 40,
