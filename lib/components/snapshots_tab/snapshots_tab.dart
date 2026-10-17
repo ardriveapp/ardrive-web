@@ -144,14 +144,18 @@ class SnapshotsTab extends StatelessWidget {
               )
             else
               // Subtle link for small drives
-              GestureDetector(
-                onTap: () => _launchCreateSnapshotDialog(context),
-                child: Text(
-                  appLocalizationsOf(context).createSnapshotAnyway,
-                  style: typography.paragraphSmall(
-                    color: colorTokens.textLow,
-                  ).copyWith(
-                    decoration: TextDecoration.underline,
+              ArDriveClickArea(
+                child: GestureDetector(
+                  onTap: () => _launchCreateSnapshotDialog(context),
+                  child: Text(
+                    appLocalizationsOf(context).createSnapshotAnyway,
+                    style: typography
+                        .paragraphSmall(
+                          color: colorTokens.textLow,
+                        )
+                        .copyWith(
+                          decoration: TextDecoration.underline,
+                        ),
                   ),
                 ),
               ),
@@ -175,8 +179,7 @@ class SnapshotsTab extends StatelessWidget {
           return _buildRecommendationBanner(context);
         }
 
-        final snapshotIndex =
-            shouldRecommendSnapshot ? index - 1 : index;
+        final snapshotIndex = shouldRecommendSnapshot ? index - 1 : index;
         final snapshot = snapshots[snapshotIndex];
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
