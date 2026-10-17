@@ -13,6 +13,13 @@ on:
       tags:
         description: 'Test scenario tags'
 
+# One staging deploy at a time, and the newest push wins. Without this, two
+# pushes in quick succession each deploy, and whichever run finishes last
+# owns gh-pages: an older commit whose tests ran longer overwrote a newer one.
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: true
+
 env:
   BUILD_NUMBER: ${{ github.run_number }}
   RELEASE_NOTES: Staging - ${{ github.sha }}
