@@ -2002,7 +2002,12 @@ class _UploadReadyWidget extends StatelessWidget {
                             .setIsUploadingCustomManifest(value);
                       },
                     ),
-                  if (state.canShowSettings)
+                  // Only where the panel can open: the phone layout has none,
+                  // and once it is open the link has nothing left to do.
+                  if (state.canShowSettings &&
+                      !state.showSettings &&
+                      getDeviceType(MediaQuery.sizeOf(context)) !=
+                          DeviceScreenType.mobile)
                     ArDriveClickArea(
                       child: GestureDetector(
                         onTap: () => context.read<UploadCubit>().showSettings(),
