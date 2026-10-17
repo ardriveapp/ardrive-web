@@ -829,6 +829,36 @@ void main() {
           reason: 'comparing the drive as well must not turn every identical '
               'tick back into a redraw');
     });
+
+    test('and a write the page does not show redraws once, not repeatedly',
+        () async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(cubit.state, isA<DriveDetailLoadSuccess>(),
+          reason: 'precondition: the folder is on screen');
+
+      final emitted = <DriveDetailState>[];
+      final subscription = cubit.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+
+      // What the end of a drive's sync writes. The row changed, so this is
+      // the one redraw the drive comparison costs; the same write again is
+      // identical and costs nothing.
+      for (var i = 0; i < 3; i++) {
+        await (db.update(db.drives)..where((d) => d.id.equals(driveId)))
+            .write(const DrivesCompanion(lastBlockHeight: Value(200)));
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+      }
+
+      expect(emitted, hasLength(1),
+          reason: 'a watermark write is one redraw; if this grows, a sync is '
+              'redrawing the folder on every batch again');
+    });
   });
 
   /// What an empty local database means, which is three different things.

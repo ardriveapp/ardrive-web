@@ -169,7 +169,7 @@ void main() {
       expect(file.fileName, 'renamed/a0.txt');
     });
 
-    test('a root folder from the explorer is named after the drive too',
+    test('a root folder arriving as a folder item is named after the drive',
         () async {
       DriveDao mockDriveDao = MockDriveDao();
       ARFSRepository mockArfsRepository = MockARFSRepository();

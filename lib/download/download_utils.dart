@@ -83,8 +83,11 @@ Future<List<MultiDownloadItem>> convertSelectionToMultiDownloadFileList(
     } else if (item is FolderDataTableItem) {
       final folderNode = await driveDao.getFolderTree(item.driveId, item.id);
 
-      // A root folder can be downloaded from the explorer as well as as a
-      // drive, and its zip is named after the drive either way.
+      // A guard. The explorer lists a folder's children, so a root folder
+      // does not normally arrive here as a folder item, but the item tile
+      // allows for one (it names that zip after the drive), and if it does
+      // the folder inside must match the zip's name rather than carry the
+      // drive's old name.
       final isRootFolder = folderNode.folder.parentFolderId == null;
       final folderName = isRootFolder
           ? (await arfsRepository.getDriveById(item.driveId)).name
