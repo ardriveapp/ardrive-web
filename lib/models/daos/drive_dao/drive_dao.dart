@@ -990,7 +990,13 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   /// name that was never damaged is left as it is; and the views watching
   /// these tables update as the names change.
   Future<int> repairMisdecodedNames() => transaction(() async {
-        var repaired = 0;
+        // Read everything first and write it in one batch: on the web every
+        // statement is a round trip to the database worker
+        // (docs/WEB_DATABASE.md), and this runs before a sync shows any
+        // progress, so a drive of thousands of non-ASCII names must not cost
+        // thousands of awaited updates. The views watching these tables hear
+        // about it once per table rather than once per row.
+        final repairs = <({TableInfo table, int rowId, String name})>[];
 
         for (final table in <TableInfo>[
           db.drives,
@@ -1000,11 +1006,10 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           db.fileEntries,
           db.fileRevisions,
         ]) {
-          final name = table.actualTableName;
-
           // Only names with something past printable ASCII can be damaged.
           final rows = await customSelect(
-            "SELECT rowid AS r, name FROM $name WHERE name GLOB '*[^ -~]*'",
+            'SELECT rowid AS r, name FROM ${table.actualTableName} '
+            "WHERE name GLOB '*[^ -~]*'",
             readsFrom: {table},
           ).get();
 
@@ -1012,24 +1017,27 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
             final stored = row.read<String>('name');
             final fixed = repairMisdecodedUtf8(stored);
 
-            if (fixed == stored) {
-              continue;
+            if (fixed != stored) {
+              repairs
+                  .add((table: table, rowId: row.read<int>('r'), name: fixed));
             }
-
-            await customUpdate(
-              'UPDATE $name SET name = ? WHERE rowid = ?',
-              variables: [
-                Variable.withString(fixed),
-                Variable.withInt(row.read<int>('r')),
-              ],
-              updates: {table},
-              updateKind: UpdateKind.update,
-            );
-            repaired++;
           }
         }
 
-        return repaired;
+        if (repairs.isNotEmpty) {
+          await batch((b) {
+            for (final repair in repairs) {
+              b.customStatement(
+                'UPDATE ${repair.table.actualTableName} '
+                'SET name = ? WHERE rowid = ?',
+                [repair.name, repair.rowId],
+                [TableUpdate.onTable(repair.table, kind: UpdateKind.update)],
+              );
+            }
+          });
+        }
+
+        return repairs.length;
       });
 
   /// Whether any transaction is still waiting to be resolved as confirmed or

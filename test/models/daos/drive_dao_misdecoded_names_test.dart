@@ -87,6 +87,37 @@ void main() {
     expect(await folderName('ascii'), 'Plain');
   });
 
+  // Written in one batch, so each row must still get its own name back.
+  test('repairs many names, each to its own', () async {
+    for (var i = 0; i < 300; i++) {
+      await folder('f$i', damaged('Talks — $i'));
+    }
+
+    expect(await driveDao.repairMisdecodedNames(), 300);
+    for (var i = 0; i < 300; i += 37) {
+      expect(await folderName('f$i'), 'Talks — $i');
+    }
+  });
+
+  // The batch's statements are raw SQL, so the tables they change are named
+  // to drift by hand; without that, a folder on screen kept its damaged name.
+  test('a view watching the folders sees the repaired name', () async {
+    await folder('dashes', damaged('Talks — 2024'));
+
+    final names = (db.select(db.folderEntries)
+          ..where((f) => f.id.equals('dashes')))
+        .watchSingle()
+        .map((f) => f.name);
+    final seen = expectLater(
+      names,
+      emitsInOrder([damaged('Talks — 2024'), 'Talks — 2024']),
+    );
+
+    await pumpEventQueue();
+    await driveDao.repairMisdecodedNames();
+    await seen;
+  });
+
   test('a second run changes nothing', () async {
     await folder('dashes', damaged('Talks — 2024'));
 
