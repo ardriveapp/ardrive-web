@@ -37,15 +37,6 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 
 
-### update_pr_and_jira
-
-```sh
-[bundle exec] fastlane update_pr_and_jira
-```
-
-
-
-----
 
 
 ## Android
@@ -66,15 +57,6 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 
 
-### android update_release_url
-
-```sh
-[bundle exec] fastlane android update_release_url
-```
-
-
-
-----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
 

@@ -8,9 +8,6 @@ on:
 
 env:
   BUILD_NUMBER: ${{ github.run_number }}
-  GIT_SHA: ${{ github.sha }}
-  PR_NUMBER: ${{ github.event.pull_request.number }}
-  PR_TITLE: ${{ github.event.pull_request.title }}
   RELEASE_NOTES: ${{ github.event.pull_request.title }} - ${{ github.sha }}
 
 jobs:
@@ -136,14 +133,6 @@ jobs:
         working-directory: ./ios
         run: bundle exec fastlane deploy type:branch
 
-      - name: Update PR description and Jira
-        env:
-          FL_JIRA_PASSWORD: ${{ secrets.FASTLANE_JIRA_API_KEY }}
-          FL_JIRA_SITE: ${{ secrets.FASTLANE_JIRA_SITE }}
-          FL_JIRA_USERNAME: ${{ secrets.FASTLANE_JIRA_USER }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        working-directory: ./ios
-        run: bundle exec fastlane update_release_url
 
   build-android:
     # skipped for now
@@ -205,11 +194,3 @@ jobs:
         working-directory: ./android
         run: bundle exec fastlane deploy type:branch
 
-      - name: Update PR description and Jira
-        env:
-          FL_JIRA_PASSWORD: ${{ secrets.FASTLANE_JIRA_API_KEY }}
-          FL_JIRA_SITE: ${{ secrets.FASTLANE_JIRA_SITE }}
-          FL_JIRA_USERNAME: ${{ secrets.FASTLANE_JIRA_USER }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        working-directory: ./android
-        run: bundle exec fastlane update_release_url
