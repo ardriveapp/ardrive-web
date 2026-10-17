@@ -1,0 +1,8 @@
+{
+  "name": "ardrive-web-e2e",
+  "private": true,
+  "description": "Drives the ArDrive web app in headless Chromium as a real user, with a guard against spending. See docs/WEB_E2E_TESTING.md.",
+  "dependencies": {
+    "playwright-core": "1.48.2"
+  }
+}
