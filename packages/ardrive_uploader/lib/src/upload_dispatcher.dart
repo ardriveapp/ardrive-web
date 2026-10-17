@@ -160,6 +160,11 @@ class UploadDispatcher {
       return UploadResult(success: true);
     } catch (e, stacktrace) {
       logger.d('Error on UploadDispatcher.send: $e $stacktrace');
+      // A cancelled upload is never retried, so its signed data items have
+      // nothing left to be resent for. Any other failure keeps them.
+      if (verifyCancel()) {
+        _d2nPreparations.remove(task.id);
+      }
       return UploadResult(
         success: false,
         error: e,
