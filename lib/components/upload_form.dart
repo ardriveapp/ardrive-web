@@ -690,16 +690,11 @@ class ConfiguringLicenseScreen extends StatelessWidget {
 
   List<ArDriveButtonNew> getModalActions(
       BuildContext context, UploadReady state, FormGroup form) {
-    String title;
-    double? customWidth;
+    // The same width as the other upload screens' buttons. With no width
+    // they stretched across the dialog.
+    final customWidth = state.arnsCheckboxChecked ? 160.0 : 100.0;
+    final title = appLocalizationsOf(context).next;
     final typography = ArDriveTypographyNew.of(context);
-
-    if (state.arnsCheckboxChecked) {
-      title = 'Next';
-      customWidth = 160;
-    } else {
-      title = appLocalizationsOf(context).next;
-    }
 
     return [
       ArDriveButtonNew(
