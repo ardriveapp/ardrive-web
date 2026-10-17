@@ -692,23 +692,28 @@ files? superseded revisions?); a candidate for §6 instead.
 ### 3.3 Payload
 
 ```
-private:  serialise rows → gzip → AES256-GCM
-public:   serialise rows → gzip
+private:  SQLite file → gzip (optional, D13) → AES256-GCM
+public:   SQLite file → gzip (optional, D13)
 ```
 
-The payload is a container of **named sections**, plus a top-level `version`
-and a top-level `coverage` object. On a private drive GCM authenticates the
-whole container, sections, version and coverage alike. See §2.2 for
-authorship, and §2.6 for why the last step is absent for a public drive.
+The payload is a SQLite file (D12) of **named tables**, one per kind of row,
+plus a one-row `meta` table carrying the `version` and the coverage
+(`blockStart`, `blockEnd`). On a private drive GCM authenticates the whole
+file, tables, version and coverage alike. See §2.2 for authorship, and §2.6
+for why the last step is absent for a public drive. The exact DDL a reader
+compares is `artifactSchema` in
+`lib/drive_state_sqlite/drive_state_artifact_schema.dart`, and the published
+form of this section is the Drive State entity in `ar-io-docs`
+(`content/build/advanced/arfs/entity-types.mdx`).
 
-The container itself is **identical between the two privacies**. Nothing in it
-is conditioned on the drive's privacy, no section appears or disappears, and
-the `drives` section carries the drive's own `privacy` value on both paths —
+The file itself is **identical between the two privacies**. Nothing in it
+is conditioned on the drive's privacy, no table appears or disappears, and
+the `drives` table carries the drive's own `privacy` value on both paths —
 which a reader checks against the privacy of the drive it holds locally, for
 the same reason it checks the coverage tags: the merge writes that value onto
 the local drive row, and the payload is the half that is imported.
 
-`version` is the same `major.minor` string the `State-Version` tag carries, and
+`meta.version` is the same `major.minor` string the `State-Version` tag carries, and
 a producer writes both from one constant. **A reader must refuse an artifact
 whose tag and payload version disagree**, for the same reason it refuses one
 whose `Block-*` tags disagree with the payload's coverage: the tag is what an
@@ -717,10 +722,11 @@ including one only in the minor — "the minor changes nothing this reader
 dispatches on" is true, and is not a reason to believe the half nobody
 authenticated.
 
-**The sections.** Seven, named for the tables they carry, each an object with
-a `rows` array. All seven are required and any may be empty (§6.1).
+**The tables.** Nine: `meta` and the eight below, named for the app tables
+they carry. All nine are required. `meta` and `drives` hold one row each, and
+any other table may be empty (§6.1).
 
-| section | carries |
+| table | carries |
 |---|---|
 | `drives` | exactly one row: the drive itself, including its `privacy`, and minus its key material, sync cursor and watermark |
 | `folder_entries` | current folder rows, without `path` or `isGhost` (below) |
@@ -760,10 +766,10 @@ app's tables require it, and it costs 0.3% of the artifact.
 
 Nothing else in the local database travels. `profiles` never does.
 
-**`coverage` is load-bearing, not informational.**
+**The coverage is load-bearing, not informational.**
 
-```json
-{ "version": "1.0", "coverage": { "blockStart": 0, "blockEnd": 1814228 }, "...": "sections" }
+```sql
+SELECT version, blockStart, blockEnd FROM meta;  -- '0.2', 0, 1814228
 ```
 
 It states the block range the rows in *this* payload account for, and it is the
@@ -1041,13 +1047,21 @@ Three rules a reader has to get right, each of which cost time to learn here:
 
 ## 6. Extensibility
 
-The payload is a container of named sections, and the rule that makes extension
-safe is the separation of **additive** from **breaking**:
+The payload is a set of named tables (called sections below, from when the
+payload was JSON), and the rule that makes extension safe is the separation of
+**additive** from **breaking**:
 
 - **Unknown sections are skipped**, not rejected. A reader takes what it knows.
 - **Known sections are required**, even when empty. See below — this is the
   half that is easy to get wrong.
 - **Unknown tags are ignored** — already how ArFS works.
+
+**Open: how a `1.x` minor adds a table.** The read gate (§2.4) refuses any
+schema but the frozen one, which is right for `0.x`, where the version must
+match exactly anyway. Above `1.0`, "unknown sections are skipped" needs the
+gate to accept tables it does not know (still with no views, triggers or
+indexes) while comparing the ones it does. That change belongs with the first
+minor that adds a table, and is recorded here so it is not discovered then.
 - **`State-Version` is `major.minor`, and only the *major* bumps when an older
   reader would *misinterpret* the payload.** An addition moves the minor.
   Bumping the major on additions locks out clients that could have used most of
