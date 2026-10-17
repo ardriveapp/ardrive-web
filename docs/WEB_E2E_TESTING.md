@@ -301,16 +301,18 @@ Don't try to test everything. There are three kinds of run:
 
 ### Testing a change
 
-This is the usual run, for a pull request: `/web-e2e <PR number>`, or
-"test PR #N per docs/WEB_E2E_TESTING.md". The skill in
-`.claude/skills/web-e2e/` walks through it:
+This is the usual run. `/web-e2e` on its own tests the current branch.
+You can also give it a pull request, a branch, a link to a build, or an area
+of the app ("the upload dialog"); no ticket or PR number is needed. The skill
+in `.claude/skills/web-e2e/` walks through it:
 
-1. Read the PR and its diff, and write a short test plan before testing.
+1. Read the change and its diff, and write a short test plan before testing.
 2. Cover each user-visible change: its normal path, and every state the code
    distinguishes (errors, empty, not enough balance, cancel, retry, free
    versus paid). Check light and dark mode where it's visual.
 3. Add the checklist journeys below that touch the same area.
-4. Run the plan on the PR's preview, then report each item with a
+4. Run the plan on the PR's preview (or a local build when there's no PR),
+   then report each item with a
    screenshot, plus any bugs and the spending check.
 
 The plan comes from the diff, not from a list, because a list can't know
