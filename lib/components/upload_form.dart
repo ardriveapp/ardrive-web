@@ -755,6 +755,7 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
         child: SingleChildScrollView(
           child: BlocBuilder<UploadCubit, UploadState>(
             builder: (context, state) {
+              final settingsOpen = state is UploadReady && state.showSettings;
               return ScreenTypeLayout.builder(
                 desktop: (context) => ConstrainedBox(
                   constraints: BoxConstraints(
@@ -785,6 +786,12 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                       ),
                       Flexible(
                         child: Row(
+                          // With the manifest panel open, the panel sets the
+                          // height and this column fills it, buttons at the
+                          // bottom, rather than floating in the middle.
+                          crossAxisAlignment: settingsOpen
+                              ? CrossAxisAlignment.stretch
+                              : CrossAxisAlignment.center,
                           children: [
                             Flexible(
                               flex: 1,
@@ -883,6 +890,9 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                                     // grow scrolls, rather than running into
                                     // the buttons.
                                     Flexible(
+                                      fit: settingsOpen
+                                          ? FlexFit.tight
+                                          : FlexFit.loose,
                                       child: SingleChildScrollView(
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
