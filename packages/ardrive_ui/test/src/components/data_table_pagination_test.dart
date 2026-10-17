@@ -71,6 +71,7 @@ void main() {
       int? initialPage,
       _Row? revealRow,
       bool? sizeColumnVisible,
+      Key? tableKey,
     }) async {
       tester.view.physicalSize = Size(width, height);
       tester.view.devicePixelRatio = 1;
@@ -86,6 +87,7 @@ void main() {
               ),
               child: Scaffold(
                 body: ArDriveDataTable<_Row>(
+                  key: tableKey,
                   columns: [
                     TableColumn('Name', 1, index: 0),
                     if (sizeColumnVisible != null)
@@ -363,6 +365,44 @@ void main() {
 
       expect(sizesReported, [50]);
       expect(range(tester), '1-50 of 120');
+    });
+
+    // A menu opened with the pointer has no focus inside it, so it does not
+    // hear Escape for itself.
+    testWidgets('Escape closes a menu opened with the pointer', (tester) async {
+      await pumpTable(tester, rows: 120);
+
+      await tester.tap(button('rows-per-page'));
+      await tester.pumpAndSettle();
+      expect(button('rows-per-page-50'), findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+
+      expect(button('rows-per-page-50'), findsNothing);
+    });
+
+    // Nine pages, so every number is one digit: the test font draws digits
+    // far wider than the app's, and two would outgrow a button here only.
+    testWidgets('the pager keeps its width as the pages it shows change',
+        (tester) async {
+      final widths = <double>{};
+      for (final page in [0, 4, 8]) {
+        // A new table each time: initialPage is read when one is built.
+        await pumpTable(
+          tester,
+          rows: 225,
+          initialPage: page,
+          tableKey: ValueKey(page),
+        );
+        expect(button('pagination-page-$page'), findsOneWidget);
+        final previous = tester.getRect(button('pagination-previous'));
+        final next = tester.getRect(button('pagination-next'));
+        widths.add(next.right - previous.left);
+      }
+
+      // Page 0 shows one ellipsis, page 4 two, page 8 one.
+      expect(widths, hasLength(1), reason: '$widths');
     });
 
     testWidgets('names its controls for a screen reader', (tester) async {

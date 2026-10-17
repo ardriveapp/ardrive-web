@@ -1550,9 +1550,11 @@ class _Ellipsis extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ExcludeSemantics(
+      // A page button's width - its face and the room around it for a focus
+      // ring - so the pager is the same width whichever pages it shows.
       child: SizedBox(
-        width: 36,
-        height: 36,
+        width: 40,
+        height: 40,
         child: Center(
           child: ArDriveIcons.dots(
             size: 20,
@@ -1595,6 +1597,18 @@ class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
   /// highlight nothing is hovering.
   bool _focusOnOpen = false;
 
+  /// Escape, while the menu is open. The menu hears it itself only when
+  /// focus is inside it, which a menu opened with the pointer does not take.
+  bool _onKey(KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape &&
+        _controller.isOpen) {
+      _controller.close();
+      return true;
+    }
+    return false;
+  }
+
   void _toggle({required bool fromKeyboard}) {
     if (_controller.isOpen) {
       _controller.close();
@@ -1611,6 +1625,7 @@ class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
 
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
     for (final node in _focusNodes.values) {
       node.dispose();
     }
@@ -1643,7 +1658,9 @@ class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
           // The menu lines up with the button's face, inside the room its
           // focus ring keeps.
           alignmentOffset: const Offset(4, 0),
+          onClose: () => HardwareKeyboard.instance.removeHandler(_onKey),
           onOpen: () {
+            HardwareKeyboard.instance.addHandler(_onKey);
             if (!_focusOnOpen) {
               return;
             }
