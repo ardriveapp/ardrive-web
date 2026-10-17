@@ -53,12 +53,14 @@ void main() {
     late List<int> sizesReported;
     late List<String> reports;
     late List<_Row> rowsOpened;
+    late List<double> offsetsSaved;
 
     setUp(() {
       pagesReported = [];
       sizesReported = [];
       reports = [];
       rowsOpened = [];
+      offsetsSaved = [];
     });
 
     Future<void> pumpTable(
@@ -117,6 +119,7 @@ void main() {
                   },
                   onChangeMultiSelecting: (_) {},
                   onRowOpen: rowsOpened.add,
+                  onScrollOffsetSaved: offsetsSaved.add,
                   sortRows: (list, column, order) => order == TableSort.asc
                       ? (list.toList()
                         ..sort((a, b) => a.index.compareTo(b.index)))
@@ -281,6 +284,38 @@ void main() {
       await pumpTable(tester, rows: 10, sizeColumnVisible: false);
       expect(find.text('size 3'), findsNothing);
       expect(find.text('row 3'), findsOneWidget);
+    });
+
+    // A caller that does not pass the reader's choice back, such as the
+    // storybook, rebuilt the table with the column showing again.
+    testWidgets('keeps a column the reader hid when the caller rebuilds',
+        (tester) async {
+      await pumpTable(tester, rows: 10, sizeColumnVisible: true);
+
+      await tester.tap(find.byType(ArDriveSubmenu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ArDriveCheckBox, 'Size'));
+      await tester.pumpAndSettle();
+      await tester.tapAt(Offset.zero);
+      await tester.pumpAndSettle();
+      expect(find.text('size 3'), findsNothing);
+
+      await pumpTable(tester, rows: 10, sizeColumnVisible: true);
+      expect(find.text('size 3'), findsNothing);
+    });
+
+    // A table rebuilt in place, as after a sync, is built before the old one
+    // is taken down, so the offset must be known before then.
+    testWidgets('reports how far the list is scrolled as it scrolls',
+        (tester) async {
+      await pumpTable(tester, rows: 100, rowsPerPage: 100, height: 400);
+
+      await tester.drag(find.text('row 2'), const Offset(0, -300));
+      await tester.pumpAndSettle();
+
+      final offset = listPosition(tester).pixels;
+      expect(offset, greaterThan(0));
+      expect(offsetsSaved.last, offset);
     });
 
     testWidgets('a menu opened with the pointer does not take focus',

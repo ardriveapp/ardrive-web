@@ -95,8 +95,10 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   /// rebuilt in place. Applied only to the page [initialPage] chose.
   final double? initialScrollOffset;
 
-  /// Called as the table is taken down with how far its list was scrolled, so
-  /// the next table built for the same rows can be given it back.
+  /// Called as the list scrolls with how far it is scrolled, so the next
+  /// table built for the same rows can be given it back. Reported as it
+  /// happens rather than as the table is taken down, because a table rebuilt
+  /// in place - after a sync - is built before the old one is taken down.
   final void Function(double offset)? onScrollOffsetSaved;
 
   const ArDriveDataTable({
@@ -213,7 +215,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
       initialScrollOffset: !revealing && widget.initialScrollOffset != null
           ? widget.initialScrollOffset!
           : 0,
-    );
+    )..addListener(_reportScrollOffset);
 
     _currentPage = _rowsOfPage(_selectedPage);
 
@@ -244,13 +246,18 @@ class _ArDriveDataTableState<T extends IndexedItem>
     HardwareKeyboard.instance.removeHandler(_handleKeyDownEvent);
     HardwareKeyboard.instance.removeHandler(_handleEscapeKey);
     HardwareKeyboard.instance.removeHandler(_handleSelectAllShortcut);
-    if (_scrollController.hasClients) {
-      widget.onScrollOffsetSaved?.call(_scrollController.offset);
-    }
-    _scrollController.dispose();
+    _scrollController
+      ..removeListener(_reportScrollOffset)
+      ..dispose();
     _doubleClick.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _reportScrollOffset() {
+    if (_scrollController.hasClients) {
+      widget.onScrollOffsetSaved?.call(_scrollController.offset);
+    }
   }
 
   /// Enter opens the selected row, as it does in any file manager.
@@ -454,7 +461,10 @@ class _ArDriveDataTableState<T extends IndexedItem>
     // built, so a column the caller hid as the table narrowed - opening the
     // details panel, or a smaller window - stayed in every row, and the rows
     // squeezed their cells into a letter's width while the header hid it.
-    if (!_sameColumns(widget.columns, _columns)) {
+    // Only a change in what the caller passes counts: a column the reader
+    // hid from the table's own menu stays hidden for a caller that does not
+    // pass it back.
+    if (!_sameColumns(widget.columns, oldWidget.columns)) {
       _columns = List.of(widget.columns);
     }
 
