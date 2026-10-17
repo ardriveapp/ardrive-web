@@ -14,10 +14,12 @@
 //   sends them to the local fake gateway (chaos_gateway.py on CHAOS_URL);
 //   AR_UPLOADS=dryrun lets them through to https://ar-io.dev only while it
 //   answers as a dry-run gateway; AR_UPLOADS=block refuses them.
-// - Turbo uploads: an upload of up to TURBO_FREE_BYTES (107520, Turbo's free
-//   size) goes through; anything bigger, and any multipart upload, is refused
-//   unless TURBO_PAID=1.
-// - Turbo top-ups (payment.ardrive.io POSTs) are always refused.
+// - Turbo uploads to the real (production and staging) services: an upload of
+//   up to TURBO_FREE_BYTES (107520, Turbo's free size) goes through; anything
+//   bigger, and any multipart upload, is refused unless TURBO_PAID=1.
+// - Turbo top-ups on the real payment service are always refused.
+// - Development builds (PR previews) use testnet Turbo services: free, wiped
+//   after a few days. Their uploads and payments are not guarded.
 // A refused request is answered with a 503 and logged as BLOCKED.
 //
 // FAKE_AR_BALANCE=<winston> answers wallet balance lookups with that amount,
@@ -42,8 +44,33 @@ const TURBO_PAID = process.env.TURBO_PAID === '1';
 const FAKE_AR_BALANCE = process.env.FAKE_AR_BALANCE;
 const DRY_RUN_GATEWAY = 'https://ar-io.dev';
 const AR_UPLOAD_PATHS = /^https?:\/\/[^/]+\/(tx|chunk|tx\/[^/]+\/status)$/;
-const TURBO_UPLOAD = /^https:\/\/upload\.ardrive\.io\//;
-const TURBO_PAYMENT = /^https:\/\/payment\.ardrive\.io\//;
+// The Turbo services that cost real money, read from the app's own config so
+// the guard follows any change there: those of every flavor except
+// development. Development builds (PR previews) use the services.ar-io.dev
+// Turbo services, which are testnet: free, and wiped after a few days, so
+// they are let through. A host the development config shares with another
+// flavor is still guarded.
+const configs = (() => {
+  const dir = path.join(__dirname, '..', '..', 'assets', 'config');
+  return fs.readdirSync(dir).filter((f) => f.endsWith('.json'))
+    .map((f) => ({ name: f, config: JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) }));
+})();
+const origins = (key, flavors) => [...new Set(configs
+  .filter(({ name }) => flavors(name))
+  .map(({ config }) => config[key]).filter(Boolean).map((u) => new URL(u).origin))];
+const isDev = (name) => name === 'dev.json';
+const guardedOrigins = (key) => {
+  const real = origins(key, (n) => !isDev(n));
+  if (!real.length) throw new Error(`no ${key} in assets/config`);
+  return real;
+};
+const testnetOrigins = (key) => origins(key, isDev).filter((o) => !guardedOrigins(key).includes(o));
+const originMatcher = (list) => ({ test: (url) => list.some((o) => url.startsWith(o + '/')) });
+const TURBO_UPLOAD_ORIGINS = guardedOrigins('defaultTurboUploadUrl');
+const TURBO_PAYMENT_ORIGINS = guardedOrigins('defaultTurboPaymentUrl');
+const TURBO_TESTNET_ORIGINS = [...testnetOrigins('defaultTurboUploadUrl'), ...testnetOrigins('defaultTurboPaymentUrl')];
+const TURBO_UPLOAD = originMatcher(TURBO_UPLOAD_ORIGINS);
+const TURBO_PAYMENT = originMatcher(TURBO_PAYMENT_ORIGINS);
 
 if (!['chaos', 'dryrun', 'block'].includes(AR_UPLOADS)) {
   console.error(`AR_UPLOADS must be chaos, dryrun or block, not ${AR_UPLOADS}`);
@@ -79,6 +106,15 @@ async function dryRunHolds() {
     return false;
   }
 }
+
+// A guard that throws refuses the request: an error must never let one through.
+const failClosed = (guard) => async (route) => {
+  try {
+    return await guard(route);
+  } catch (e) {
+    return refuse(route, `guard error: ${String(e).slice(0, 120)}`);
+  }
+};
 
 async function guardArUpload(route) {
   const req = route.request();
@@ -117,13 +153,13 @@ async function guardArUpload(route) {
 async function guardTurbo(route) {
   const req = route.request();
   if (!['POST', 'PUT'].includes(req.method()) || TURBO_PAID) return route.continue();
-  const path = new URL(req.url()).pathname;
-  if (path.includes('/chunks/')) return refuse(route, 'multipart Turbo upload (too big to be free); set TURBO_PAID=1');
+  const urlPath = new URL(req.url()).pathname;
+  if (urlPath.includes('/chunks/')) return refuse(route, 'multipart Turbo upload (too big to be free); set TURBO_PAID=1');
   const size = (req.postDataBuffer() || Buffer.alloc(0)).length;
   if (size > TURBO_FREE_BYTES) {
     return refuse(route, `Turbo upload of ${size} bytes is over the free ${TURBO_FREE_BYTES}; set TURBO_PAID=1`);
   }
-  log({ ev: 'turbo', method: req.method(), path: path.slice(0, 60), bytes: size });
+  log({ ev: 'turbo', method: req.method(), path: urlPath.slice(0, 60), bytes: size });
   return route.continue();
 }
 
@@ -135,9 +171,9 @@ async function guardTurbo(route) {
     args: ['--no-sandbox', `--remote-debugging-port=${CDP_PORT}`],
   });
 
-  await ctx.route(AR_UPLOAD_PATHS, guardArUpload);
-  await ctx.route(TURBO_UPLOAD, guardTurbo);
-  await ctx.route(TURBO_PAYMENT, (route) =>
+  await ctx.route(AR_UPLOAD_PATHS, failClosed(guardArUpload));
+  await ctx.route((url) => TURBO_UPLOAD.test(url.href), failClosed(guardTurbo));
+  await ctx.route((url) => TURBO_PAYMENT.test(url.href), (route) =>
     route.request().method() === 'GET' ? route.continue() : refuse(route, 'Turbo top-ups are never automated'));
   if (FAKE_AR_BALANCE) {
     await ctx.route(/\/wallet\/[^/]+\/balance$/, (route) => {
@@ -182,5 +218,7 @@ async function guardTurbo(route) {
 
   await page.goto(APP_URL);
   console.log(`READY ${APP_URL} cdp=${CDP_PORT} ar_uploads=${AR_UPLOADS} turbo_paid=${TURBO_PAID} dir=${E2E_DIR}`);
+  console.log(`guarding Turbo ${[...TURBO_UPLOAD_ORIGINS, ...TURBO_PAYMENT_ORIGINS].join(' ')}`);
+  console.log(`testnet Turbo, not guarded: ${TURBO_TESTNET_ORIGINS.join(' ') || 'none'}`);
   await new Promise(() => {});
 })();

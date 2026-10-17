@@ -22,11 +22,14 @@ These hold for every run.
    passwords.
 2. **Don't spend.** `launch.js` blocks spending by default:
    - Wallet-paid (AR) uploads go to a local fake gateway, never to Arweave.
-   - Turbo uploads go through only if each item is within Turbo's free size
-     (105 KiB). Anything bigger is refused.
-   - Turbo top-ups are always refused.
-   A real AR upload, or a paid Turbo upload (`TURBO_PAID=1`), needs a human's
-   go-ahead first, every time.
+   - On the real Turbo services (production and staging builds), uploads go
+     through only if each item is within Turbo's free size (105 KiB).
+     Anything bigger is refused.
+   - Top-ups on the real Turbo payment service are always refused.
+   - PR preview builds use testnet Turbo, which is free, so their Turbo
+     uploads aren't blocked (see *Which build to test*).
+   A real AR upload, or a paid upload on real Turbo (`TURBO_PAID=1`), needs a
+   human's go-ahead first, every time.
 3. **Upload only test data, only to test drives.** Use random bytes (see
    *Test files*), never real documents. Upload to *Private Drive Test* or a
    `UAT-TESTONLY-DELETEME` drive. Anything uploaded for real is permanent.
@@ -58,9 +61,35 @@ chmod 600 ~/.config/ardrive-e2e/env
 Environment variables of the same names override the file. `CREDENTIALS`
 points the scripts at a different file.
 
+## Which build to test
+
+| Testing | Use | Turbo there |
+|---|---|---|
+| A pull request | Its preview, at the URL the github-actions bot posts on the PR | Testnet: free, data wiped after a few days |
+| A release candidate | https://staging.ardrive.io (`dev` deploys there) | Real: the guard is on |
+| A change not pushed yet | A local build (below) | Depends on the config you build with |
+
+Point the browser at it with `APP_URL`, for example
+`APP_URL=https://ardrive-web--pr2274-….web.app/ node launch.js`. Each URL is a
+separate site to the browser, so each needs its own login and first sync.
+
+PR previews are built with the development config:
+- Turbo uploads and payments go to testnet services (`upload.services.ar-io.dev`,
+  `payment.services.ar-io.dev`), which cost nothing. Files up to 5 MiB are
+  free, so the payment choice only appears for bigger files.
+- The test wallet has no testnet Turbo Credits (as of October 2026), so a
+  paid Turbo upload on a preview shows the not-enough-credits state.
+- Wallet-paid uploads still go to the default gateway, turbo-gateway.com,
+  which is mainnet, so the guard handles them as everywhere else.
+
+`launch.js` reads which Turbo services are real from `assets/config/`, and
+prints what it guards when it starts.
+
 ## Running a test
 
 ### 1. Build and serve the branch under test
+
+Skip this when testing a preview or staging.
 
 Build a production release, the same as users get:
 
@@ -185,12 +214,14 @@ python3 -c "import os; open('e2e-300k.bin','wb').write(os.urandom(300*1024))"
 
 **Free Turbo upload.** Use a file under 100 KiB on the default *Turbo Credits*
 option. The dialog says it's free, and `net.log` shows `turbo` lines under
-107520 bytes. This is a real, permanent upload.
+107520 bytes. On production or staging this is a real, permanent upload. On a
+preview it goes to testnet, shown as `post` lines to
+`upload.services.ar-io.dev`, and files up to 5 MiB are free.
 
-**Paid Turbo upload (blocked).** Use a file over 105 KiB on Turbo Credits. The
-app shows *Problem with Upload*, and `net.log` shows `BLOCKED`. The small
-metadata item may already have gone through, which leaves a failed entry for
-that file in the drive.
+**Paid Turbo upload (blocked).** On production or staging, use a file over
+105 KiB on Turbo Credits. The app shows *Problem with Upload*, and `net.log`
+shows `BLOCKED`. The small metadata item may already have gone through, which
+leaves a failed entry for that file in the drive.
 
 **Wallet-paid upload.** Choose the *Wallet (AR)* card, then **Upload**.
 `net.log` shows `chaos` lines for `/tx` and `/chunk`, and `chaos_report.py`
@@ -219,6 +250,9 @@ it accepts headers and chunks and forwards nothing to Arweave.
   drive that hasn't been synced opens a different drive (the first in the
   list). Sync all drives first.
 - **The sidebar highlight** can stay on a different drive than the one shown.
+- **A file name the drive already has** brings up *A duplicate file found*
+  (Cancel or Replace) before the upload dialog. Earlier test runs leave
+  names behind, so read the screenshot before clicking Upload.
 - **Two launchers** can't share the profile. The second fails with
   `SingletonLock: File exists`. Stop the first.
 - **Accessibility on.** Turning on Flutter's accessibility mode changes what
