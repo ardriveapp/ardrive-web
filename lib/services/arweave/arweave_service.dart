@@ -1139,14 +1139,17 @@ class ArweaveService {
     return _commitTimeOrZero(tx) > _commitTimeOrZero(than);
   }
 
-  /// A transaction's `Unix-Time` in milliseconds, or 0 when it has none or it
-  /// does not parse, so a malformed tag loses a tie rather than throwing out
-  /// of the drive list.
+  /// A transaction's `Unix-Time` in milliseconds, or 0 when it has none, it
+  /// does not parse, or it is outside what a [DateTime] can hold. A malformed
+  /// tag loses a tie rather than throwing out of the drive list, which would
+  /// fail discovery for every drive in the wallet, not just this one.
   static int _commitTimeOrZero(TransactionCommonMixin tx) {
     if (tx.getTag(EntityTag.unixTime) == null) return 0;
     try {
       return tx.getCommitTime().millisecondsSinceEpoch;
     } on FormatException {
+      return 0;
+    } on RangeError {
       return 0;
     }
   }
@@ -1283,8 +1286,8 @@ class ArweaveService {
             // A drive we cannot read is dropped from this pass, as before.
           }
 
-          // Counted per drive, so a drive with several revisions on several
-          // pages advances the figure once.
+          // Counted per drive id, so the figure stays a count of drives even
+          // if an id ever appears twice in the list.
           final id = driveTxs[i].getTag(EntityTag.driveId);
           if (id != null && readDriveIds.add(id)) {
             onDriveRead?.call(readDriveIds.length, driveCount);
@@ -1314,8 +1317,8 @@ class ArweaveService {
       final handledDriveIds = <String?>{};
 
       // Distinct private drives, which is what the loop below will actually
-      // unlock - `driveTxs` holds every revision, so counting rows would
-      // promise more work than there is.
+      // unlock - counted by id rather than by row, for the same reason as the
+      // read count above.
       final privateDriveIds = <String>{};
       for (final tx in driveTxs) {
         if (tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
@@ -1334,7 +1337,8 @@ class ArweaveService {
         if (driveResponses[i] == null) continue;
         final driveTx = driveTxs[i];
 
-        // Ignore drive entity transactions which we already have newer entities for.
+        // Skip a drive already handled. The list holds one transaction per
+        // drive, so this guards that invariant; see [handledDriveIds].
         final txDriveId = driveTx.getTag(EntityTag.driveId);
 
         if (drivesById.containsKey(txDriveId) ||

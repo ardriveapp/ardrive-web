@@ -201,4 +201,36 @@ void main() {
       ['XWmU', 'other'],
     );
   });
+
+  test('a bad Unix-Time loses the tie instead of throwing', () async {
+    // Missing, not a number, and a number DateTime cannot hold, which
+    // getCommitTime reads as milliseconds and then throws a RangeError on.
+    // Any of these escaping would fail discovery for the whole wallet.
+    final badValues = <String?>[null, 'not-a-number', '9000000000000000'];
+
+    for (final value in badValues) {
+      final bad = driveTx('bad', height: block, unixTime: 0);
+      bad.tags.removeWhere((t) => t.name == EntityTag.unixTime);
+      if (value != null) {
+        bad.tags.add(TransactionCommonMixin$Tag()
+          ..name = EntityTag.unixTime
+          ..value = value);
+      }
+
+      expect(
+        await idsFor([
+          [bad, hide],
+        ]),
+        ['XWmU'],
+        reason: 'Unix-Time: $value, listed first',
+      );
+      expect(
+        await idsFor([
+          [hide, bad],
+        ]),
+        ['XWmU'],
+        reason: 'Unix-Time: $value, listed second',
+      );
+    }
+  });
 }
