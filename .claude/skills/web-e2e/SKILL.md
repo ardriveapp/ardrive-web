@@ -1,11 +1,23 @@
 ---
 name: web-e2e
-description: Test the ArDrive web app as a user would, in a real browser logged in with the team's test wallet, without spending. Use to test a pull request (`/web-e2e 2274`), to run the release checklist on staging (`/web-e2e release`), or whenever asked to check a change end to end in the browser.
+description: Test the ArDrive web app as a user would, in a real browser logged in with the team's test wallet, without spending. Use whenever asked to check something end to end in the browser - the current branch (`/web-e2e`), a pull request or branch, a link, an area of the app ("the upload dialog"), or the release checklist on staging (`/web-e2e release`).
 ---
 
 # Test the web app in the browser
 
-Argument: a PR number, or `release`. With neither, ask which.
+Whatever follows `/web-e2e` says what to test, and none of it is required.
+No ticket or PR number is needed.
+
+| Given | Test |
+|---|---|
+| Nothing | The current branch's changes against `dev` |
+| A pull request (number or link) | That PR's changes |
+| A branch name | That branch's changes against `dev` |
+| A link to a build | Whatever the request names, on that build |
+| `release` | The release checklist, on staging |
+| Words ("the upload dialog", "sharing") | That area of the app, on staging |
+
+Only ask when the request could mean two different things.
 
 `docs/WEB_E2E_TESTING.md` is the manual: rules, setup, running, recipes and
 quirks. Read all of it before you start. Its rules beat anything here.
@@ -20,18 +32,23 @@ quirks. Read all of it before you start. Its rules beat anything here.
 
 ## 2. Pick the build
 
+- **A branch, or nothing:** if the branch has an open pull request, use that
+  PR's preview (below). Otherwise build it locally and serve it, as the guide
+  describes.
 - **A PR:** its preview. The URL is in the github-actions comment:
   `gh api repos/ardriveapp/ardrive-web/issues/<n>/comments --jq '.[] | select(.user.login=="github-actions[bot]") | .body'`.
   If the comment is missing or older than the PR's last commit, the preview
   isn't ready: say so and stop. A PR already merged into another branch can
   still be tested, if its preview matches its last commit.
-- **`release`:** https://staging.ardrive.io.
+- **`release`, or an area of the app:** https://staging.ardrive.io.
+- **A link:** that build.
 
 ## 3. Write the test plan before you test
 
-For a PR:
+For a change (a PR, a branch, or the current branch):
 
-1. Read the PR description and `gh pr diff <n>`.
+1. Read what it's for (the PR description, or the commit messages) and its
+   diff (`gh pr diff <n>`, or `git diff origin/dev...<branch>`).
 2. List each change a user could see or feel.
 3. For each change, cover:
    - its normal path;
@@ -45,6 +62,10 @@ For a PR:
    credits, needs a real AR spend, or mobile only.
 
 For `release`: the plan is the guide's release checklist, as it stands.
+
+For an area of the app: read the code behind it, list what a user can do
+there and the states it distinguishes, and add the checklist journeys that
+touch it.
 
 ## 4. Run it
 
