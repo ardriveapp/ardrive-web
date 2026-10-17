@@ -3039,9 +3039,9 @@
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },
-  "snapshotCreationSucceeded": "Your successfuly created a snapshot of {driveName}!",
+  "snapshotCreationSucceeded": "You created a snapshot of {driveName}.",
   "@snapshotCreationSucceeded": {
-    "description": "The snapshot was sucessfuly created",
+    "description": "The snapshot was successfully created",
     "placeholders": {
       "driveName": {
         "type": "String",
