@@ -7,6 +7,11 @@ Tracks the ArFS addition across every repository it touches. The proposal is
 **Status key:** ✅ merged to the feature branch · 🔨 in flight · ⬜ not started ·
 🔒 blocked on a human decision
 
+**Status, 2026-10-17.** The web app's part is on `dev` (#2197, merged
+2026-10-16, then #2267 to #2271) and reads and publishes artifacts on staging.
+Production has both flags off. The spec is in review as ar-io/docs #192.
+Stream B (core-js and the CLI) has not started.
+
 ---
 
 ## Findings that shape the downstream work
@@ -71,10 +76,10 @@ each other.
 | 1.16 | Localisation — every string the feature adds is hardcoded English by decision, pending a single `.arb` pass across all six locales at ship time | ⬜ ship-time |
 | 1.17 | 🔨 The imported-artifact record is persisted on the drive row (D19), so a restart no longer re-downloads and re-imports. The sync skip ledger (`SYNC_SKIPPED_ENTITY_PERSISTENCE.md`) is still in memory, so a restart forgets one refusal | ⬜ skip ledger |
 | 1.18 | ✅ **Import speed (D18).** The bulk tables are copied by SQLite, not through Dart: 5.4 s to 2.1 s at 41,767 files on the VM; in an optimised browser build 0.93 s to 0.43 s at 3,000 files and 26.8 s to 19.2 s at 41,767, where the rest is the web database's storage layer. Behaviour proved identical by a twelve-scenario table-by-table harness, and concurrent imports no longer collide on one attach name | ✅ |
-| 1.19 | **The web database's storage.** Measured 2026-10-15, below. Recommended: SQLite on OPFS in a dedicated worker, decided before #2197's web migration ships, so every user migrates once | ⬜ decision |
+| 1.19 | **The web database's storage.** Measured 2026-10-15, below. SQLite on OPFS in a dedicated worker, built in #2197 (`a0b6416f0`), so every user migrates once. See `docs/WEB_DATABASE.md` | ✅ |
 | 1.11 | Export views replacing the typed projection (D7 deferral — needs a schema migration) | 🔒 |
 | 1.12 | ArNS discovery (D6 deferral — needs an undername convention) | 🔒 |
-| 1.13 | Execute an upload | 🔒 human only — costs money, publishes permanently |
+| 1.13 | Execute an upload | ✅ by a human, 2026-10-15: `xk_N9vGYgTuLUgyWlVbdHCkl_js_Bo35M2miM6porK4` (rehearsal below). Every further upload stays human only, because it costs money and publishes permanently |
 
 ## End-to-end review, 2026-10-14
 
@@ -87,7 +92,7 @@ gateway. Fixed items are in #2197; open ones are owned below.
 | R2 | Ethereum and Solana sign-ins | ✅ not a gap: both derive an Arweave wallet from a seed phrase (`login_bloc.dart`), and it owns and signs the drive |
 | R3 | **Which signature is the artifact's proof of authorship.** The upload's owner, as for every ArFS entity; the inner signature is gone. See below | ✅ D16 |
 | R4 | 🔨 `meta.producer` now carries the building client and version (D17); the reader-side refusal list and the spec's versioning policy remain. **No way to disown a buggy producer.** A reader tries the next artifact only when one fails a check; a valid but wrong one is adopted by every client. Artifacts carry `App-Version`, so a reader-side refusal list (config) plus a versioning policy in the spec closes it | ⬜ spec + reader |
-| R5 | ✅ **`path` and `isGhost` no longer travel; the rest are chain facts.** `thumbnail`, `importSource`, `originalOwner`, `fallbackTxId` and `assignedNames` are fields of the file's ArFS metadata, so they stay; `action` stays as derived and informational. Original finding: **app-internal columns in the format**: `path`, `isGhost`, `thumbnail`, `importSource`, `action`, `fallbackTxId`, `assignedNames`. Ghost and placeholder rows are already filtered out (`artifactChainOnlyPredicate`); the columns themselves need a protocol-or-drop call in 2.3 before the first publish | ⬜ 2.3 |
+| R5 | ✅ **`path` and `isGhost` no longer travel; the rest are chain facts.** `thumbnail`, `importSource`, `originalOwner`, `fallbackTxId` and `assignedNames` are fields of the file's ArFS metadata, so they stay; `action` stays as derived and informational. Original finding: **app-internal columns in the format**: `path`, `isGhost`, `thumbnail`, `importSource`, `action`, `fallbackTxId`, `assignedNames`. Ghost and placeholder rows are already filtered out (`artifactChainOnlyPredicate`); the columns themselves need a protocol-or-drop call in 2.3 before the first publish | ✅ D17; specified in ar-io/docs #192 |
 | R6 | **Library pages could not verify what they read by range**, since a signature covered the whole payload | ✅ resolved by D16: a range read is trusted exactly as much as a full one |
 | R7 | **No rollout plan.** Flags exist, but a flag change reaches a user only with a `configVersion` bump and a reload, so there is no fast off switch, and outcomes are only logged | ⬜ below |
 | R8 | Stream B order: with snapshots retiring, core-js may wire artifacts before finishing its own snapshot wiring | ⬜ B1.3 |
@@ -204,11 +209,11 @@ an IndexedDB-to-OPFS mover, but not a header-free OPFS mode for Chrome.
 
 ### Rollout (R7)
 
-1. Read artifacts on staging (`enableSyncFromDriveState`), with a
-   `configVersion` bump.
-2. Read in production, the same way.
-3. Publish on staging, with the demo wallet and with Wander.
-4. Publish in production.
+1. ✅ Read artifacts on staging (`enableSyncFromDriveState`), with a
+   `configVersion` bump (`staging.json`, `configVersion` 4).
+2. ⬜ Read in production, the same way.
+3. 🔨 Publish on staging: done with the demo wallet; Wander not yet.
+4. ⬜ Publish in production.
 
 Each step records the import outcomes (§7) and the migration result, so a
 step is judged on numbers rather than on the absence of complaints.
@@ -243,12 +248,12 @@ instead of the spec would only prove that the two codebases agree.
 | | Item | Status |
 |---|---|---|
 | 2.1 | **Correct the Snapshot spec**: `jsonMetadata`, not `dataJson`; `txSnapshot`, not `tsSnapshot`; a sibling of `gqlNode`; a nullable string | ✅ ar-io-docs #137 |
-| 2.2 | `entity-types.mdx`: a `## Drive State` section beside `## Snapshot`, with its tags (`Entity-Type: drive-state`, `Drive-Id`, `Drive-State-Id`, `State-Version`, `Entity-Count`, `Block-Start`, `Block-End`, `Cipher`, `Cipher-IV`) and the rule that a `Content-Encoding` tag is never set | ⬜ |
-| 2.3 | **The payload, normatively**: the SQLite tables, columns, types and `meta` keys a producer must write and a reader may rely on, with what is excluded by construction (every key). A second producer cannot be written without this, and today it exists only as `drive_state_artifact_schema.dart` | ⬜ |
-| 2.4 | **The envelope, normatively**: serialise, optional gzip, AES256-GCM with the drive key for a private drive. Authorship is the upload's owner (D16). The coverage claim, and the rule that the indexer-reported `Block-Start` / `Block-End` tags are checked against it before a watermark is adopted | ⬜ |
-| 2.5 | **The encoding rule** (D13, decided below): a reader accepts both encodings and tells them apart by the first bytes of the payload | ⬜ |
-| 2.6 | `reading-data.mdx`: the read order (artifact, then snapshots, then GraphQL) and the rule that every failure falls back rather than fails | ⬜ |
-| 2.7 | `privacy.mdx`: one ciphertext under the **drive** key, unlike a snapshot's per-entity ciphertext; and that a snapshot of a private drive publishes its structure in plaintext, which is not stated anywhere | ⬜ |
+| 2.2 | `entity-types.mdx`: a `## Drive State` section beside `## Snapshot`, with its tags (`Entity-Type: drive-state`, `Drive-Id`, `Drive-State-Id`, `State-Version`, `Entity-Count`, `Block-Start`, `Block-End`, `Cipher`, `Cipher-IV`) and the rule that a `Content-Encoding` tag is never set | 🔨 ar-io/docs #192 |
+| 2.3 | **The payload, normatively**: the SQLite tables, columns, types and `meta` keys a producer must write and a reader may rely on, with what is excluded by construction (every key). A second producer cannot be written without this. The DDL in the PR is generated from `drive_state_artifact_schema.dart` | 🔨 ar-io/docs #192 |
+| 2.4 | **The envelope, normatively**: serialise, optional gzip, AES256-GCM with the drive key for a private drive. Authorship is the upload's owner (D16). The coverage claim, and the rule that the indexer-reported `Block-Start` / `Block-End` tags are checked against it before a watermark is adopted | 🔨 ar-io/docs #192 |
+| 2.5 | **The encoding rule** (D13, decided below): a reader accepts both encodings and tells them apart by the first bytes of the payload | 🔨 ar-io/docs #192 |
+| 2.6 | `reading-data.mdx`: the read order (artifact, then snapshots, then GraphQL) and the rule that every failure falls back rather than fails | 🔨 ar-io/docs #192 |
+| 2.7 | `privacy.mdx`: one ciphertext under the **drive** key, unlike a snapshot's per-entity ciphertext; and that a snapshot of a private drive publishes its structure in plaintext, which is not stated anywhere | 🔨 ar-io/docs #192 |
 | 2.8 | Snapshots: marked as superseded for new drives (D-30). Existing snapshots stay readable for ever, and a reader keeps reading them | ⬜ 🔒 D-30 |
 | 2.9 | Whether this addition bumps the ArFS version (0.15 today). A reader that ignores an unknown entity type is unaffected either way | ⬜ 🔒 naming |
 
@@ -372,7 +377,7 @@ implementation, read by another, yielding identical entities. Nothing else prove
 
 ## Sequencing
 
-1. **Finish ardrive-web** (#2197), including the two-encoding reader (D13
+1. ✅ **Finish ardrive-web** (#2197), including the two-encoding reader (D13
    above) so no published artifact can outrun its readers.
 2. **Specify** (2.2 to 2.9) from the implementation that exists, not from
    intent: the `dataJson` divergence is what happens when those drift apart.

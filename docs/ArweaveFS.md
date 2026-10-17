@@ -13,6 +13,7 @@ Folder entities require a single metadata transaction, with standard Folder tags
 File entities require a metadata transaction, with standard File tags and an encoded JSON with secondary metadata.
 File entities also require a second data transaction, which includes a limited set of File tags and the actual file data itself.
 Snapshot entities require a single data transaction, with standard Snapshot tags and encoded JSON with GQL plus JSON metadata (Base64-encoded if private) on it.
+Drive State entities require a single data transaction, with standard Drive State tags and a SQLite database of the drive's parsed state (encrypted with the drive key if private) on it.
 
 MetaData stored in any transaction tags will be defined in the following manner:
 
@@ -152,6 +153,31 @@ The snapshot data is a JSON array of objects containing `gqlNode` and `jsonMetad
     ...
 ]
 ```
+
+## Drive State
+
+A Drive State entity holds a drive's whole parsed state, up to a block height, in one SQLite database published by the drive's owner. A client imports it in one step and then queries only later blocks, instead of replaying every entity. It is a cache: a client that cannot use one syncs from snapshots and GQL as before. Users of the ArDrive app see it as a snapshot.
+
+```Drive State Transaction
+ArFS: 0.15
+Drive-Id: <drive uuid>
+Entity-Type: drive-state
+Drive-State-Id: <uuid of this drive state>
+State-Version: <major.minor, eg 0.2>
+Content-Type: application/octet-stream
+Block-Start: 0
+Block-End: <the producer's synced block height>
+Data-Start: <first block where there's data>
+Data-End: <last block where there's data>
+Entity-Count: <drive, folders and files in the data>
+Unix-Time: <seconds since unix epoch>
+Cipher: AES256-GCM            (private drives only)
+Cipher-IV: <12 byte IV, base64url>  (private drives only)
+
+{ SQLite database, optionally gzipped, then AES256-GCM with the drive key if private }
+```
+
+The published specification is the Drive State section of the ArFS entity types page on docs.ar.io (`ar-io-docs`, `content/build/advanced/arfs/entity-types.mdx`), with the read order in `reading-data.mdx`. The design and its reasoning are in `docs/DRIVE_STATE_ARTIFACT.md`, and the exact schema a reader compares is `lib/drive_state_sqlite/drive_state_artifact_schema.dart`.
 
 ## Creating a Drive
 
