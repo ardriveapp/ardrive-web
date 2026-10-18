@@ -40,7 +40,7 @@ const double _blockGap = 12;
 /// `ArDriveDataTable` leaves above its header and below its last row.
 const double _panelPadding = 8;
 
-/// Wide enough for "Sync All Drives" and no wider, at a text scale of 1.
+/// Wide enough for "Sync all drives" and no wider, at a text scale of 1.
 ///
 /// The label measures 120px in Wavehaus at the button's size, plus its 20px of
 /// padding.
@@ -802,11 +802,11 @@ class _DrivesListLoadedView extends StatelessWidget {
                           //
                           // Replacing them is what a mail client does, and it
                           // works there because those rows describe
-                          // themselves. These read "Never synced", a dash, a
-                          // dash and a date: four terse columns with no labels
-                          // stop being a table. So the strip takes a line of
-                          // its own while a selection exists, and the headings
-                          // stay where they are.
+                          // themselves. These read "Not synced on this
+                          // device", a dash, a dash and a date: four terse
+                          // columns with no labels stop being a table. So the
+                          // strip takes a line of its own while a selection
+                          // exists, and the headings stay where they are.
                           if (state.selected.isNotEmpty &&
                               onSyncSelected != null)
                             SliverToBoxAdapter(
@@ -1114,10 +1114,10 @@ class _SyncEverythingPrompt extends StatelessWidget {
 /// What the reader can do with the drives they have ticked.
 ///
 /// A line of its own above the column headings, not instead of them: this
-/// table's cells are "Never synced", a dash, a dash and a date, and four terse
-/// columns with no labels stop being a table. It is drawn as a tinted band
-/// rather than another card, so it reads as part of the table it belongs to
-/// rather than a second panel stacked on the first.
+/// table's cells are "Not synced on this device", a dash, a dash and a date,
+/// and four terse columns with no labels stop being a table. It is drawn as a
+/// tinted band rather than another card, so it reads as part of the table it
+/// belongs to rather than a second panel stacked on the first.
 class _SelectionBar extends StatelessWidget {
   const _SelectionBar({
     required this.count,

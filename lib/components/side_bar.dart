@@ -336,7 +336,7 @@ class _AppSideBarState extends State<AppSideBar> {
               // is what kept the list exactly as tall as the window.
               //
               // No indent of its own. It sat 43px in, so its headings started
-              // a whole icon-and-gap to the right of All drives above them.
+              // a whole icon-and-gap to the right of Your drives above them.
               return _DriveSections(state: state);
             }
 
@@ -974,7 +974,7 @@ class _DriveSectionsState extends State<_DriveSections> {
         bool shown(Drive drive) => !(hideHidden && drive.isHidden);
 
         // No padding of its own on either breakpoint: the rows sit on the
-        // same edge as All drives above them.
+        // same edge as Your drives above them.
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,

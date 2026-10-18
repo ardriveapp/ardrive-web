@@ -93,7 +93,7 @@ class DriveScopeRail extends StatelessWidget {
 
 /// One row of the nav, wherever it appears.
 ///
-/// Shared so the permanent "All drives" anchor the sidebar draws above this
+/// Shared so the permanent "Your drives" anchor the sidebar draws above this
 /// rail is the same object as the scopes below it - the row a reader relies on
 /// to get home must not be a lookalike that drifts.
 class DriveNavRow extends StatelessWidget {

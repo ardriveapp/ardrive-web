@@ -472,7 +472,7 @@
   "@syncThisDrive": {
     "description": "Menu option to sync only the current drive"
   },
-  "deepSyncThisDrive": "Deep Sync This Drive",
+  "deepSyncThisDrive": "Deep sync this drive",
   "@deepSyncThisDrive": {
     "description": "Menu option to deep sync only the current drive"
   },
@@ -943,7 +943,7 @@
   },
   "driveSyncFailed": "Last sync failed",
   "@driveSyncFailed": {
-    "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from 'Never synced', which means nobody has looked yet."
+    "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from driveNeverSynced, which means nobody has looked yet."
   },
   "driveSyncingNow": "Syncing...",
   "@driveSyncingNow": {
