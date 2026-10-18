@@ -162,6 +162,62 @@ void main() {
       expect(find.text('Share folder with others'), findsOneWidget);
       expect(find.text('Q4 Photos'), findsOneWidget);
       expect(find.text('My Drive'), findsNothing);
+      expect(
+        find.text('Anyone with the link can open this folder.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('public drive'), findsNothing);
+    });
+
+    group('a private folder share says the key opens the whole drive', () {
+      // There is no folder key. A folder in a private drive is read with the
+      // drive key, so sharing it hands over the rest of the drive too - and
+      // copy that only mentions the folder would hide that.
+      DriveShareLoadSuccess folderShare({required bool keyIsInLink}) =>
+          DriveShareLoadSuccess(
+            drive: drive(isPrivate: true),
+            driveShareLink: Uri.parse(
+              'https://app.ardrive.io/#/drives/$driveId/folders/folder-id'
+              '${keyIsInLink ? '?driveKey=$driveKeyBase64' : ''}',
+            ),
+            driveKeyBase64: driveKeyBase64,
+            keyIsInLink: keyIsInLink,
+            isFolder: true,
+            folderName: 'Q4 Photos',
+          );
+
+      testWidgets('when the key is sent separately', (tester) async {
+        await pumpState(tester, folderShare(keyIsInLink: false));
+
+        expect(
+          find.textContaining('won’t open this folder'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining("opens everything in 'My Drive'"),
+          findsOneWidget,
+        );
+        expect(find.text('Include the drive key in the link'), findsOneWidget);
+      });
+
+      testWidgets('when the key is in the link', (tester) async {
+        await pumpState(tester, folderShare(keyIsInLink: true));
+
+        expect(
+          find.textContaining(
+              "can open everything in 'My Drive', not just this folder"),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Anyone with the link can open this folder and the rest '
+              "of 'My Drive'."),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('Anyone can access this private drive'),
+          findsNothing,
+        );
+      });
     });
 
     testWidgets('a failure is shown, with a way out of it', (tester) async {

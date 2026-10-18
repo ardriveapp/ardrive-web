@@ -114,8 +114,11 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                         // cubit's answer changes.
                         key: ValueKey(state.keyIsInLink),
                         checked: state.keyIsInLink,
-                        title: appLocalizationsOf(context)
-                            .shareDriveIncludeKeyInLink,
+                        title: state.isFolder
+                            ? appLocalizationsOf(context)
+                                .shareFolderIncludeKeyInLink
+                            : appLocalizationsOf(context)
+                                .shareDriveIncludeKeyInLink,
                         titleStyle: typography.paragraphNormal(
                           color: colorTokens.textMid,
                         ),
@@ -126,8 +129,15 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                       ),
                       if (state.keyIsInLink)
                         _HelperText(
-                          appLocalizationsOf(context)
-                              .shareDriveKeyInLinkWarning,
+                          // There is no folder key: a folder in a private
+                          // drive is opened with the drive's key, which opens
+                          // the rest of the drive too. A folder share must say
+                          // so, or it reads as sharing only the folder.
+                          state.isFolder
+                              ? appLocalizationsOf(context)
+                                  .shareFolderKeyInLinkWarning(state.drive.name)
+                              : appLocalizationsOf(context)
+                                  .shareDriveKeyInLinkWarning,
                           color: colorTokens.strokeRed,
                         ),
                     },
@@ -136,14 +146,7 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                       // A keyless private link does *not* grant access on its
                       // own, so it must not be described as though it does -
                       // that copy predates the key ever being optional.
-                      state.drive.isPublic
-                          ? appLocalizationsOf(context)
-                              .anyoneCanAccessThisDrivePublic
-                          : state.keyIsInLink
-                              ? appLocalizationsOf(context)
-                                  .anyoneCanAccessThisDrivePrivate
-                              : appLocalizationsOf(context)
-                                  .shareDriveKeylessNotice,
+                      _notice(context, state),
                       // Guidance, not the headline. As `paragraphLarge` it was
                       // the largest text in a dialog whose actual subject is
                       // the two fields above it.
@@ -182,6 +185,26 @@ class DriveShareDialogState extends State<DriveShareDialog> {
           );
         },
       );
+
+  /// What the link grants on its own, said of the folder when it names one.
+  String _notice(BuildContext context, DriveShareLoadSuccess state) {
+    final l10n = appLocalizationsOf(context);
+    final driveName = state.drive.name;
+
+    if (state.drive.isPublic) {
+      return state.isFolder
+          ? l10n.shareFolderPublicNotice
+          : l10n.anyoneCanAccessThisDrivePublic;
+    }
+    if (state.keyIsInLink) {
+      return state.isFolder
+          ? l10n.shareFolderPrivateNotice(driveName)
+          : l10n.anyoneCanAccessThisDrivePrivate;
+    }
+    return state.isFolder
+        ? l10n.shareFolderKeylessNotice(driveName)
+        : l10n.shareDriveKeylessNotice;
+  }
 }
 
 /// A line of guidance under the control it belongs to.
