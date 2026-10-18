@@ -1,8 +1,10 @@
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/permanence/permanence_panel.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   const gb = 1024 * 1024 * 1024;
@@ -259,6 +261,42 @@ void main() {
     expect(cost.dy, greaterThan(spend.dy));
   });
 
+  // The profile card closes as it opens the panel, so the context that
+  // opened it is gone by the time Share is pressed.
+  testWidgets('opens the share card after what opened the panel has gone',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(ChangeNotifierProvider(
+      create: (_) => ActivityTracker(),
+      child: ArDriveTheme(
+        themeData: lightTheme(),
+        child: MaterialApp(
+          home: Material(
+            child: _Opener(
+              onOpen: (context) => showPermanencePanel(context, summary()),
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    expect(find.text('Open'), findsNothing);
+
+    await tester.tap(find.text('Share my permanence'));
+    await tester.pumpAndSettle();
+
+    // The card is drawn at a fixed size and the test font is wider than the
+    // app's, so its text can overflow here. What this checks is that it
+    // opened, from a context that was still there.
+    expect('${tester.takeException()}', isNot(contains('deactivated')));
+    expect(find.text('Share your permanence'), findsOneWidget);
+  });
+
   test('the share text carries no dollar figure and no promised duration', () {
     final text = permanenceShareText(summary());
 
@@ -266,4 +304,32 @@ void main() {
     expect(text, isNot(contains(r'$')));
     expect(text, isNot(contains('200')));
   });
+}
+
+/// A button that takes itself away as it is pressed, as the profile card
+/// closes when it opens the panel.
+class _Opener extends StatefulWidget {
+  const _Opener({required this.onOpen});
+
+  final void Function(BuildContext context) onOpen;
+
+  @override
+  State<_Opener> createState() => _OpenerState();
+}
+
+class _OpenerState extends State<_Opener> {
+  bool _shown = true;
+
+  @override
+  Widget build(BuildContext context) => _shown
+      ? Builder(
+          builder: (context) => TextButton(
+            onPressed: () {
+              setState(() => _shown = false);
+              widget.onOpen(context);
+            },
+            child: const Text('Open'),
+          ),
+        )
+      : const SizedBox();
 }

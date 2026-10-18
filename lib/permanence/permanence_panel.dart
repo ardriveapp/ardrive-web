@@ -207,6 +207,11 @@ String _plural(int n, String one) =>
     '${_count.format(n)} $one${n == 1 ? '' : 's'}';
 
 void showPermanencePanel(BuildContext context, PermanenceSummary summary) {
+  // Held from here because the profile card closes as it opens this, so
+  // [context] is gone by the time Share is pressed: the share card is opened
+  // from the navigator's own context, which outlives both.
+  final navigator = Navigator.of(context);
+
   showArDriveDialog(
     context,
     content: _NoScrollbar(
@@ -226,8 +231,8 @@ void showPermanencePanel(BuildContext context, PermanenceSummary summary) {
             title: 'Share my permanence',
             customWidth: 240,
             action: () {
-              Navigator.of(context).pop();
-              showPermanenceShare(context, summary);
+              navigator.pop();
+              showPermanenceShare(navigator.context, summary);
             },
           ),
         ],
