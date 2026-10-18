@@ -366,7 +366,7 @@ class _AppSideBarState extends State<AppSideBar> {
     }
 
     return ArDriveClickArea(
-      tooltip: appLocalizationsOf(context).allDrivesScope,
+      tooltip: appLocalizationsOf(context).yourDrives,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
@@ -1102,7 +1102,7 @@ class _AllDrivesRow extends StatelessWidget {
 
     return DriveNavRow(
       icon: DriveScopeRail.iconFor(DriveScope.all),
-      label: appLocalizationsOf(context).allDrivesScope,
+      label: appLocalizationsOf(context).yourDrives,
       showLabel: showLabel,
       isCurrent: scopeIsAll,
       onTap: () {

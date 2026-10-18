@@ -63,7 +63,7 @@ class DriveScopeRail extends StatelessWidget {
 
     switch (scope) {
       case DriveScope.all:
-        return l.allDrivesScope;
+        return l.yourDrives;
       case DriveScope.public:
         return l.publicDrives;
       case DriveScope.private:

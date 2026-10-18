@@ -233,6 +233,75 @@ void main() {
     expect(results.single.trigger, SyncTrigger.userInitiated);
   });
 
+  group('a first read', () {
+    Future<SyncComplete> resultOf(
+      SyncProgress reported, {
+      bool deep = false,
+    }) async {
+      repositoryReports(reported);
+      final cubit = buildCubit();
+      final results =
+          await resultsOf(cubit, () => cubit.startSync(deepSync: deep));
+      await cubit.close();
+      return results.single;
+    }
+
+    test(
+        'reports how many drives it read, when it read every one from the start',
+        () async {
+      final result = await resultOf(
+        SyncProgress.initial().copyWith(
+          progress: 1,
+          entitiesSynced: 29,
+          firstTimeSyncDriveCount: 2,
+          syncedDriveIds: ['drive-a', 'drive-b'],
+        ),
+      );
+
+      expect(result.firstReadDriveCount, 2);
+    });
+
+    test('is not reported when some drives carried on from where they were',
+        () async {
+      // One drive new to this device, two read since their last sync: the
+      // items are mostly changes, so the result says what changed.
+      final result = await resultOf(
+        SyncProgress.initial().copyWith(
+          progress: 1,
+          entitiesSynced: 29,
+          firstTimeSyncDriveCount: 1,
+          syncedDriveIds: ['drive-a', 'drive-b', 'drive-c'],
+        ),
+      );
+
+      expect(result.firstReadDriveCount, 0);
+    });
+
+    test('is not reported for a deep resync', () async {
+      // A deep resync reads every drive from the start as well, but most of
+      // what it reads is here already, and the count is of what it wrote.
+      final result = await resultOf(
+        SyncProgress.initial().copyWith(
+          progress: 1,
+          entitiesSynced: 8,
+          firstTimeSyncDriveCount: 2,
+          syncedDriveIds: ['drive-a', 'drive-b'],
+        ),
+        deep: true,
+      );
+
+      expect(result.firstReadDriveCount, 0);
+    });
+
+    test('is not reported when no drive was read', () async {
+      final result = await resultOf(
+        SyncProgress.initial().copyWith(progress: 1),
+      );
+
+      expect(result.firstReadDriveCount, 0);
+    });
+  });
+
   test('a sync of one drive reports the drive it was', () async {
     repositoryReportsForOneDrive(
       SyncProgress.initial().copyWith(

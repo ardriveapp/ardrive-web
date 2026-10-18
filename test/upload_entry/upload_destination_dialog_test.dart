@@ -135,9 +135,9 @@ void main() {
     testWidgets('marks only the drives nothing has read', (tester) async {
       await openChooser(tester, unsynced: {archive.id});
 
-      expect(find.text('Never synced'), findsOneWidget);
+      expect(find.text('Not synced on this device'), findsOneWidget);
 
-      final hint = tester.getTopLeft(find.text('Never synced')).dy;
+      final hint = tester.getTopLeft(find.text('Not synced on this device')).dy;
       expect(hint, greaterThan(tester.getTopLeft(find.text('Archive')).dy));
     });
 

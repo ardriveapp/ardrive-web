@@ -141,9 +141,9 @@ void main() {
   testWidgets('both offers are live when nothing is running', (tester) async {
     await pumpCard(tester, isSyncing: false);
 
-    expect(buttonNamed(tester, 'Sync Now').isDisabled, isFalse);
-    expect(buttonNamed(tester, 'Sync Now').onPressed, isNotNull);
-    expect(buttonNamed(tester, 'Sync All Drives').isDisabled, isFalse);
+    expect(buttonNamed(tester, 'Sync this drive').isDisabled, isFalse);
+    expect(buttonNamed(tester, 'Sync this drive').onPressed, isNotNull);
+    expect(buttonNamed(tester, 'Sync all drives').isDisabled, isFalse);
   });
 
   testWidgets('both say they are unavailable while a sync runs',
@@ -153,10 +153,10 @@ void main() {
     // `isDisabled` as well as a null callback: ArDriveButtonNew picks its
     // colours off the flag alone, so without it the button looks live and
     // does nothing.
-    expect(buttonNamed(tester, 'Sync Now').isDisabled, isTrue);
-    expect(buttonNamed(tester, 'Sync Now').onPressed, isNull);
-    expect(buttonNamed(tester, 'Sync All Drives').isDisabled, isTrue);
-    expect(buttonNamed(tester, 'Sync All Drives').onPressed, isNull);
+    expect(buttonNamed(tester, 'Sync this drive').isDisabled, isTrue);
+    expect(buttonNamed(tester, 'Sync this drive').onPressed, isNull);
+    expect(buttonNamed(tester, 'Sync all drives').isDisabled, isTrue);
+    expect(buttonNamed(tester, 'Sync all drives').onPressed, isNull);
   });
 
   group('the kebab offers the same answer as the buttons', () {
@@ -213,7 +213,7 @@ void main() {
 
       final item = syncItem(tester);
 
-      expect((item.content as ArDriveDropdownItemTile).name, 'Sync This Drive');
+      expect((item.content as ArDriveDropdownItemTile).name, 'Sync this drive');
       expect(item.onClick, isNotNull);
       expect((item.content as ArDriveDropdownItemTile).isDisabled, isFalse);
     });
@@ -318,7 +318,7 @@ void main() {
             surface: layout.value,
           );
 
-          final button = find.widgetWithText(ArDriveButtonNew, 'Sync Now');
+          final button = find.widgetWithText(ArDriveButtonNew, 'Sync this drive');
           expect(button, findsOneWidget);
 
           // Scrolled to, not assumed on screen: the card is allowed to be
@@ -346,7 +346,7 @@ void main() {
           );
 
           final button =
-              find.widgetWithText(ArDriveButtonNew, 'Sync All Drives');
+              find.widgetWithText(ArDriveButtonNew, 'Sync all drives');
           expect(button, findsOneWidget);
 
           await tester.ensureVisible(button);

@@ -497,13 +497,15 @@ class DriveListRow extends StatelessWidget {
         Expanded(flex: _syncFlex, child: _syncState(context)),
         const SizedBox(width: _columnGap),
         if (showsAllColumns) ...[
-          Expanded(flex: _filesFlex, child: _files(context)),
+          Expanded(
+              flex: _filesFlex, child: _files(context, underHeading: true)),
           const SizedBox(width: _columnGap),
         ],
         Expanded(flex: _sizeFlex, child: _size(context)),
         if (showsAllColumns) ...[
           const SizedBox(width: _columnGap),
-          Expanded(flex: _createdFlex, child: _created(context)),
+          Expanded(
+              flex: _createdFlex, child: _created(context, underHeading: true)),
         ],
       ],
     );
@@ -532,7 +534,8 @@ class DriveListRow extends StatelessWidget {
           children: [
             // A withheld figure is a mark that means nothing without the
             // column heading above it, and there is no heading here. The row
-            // already says "Never synced", which is the same fact in words.
+            // already says the drive is not synced on this device, which is
+            // the same fact in words.
             if (drive.fileCount != null) _files(context),
             if (drive.totalSize != null) _size(context),
             _created(context),
@@ -636,14 +639,19 @@ class DriveListRow extends StatelessWidget {
     );
   }
 
-  Widget _files(BuildContext context) {
+  // [underHeading] is true in the table, where the column heading already says
+  // what the figure is: "Files" over "15 files" said it twice. The stacked
+  // layout has no headings, so there the words stay.
+  Widget _files(BuildContext context, {bool underHeading = false}) {
     final fileCount = drive.fileCount;
 
     return _figure(
       context,
       fileCount == null
           ? driveListWithheldFigure
-          : appLocalizationsOf(context).driveFileCount(fileCount),
+          : underHeading
+              ? NumberFormat.decimalPattern().format(fileCount)
+              : appLocalizationsOf(context).driveFileCount(fileCount),
       withheld: fileCount == null,
     );
   }
@@ -661,13 +669,16 @@ class DriveListRow extends StatelessWidget {
     );
   }
 
-  Widget _created(BuildContext context) {
+  // See [_files] for [underHeading].
+  Widget _created(BuildContext context, {bool underHeading = false}) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final date = DateFormat.yMMMd().format(drive.dateCreated);
 
     return Text(
-      appLocalizationsOf(context)
-          .driveCreatedOnDate(DateFormat.yMMMd().format(drive.dateCreated)),
+      underHeading
+          ? date
+          : appLocalizationsOf(context).driveCreatedOnDate(date),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: typography
@@ -739,7 +750,7 @@ class _SharedMarker extends StatelessWidget {
 ///
 /// Pulled out of the widget so the thresholds can be checked directly. Every
 /// branch is a different fact, and none of them is allowed to stand in for
-/// another: "Never synced" is not "empty", and a bare "Synced" is not a time.
+/// another: "not synced" is not "empty", and a bare "Synced" is not a time.
 String formatDriveSyncState(
   BuildContext context,
   DriveListItem drive, {

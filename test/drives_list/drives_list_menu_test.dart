@@ -158,8 +158,8 @@ void main() {
     testWidgets('is live when nothing is running', (tester) async {
       await openMenu(tester, isOwner: true);
 
-      expect(itemNamed(tester, 'Sync This Drive').isDisabled, isFalse);
-      expect(entryNamed(tester, 'Sync This Drive').onClick, isNotNull);
+      expect(itemNamed(tester, 'Sync this drive').isDisabled, isFalse);
+      expect(entryNamed(tester, 'Sync this drive').onClick, isNotNull);
     });
 
     testWidgets('says it is unavailable rather than doing nothing',
@@ -171,8 +171,8 @@ void main() {
       // alone, so a null callback on its own leaves it looking live.
       await openMenu(tester, isOwner: true, isSyncing: true);
 
-      expect(itemNamed(tester, 'Sync This Drive').isDisabled, isTrue);
-      expect(entryNamed(tester, 'Sync This Drive').onClick, isNull);
+      expect(itemNamed(tester, 'Sync this drive').isDisabled, isTrue);
+      expect(entryNamed(tester, 'Sync this drive').onClick, isNull);
     });
 
     testWidgets('and the other actions are untouched', (tester) async {
@@ -190,7 +190,7 @@ void main() {
         (tester) async {
       await openMenu(tester, isOwner: true);
 
-      expect(find.text('Sync This Drive'), findsOneWidget);
+      expect(find.text('Sync this drive'), findsOneWidget);
       expect(find.text('Rename Drive'), findsOneWidget);
       expect(find.text('Share Drive'), findsOneWidget);
       expect(find.text('Hide'), findsOneWidget);
@@ -203,7 +203,7 @@ void main() {
         (tester) async {
       await openMenu(tester, isOwner: false);
 
-      expect(find.text('Sync This Drive'), findsOneWidget);
+      expect(find.text('Sync this drive'), findsOneWidget);
       expect(find.text('Share Drive'), findsOneWidget);
       expect(find.text('Detach Drive'), findsOneWidget);
       // Renaming and hiding are the owner's, and an item that cannot work is
@@ -321,7 +321,7 @@ void main() {
       );
 
       final heading = tester.getRect(find.text('Last synced'));
-      final value = tester.getRect(find.text('Never synced'));
+      final value = tester.getRect(find.text('Not synced on this device'));
 
       expect(value.left, closeTo(heading.left, 1),
           reason: 'the heading and the column under it are laid out in '

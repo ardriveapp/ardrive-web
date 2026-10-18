@@ -200,7 +200,7 @@ void main() {
     await pumpPanel(tester);
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.text('Never synced'), findsOneWidget);
+    expect(find.text('Not synced on this device'), findsOneWidget);
     expect(
       find.text(
         'This drive has not been synced on this device, so its size and '
@@ -219,7 +219,7 @@ void main() {
 
     expect(synced, 0, reason: 'showing the details syncs nothing');
 
-    await tester.tap(find.text('Sync Now'));
+    await tester.tap(find.text('Sync this drive'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -232,8 +232,8 @@ void main() {
       (tester) async {
     await pumpPanel(tester, withSync: false);
 
-    expect(find.text('Never synced'), findsOneWidget);
-    expect(find.text('Sync Now'), findsNothing);
+    expect(find.text('Not synced on this device'), findsOneWidget);
+    expect(find.text('Sync this drive'), findsNothing);
 
     await takeDown(tester);
   });

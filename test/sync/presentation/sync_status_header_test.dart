@@ -562,7 +562,7 @@ void main() {
     await openMenu(tester);
 
     expect(tester.takeException(), isNull);
-    expect(find.text('All drives'), findsOneWidget);
+    expect(find.text('Your drives'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
   });
@@ -726,7 +726,7 @@ void main() {
       await openMenu(tester);
 
       expect(find.byKey(syncStatusHeaderKey), findsNothing);
-      expect(find.text('All drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsOneWidget);
 
       // And once its few seconds are up it is history: nothing is running and
       // nothing is waiting to be read, so the indicator goes, menu and all.
@@ -735,7 +735,7 @@ void main() {
       await tester.pump(const Duration(seconds: 30));
 
       expect(find.byType(ArDriveDropdown), findsNothing);
-      expect(find.text('All drives'), findsNothing);
+      expect(find.text('Your drives'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });
