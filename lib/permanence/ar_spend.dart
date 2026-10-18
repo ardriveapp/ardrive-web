@@ -128,6 +128,12 @@ class ArSpendTally {
         },
       );
 
+  /// Everything this tally, and the count it carries on from, left out.
+  Set<String> get excludedIds => {
+        ...excluded.keys,
+        ...?runBase?.excludedIds,
+      };
+
   /// This tally with whatever it left out that [knownTxIds] now say is
   /// ArDrive's counted in.
   ArSpendTally reclaim(Set<String> knownTxIds) {
@@ -189,12 +195,16 @@ Future<ArSpendTally> tallyArSpend({
   required Future<void> Function(String key, String value) write,
   required Future<ArFeePage> Function({required int minHeight, String? after})
       fetchPage,
-  Set<String> knownTxIds = const {},
+  KnownTxLookup? knownAmong,
   int maxPages = 10,
 }) async {
-  // What an earlier count left out, before sync knew it was ArDrive's.
-  var tally = (ArSpendTally.fromJson(read(storageKey)) ?? ArSpendTally.empty)
-      .reclaim(knownTxIds);
+  final stored = ArSpendTally.fromJson(read(storageKey)) ?? ArSpendTally.empty;
+
+  // What an earlier count left out, before sync knew it was ArDrive's. Only
+  // those are asked about, and only when there are any.
+  var tally = stored.reclaim(
+    await lookUpKnown(knownAmong, stored.excludedIds),
+  );
 
   // What this count adds to, kept until it finishes.
   final base = tally.runBase ??
@@ -314,6 +324,28 @@ Future<ArFeePage> fetchDirectFeesPage({
   return raw.page;
 }
 
+/// Which of [txIds] the wallet's synced drives are made of. See
+/// `DriveDao.arDriveTransactionsAmong`.
+typedef KnownTxLookup = Future<Set<String>> Function(Set<String> txIds);
+
+/// [knownAmong] asked about [txIds], and nothing asked when there is nothing
+/// to ask. A lookup that fails knows nothing: what it would have counted is
+/// left out for now, and asked about again by the next count.
+Future<Set<String>> lookUpKnown(
+  KnownTxLookup? knownAmong,
+  Set<String> txIds,
+) async {
+  if (knownAmong == null || txIds.isEmpty) {
+    return const {};
+  }
+
+  try {
+    return await knownAmong(txIds);
+  } catch (_) {
+    return const {};
+  }
+}
+
 /// Whether a transaction a wallet paid for is ArDrive storage.
 ///
 /// First by what sync knows: [knownTxIds] are the transactions the wallet's
@@ -329,9 +361,13 @@ bool isArDriveTransaction({
   required Map<String, String> tags,
   required Set<String> knownTxIds,
 }) =>
-    knownTxIds.contains(txId) ||
-    tags.containsKey('ArFS') ||
-    arDriveAppNames.contains(tags['App-Name']);
+    knownTxIds.contains(txId) || isArDriveByTags(tags);
+
+/// Whether a transaction's tags alone say it is ArDrive's: an `ArFS` tag, or
+/// an App-Name of one of ArDrive's apps. What they leave open is for
+/// [isArDriveTransaction]'s known transactions to settle.
+bool isArDriveByTags(Map<String, String> tags) =>
+    tags.containsKey('ArFS') || arDriveAppNames.contains(tags['App-Name']);
 
 /// What a wallet paid for one of its ArDrive transactions, in winston: the
 /// network's fee, and the tip a direct upload sent ArDrive's community with

@@ -5,9 +5,13 @@ void main() {
   late Map<String, String> storage;
   late List<({int minHeight, String? after})> asked;
 
+  /// What each count asked the database about.
+  late List<Set<String>> looked;
+
   setUp(() {
     storage = {};
     asked = [];
+    looked = [];
   });
 
   ArFeePage page(int winston, int count, int? lastHeight,
@@ -30,6 +34,7 @@ void main() {
     int maxPages = 10,
     bool failOnFirst = false,
     Set<String> known = const {},
+    bool lookupFails = false,
   }) {
     var next = 0;
     return tallyArSpend(
@@ -37,7 +42,11 @@ void main() {
       read: (key) => storage[key],
       write: (key, value) async => storage[key] = value,
       maxPages: maxPages,
-      knownTxIds: known,
+      knownAmong: (txIds) async {
+        looked.add(txIds);
+        if (lookupFails) throw Exception('database closed');
+        return txIds.intersection(known);
+      },
       fetchPage: ({required int minHeight, String? after}) async {
         asked.add((minHeight: minHeight, after: after));
         if (failOnFirst) throw Exception('gateway down');
@@ -168,6 +177,39 @@ void main() {
       expect(result.winston, BigInt.zero);
       expect(ArSpendTally.fromJson(storage['key'])!.excluded.keys,
           ['arkb-upload']);
+    });
+
+    test('is all the database is asked about, and only when there is one',
+        () async {
+      // A drive of 100,000 files is made of 400,000 transactions: reading
+      // them all on every open cost seconds on the web.
+      await tally([page(100, 1, 500)]);
+      expect(looked, isEmpty, reason: 'nothing left out, nothing to ask');
+
+      await tally([
+        page(0, 0, 600, excluded: {'late-data': 40})
+      ]);
+      looked.clear();
+
+      await tally([page(0, 0, null)], known: {'late-data'});
+      expect(looked, [
+        {'late-data'}
+      ]);
+    });
+
+    test('stays left out while the database cannot say', () async {
+      await tally([
+        page(0, 0, 500, excluded: {'late-data': 40})
+      ]);
+
+      final result = await tally(
+        [page(0, 0, null)],
+        known: {'late-data'},
+        lookupFails: true,
+      );
+
+      expect(result.winston, BigInt.zero);
+      expect(result.excluded.keys, ['late-data'], reason: 'asked again later');
     });
 
     test('keeps only the most recent of them', () async {

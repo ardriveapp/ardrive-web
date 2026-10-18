@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:ardrive/utils/snapshots/misdecoded_text.dart';
 import 'package:ardrive/utils/preview_byte_cache.dart';
@@ -1086,6 +1087,30 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return row.read<int>('files');
   }
 
+  /// Changes whenever [permanentDataByYear] or [permanentFileCount] could:
+  /// when a revision is written, or an upload starts, lands or fails. For
+  /// deciding whether figures already counted still hold, at a fraction of a
+  /// millisecond against a scan of every revision.
+  ///
+  /// Revisions are only ever added, so the newest row's id moves with every
+  /// one written. An upload that lands leaves the pending count; one that
+  /// fails moves to the failed count.
+  Future<String> permanentDataVersion() async {
+    final row = await customSelect(
+      '''
+      SELECT (SELECT MAX(rowid) FROM file_revisions) AS revisions,
+             (SELECT COUNT(*) FROM network_transactions
+               WHERE status = '${TransactionStatus.pending}') AS pending,
+             (SELECT COUNT(*) FROM network_transactions
+               WHERE status = '${TransactionStatus.failed}') AS failed
+      ''',
+      readsFrom: {fileRevisions, networkTransactions},
+    ).getSingle();
+
+    return '${row.read<int?>('revisions')}:${row.read<int>('pending')}'
+        ':${row.read<int>('failed')}';
+  }
+
   /// The revisions of [ids] whose data is stored for good: not a pin, and
   /// not an upload still pending or one that failed. Binds one variable per
   /// drive id.
@@ -1099,40 +1124,68 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
                              '${TransactionStatus.failed}')
         )''';
 
-  /// Every transaction [driveIds] are made of, as sync recorded them: the
+  /// Which of [txIds] [driveIds] are made of, as sync recorded them: the
   /// metadata and data of every file revision, the metadata of every folder
   /// and drive revision, and the bundles any of them travelled in.
   ///
   /// What makes a wallet's transaction ArDrive storage, for the AR it paid
   /// directly - the same drives the permanence panel sizes, known the way
   /// sync knows them rather than guessed from an App-Name tag.
-  Future<Set<String>> arDriveTransactionIds(Iterable<String> driveIds) async {
-    final ids = driveIds.toList();
+  ///
+  /// Asked about the transactions in hand, never for the whole set: a drive
+  /// of 100,000 files is made of 400,000 of them, which took a second and a
+  /// half to read out natively and more on the web, where every row crosses
+  /// to the page from the database worker. Asked in batches of
+  /// [_txLookupBatch], to stay well inside SQLite's limit on variables.
+  Future<Set<String>> arDriveTransactionsAmong(
+    Iterable<String> driveIds,
+    Iterable<String> txIds,
+  ) async {
+    final drives = driveIds.toList();
+    final candidates = txIds.toSet().toList();
 
-    if (ids.isEmpty) {
+    if (drives.isEmpty || candidates.isEmpty) {
       return {};
     }
 
-    final placeholders = List.filled(ids.length, '?').join(', ');
-    final variables = [for (final id in ids) Variable.withString(id)];
+    final drivePlaceholders = List.filled(drives.length, '?').join(', ');
+    final found = <String>{};
 
-    final rows = await customSelect(
-      '''
-      SELECT metadataTxId AS tx FROM file_revisions WHERE driveId IN ($placeholders)
-      UNION SELECT dataTxId FROM file_revisions WHERE driveId IN ($placeholders)
-      UNION SELECT bundledIn FROM file_revisions
-        WHERE driveId IN ($placeholders) AND bundledIn IS NOT NULL
-      UNION SELECT metadataTxId FROM folder_revisions WHERE driveId IN ($placeholders)
-      UNION SELECT metadataTxId FROM drive_revisions WHERE driveId IN ($placeholders)
-      UNION SELECT bundledIn FROM drive_revisions
-        WHERE driveId IN ($placeholders) AND bundledIn IS NOT NULL
-      ''',
-      variables: [for (var i = 0; i < 6; i++) ...variables],
-      readsFrom: {fileRevisions, folderRevisions, driveRevisions},
-    ).get();
+    for (var i = 0; i < candidates.length; i += _txLookupBatch) {
+      final batch = candidates.sublist(
+          i, math.min(i + _txLookupBatch, candidates.length));
+      final txPlaceholders = List.filled(batch.length, '?').join(', ');
+      // The transaction first: dataTxId has an index, and for the rest
+      // SQLite checks each row against the batch in one pass.
+      String among(String column, String table) => '''
+        SELECT $column AS tx FROM $table
+        WHERE $column IN ($txPlaceholders) AND driveId IN ($drivePlaceholders)''';
 
-    return {for (final row in rows) row.read<String>('tx')};
+      final rows = await customSelect(
+        [
+          among('dataTxId', 'file_revisions'),
+          among('metadataTxId', 'file_revisions'),
+          among('bundledIn', 'file_revisions'),
+          among('metadataTxId', 'folder_revisions'),
+          among('metadataTxId', 'drive_revisions'),
+          among('bundledIn', 'drive_revisions'),
+        ].join('\nUNION '),
+        variables: [
+          for (var branch = 0; branch < 6; branch++) ...[
+            for (final tx in batch) Variable.withString(tx),
+            for (final drive in drives) Variable.withString(drive),
+          ],
+        ],
+        readsFrom: {fileRevisions, folderRevisions, driveRevisions},
+      ).get();
+
+      found.addAll(rows.map((row) => row.read<String>('tx')));
+    }
+
+    return found;
   }
+
+  static const _txLookupBatch = 300;
 
   /// Undoes names damaged by reading drive snapshots as Latin-1, in every
   /// table that keeps one: drives, folders and files, and their revisions.

@@ -72,7 +72,7 @@ void main() {
           bundledIn: const Value('bundle-2'),
         ));
 
-    expect(await driveDao.arDriveTransactionIds(['mine']), {
+    const all = {
       'a-meta',
       'a-data',
       'b-meta',
@@ -81,15 +81,47 @@ void main() {
       'folder-meta',
       'drive-meta',
       'bundle-2',
-    });
+    };
+    expect(
+      await driveDao.arDriveTransactionsAmong(['mine'], {...all, 'other'}),
+      all,
+    );
+  });
+
+  test('answers only for the transactions asked about', () async {
+    await fileRevision('mine', 'a', metadata: 'a-meta', data: 'a-data');
+
+    expect(
+      await driveDao.arDriveTransactionsAmong(['mine'], {'a-data', 'other'}),
+      {'a-data'},
+    );
+    expect(await driveDao.arDriveTransactionsAmong(['mine'], {}), isEmpty);
+  });
+
+  test('asks about any number, a batch at a time', () async {
+    await fileRevision('mine', 'a', metadata: 'a-meta', data: 'a-data');
+    await fileRevision('mine', 'b', metadata: 'b-meta', data: 'b-data');
+
+    // More than one batch, with a match in the first and in the last.
+    final asked = {
+      'a-data',
+      for (var i = 0; i < 1000; i++) 'unknown-$i',
+      'b-meta',
+    };
+
+    expect(
+      await driveDao.arDriveTransactionsAmong(['mine'], asked),
+      {'a-data', 'b-meta'},
+    );
   });
 
   test('only the drives asked about', () async {
     await fileRevision('mine', 'a', metadata: 'a-meta', data: 'a-data');
     await fileRevision('theirs', 'z', metadata: 'z-meta', data: 'z-data');
 
-    expect(
-        await driveDao.arDriveTransactionIds(['mine']), {'a-meta', 'a-data'});
-    expect(await driveDao.arDriveTransactionIds([]), isEmpty);
+    const asked = {'a-meta', 'a-data', 'z-meta', 'z-data'};
+    expect(await driveDao.arDriveTransactionsAmong(['mine'], asked),
+        {'a-meta', 'a-data'});
+    expect(await driveDao.arDriveTransactionsAmong([], asked), isEmpty);
   });
 }

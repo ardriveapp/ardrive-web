@@ -154,4 +154,43 @@ void main() {
     expect(await driveDao.permanentDataByYear([]), isEmpty);
     expect(await driveDao.permanentFileCount([]), 0);
   });
+
+  group('the data version', () {
+    // The profile card keeps its figures while this stays the same, so it
+    // must change whenever they could.
+    test('changes when a revision is written', () async {
+      final before = await driveDao.permanentDataVersion();
+      await addRevision('new', size: 100);
+
+      expect(await driveDao.permanentDataVersion(), isNot(before));
+    });
+
+    test('changes when an upload lands or fails', () async {
+      await addRevision('a', size: 100);
+      await addRevision('b', size: 100);
+      await markTx('a-tx', TransactionStatus.pending);
+      await markTx('b-tx', TransactionStatus.pending);
+      final pending = await driveDao.permanentDataVersion();
+
+      Future<void> settle(String txId, String status) =>
+          (db.update(db.networkTransactions)..where((t) => t.id.equals(txId)))
+              .write(NetworkTransactionsCompanion(status: Value(status)));
+
+      await settle('a-tx', TransactionStatus.failed);
+      final oneFailed = await driveDao.permanentDataVersion();
+      expect(oneFailed, isNot(pending));
+
+      await settle('b-tx', TransactionStatus.confirmed);
+      expect(await driveDao.permanentDataVersion(), isNot(oneFailed));
+    });
+
+    test('stays the same while nothing changes', () async {
+      await addRevision('a', size: 100);
+
+      expect(
+        await driveDao.permanentDataVersion(),
+        await driveDao.permanentDataVersion(),
+      );
+    });
+  });
 }

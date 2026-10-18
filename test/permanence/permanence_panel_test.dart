@@ -160,6 +160,39 @@ void main() {
       expect(find.text('more top-ups than we can count here'), findsOneWidget);
     });
 
+    testWidgets('for a wallet that would prompt waits until asked',
+        (tester) async {
+      // A browser extension asks its owner to approve every signature, and
+      // reading the credits takes one.
+      var reads = 0;
+      await pump(
+        tester,
+        PermanenceSummary(
+          totalBytes: 2 * gb,
+          fileCount: 1200,
+          driveCount: 3,
+          bytesByYear: const {2022: gb, 2024: gb},
+          loadSpend: () {
+            reads++;
+            return credits(92.0812);
+          },
+        ),
+      );
+
+      expect(reads, 0, reason: 'not on opening the panel');
+      expect(find.text('Show credits used'), findsOneWidget);
+      expect(
+          find.text('your wallet signs to read your credits'), findsOneWidget);
+
+      await tester.tap(find.text('Show credits used'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(reads, 1);
+      expect(find.text('92.08'), findsOneWidget);
+      expect(find.text('Show credits used'), findsNothing);
+    });
+
     testWidgets('of credits not yet used says so', (tester) async {
       await pump(tester, summary(spend: credits(0)));
 

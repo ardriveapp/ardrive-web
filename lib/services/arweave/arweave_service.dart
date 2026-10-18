@@ -2101,7 +2101,7 @@ class ArweaveService {
   Future<ArFeePage> getArDriveFeesPage({
     required String owner,
     required int minHeight,
-    required Set<String> knownTxIds,
+    KnownTxLookup? knownAmong,
     String? after,
   }) =>
       fetchDirectFeesPage(
@@ -2112,7 +2112,7 @@ class ArweaveService {
           minHeight: minHeight,
           after: after,
           bundledIn: bundledIn,
-          knownTxIds: knownTxIds,
+          knownAmong: knownAmong,
         ),
       );
 
@@ -2121,7 +2121,7 @@ class ArweaveService {
     required int minHeight,
     required String? after,
     required List<String>? bundledIn,
-    required Set<String> knownTxIds,
+    required KnownTxLookup? knownAmong,
   }) async {
     final query = await graphQLRetry.execute(
       WalletArDriveFeesQuery(
@@ -2142,6 +2142,20 @@ class ArweaveService {
       );
     }
 
+    final tagsById = {
+      for (final edge in transactions.edges)
+        edge.node.id: {for (final tag in edge.node.tags) tag.name: tag.value},
+    };
+
+    // Only what the tags leave open is asked of the database, and only when
+    // there is any: for ArDrive's own uploads the tags settle it.
+    final known = await lookUpKnown(knownAmong, {
+      for (final edge in transactions.edges)
+        if (edge.node.bundledIn == null &&
+            !isArDriveByTags(tagsById[edge.node.id]!))
+          edge.node.id,
+    });
+
     var winston = BigInt.zero;
     var count = 0;
     var unbundled = 0;
@@ -2159,11 +2173,11 @@ class ArweaveService {
 
       unbundled++;
 
-      final tags = {for (final tag in edge.node.tags) tag.name: tag.value};
+      final tags = tagsById[edge.node.id]!;
       final isArDrive = isArDriveTransaction(
         txId: edge.node.id,
         tags: tags,
-        knownTxIds: knownTxIds,
+        knownTxIds: known,
       );
 
       final fee = arDrivePayment(

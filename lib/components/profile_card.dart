@@ -62,6 +62,13 @@ class _ProfileCardState extends State<ProfileCard> {
   /// line does not blink out every time the card opens.
   _AccountStats? _lastAccountStats;
 
+  /// The last stats counted, and what they were counted from: the wallet,
+  /// its drives and [DriveDao.permanentDataVersion]. The card counts again
+  /// each time it opens, and while nothing it counts has changed that is
+  /// this, rather than a scan of every revision.
+  _AccountStats? _countedStats;
+  String? _countedStatsKey;
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileCubit, ProfileState>(
@@ -508,11 +515,20 @@ class _ProfileCardState extends State<ProfileCard> {
                         final wallet =
                             context.read<ArDriveAuth>().currentUser.wallet;
 
-                        // A signed request, which may ask the wallet to sign.
-                        final spend = loadCreditsSpent(
-                          paymentService: paymentService,
-                          wallet: wallet,
-                        );
+                        // A signed request. A keyfile, or the wallet an
+                        // Ethereum or Solana sign-in derives, signs without
+                        // a word, so it is read as the panel opens. A browser
+                        // extension shows its owner a prompt instead, so
+                        // there it waits until they ask.
+                        Future<SpendLookup> readSpend() => loadCreditsSpent(
+                              paymentService: paymentService,
+                              wallet: wallet,
+                            );
+                        final signsSilently = context
+                                .read<ArDriveAuth>()
+                                .currentUser
+                                .profileType !=
+                            ProfileType.arConnect;
 
                         // Public, so no signature: what this wallet paid in
                         // AR to upload directly, counted a page at a time and
@@ -521,12 +537,17 @@ class _ProfileCardState extends State<ProfileCard> {
                             .read<ArDriveAuth>()
                             .currentUser
                             .walletAddress;
-                        // The transactions this wallet's synced drives are
-                        // made of: what makes one of its payments ArDrive
-                        // storage. See [isArDriveTransaction].
-                        final knownTxIds = context
-                            .read<DriveDao>()
-                            .arDriveTransactionIds(stats.driveIds);
+                        // Which transactions this wallet's synced drives
+                        // are made of: what makes one of its payments ArDrive
+                        // storage when its tags don't say. Asked only about
+                        // those, never for the whole set. See
+                        // [isArDriveTransaction].
+                        final driveDao = context.read<DriveDao>();
+                        Future<Set<String>> knownAmong(Set<String> txIds) =>
+                            driveDao.arDriveTransactionsAmong(
+                              stats.driveIds,
+                              txIds,
+                            );
                         final arSpend = LocalKeyValueStore.getInstance().then(
                           (store) async => tallyArSpend(
                             // v4: counts made without the tips direct
@@ -535,12 +556,12 @@ class _ProfileCardState extends State<ProfileCard> {
                             storageKey: 'permanenceArSpend_v4_$owner',
                             read: store.getString,
                             write: (key, value) => store.putString(key, value),
-                            knownTxIds: await knownTxIds,
+                            knownAmong: knownAmong,
                             fetchPage: ({required minHeight, after}) async =>
                                 arweave.getArDriveFeesPage(
                               owner: owner,
                               minHeight: minHeight,
-                              knownTxIds: await knownTxIds,
+                              knownAmong: knownAmong,
                               after: after,
                             ),
                           ),
@@ -569,7 +590,8 @@ class _ProfileCardState extends State<ProfileCard> {
                                 year.key: year.value.bytes,
                             },
                             costToday: costToday,
-                            spend: spend,
+                            spend: signsSilently ? readSpend() : null,
+                            loadSpend: signsSilently ? null : readSpend,
                             arSpend: arSpend,
                           ),
                         );
@@ -639,15 +661,29 @@ class _ProfileCardState extends State<ProfileCard> {
         .toList();
 
     final driveIds = [for (final drive in drives) drive.id];
+    final key = [
+      walletAddress,
+      ...driveIds,
+      await driveDao.permanentDataVersion(),
+    ].join('|');
+
+    if (key == _countedStatsKey && _countedStats != null) {
+      return _countedStats!;
+    }
+
     final permanentByYear = await driveDao.permanentDataByYear(driveIds);
     final fileCount = await driveDao.permanentFileCount(driveIds);
 
-    return _AccountStats(
+    final stats = _AccountStats(
       driveCount: drives.length,
       fileCount: fileCount,
       permanentByYear: permanentByYear,
       driveIds: driveIds,
     );
+    _countedStats = stats;
+    _countedStatsKey = key;
+
+    return stats;
   }
 
   Widget _buildIdentityHeader(BuildContext context, ProfileLoggedIn state) {

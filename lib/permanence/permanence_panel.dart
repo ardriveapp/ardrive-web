@@ -152,6 +152,7 @@ class PermanenceSummary {
     required this.bytesByYear,
     this.costToday,
     this.spend,
+    this.loadSpend,
     this.arSpend,
   });
 
@@ -167,6 +168,12 @@ class PermanenceSummary {
 
   /// What the wallet has spent, still arriving when the panel opens.
   final Future<SpendLookup>? spend;
+
+  /// Reads what the wallet has spent when the reader asks, in place of
+  /// [spend], for a wallet that would ask its owner to sign: a browser
+  /// extension shows a prompt for every signature, and one that opens with
+  /// a summary nobody asked to sign for reads as something gone wrong.
+  final Future<SpendLookup> Function()? loadSpend;
 
   /// What the wallet paid in AR to upload directly, counted as it arrives.
   /// Null when it could not be asked.
@@ -323,6 +330,7 @@ class PermanencePanel extends StatelessWidget {
         LayoutBuilder(builder: (context, box) {
           final spendTile = _SpendTile(
             spend: summary.spend,
+            loadSpend: summary.loadSpend,
             arSpend: summary.arSpend,
           );
           final costTile = _CostTile(cost: summary.costToday);
@@ -361,6 +369,8 @@ class _Tile extends StatelessWidget {
     required this.value,
     required this.note,
     this.extra,
+    this.action,
+    this.onAction,
   });
 
   final String label;
@@ -369,6 +379,10 @@ class _Tile extends StatelessWidget {
 
   /// A second figure under the note: AR paid directly, beside dollars.
   final String? extra;
+
+  /// A link under the note, and what it does.
+  final String? action;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -410,6 +424,24 @@ class _Tile extends StatelessWidget {
               fontWeight: ArFontWeight.book,
             ),
           ),
+          if (action != null) ...[
+            const SizedBox(height: 6),
+            ArDriveClickArea(
+              child: GestureDetector(
+                onTap: onAction,
+                child: Semantics(
+                  button: true,
+                  child: Text(
+                    action!,
+                    style: typography.caption(
+                      color: colors.textRed,
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
           if (extra != null) ...[
             const SizedBox(height: 6),
             Text(
@@ -511,13 +543,39 @@ String _formatCredits(BigInt winc) {
 /// What the wallet has spent, in what it spent it in: Turbo credits, and AR
 /// paid directly. No dollars - nothing here is a price, so there is nothing
 /// to set against what storage costs today.
-class _SpendTile extends StatelessWidget {
-  const _SpendTile({required this.spend, required this.arSpend});
+class _SpendTile extends StatefulWidget {
+  const _SpendTile({
+    required this.spend,
+    required this.loadSpend,
+    required this.arSpend,
+  });
 
   final Future<SpendLookup>? spend;
+  final Future<SpendLookup> Function()? loadSpend;
   final Future<ArSpendTally>? arSpend;
 
+  @override
+  State<_SpendTile> createState() => _SpendTileState();
+}
+
+class _SpendTileState extends State<_SpendTile> {
   static const _label = 'SPENT';
+
+  /// The credits being read: from the start, or once asked for.
+  late Future<SpendLookup>? spend = widget.spend;
+
+  Future<ArSpendTally>? get arSpend => widget.arSpend;
+
+  @override
+  void didUpdateWidget(covariant _SpendTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Another summary: whatever was read for the last one is not this one's.
+    if (widget.spend != oldWidget.spend ||
+        widget.loadSpend != oldWidget.loadSpend) {
+      spend = widget.spend;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -550,6 +608,29 @@ class _SpendTile extends StatelessWidget {
                   ? 'paid directly in AR'
                   : 'paid directly in AR, at least',
             );
+
+        // Not read yet: this wallet signs to read them, and the reader has
+        // not asked.
+        final loadSpend = widget.loadSpend;
+        if (spend == null && loadSpend != null) {
+          return _Tile(
+            label: _label,
+            value: paidAr == null ? '-' : _formatAr(paidAr.ar),
+            note: paidAr == null
+                ? 'your wallet signs to read your credits'
+                : paidAr.complete
+                    ? 'paid directly in AR'
+                    : 'paid directly in AR, at least',
+            action: 'Show credits used',
+            onAction: () {
+              final read = loadSpend();
+              setState(() {
+                spend = read;
+              });
+            },
+            extra: paidAr == null ? arLine() : null,
+          );
+        }
 
         return FutureBuilder<SpendLookup>(
           future: spend,
