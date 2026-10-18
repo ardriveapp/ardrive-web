@@ -293,6 +293,31 @@ void main() {
     expect(fineText, contains('Arweave says'),
         reason: "a duration is Arweave's claim, not ours");
     expect(fineText, isNot(contains(' - ')), reason: 'no dashes');
+    expect(fineText, isNot(contains('shared from your')),
+        reason: 'only for a reader who signed in with another chain');
+  });
+
+  testWidgets(
+      'tells a reader who signed in with another chain what it leaves out',
+      (tester) async {
+    await pump(
+      tester,
+      const PermanenceSummary(
+        totalBytes: gb,
+        fileCount: 1,
+        driveCount: 1,
+        bytesByYear: {2024: gb},
+        signInChain: 'Solana',
+      ),
+    );
+    await tester.tap(find.text('How these numbers work'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining("Credits shared from your Solana wallet aren't",
+          findRichText: true),
+      findsOneWidget,
+    );
   });
 
   testWidgets('keeps its two figures side by side on a phone', (tester) async {

@@ -154,6 +154,7 @@ class PermanenceSummary {
     this.spend,
     this.loadSpend,
     this.arSpend,
+    this.signInChain,
   });
 
   final int totalBytes;
@@ -178,6 +179,13 @@ class PermanenceSummary {
   /// What the wallet paid in AR to upload directly, counted as it arrives.
   /// Null when it could not be asked.
   final Future<ArSpendTally>? arSpend;
+
+  /// The chain of the wallet the reader signed in with ("Ethereum",
+  /// "Solana"), when it was not an Arweave one. Credits that wallet shared
+  /// with the Arweave wallet made for it are spent here, but are in neither
+  /// one's own history as this reads it, so the fine print says so: to
+  /// them, and to nobody else.
+  final String? signInChain;
 
   int? get firstYear => bytesByYear.isEmpty ? null : bytesByYear.keys.first;
 }
@@ -357,7 +365,7 @@ class PermanencePanel extends StatelessWidget {
           );
         }),
         const SizedBox(height: 12),
-        const _FinePrint(),
+        _FinePrint(signInChain: summary.signInChain),
       ],
     );
   }
@@ -697,7 +705,10 @@ class _SpendTileState extends State<_SpendTile> {
 /// panel stays a summary; open, it says plainly what each figure is and is
 /// not.
 class _FinePrint extends StatefulWidget {
-  const _FinePrint();
+  const _FinePrint({this.signInChain});
+
+  /// See [PermanenceSummary.signInChain].
+  final String? signInChain;
 
   @override
   State<_FinePrint> createState() => _FinePrintState();
@@ -817,6 +828,11 @@ class _FinePrintState extends State<_FinePrint> {
                               'is in dollars: credits and AR were bought at '
                               'different prices over time.',
                         ),
+                        if (widget.signInChain != null)
+                          TextSpan(
+                            text: ' Credits shared from your '
+                                "${widget.signInChain} wallet aren't counted.",
+                          ),
                       ])),
                       point(TextSpan(children: [
                         lead('Cost today'),

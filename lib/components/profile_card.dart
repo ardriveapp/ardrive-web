@@ -13,6 +13,7 @@ import 'package:ardrive/gar/presentation/widgets/gateway_input_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/permanence/permanence_panel.dart';
 import 'package:ardrive/permanence/ar_spend.dart';
+import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/services/config/config.dart';
@@ -592,6 +593,16 @@ class _ProfileCardState extends State<ProfileCard> {
                             costToday: costToday,
                             spend: signsSilently ? readSpend() : null,
                             loadSpend: signsSilently ? null : readSpend,
+                            signInChain: switch (walletTypeOfSourceAddress(
+                              context
+                                  .read<ArDriveAuth>()
+                                  .currentUser
+                                  .sourceWalletAddress,
+                            )) {
+                              WalletType.ethereum => 'Ethereum',
+                              WalletType.solana => 'Solana',
+                              _ => null,
+                            },
                             arSpend: arSpend,
                           ),
                         );
