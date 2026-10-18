@@ -117,6 +117,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   bool _refreshSelectedItem = false;
 
+  /// The folder a link named, in a drive that was not on this device when the
+  /// link was opened. Opened by [changeDrive] once that drive arrives.
+  ({String driveId, String folderId})? _linkedFolder;
+
   DriveDetailCubit({
     required String driveId,
     String? initialFolderId,
@@ -157,7 +161,6 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
 
     if (initialFolderId != null) {
-      // TODO: Handle deep-linking folders of unattached drives.
       Future.microtask(() async {
         final folder = await _driveDao
             .folderById(folderId: initialFolderId)
@@ -165,6 +168,13 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
         // Abort if user switched drives during the async operation
         if (_driveId != driveId) return;
+
+        // A link to a folder in a drive this device does not have yet. The
+        // drive gets attached and synced first, and then opened through
+        // [changeDrive] - which has to open this folder, not the root.
+        if (folder == null) {
+          _linkedFolder = (driveId: driveId, folderId: initialFolderId);
+        }
 
         // Open the root folder if the deep-linked folder could not be found.
         // The item is only meaningful inside the folder that was asked for: if
@@ -512,7 +522,22 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _driveId = driveId;
 
-    openFolder(folderId: drive.rootFolderId);
+    // One shot: the folder a link named is opened the first time its drive
+    // is, and after that the drive opens at its root like any other.
+    final linkedFolder = _linkedFolder;
+    _linkedFolder = null;
+
+    final folder = linkedFolder?.driveId == driveId
+        ? await _driveDao
+            .folderById(folderId: linkedFolder!.folderId)
+            .getSingleOrNull()
+        : null;
+
+    if (isClosed || _driveId != driveId) {
+      return;
+    }
+
+    openFolder(folderId: folder?.id ?? drive.rootFolderId);
   }
 
   Future<void> openFolder({

@@ -478,16 +478,34 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                                 return;
                               }
 
+                              final driveDao = context.read<DriveDao>();
+                              final linkedDriveId = driveId!;
+
                               attachDrive(
                                 context: context,
                                 driveId: driveId,
                                 driveName: driveName,
                                 driveKey: sharedDriveKey,
-                              ).then((_) {
+                              ).then((_) async {
                                 sharedDriveKey = null;
                                 sharedRawDriveKey = null;
-                                driveId = null;
-                                driveName = null;
+
+                                // An attached drive stays the one in view. For
+                                // a visitor with no profile it is the only
+                                // thing keeping the explorer on screen: let go
+                                // of it and the explorer, the sync it just
+                                // started and the drives cubit that would have
+                                // selected the drive are all torn down, leaving
+                                // the visitor on a blank page.
+                                final attached = await driveDao
+                                        .driveById(driveId: linkedDriveId)
+                                        .getSingleOrNull() !=
+                                    null;
+
+                                if (!attached) {
+                                  driveId = null;
+                                  driveName = null;
+                                }
                                 notifyListeners();
                               });
                             }
