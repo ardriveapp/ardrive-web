@@ -644,6 +644,35 @@ void main() {
           'running. You can sync it when that finishes.'),
       findsOneWidget,
     );
+    // Nothing to press: only one sync runs at a time.
+    expect(find.text('Sync 1 drive'), findsNothing);
+    expect(find.text('Try again'), findsNothing);
+  });
+
+  testWidgets('a sync that left drives unread says how many, and retries',
+      (tester) async {
+    coverageIs(const SearchCoverage(
+      totalDrives: 3,
+      unsearchedDriveIds: ['b', 'c'],
+    ));
+    when(() => syncCubit.syncDrives(any())).thenAnswer((_) async => true);
+
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+    await tester.tap(find.text('Sync the other 2'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.textContaining("Searched 1 of 3 drives. 2 drives couldn't be "
+          "synced, so their files weren't searched."),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+
+    verify(() => syncCubit.syncDrives(['b', 'c'])).called(2);
   });
 
   testWidgets('leaves the arrow keys to an input method while it composes',
