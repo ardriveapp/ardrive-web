@@ -238,7 +238,7 @@ void main() {
 
       expect(find.text('Sync selected'), findsOneWidget);
       expect(
-        find.text('Sync All Drives'),
+        find.text('Sync all drives'),
         findsNothing,
         reason: 'the reader has just said which drives they meant, so the '
             'offer to sync every one of them is withdrawn rather than left to '
@@ -258,7 +258,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Sync All Drives'), findsWidgets);
+      expect(find.text('Sync all drives'), findsWidgets);
       expect(find.text('Sync selected'), findsNothing);
     });
   });

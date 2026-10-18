@@ -1721,10 +1721,6 @@
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
-  "resync": "再同期",
-  "@resync": {
-    "description": "Sync button Text"
-  },
   "resyncTooltip": "すべてのドライブを更新する",
   "@resyncTooltip": {
     "description": "resync tooltip text"
@@ -2092,10 +2088,6 @@
   "sync": "同期",
   "@sync": {
     "description": "Sync button tooltip"
-  },
-  "syncNow": "今すぐ同期",
-  "@syncNow": {
-    "description": "Button text to sync an unsynced drive"
   },
   "syncingOnlyOneDrive": "ドライブの同期中…",
   "@syncingOnlyOneDrive": {

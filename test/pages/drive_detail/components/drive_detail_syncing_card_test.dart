@@ -420,7 +420,8 @@ void main() {
     expect(tester.takeException(), isNull);
 
     expect(find.text('Drive Not Synced'), findsOneWidget);
-    expect(find.text('Sync Now'), findsOneWidget);
+    expect(find.widgetWithText(ArDriveButtonNew, 'Sync this drive'),
+        findsOneWidget);
 
     // Nothing about it reads as work in progress.
     expect(find.byType(LinearProgressIndicator), findsNothing);
@@ -481,7 +482,8 @@ void main() {
       // Not the card that was already acted on, and not the button that was
       // already pressed.
       expect(find.text('Drive Not Synced'), findsNothing);
-      expect(find.text('Sync Now'), findsNothing);
+      expect(find.widgetWithText(ArDriveButtonNew, 'Sync this drive'),
+          findsNothing);
       expect(find.text('Check Again'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
@@ -493,7 +495,8 @@ void main() {
       await pumpCard(tester, syncFoundNothing: false);
 
       expect(find.text('Drive Not Synced'), findsOneWidget);
-      expect(find.text('Sync Now'), findsOneWidget);
+      expect(find.widgetWithText(ArDriveButtonNew, 'Sync this drive'),
+          findsOneWidget);
       expect(find.text('Nothing Found Yet'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());

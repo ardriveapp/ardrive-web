@@ -660,7 +660,7 @@ void main() {
       // `test/drives_list/drives_sync_menu_test.dart`. What this menu owes is
       // the way to the page that carries it.
       expect(find.text('Retry Failed'), findsNothing);
-      expect(find.text('All drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -682,7 +682,7 @@ void main() {
       expect(find.text('2 of 5 drives could not be synced'), findsOneWidget);
 
       await openMenu(tester);
-      expect(find.text('All drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -731,7 +731,7 @@ void main() {
       // menu the indicator opens, and the indicator's own red triangle.
       await openMenu(tester);
 
-      expect(find.text('All drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -783,7 +783,7 @@ void main() {
           findsNothing);
 
       await openMenu(tester);
-      expect(find.text('All drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });

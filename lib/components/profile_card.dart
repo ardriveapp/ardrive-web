@@ -1159,7 +1159,7 @@ class ProfileCardHeader extends StatelessWidget {
 
   double _calculateMaxWidth(String primaryName, ProfileNameState state) {
     if (state is! ProfileNameLoaded && !isExpanded) {
-      return 180;
+      return 200;
     }
 
     double width = primaryName.length * 20;
@@ -1219,17 +1219,32 @@ class ProfileCardHeader extends StatelessWidget {
                 ),
               ),
               Flexible(
-                child: Text(
-                  isExpanded ? walletAddress : truncatedWalletAddress,
-                  softWrap: true,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                    color:
-                        isExpanded ? colorTokens.textLow : colorTokens.textHigh,
-                  ),
-                ),
+                child: isExpanded
+                    ? Text(
+                        walletAddress,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colorTokens.textLow,
+                        ),
+                      )
+                    // Already shortened to its start and its end, so an
+                    // ellipsis here shortened it a second time: an address of
+                    // wide letters overran the button and lost its end to
+                    // "...". Scaled down instead, so the end always shows.
+                    : FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          truncatedWalletAddress,
+                          maxLines: 1,
+                          style: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colorTokens.textHigh,
+                          ),
+                        ),
+                      ),
               ),
               if (hasLogoutButton)
                 Padding(

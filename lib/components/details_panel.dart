@@ -657,7 +657,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             return Align(
               alignment: Alignment.centerLeft,
               child: ArDriveButtonNew(
-                text: appLocalizationsOf(context).syncNow,
+                text: appLocalizationsOf(context).syncThisDrive,
                 typography: typography,
                 variant: ButtonVariant.primary,
                 maxWidth: 160,

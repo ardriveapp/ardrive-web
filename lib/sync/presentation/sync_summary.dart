@@ -81,11 +81,12 @@ class SyncSummary {
 /// next sync is one they can ignore, which is the whole point of reporting a
 /// result at all.
 ///
-/// No case counts drives. `drivesSynced` counts drives walked, failures
-/// included, so "across 3 drives" was two facts joined by a word that does not
-/// hold between them. And no case says "new": a rename, a move or a new
-/// version writes a revision too, so the count is what changed, not what
-/// arrived - see [SyncComplete.entitiesSynced].
+/// Only a first read counts drives - see [SyncComplete.firstReadDriveCount].
+/// Otherwise `drivesSynced` counts drives walked, failures included, so
+/// "across 3 drives" was two facts joined by a word that does not hold between
+/// them. And no case says "new": a rename, a move or a new version writes a
+/// revision too, so the count is what changed, not what arrived - see
+/// [SyncComplete.entitiesSynced].
 SyncSummary syncCompleteSummaryParts(
     AppLocalizations l10n, SyncComplete state) {
   final synced = state.entitiesSynced;
@@ -104,11 +105,19 @@ SyncSummary syncCompleteSummaryParts(
     );
   }
 
+  final firstRead = state.firstReadDriveCount;
+
   return SyncSummary(
     arrived: synced > 0
-        ? (namesADrive
-            ? l10n.syncSummaryEntitiesInDrive(synced, driveName)
-            : l10n.syncSummaryEntities(synced))
+        ? (firstRead > 0
+            ? (namesADrive
+                ? l10n.syncSummaryFirstReadInDrive(
+                    driveName, l10n.syncSummaryItemCount(synced))
+                : l10n.syncSummaryFirstRead(
+                    firstRead, l10n.syncSummaryItemCount(synced)))
+            : namesADrive
+                ? l10n.syncSummaryEntitiesInDrive(synced, driveName)
+                : l10n.syncSummaryEntities(synced))
         : null,
     unreadable: skipped > 0 ? l10n.syncSummarySkippedEntities(skipped) : null,
   );

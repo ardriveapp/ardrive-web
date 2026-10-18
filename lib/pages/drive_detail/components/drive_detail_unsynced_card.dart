@@ -518,7 +518,7 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
     );
   }
 
-  /// Builds the "Sync This Drive" action card.
+  /// Builds the "Sync this drive" action card.
   Widget _buildSyncThisDriveCard(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
@@ -547,13 +547,14 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         ArDriveButtonNew(
-          // Not "Sync Now" a second time: that button has been pressed, and
-          // offering it again unchanged is what made the screen read as a
-          // loop. Checking again is worth doing - a drive created moments
-          // ago does turn up - so the action stays, under its real name.
+          // Not "Sync this drive" a second time: that button has been
+          // pressed, and offering it again unchanged is what made the screen
+          // read as a loop. Checking again is worth doing - a drive created
+          // moments ago does turn up - so the action stays, under its real
+          // name.
           text: syncFoundNothing
               ? appLocalizationsOf(context).checkAgain
-              : appLocalizationsOf(context).syncNow,
+              : appLocalizationsOf(context).syncThisDrive,
           typography: typography,
           // One sync at a time: the cubit refuses a second one, and
           // `syncCurrentDrive` reads the result of the sync it thought it
@@ -573,7 +574,7 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
     );
   }
 
-  /// Builds the "Sync All Drives" action card.
+  /// Builds the "Sync all drives" action card.
   Widget _buildSyncAllDrivesCard(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;

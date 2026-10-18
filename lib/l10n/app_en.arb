@@ -468,11 +468,11 @@
   "@replace": {
     "description": "Replaces an existing file with the one being uploaded"
   },
-  "syncThisDrive": "Sync This Drive",
+  "syncThisDrive": "Sync this drive",
   "@syncThisDrive": {
     "description": "Menu option to sync only the current drive"
   },
-  "deepSyncThisDrive": "Deep Sync This Drive",
+  "deepSyncThisDrive": "Deep sync this drive",
   "@deepSyncThisDrive": {
     "description": "Menu option to deep sync only the current drive"
   },
@@ -518,7 +518,7 @@
   "@decentralizedPermanent": {
     "description": "Permanence requires patience"
   },
-  "deepResync": "Deep Resync",
+  "deepResync": "Deep resync",
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
@@ -921,7 +921,7 @@
   "@warning": {
     "description": "Title of a warning dialog"
   },
-  "yourDrives": "Your Drives",
+  "yourDrives": "Your drives",
   "@yourDrives": {
     "description": "Title of the page a login lands on: the list of every drive this wallet can open"
   },
@@ -929,7 +929,7 @@
   "@driveSharedWithMe": {
     "description": "Marker on a drive owned by somebody else and attached by this user"
   },
-  "driveNeverSynced": "Never synced",
+  "driveNeverSynced": "Not synced on this device",
   "@driveNeverSynced": {
     "description": "Sync state of a drive whose history has never been read on this device. Deliberately not \"Empty\" - nothing has looked"
   },
@@ -943,7 +943,7 @@
   },
   "driveSyncFailed": "Last sync failed",
   "@driveSyncFailed": {
-    "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from 'Never synced', which means nobody has looked yet."
+    "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from driveNeverSynced, which means nobody has looked yet."
   },
   "driveSyncingNow": "Syncing...",
   "@driveSyncingNow": {
@@ -1053,7 +1053,7 @@
   "@syncThisDriveDescription": {
     "description": "Description for the sync drive action card"
   },
-  "syncAllDrives": "Sync All Drives",
+  "syncAllDrives": "Sync all drives",
   "syncAllDrivesDescription": "Sync all your drives at once to ensure all content is up to date.",
   "@syncAllDrivesDescription": {
     "description": "Description for the sync all drives action card"
@@ -1711,10 +1711,6 @@
   "hiddenDrives": "Hidden",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
-  },
-  "allDrivesScope": "All drives",
-  "@allDrivesScope": {
-    "description": "Sidebar scope showing every drive that is not hidden."
   },
   "hidingFile": "Hiding file",
   "@hidingFile": {
@@ -2605,7 +2601,7 @@
   "@private": {
     "description": "A private entity"
   },
-  "privateDrives": "Private Drives",
+  "privateDrives": "Private drives",
   "@privateDrives": {
     "description": "Private drives accordion title"
   },
@@ -2629,7 +2625,7 @@
   "@public": {
     "description": "A public entity"
   },
-  "publicDrives": "Public Drives",
+  "publicDrives": "Public drives",
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
@@ -2755,10 +2751,6 @@
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
-  "resync": "Resync",
-  "@resync": {
-    "description": "Sync button Text"
-  },
   "sync": "Sync",
   "resyncTooltip": "Drive Synchronization",
   "@resyncTooltip": {
@@ -2837,7 +2829,7 @@
   "@sendGift": {},
   "share": "Share",
   "@share": {},
-  "sharedDrives": "Shared Drives",
+  "sharedDrives": "Shared drives",
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list"
   },
@@ -3328,10 +3320,6 @@
   "@subscribeEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },
-  "syncNow": "Sync Now",
-  "@syncNow": {
-    "description": "Button text to sync an unsynced drive"
-  },
   "syncingOnlyOneDrive": "Syncing your drive...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
@@ -3450,7 +3438,7 @@
   },
   "syncSummaryEntities": "{count, plural, =1{1 item changed} other{{count} items changed}}",
   "@syncSummaryEntities": {
-    "description": "Summary of a sync that changed something. Says \"changed\", not \"new\": a rename, move or new version writes a revision too. Never says how many drives, because the sync only knows how many it walked",
+    "description": "Summary of a sync that changed something. Says \"changed\", not \"new\": a rename, move or new version writes a revision too. A sync that read every drive it covered from the start says syncSummaryFirstRead instead",
     "placeholders": {
       "count": {
         "type": "int",
@@ -3474,7 +3462,47 @@
       }
     }
   },
-  "syncSummarySkippedEntities": "{count, plural, =1{1 update could not be read} other{{count} updates could not be read}}",
+  "syncSummaryFirstRead": "{count, plural, =1{Synced 1 drive ({items})} other{Synced {count} drives ({items})}}",
+  "@syncSummaryFirstRead": {
+    "description": "Summary of a sync that read every drive it covered from the start, as a first sync on a device does. Nothing changed from the reader's point of view, so it does not say \"changed\". {items} is syncSummaryItemCount",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      },
+      "items": {
+        "type": "String",
+        "example": "29 items"
+      }
+    }
+  },
+  "syncSummaryFirstReadInDrive": "Synced {driveName} ({items})",
+  "@syncSummaryFirstReadInDrive": {
+    "description": "Summary of a single drive sync that read the drive from the start. {items} is syncSummaryItemCount",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Photos"
+      },
+      "items": {
+        "type": "String",
+        "example": "29 items"
+      }
+    }
+  },
+  "syncSummaryItemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@syncSummaryItemCount": {
+    "description": "How many files and folders a first sync read, inside syncSummaryFirstRead",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "29"
+      }
+    }
+  },
+  "syncSummarySkippedEntities":"{count, plural, =1{1 update could not be read} other{{count} updates could not be read}}",
   "@syncSummarySkippedEntities": {
     "description": "How many updates a sync had to leave out because their metadata could not be read. Counts transactions, not files",
     "placeholders": {

@@ -1721,10 +1721,6 @@
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
-  "resync": "रीसिंक करें",
-  "@resync": {
-    "description": "Sync button Text"
-  },
   "resyncTooltip": "सभी ड्राइव को रिफ़्रेश करें",
   "@resyncTooltip": {
     "description": "resync tooltip text"
@@ -2092,10 +2088,6 @@
   "sync": "همگام سازی",
   "@sync": {
     "description": "Sync button tooltip"
-  },
-  "syncNow": "अभी सिंक करें",
-  "@syncNow": {
-    "description": "Button text to sync an unsynced drive"
   },
   "syncingOnlyOneDrive": "आपकी ड्राइव सिंक हो रही है...",
   "@syncingOnlyOneDrive": {

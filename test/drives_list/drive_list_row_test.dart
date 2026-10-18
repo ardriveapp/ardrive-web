@@ -177,7 +177,7 @@ void main() {
         (tester) async {
       await pumpRow(tester, drive(hasBeenWalked: false), width: 1200);
 
-      expect(find.text('Never synced'), findsOneWidget);
+      expect(find.text('Not synced on this device'), findsOneWidget);
       // Two withheld figures - items and size - and not a single zero.
       expect(find.text(driveListWithheldFigure), findsNWidgets(2));
       expect(find.text('No files'), findsNothing);
@@ -187,13 +187,14 @@ void main() {
     testWidgets('a walked drive reports both', (tester) async {
       await pumpRow(tester, drive(), width: 1200);
 
-      expect(find.text('3 files'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
       expect(find.text('350 B'), findsOneWidget);
       expect(find.text(driveListWithheldFigure), findsNothing);
     });
 
     testWidgets('one file is one file, not "1 files"', (tester) async {
-      await pumpRow(tester, drive(fileCount: 1), width: 1200);
+      // Stacked, where the count carries its word.
+      await pumpRow(tester, drive(fileCount: 1), width: 390);
 
       expect(find.text('1 file'), findsOneWidget);
     });
@@ -203,9 +204,13 @@ void main() {
       await pumpRow(tester, drive(fileCount: 0, totalSize: 0), width: 1200);
 
       // The difference between this and the row above is the whole point of
-      // the page: "No files" is a finding, the mark is an admission.
-      expect(find.text('No files'), findsOneWidget);
+      // the page: a zero is a finding, the mark is an admission.
+      expect(find.text('0'), findsOneWidget);
       expect(find.text(driveListWithheldFigure), findsNothing);
+
+      // Stacked, the zero is said in words.
+      await pumpRow(tester, drive(fileCount: 0, totalSize: 0), width: 390);
+      expect(find.text('No files'), findsOneWidget);
     });
 
     testWidgets(
@@ -214,7 +219,7 @@ void main() {
       await pumpRow(tester, drive(lastSyncedAt: null), width: 1200);
 
       expect(find.text('Synced'), findsOneWidget);
-      expect(find.text('Never synced'), findsNothing);
+      expect(find.text('Not synced on this device'), findsNothing);
     });
 
     testWidgets('a recorded time is reported as one', (tester) async {
@@ -407,6 +412,26 @@ void main() {
     });
   });
 
+  group('the table does not repeat its headings', () {
+    testWidgets('under "Files" and "Date created" the figures stand alone',
+        (tester) async {
+      await pumpRow(tester, drive(), width: 1200, withHeader: true);
+
+      expect(find.text('3'), findsOneWidget);
+      expect(find.text('Mar 4, 2024'), findsOneWidget);
+      expect(find.textContaining('files'), findsNothing);
+      expect(find.textContaining('Created'), findsNothing);
+    });
+
+    testWidgets('stacked, with no headings, they keep their words',
+        (tester) async {
+      await pumpRow(tester, drive(), width: 390, showsColumns: false);
+
+      expect(find.text('3 files'), findsOneWidget);
+      expect(find.text('Created Mar 4, 2024'), findsOneWidget);
+    });
+  });
+
   group('the withheld figures', () {
     testWidgets('are drawn in a character the brand font actually has',
         (tester) async {
@@ -435,7 +460,7 @@ void main() {
       // explained them unreachable without a mouse.
       expect(find.text(driveListWithheldFigure), findsNothing);
       // The row still says the same thing, in words.
-      expect(find.text('Never synced'), findsOneWidget);
+      expect(find.text('Not synced on this device'), findsOneWidget);
     });
 
     testWidgets('and a walked drive still reports both when stacked',
@@ -459,7 +484,11 @@ void main() {
     /// different sizes centred in one row already have different tops.
     bool isStacked(WidgetTester tester) {
       final nameX = tester.getTopLeft(find.text('Photos')).dx;
-      final itemsX = tester.getTopLeft(find.text('3 files')).dx;
+      // Bare under the table's heading, worded when stacked.
+      final itemsX = tester
+          .getTopLeft(find.byWidgetPredicate(
+              (w) => w is Text && (w.data == '3' || w.data == '3 files')))
+          .dx;
 
       return itemsX < nameX;
     }
@@ -646,7 +675,7 @@ void main() {
     testWidgets('and is distinguishable from one nobody has opened',
         (tester) async {
       await pumpRow(tester, drive(hasBeenWalked: false), width: 1200);
-      expect(find.text('Never synced'), findsOneWidget);
+      expect(find.text('Not synced on this device'), findsOneWidget);
       expect(find.text('Last sync failed'), findsNothing);
 
       await pumpRow(
@@ -655,7 +684,7 @@ void main() {
         width: 1200,
       );
       expect(find.text('Last sync failed'), findsOneWidget);
-      expect(find.text('Never synced'), findsNothing);
+      expect(find.text('Not synced on this device'), findsNothing);
     });
 
     testWidgets('but a running sync still wins, since it is happening now',
