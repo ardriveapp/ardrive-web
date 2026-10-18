@@ -732,6 +732,55 @@ void main() {
       );
     });
 
+    /// What the browser showed: the drive's row is written first and the
+    /// drive opens on it, while the sync is still reading its folders.
+    test('opens the linked folder when it arrives after the drive', () async {
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        rootFolderId,
+        reason: 'precondition: the folder is not there yet, so the root opens',
+      );
+
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        'subfolder-1',
+      );
+    });
+
+    test('does not pull the reader back once they have moved on', () async {
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-2');
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      unawaited(cubit.openFolder(folderId: 'subfolder-2'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        'subfolder-2',
+      );
+    });
+
     test('opens the root when the linked folder never arrives', () async {
       // A link to a folder that was deleted, or that this sync did not reach.
       final cubit = buildCubit(initialFolderId: 'no-such-folder');

@@ -121,6 +121,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// link was opened. Opened by [changeDrive] once that drive arrives.
   ({String driveId, String folderId})? _linkedFolder;
 
+  /// Waits for the linked folder when its drive opened before the sync that
+  /// attached it had reached the folder.
+  StreamSubscription? _linkedFolderWatch;
+
   DriveDetailCubit({
     required String driveId,
     String? initialFolderId,
@@ -524,20 +528,49 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     // One shot: the folder a link named is opened the first time its drive
     // is, and after that the drive opens at its root like any other.
-    final linkedFolder = _linkedFolder;
+    final linkedFolder =
+        _linkedFolder?.driveId == driveId ? _linkedFolder : null;
     _linkedFolder = null;
+    await _linkedFolderWatch?.cancel();
+    _linkedFolderWatch = null;
 
-    final folder = linkedFolder?.driveId == driveId
-        ? await _driveDao
-            .folderById(folderId: linkedFolder!.folderId)
-            .getSingleOrNull()
-        : null;
+    final folder = linkedFolder == null
+        ? null
+        : await _driveDao
+            .folderById(folderId: linkedFolder.folderId)
+            .getSingleOrNull();
 
     if (isClosed || _driveId != driveId) {
       return;
     }
 
-    openFolder(folderId: folder?.id ?? drive.rootFolderId);
+    final rootFolderId = drive.rootFolderId;
+    openFolder(folderId: folder?.id ?? rootFolderId);
+
+    // The drive opens as soon as its row is written, while the sync that
+    // attached it is still reading its folders - so a linked folder is
+    // usually not there yet. Open it when it lands, unless the reader has
+    // already gone somewhere else in the drive.
+    if (linkedFolder != null && folder == null) {
+      _linkedFolderWatch = _driveDao
+          .folderById(folderId: linkedFolder.folderId)
+          .watchSingleOrNull()
+          .where((folder) => folder != null)
+          .take(1)
+          .listen((folder) {
+        _linkedFolderWatch = null;
+
+        final current = state;
+        final readerMoved = current is DriveDetailLoadSuccess &&
+            current.folderInView.folder.id != rootFolderId;
+
+        if (isClosed || _driveId != driveId || readerMoved) {
+          return;
+        }
+
+        openFolder(folderId: folder!.id);
+      });
+    }
   }
 
   Future<void> openFolder({
@@ -1570,6 +1603,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   @override
   Future<void> close() {
     _folderSubscription?.cancel();
+    _linkedFolderWatch?.cancel();
     _syncSubscription?.cancel();
     _allImagesOfCurrentFolder = null;
     return super.close();

@@ -182,10 +182,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 final cubit = context.read<DriveDetailCubit>();
 
                 // Don't re-trigger changeDrive if we're already viewing/loading
-                // this drive — UNLESS the drive was not found (it may have
-                // been attached since we last checked).
+                // this drive — UNLESS nothing of it is on screen: not found,
+                // or the no-drives screens a visitor gets while the drive a
+                // link named is being attached. In either case it may have
+                // been attached since we last checked.
+                final showingNoDrive = cubit.state is DriveDetailLoadNotFound ||
+                    cubit.state is DriveDetailLoadEmpty ||
+                    cubit.state is DriveDetailDrivesUnavailable;
                 if (cubit.currentDriveId == state.selectedDriveId &&
-                    cubit.state is! DriveDetailLoadNotFound) {
+                    !showingNoDrive) {
                   return;
                 }
 
