@@ -204,6 +204,26 @@
   "@freeAllowanceExceededUploadNote": {
     "description": "Note shown above the payment method selector when an upload is size-eligible for the free tier but larger than the wallet's remaining free allowance, so part or all of it needs payment"
   },
+  "newUserEmptyDriveDescription": "You've made your first blockchain transaction. You can now use your drive to store, share and organize any kind of file. Files up to {limit} each upload free, while your free allowance lasts.",
+  "@newUserEmptyDriveDescription": {
+    "description": "Shown on the empty page of a wallet's first drive. limit is the largest file Turbo uploads free, as a size",
+    "placeholders": {
+      "limit": {
+        "type": "String",
+        "example": "105 KiB"
+      }
+    }
+  },
+  "existingUserEmptyDriveDescription": "Files up to {limit} each upload free, while your free allowance lasts. For larger files, you can pay with Credits. Here are some things you can do next.",
+  "@existingUserEmptyDriveDescription": {
+    "description": "Shown on the empty page of a new drive in a wallet that already has drives, above the actions it offers. limit is the largest file Turbo uploads free, as a size",
+    "placeholders": {
+      "limit": {
+        "type": "String",
+        "example": "105 KiB"
+      }
+    }
+  },
   "camera": "Camera",
   "@camera": {
     "description": "Button label to select a file from camera"
