@@ -414,6 +414,35 @@ void main() {
     expect(navigations.single.$3, 'reports');
   });
 
+  testWidgets('the last row says how many results there are past the list',
+      (tester) async {
+    searchReturns('rep', [
+      for (var i = 0; i < searchBoxMaxResults + 3; i++)
+        file('f$i', 'rep-$i.txt'),
+    ]);
+
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+
+    expect(find.text('See all ${searchBoxMaxResults + 3} results'),
+        findsOneWidget);
+    expect(find.text('See all results'), findsNothing);
+  });
+
+  testWidgets('Esc a second time empties the field', (tester) async {
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+    await key(tester, LogicalKeyboardKey.escape);
+    expect(session().controller.text, 'rep');
+
+    await key(tester, LogicalKeyboardKey.escape);
+    expect(session().controller.text, isEmpty);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus,
+      isTrue,
+    );
+  });
+
   testWidgets('says when nothing matches', (tester) async {
     await tester.pumpWidget(host());
     await typeQuery(tester, 'zzz');
@@ -437,23 +466,23 @@ void main() {
     await tester.pumpWidget(host());
     await typeQuery(tester, 'rep');
 
-    expect(
-      find.text('Searched 1 of 3 drives. Sync the other 2 to search them.'),
-      findsOneWidget,
-    );
+    // One line, with the action as a link rather than a boxed button.
+    expect(find.textContaining('Searched 1 of 3 drives.'), findsOneWidget);
+    expect(find.text('Sync the other 2'), findsOneWidget);
+    expect(find.byType(ArDriveButtonNew), findsNothing);
 
-    await tester.tap(find.text('Sync 2 drives'));
+    await tester.tap(find.text('Sync the other 2'));
     await tester.pump();
 
     verify(() => syncCubit.syncDrives(['b', 'c'])).called(1);
-    // Still open: the button is in the dropdown, not elsewhere.
+    // Still open: the link is in the dropdown, and took no focus from it.
     expect(find.text('report.pdf'), findsOneWidget);
     expect(
       find.text('Searched 1 of 3 drives. Syncing the other 2 now. Results '
           'update when they finish.'),
       findsOneWidget,
     );
-    expect(find.text('Sync 2 drives'), findsNothing);
+    expect(find.text('Sync the other 2'), findsNothing);
 
     syncing.complete(true);
   });
@@ -468,11 +497,58 @@ void main() {
     await typeQuery(tester, 'rep');
 
     expect(
-      find.text('None of your 21 drives are synced on this device yet. '
-          'Sync them to search their files.'),
+      find.textContaining(
+          'None of your 21 drives are synced on this device yet.'),
       findsOneWidget,
     );
     expect(find.text('Sync 21 drives'), findsOneWidget);
+  });
+
+  testWidgets('the dialog says it in full, with a button', (tester) async {
+    coverageIs(const SearchCoverage(
+      totalDrives: 3,
+      unsearchedDriveIds: ['b', 'c'],
+    ));
+
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+    await enter(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FileSearchModal), findsOneWidget);
+    expect(
+      find.text('Searched 1 of 3 drives. Sync the other 2 to search them.'),
+      findsOneWidget,
+    );
+    expect(
+      find.widgetWithText(ArDriveButtonNew, 'Sync 2 drives'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a sync that could not start offers to try again',
+      (tester) async {
+    coverageIs(const SearchCoverage(
+      totalDrives: 3,
+      unsearchedDriveIds: ['b', 'c'],
+    ));
+    when(() => syncCubit.syncDrives(any())).thenAnswer((_) async => false);
+
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+    await tester.tap(find.text('Sync the other 2'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.textContaining("Searched 1 of 3 drives. Sync couldn't start."),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+
+    verify(() => syncCubit.syncDrives(['b', 'c'])).called(2);
   });
 
   testWidgets('says nothing about drives when every one was searched',

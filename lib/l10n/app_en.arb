@@ -2010,6 +2010,19 @@
   "@searchCoverageSyncRefused": {
     "description": "Follows searchCoverageSearched when the sync started from search did not start: an upload or another task that cannot be interrupted was running, or the browser tab was in the background"
   },
+  "searchCoverageSyncOthersLink": "{count, plural, =1{Sync the other one} other{Sync the other {count}}}",
+  "@searchCoverageSyncOthersLink": {
+    "description": "Link after searchCoverageSearched in the search box's dropdown; syncs the drives that were not searched",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncNotStarted": "Sync couldn't start.",
+  "@searchCoverageSyncNotStarted": {
+    "description": "Short form of searchCoverageSyncRefused, in the search box's dropdown, followed by the searchCoverageTryAgain link"
+  },
+  "searchCoverageTryAgain": "Try again",
+  "@searchCoverageTryAgain": {
+    "description": "Link in the search box's dropdown that starts the sync again after it failed or could not start"
+  },
   "searchSyncDrives": "{count, plural, =1{Sync 1 drive} other{Sync {count} drives}}",
   "@searchSyncDrives": {
     "description": "Button with search results that syncs the drives that were not searched, then searches again",
@@ -2027,6 +2040,11 @@
   "searchSeeAllResults": "See all results",
   "@searchSeeAllResults": {
     "description": "Last row of the search box's dropdown; opens every result in the search dialog"
+  },
+  "searchSeeAllResultsCount": "{count, plural, =1{See 1 result} other{See all {count} results}}",
+  "@searchSeeAllResultsCount": {
+    "description": "Last row of the search box's dropdown when it lists only some of the results; opens every result in the search dialog",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
   },
   "searchSearching": "Searching...",
   "@searchSearching": {

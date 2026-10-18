@@ -226,6 +226,7 @@ class _FileSearchModalState extends State<FileSearchModal> {
                   itemBuilder: (_, index) => _buildSearchResultItem(
                     context,
                     state.results[index],
+                    state.query,
                     typography,
                     colorTokens,
                   ),
@@ -264,6 +265,7 @@ class _FileSearchModalState extends State<FileSearchModal> {
   Widget _buildSearchResultItem(
     BuildContext context,
     SearchResult searchResult,
+    String query,
     ArdriveTypographyNew typography,
     ArDriveColorTokens colorTokens,
   ) {
@@ -278,13 +280,20 @@ class _FileSearchModalState extends State<FileSearchModal> {
         child: ListTile(
           onTap: () => _handleNavigation(context, searchResult),
           leading: leadingIcon,
-          title: Wrap(
+          title: Row(
             children: [
-              Text(
-                name,
-                style: typography.paragraphXLarge(
-                  color: colorTokens.textHigh,
-                  fontWeight: ArFontWeight.bold,
+              Flexible(
+                child: SearchMatchText(
+                  text: name,
+                  query: query,
+                  style: typography.paragraphXLarge(
+                    color: colorTokens.textMid,
+                    fontWeight: ArFontWeight.book,
+                  ),
+                  matchStyle: typography.paragraphXLarge(
+                    color: colorTokens.textHigh,
+                    fontWeight: ArFontWeight.bold,
+                  ),
                 ),
               ),
               if (isHidden)
@@ -297,7 +306,15 @@ class _FileSearchModalState extends State<FileSearchModal> {
             ],
           ),
           trailing: trailingIcons,
-          subtitle: _buildSubtitle(searchResult, typography, colorTokens),
+          subtitle: Text(
+            searchResultLocation(context, searchResult),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: typography.paragraphNormal(
+              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
         ),
       ),
     );
@@ -332,33 +349,6 @@ class _FileSearchModalState extends State<FileSearchModal> {
               file: DriveDataTableItemMapper.fromFileEntryForSearchModal(
                 searchResult.result as FileEntry,
               ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildSubtitle(
-    SearchResult searchResult,
-    ArdriveTypographyNew typography,
-    ArDriveColorTokens colorTokens,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Drive: ${searchResult.drive.name}',
-          style: typography.paragraphNormal(
-            color: colorTokens.textLow,
-            fontWeight: ArFontWeight.semiBold,
-          ),
-        ),
-        if (searchResult.parentFolder != null)
-          Text(
-            'Folder: ${searchResult.parentFolder!.name}',
-            style: typography.paragraphNormal(
-              color: colorTokens.textLow,
-              fontWeight: ArFontWeight.semiBold,
             ),
           ),
       ],

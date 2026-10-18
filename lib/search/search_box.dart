@@ -34,7 +34,8 @@ const _seeAllRowId = '#see-all';
 /// - Down and Up move through them, and the mouse picks one by moving over it
 /// - Enter goes to the highlighted result, or with none highlighted opens
 ///   every result in the search dialog
-/// - Esc or a click elsewhere closes the dropdown; typing or Down reopens it
+/// - Esc or a click elsewhere closes the dropdown; typing or Down reopens it,
+///   and Esc again with it closed empties the field
 ///
 /// The text and the search belong to the session ([SearchSession]), not to
 /// this widget, which the explorer rebuilds whenever the drive on screen
@@ -207,6 +208,12 @@ class _SearchBoxState extends State<SearchBox> {
       return KeyEventResult.handled;
     }
 
+    if (key == LogicalKeyboardKey.escape &&
+        _session.controller.text.isNotEmpty) {
+      _session.clear();
+      return KeyEventResult.handled;
+    }
+
     return KeyEventResult.ignored;
   }
 
@@ -254,7 +261,7 @@ class _SearchBoxState extends State<SearchBox> {
     final String label;
 
     if (id == _seeAllRowId) {
-      label = appLocalizationsOf(context).searchSeeAllResults;
+      label = _seeAllLabel(context, _session.bloc.state);
     } else {
       final result = _listed(_session.bloc.state)
           .where((result) => result.uniqueId == id)
@@ -352,6 +359,12 @@ class _SearchBoxState extends State<SearchBox> {
         builder: (context, constraints) {
           final fieldWidth =
               constraints.maxWidth.isFinite ? constraints.maxWidth : 400.0;
+          // Wider than a narrow field, so names and their folders fit, but
+          // never wider than the window.
+          final width = min(
+            max(fieldWidth, 440.0),
+            max(fieldWidth, MediaQuery.sizeOf(context).width - 32),
+          );
 
           return PortalTarget(
             visible: _isOpen,
@@ -362,7 +375,7 @@ class _SearchBoxState extends State<SearchBox> {
             ),
             portalFollower: TextFieldTapRegion(
               child: SizedBox(
-                width: max(fieldWidth, 360),
+                width: width,
                 child: BlocBuilder<SearchBloc, SearchState>(
                   builder: (context, state) => _SearchDropdown(
                     state: state,
@@ -393,6 +406,16 @@ class _SearchBoxState extends State<SearchBox> {
       ),
     );
   }
+}
+
+/// The last row's label: how many results there are when the dropdown lists
+/// only some, so the reader knows whether more are worth opening.
+String _seeAllLabel(BuildContext context, SearchState state) {
+  final localizations = appLocalizationsOf(context);
+
+  return state.results.length > searchBoxMaxResults
+      ? localizations.searchSeeAllResultsCount(state.results.length)
+      : localizations.searchSeeAllResults;
 }
 
 class _SearchDropdown extends StatelessWidget {
@@ -479,16 +502,16 @@ class _SearchDropdown extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (state.query.isNotEmpty && !state.coverage.isComplete)
-              const Padding(
-                padding: EdgeInsets.fromLTRB(12, 12, 12, 4),
-                child: SearchCoverageNotice(compact: true),
-              ),
+            if (state.query.isNotEmpty && !state.coverage.isComplete) ...[
+              const SearchCoverageNotice(compact: true),
+              Divider(height: 1, color: colorTokens.strokeLow),
+            ],
             body,
             if (listed.isNotEmpty) ...[
               Divider(height: 1, color: colorTokens.strokeLow),
               _SeeAllRow(
                 key: rowKeys.putIfAbsent(_seeAllRowId, GlobalKey.new),
+                label: _seeAllLabel(context, state),
                 highlighted: highlighted == _seeAllRowId,
                 onHighlight: () => onHighlight(_seeAllRowId),
                 onTap: onSeeAll,
@@ -523,6 +546,7 @@ class _HoverRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dropdownTheme = ArDriveTheme.of(context).themeData.dropdownTheme;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Semantics(
       button: true,
@@ -542,7 +566,21 @@ class _HoverRow extends StatelessWidget {
           onTap: onTap,
           child: ColoredBox(
             color: highlighted ? dropdownTheme.hoverColor : Colors.transparent,
-            child: child,
+            // A bar down the edge as well as the shade, which alone was hard
+            // to see in the light theme.
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    width: 3,
+                    color: highlighted
+                        ? colorTokens.containerRed
+                        : Colors.transparent,
+                  ),
+                ),
+              ),
+              child: child,
+            ),
           ),
         ),
       ),
@@ -596,8 +634,8 @@ class _ResultRow extends StatelessWidget {
                       text: name,
                       query: query,
                       style: typography.paragraphNormal(
-                        color: colorTokens.textHigh,
-                        fontWeight: ArFontWeight.semiBold,
+                        color: colorTokens.textMid,
+                        fontWeight: ArFontWeight.book,
                       ),
                       matchStyle: typography.paragraphNormal(
                         color: colorTokens.textHigh,
@@ -635,11 +673,13 @@ class _ResultRow extends StatelessWidget {
 class _SeeAllRow extends StatelessWidget {
   const _SeeAllRow({
     super.key,
+    required this.label,
     required this.highlighted,
     required this.onHighlight,
     required this.onTap,
   });
 
+  final String label;
   final bool highlighted;
   final VoidCallback onHighlight;
   final VoidCallback onTap;
@@ -648,7 +688,6 @@ class _SeeAllRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final label = appLocalizationsOf(context).searchSeeAllResults;
 
     return _HoverRow(
       highlighted: highlighted,
