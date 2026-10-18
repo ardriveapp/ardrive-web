@@ -344,8 +344,25 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('copies the text without closing the share card',
-      (tester) async {
+  test('spreads the labels of two thin years apart', () {
+    // 2025 and 2026 were small and sat together at the top of the chart, so
+    // their labels touched.
+    final ys = spreadStrataLabels(
+      [110, 80, 40, 12, 6, 2],
+      gap: 16,
+      height: 120,
+    );
+
+    for (var i = 1; i < ys.length; i++) {
+      expect(ys[i - 1] - ys[i], greaterThanOrEqualTo(16));
+    }
+    expect(ys.last, greaterThanOrEqualTo(8), reason: 'inside the top edge');
+    expect(ys.first, lessThanOrEqualTo(112), reason: 'inside the bottom');
+    expect(ys.take(3), [110, 80, 56],
+        reason: 'the rest move no more than needed');
+  });
+
+  testWidgets('copies the text without closing the share card', (tester) async {
     tester.view.physicalSize = const Size(1200, 1400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);

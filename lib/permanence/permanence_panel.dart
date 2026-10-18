@@ -1099,26 +1099,42 @@ class _StrataPainter extends CustomPainter {
       );
     }
 
-    var below = size.height;
+    TextPainter text(String value, TextStyle style) => TextPainter(
+          text: TextSpan(text: value, style: style),
+          textDirection: TextDirection.ltr,
+        )..layout();
+
+    final years = [
+      for (final layer in layers)
+        text('${layer.key}', labelStyle.copyWith(color: label)),
+    ];
+    final amounts = [
+      for (final layer in layers)
+        text(_formatSize(layer.value), mutedStyle.copyWith(color: muted)),
+    ];
+    final lineHeight = [...years, ...amounts]
+        .fold<double>(0, (a, painter) => math.max(a, painter.height));
+
+    // Each label beside the middle of its band, unless two thin years sit
+    // together: then they are spread a line apart.
+    final ys = spreadStrataLabels(
+      [
+        for (var i = 0; i < layers.length; i++)
+          (tops[i] + (i == 0 ? size.height : tops[i - 1])) / 2,
+      ],
+      gap: lineHeight + 2,
+      height: size.height,
+    );
+
     for (var i = 0; i < layers.length; i++) {
-      final mid = (tops[i] + below) / 2;
-      final year = TextPainter(
-        text: TextSpan(
-          text: '${layers[i].key}',
-          style: labelStyle.copyWith(color: label),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      final amount = TextPainter(
-        text: TextSpan(
-          text: _formatSize(layers[i].value),
-          style: mutedStyle.copyWith(color: muted),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      year.paint(canvas, Offset(bandWidth + 14, mid - year.height / 2));
-      amount.paint(canvas, Offset(bandWidth + 54, mid - amount.height / 2));
-      below = tops[i];
+      years[i].paint(
+        canvas,
+        Offset(bandWidth + 14, ys[i] - years[i].height / 2),
+      );
+      amounts[i].paint(
+        canvas,
+        Offset(bandWidth + 54, ys[i] - amounts[i].height / 2),
+      );
     }
   }
 
@@ -1127,4 +1143,30 @@ class _StrataPainter extends CustomPainter {
       old.bytesByYear != bytesByYear ||
       old.brand != brand ||
       old.faint != faint;
+}
+
+/// Where each year's label goes: [mids] are the bands' middles, oldest
+/// (lowest) first, and each label is moved as little as it takes to sit at
+/// least [gap] from the next, inside [height].
+@visibleForTesting
+List<double> spreadStrataLabels(
+  List<double> mids, {
+  required double gap,
+  required double height,
+}) {
+  final ys = List<double>.of(mids);
+
+  // Up from the bottom: each one at least a gap above the one below it.
+  for (var i = 0; i < ys.length; i++) {
+    final ceiling = i == 0 ? height - gap / 2 : ys[i - 1] - gap;
+    ys[i] = math.min(ys[i], ceiling);
+  }
+
+  // Down from the top: nothing pushed out of the top edge.
+  for (var i = ys.length - 1; i >= 0; i--) {
+    final floor = i == ys.length - 1 ? gap / 2 : ys[i + 1] + gap;
+    ys[i] = math.max(ys[i], floor);
+  }
+
+  return ys;
 }
