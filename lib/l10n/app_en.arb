@@ -2869,6 +2869,19 @@
   "@sharedFileDetailsMetadata": {
     "description": "Label of the metadata transaction row in the shared file details drawer"
   },
+  "sharedFileDetailsModified": "Modified",
+  "@sharedFileDetailsModified": {
+    "description": "Label of the row in the shared file details drawer showing when the file was last modified on the uploader's computer, before it was uploaded"
+  },
+  "sharedFileDetailsModifiedTooltip": "Last modified on the uploader's computer: {date}",
+  "@sharedFileDetailsModifiedTooltip": {
+    "description": "Tooltip on the Modified row in the shared file details drawer",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "sharedFileDetailsOwner": "Shared by",
   "@sharedFileDetailsOwner": {
     "description": "Label of the owner address row in the shared file details drawer"
@@ -2876,6 +2889,10 @@
   "sharedFileDetailsTransaction": "Transaction",
   "@sharedFileDetailsTransaction": {
     "description": "Label of the data transaction row in the shared file details drawer"
+  },
+  "sharedFileDetailsUploaded": "Uploaded",
+  "@sharedFileDetailsUploaded": {
+    "description": "Label of the row in the shared file details drawer showing when this version of the file was uploaded"
   },
   "sharedFileEncryptedFileTitle": "Encrypted file",
   "@sharedFileEncryptedFileTitle": {

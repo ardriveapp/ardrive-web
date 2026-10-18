@@ -18,7 +18,6 @@ import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_revision_base.dart';
-import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -976,16 +975,25 @@ class SharedFileDetailsContent extends StatelessWidget {
           // Read like dates, not like timestamps. The exact instant is a
           // hover away, which is the pairing the version rows and the drive
           // explorer both use.
+          //
+          // Named for what each date is. The first is when this version was
+          // uploaded. The second is the file's modified time on the
+          // uploader's computer, saved at upload, so it is usually the
+          // earlier of the two: as "Date created" and "Last updated" they
+          // read as though the file changed before it was uploaded.
           SharedFileDetailRow(
-            label: appLocalizationsOf(context).dateCreated,
-            value: yMMdDateFormatter.format(revision.dateCreated),
-            tooltip: formatDateToUtcString(revision.dateCreated),
+            label: appLocalizationsOf(context).sharedFileDetailsUploaded,
+            value: formatDate(revision.dateCreated),
+            tooltip: formatDateTime(revision.dateCreated),
             canCopy: false,
           ),
           SharedFileDetailRow(
-            label: appLocalizationsOf(context).lastUpdated,
-            value: yMMdDateFormatter.format(revision.lastModifiedDate),
-            tooltip: formatDateToUtcString(revision.lastModifiedDate),
+            label: appLocalizationsOf(context).sharedFileDetailsModified,
+            value: formatDate(revision.lastModifiedDate),
+            tooltip:
+                appLocalizationsOf(context).sharedFileDetailsModifiedTooltip(
+              formatDateTime(revision.lastModifiedDate),
+            ),
             canCopy: false,
           ),
         ],
@@ -1238,9 +1246,9 @@ class _SharedFileVersionRow extends StatelessWidget {
                     // The row shows the short date so that it still fits beside
                     // a size and a chip on a phone; the exact timestamp is one
                     // hover away, the same pairing the drive explorer uses.
-                    message: formatDateToUtcString(revision.dateCreated),
+                    message: formatDateTime(revision.dateCreated),
                     child: Text(
-                      yMMdDateFormatter.format(revision.dateCreated),
+                      formatDate(revision.dateCreated),
                       overflow: TextOverflow.ellipsis,
                       style: isSelected
                           ? ArDriveTypography.body
