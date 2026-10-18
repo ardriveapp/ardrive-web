@@ -1991,18 +1991,24 @@
     "description": "Follows searchCoverageNoneSynced while the drives are syncing",
     "placeholders": { "count": { "type": "num", "format": "compact" } }
   },
-  "searchCoverageOtherSyncRunning": "Another sync is running. You can sync these when it finishes.",
+  "searchCoverageSyncingSome": "{count, plural, =1{Syncing one of them now. Results update when it finishes.} other{Syncing {count} of them now. Results update when they finish.}}",
+  "@searchCoverageSyncingSome": {
+    "description": "Follows searchCoverageSearched or searchCoverageNoneSynced while a sync runs that covers only some of the drives that were not searched, such as one started from a drive's own page",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageOtherSyncRunning": "{count, plural, =1{Another sync is running. You can sync it when that finishes.} other{Another sync is running. You can sync these when it finishes.}}",
   "@searchCoverageOtherSyncRunning": {
-    "description": "Follows searchCoverageSearched while a sync of other drives runs; only one sync runs at a time"
+    "description": "Follows searchCoverageSearched while a sync of other drives runs; only one sync runs at a time",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
   },
   "searchCoverageSyncFailed": "{count, plural, =1{1 drive couldn't be synced, so its files weren't searched.} other{{count} drives couldn't be synced, so their files weren't searched.}}",
   "@searchCoverageSyncFailed": {
     "description": "Follows searchCoverageSearched when the sync started from search ended with some drives still not synced",
     "placeholders": { "count": { "type": "num", "format": "compact" } }
   },
-  "searchCoverageSyncRefused": "Sync couldn't start while another task is running. Try again when it finishes.",
+  "searchCoverageSyncRefused": "Sync couldn't start right now. Try again in a moment.",
   "@searchCoverageSyncRefused": {
-    "description": "Follows searchCoverageSearched when the sync started from search was refused, because an upload or another task that cannot be interrupted was running"
+    "description": "Follows searchCoverageSearched when the sync started from search did not start: an upload or another task that cannot be interrupted was running, or the browser tab was in the background"
   },
   "searchSyncDrives": "{count, plural, =1{Sync 1 drive} other{Sync {count} drives}}",
   "@searchSyncDrives": {

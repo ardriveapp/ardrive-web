@@ -107,7 +107,6 @@ void main() {
   void coverageIs(SearchCoverage coverage) {
     when(() => repository.coverage(
           includeHiddenDrives: any(named: 'includeHiddenDrives'),
-          failedDriveIds: any(named: 'failedDriveIds'),
         )).thenAnswer((_) async => coverage);
   }
 
@@ -494,6 +493,81 @@ void main() {
     await tester.pumpWidget(host(boxKey: const Key('second')));
 
     expect(find.text('rep'), findsOneWidget);
+  });
+
+  testWidgets('keeps focus and the dropdown when the page rebuilds the box',
+      (tester) async {
+    await tester.pumpWidget(host(boxKey: const Key('first')));
+    await typeQuery(tester, 'rep');
+    expect(find.text('report.pdf'), findsOneWidget);
+
+    // A new box in the old one's place, as when a sync brings the drive on
+    // screen into view.
+    await tester.pumpWidget(host(boxKey: const Key('second')));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('report.pdf'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus,
+      isTrue,
+    );
+  });
+
+  testWidgets('a box given up on purpose does not take focus back',
+      (tester) async {
+    await tester.pumpWidget(host(boxKey: const Key('first')));
+    await typeQuery(tester, 'rep');
+    await key(tester, LogicalKeyboardKey.arrowDown);
+    await enter(tester);
+
+    await tester.pumpWidget(host(boxKey: const Key('second')));
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).focusNode!.hasFocus,
+      isFalse,
+    );
+  });
+
+  testWidgets('says how many a sync of only some of them covers',
+      (tester) async {
+    coverageIs(const SearchCoverage(
+      totalDrives: 6,
+      unsearchedDriveIds: ['b', 'c', 'd', 'e'],
+    ));
+    whenListen(syncCubit, const Stream<SyncState>.empty(),
+        initialState: SyncInProgress());
+    when(() => syncCubit.syncingDriveId).thenReturn('c');
+
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+
+    expect(
+      find.text('Searched 2 of 6 drives. Syncing one of them now. Results '
+          'update when it finishes.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('another sync running reads right for one drive', (tester) async {
+    coverageIs(const SearchCoverage(
+      totalDrives: 1,
+      unsearchedDriveIds: ['b'],
+    ));
+    whenListen(syncCubit, const Stream<SyncState>.empty(),
+        initialState: SyncInProgress());
+    when(() => syncCubit.syncingDriveId).thenReturn('a');
+
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+
+    expect(
+      find.text("Your drive isn't synced on this device yet. Another sync is "
+          'running. You can sync it when that finishes.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('leaves the arrow keys to an input method while it composes',

@@ -21,7 +21,7 @@ class SearchCoverage extends Equatable {
   final int totalDrives;
 
   /// The drives in scope whose files and folders search cannot see, because
-  /// they are not on this device or their last sync failed.
+  /// they are not on this device.
   final List<String> unsearchedDriveIds;
 
   int get searchedDrives => totalDrives - unsearchedDriveIds.length;

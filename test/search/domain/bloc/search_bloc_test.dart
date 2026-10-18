@@ -26,6 +26,9 @@ void main() {
   late StreamController<GlobalHideState> hideStates;
   late StreamController<void> drivesChanges;
 
+  // What a sync changes, for a test that needs it changed mid-way.
+  void Function() syncCubitEnds = () {};
+
   const debounce = Duration(milliseconds: 250);
 
   final drive = Drive(
@@ -46,11 +49,14 @@ void main() {
   const partial =
       SearchCoverage(totalDrives: 3, unsearchedDriveIds: ['b', 'c']);
 
+  const settle = Duration(milliseconds: 20);
+
   SearchBloc build({Duration wait = debounce}) => SearchBloc(
         repository,
         syncCubit: syncCubit,
         globalHideBloc: globalHideBloc,
         debounce: wait,
+        drivesSettle: settle,
       );
 
   setUp(() {
@@ -73,7 +79,6 @@ void main() {
     when(() => repository.search(any())).thenAnswer((_) async => []);
     when(() => repository.coverage(
           includeHiddenDrives: any(named: 'includeHiddenDrives'),
-          failedDriveIds: any(named: 'failedDriveIds'),
         )).thenAnswer((_) async => complete);
   });
 
@@ -116,6 +121,7 @@ void main() {
           status: SearchStatus.success,
           results: [result('a'), result('b')],
           coverage: complete,
+          resultsRevision: 1,
         ),
       ],
     );
@@ -131,6 +137,7 @@ void main() {
           query: 'zzz',
           status: SearchStatus.empty,
           coverage: complete,
+          resultsRevision: 1,
         ),
       ],
     );
@@ -210,6 +217,7 @@ void main() {
           status: SearchStatus.success,
           results: [result('a')],
           coverage: complete,
+          resultsRevision: 1,
         ),
       ],
     );
@@ -221,7 +229,6 @@ void main() {
       setUp: () {
         when(() => repository.coverage(
               includeHiddenDrives: any(named: 'includeHiddenDrives'),
-              failedDriveIds: any(named: 'failedDriveIds'),
             )).thenAnswer((_) async => partial);
       },
       build: build,
@@ -232,6 +239,7 @@ void main() {
           query: 'report',
           status: SearchStatus.empty,
           coverage: partial,
+          resultsRevision: 1,
         ),
       ],
     );
@@ -245,30 +253,7 @@ void main() {
       build: build,
       act: (bloc) => bloc.add(const SearchSubmitted('report')),
       verify: (_) {
-        verify(() => repository.coverage(
-              includeHiddenDrives: true,
-              failedDriveIds: const {},
-            )).called(1);
-      },
-    );
-
-    blocTest<SearchBloc, SearchState>(
-      'counts a drive whose last sync failed as not searched',
-      setUp: () {
-        when(() => syncCubit.state).thenReturn(SyncCompleteWithErrors(
-          failedDrives: 1,
-          totalDrives: 3,
-          failedDriveIds: const ['b'],
-          errorMessages: const {},
-        ));
-      },
-      build: build,
-      act: (bloc) => bloc.add(const SearchSubmitted('report')),
-      verify: (_) {
-        verify(() => repository.coverage(
-              includeHiddenDrives: false,
-              failedDriveIds: {'b'},
-            )).called(1);
+        verify(() => repository.coverage(includeHiddenDrives: true)).called(1);
       },
     );
 
@@ -278,7 +263,7 @@ void main() {
       build: build,
       act: (bloc) async {
         drivesChanges.add(null);
-        await Future.delayed(Duration.zero);
+        await Future.delayed(settle * 2);
         hideStates.add(const ShowingHiddenItems(userHasHiddenDrive: false));
         await Future.delayed(Duration.zero);
         syncStates.add(SyncInProgress());
@@ -287,7 +272,6 @@ void main() {
       verify: (_) {
         verify(() => repository.coverage(
               includeHiddenDrives: any(named: 'includeHiddenDrives'),
-              failedDriveIds: any(named: 'failedDriveIds'),
             )).called(3);
       },
     );
@@ -297,7 +281,6 @@ void main() {
     setUp(() {
       when(() => repository.coverage(
             includeHiddenDrives: any(named: 'includeHiddenDrives'),
-            failedDriveIds: any(named: 'failedDriveIds'),
           )).thenAnswer((_) async => partial);
     });
 
@@ -314,7 +297,6 @@ void main() {
           await Future.delayed(Duration.zero);
           when(() => repository.coverage(
                 includeHiddenDrives: any(named: 'includeHiddenDrives'),
-                failedDriveIds: any(named: 'failedDriveIds'),
               )).thenAnswer((_) async => complete);
           when(() => repository.search('report'))
               .thenAnswer((_) async => [result('found-after-sync')]);
@@ -393,7 +375,6 @@ void main() {
           ));
           when(() => repository.coverage(
                     includeHiddenDrives: any(named: 'includeHiddenDrives'),
-                    failedDriveIds: any(named: 'failedDriveIds'),
                   ))
               .thenAnswer((_) async => const SearchCoverage(
                   totalDrives: 3, unsearchedDriveIds: ['c']));
@@ -408,7 +389,7 @@ void main() {
       wait: const Duration(milliseconds: 50),
       verify: (bloc) {
         expect(bloc.state.syncStatus, SearchSyncStatus.failed);
-        expect(bloc.state.failedSyncCount, 1);
+        expect(bloc.state.syncCount, 1);
       },
     );
 
@@ -454,5 +435,169 @@ void main() {
         expect(bloc.state.status, SearchStatus.success);
       },
     );
+
+    blocTest<SearchBloc, SearchState>(
+      'shows a search after a sync that found the same items under new names',
+      setUp: () {
+        var name = 'old name';
+        when(() => repository.search('report')).thenAnswer((_) async => [
+              SearchResult<String>(result: name, drive: drive, uniqueId: 'x'),
+            ]);
+        syncCubitEnds = () => name = 'new name';
+      },
+      build: build,
+      act: (bloc) async {
+        await searchFirst(bloc);
+        syncStates.add(SyncInProgress());
+        await Future.delayed(Duration.zero);
+        syncCubitEnds();
+        syncStates.add(SyncIdle());
+      },
+      wait: const Duration(milliseconds: 50),
+      verify: (bloc) => expect(bloc.state.results.single.result, 'new name'),
+    );
+
+    blocTest<SearchBloc, SearchState>(
+      'counts a drive page sync of one of them as one, not all of them',
+      setUp: () {
+        when(() => syncCubit.state).thenReturn(SyncInProgress());
+        when(() => syncCubit.syncingDriveId).thenReturn('c');
+      },
+      build: build,
+      act: searchFirst,
+      verify: (bloc) {
+        expect(bloc.state.syncStatus, SearchSyncStatus.syncing);
+        expect(bloc.state.syncCount, 1);
+      },
+    );
+
+    blocTest<SearchBloc, SearchState>(
+      'counts a run over some drives by the ones it covers',
+      setUp: () {
+        when(() => syncCubit.state).thenReturn(SyncInProgress());
+        when(() => syncCubit.syncingDriveIds).thenReturn({'a', 'c'});
+      },
+      build: build,
+      act: searchFirst,
+      verify: (bloc) {
+        expect(bloc.state.syncStatus, SearchSyncStatus.syncing);
+        expect(bloc.state.syncCount, 1);
+      },
+    );
+
+    blocTest<SearchBloc, SearchState>(
+      'the failed count shrinks when a later sync reads one of them',
+      setUp: () {
+        when(() => syncCubit.syncDrives(any())).thenAnswer((_) async {
+          when(() => syncCubit.state).thenReturn(SyncCompleteWithErrors(
+            failedDrives: 2,
+            totalDrives: 2,
+            failedDriveIds: const ['b', 'c'],
+            errorMessages: const {},
+          ));
+          return true;
+        });
+      },
+      build: build,
+      act: (bloc) async {
+        await searchFirst(bloc);
+        bloc.add(const SearchSyncRequested());
+        await Future.delayed(const Duration(milliseconds: 20));
+        expect(bloc.state.syncStatus, SearchSyncStatus.failed);
+        expect(bloc.state.syncCount, 2);
+
+        // A background sync reads b.
+        when(() => repository.coverage(
+                  includeHiddenDrives: any(named: 'includeHiddenDrives'),
+                ))
+            .thenAnswer((_) async => const SearchCoverage(
+                totalDrives: 3, unsearchedDriveIds: ['c']));
+        when(() => syncCubit.state).thenReturn(SyncIdle());
+        drivesChanges.add(null);
+      },
+      wait: const Duration(milliseconds: 80),
+      verify: (bloc) {
+        expect(bloc.state.syncStatus, SearchSyncStatus.failed);
+        expect(bloc.state.syncCount, 1);
+      },
+    );
+
+    blocTest<SearchBloc, SearchState>(
+      'a press refused because another sync started reads as that sync, '
+      'not as a refusal, and offers the button again after it',
+      setUp: () {
+        when(() => syncCubit.syncDrives(any())).thenAnswer((_) async {
+          when(() => syncCubit.state).thenReturn(SyncInProgress());
+          when(() => syncCubit.syncingDriveId).thenReturn('a');
+          return false;
+        });
+      },
+      build: build,
+      act: (bloc) async {
+        await searchFirst(bloc);
+        bloc.add(const SearchSyncRequested());
+        await Future.delayed(const Duration(milliseconds: 20));
+        expect(bloc.state.syncStatus, SearchSyncStatus.otherSyncRunning);
+
+        when(() => syncCubit.state).thenReturn(SyncIdle());
+        when(() => syncCubit.syncingDriveId).thenReturn(null);
+        syncStates.add(SyncInProgress());
+        await Future.delayed(Duration.zero);
+        syncStates.add(SyncIdle());
+      },
+      wait: const Duration(milliseconds: 50),
+      verify: (bloc) => expect(bloc.state.syncStatus, SearchSyncStatus.none),
+    );
+
+    blocTest<SearchBloc, SearchState>(
+      'a refusal is forgotten when the next sync ends',
+      setUp: () {
+        when(() => syncCubit.syncDrives(any())).thenAnswer((_) async => false);
+      },
+      build: build,
+      act: (bloc) async {
+        await searchFirst(bloc);
+        bloc.add(const SearchSyncRequested());
+        await Future.delayed(const Duration(milliseconds: 20));
+        expect(bloc.state.syncStatus, SearchSyncStatus.refused);
+
+        syncStates.add(SyncInProgress());
+        await Future.delayed(Duration.zero);
+        syncStates.add(SyncIdle());
+      },
+      wait: const Duration(milliseconds: 50),
+      verify: (bloc) => expect(bloc.state.syncStatus, SearchSyncStatus.none),
+    );
   });
+
+  blocTest<SearchBloc, SearchState>(
+    'during a sync, the count and the results move together',
+    setUp: () {
+      when(() => repository.coverage(
+            includeHiddenDrives: any(named: 'includeHiddenDrives'),
+          )).thenAnswer((_) async => partial);
+      when(() => repository.search('report'))
+          .thenAnswer((_) async => [result('from-a')]);
+    },
+    build: build,
+    act: (bloc) async {
+      bloc.add(const SearchSubmitted('report'));
+      await Future.delayed(const Duration(milliseconds: 20));
+
+      // The sync finishes walking b and writes its row.
+      when(() => repository.coverage(
+                includeHiddenDrives: any(named: 'includeHiddenDrives'),
+              ))
+          .thenAnswer((_) async =>
+              const SearchCoverage(totalDrives: 3, unsearchedDriveIds: ['c']));
+      when(() => repository.search('report'))
+          .thenAnswer((_) async => [result('from-a'), result('from-b')]);
+      drivesChanges.add(null);
+    },
+    wait: const Duration(milliseconds: 80),
+    verify: (bloc) {
+      expect(bloc.state.coverage.searchedDrives, 2);
+      expect(bloc.state.results, [result('from-a'), result('from-b')]);
+    },
+  );
 }

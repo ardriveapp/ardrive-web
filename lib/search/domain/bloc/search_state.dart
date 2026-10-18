@@ -43,7 +43,8 @@ class SearchState extends Equatable {
     this.results = const [],
     this.coverage = SearchCoverage.unknown,
     this.syncStatus = SearchSyncStatus.none,
-    this.failedSyncCount = 0,
+    this.syncCount = 0,
+    this.resultsRevision = 0,
   });
 
   final String query;
@@ -52,9 +53,14 @@ class SearchState extends Equatable {
   final SearchCoverage coverage;
   final SearchSyncStatus syncStatus;
 
-  /// For [SearchSyncStatus.failed]: how many of the drives asked for are still
-  /// unreadable.
-  final int failedSyncCount;
+  /// For [SearchSyncStatus.syncing], how many of the drives not searched the
+  /// running sync covers. For [SearchSyncStatus.failed], how many of the
+  /// drives asked for are still unreadable.
+  final int syncCount;
+
+  /// Moves on with every set of results, so a search that finds the same
+  /// items with new names or places is a new state. [results] compare by id.
+  final int resultsRevision;
 
   SearchState copyWith({
     String? query,
@@ -62,7 +68,8 @@ class SearchState extends Equatable {
     List<SearchResult>? results,
     SearchCoverage? coverage,
     SearchSyncStatus? syncStatus,
-    int? failedSyncCount,
+    int? syncCount,
+    int? resultsRevision,
   }) {
     return SearchState(
       query: query ?? this.query,
@@ -70,11 +77,19 @@ class SearchState extends Equatable {
       results: results ?? this.results,
       coverage: coverage ?? this.coverage,
       syncStatus: syncStatus ?? this.syncStatus,
-      failedSyncCount: failedSyncCount ?? this.failedSyncCount,
+      syncCount: syncCount ?? this.syncCount,
+      resultsRevision: resultsRevision ?? this.resultsRevision,
     );
   }
 
   @override
-  List<Object> get props =>
-      [query, status, results, coverage, syncStatus, failedSyncCount];
+  List<Object> get props => [
+        query,
+        status,
+        results,
+        coverage,
+        syncStatus,
+        syncCount,
+        resultsRevision,
+      ];
 }

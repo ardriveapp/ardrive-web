@@ -127,16 +127,14 @@ void main() {
       );
     });
 
-    test('counts a drive whose last sync failed as not searched', () async {
-      final coverage = await repository.coverage(
-        includeHiddenDrives: false,
-        failedDriveIds: {'synced'},
-      );
+    test(
+        'counts a drive with its contents here as searched, even after a '
+        'failed sync', () async {
+      // Search reads what is on this device, so a drive whose last sync
+      // failed was still looked inside. Only whether it is here counts.
+      final coverage = await repository.coverage(includeHiddenDrives: false);
 
-      expect(
-        coverage.unsearchedDriveIds,
-        unorderedEquals(['synced', 'discovered']),
-      );
+      expect(coverage.unsearchedDriveIds, isNot(contains('synced')));
     });
 
     test('is complete with no drives at all', () async {

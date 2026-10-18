@@ -70,6 +70,10 @@ class _SearchBoxState extends State<SearchBox> {
 
   String _text = '';
 
+  /// Set once the box gives up focus on purpose, to open a result or the
+  /// dialog, so the page that replaces it does not take focus back.
+  bool _letGo = false;
+
   final _rowKeys = <String, GlobalKey>{};
 
   @override
@@ -80,6 +84,27 @@ class _SearchBoxState extends State<SearchBox> {
     _text = _session.controller.text;
     _session.controller.addListener(_onTextChanged);
     _focusNode.addListener(_onFocusChanged);
+
+    if (_session.restoreBoxFocus) {
+      _session.restoreBoxFocus = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _focusNode.requestFocus();
+        }
+      });
+    }
+  }
+
+  @override
+  void deactivate() {
+    // Taken down with focus, not let go of: the page was rebuilt under the
+    // reader, as the explorer does when a sync started from this dropdown
+    // brings the drive on screen into view. See [SearchSession.restoreBoxFocus].
+    if (_focusNode.hasFocus && !_letGo) {
+      _session.restoreBoxFocus = true;
+    }
+
+    super.deactivate();
   }
 
   @override
@@ -108,6 +133,10 @@ class _SearchBoxState extends State<SearchBox> {
   }
 
   void _onFocusChanged() {
+    if (_focusNode.hasFocus) {
+      _letGo = false;
+    }
+
     setState(() {
       _dismissed = false;
 
@@ -272,6 +301,7 @@ class _SearchBoxState extends State<SearchBox> {
   /// gone.
   void _close() {
     _highlighted = null;
+    _letGo = true;
     _focusNode.unfocus();
   }
 
@@ -289,7 +319,6 @@ class _SearchBoxState extends State<SearchBox> {
 
   void _openAllResults() {
     _close();
-    _session.submit();
 
     showSearchModalDesktop(
       context: context,

@@ -259,6 +259,12 @@ deleteLicensesByDriveId:
 -- typed in full could be cut before anything ranked it. LIKE ignores ASCII
 -- case, so the ranks do too. `rankSearchResults` orders the combined results
 -- by the same rule, and finer.
+--
+-- Ranking means sorting every match rather than stopping at the first 50 in
+-- name order, so files and folders are ranked by rowid and name alone and
+-- joined to their drive and folder only after the limit. Joined first, every
+-- match was joined and sorted whole: two to three times slower for a common
+-- term in 200,000 files.
 searchFiles ($query = '', $limit = 50, $offset = 0) AS FileSearchResult:
     SELECT
         f.*,
@@ -269,18 +275,29 @@ searchFiles ($query = '', $limit = 50, $offset = 0) AS FileSearchResult:
         d.privacy AS drive_privacy,
         d.rootFolderId AS drive_root_folder_id,
         d.isHidden AS drive_is_hidden
-    FROM file_entries f
+    FROM (
+        SELECT rowid AS match_rowid
+        FROM file_entries
+        WHERE name LIKE '%' || :query || '%'
+        ORDER BY
+            CASE
+                WHEN name LIKE :query THEN 0
+                WHEN name LIKE :query || '%' THEN 1
+                ELSE 2
+            END,
+            name
+        LIMIT :limit OFFSET :offset
+    ) matched
+    JOIN file_entries f ON f.rowid = matched.match_rowid
     JOIN drives d ON d.id = f.driveId
     LEFT JOIN folder_entries parent_folder ON parent_folder.id = f.parentFolderId
-    WHERE f.name LIKE '%' || :query || '%'
     ORDER BY
         CASE
             WHEN f.name LIKE :query THEN 0
             WHEN f.name LIKE :query || '%' THEN 1
             ELSE 2
         END,
-        f.name
-    LIMIT :limit OFFSET :offset;
+        f.name;
 
 searchFolders ($query = '', $limit = 50, $offset = 0) AS FolderSearchResult:
     SELECT
@@ -292,19 +309,30 @@ searchFolders ($query = '', $limit = 50, $offset = 0) AS FolderSearchResult:
         d.privacy AS drive_privacy,
         d.rootFolderId AS drive_root_folder_id,
         d.isHidden AS drive_is_hidden
-    FROM folder_entries f
+    FROM (
+        SELECT rowid AS match_rowid
+        FROM folder_entries
+        WHERE name LIKE '%' || :query || '%'
+            AND parentFolderId IS NOT NULL  -- Exclude root folders
+        ORDER BY
+            CASE
+                WHEN name LIKE :query THEN 0
+                WHEN name LIKE :query || '%' THEN 1
+                ELSE 2
+            END,
+            name
+        LIMIT :limit OFFSET :offset
+    ) matched
+    JOIN folder_entries f ON f.rowid = matched.match_rowid
     JOIN drives d ON d.id = f.driveId
     LEFT JOIN folder_entries parent_folder ON parent_folder.id = f.parentFolderId
-    WHERE f.name LIKE '%' || :query || '%'
-        AND f.parentFolderId IS NOT NULL  -- Exclude root folders
     ORDER BY
         CASE
             WHEN f.name LIKE :query THEN 0
             WHEN f.name LIKE :query || '%' THEN 1
             ELSE 2
         END,
-        f.name
-    LIMIT :limit OFFSET :offset;
+        f.name;
 
 searchDrives ($query = '', $limit = 50, $offset = 0):
     SELECT *

@@ -16,13 +16,13 @@ abstract class SearchRepository {
   ///
   /// [includeHiddenDrives] is whether hidden drives count, which they do only
   /// while hidden items are shown: the reader is not told about drives they
-  /// cannot see. [failedDriveIds] are drives whose last sync failed, which
-  /// count as unsearched whatever is on this device, since the sync might have
-  /// stopped short of their newest files.
-  Future<SearchCoverage> coverage({
-    required bool includeHiddenDrives,
-    Set<String> failedDriveIds = const {},
-  });
+  /// cannot see.
+  ///
+  /// A drive whose last sync failed still counts as searched when its contents
+  /// are here: search did look inside it, and calling it "not synced on this
+  /// device" beside results from it would be untrue. A sync the reader asked
+  /// for from search that fails says so on its own (`SearchSyncStatus.failed`).
+  Future<SearchCoverage> coverage({required bool includeHiddenDrives});
 
   /// Fires whenever the drives table changes: a drive attached, detached,
   /// hidden, renamed or synced.
@@ -82,10 +82,7 @@ class ArDriveSearchRepository implements SearchRepository {
   }
 
   @override
-  Future<SearchCoverage> coverage({
-    required bool includeHiddenDrives,
-    Set<String> failedDriveIds = const {},
-  }) async {
+  Future<SearchCoverage> coverage({required bool includeHiddenDrives}) async {
     final drives = await _driveDao.searchCoverageDrives().get();
     final inScope =
         drives.where((drive) => includeHiddenDrives || !drive.isHidden);
@@ -94,7 +91,7 @@ class ArDriveSearchRepository implements SearchRepository {
       totalDrives: inScope.length,
       unsearchedDriveIds: [
         for (final drive in inScope)
-          if (!drive.hasContents || failedDriveIds.contains(drive.id)) drive.id,
+          if (!drive.hasContents) drive.id,
       ],
     );
   }

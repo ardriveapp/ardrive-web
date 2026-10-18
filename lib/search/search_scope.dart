@@ -25,6 +25,11 @@ class SearchSession {
 
   String _lastQuery = '';
 
+  /// Set by a search box taken down while it had focus, which the explorer
+  /// does whenever the drive on screen changes state. The box built in its
+  /// place takes focus back, so the reader's dropdown stays open.
+  bool restoreBoxFocus = false;
+
   /// The query as searched: the field's text without the spaces around it.
   String get query => controller.text.trim();
 
@@ -50,9 +55,11 @@ class SearchSession {
   /// Empties the field, after the reader has gone to a result.
   void clear() => controller.clear();
 
+  /// Stops following the text. The controller is left to be collected rather
+  /// than disposed: a search dialog open at logout keeps its field, and a field
+  /// on a disposed controller throws.
   void dispose() {
     controller.removeListener(_onTextChanged);
-    controller.dispose();
   }
 }
 

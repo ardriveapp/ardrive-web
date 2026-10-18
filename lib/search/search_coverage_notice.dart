@@ -22,7 +22,7 @@ class SearchCoverageNotice extends StatelessWidget {
           previous.query.isEmpty != current.query.isEmpty ||
           previous.coverage != current.coverage ||
           previous.syncStatus != current.syncStatus ||
-          previous.failedSyncCount != current.failedSyncCount,
+          previous.syncCount != current.syncCount,
       builder: (context, state) {
         final coverage = state.coverage;
 
@@ -49,13 +49,17 @@ class SearchCoverageNotice extends StatelessWidget {
           SearchSyncStatus.none => noneSearched
               ? localizations.searchCoverageSyncThem(unsearched)
               : localizations.searchCoverageSyncOthers(unsearched),
-          SearchSyncStatus.syncing => noneSearched
-              ? localizations.searchCoverageSyncingThem(unsearched)
-              : localizations.searchCoverageSyncing(unsearched),
+          // A sync that covers only some of them, such as one started from a
+          // drive's own page, says how many rather than claiming all.
+          SearchSyncStatus.syncing => state.syncCount < unsearched
+              ? localizations.searchCoverageSyncingSome(state.syncCount)
+              : noneSearched
+                  ? localizations.searchCoverageSyncingThem(unsearched)
+                  : localizations.searchCoverageSyncing(unsearched),
           SearchSyncStatus.otherSyncRunning =>
-            localizations.searchCoverageOtherSyncRunning,
+            localizations.searchCoverageOtherSyncRunning(unsearched),
           SearchSyncStatus.failed =>
-            localizations.searchCoverageSyncFailed(state.failedSyncCount),
+            localizations.searchCoverageSyncFailed(state.syncCount),
           SearchSyncStatus.refused => localizations.searchCoverageSyncRefused,
         };
 
