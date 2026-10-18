@@ -1954,6 +1954,88 @@
   "@searchFiles": {
     "description": "Tooltip on the mobile app bar's search control"
   },
+  "searchBoxHint": "Search files, folders and drives",
+  "@searchBoxHint": {
+    "description": "Placeholder in the search box at the top of the page"
+  },
+  "searchCoverageSearched": "Searched {searched} of {total} drives.",
+  "@searchCoverageSearched": {
+    "description": "First sentence of the note with search results when some drives are not synced on this device, so their files and folders could not be searched. Always followed by one of the searchCoverage sentences below",
+    "placeholders": {
+      "searched": { "type": "num", "format": "compact" },
+      "total": { "type": "num", "format": "compact" }
+    }
+  },
+  "searchCoverageSyncOthers": "{count, plural, =1{Sync the other one to search it.} other{Sync the other {count} to search them.}}",
+  "@searchCoverageSyncOthers": {
+    "description": "Follows searchCoverageSearched: offers to sync the drives that were not searched",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageNoneSynced": "{count, plural, =1{Your drive isn't synced on this device yet.} other{None of your {count} drives are synced on this device yet.}}",
+  "@searchCoverageNoneSynced": {
+    "description": "Note with search results when no drive is synced on this device, so only drive names could be searched. Always followed by searchCoverageSyncThem or another of the searchCoverage sentences",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncing": "{count, plural, =1{Syncing the other one now. Results update when it finishes.} other{Syncing the other {count} now. Results update when they finish.}}",
+  "@searchCoverageSyncing": {
+    "description": "Follows searchCoverageSearched while the drives that were not searched are syncing",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncThem": "{count, plural, =1{Sync it to search its files.} other{Sync them to search their files.}}",
+  "@searchCoverageSyncThem": {
+    "description": "Follows searchCoverageNoneSynced: offers to sync the drives",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncingThem": "{count, plural, =1{Syncing it now. Results update when it finishes.} other{Syncing them now. Results update when they finish.}}",
+  "@searchCoverageSyncingThem": {
+    "description": "Follows searchCoverageNoneSynced while the drives are syncing",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageOtherSyncRunning": "Another sync is running. You can sync these when it finishes.",
+  "@searchCoverageOtherSyncRunning": {
+    "description": "Follows searchCoverageSearched while a sync of other drives runs; only one sync runs at a time"
+  },
+  "searchCoverageSyncFailed": "{count, plural, =1{1 drive couldn't be synced, so its files weren't searched.} other{{count} drives couldn't be synced, so their files weren't searched.}}",
+  "@searchCoverageSyncFailed": {
+    "description": "Follows searchCoverageSearched when the sync started from search ended with some drives still not synced",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncRefused": "Sync couldn't start while another task is running. Try again when it finishes.",
+  "@searchCoverageSyncRefused": {
+    "description": "Follows searchCoverageSearched when the sync started from search was refused, because an upload or another task that cannot be interrupted was running"
+  },
+  "searchSyncDrives": "{count, plural, =1{Sync 1 drive} other{Sync {count} drives}}",
+  "@searchSyncDrives": {
+    "description": "Button with search results that syncs the drives that were not searched, then searches again",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchClear": "Clear search",
+  "@searchClear": {
+    "description": "Screen reader label and tooltip of the x that empties a search field"
+  },
+  "searchDriveResult": "{privacy, select, private{Private drive} other{Public drive}}",
+  "@searchDriveResult": {
+    "description": "Second line of a search result that is a drive",
+    "placeholders": { "privacy": { "type": "String", "example": "public" } }
+  },
+  "searchSeeAllResults": "See all results",
+  "@searchSeeAllResults": {
+    "description": "Last row of the search box's dropdown; opens every result in the search dialog"
+  },
+  "searchSearching": "Searching...",
+  "@searchSearching": {
+    "description": "Shown in the search box's dropdown while the first results for a query load"
+  },
+  "searchNoMatches": "No files, folders or drives match \u201c{query}\u201d.",
+  "@searchNoMatches": {
+    "description": "Shown in the search box's dropdown when nothing matches",
+    "placeholders": { "query": { "type": "String", "example": "report" } }
+  },
+  "searchResultCount": "{count, plural, =0{No results} =1{1 result} other{{count} results}}",
+  "@searchResultCount": {
+    "description": "Read aloud by screen readers when search results change",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
   "driveListDrivesHaveChangesDetail": "The files and sizes below were read earlier. Syncing brings them up to date.",
   "@driveListDrivesHaveChangesDetail": {
     "description": "Explains that the figures on screen are still the last ones read"

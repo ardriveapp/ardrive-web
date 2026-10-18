@@ -311,9 +311,8 @@ const double mobileAppBarIconSize = _mobileAppBarIconSize;
 /// from the modal instead. What is gained is the band it occupied, on the one
 /// layout where vertical space is the scarce thing.
 ///
-/// A controller per press rather than one held for the life of the bar: the
-/// modal owns the text while it is open and there is nothing to remember once
-/// it closes.
+/// The text is the session's ([SearchSession]), as it is for the search box on
+/// a wider screen, so the sheet opens on the last search.
 class _MobileSearchButton extends StatelessWidget {
   const _MobileSearchButton({this.onNavigateToFolder});
 
@@ -337,7 +336,6 @@ class _MobileSearchButton extends StatelessWidget {
           context: context,
           driveDetailCubit: context.read<DriveDetailCubit>(),
           drivesCubit: context.read<DrivesCubit>(),
-          controller: TextEditingController(),
           onNavigateToFolder: onNavigateToFolder,
         );
       },

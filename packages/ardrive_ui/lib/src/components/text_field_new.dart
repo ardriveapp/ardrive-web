@@ -202,6 +202,7 @@ class ArDriveTextFieldNew extends StatefulWidget {
     this.keyboardType,
     this.onTap,
     this.onFieldSubmitted,
+    this.onEditingComplete,
     this.focusNode,
     this.maxLength,
     this.label,
@@ -239,6 +240,11 @@ class ArDriveTextFieldNew extends StatefulWidget {
   final List<TextInputFormatter>? inputFormatters;
   final Function()? onTap;
   final Function(String)? onFieldSubmitted;
+
+  /// Called when the reader finishes editing, before [onFieldSubmitted]. When
+  /// set, finishing no longer takes focus from the field, which a field that
+  /// acts on Enter and stays open for more typing needs.
+  final VoidCallback? onEditingComplete;
   final int? maxLength;
   final FocusNode? focusNode;
   final String? label;
@@ -318,6 +324,7 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
             inputFormatters: widget.inputFormatters,
             onTap: widget.onTap,
             onFieldSubmitted: widget.onFieldSubmitted,
+            onEditingComplete: widget.onEditingComplete,
             maxLength: widget.maxLength,
             focusNode: widget.focusNode,
             key: widget.key,

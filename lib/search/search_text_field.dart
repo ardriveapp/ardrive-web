@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
@@ -7,15 +8,24 @@ class SearchTextField extends StatelessWidget {
     this.controller,
     required this.onFieldSubmitted,
     this.onChanged,
+    this.onEditingComplete,
+    this.focusNode,
     this.hintText,
     this.labelText,
+    this.autofocus = false,
   });
 
   final TextEditingController? controller;
   final Function(String text) onFieldSubmitted;
   final Function(String text)? onChanged;
+
+  /// See [ArDriveTextFieldNew.onEditingComplete]: set it to keep focus in the
+  /// field when Enter is pressed.
+  final VoidCallback? onEditingComplete;
+  final FocusNode? focusNode;
   final String? hintText;
   final String? labelText;
+  final bool autofocus;
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +34,12 @@ class SearchTextField extends StatelessWidget {
 
     return ArDriveTextFieldNew(
       controller: controller,
+      focusNode: focusNode,
+      autofocus: autofocus,
       hintText: hintText,
       label: labelText,
       onChanged: onChanged,
+      onEditingComplete: onEditingComplete,
       prefixIcon: Padding(
         padding: const EdgeInsets.only(right: 8.0, left: 16),
         child: Icon(
@@ -36,25 +49,45 @@ class SearchTextField extends StatelessWidget {
         ),
       ),
       onTapOutside: (_) {
-        FocusScope.of(context).unfocus();
+        focusNode != null
+            ? focusNode!.unfocus()
+            : FocusScope.of(context).unfocus();
       },
-      suffixIcon: Transform(
-        // move 4 pixels bottom
-        transform: Matrix4.translationValues(0.0, 4.0, 0.0),
-        child: ArDriveClickArea(
-          child: GestureDetector(
-            child: Icon(
-              Icons.close,
-              size: 20,
-              color: colorTokens.textMid,
+      // Only when there is something to clear: an x in an empty field offers
+      // to do nothing.
+      suffixIcon: controller == null
+          ? null
+          : ValueListenableBuilder<TextEditingValue>(
+              valueListenable: controller!,
+              builder: (context, value, _) {
+                if (value.text.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                return Transform(
+                  // move 4 pixels bottom
+                  transform: Matrix4.translationValues(0.0, 4.0, 0.0),
+                  child: Semantics(
+                    button: true,
+                    label: appLocalizationsOf(context).searchClear,
+                    child: ArDriveClickArea(
+                      tooltip: appLocalizationsOf(context).searchClear,
+                      child: GestureDetector(
+                        child: Icon(
+                          Icons.close,
+                          size: 20,
+                          color: colorTokens.textMid,
+                        ),
+                        onTap: () {
+                          controller?.clear();
+                          onChanged?.call('');
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
-            onTap: () {
-              controller?.clear();
-              onChanged?.call('');
-            },
-          ),
-        ),
-      ),
       hintStyle: typography.paragraphNormal(
           color: colorTokens.textMid, fontWeight: ArFontWeight.semiBold),
       onFieldSubmitted: onFieldSubmitted,

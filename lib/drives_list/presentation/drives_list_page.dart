@@ -1,7 +1,5 @@
-import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
-import 'package:ardrive/search/search_modal.dart';
-import 'package:ardrive/search/search_text_field.dart';
+import 'package:ardrive/search/search_box.dart';
 import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_empty.dart';
 import 'package:ardrive/drives_list/presentation/drives_sync_menu.dart';
@@ -313,44 +311,18 @@ class _DrivesListChrome extends StatelessWidget {
 /// selecting a drive replaces the whole subtree, so that cubit is torn down
 /// mid-navigation - hence [AppRouterDelegate.requestFolder], which asks for the
 /// folder before the selection that carries it.
-class _DrivesListSearchField extends StatefulWidget {
+class _DrivesListSearchField extends StatelessWidget {
   const _DrivesListSearchField();
 
   @override
-  State<_DrivesListSearchField> createState() => _DrivesListSearchFieldState();
-}
-
-class _DrivesListSearchFieldState extends State<_DrivesListSearchField> {
-  final TextEditingController _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return SearchTextField(
-      controller: _controller,
-      onFieldSubmitted: (query) {
-        if (query.isEmpty) {
-          return;
-        }
+    // Read now, not when a result is picked: going to a drive replaces this
+    // page, and a context read after that point would be a dead one.
+    final router = context.read<AppRouterDelegate>();
 
-        showSearchModalDesktop(
-          context: context,
-          driveDetailCubit: context.read<DriveDetailCubit>(),
-          drivesCubit: context.read<DrivesCubit>(),
-          controller: _controller,
-          onNavigateToFolder: (driveId, folderId, {itemId}) =>
-              context.read<AppRouterDelegate>().requestFolder(
-                    driveId,
-                    folderId,
-                    itemId: itemId,
-                  ),
-        );
-      },
+    return SearchBox(
+      onNavigateToFolder: (driveId, folderId, {itemId}) =>
+          router.requestFolder(driveId, folderId, itemId: itemId),
     );
   }
 }
