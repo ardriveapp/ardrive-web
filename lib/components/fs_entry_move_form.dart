@@ -94,7 +94,7 @@ class FsEntryMoveForm extends StatelessWidget {
                     children: [
                       Text(
                         appLocalizationsOf(context)
-                            .itemMoveNameConflict(state.folderInView.name),
+                            .itemMoveNameConflict(state.destinationName),
                         style: typography.paragraphNormal(),
                       ),
                       for (final itemName in state.conflictingFileNames() +

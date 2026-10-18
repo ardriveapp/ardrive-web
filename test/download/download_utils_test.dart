@@ -16,8 +16,10 @@ void main() {
     },
   );
 
+  // An ordinary folder, one with a parent. A root folder is named after its
+  // drive in a zip; see the root folder tests below.
   final mockFolderA = FolderNode(
-    folder: createMockFolderEntry(name: 'a'),
+    folder: createMockFolderEntry(name: 'a', parentFolderId: 'parent'),
     subfolders: [mockFolderB],
     files: {
       'a0': createMockFileEntry(name: 'a0.txt', size: 85, dataTxId: 'a0'),
@@ -131,10 +133,12 @@ void main() {
       expect(file.size, const GiB(3).size);
     });
 
-    test('works with drive', () async {
+    test('works with drive, its top folder named after the drive', () async {
       DriveDao mockDriveDao = MockDriveDao();
       ARFSRepository mockArfsRepository = MockARFSRepository();
-      final drive = createMockDrive();
+      // Rename Drive leaves the root folder's own name as it was, so the root
+      // folder ('a' here) can carry the drive's old name.
+      final drive = createMockDrive(name: 'renamed');
 
       when(() => mockArfsRepository.getDriveById(any()))
           .thenAnswer((_) async => drive);
@@ -147,22 +151,70 @@ void main() {
 
       expect(output.length, 4);
       expect(output[0] is MultiDownloadFolder, true);
-      expect((output[0] as MultiDownloadFolder).folderPath, 'a/');
+      expect((output[0] as MultiDownloadFolder).folderPath, 'renamed/');
 
       expect(output[1] is MultiDownloadFolder, true);
-      expect((output[1] as MultiDownloadFolder).folderPath, 'a/b/');
+      expect((output[1] as MultiDownloadFolder).folderPath, 'renamed/b/');
 
       expect(output[2] is MultiDownloadFile, true);
       var file = output[2] as MultiDownloadFile;
       expect(file.txId, 'b0');
       expect(file.size, 75);
-      expect(file.fileName, 'a/b/b0.txt');
+      expect(file.fileName, 'renamed/b/b0.txt');
 
       expect(output[3] is MultiDownloadFile, true);
       file = output[3] as MultiDownloadFile;
       expect(file.txId, 'a0');
       expect(file.size, 85);
-      expect(file.fileName, 'a/a0.txt');
+      expect(file.fileName, 'renamed/a0.txt');
+    });
+
+    test('a root folder arriving as a folder item is named after the drive',
+        () async {
+      DriveDao mockDriveDao = MockDriveDao();
+      ARFSRepository mockArfsRepository = MockARFSRepository();
+      final rootFolder = FolderNode(
+        folder: createMockFolderEntry(name: 'old name'),
+        subfolders: [mockFolderB],
+        files: {},
+      );
+
+      when(() => mockArfsRepository.getDriveById(any()))
+          .thenAnswer((_) async => createMockDrive(name: 'renamed'));
+      when(() => mockDriveDao.getFolderTree(any(), any()))
+          .thenAnswer((_) async => rootFolder);
+
+      final output = await convertSelectionToMultiDownloadFileList(
+        mockDriveDao,
+        mockArfsRepository,
+        [createMockFolderDataTableItem(name: 'old name')],
+      );
+
+      expect(
+        output.whereType<MultiDownloadFolder>().map((f) => f.folderPath),
+        ['renamed/', 'renamed/b/'],
+      );
+      expect(
+        output.whereType<MultiDownloadFile>().single.fileName,
+        'renamed/b/b0.txt',
+      );
+    });
+
+    test('a folder with a parent keeps its own name, and no drive is read',
+        () async {
+      DriveDao mockDriveDao = MockDriveDao();
+      ARFSRepository mockArfsRepository = MockARFSRepository();
+      when(() => mockDriveDao.getFolderTree(any(), any()))
+          .thenAnswer((_) async => mockFolderA);
+
+      final output = await convertSelectionToMultiDownloadFileList(
+        mockDriveDao,
+        mockArfsRepository,
+        [createMockFolderDataTableItem(name: 'a')],
+      );
+
+      expect((output.first as MultiDownloadFolder).folderPath, 'a/');
+      verifyNever(() => mockArfsRepository.getDriveById(any()));
     });
   });
 }

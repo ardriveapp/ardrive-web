@@ -174,6 +174,20 @@
   "@actionFailedTryAgain": {
     "description": "Generic failure message for metadata operations (rename, move, create, etc.)"
   },
+  "closeAnyway": "Close Anyway",
+  "@closeAnyway": {
+    "description": "Closes the upload problem dialog, leaving wallet-paid files unfinished"
+  },
+  "costCredits": "Cost: {credits} Credits",
+  "@costCredits": {
+    "description": "The total cost estimation of the upload quoted in Turbo Credits",
+    "placeholders": {
+      "credits": {
+        "type": "String",
+        "example": "0.0041"
+      }
+    }
+  },
   "freeAllowanceUsedUpTitle": "Free allowance used up",
   "@freeAllowanceUsedUpTitle": {
     "description": "Title of the dialog shown when a Turbo action is rejected because the free allowance is exhausted"
@@ -189,6 +203,26 @@
   "freeAllowanceExceededUploadNote": "This upload exceeds your free allowance and will need Credits or AR.",
   "@freeAllowanceExceededUploadNote": {
     "description": "Note shown above the payment method selector when an upload is size-eligible for the free tier but larger than the wallet's remaining free allowance, so part or all of it needs payment"
+  },
+  "newUserEmptyDriveDescription": "You've made your first blockchain transaction. You can now use your drive to store, share and organize any kind of file. Files up to {limit} each upload free, while your free allowance lasts.",
+  "@newUserEmptyDriveDescription": {
+    "description": "Shown on the empty page of a wallet's first drive. limit is the largest file Turbo uploads free, as a size",
+    "placeholders": {
+      "limit": {
+        "type": "String",
+        "example": "105 KiB"
+      }
+    }
+  },
+  "existingUserEmptyDriveDescription": "Files up to {limit} each upload free, while your free allowance lasts. For larger files, you can pay with Credits. Here are some things you can do next.",
+  "@existingUserEmptyDriveDescription": {
+    "description": "Shown on the empty page of a new drive in a wallet that already has drives, above the actions it offers. limit is the largest file Turbo uploads free, as a size",
+    "placeholders": {
+      "limit": {
+        "type": "String",
+        "example": "105 KiB"
+      }
+    }
   },
   "camera": "Camera",
   "@camera": {
@@ -413,6 +447,26 @@
         "example": "Curious Cat"
       }
     }
+  },
+  "goBack": "Go Back",
+  "@goBack": {
+    "description": "Returns to the previous dialog"
+  },
+  "leaveFilesUnfinishedDescription": "You may already have been charged for these files. If you close now, they won't finish uploading, and you'd need to upload them again.",
+  "@leaveFilesUnfinishedDescription": {
+    "description": "Asks before closing the upload problem dialog with wallet-paid files unfinished"
+  },
+  "leaveFilesUnfinishedTitle": "Leave these files unfinished?",
+  "@leaveFilesUnfinishedTitle": {
+    "description": "Title of the confirmation before closing the upload problem dialog with wallet-paid files unfinished"
+  },
+  "reUpload": "Re-Upload",
+  "@reUpload": {
+    "description": "Uploads the files that did not finish again"
+  },
+  "replace": "Replace",
+  "@replace": {
+    "description": "Replaces an existing file with the one being uploaded"
   },
   "syncThisDrive": "Sync This Drive",
   "@syncThisDrive": {
@@ -690,6 +744,182 @@
         "example": "Photos"
       }
     }
+  },
+  "addCreditsToUpload": "Add Credits to upload.",
+  "@addCreditsToUpload": {
+    "description": "Link under the upload payment options, when neither balance can pay, that opens the Turbo Credits top-up"
+  },
+  "amountInAr": "{amount} AR",
+  "@amountInAr": {
+    "description": "What an upload costs in AR, on the wallet payment option",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "0.0079"
+      }
+    }
+  },
+  "amountInCredits": "{amount} Credits",
+  "@amountInCredits": {
+    "description": "What an upload costs in Turbo Credits, on the Turbo payment option",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "0.0041"
+      }
+    }
+  },
+  "arAvailable": "{balance} AR available",
+  "@arAvailable": {
+    "description": "The wallet balance, under the wallet payment option",
+    "placeholders": {
+      "balance": {
+        "type": "String",
+        "example": "1.0619"
+      }
+    }
+  },
+  "creditsAvailable": "{balance} Credits available",
+  "@creditsAvailable": {
+    "description": "The Turbo Credits balance, under the Turbo payment option",
+    "placeholders": {
+      "balance": {
+        "type": "String",
+        "example": "2.0370"
+      }
+    }
+  },
+  "noCreditsYet": "No credits yet",
+  "@noCreditsYet": {
+    "description": "Under the Turbo payment option when the account has no Turbo Credits"
+  },
+  "notEnoughAr": "Not enough AR, {balance} available",
+  "@notEnoughAr": {
+    "description": "Under the wallet payment option when the wallet cannot pay for the upload",
+    "placeholders": {
+      "balance": {
+        "type": "String",
+        "example": "0.0012"
+      }
+    }
+  },
+  "notEnoughCredits": "Not enough Credits, {balance} available",
+  "@notEnoughCredits": {
+    "description": "Under the Turbo payment option when the Turbo Credits cannot pay for the upload",
+    "placeholders": {
+      "balance": {
+        "type": "String",
+        "example": "0.0012"
+      }
+    }
+  },
+  "notEnoughCreditsOrAr": "You don't have enough Credits or AR for this upload.",
+  "@notEnoughCreditsOrAr": {
+    "description": "Under the upload payment options when neither the Turbo Credits nor the wallet's AR can pay for the upload"
+  },
+  "paymentOptionTurboCredits": "Turbo Credits",
+  "@paymentOptionTurboCredits": {
+    "description": "Upload payment option: pay with Turbo Credits"
+  },
+  "paymentOptionWallet": "Wallet (AR)",
+  "@paymentOptionWallet": {
+    "description": "Upload payment option: pay with AR from the wallet"
+  },
+  "assignName": "Assign Name",
+  "@assignName": {
+    "description": "Upload dialog button that goes on to choosing an ArNS name"
+  },
+  "configure": "Configure",
+  "@configure": {
+    "description": "Upload dialog button that goes on to setting up the chosen license"
+  },
+  "licenseHeading": "License",
+  "@licenseHeading": {
+    "description": "Heading of the license choice in the upload options"
+  },
+  "manifestsToUpdate": "{count, plural, =1{1 manifest to update} other{{count} manifests to update}}",
+  "@manifestsToUpdate": {
+    "description": "Upload options summary: how many manifests the upload will update",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "moreFiles": "+ {count} more",
+  "@moreFiles": {
+    "description": "Under the first few files of an upload: how many more there are; selecting it lists them all",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "namedLicense": "{name} license",
+  "@namedLicense": {
+    "description": "Upload options summary: the license chosen, by its short name",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "UDL"
+      }
+    }
+  },
+  "noLicense": "No license",
+  "@noLicense": {
+    "description": "Upload options: no license is attached to the upload"
+  },
+  "showFewerFiles": "Show fewer",
+  "@showFewerFiles": {
+    "description": "Under the full list of files of an upload: collapses it back to the first few"
+  },
+  "thumbnailsOff": "Thumbnails off",
+  "@thumbnailsOff": {
+    "description": "Upload options summary: thumbnails will not be made for the images"
+  },
+  "thumbnailsOn": "Thumbnails on",
+  "@thumbnailsOn": {
+    "description": "Upload options summary: thumbnails will be made for the images"
+  },
+  "totalUploadSize": "{size} total",
+  "@totalUploadSize": {
+    "description": "Under the files of an upload: their combined size",
+    "placeholders": {
+      "size": {
+        "type": "String",
+        "example": "2.75 MiB"
+      }
+    }
+  },
+  "updateManifests": "Update manifests",
+  "@updateManifests": {
+    "description": "Upload options link that opens the choice of manifests to update with the new files"
+  },
+  "uploadAsManifest": "Upload as a manifest",
+  "@uploadAsManifest": {
+    "description": "Upload options summary: the file will be converted to an Arweave manifest"
+  },
+  "uploadOptions": "Options",
+  "@uploadOptions": {
+    "description": "Upload dialog: the collapsed row holding the optional settings (thumbnails, license)"
+  },
+  "uploadWithThumbnails": "Upload with thumbnails",
+  "@uploadWithThumbnails": {
+    "description": "Upload options checkbox: also make and upload thumbnails for the images"
+  },
+  "uploadFailedPartial": "Some files didn't finish uploading. They'll show as failed in your drive. Select Re-Upload to try them again.",
+  "@uploadFailedPartial": {
+    "description": "Upload problem dialog text when some Turbo uploads did not finish"
+  },
+  "uploadProblemTitle": "Problem with Upload",
+  "@uploadProblemTitle": {
+    "description": "Title of the dialog listing files that did not finish uploading"
+  },
+  "warning": "Warning",
+  "@warning": {
+    "description": "Title of a warning dialog"
   },
   "yourDrives": "Your Drives",
   "@yourDrives": {
@@ -2442,9 +2672,48 @@
   "@rootFolderTxID": {
     "description": "The transaction ID of the Root Folder entity"
   },
-  "rowsPerPage": "Rows Per Page",
+  "rowsPerPage": "Rows per page",
   "@rowsPerPage": {
     "description": "How many rows per page to use"
+  },
+  "tableNextPage": "Next page",
+  "@tableNextPage": {
+    "description": "Accessible name of the file table's next page button"
+  },
+  "tablePageNumber": "Page {page}",
+  "@tablePageNumber": {
+    "description": "Accessible name of a page button in the file table's pager, e.g. 'Page 3'",
+    "placeholders": {
+      "page": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "tablePageRange": "{first}-{last} of {total}",
+  "@tablePageRange": {
+    "description": "The rows on screen in the file table's footer, e.g. '26-50 of 312'",
+    "placeholders": {
+      "first": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "26"
+      },
+      "last": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "50"
+      },
+      "total": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "312"
+      }
+    }
+  },
+  "tablePreviousPage": "Previous page",
+  "@tablePreviousPage": {
+    "description": "Accessible name of the file table's previous page button"
   },
   "secondsFromForeverEmphasized": "SECONDS FROM FOREVER",
   "@secondsFromForeverEmphasized": {
@@ -2829,9 +3098,9 @@
   "@snapshotCreationFailed": {
     "description": "There was an error when creating the snapshot"
   },
-  "snapshotCreationSucceeded": "Your successfuly created a snapshot of {driveName}!",
+  "snapshotCreationSucceeded": "You created a snapshot of {driveName}.",
   "@snapshotCreationSucceeded": {
-    "description": "The snapshot was sucessfuly created",
+    "description": "The snapshot was successfully created",
     "placeholders": {
       "driveName": {
         "type": "String",
@@ -3565,6 +3834,22 @@
   "uploadFailed": "Upload Failed",
   "@uploadFailed": {
     "description": "Upload Failed dialog title"
+  },
+  "uploadWithWalletKeepTabOpen": "Keep this tab open until your upload finishes. If you close it early, you may be charged for files that don't upload.",
+  "@uploadWithWalletKeepTabOpen": {
+    "description": "Warning under the payment choice when paying for an upload from the wallet balance (AR). Paying this way charges before the files are sent, so closing the tab midway can cost money for nothing."
+  },
+  "uploadInProgressKeepTabOpen": "Keep this tab open until your upload finishes.",
+  "@uploadInProgressKeepTabOpen": {
+    "description": "Warning in the upload progress dialog while an upload paid from the wallet balance (AR) is running"
+  },
+  "uploadFailedWalletFiles": "Some files didn't finish uploading. Select Re-Upload to finish them.",
+  "@uploadFailedWalletFiles": {
+    "description": "Explanation in the upload problem dialog when files paid for from the wallet balance (AR) failed"
+  },
+  "uploadFailedWalletKeepTabOpen": "Keep this tab open. If you leave now, you won't be able to finish these files.",
+  "@uploadFailedWalletKeepTabOpen": {
+    "description": "Warning in the upload problem dialog when files paid for from the wallet balance (AR) failed and can still be re-uploaded from this tab only"
   },
   "uploadFiles": "Upload File(s)",
   "@uploadFiles": {

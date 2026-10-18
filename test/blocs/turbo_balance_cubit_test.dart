@@ -64,4 +64,28 @@ void main() {
       TurboBalanceErrorState(),
     ],
   );
+
+  // The profile card that asks for the balance can close while the request is
+  // out or during the error's half-second wait, and a closed cubit throws on
+  // emit ("Cannot emit new states after calling close").
+  group('closed before the answer arrives', () {
+    test('a balance that arrives after close is dropped', () async {
+      when(() => mockPaymentService.getBalance(wallet: wallet))
+          .thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return BigInt.from(100);
+      });
+      final pending = turboBalanceCubit.getBalance();
+      await turboBalanceCubit.close();
+      await expectLater(pending, completes);
+    });
+
+    test('an error that lands after close is dropped', () async {
+      when(() => mockPaymentService.getBalance(wallet: wallet))
+          .thenThrow(Exception());
+      final pending = turboBalanceCubit.getBalance();
+      await turboBalanceCubit.close();
+      await expectLater(pending, completes);
+    });
+  });
 }

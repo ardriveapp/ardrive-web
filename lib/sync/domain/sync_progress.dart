@@ -27,6 +27,7 @@ class SyncProgress extends LinearProgress {
     this.driveName,
     this.skippedEntityCount = 0,
     this.skippedEntityTxIdsByDrive = const {},
+    this.examinedDriveIds = const {},
     this.firstTimeSyncDriveCount = 0,
     this.skippedDriveCount = 0,
     this.isIndeterminate = false,
@@ -104,6 +105,23 @@ class SyncProgress extends LinearProgress {
   /// "failed files" in the UI. See `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
   final Map<String, List<String>> skippedEntityTxIdsByDrive;
 
+  /// The drives this sync opened and read — **not** every drive attached.
+  ///
+  /// A sync reports skips only for drives it examined, and its silence about
+  /// the rest is not evidence about them. The activity probe skips drives it
+  /// believes unchanged, and those drives are neither synced nor failed: they
+  /// appear in no list this report carries. Naming what was examined is what
+  /// lets a reader tell "this sync looked and found nothing to skip" apart
+  /// from "this sync never looked".
+  ///
+  /// What reads it is `SyncCubit`'s per-drive skip ledger, and through that
+  /// `driveStateSyncSkipStatus` — the precondition on publishing a drive
+  /// state artifact, which records permanently and immutably on Arweave
+  /// whatever gap it was built over. So this is populated **before** the first
+  /// drive is touched rather than at the end: a sync that dies part-way must
+  /// still have said which drives it may have already advanced.
+  final Set<String> examinedDriveIds;
+
   /// Number of drives in this sync that are read from the start of their
   /// history rather than from a watermark, and so cost a full history walk:
   /// the drives that have never been synced before, and — in a deep sync,
@@ -177,6 +195,7 @@ class SyncProgress extends LinearProgress {
     Object? driveName = _absent,
     int? skippedEntityCount,
     Map<String, List<String>>? skippedEntityTxIdsByDrive,
+    Set<String>? examinedDriveIds,
     int? firstTimeSyncDriveCount,
     int? skippedDriveCount,
     bool? isIndeterminate,
@@ -203,6 +222,7 @@ class SyncProgress extends LinearProgress {
       skippedEntityCount: skippedEntityCount ?? this.skippedEntityCount,
       skippedEntityTxIdsByDrive:
           skippedEntityTxIdsByDrive ?? this.skippedEntityTxIdsByDrive,
+      examinedDriveIds: examinedDriveIds ?? this.examinedDriveIds,
       firstTimeSyncDriveCount:
           firstTimeSyncDriveCount ?? this.firstTimeSyncDriveCount,
       skippedDriveCount: skippedDriveCount ?? this.skippedDriveCount,

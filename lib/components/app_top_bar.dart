@@ -477,6 +477,7 @@ class SyncButton extends StatelessWidget {
     }
 
     return _ExpiresWhenStale(
+      identity: announcement?.identity,
       // Only a result expires on the clock. A sync that is running, or an
       // error waiting to be read, leaves this null and nothing is scheduled.
       after: status == null ? announcement?.showFor : null,
@@ -1159,7 +1160,14 @@ class _SyncProgressRingState extends State<_SyncProgressRing>
 /// is collapse the slot, because whether the slot is drawn at all is decided
 /// above it.
 class _ExpiresWhenStale extends StatefulWidget {
-  const _ExpiresWhenStale({required this.after, required this.child});
+  const _ExpiresWhenStale({
+    required this.identity,
+    required this.after,
+    required this.child,
+  });
+
+  /// Which announcement [after] belongs to - see [SyncAnnouncement.identity].
+  final Object? identity;
 
   /// How long what is being drawn is still entitled to. Null when nothing is
   /// on a clock, which is every state except a fresh result.
@@ -1198,9 +1206,14 @@ class _ExpiresWhenStaleState extends State<_ExpiresWhenStale> {
   void didUpdateWidget(covariant _ExpiresWhenStale oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // A new result while one is still showing gets its own full window, and a
-    // sync starting again cancels the old timer rather than firing under it.
-    if (oldWidget.after != widget.after) {
+    // A new result gets its own full window, whether or not the last one is
+    // still showing, and a sync starting again cancels the old timer rather
+    // than firing under it. Told apart by identity as well as by time left:
+    // two fresh results both have the whole of syncSummaryDuration left when
+    // each is drawn on the clock tick it finished in, and the second one used
+    // to find this already expired and stay hidden.
+    if (oldWidget.identity != widget.identity ||
+        oldWidget.after != widget.after) {
       _expired = false;
       _schedule();
     }

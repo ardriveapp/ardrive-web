@@ -8,6 +8,9 @@ CREATE TABLE drives (
 
     syncCursor TEXT,
     lastBlockHeight INTEGER DEFAULT 0,
+    -- The drive state artifact last imported into this drive, so a restart
+    -- does not download and import the same one again.
+    importedArtifactTxId TEXT,
 
     privacy TEXT NOT NULL,
 

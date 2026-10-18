@@ -29,14 +29,24 @@ class D2NStreamedUpload implements StreamedUpload<UploadItem> {
 
     logger.d('D2NStreamedUpload.send');
 
-    final progressStreamTask = await uploadTransaction(
-      (uploadItem).data,
-      _getArweave(),
-    ).run();
+    final arweave = _getArweave();
+    final transaction = uploadItem.data;
+
+    // A retry sends a transaction that may already be on the network, its
+    // header posted: only its chunks are sent then.
+    final isKnown = await _isKnownToNetwork(arweave, transaction.id);
+    final progressStreamTask = await (isKnown
+            ? uploadTransactionChunks(transaction, arweave)
+            : uploadTransaction(transaction, arweave))
+        .run();
     Completer<StreamedUploadResult> upload = Completer<StreamedUploadResult>();
 
     progressStreamTask.match((l) {
-      upload.complete(StreamedUploadResult(success: false));
+      // Only posting the header fails before the chunk stream starts.
+      upload.complete(StreamedUploadResult(
+        success: false,
+        error: TransactionHeaderNotPostedException(error: l),
+      ));
     }, (uploadProgressAndAborter) async {
       final uploadProgress = uploadProgressAndAborter.$1;
       _aborter = uploadProgressAndAborter.$2;
@@ -75,4 +85,17 @@ class D2NStreamedUpload implements StreamedUpload<UploadItem> {
   }
 
   bool _isCanceled = false;
+
+  /// Whether the network has [transactionId], pending (202) or mined (200).
+  /// Unknown when the lookup fails, which posts the header as for a new
+  /// transaction.
+  Future<bool> _isKnownToNetwork(Arweave arweave, String transactionId) async {
+    try {
+      final response = await arweave.api.get('tx/$transactionId/status');
+      return response.statusCode == 200 || response.statusCode == 202;
+    } catch (e) {
+      logger.w('Could not look up transaction $transactionId: $e');
+      return false;
+    }
+  }
 }

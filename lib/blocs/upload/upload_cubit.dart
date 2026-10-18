@@ -22,6 +22,7 @@ import 'package:ardrive/services/license/license.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/utils/is_custom_manifest.dart';
+import 'package:ardrive/utils/leave_page_guard/leave_page_guard.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_custom_event_properties.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
@@ -355,6 +356,9 @@ class UploadCubit extends Cubit<UploadState> {
     _uploadThumbnail = uploadThumbnail;
   }
 
+  /// Whether this upload will make thumbnails for its images.
+  bool get uploadThumbnail => _uploadThumbnail;
+
   /// Settings
   void showSettings() {
     emit((state as UploadReady).copyWith(showSettings: true));
@@ -570,8 +574,8 @@ class UploadCubit extends Cubit<UploadState> {
     int size = 0;
 
     for (final file in _files) {
-      size += _fileLengthCache[file.getIdentifier()] ??
-          await file.ioFile.length;
+      size +=
+          _fileLengthCache[file.getIdentifier()] ?? await file.ioFile.length;
     }
 
     return size;
@@ -1570,6 +1574,40 @@ class UploadCubit extends Cubit<UploadState> {
         ? UploadErrors.turboPaymentRequired
         : UploadErrors.unknown;
   }
+
+  /// Keeps the browser asking before the tab is closed while an upload paid
+  /// from the wallet can still be lost by closing it: while it runs, and while
+  /// its failed files can still be re-uploaded. Such an upload pays for its
+  /// transaction before sending its data, and only this tab holds what is
+  /// needed to send the data, so closing it then leaves a paid transaction
+  /// with nothing in it.
+  @override
+  void onChange(Change<UploadState> change) {
+    super.onChange(change);
+    if (isWalletPaidUploadAtRisk(change.nextState)) {
+      holdLeavePageGuard(this);
+    } else {
+      releaseLeavePageGuard(this);
+    }
+  }
+
+  @override
+  Future<void> close() {
+    releaseLeavePageGuard(this);
+    return super.close();
+  }
+}
+
+/// Whether [state] is an upload paid from the wallet that closing the tab
+/// would lose: one in progress, or one with failed files left to re-upload.
+bool isWalletPaidUploadAtRisk(UploadState state) {
+  if (state is UploadInProgress) {
+    return state.uploadMethod == UploadMethod.ar;
+  }
+  if (state is UploadFailure) {
+    return state.failedTasks?.any((t) => t.type == UploadType.d2n) ?? false;
+  }
+  return false;
 }
 
 class UploadFolder extends IOFolder {

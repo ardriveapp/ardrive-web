@@ -1,6 +1,7 @@
 import 'package:ardrive/utils/exceptions.dart';
 import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/services/arweave/fragment_free_graphql.dart';
 import 'package:artemis/client.dart';
 import 'package:artemis/schema/graphql_query.dart';
 import 'package:artemis/schema/graphql_response.dart';
@@ -75,7 +76,7 @@ class GraphQLRetry {
           'trying fallback: $_fallbackGraphqlUrl',
         );
 
-        final fallbackClient = ArtemisClient(_fallbackGraphqlUrl);
+        final fallbackClient = fragmentFreeArtemisClient(_fallbackGraphqlUrl);
         try {
           final result = await _executeWithRetry(fallbackClient, query,
               onRetry: onRetry, maxAttempts: 3);

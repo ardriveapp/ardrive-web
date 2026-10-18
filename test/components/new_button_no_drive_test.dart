@@ -4,6 +4,7 @@ import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
+import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -54,6 +55,7 @@ void main() {
   late MockSyncBloc syncCubit;
   late MockArDriveAuth auth;
   late AppRouterDelegate router;
+  late MockConfigService configService;
 
   /// [syncingDriveId] is a sync reading that one drive.
   void syncing({String? syncingDriveId}) {
@@ -75,6 +77,10 @@ void main() {
     syncCubit = MockSyncBloc();
     auth = MockArDriveAuth();
     router = AppRouterDelegate();
+    configService = MockConfigService();
+    when(() => configService.config).thenReturn(
+      AppConfig(allowedDataItemSizeForTurbo: 0, stripePublishableKey: ''),
+    );
 
     when(() => profileCubit.state).thenReturn(
       ProfileLoggedIn(user: fakeUserJson, useTurbo: true),
@@ -145,6 +151,9 @@ void main() {
                 BlocProvider<DriveDetailCubit>.value(value: driveDetailCubit),
                 BlocProvider<DrivesCubit>.value(value: drivesCubit),
                 BlocProvider<SyncCubit>.value(value: syncCubit),
+                // Read by the drive state publishing entry, which stays hidden
+                // here: its flag ships off, as it does in production.
+                RepositoryProvider<ConfigService>.value(value: configService),
               ],
               child: Scaffold(
                 body: Center(

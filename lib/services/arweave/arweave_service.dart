@@ -11,6 +11,7 @@ import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/services/arweave/arweave_service_exception.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
+import 'package:ardrive/services/arweave/fragment_free_graphql.dart';
 import 'package:ardrive/services/arweave/get_segmented_transaction_from_drive_strategy.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/models/drive_entity_history.dart';
@@ -101,7 +102,7 @@ class ArweaveService {
     Client? httpClient,
   })  : _httpClient = httpClient ?? Client(),
         _gql = artemisClient ??
-            ArtemisClient(_graphqlUrlFromGateway(
+            fragmentFreeArtemisClient(_graphqlUrlFromGateway(
                 _configService.config.arweaveGatewayUrl ??
                     defaultGraphqlGateway)) {
     graphQLRetry = GraphQLRetry(
@@ -146,7 +147,7 @@ class ArweaveService {
   void updateGraphQLEndpoint(String gatewayUrl) {
     final previousClient = _gql;
     final graphqlUrl = _graphqlUrlFromGateway(gatewayUrl);
-    _gql = ArtemisClient(graphqlUrl);
+    _gql = fragmentFreeArtemisClient(graphqlUrl);
     graphQLRetry = GraphQLRetry(
       _gql,
       internetChecker: InternetChecker(
@@ -209,11 +210,25 @@ class ArweaveService {
     return blockHeight;
   }
 
+  /// How long one price request may take before the attempt is abandoned.
+  ///
+  /// Without this the retry loop below cannot do its job: `client.api.get` has
+  /// no deadline, so an attempt that hangs rather than fails hangs for ever and
+  /// the second and third attempts are never reached. The loop reads as if it
+  /// were resilient while being exactly as fragile as a single call.
+  ///
+  /// Six seconds so the three bounded calls behind one AR cost estimate - this,
+  /// the community tip and the AR/USD rate - still fit inside that estimate's
+  /// own 20-second budget.
+  static const _priceAttemptTimeout = Duration(seconds: 6);
+
   Future<BigInt> getPrice({required int byteSize}) async {
     const maxRetries = 3;
     for (var attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        final res = await client.api.get('price/$byteSize');
+        final res = await client.api
+            .get('price/$byteSize')
+            .timeout(_priceAttemptTimeout);
         if (res.statusCode == 200) {
           return BigInt.parse(res.body);
         }
@@ -1032,7 +1047,13 @@ class ArweaveService {
     return data.bodyBytes;
   }
 
-  // Gets the unique drive entity transactions for a particular user.
+  /// Gets the newest drive entity transaction for each of a user's drives.
+  ///
+  /// One transaction per Drive-Id, across every page. The query sorts
+  /// `HEIGHT_DESC`, but the gateway orders the transactions inside one block
+  /// however it likes, so taking the first one per drive could pick a rename
+  /// over the hide that followed it in the same block - and bring a hidden
+  /// drive back. See [_isNewerDriveEntityTx] for the rule.
   Future<List<TransactionCommonMixin>> getUniqueUserDriveEntityTxs(
     String userAddress, {
     int maxRetries = defaultMaxRetries,
@@ -1047,7 +1068,9 @@ class ArweaveService {
       return _cachedUserDriveTxs!;
     }
 
-    List<TransactionCommonMixin> drives = [];
+    // Insertion-ordered, and replacing a value keeps its key's place, so the
+    // list comes out in the order each drive was first seen.
+    final newestByDriveId = <String?, TransactionCommonMixin>{};
     String cursor = '';
 
     while (true) {
@@ -1070,22 +1093,13 @@ class ArweaveService {
 
       cursor = queryEdges.isNotEmpty ? queryEdges.last.cursor : '';
 
-      final drivesInThisPage = filteredEdges
-          .map((e) => e.node)
-          .fold<Map<String?, TransactionCommonMixin>>(
-            {},
-            (map, tx) {
-              final driveId = tx.getTag('Drive-Id');
-              if (!map.containsKey(driveId)) {
-                map[driveId] = tx;
-              }
-              return map;
-            },
-          )
-          .values
-          .toList();
-
-      drives.addAll(drivesInThisPage);
+      for (final tx in filteredEdges.map((e) => e.node)) {
+        final driveId = tx.getTag(EntityTag.driveId);
+        final seen = newestByDriveId[driveId];
+        if (seen == null || _isNewerDriveEntityTx(tx, than: seen)) {
+          newestByDriveId[driveId] = tx;
+        }
+      }
 
       final hasNextPage =
           userDriveEntitiesQuery.data!.transactions.pageInfo.hasNextPage;
@@ -1094,11 +1108,54 @@ class ArweaveService {
       }
     }
 
+    final drives = newestByDriveId.values.toList();
+
     // Cache the result — cleared by clearUserDriveTxsCache()
     _cachedUserDriveTxsAddress = userAddress;
     _cachedUserDriveTxs = drives;
 
     return drives;
+  }
+
+  /// Whether [tx] is a later revision of its drive than [than].
+  ///
+  /// A higher block wins, and a pending transaction, with no block yet, is
+  /// above every mined one. Inside one block, the later `Unix-Time` wins: the
+  /// same order sync applies in [createDriveEntityHistoryFromTransactions],
+  /// so the drive list and a full sync settle on the same revision. A tie on
+  /// both keeps [than], the one the gateway listed first.
+  static bool _isNewerDriveEntityTx(
+    TransactionCommonMixin tx, {
+    required TransactionCommonMixin than,
+  }) {
+    final height = tx.block?.height;
+    final otherHeight = than.block?.height;
+
+    if (height != otherHeight) {
+      if (height == null) return true;
+      if (otherHeight == null) return false;
+      return height > otherHeight;
+    }
+
+    return _commitTimeOrZero(tx) > _commitTimeOrZero(than);
+  }
+
+  /// A transaction's `Unix-Time` in milliseconds, or 0 when it has none, it
+  /// does not parse, or it is outside what a [DateTime] can hold. A malformed
+  /// tag loses a tie rather than throwing out of the drive list, which would
+  /// fail discovery for every drive in the wallet, not just this one.
+  static int _commitTimeOrZero(TransactionCommonMixin tx) {
+    if (tx.getTag(EntityTag.unixTime) == null) return 0;
+    try {
+      return tx.getCommitTime().millisecondsSinceEpoch;
+    } on FormatException {
+      return 0;
+    } on ArgumentError {
+      // Not RangeError: the VM throws one for a value DateTime cannot hold,
+      // but the web build throws a plain ArgumentError. RangeError is a
+      // subclass, so this catches both.
+      return 0;
+    }
   }
 
   Future<TransactionCommonMixin?> getFirstPrivateDriveTx(
@@ -1190,10 +1247,10 @@ class ArweaveService {
       final userAddress = await wallet.getAddress();
       final driveTxs = await getUniqueUserDriveEntityTxs(userAddress);
 
-      // Distinct drives, not transactions. `getUniqueUserDriveEntityTxs`
-      // dedupes per GQL page only, so a wallet whose drive entities span more
-      // than one page has more rows here than it has drives - and the count
-      // read "43 of 137" for twelve drives.
+      // Distinct drives, not transactions. `getUniqueUserDriveEntityTxs` now
+      // returns one transaction per drive, but it used to dedupe per GQL page
+      // only, and the count then read "43 of 137" for twelve drives. Counting
+      // ids keeps the figure right whatever the list holds.
       final distinctDriveIds = <String>{};
       for (final tx in driveTxs) {
         final id = tx.getTag(EntityTag.driveId);
@@ -1233,8 +1290,8 @@ class ArweaveService {
             // A drive we cannot read is dropped from this pass, as before.
           }
 
-          // Counted per drive, so a drive with several revisions on several
-          // pages advances the figure once.
+          // Counted per drive id, so the figure stays a count of drives even
+          // if an id ever appears twice in the list.
           final id = driveTxs[i].getTag(EntityTag.driveId);
           if (id != null && readDriveIds.add(id)) {
             onDriveRead?.call(readDriveIds.length, driveCount);
@@ -1256,16 +1313,16 @@ class ArweaveService {
 
       /// Drives whose newest transaction was reached but could not be used.
       ///
-      /// `getUniqueUserDriveEntityTxs` dedupes **per page**, so the same
-      /// Drive-Id can appear on more than one page and the list is newest
-      /// first. Skipping the newest without recording it would let an older
-      /// revision take its place and write stale metadata - worse than the
-      /// drive simply being late.
+      /// `getUniqueUserDriveEntityTxs` returns only the newest transaction per
+      /// drive, so this guards the invariant rather than a case it produces:
+      /// if a drive's id ever appears twice, skipping the newest without
+      /// recording it would let an older revision take its place and write
+      /// stale metadata - worse than the drive simply being late.
       final handledDriveIds = <String?>{};
 
       // Distinct private drives, which is what the loop below will actually
-      // unlock - `driveTxs` holds every revision, so counting rows would
-      // promise more work than there is.
+      // unlock - counted by id rather than by row, for the same reason as the
+      // read count above.
       final privateDriveIds = <String>{};
       for (final tx in driveTxs) {
         if (tx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
@@ -1284,7 +1341,8 @@ class ArweaveService {
         if (driveResponses[i] == null) continue;
         final driveTx = driveTxs[i];
 
-        // Ignore drive entity transactions which we already have newer entities for.
+        // Skip a drive already handled. The list holds one transaction per
+        // drive, so this guards that invariant; see [handledDriveIds].
         final txDriveId = driveTx.getTag(EntityTag.driveId);
 
         if (drivesById.containsKey(txDriveId) ||
@@ -1338,8 +1396,9 @@ class ArweaveService {
                   'Could not read the drive signature for $txDriveId; '
                   'skipping this drive for this pass: $e',
                 );
-                // Claim the id so an older transaction for the same drive on
-                // a later page cannot quietly stand in for the newest one.
+                // Claim the id, so that if it ever appeared twice an older
+                // transaction could not quietly stand in for the newest one.
+                // See [handledDriveIds].
                 handledDriveIds.add(txDriveId);
                 settled();
                 continue;
@@ -2316,18 +2375,56 @@ class ArweaveService {
   /// header then chunks with [maxConcurrentUploadCount] (default 1) to avoid
   /// gateway 400s from data_root propagation when many chunk requests hit
   /// before the tx is indexed.
+  ///
+  /// [onTransactionPosted] fires once the transaction **header** has been
+  /// accepted, before any chunk is sent. That ordering is
+  /// `TransactionUploader`'s (arweave-dart v4.0.2): `upload()` awaits
+  /// `_postTransactionHeader()` and only then yields its first event, so a
+  /// caller that never sees the callback knows nothing reached the network,
+  /// and one that does knows a transaction now exists and will be paid for
+  /// whether or not its chunks follow. Without it a chunk failure and a
+  /// refused header are the same exception, and a caller can only guess which
+  /// of the two it is holding.
   Future<void> uploadTx(
     Transaction transaction, {
     int maxConcurrentUploadCount = 1,
     bool dryRun = false,
-  }) async {
-    await client.transactions
-        .upload(
+    void Function()? onTransactionPosted,
+  }) =>
+      drainUpload(
+        client.transactions.upload(
           transaction,
           maxConcurrentUploadCount: maxConcurrentUploadCount,
           dryRun: dryRun,
-        )
-        .drain();
+        ),
+        dryRun: dryRun,
+        onTransactionPosted: onTransactionPosted,
+      );
+
+  /// Drains an upload's event stream, reporting the header post the first time
+  /// the stream says anything.
+  ///
+  /// Separate from [uploadTx], and typed on `Object?` rather than on the
+  /// uploader, because `ArweaveTransactionsApi` is not exported by
+  /// `package:arweave` and so cannot be named - or mocked - from here. This is
+  /// the whole rule, and it is the part that can be got wrong: firing eagerly
+  /// would invent a charge that never happened, and firing on every event
+  /// would report one transaction many times.
+  @visibleForTesting
+  static Future<void> drainUpload(
+    Stream<Object?> events, {
+    required bool dryRun,
+    void Function()? onTransactionPosted,
+  }) async {
+    var posted = false;
+
+    await for (final _ in events) {
+      // A dry run yields the uploader without posting anything, so it must not
+      // be reported as a transaction that exists.
+      if (posted || dryRun) continue;
+      posted = true;
+      onTransactionPosted?.call();
+    }
   }
 
   // TODO: replace with the method on ardrive_utils
