@@ -46,7 +46,13 @@ class ArDriveSearchRepository implements SearchRepository {
     if (query.isEmpty) return Future.value([]);
 
     // Start both searches in parallel
-    final arnsSearchFuture = _searchArns(query);
+    // An ArNS name whose file is not on this device, as when its drive has
+    // not been synced, fails its lookups. That loses the one ArNS row rather
+    // than every result.
+    final arnsSearchFuture = _searchArns(query).catchError((Object error) {
+      logger.w('ArNS search failed: $error');
+      return null;
+    });
     final driveSearchFuture =
         _driveDao.search(query: query, type: SearchQueryType.all);
 

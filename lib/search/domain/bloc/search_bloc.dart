@@ -136,10 +136,29 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
       emit(state.copyWith(query: query, status: SearchStatus.loading));
     }
 
-    final searched = await Future.wait([
-      _searchRepository.search(query),
-      _coverage(),
-    ]);
+    final List<Object> searched;
+
+    try {
+      searched = await Future.wait([
+        _searchRepository.search(query),
+        _coverage(),
+      ]);
+    } catch (error, stackTrace) {
+      // Ended rather than left loading: "Searching..." with nothing coming
+      // read as a search still running until the reader changed the query.
+      addError(error, stackTrace);
+
+      if (!emit.isDone) {
+        emit(state.copyWith(
+          query: query,
+          status: SearchStatus.empty,
+          results: const [],
+          resultsRevision: ++_resultsRevision,
+        ));
+      }
+
+      return;
+    }
 
     if (emit.isDone) {
       return;

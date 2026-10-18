@@ -3,6 +3,10 @@ import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/search/search_result.dart';
 
+/// How long to wait for the explorer to show a drive picked from search. A
+/// drive in the results is already on this device, so this is a backstop.
+const _driveShownTimeout = Duration(seconds: 10);
+
 /// Goes to a search result: its drive, its folder, or the folder a file is in
 /// with the file picked out.
 ///
@@ -55,7 +59,7 @@ class SearchResultNavigator {
         return;
       }
 
-      drivesCubit.selectDrive(searchResult.drive.id);
+      await _showDrive(searchResult.drive.id);
 
       driveDetailCubit.openFolder(
         otherDriveId: otherDriveId,
@@ -63,6 +67,34 @@ class SearchResultNavigator {
       );
     } else if (result is Drive) {
       drivesCubit.selectDrive(result.id);
+    }
+  }
+
+  /// Selects [driveId] and waits until the explorer shows it.
+  ///
+  /// Selecting a drive makes the page call `changeDrive`, which opens the
+  /// drive's root once it has read the drive. A folder asked for before then
+  /// was replaced by the root, and the reader landed at the top of the drive
+  /// instead of in the folder they picked.
+  Future<void> _showDrive(String driveId) async {
+    bool showsDrive(DriveDetailState state) =>
+        state is DriveDetailLoadSuccess && state.currentDrive.id == driveId;
+
+    // Listening before selecting, so the state it waits for cannot pass first.
+    final shown = driveDetailCubit.stream.firstWhere(showsDrive);
+
+    drivesCubit.selectDrive(driveId);
+
+    if (showsDrive(driveDetailCubit.state)) {
+      shown.ignore();
+      return;
+    }
+
+    try {
+      await shown.timeout(_driveShownTimeout);
+    } catch (_) {
+      // Not shown in time, or the explorer closed: the folder is asked for
+      // anyway, and a closed explorer ignores it.
     }
   }
 
@@ -80,11 +112,7 @@ class SearchResultNavigator {
       return;
     }
 
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    drivesCubit.selectDrive(file.driveId);
-
-    await Future.delayed(const Duration(milliseconds: 100));
+    await _showDrive(file.driveId);
 
     driveDetailCubit.openFolder(
       otherDriveId: file.driveId,

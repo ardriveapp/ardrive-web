@@ -349,7 +349,9 @@ void main() {
       (tester) async {
     await tester.pumpWidget(host());
     await typeQuery(tester, 'rep');
-    await tester.tap(find.byKey(const Key('elsewhere')));
+    // An empty box, so the tap lands on the page behind it: still outside
+    // the field and the dropdown, which is all this needs.
+    await tester.tap(find.byKey(const Key('elsewhere')), warnIfMissed: false);
     await tester.pump();
 
     expect(find.text('report.pdf'), findsNothing);

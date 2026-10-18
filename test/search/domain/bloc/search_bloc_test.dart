@@ -126,6 +126,31 @@ void main() {
       ],
     );
 
+    // A plain test: bloc_test passed this with the handler still throwing,
+    // because a state mismatch raised alongside an expected error was lost.
+    test('a search that fails ends, rather than staying at loading', () async {
+      when(() => repository.search('report'))
+          .thenAnswer((_) async => throw StateError('database closed'));
+      final bloc = build();
+      final states = <SearchState>[];
+      final subscription = bloc.stream.listen(states.add);
+
+      bloc.add(const SearchQueryChanged('report'));
+      await Future.delayed(debounce * 2);
+
+      expect(states, [
+        const SearchState(query: 'report', status: SearchStatus.loading),
+        const SearchState(
+          query: 'report',
+          status: SearchStatus.empty,
+          resultsRevision: 1,
+        ),
+      ]);
+
+      await subscription.cancel();
+      await bloc.close();
+    });
+
     blocTest<SearchBloc, SearchState>(
       'a query that matches nothing is empty',
       build: build,
