@@ -2159,13 +2159,18 @@ class ArweaveService {
 
       unbundled++;
 
+      final tags = {for (final tag in edge.node.tags) tag.name: tag.value};
       final isArDrive = isArDriveTransaction(
         txId: edge.node.id,
-        tags: {for (final tag in edge.node.tags) tag.name: tag.value},
+        tags: tags,
         knownTxIds: knownTxIds,
       );
 
-      final fee = BigInt.tryParse(edge.node.fee.winston) ?? BigInt.zero;
+      final fee = arDrivePayment(
+        feeWinston: edge.node.fee.winston,
+        quantityWinston: edge.node.quantity.winston,
+        tags: tags,
+      );
 
       if (isArDrive) {
         winston += fee;

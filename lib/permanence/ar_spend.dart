@@ -12,7 +12,7 @@ class ArFeePage {
     this.excluded = const {},
   });
 
-  /// The fees on this page.
+  /// What was paid on this page: fees, and tips. See [arDrivePayment].
   final BigInt winston;
 
   /// Transactions on this page.
@@ -332,6 +332,27 @@ bool isArDriveTransaction({
     knownTxIds.contains(txId) ||
     tags.containsKey('ArFS') ||
     arDriveAppNames.contains(tags['App-Name']);
+
+/// What a wallet paid for one of its ArDrive transactions, in winston: the
+/// network's fee, and the tip a direct upload sent ArDrive's community with
+/// it.
+///
+/// The tip travels as the transaction's own transfer to a token holder,
+/// tagged `Tip-Type`, so it is not in the fee. Any other transfer is not a
+/// payment for storage and is left out.
+BigInt arDrivePayment({
+  required String feeWinston,
+  required String quantityWinston,
+  required Map<String, String> tags,
+}) {
+  final fee = BigInt.tryParse(feeWinston) ?? BigInt.zero;
+
+  if (!tags.containsKey('Tip-Type')) {
+    return fee;
+  }
+
+  return fee + (BigInt.tryParse(quantityWinston) ?? BigInt.zero);
+}
 
 /// The App-Name values ArDrive's apps have tagged uploads with: a fallback
 /// for transactions sync has not recorded yet.

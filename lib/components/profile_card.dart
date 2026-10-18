@@ -482,7 +482,7 @@ class _ProfileCardState extends State<ProfileCard> {
                 Text(
                   [
                     permanenceCount(stats.driveCount, 'drive'),
-                    permanenceCount(stats.permanentItems, 'file'),
+                    permanenceCount(stats.fileCount, 'file'),
                     formatPermanenceSize(stats.permanentBytes),
                   ].join(permanenceSeparator),
                   style: typography.caption(
@@ -529,9 +529,10 @@ class _ProfileCardState extends State<ProfileCard> {
                             .arDriveTransactionIds(stats.driveIds);
                         final arSpend = LocalKeyValueStore.getInstance().then(
                           (store) async => tallyArSpend(
-                            // v3: counts made before the drives' own
+                            // v4: counts made without the tips direct
+                            // uploads sent, or before the drives' own
                             // transactions decided what is ArDrive's.
-                            storageKey: 'permanenceArSpend_v3_$owner',
+                            storageKey: 'permanenceArSpend_v4_$owner',
                             read: store.getString,
                             write: (key, value) => store.putString(key, value),
                             knownTxIds: await knownTxIds,
@@ -561,7 +562,7 @@ class _ProfileCardState extends State<ProfileCard> {
                           context,
                           PermanenceSummary(
                             totalBytes: permanentBytes,
-                            fileCount: stats.permanentItems,
+                            fileCount: stats.fileCount,
                             driveCount: stats.driveCount,
                             bytesByYear: {
                               for (final year in stats.permanentByYear.entries)
@@ -602,8 +603,8 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   /// What this account keeps on Arweave, as far as this device knows: its own
-  /// drives' data, each piece once, only once its upload is confirmed, and
-  /// not pinned files. See [DriveDao.permanentDataByYear].
+  /// drives' data, every version, each piece once, only once its upload is
+  /// confirmed, and not pinned files. See [DriveDao.permanentDataByYear].
   ///
   /// The same figure the permanence panel shows, so the two can never
   /// disagree. It used to be every file row, from the query the drives list
@@ -637,14 +638,15 @@ class _ProfileCardState extends State<ProfileCard> {
             (drive) => drive.ownerAddress == walletAddress && !drive.isHidden)
         .toList();
 
-    final permanentByYear = await driveDao.permanentDataByYear(
-      [for (final drive in drives) drive.id],
-    );
+    final driveIds = [for (final drive in drives) drive.id];
+    final permanentByYear = await driveDao.permanentDataByYear(driveIds);
+    final fileCount = await driveDao.permanentFileCount(driveIds);
 
     return _AccountStats(
       driveCount: drives.length,
+      fileCount: fileCount,
       permanentByYear: permanentByYear,
-      driveIds: [for (final drive in drives) drive.id],
+      driveIds: driveIds,
     );
   }
 
@@ -1621,14 +1623,16 @@ class _AccountStats {
   /// The wallet's own drives that were counted.
   final List<String> driveIds;
 
+  /// Files with at least one version stored for good. See
+  /// [DriveDao.permanentFileCount].
+  final int fileCount;
+
   int get permanentBytes =>
       permanentByYear.values.fold(0, (sum, year) => sum + year.bytes);
 
-  int get permanentItems =>
-      permanentByYear.values.fold(0, (sum, year) => sum + year.items);
-
   _AccountStats({
     required this.driveCount,
+    this.fileCount = 0,
     this.permanentByYear = const {},
     this.driveIds = const [],
   });

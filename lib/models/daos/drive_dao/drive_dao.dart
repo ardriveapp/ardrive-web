@@ -1012,16 +1012,20 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   /// Stricter than [driveContentSummaries], which counts every file row,
   /// because this is a figure somebody may hold us to:
   ///
-  /// - **Each piece of data once.** A file copied to a second folder is a
-  ///   second row over the same data transaction, stored once and paid for
-  ///   once.
+  /// - **Every version.** Read from the revisions, not the files: a file's
+  ///   earlier versions are stored, and were paid for, as much as its
+  ///   newest.
+  /// - **Each piece of data once.** A file copied to a second folder, or
+  ///   renamed, is another revision over the same data transaction, stored
+  ///   once and paid for once.
   /// - **Only data that landed.** An upload still pending, or one that
   ///   failed, is not preserved. Data with no transaction row at all was
   ///   synced from the network, so it is there.
   /// - **Not pinned files.** A pin points at somebody else's data, which
   ///   they paid to store.
   ///
-  /// A piece of data in more than one row is dated by its earliest row.
+  /// A piece of data is dated by the first revision that carried it: when
+  /// it was uploaded, not when its file was first made.
   Future<Map<int, PermanentData>> permanentDataByYear(
     Iterable<String> driveIds,
   ) async {
@@ -1031,30 +1035,22 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       return {};
     }
 
-    final placeholders = List.filled(ids.length, '?').join(', ');
     final rows = await customSelect(
       '''
       SELECT CAST(strftime('%Y', created, 'unixepoch') AS INTEGER) AS year,
              SUM(size) AS bytes,
              COUNT(*) AS items
       FROM (
-        SELECT f.dataTxId, MIN(f.dateCreated) AS created, MAX(f.size) AS size
-        FROM file_entries f
-        WHERE f.driveId IN ($placeholders)
-          AND f.pinnedDataOwnerAddress IS NULL
-          AND NOT EXISTS (
-            SELECT 1 FROM network_transactions t
-            WHERE t.id = f.dataTxId
-              AND t.status IN ('${TransactionStatus.pending}',
-                               '${TransactionStatus.failed}')
-          )
-        GROUP BY f.dataTxId
+        SELECT r.dataTxId, MIN(r.dateCreated) AS created, MAX(r.size) AS size
+        FROM file_revisions r
+        WHERE ${_permanentRevisions(ids)}
+        GROUP BY r.dataTxId
       )
       GROUP BY year
       ORDER BY year
       ''',
       variables: [for (final id in ids) Variable.withString(id)],
-      readsFrom: {fileEntries, networkTransactions},
+      readsFrom: {fileRevisions, networkTransactions},
     ).get();
 
     return {
@@ -1066,6 +1062,42 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
           ),
     };
   }
+
+  /// How many files in [driveIds] have at least one version stored for
+  /// good, counted as [permanentDataByYear] counts their data. A copy is a
+  /// file of its own here, though its data is counted once there.
+  Future<int> permanentFileCount(Iterable<String> driveIds) async {
+    final ids = driveIds.toList();
+
+    if (ids.isEmpty) {
+      return 0;
+    }
+
+    final row = await customSelect(
+      '''
+      SELECT COUNT(DISTINCT r.fileId) AS files
+      FROM file_revisions r
+      WHERE ${_permanentRevisions(ids)}
+      ''',
+      variables: [for (final id in ids) Variable.withString(id)],
+      readsFrom: {fileRevisions, networkTransactions},
+    ).getSingle();
+
+    return row.read<int>('files');
+  }
+
+  /// The revisions of [ids] whose data is stored for good: not a pin, and
+  /// not an upload still pending or one that failed. Binds one variable per
+  /// drive id.
+  String _permanentRevisions(List<String> ids) => '''
+        r.driveId IN (${List.filled(ids.length, '?').join(', ')})
+        AND r.pinnedDataOwnerAddress IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM network_transactions t
+          WHERE t.id = r.dataTxId
+            AND t.status IN ('${TransactionStatus.pending}',
+                             '${TransactionStatus.failed}')
+        )''';
 
   /// Every transaction [driveIds] are made of, as sync recorded them: the
   /// metadata and data of every file revision, the metadata of every folder
@@ -1237,7 +1269,8 @@ class PermanentData extends Equatable {
 
   final int bytes;
 
-  /// Pieces of data, each counted once however many files point at it.
+  /// Pieces of data, each counted once however many files or versions
+  /// point at it.
   final int items;
 
   @override

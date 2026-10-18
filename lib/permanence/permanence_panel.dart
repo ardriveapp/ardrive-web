@@ -636,6 +636,16 @@ class _FinePrintState extends State<_FinePrint> {
       fontWeight: ArFontWeight.book,
     );
 
+    // Each point opens with the name of the figure it explains, as the
+    // panel labels it.
+    TextSpan lead(String figure) => TextSpan(
+          text: figure,
+          style: body.copyWith(
+            color: colors.textHigh,
+            fontWeight: ArFontWeight.semiBold.weight,
+          ),
+        );
+
     Widget point(InlineSpan text) => Padding(
           padding: const EdgeInsets.only(top: 8),
           child: Row(
@@ -702,34 +712,50 @@ class _FinePrintState extends State<_FinePrint> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      point(const TextSpan(
-                        text: 'Sizes count the drives synced on this device: '
-                            'data you uploaded, each piece once, once its '
-                            'upload is confirmed. Pinned files are not '
-                            'included.',
-                      )),
-                      point(const TextSpan(
-                        text: 'Spent is your Turbo credits, bought or '
-                            "granted, minus what's left - which also counts "
-                            'credits used on ArNS names or shared with other '
-                            'wallets - and the AR this wallet paid to upload '
-                            'with ArDrive directly, read from the network.',
-                      )),
-                      point(const TextSpan(
-                        text: 'Cost today is what the Arweave network '
-                            'charges, today, to store this much data '
-                            'permanently: its price in AR, shown in dollars '
-                            'at the current AR price. Both move with the '
-                            "network and the market. It isn't a bill or a "
-                            'quote.',
-                      )),
+                      point(TextSpan(children: [
+                        lead('Size'),
+                        const TextSpan(
+                          text: ' counts every version of every file in your '
+                              'own drives synced on this device, once its '
+                              'upload is confirmed. Data saved in more than '
+                              'one place counts once. Hidden drives and '
+                              "pinned files aren't included, so this can "
+                              'differ from what your drives list adds up to.',
+                        ),
+                      ])),
+                      point(TextSpan(children: [
+                        lead('Spent'),
+                        const TextSpan(
+                          text: " is the Turbo credits you've used: "
+                              'everything credited to this wallet, minus '
+                              'your balance. It includes credits spent on '
+                              'ArNS names and credits used by wallets you '
+                              'shared them with. Under it is the AR this '
+                              'wallet paid for direct uploads (network fees '
+                              'and ArDrive tips), read from Arweave. Neither '
+                              'is in dollars: credits and AR were bought at '
+                              'different prices over time.',
+                        ),
+                      ])),
+                      point(TextSpan(children: [
+                        lead('Cost today'),
+                        const TextSpan(
+                          text: " is the Arweave network's own price to "
+                              'store this much data now, in AR, converted at '
+                              "today's AR price. The network's price and "
+                              "AR's dollar value both change. It isn't what "
+                              "ArDrive or Turbo would charge, and it isn't a "
+                              'bill or a quote.',
+                        ),
+                      ])),
                       point(TextSpan(
                         children: [
+                          lead('Permanence'),
                           const TextSpan(
-                            text: 'Permanence is provided by the Arweave '
-                                'network, whose storage endowment is '
-                                'designed to fund data for 200+ years. See '
-                                'the ',
+                            text: ' is provided by the Arweave network, not '
+                                'by ArDrive. Arweave says its storage '
+                                'endowment is designed to pay for storage for '
+                                '200 years or more. See the ',
                           ),
                           TextSpan(
                             text: 'Terms of Service',

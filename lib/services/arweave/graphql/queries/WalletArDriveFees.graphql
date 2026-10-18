@@ -18,6 +18,9 @@ query WalletArDriveFees(
         fee {
           winston
         }
+        quantity {
+          winston
+        }
         block {
           height
         }

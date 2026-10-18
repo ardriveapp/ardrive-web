@@ -202,6 +202,41 @@ void main() {
     expect(asked.single.minHeight, 0);
   });
 
+  group('what one transaction cost', () {
+    test('is its fee', () {
+      expect(
+        arDrivePayment(
+          feeWinston: '100',
+          quantityWinston: '0',
+          tags: const {'App-Name': 'ArDrive-App'},
+        ),
+        BigInt.from(100),
+      );
+    });
+
+    test("adds the tip a direct upload sent ArDrive's community", () {
+      expect(
+        arDrivePayment(
+          feeWinston: '100',
+          quantityWinston: '15',
+          tags: const {'App-Name': 'ArDrive-App', 'Tip-Type': 'data upload'},
+        ),
+        BigInt.from(115),
+      );
+    });
+
+    test('leaves out a transfer that is not a tip', () {
+      expect(
+        arDrivePayment(
+          feeWinston: '100',
+          quantityWinston: '5000',
+          tags: const {'App-Name': 'ArDrive-App'},
+        ),
+        BigInt.from(100),
+      );
+    });
+  });
+
   test('a winston is a trillionth of an AR', () {
     final tally = ArSpendTally(
       winston: BigInt.from(1500000000000),

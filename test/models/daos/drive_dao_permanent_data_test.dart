@@ -17,25 +17,29 @@ void main() {
 
   tearDown(() async => db.close());
 
-  Future<void> addFile(
+  /// One revision of [fileId], made in [year] (in [month], so a file's
+  /// revisions in the same year stay apart).
+  Future<void> addRevision(
     String fileId, {
     required int size,
     String driveId = 'drive',
     String? dataTxId,
     int year = 2024,
+    int month = 6,
     String? pinnedBy,
   }) =>
-      db.into(db.fileEntries).insert(
-            FileEntriesCompanion.insert(
-              id: fileId,
+      db.into(db.fileRevisions).insert(
+            FileRevisionsCompanion.insert(
+              fileId: fileId,
               driveId: driveId,
               parentFolderId: 'root',
               name: fileId,
+              metadataTxId: '$fileId-$year-$month-meta',
               dataTxId: dataTxId ?? '$fileId-tx',
               size: size,
               lastModifiedDate: DateTime(year),
-              dateCreated: Value(DateTime(year, 6)),
-              path: '',
+              dateCreated: Value(DateTime(year, month)),
+              action: RevisionAction.create,
               pinnedDataOwnerAddress: Value(pinnedBy),
             ),
           );
@@ -49,31 +53,56 @@ void main() {
           );
 
   test('groups what is stored by the year it was uploaded', () async {
-    await addFile('a', size: 100, year: 2022);
-    await addFile('b', size: 200, year: 2024);
-    await addFile('c', size: 50, year: 2024);
+    await addRevision('a', size: 100, year: 2022);
+    await addRevision('b', size: 200, year: 2024);
+    await addRevision('c', size: 50, year: 2024);
 
     expect(await driveDao.permanentDataByYear(['drive']), {
       2022: const PermanentData(bytes: 100, items: 1),
       2024: const PermanentData(bytes: 250, items: 2),
     });
+    expect(await driveDao.permanentFileCount(['drive']), 3);
   });
 
-  test('counts a copy of the same data once, in the year it first came',
+  test('counts every version of a file, each in the year it was uploaded',
       () async {
-    // The same upload, filed in two folders.
-    await addFile('original', size: 100, dataTxId: 'shared', year: 2022);
-    await addFile('copy', size: 100, dataTxId: 'shared', year: 2024);
+    // Made in 2021, replaced in 2024: both versions are stored, and the
+    // second is 2024's, not 2021's.
+    await addRevision('report', size: 100, dataTxId: 'v1', year: 2021);
+    await addRevision('report', size: 300, dataTxId: 'v2', year: 2024);
+
+    expect(await driveDao.permanentDataByYear(['drive']), {
+      2021: const PermanentData(bytes: 100, items: 1),
+      2024: const PermanentData(bytes: 300, items: 1),
+    });
+    expect(await driveDao.permanentFileCount(['drive']), 1);
+  });
+
+  test('counts a rename once, in the year its data came', () async {
+    // A rename is a new revision over the same data.
+    await addRevision('photo', size: 100, dataTxId: 'data', year: 2022);
+    await addRevision('photo', size: 100, dataTxId: 'data', year: 2024);
 
     expect(await driveDao.permanentDataByYear(['drive']), {
       2022: const PermanentData(bytes: 100, items: 1),
     });
   });
 
+  test('counts a copy of the same data once, though it is two files', () async {
+    // The same upload, filed in two folders.
+    await addRevision('original', size: 100, dataTxId: 'shared', year: 2022);
+    await addRevision('copy', size: 100, dataTxId: 'shared', year: 2024);
+
+    expect(await driveDao.permanentDataByYear(['drive']), {
+      2022: const PermanentData(bytes: 100, items: 1),
+    });
+    expect(await driveDao.permanentFileCount(['drive']), 2);
+  });
+
   test('leaves out uploads that are pending or failed', () async {
-    await addFile('landed', size: 100);
-    await addFile('waiting', size: 200);
-    await addFile('lost', size: 400);
+    await addRevision('landed', size: 100);
+    await addRevision('waiting', size: 200);
+    await addRevision('lost', size: 400);
     await markTx('landed-tx', TransactionStatus.confirmed);
     await markTx('waiting-tx', TransactionStatus.pending);
     await markTx('lost-tx', TransactionStatus.failed);
@@ -81,11 +110,23 @@ void main() {
     expect(await driveDao.permanentDataByYear(['drive']), {
       2024: const PermanentData(bytes: 100, items: 1),
     });
+    expect(await driveDao.permanentFileCount(['drive']), 1);
+  });
+
+  test('keeps a file whose newest version is still uploading', () async {
+    await addRevision('draft', size: 100, dataTxId: 'old', year: 2023);
+    await addRevision('draft', size: 200, dataTxId: 'new', year: 2024);
+    await markTx('new', TransactionStatus.pending);
+
+    expect(await driveDao.permanentDataByYear(['drive']), {
+      2023: const PermanentData(bytes: 100, items: 1),
+    });
+    expect(await driveDao.permanentFileCount(['drive']), 1);
   });
 
   test('counts data synced with no transaction row as stored', () async {
-    // A sync writes file rows before, or without, their transaction rows.
-    await addFile('synced', size: 100);
+    // A sync writes revisions before, or without, their transaction rows.
+    await addRevision('synced', size: 100);
 
     expect(await driveDao.permanentDataByYear(['drive']), {
       2024: const PermanentData(bytes: 100, items: 1),
@@ -93,21 +134,24 @@ void main() {
   });
 
   test('leaves out pinned files, which somebody else paid to store', () async {
-    await addFile('mine', size: 100);
-    await addFile('pin', size: 9000, pinnedBy: 'someone-else');
+    await addRevision('mine', size: 100);
+    await addRevision('pin', size: 9000, pinnedBy: 'someone-else');
 
     expect(await driveDao.permanentDataByYear(['drive']), {
       2024: const PermanentData(bytes: 100, items: 1),
     });
+    expect(await driveDao.permanentFileCount(['drive']), 1);
   });
 
   test('reads only the drives asked about', () async {
-    await addFile('mine', size: 100, driveId: 'mine');
-    await addFile('shared-with-me', size: 9000, driveId: 'theirs');
+    await addRevision('mine', size: 100, driveId: 'mine');
+    await addRevision('shared-with-me', size: 9000, driveId: 'theirs');
 
     expect(await driveDao.permanentDataByYear(['mine']), {
       2024: const PermanentData(bytes: 100, items: 1),
     });
+    expect(await driveDao.permanentFileCount(['mine']), 1);
     expect(await driveDao.permanentDataByYear([]), isEmpty);
+    expect(await driveDao.permanentFileCount([]), 0);
   });
 }

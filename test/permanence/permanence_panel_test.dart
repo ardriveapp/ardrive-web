@@ -241,6 +241,27 @@ void main() {
         findsOneWidget);
   });
 
+  testWidgets('says plainly what each figure counts', (tester) async {
+    await pump(tester, summary());
+    await tester.tap(find.text('How these numbers work'));
+    await tester.pumpAndSettle();
+
+    final fineText = tester
+        .widgetList<RichText>(find.byType(RichText))
+        .map((text) => text.text.toPlainText())
+        .where((text) => text.contains(' is ') || text.contains(' counts '))
+        .join('\n');
+
+    expect(fineText, contains('Size counts every version'));
+    expect(fineText, contains('Hidden drives'));
+    expect(fineText, contains('network fees and ArDrive tips'));
+    expect(fineText, contains('Neither is in dollars'));
+    expect(fineText, contains("isn't what ArDrive or Turbo would charge"));
+    expect(fineText, contains('Arweave says'),
+        reason: "a duration is Arweave's claim, not ours");
+    expect(fineText, isNot(contains(' - ')), reason: 'no dashes');
+  });
+
   testWidgets('keeps its two figures side by side on a phone', (tester) async {
     // Stacked, the panel did not fit a phone, and nothing said it scrolled.
     await pump(tester, summary(), width: 340);
