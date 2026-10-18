@@ -480,7 +480,11 @@ class _ProfileCardState extends State<ProfileCard> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  '${stats.driveCount} ${stats.driveCount == 1 ? 'drive' : 'drives'} · ${stats.permanentItems} ${stats.permanentItems == 1 ? 'file' : 'files'} · ${formatPermanenceSize(stats.permanentBytes)}',
+                  [
+                    permanenceCount(stats.driveCount, 'drive'),
+                    permanenceCount(stats.permanentItems, 'file'),
+                    formatPermanenceSize(stats.permanentBytes),
+                  ].join(permanenceSeparator),
                   style: typography.caption(
                     color: colorTokens.textLow,
                     fontWeight: ArFontWeight.book,

@@ -3,6 +3,7 @@ import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/permanence/permanence_panel.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
@@ -59,7 +60,7 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('2.0 GB'), findsOneWidget);
+    expect(find.textContaining('2.0 GiB'), findsOneWidget);
     expect(find.textContaining('1,200 files'), findsOneWidget);
     expect(find.textContaining('since 2022'), findsOneWidget);
     expect(find.text(r'$100'), findsOneWidget);
@@ -297,10 +298,108 @@ void main() {
     expect(find.text('Share your permanence'), findsOneWidget);
   });
 
+  test('sizes are in the units the rest of the app uses', () {
+    // The drives list says GiB for 1024-based sizes; this said GB for the
+    // same arithmetic, so the two looked like different numbers.
+    expect(formatPermanenceSize(512), '0.5 KiB');
+    expect(formatPermanenceSize(3 * 1024 * 1024), '3.0 MiB');
+    expect(formatPermanenceSize((24.9 * gb).round()), '24.9 GiB');
+    expect(formatPermanenceSize(150 * gb), '150 GiB');
+    expect(formatPermanenceSize(2 * 1024 * gb), '2.0 TiB');
+  });
+
+  test('counts are separated by thousands, with a bullet between them', () {
+    expect(
+      [permanenceCount(21, 'drive'), permanenceCount(1776, 'file')]
+          .join(permanenceSeparator),
+      '21 drives  •  1,776 files',
+    );
+    expect(permanenceCount(1, 'file'), '1 file');
+  });
+
+  testWidgets('keeps a label for every year of a long history', (tester) async {
+    // Six years filled the chart; a seventh and eighth pushed the oldest off
+    // its top.
+    await pump(
+      tester,
+      PermanenceSummary(
+        totalBytes: 10 * gb,
+        fileCount: 10,
+        driveCount: 1,
+        bytesByYear: {for (var y = 2017; y <= 2026; y++) y: gb},
+      ),
+    );
+
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is SizedBox && w.child is CustomPaint && w.height == 200,
+      ),
+      findsOneWidget,
+      reason: 'twenty points a year',
+    );
+    expect(
+      find.bySemanticsLabel(RegExp('2017, 1.0 GiB.*2026, 1.0 GiB')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('copies the text without closing the share card',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    String? copied;
+    tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') {
+        copied = (call.arguments as Map)['text'] as String;
+      }
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null));
+
+    await tester.pumpWidget(ChangeNotifierProvider(
+      create: (_) => ActivityTracker(),
+      child: ArDriveTheme(
+        themeData: lightTheme(),
+        child: MaterialApp(
+          home: Material(
+            child: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showPermanenceShare(context, summary()),
+                child: const Text('Share'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('Share'));
+    await tester.pumpAndSettle();
+    // The card's fixed size overflows in the test font only; see above.
+    tester.takeException();
+
+    await tester.tap(find.text('Copy text'));
+    await tester.pump();
+
+    expect(copied, permanenceShareText(summary()));
+    expect(find.text('Copied'), findsOneWidget, reason: 'says it is done');
+    expect(find.text('Share your permanence'), findsOneWidget,
+        reason: 'still open, for the image too');
+
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text('Copy text'), findsOneWidget);
+    tester.takeException();
+  });
+
   test('the share text carries no dollar figure and no promised duration', () {
     final text = permanenceShareText(summary());
 
-    expect(text, contains('2.0 GB'));
+    expect(text, contains('2.0 GiB'));
     expect(text, isNot(contains(r'$')));
     expect(text, isNot(contains('200')));
   });

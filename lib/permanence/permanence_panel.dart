@@ -178,9 +178,12 @@ class PermanenceSummary {
 final _usd = NumberFormat.currency(symbol: r'$', decimalDigits: 0);
 final _count = NumberFormat.decimalPattern();
 
-/// Sizes in the units people think in, to one decimal place until that
-/// stops meaning anything. The profile card uses it too, so its line and the
-/// panel always say the same size the same way.
+/// Sizes to one decimal place until that stops meaning anything. The profile
+/// card uses it too, so its line and the panel always say the same size the
+/// same way.
+///
+/// In the units the rest of the app counts in (KiB, MiB, GiB, as `filesize`
+/// prints them), so the drives list and this line measure alike.
 String formatPermanenceSize(int bytes) => _formatSize(bytes);
 
 String _formatSize(int bytes) {
@@ -193,17 +196,19 @@ String _formatSize(int bytes) {
       ? '${_count.format(value.round())} $unit'
       : '${value.toStringAsFixed(1)} $unit';
 
-  if (bytes >= tb) return scaled(bytes / tb, 'TB');
-  if (bytes >= gb) return scaled(bytes / gb, 'GB');
-  if (bytes >= mb) return scaled(bytes / mb, 'MB');
-  return scaled(bytes / kb, 'KB');
+  if (bytes >= tb) return scaled(bytes / tb, 'TiB');
+  if (bytes >= gb) return scaled(bytes / gb, 'GiB');
+  if (bytes >= mb) return scaled(bytes / mb, 'MiB');
+  return scaled(bytes / kb, 'KiB');
 }
 
-/// Between items in a line of facts. Wavehaus draws its middle dot low and
-/// small, so it read as a full stop; its bullet sits on the line's middle.
-const _separator = '  •  ';
+/// Between items in a line of facts, here and on the profile card. Wavehaus
+/// draws its middle dot low and small, so it read as a full stop; its bullet
+/// sits on the line's middle.
+const permanenceSeparator = '  •  ';
 
-String _plural(int n, String one) =>
+/// A count and what it counts, with thousands separated: "1,776 files".
+String permanenceCount(int n, String one) =>
     '${_count.format(n)} $one${n == 1 ? '' : 's'}';
 
 void showPermanencePanel(BuildContext context, PermanenceSummary summary) {
@@ -278,10 +283,10 @@ class PermanencePanel extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           [
-            _plural(summary.fileCount, 'file'),
-            _plural(summary.driveCount, 'drive'),
+            permanenceCount(summary.fileCount, 'file'),
+            permanenceCount(summary.driveCount, 'drive'),
             if (summary.firstYear != null) 'since ${summary.firstYear}',
-          ].join(_separator),
+          ].join(permanenceSeparator),
           style: typography.paragraphNormal(
             color: colors.textLow,
             fontWeight: ArFontWeight.book,
@@ -289,18 +294,27 @@ class PermanencePanel extends StatelessWidget {
         ),
         if (summary.bytesByYear.isNotEmpty) ...[
           const SizedBox(height: 20),
-          SizedBox(
-            height: 120,
-            child: CustomPaint(
-              painter: _StrataPainter(
-                bytesByYear: summary.bytesByYear,
-                brand: colors.buttonPrimaryDefault,
-                faint: colors.textOnPrimary,
-                outline: colors.strokeLow,
-                label: colors.textHigh,
-                muted: colors.textLow,
-                labelStyle: typography.caption(fontWeight: ArFontWeight.bold),
-                mutedStyle: typography.caption(fontWeight: ArFontWeight.book),
+          Semantics(
+            // The chart is painted, so it says in words what it draws.
+            label: 'Uploaded by year: ${[
+              for (final year in summary.bytesByYear.entries)
+                '${year.key}, ${_formatSize(year.value)}',
+            ].join('; ')}',
+            child: SizedBox(
+              // Taller with each year past six, so every year keeps room for
+              // its label.
+              height: math.max(120, 20.0 * summary.bytesByYear.length),
+              child: CustomPaint(
+                painter: _StrataPainter(
+                  bytesByYear: summary.bytesByYear,
+                  brand: colors.buttonPrimaryDefault,
+                  faint: colors.textOnPrimary,
+                  outline: colors.strokeLow,
+                  label: colors.textHigh,
+                  muted: colors.textLow,
+                  labelStyle: typography.caption(fontWeight: ArFontWeight.bold),
+                  mutedStyle: typography.caption(fontWeight: ArFontWeight.book),
+                ),
               ),
             ),
           ),
@@ -763,99 +777,140 @@ String permanenceShareText(PermanenceSummary summary) => [
     ].join(' ');
 
 void showPermanenceShare(BuildContext context, PermanenceSummary summary) {
-  final cardKey = GlobalKey();
-  final typography = ArDriveTypographyNew.of(context);
-
   showArDriveDialog(
     context,
-    content: _NoScrollbar(
-      child: ArDriveStandardModalNew(
-        width: 600,
-        hasCloseButton: true,
-        scrollableContent: true,
-        titleWidget: Text(
-          'Share your permanence',
-          style: typography.heading3(fontWeight: ArFontWeight.bold),
+    content: _NoScrollbar(child: _PermanenceShareDialog(summary: summary)),
+  );
+}
+
+/// The share card with its text, to copy and to save. Both leave it open,
+/// since a post usually wants the two, and each says when it is done.
+class _PermanenceShareDialog extends StatefulWidget {
+  const _PermanenceShareDialog({required this.summary});
+
+  final PermanenceSummary summary;
+
+  @override
+  State<_PermanenceShareDialog> createState() => _PermanenceShareDialogState();
+}
+
+class _PermanenceShareDialogState extends State<_PermanenceShareDialog> {
+  final _cardKey = GlobalKey();
+
+  bool _copied = false;
+  bool _saving = false;
+  bool _saved = false;
+
+  /// How long a button says it is done before it reads as itself again.
+  static const _doneFor = Duration(seconds: 2);
+
+  Future<void> _copy() async {
+    await Clipboard.setData(
+      ClipboardData(text: permanenceShareText(widget.summary)),
+    );
+
+    if (!mounted) return;
+    setState(() => _copied = true);
+    await Future.delayed(_doneFor);
+    if (mounted) setState(() => _copied = false);
+  }
+
+  Future<void> _save() async {
+    final boundary =
+        _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+
+    if (boundary == null || _saving) {
+      return;
+    }
+
+    setState(() => _saving = true);
+
+    try {
+      final image = await boundary.toImage(pixelRatio: 2);
+      final png = await image.toByteData(format: ui.ImageByteFormat.png);
+
+      if (png == null) {
+        return;
+      }
+
+      await ArDriveIO().saveFile(
+        await IOFile.fromData(
+          png.buffer.asUint8List(),
+          name: 'my-permanence.png',
+          lastModifiedDate: DateTime.now(),
+          contentType: 'image/png',
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 16),
-            // Drawn at 600 x 315 and saved at twice that: the 1200 x 630 that
-            // social sites expect for a link card.
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: FittedBox(
-                child: RepaintBoundary(
-                  key: cardKey,
-                  child: PermanenceShareCard(summary: summary),
-                ),
+      );
+    } catch (e) {
+      logger.w('Could not save the permanence card: $e');
+      return;
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+
+    if (!mounted) return;
+    setState(() => _saved = true);
+    await Future.delayed(_doneFor);
+    if (mounted) setState(() => _saved = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+
+    return ArDriveStandardModalNew(
+      width: 600,
+      hasCloseButton: true,
+      scrollableContent: true,
+      titleWidget: Text(
+        'Share your permanence',
+        style: typography.heading3(fontWeight: ArFontWeight.bold),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 16),
+          // Drawn at 600 x 315 and saved at twice that: the 1200 x 630 that
+          // social sites expect for a link card.
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: FittedBox(
+              child: RepaintBoundary(
+                key: _cardKey,
+                child: PermanenceShareCard(summary: widget.summary),
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              permanenceShareText(summary),
-              style: typography.paragraphSmall(
-                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
-                fontWeight: ArFontWeight.book,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ModalAction(
-            title: 'Copy text',
-            customWidth: 120,
-            action: () {
-              Clipboard.setData(
-                ClipboardData(text: permanenceShareText(summary)),
-              );
-              Navigator.of(context).pop();
-            },
           ),
-          ModalAction(
-            title: 'Download image',
-            customWidth: 160,
-            action: () async {
-              final boundary = cardKey.currentContext?.findRenderObject()
-                  as RenderRepaintBoundary?;
-
-              if (boundary == null) {
-                return;
-              }
-
-              try {
-                final image = await boundary.toImage(pixelRatio: 2);
-                final png =
-                    await image.toByteData(format: ui.ImageByteFormat.png);
-
-                if (png == null) {
-                  return;
-                }
-
-                await ArDriveIO().saveFile(
-                  await IOFile.fromData(
-                    png.buffer.asUint8List(),
-                    name: 'my-permanence.png',
-                    lastModifiedDate: DateTime.now(),
-                    contentType: 'image/png',
-                  ),
-                );
-              } catch (e) {
-                logger.w('Could not save the permanence card: $e');
-                return;
-              }
-
-              if (context.mounted) {
-                Navigator.of(context).pop();
-              }
-            },
+          const SizedBox(height: 16),
+          Text(
+            permanenceShareText(widget.summary),
+            style: typography.paragraphSmall(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+              fontWeight: ArFontWeight.book,
+            ),
           ),
         ],
       ),
-    ),
-  );
+      actions: [
+        ModalAction(
+          title: _copied ? 'Copied' : 'Copy text',
+          customWidth: 120,
+          action: _copy,
+        ),
+        ModalAction(
+          title: _saving
+              ? 'Saving...'
+              : _saved
+                  ? 'Saved'
+                  : 'Download image',
+          customWidth: 160,
+          isEnable: !_saving,
+          action: _save,
+        ),
+      ],
+    );
+  }
 }
 
 /// The card people share: the size, the years and the strata, on the brand's
@@ -909,8 +964,8 @@ class PermanenceShareCard extends StatelessWidget {
                 Text(
                   [
                     if (summary.firstYear != null) 'Since ${summary.firstYear}',
-                    _plural(summary.fileCount, 'file'),
-                  ].join(_separator),
+                    permanenceCount(summary.fileCount, 'file'),
+                  ].join(permanenceSeparator),
                   style: typography.paragraphNormal(
                     color: _muted,
                     fontWeight: ArFontWeight.book,
@@ -975,8 +1030,11 @@ class _StrataPainter extends CustomPainter {
     }
 
     const labelWidth = 112.0;
-    const minBand = 16.0;
     final layers = bytesByYear.entries.toList();
+    // No band thinner than a label, unless there are more years than fit:
+    // then they share the height, rather than the oldest falling off the
+    // top.
+    final minBand = math.min(16.0, size.height / layers.length);
     final bandWidth = size.width - labelWidth;
     final total = layers.fold<int>(0, (a, e) => a + e.value);
     final maxBytes = layers.fold<int>(0, (a, e) => math.max(a, e.value));
