@@ -21,6 +21,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/pages/raw_transaction_view/raw_transaction_view_page.dart';
+import 'package:ardrive/search/search_scope.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -614,7 +615,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         );
                       }
                     },
-                    child: navigator,
+                    child: SearchScope(child: navigator),
                   ),
                 );
               } else {

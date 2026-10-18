@@ -1,14 +1,12 @@
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'dart:async';
 
-import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/search/search_modal.dart';
-import 'package:ardrive/search/search_text_field.dart';
+import 'package:ardrive/search/search_box.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/presentation/sync_elapsed_time.dart';
@@ -28,8 +26,6 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = TextEditingController();
-
     return SizedBox(
       height: _topBarRowHeight,
       width: double.maxFinite,
@@ -42,17 +38,7 @@ class AppTopBar extends StatelessWidget {
             Expanded(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),
-                child: SearchTextField(
-                  controller: controller,
-                  onFieldSubmitted: (query) {
-                    showSearchModalDesktop(
-                      context: context,
-                      driveDetailCubit: context.read<DriveDetailCubit>(),
-                      controller: controller,
-                      drivesCubit: context.read<DrivesCubit>(),
-                    );
-                  },
-                ),
+                child: const SearchBox(),
               ),
             ),
             const SizedBox(width: 24),

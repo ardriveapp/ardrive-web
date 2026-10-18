@@ -128,32 +128,24 @@ void main() {
 
     test('includes ARNS results in search', () async {
       final mockSelectable = MockSelectable<ArnsRecord>();
+      // How `extractNameAndDomain` reads "test": the domain, at its root.
       when(() => mockArnsDao.getActiveARNSRecordByName(
-            domain: '',
-            name: 'test',
+            domain: 'test',
+            name: '@',
           )).thenReturn(mockSelectable);
       when(() => mockSelectable.getSingleOrNull())
           .thenAnswer((_) async => testArnsRecord);
 
       when(() => mockFileRepository.getFileEntryById('file-1'))
           .thenAnswer((_) async => testFile);
+      final driveSelectable = MockSelectable<Drive>();
       when(() => mockDriveDao.driveById(driveId: 'drive-1'))
-          .thenReturn(MockSelectable<Drive>());
-      when(() => mockDriveDao.driveById(driveId: 'drive-1').getSingle())
+          .thenReturn(driveSelectable);
+      when(() => driveSelectable.getSingle())
           .thenAnswer((_) async => testDrive);
       when(() => mockFolderRepository.getFolderEntryById('folder-1'))
           .thenAnswer((_) async => testParentFolder);
-      when(() => mockDriveDao.search(
-            query: 'test',
-            type: SearchQueryType.all,
-          )).thenAnswer((_) async => [
-            SearchResult(
-              result: testFile,
-              drive: testDrive,
-              parentFolder: testParentFolder,
-              hasArNSName: true,
-            ),
-          ]);
+      // Nothing from the name search, so the result can only be the ArNS one.
 
       final results = await searchRepository.search('test');
 
@@ -162,6 +154,31 @@ void main() {
       expect(results.first.drive, equals(testDrive));
       expect(results.first.parentFolder, equals(testParentFolder));
       expect(results.first.hasArNSName, isTrue);
+    });
+
+    test('an ArNS name whose file is not here loses only its own row',
+        () async {
+      final mockSelectable = MockSelectable<ArnsRecord>();
+      // How `extractNameAndDomain` reads "test": the domain, at its root.
+      when(() => mockArnsDao.getActiveARNSRecordByName(
+            domain: 'test',
+            name: '@',
+          )).thenReturn(mockSelectable);
+      when(() => mockSelectable.getSingleOrNull())
+          .thenAnswer((_) async => testArnsRecord);
+      // Its drive has not been synced, so the file is not in the database.
+      when(() => mockFileRepository.getFileEntryById('file-1'))
+          .thenAnswer((_) async => throw StateError('no file-1'));
+      when(() => mockDriveDao.search(
+            query: 'test',
+            type: SearchQueryType.all,
+          )).thenAnswer((_) async => [
+            SearchResult(result: testDrive, drive: testDrive),
+          ]);
+
+      final results = await searchRepository.search('test');
+
+      expect(results.map((r) => r.result), [testDrive]);
     });
   });
 }

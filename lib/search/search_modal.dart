@@ -1,39 +1,35 @@
-import 'dart:async';
-
-import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/file_download_dialog.dart';
-import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
-import 'package:ardrive/core/arfs/repository/file_repository.dart';
-import 'package:ardrive/core/arfs/repository/folder_repository.dart';
-import 'package:ardrive/entities/constants.dart';
-import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/search/domain/bloc/search_bloc.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
+import 'package:ardrive/search/search_coverage_notice.dart';
 import 'package:ardrive/search/search_result.dart';
+import 'package:ardrive/search/search_result_navigator.dart';
+import 'package:ardrive/search/search_result_view.dart';
+import 'package:ardrive/search/search_scope.dart';
 import 'package:ardrive/search/search_text_field.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 import '../models/models.dart';
 
+/// The search for the session, full screen on a phone. It searches the
+/// session's query (see [SearchSession]), so it opens on whatever was last
+/// typed.
 Future<void> showSearchModalBottomSheet({
   required BuildContext context,
   required DriveDetailCubit driveDetailCubit,
   required DrivesCubit drivesCubit,
-  required TextEditingController controller,
-  String? query,
 
-  /// See [FileSearchModal.onNavigateToFolder].
+  /// See [SearchResultNavigator.onNavigateToFolder].
   void Function(String driveId, String folderId, {String? itemId})?
       onNavigateToFolder,
 }) {
@@ -58,9 +54,7 @@ Future<void> showSearchModalBottomSheet({
         child: BlocProvider.value(
           value: context.read<DriveDetailCubit>(),
           child: FileSearchModal(
-            initialQuery: query,
             driveDetailCubit: context.read<DriveDetailCubit>(),
-            controller: controller,
             drivesCubit: drivesCubit,
             onNavigateToFolder: onNavigateToFolder,
           ),
@@ -70,14 +64,14 @@ Future<void> showSearchModalBottomSheet({
   );
 }
 
+/// Every result for the session's query, in a dialog. Opened from the search
+/// box with Enter or "See all results".
 Future<void> showSearchModalDesktop({
   required BuildContext context,
   required DriveDetailCubit driveDetailCubit,
   required DrivesCubit drivesCubit,
-  required TextEditingController controller,
-  String? query,
 
-  /// See [FileSearchModal.onNavigateToFolder].
+  /// See [SearchResultNavigator.onNavigateToFolder].
   void Function(String driveId, String folderId, {String? itemId})?
       onNavigateToFolder,
 }) {
@@ -88,9 +82,7 @@ Future<void> showSearchModalDesktop({
   return showArDriveDialog(
     context,
     content: FileSearchModal(
-      initialQuery: query,
       driveDetailCubit: context.read<DriveDetailCubit>(),
-      controller: controller,
       drivesCubit: drivesCubit,
       onNavigateToFolder: onNavigateToFolder,
     ),
@@ -98,104 +90,38 @@ Future<void> showSearchModalDesktop({
   );
 }
 
-class FileSearchModal extends StatelessWidget {
+class FileSearchModal extends StatefulWidget {
   const FileSearchModal({
     super.key,
     required this.driveDetailCubit,
     required this.drivesCubit,
     this.onNavigateToFolder,
-    this.initialQuery,
-    required this.controller,
   });
 
   final DriveDetailCubit driveDetailCubit;
   final DrivesCubit drivesCubit;
 
-  /// How to reach a folder, when calling `openFolder` on [driveDetailCubit] will
-  /// not get there.
-  ///
-  /// The explorer's cubit is long-lived and switches drives underneath the page,
-  /// so it can simply be told to open a folder in another drive. The drives
-  /// list's is not: selecting a drive there replaces the whole subtree, and the
-  /// cubit this modal was handed is torn down mid-navigation - leaving the
-  /// reader at the drive root rather than the file they searched for. Callers in
-  /// that position pass this and the navigation goes through the router instead.
-  final void Function(String driveId, String folderId, {String? itemId})?
-      onNavigateToFolder;
-  final String? initialQuery;
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        RepositoryProvider<ArDriveSearchRepository>(
-          create: (_) => ArDriveSearchRepository(
-            context.read<DriveDao>(),
-            ARNSDao(context.read<Database>()),
-            context.read<FileRepository>(),
-            context.read<FolderRepository>(),
-          ),
-        ),
-        BlocProvider<SearchBloc>(
-          create: (context) =>
-              SearchBloc(context.read<ArDriveSearchRepository>())
-                ..add(SearchQueryChanged(initialQuery ?? '')),
-        ),
-      ],
-      child: _FileSearchModal(
-        driveDetailCubit: driveDetailCubit,
-        initialQuery: initialQuery,
-        controller: controller,
-        drivesCubit: drivesCubit,
-        onNavigateToFolder: onNavigateToFolder,
-      ),
-    );
-  }
-}
-
-class _FileSearchModal extends StatefulWidget {
-  const _FileSearchModal({
-    required this.driveDetailCubit,
-    required this.drivesCubit,
-    this.initialQuery,
-    required this.controller,
-    this.onNavigateToFolder,
-  });
-
-  final String? initialQuery;
-  final DriveDetailCubit driveDetailCubit;
-  final DrivesCubit drivesCubit;
-  final TextEditingController controller;
-
-  /// See [FileSearchModal.onNavigateToFolder].
+  /// See [SearchResultNavigator.onNavigateToFolder].
   final void Function(String driveId, String folderId, {String? itemId})?
       onNavigateToFolder;
 
   @override
-  _FileSearchModalState createState() => _FileSearchModalState();
+  State<FileSearchModal> createState() => _FileSearchModalState();
 }
 
-class _FileSearchModalState extends State<_FileSearchModal> {
+class _FileSearchModalState extends State<FileSearchModal> {
+  late final SearchSession _session;
+
   @override
   void initState() {
     super.initState();
-    if (widget.controller.text.isNotEmpty) {
-      searchFiles(widget.controller.text);
-    }
 
-    widget.controller.addListener(() {
-      debounceSearch(widget.controller.text);
-    });
-  }
+    _session = context.read<SearchSession>();
 
-  void debounceSearch(String query) {
-    debounce(() => searchFiles(query));
-  }
-
-  Future<void> searchFiles(String query) async {
-    if (mounted) {
-      context.read<SearchBloc>().add(SearchQueryChanged(query));
+    // Results for what is already typed, now: opening on "Nothing here yet"
+    // and filling in after the typing pause read as a search that had failed.
+    if (_session.query.isNotEmpty) {
+      _session.submit();
     }
   }
 
@@ -225,12 +151,9 @@ class _FileSearchModalState extends State<_FileSearchModal> {
                 children: [
                   _buildSearchHeader(typography, colorTokens),
                   const SizedBox(height: 16),
-                  SearchTextField(
-                    controller: widget.controller,
-                    onFieldSubmitted: (_) =>
-                        searchFiles(widget.controller.text),
-                  ),
+                  _buildSearchField(),
                   const SizedBox(height: 16),
+                  const SearchCoverageNotice(),
                   _buildSearchResults(context, typography, colorTokens),
                 ],
               ),
@@ -248,17 +171,25 @@ class _FileSearchModalState extends State<_FileSearchModal> {
             children: [
               _buildSearchHeader(typography, colorTokens),
               const SizedBox(height: 16),
-              SearchTextField(
-                controller: widget.controller,
-                onFieldSubmitted: (_) => searchFiles(widget.controller.text),
-              ),
+              _buildSearchField(),
               const SizedBox(height: 16),
+              const SearchCoverageNotice(),
               _buildSearchResults(context, typography, colorTokens),
             ],
           ),
         ),
       );
     });
+  }
+
+  Widget _buildSearchField() {
+    return SearchTextField(
+      controller: _session.controller,
+      // Opened to search, so ready to type into.
+      autofocus: true,
+      onEditingComplete: () {},
+      onFieldSubmitted: (_) => _session.submit(),
+    );
   }
 
   Widget _buildSearchHeader(
@@ -281,22 +212,28 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     return Expanded(
       child: BlocBuilder<SearchBloc, SearchState>(
         builder: (context, state) {
-          if (state is SearchSuccess) {
-            return ArDriveScrollBar(
-              controller: scrollController,
-              alwaysVisible: true,
-              child: ListView.builder(
+          // A newer query that is still loading keeps the last results up
+          // rather than blanking the list.
+          if (state.results.isNotEmpty && state.status != SearchStatus.empty) {
+            return Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: ArDriveScrollBar(
                 controller: scrollController,
-                itemCount: state.results.length,
-                itemBuilder: (_, index) => _buildSearchResultItem(
-                  context,
-                  state.results[index],
-                  typography,
-                  colorTokens,
+                alwaysVisible: true,
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: state.results.length,
+                  itemBuilder: (_, index) => _buildSearchResultItem(
+                    context,
+                    state.results[index],
+                    state.query,
+                    typography,
+                    colorTokens,
+                  ),
                 ),
               ),
             );
-          } else if (state is SearchQueryEmpty) {
+          } else if (state.status == SearchStatus.idle) {
             return Center(
               child: Text(
                 'Nothing here yet! Start by searching for a file name, folder, or drive above.',
@@ -307,6 +244,8 @@ class _FileSearchModalState extends State<_FileSearchModal> {
                 textAlign: TextAlign.center,
               ),
             );
+          } else if (state.status == SearchStatus.loading) {
+            return const Center(child: CircularProgressIndicator());
           }
           return Center(
             child: Text(
@@ -326,12 +265,13 @@ class _FileSearchModalState extends State<_FileSearchModal> {
   Widget _buildSearchResultItem(
     BuildContext context,
     SearchResult searchResult,
+    String query,
     ArdriveTypographyNew typography,
     ArDriveColorTokens colorTokens,
   ) {
-    final name = _resolveName(searchResult.result);
-    final isHidden = _isHidden(searchResult.result);
-    final leadingIcon = _getLeadingIcon(searchResult.result, colorTokens);
+    final name = searchResultName(searchResult);
+    final isHidden = searchResultIsHidden(searchResult);
+    final leadingIcon = searchResultIcon(searchResult, colorTokens);
     final trailingIcons = _getTrailingIcons(context, searchResult, colorTokens);
 
     return HoverWidget(
@@ -340,13 +280,20 @@ class _FileSearchModalState extends State<_FileSearchModal> {
         child: ListTile(
           onTap: () => _handleNavigation(context, searchResult),
           leading: leadingIcon,
-          title: Wrap(
+          title: Row(
             children: [
-              Text(
-                name,
-                style: typography.paragraphXLarge(
-                  color: colorTokens.textHigh,
-                  fontWeight: ArFontWeight.bold,
+              Flexible(
+                child: SearchMatchText(
+                  text: name,
+                  query: query,
+                  style: typography.paragraphXLarge(
+                    color: colorTokens.textMid,
+                    fontWeight: ArFontWeight.book,
+                  ),
+                  matchStyle: typography.paragraphXLarge(
+                    color: colorTokens.textHigh,
+                    fontWeight: ArFontWeight.bold,
+                  ),
                 ),
               ),
               if (isHidden)
@@ -359,50 +306,18 @@ class _FileSearchModalState extends State<_FileSearchModal> {
             ],
           ),
           trailing: trailingIcons,
-          subtitle: _buildSubtitle(searchResult, typography, colorTokens),
+          subtitle: Text(
+            searchResultLocation(context, searchResult),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: typography.paragraphNormal(
+              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
         ),
       ),
     );
-  }
-
-  bool _isHidden(dynamic result) {
-    if (result is FileEntry) {
-      return result.isHidden;
-    } else if (result is FolderEntry) {
-      return result.isHidden;
-    } else {
-      return false;
-    }
-  }
-
-  String _resolveName(dynamic result) {
-    if (result is FileEntry) return result.name;
-    if (result is FolderEntry) return result.name;
-    if (result is Drive) return result.name;
-    return 'Unknown';
-  }
-
-  Widget _getLeadingIcon(
-    dynamic result,
-    ArDriveColorTokens colorTokens,
-  ) {
-    if (result is FileEntry) {
-      return getIconForContentType(
-        result.dataContentType ?? ContentType.octetStream,
-        size: 24,
-        color: colorTokens.textHigh,
-      );
-    } else if (result is FolderEntry) {
-      return ArDriveIcons.folderOutline(
-        color: colorTokens.textHigh,
-      );
-    } else if (result is Drive) {
-      return result.privacy == DrivePrivacy.private.name
-          ? ArDriveIcons.privateDrive(color: colorTokens.iconHigh)
-          : ArDriveIcons.publicDrive(color: colorTokens.iconHigh);
-    }
-
-    return const Icon(Icons.error);
   }
 
   Widget _getTrailingIcons(
@@ -440,114 +355,17 @@ class _FileSearchModalState extends State<_FileSearchModal> {
     );
   }
 
-  Widget _buildSubtitle(
-    SearchResult searchResult,
-    ArdriveTypographyNew typography,
-    ArDriveColorTokens colorTokens,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Drive: ${searchResult.drive.name}',
-          style: typography.paragraphNormal(
-            color: colorTokens.textLow,
-            fontWeight: ArFontWeight.semiBold,
-          ),
-        ),
-        if (searchResult.parentFolder != null)
-          Text(
-            'Folder: ${searchResult.parentFolder!.name}',
-            style: typography.paragraphNormal(
-              color: colorTokens.textLow,
-              fontWeight: ArFontWeight.semiBold,
-            ),
-          ),
-      ],
-    );
-  }
-
   void _handleNavigation(BuildContext context, SearchResult searchResult) {
-    if (searchResult.result is FileEntry) {
-      _navigateToFile(context, searchResult.result as FileEntry);
-    } else if (searchResult.result is FolderEntry) {
-      final otherDriveId = (searchResult.parentFolder == null)
-          ? searchResult.drive.id
-          : searchResult.parentFolder!.driveId;
-
-      final navigate = widget.onNavigateToFolder;
-
-      if (navigate != null) {
-        // Asked for before the selection, because the selection is what carries
-        // it - see [FileSearchModal.onNavigateToFolder].
-        navigate(otherDriveId, searchResult.result.id);
-        context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
-        Navigator.of(context).pop();
-
-        return;
-      }
-
-      context.read<DrivesCubit>().selectDrive(searchResult.drive.id);
-
-      widget.driveDetailCubit.openFolder(
-        otherDriveId: otherDriveId,
-        folderId: searchResult.result.id,
-      );
-
-      Navigator.of(context).pop();
-    } else if (searchResult.result is Drive) {
-      context
-          .read<DrivesCubit>()
-          .selectDrive((searchResult.result as Drive).id);
-      Navigator.of(context).pop();
-    }
-  }
-
-  Future<void> _navigateToFile(
-    BuildContext context,
-    FileEntry result,
-  ) async {
-    final file = DriveDataTableItemMapper.fromFileEntryForSearchModal(
-      result,
+    final navigator = SearchResultNavigator(
+      drivesCubit: widget.drivesCubit,
+      driveDetailCubit: widget.driveDetailCubit,
+      onNavigateToFolder: widget.onNavigateToFolder,
     );
 
-    final navigate = widget.onNavigateToFolder;
-
-    if (navigate != null) {
-      // The folder the file is in, and the file to pick out of it once it
-      // opens - the same thing the explorer's path below does with
-      // `selectedItemId`, taking the long way round because the cubit that
-      // could be told directly is about to be torn down.
-      navigate(file.driveId, file.parentFolderId, itemId: file.id);
-      widget.drivesCubit.selectDrive(file.driveId);
-
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-
-      return;
-    }
-
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    widget.drivesCubit.selectDrive(file.driveId);
-
-    await Future.delayed(const Duration(milliseconds: 100));
-
-    widget.driveDetailCubit.openFolder(
-      otherDriveId: file.driveId,
-      folderId: file.parentFolderId,
-      selectedItemId: file.id,
-    );
-
-    late StreamSubscription<DriveDetailState> listener;
-
-    listener = widget.driveDetailCubit.stream.listen((state) {
-      if (state is DriveDetailLoadSuccess) {
-        listener.cancel();
-        // ignore: use_build_context_synchronously
-        Navigator.of(context).pop();
-      }
-    });
+    // Closed first: the navigator holds what it needs, and the page under the
+    // dialog may be rebuilt as it goes.
+    Navigator.of(context).pop();
+    _session.clear();
+    navigator.open(searchResult);
   }
 }
