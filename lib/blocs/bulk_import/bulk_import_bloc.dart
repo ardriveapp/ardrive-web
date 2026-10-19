@@ -262,8 +262,8 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
 
     if (successfulFiles == 0) {
       final paymentError = _isBulkImportPaymentError(lastImportError) ||
-          (importResult?.failures
-                  .any((f) => _isBulkImportPaymentError(f.originalError)) ??
+          (importResult?.failures.any(
+                  (f) => _isBulkImportPaymentError(f.originalError)) ??
               false);
       emit(BulkImportError(
         paymentError

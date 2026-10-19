@@ -89,7 +89,8 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
                 context,
                 content: ArDriveStandardModalNew(
                   title: appLocalizationsOf(context).error,
-                  description: appLocalizationsOf(context).actionFailedTryAgain,
+                  description:
+                      appLocalizationsOf(context).actionFailedTryAgain,
                 ),
               );
             }

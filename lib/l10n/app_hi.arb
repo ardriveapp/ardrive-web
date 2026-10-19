@@ -2299,6 +2299,33 @@
   "@uploadingSnapshot": {
     "description": "Uploading Snapshot"
   },
+  "uploadAsNewVersion": "{numberOfFiles, plural, zero{} one{नए संस्करण के रूप में अपलोड करें} other{नए संस्करणों के रूप में अपलोड करें}}",
+  "@uploadAsNewVersion": {
+    "description": "Button on the duplicate file dialog that uploads the files as new versions of the ones already there",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "uploadAnyway": "फिर भी अपलोड करें",
+  "@uploadAnyway": {
+    "description": "Button on the large file warning that starts the upload"
+  },
+  "uploadSnapshot": "स्नैपशॉट अपलोड करें",
+  "@uploadSnapshot": {
+    "description": "Button on the snapshot cost step that uploads the snapshot"
+  },
+  "createPin": "पिन बनाएं",
+  "@createPin": {
+    "description": "Button that creates a file pin"
+  },
+  "newUserEmptyDriveTitle": "आपकी ड्राइव तैयार है",
+  "@newUserEmptyDriveTitle": {
+    "description": "Heading on a new user's first, empty drive"
+  },
   "uploadNFiles": "{numberOfFiles, plural, zero{} one{1 फ़ाइल अपलोड करें} other{{numberOfFiles} फ़ाइलें अपलोड करें}}",
   "@uploadNFiles": {
     "description": "Upload a single or many files",

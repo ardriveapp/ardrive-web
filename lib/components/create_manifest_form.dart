@@ -965,7 +965,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                     return null;
                   }
 
-                  return isValidArweaveTxId(value) ? null : 'Invalid TxId';
+                  return isValidArweaveTxId(value) ? null : 'Invalid transaction ID';
                 },
               ),
             ),

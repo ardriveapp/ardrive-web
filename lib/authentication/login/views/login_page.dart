@@ -110,8 +110,10 @@ class _LoginPageState extends State<LoginPage> {
                 progressDescription: Text(
                   'This may take a moment.',
                   style: ArDriveTypographyNew.of(context).paragraphNormal(
-                    color:
-                        ArDriveTheme.of(context).themeData.colorTokens.textLow,
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colorTokens
+                        .textLow,
                     fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
