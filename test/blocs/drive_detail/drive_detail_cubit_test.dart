@@ -781,6 +781,56 @@ void main() {
       );
     });
 
+    test('does not pull back a reader who looked around and came back',
+        () async {
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-2');
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      unawaited(cubit.openFolder(folderId: 'subfolder-2'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      unawaited(cubit.openFolder(folderId: rootFolderId));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        rootFolderId,
+      );
+    });
+
+    test('survives the drive being opened twice before the folder lands',
+        () async {
+      // Attaching a drive writes it and then selects it, so the page can ask
+      // for the same drive more than once while it is still arriving.
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        'subfolder-1',
+      );
+    });
+
     test('opens the root when the linked folder never arrives', () async {
       // A link to a folder that was deleted, or that this sync did not reach.
       final cubit = buildCubit(initialFolderId: 'no-such-folder');
@@ -794,6 +844,31 @@ void main() {
       expect(
         (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
         rootFolderId,
+      );
+    });
+
+    test('opens a linked folder that lands after its drive was already here',
+        () async {
+      // A folder made on another device, in a drive this one already has.
+      // The drive opens straight away, so no changeDrive follows to open it.
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        rootFolderId,
+        reason: 'precondition: the folder is not there yet, so the root opens',
+      );
+
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        'subfolder-1',
       );
     });
   });
