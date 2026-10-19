@@ -52,7 +52,10 @@ class DriveShareDialogState extends State<DriveShareDialog> {
 
           return ArDriveStandardModalNew(
             width: kLargeDialogWidth,
-            title: state is DriveShareLoadSuccess && state.isFolder
+            // From what was asked for, not from the loaded state: a private
+            // folder spends a moment loading its drive's key, and the title
+            // said "Share drive" for that moment, or for good if it failed.
+            title: context.read<DriveShareCubit>().folderId != null
                 ? appLocalizationsOf(context).shareFolderWithOthers
                 : appLocalizationsOf(context).shareDriveWithOthers,
             scrollableContent: true,

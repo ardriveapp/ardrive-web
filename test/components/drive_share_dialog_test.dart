@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 class MockDriveShareCubit extends MockCubit<DriveShareState>
     implements DriveShareCubit {}
@@ -153,6 +154,8 @@ void main() {
 
     testWidgets('a folder share is named after the folder, not the drive',
         (tester) async {
+      when(() => cubit.folderId).thenReturn('folder-id');
+
       await pumpState(
         tester,
         DriveShareLoadSuccess(
@@ -226,6 +229,23 @@ void main() {
         );
       });
     });
+
+    // A private folder loads its drive's key before it has a link, and a
+    // load can fail. The title is about what is being shared either way.
+    for (final state in <DriveShareState>[
+      DriveShareLoadInProgress(),
+      const DriveShareLoadFail(),
+    ]) {
+      testWidgets('a folder share says folder while ${state.runtimeType}',
+          (tester) async {
+        when(() => cubit.folderId).thenReturn('folder-id');
+
+        await pumpState(tester, state);
+
+        expect(find.text('Share folder with others'), findsOneWidget);
+        expect(find.text('Share drive with others'), findsNothing);
+      });
+    }
 
     testWidgets('a failure is shown, with a way out of it', (tester) async {
       // The state that used to be unreachable: the dialog spun forever instead.
