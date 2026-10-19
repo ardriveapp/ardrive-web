@@ -24,7 +24,7 @@ class UploadProgressSummary {
     var totalUploaded = 0;
 
     for (final task in tasks) {
-      final isComplete = task.status == UploadStatus.complete;
+      final uploaded = isUploaded(task);
 
       final files = task.content?.whereType<ARFSFileUploadMetadata>() ??
           const <ARFSFileUploadMetadata>[];
@@ -33,7 +33,7 @@ class UploadProgressSummary {
         numberOfFiles++;
         totalSize += file.size;
 
-        if (isComplete) {
+        if (uploaded) {
           numberOfUploadedFiles++;
         }
 
@@ -41,8 +41,7 @@ class UploadProgressSummary {
       }
     }
 
-    final completeTasks =
-        tasks.where((task) => task.status == UploadStatus.complete).length;
+    final completeTasks = tasks.where(isUploaded).length;
     final allComplete = tasks.isNotEmpty && completeTasks == tasks.length;
 
     final double progress;
@@ -69,9 +68,15 @@ class UploadProgressSummary {
     );
   }
 
+  /// Whether [task]'s data is all sent. A file being given its ArNS name has
+  /// already uploaded.
+  static bool isUploaded(UploadTask task) =>
+      task.status == UploadStatus.complete ||
+      task.status == UploadStatus.assigningUndername;
+
   /// How much of [file] is sent, at the file's own size.
   static int uploadedBytes(ARFSFileUploadMetadata file, UploadTask task) {
-    if (task.status == UploadStatus.complete) {
+    if (isUploaded(task)) {
       return file.size;
     }
 
@@ -85,7 +90,7 @@ class UploadProgressSummary {
   final int totalSize;
   final int totalUploaded;
 
-  /// From 0 to 1. It is 1 only when every task is complete.
+  /// From 0 to 1. It is 1 only when every task's data is sent.
   final double progress;
 
   /// [progress] as a whole percentage, rounded down.

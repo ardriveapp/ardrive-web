@@ -405,7 +405,7 @@ String _costLabel(DriveStateCreationReady state) {
 
   return switch (state.effectiveMethod) {
     UploadMethod.turbo =>
-      '${winstonToAr(cost.costEstimateTurbo.totalCost)} Credits',
+      '${winstonToAr(cost.costEstimateTurbo.totalCost)} credits',
     UploadMethod.ar => '${winstonToAr(cost.costEstimateAr.totalCost)} AR',
   };
 }

@@ -1775,12 +1775,8 @@ class _PreparingUploadWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            // Left out for large selections, as the cubit decides.
-            if (state is! UploadPreparationInitialized ||
-                (state as UploadPreparationInitialized).showLoadingFiles) ...[
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-            ],
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
             if (state is UploadPreparationInProgress &&
                 (state as UploadPreparationInProgress).isArConnect)
               Text(

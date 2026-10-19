@@ -118,6 +118,17 @@ void main() {
       expect(summary.percent, 100);
     });
 
+    test('counts a file being given its ArNS name as uploaded', () {
+      final summary = UploadProgressSummary.from(_progress([
+        _fileTask(index,
+            status: UploadStatus.assigningUndername, progress: 0.9),
+      ]));
+
+      expect(summary.numberOfUploadedFiles, 1);
+      expect(summary.totalUploaded, 3133);
+      expect(summary.percent, 100);
+    });
+
     test('counts tasks when there are no bytes to count', () {
       final summary = UploadProgressSummary.from(_progress([
         _folderTask(),
