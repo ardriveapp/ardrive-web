@@ -11,14 +11,33 @@ import 'package:arweave/arweave.dart';
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 
+/// A wallet's top-ups as `GET /v1/account/payments` returned them.
+class TurboPaymentHistory {
+  const TurboPaymentHistory({required this.payments, required this.complete});
+
+  final List<Map<String, dynamic>> payments;
+
+  /// False when there were more pages than were read.
+  final bool complete;
+}
+
 class TurboBalanceInterface {
+  /// What the wallet can spend now: its own credits plus what is left of
+  /// credits other wallets have shared with it (Turbo's `effectiveBalance`).
   final BigInt balance;
   final List<String> paidBy;
+
+  /// The wallet's own credits alone, including any it has shared that have
+  /// not been spent yet (Turbo's `controlledWinc`). Credits shared *to* it
+  /// are not in here. Where only [balance] is known, it is that.
+  BigInt get controlledWinc => _controlledWinc ?? balance;
+  final BigInt? _controlledWinc;
 
   TurboBalanceInterface({
     required this.balance,
     required this.paidBy,
-  });
+    BigInt? controlledWinc,
+  }) : _controlledWinc = controlledWinc;
 
   @override
   String toString() {
@@ -87,6 +106,7 @@ class PaymentService {
 
       final data = json.decode(result.data);
       final balance = BigInt.parse(data['effectiveBalance']);
+      final controlled = BigInt.tryParse('${data['controlledWinc']}');
       final receivedApprovals = data['receivedApprovals'] as List<dynamic>;
       final paidBy = receivedApprovals
           .map((approval) => approval['payingAddress'] as String)
@@ -95,6 +115,7 @@ class PaymentService {
       return TurboBalanceInterface(
         balance: balance,
         paidBy: paidBy,
+        controlledWinc: controlled,
       );
     } catch (error, stackTrace) {
       if (error is ArDriveHTTPException) {
@@ -106,6 +127,52 @@ class PaymentService {
       logger.e('error getting balance', error, stackTrace);
       rethrow;
     }
+  }
+
+  /// The wallet's own completed top-ups, card and crypto, newest first.
+  ///
+  /// A signed request: the service reads whose history it is from the
+  /// signature, so it can only ever return the signer's own. The signature
+  /// headers are cached per wallet, so a wallet that has already signed for
+  /// Turbo this session is not asked again.
+  ///
+  /// Reads up to [maxPages] pages of a hundred rows, and says whether that
+  /// was all of it: a history cut short is not a smaller history, and must
+  /// not be read as one.
+  Future<TurboPaymentHistory> getPaymentHistory({
+    required Wallet wallet,
+    int maxPages = 10,
+  }) async {
+    final headers = await turboSignatureHeadersManager.getSignatureHeaders(
+      wallet: wallet,
+    );
+    final payments = <Map<String, dynamic>>[];
+    String? cursor;
+    var complete = false;
+
+    for (var page = 0; page < maxPages; page++) {
+      final query = cursor == null
+          ? 'limit=100'
+          : 'limit=100&cursor=${Uri.encodeQueryComponent(cursor)}';
+      final result = await httpClient.get(
+        url: '$turboPaymentUri/v1/account/payments?$query',
+        headers: headers,
+      );
+      final data = json.decode(result.data) as Map<String, dynamic>;
+
+      payments.addAll(
+        (data['payments'] as List<dynamic>).cast<Map<String, dynamic>>(),
+      );
+
+      cursor = data['cursor'] as String?;
+
+      if (data['hasMore'] != true || cursor == null) {
+        complete = true;
+        break;
+      }
+    }
+
+    return TurboPaymentHistory(payments: payments, complete: complete);
   }
 
   Future<BigInt> getBalance({
