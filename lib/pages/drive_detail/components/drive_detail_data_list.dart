@@ -158,6 +158,14 @@ Widget _buildDataListContent(
           onScrollOffsetSaved: (offset) => context
               .read<DriveDetailCubit>()
               .rememberScrollOffset(folder.id, offset),
+          // And in the order the reader picked, for the same reason.
+          initialSortColumn:
+              context.read<DriveDetailCubit>().sortForFolder(folder.id)?.column,
+          initialSortOrder:
+              context.read<DriveDetailCubit>().sortForFolder(folder.id)?.order,
+          onSortChanged: (column, order) => context
+              .read<DriveDetailCubit>()
+              .rememberSort(folder.id, column, order),
           rowsPerPage: rowsPerPage,
           rowsPerPageOptions: DriveDetailCubit.rowsPerPageOptions,
           onRowsPerPageChanged: (rowsPerPage) =>

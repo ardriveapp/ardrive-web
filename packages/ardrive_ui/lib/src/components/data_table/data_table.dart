@@ -101,6 +101,17 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   /// in place - after a sync - is built before the old one is taken down.
   final void Function(double offset)? onScrollOffsetSaved;
 
+  /// The column sort to open with, for a table rebuilt in place. Both or
+  /// neither: a column with no order is not a sort.
+  final int? initialSortColumn;
+  final TableSort? initialSortOrder;
+
+  /// Called when the reader picks a sort from a column header, so the next
+  /// table built for the same rows can be given it back. The sort lives in
+  /// this table's state, and a rename, an upload or a hide rebuilds the
+  /// table - which put the list back in the order it was handed over in.
+  final void Function(int column, TableSort order)? onSortChanged;
+
   const ArDriveDataTable({
     super.key,
     required this.columns,
@@ -131,6 +142,9 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     this.revealRow,
     this.initialScrollOffset,
     this.onScrollOffsetSaved,
+    this.initialSortColumn,
+    this.initialSortOrder,
+    this.onSortChanged,
   });
 
   @override
@@ -203,6 +217,14 @@ class _ArDriveDataTableState<T extends IndexedItem>
     super.initState();
     _cachedRows = widget.rows;
     _numberOfItemsPerPage = _validRowsPerPage(widget.rowsPerPage);
+
+    // Sorted before the page is chosen, so [initialPage] and [revealRow] count
+    // against the order the reader will see.
+    if (widget.initialSortColumn != null && widget.initialSortOrder != null) {
+      _sortedColumn = widget.initialSortColumn;
+      _tableSort = widget.initialSortOrder;
+      _cachedRows = _sorted(_cachedRows, _sortedColumn!);
+    }
 
     // The page to open on: the one holding [revealRow] if there is one,
     // otherwise [initialPage]. Clamped, because a page number outlives the
@@ -801,6 +823,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
               });
 
               _sortRows(index);
+              widget.onSortChanged?.call(index, _tableSort!);
 
               // A new order is a new list, read from its start.
               selectPage(0);
@@ -1157,12 +1180,12 @@ class _ArDriveDataTableState<T extends IndexedItem>
     selectPage(_selectedPage - 1);
   }
 
-  void _sortRows(int index) {
-    final stopwatch = Stopwatch()..start();
-
+  List<T> _sorted(List<T> rows, int index) {
     if (widget.sortRows != null) {
-      _cachedRows = widget.sortRows!(_cachedRows, index, _tableSort!);
-    } else if (widget.sort != null) {
+      return widget.sortRows!(rows, index, _tableSort!);
+    }
+
+    if (widget.sort != null) {
       int sort(a, b) {
         if (_tableSort == TableSort.asc) {
           return widget.sort!.call(index)(a, b);
@@ -1171,8 +1194,16 @@ class _ArDriveDataTableState<T extends IndexedItem>
         }
       }
 
-      _cachedRows.sort(sort);
+      return rows..sort(sort);
     }
+
+    return rows;
+  }
+
+  void _sortRows(int index) {
+    final stopwatch = Stopwatch()..start();
+
+    _cachedRows = _sorted(_cachedRows, index);
 
     selectPage(_selectedPage);
 

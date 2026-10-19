@@ -104,6 +104,11 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   final _firstRowByFolder = <String, int>{};
   final _scrollOffsetByFolder = <String, double>{};
 
+  /// The order picked from a column header in each folder, for the same
+  /// reason: a sort lives in the table, and an upload or a rename rebuilt the
+  /// table and dropped it.
+  final _sortByFolder = <String, ({int column, TableSort order})>{};
+
   /// Set when a folder is opened to show one item in it, such as a search
   /// result: the next state asks the table to open on that item's page.
   bool _revealSelectedItem = false;
@@ -1064,6 +1069,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         emit(state.copyWith(revealSelectedItem: false));
       }
     }
+  }
+
+  /// The column sort picked in [folderId], if one has been this session.
+  ({int column, TableSort order})? sortForFolder(String folderId) =>
+      _sortByFolder[folderId];
+
+  /// A column sort picked from the file table's header in [folderId].
+  void rememberSort(String folderId, int column, TableSort order) {
+    _sortByFolder[folderId] = (column: column, order: order);
   }
 
   void rememberScrollOffset(String folderId, double offset) {
