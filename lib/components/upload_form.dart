@@ -1631,7 +1631,7 @@ class _UploadFileConflictWidget extends StatelessWidget {
     return ArDriveStandardModalNew(
       // Wide enough for its content and for Cancel, Skip and Upload as new
       // version on one row; narrower, the third button wraps to a second row.
-      width: kMediumDialogWidth + 96,
+      width: kMediumDialogWidth + 128,
       title: appLocalizationsOf(context)
           .duplicateFiles(state.conflictingFileNames.length),
       content: SizedBox(
