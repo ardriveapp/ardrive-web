@@ -2,6 +2,7 @@ import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -19,6 +20,9 @@ class _MockTurboUploadService extends Mock implements TurboUploadService {}
 class _MockConfigService extends Mock implements ConfigService {}
 
 class _MockAppConfig extends Mock implements AppConfig {}
+
+class _MockSyncCubit extends MockBloc<dynamic, SyncState>
+    implements SyncCubit {}
 
 Drive _drive(String id) => Drive(
       id: id,
@@ -40,6 +44,7 @@ void main() {
   late _MockDrivesCubit drivesCubit;
   late TurboUploadService turboUploadService;
   late _MockConfigService configService;
+  late _MockSyncCubit syncCubit;
 
   void withDrives(List<Drive> drives) => whenListen(
         drivesCubit,
@@ -69,6 +74,12 @@ void main() {
     // Exactly one drive is what makes this the new-user page rather than the
     // existing-user one.
     withDrives([_drive('drive-a')]);
+
+    syncCubit = _MockSyncCubit();
+    whenListen(syncCubit, const Stream<SyncState>.empty(),
+        initialState: SyncIdle());
+    when(() => syncCubit.syncingDriveId).thenReturn(null);
+    when(() => syncCubit.syncingDriveIds).thenReturn(null);
   });
 
   Future<void> pumpAt(
@@ -76,6 +87,8 @@ void main() {
     Size size, {
     bool dark = false,
     double textScale = 1,
+    bool canAddFiles = true,
+    bool isRootFolder = true,
   }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -105,12 +118,16 @@ void main() {
                     value: turboUploadService),
                 RepositoryProvider<ConfigService>.value(value: configService),
               ],
-              child: BlocProvider<DrivesCubit>.value(
-                value: drivesCubit,
-                child: const DriveDetailFolderEmptyCard(
+              child: MultiBlocProvider(
+                providers: [
+                  BlocProvider<DrivesCubit>.value(value: drivesCubit),
+                  BlocProvider<SyncCubit>.value(value: syncCubit),
+                ],
+                child: DriveDetailFolderEmptyCard(
                   driveId: 'drive-a',
                   parentFolderId: 'root',
-                  isRootFolder: true,
+                  isRootFolder: isRootFolder,
+                  promptToAddFiles: canAddFiles,
                 ),
               ),
             ),
@@ -259,6 +276,62 @@ void main() {
       await pumpAt(tester, const Size(1280, 800));
 
       expect(find.textContaining('Files up to 97.66 KiB each'), findsOneWidget);
+    });
+  });
+
+  /// Someone who opened a link to another person's drive. The owner's page
+  /// welcomes them to a drive they just made and offers uploads they cannot
+  /// make, so they get one true sentence instead.
+  group('in a drive the reader cannot add to', () {
+    for (final isRootFolder in [true, false]) {
+      testWidgets(
+          'says the folder is empty and offers nothing '
+          '(${isRootFolder ? 'root' : 'subfolder'})', (tester) async {
+        await pumpAt(
+          tester,
+          const Size(1280, 800),
+          canAddFiles: false,
+          isRootFolder: isRootFolder,
+        );
+
+        expect(find.text('This folder is empty.'), findsOneWidget);
+        expect(find.byType(ArDriveButtonNew), findsNothing);
+        for (final ownerCopy in [
+          "You're on chain!",
+          'Your brand new drive!',
+          'Ready to organize your files?',
+          'upload free',
+        ]) {
+          expect(find.textContaining(ownerCopy), findsNothing,
+              reason: ownerCopy);
+        }
+      });
+    }
+
+    testWidgets('says the drive is still loading while a sync reads it',
+        (tester) async {
+      whenListen(syncCubit, const Stream<SyncState>.empty(),
+          initialState: SyncInProgress());
+      when(() => syncCubit.syncingDriveId).thenReturn('drive-a');
+
+      await pumpAt(tester, const Size(1280, 800), canAddFiles: false);
+
+      expect(
+        find.text('This drive is still loading. Its files will appear here.'),
+        findsOneWidget,
+      );
+      expect(find.text('This folder is empty.'), findsNothing);
+    });
+
+    testWidgets('says it is empty while a sync reads a different drive',
+        (tester) async {
+      whenListen(syncCubit, const Stream<SyncState>.empty(),
+          initialState: SyncInProgress());
+      when(() => syncCubit.syncingDriveId).thenReturn('drive-b');
+
+      await pumpAt(tester, const Size(1280, 800), canAddFiles: false);
+
+      expect(find.text('This folder is empty.'), findsOneWidget);
     });
   });
 }

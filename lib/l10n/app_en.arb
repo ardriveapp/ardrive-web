@@ -3595,6 +3595,14 @@
   "@syncStillReadingThisDrive": {
     "description": "Shown above the file list while a sync is walking the open drive. Leads with the fact that the list is incomplete - a reader who can now browse a drive mid-sync would otherwise take a short list for the whole of it - and explains the paused selection in the same breath, since both hold for exactly as long."
   },
+  "readOnlyFolderEmpty": "This folder is empty.",
+  "@readOnlyFolderEmpty": {
+    "description": "Shown in place of the file list when someone opens an empty folder in a drive they cannot add to, such as one shared with them by link."
+  },
+  "readOnlyFolderStillLoading": "This drive is still loading. Its files will appear here.",
+  "@readOnlyFolderStillLoading": {
+    "description": "Shown in place of the file list when someone opens a folder in a drive they cannot add to while the app is still reading that drive, so the folder only looks empty."
+  },
   "syncElapsedTime": "{seconds}s elapsed",
   "@syncElapsedTime": {
     "description": "Elapsed time shown during sync after 5 seconds",

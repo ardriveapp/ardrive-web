@@ -8,7 +8,7 @@ class DriveDetailFolderEmptyCard extends StatefulWidget {
 
   const DriveDetailFolderEmptyCard({
     super.key,
-    this.promptToAddFiles = false,
+    required this.promptToAddFiles,
     required this.driveId,
     required this.parentFolderId,
     required this.isRootFolder,
@@ -27,6 +27,15 @@ class _DriveDetailFolderEmptyCardState
   Widget buildArDriveCard(BuildContext context) {
     ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    // Everything below is written for the drive's owner: upload buttons,
+    // free-allowance copy, "Your brand new drive!". Someone who opened a
+    // shared link to another person's drive can do none of that, so they are
+    // told what is true for them and offered nothing they cannot use.
+    if (!widget.promptToAddFiles) {
+      return _ReadOnlyEmptyFolder(driveId: widget.driveId);
+    }
+
     return BlocBuilder<DrivesCubit, DrivesState>(
       builder: (context, state) {
         final isANewUser = (state as DrivesLoadSuccess).userDrives.length == 1;
@@ -91,6 +100,46 @@ class _DriveDetailFolderEmptyCardState
           );
         });
       },
+    );
+  }
+}
+
+/// An empty folder in a drive the reader cannot write to.
+///
+/// While a sync is still reading the drive, "empty" may not be true yet: a
+/// shared folder opened for the first time is empty right up until its files
+/// arrive. So it says which of the two it is.
+class _ReadOnlyEmptyFolder extends StatelessWidget {
+  const _ReadOnlyEmptyFolder({required this.driveId});
+
+  final String driveId;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final syncCubit = context.watch<SyncCubit>();
+    final stillReading = SyncingDriveNotice.locksMultiSelect(
+      syncCubit.state,
+      syncingDriveId: syncCubit.syncingDriveId,
+      syncingDriveIds: syncCubit.syncingDriveIds,
+      driveId: driveId,
+    );
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
+        child: Text(
+          stillReading
+              ? appLocalizationsOf(context).readOnlyFolderStillLoading
+              : appLocalizationsOf(context).readOnlyFolderEmpty,
+          style: typography.heading5(
+            color: colorTokens.textLow,
+            fontWeight: ArFontWeight.semiBold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
     );
   }
 }
