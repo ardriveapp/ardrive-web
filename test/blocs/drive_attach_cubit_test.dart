@@ -147,13 +147,13 @@ void main() {
 
     // The field has focus when a link fills it. With no cursor, the browser
     // selected the whole ID in the brand red, which read as an error.
-    test('a drive id from a link is filled in with the cursor at its end',
+    test('a drive id from a link is filled in with the cursor at its start',
         () async {
       await driveAttachCubit.initializeForm(driveId: validPrivateDriveId);
 
       expect(
         driveAttachCubit.driveIdController.selection,
-        const TextSelection.collapsed(offset: validPrivateDriveId.length),
+        const TextSelection.collapsed(offset: 0),
       );
     });
 

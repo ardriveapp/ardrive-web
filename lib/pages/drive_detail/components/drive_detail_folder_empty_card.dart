@@ -33,7 +33,21 @@ class _DriveDetailFolderEmptyCardState
     // shared link to another person's drive can do none of that, so they are
     // told what is true for them and offered nothing they cannot use.
     if (!widget.promptToAddFiles) {
-      return _ReadOnlyEmptyFolder(driveId: widget.driveId);
+      return ScreenTypeLayout.builder(
+        mobile: (context) => _ReadOnlyEmptyFolder(driveId: widget.driveId),
+        // The same card the owner's empty folder sits in.
+        desktop: (context) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.8,
+            child: ArDriveCard(
+              width: double.infinity,
+              backgroundColor: colorTokens.containerL1,
+              content: _ReadOnlyEmptyFolder(driveId: widget.driveId),
+            ),
+          ),
+        ),
+      );
     }
 
     return BlocBuilder<DrivesCubit, DrivesState>(
