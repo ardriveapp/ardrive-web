@@ -83,7 +83,7 @@ class _AOConnectSignatureContent extends StatelessWidget {
               if (onBack != null) const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Connect to AO Network',
+                  'Connect to AO network',
                   style: typography.heading4(
                     fontWeight: ArFontWeight.bold,
                     color: colorTokens.textHigh,
@@ -143,7 +143,7 @@ class _AOConnectSignatureContent extends StatelessWidget {
               if (onBack != null) const SizedBox(width: 12),
               Expanded(
                 child: ArDriveButton(
-                  text: state.error != null ? 'Try Again' : 'Sign & Connect',
+                  text: state.error != null ? 'Try again' : 'Sign & Connect',
                   onPressed: () {
                     bloc.add(const CryptoTopupAOConnectSignatureRequested());
                   },
@@ -176,7 +176,7 @@ class _SigningInProgress extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Connect to AO Network',
+                  'Connect to AO network',
                   style: typography.heading4(
                     fontWeight: ArFontWeight.bold,
                     color: colorTokens.textHigh,
@@ -356,7 +356,7 @@ class _ConnectedWalletCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Connected Wallet',
+                  'Connected wallet',
                   style: typography.paragraphSmall(
                     color: colorTokens.textMid,
                   ),
@@ -425,7 +425,7 @@ class _ErrorMessage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  isUserRejected ? 'Signature Rejected' : 'Error',
+                  isUserRejected ? 'Signature rejected' : 'Error',
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
                     color: colorTokens.textHigh,

@@ -29,7 +29,7 @@ void main() {
     await tester.pumpWidget(wrap(FreeUploadStatus.free));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('free thanks to Turbo'), findsOneWidget);
+    expect(find.textContaining('are free with Turbo'), findsOneWidget);
     // In credits, the unit a paid Turbo upload shows.
     expect(find.textContaining('Cost: 0 credits'), findsOneWidget);
     expect(find.textContaining('AR'), findsNothing);

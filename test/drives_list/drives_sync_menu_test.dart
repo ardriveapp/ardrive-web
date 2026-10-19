@@ -302,9 +302,9 @@ void main() {
       );
 
       await openMenu(tester);
-      expect(find.text('Retry Failed'), findsOneWidget);
+      expect(find.text('Retry failed'), findsOneWidget);
 
-      entryNamed(tester, 'Retry Failed').onClick!();
+      entryNamed(tester, 'Retry failed').onClick!();
       await tester.pump();
 
       verify(() => syncCubit.retryFailedDrives(['drive-a', 'drive-b']))
@@ -314,7 +314,7 @@ void main() {
     testWidgets('and does not offer it when nothing failed', (tester) async {
       await openMenu(tester);
 
-      expect(find.text('Retry Failed'), findsNothing);
+      expect(find.text('Retry failed'), findsNothing);
     });
   });
 }

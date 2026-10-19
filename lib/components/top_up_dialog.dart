@@ -216,7 +216,7 @@ class _CardPaymentButton extends StatelessWidget {
             size: 18,
             color: textColor,
           ),
-          text: 'Pay with Card',
+          text: 'Pay with card',
           fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
             fontWeight: ArFontWeight.bold,
             color: textColor,
@@ -276,7 +276,7 @@ class _CryptoPaymentButton extends StatelessWidget {
         size: 18,
         color: isDisabled ? colors.themeFgDisabled : colors.themeFgDefault,
       ),
-      text: 'Pay with Crypto',
+      text: 'Pay with crypto',
       fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
         fontWeight: ArFontWeight.bold,
         color: isDisabled ? colors.themeFgDisabled : colors.themeFgDefault,

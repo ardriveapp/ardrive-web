@@ -31,7 +31,7 @@ class ParsedEmail extends Equatable {
       from: headers['from']?.toString() ?? '',
       to: headers['to']?.toString() ?? '',
       cc: headers['cc']?.toString() ?? '',
-      subject: headers['subject']?.toString() ?? 'No Subject',
+      subject: headers['subject']?.toString() ?? 'No subject',
       date: headers['date']?.toString() ?? '',
       textBody: body['text']?.toString() ?? '',
       htmlBody: body['html']?.toString() ?? '',

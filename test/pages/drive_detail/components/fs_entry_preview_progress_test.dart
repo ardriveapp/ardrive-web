@@ -108,7 +108,7 @@ void main() {
 
       expect(find.text("The preview couldn't be downloaded."), findsOneWidget);
 
-      await tester.tap(find.text('Try Again'));
+      await tester.tap(find.text('Try again'));
       await tester.pump();
 
       expect(retries, 1);
@@ -125,7 +125,7 @@ void main() {
         find.textContaining("couldn't be decrypted for preview"),
         findsOneWidget,
       );
-      expect(find.text('Try Again'), findsNothing);
+      expect(find.text('Try again'), findsNothing);
     });
   });
 
@@ -195,7 +195,7 @@ void main() {
         const FsEntryPreviewFailed(FsEntryPreviewFailure.download),
       );
 
-      await tester.tap(find.text('Try Again'));
+      await tester.tap(find.text('Try again'));
       await tester.pump();
 
       verify(() => cubit.retry()).called(1);

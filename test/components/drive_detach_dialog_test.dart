@@ -148,7 +148,7 @@ void main() {
     when(() => drivesCubit.detachDrive(any())).thenAnswer((_) async {});
 
     await openDialog(tester);
-    await tester.tap(find.text('DETACH'));
+    await tester.tap(find.text('Detach'));
     await tester.pumpAndSettle();
 
     verify(() => drivesCubit.detachDrive('drive-a')).called(1);

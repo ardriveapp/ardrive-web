@@ -31,7 +31,7 @@ Drive _drive(String id) => Drive(
       isHidden: false,
     );
 
-/// The page a brand new drive opens on: "You're on chain!".
+/// The page a brand new drive opens on: "Your drive is ready".
 ///
 /// It has one job - say well done, then offer the two things worth doing next -
 /// and on a phone it was doing that job below the fold, because both offers
@@ -134,7 +134,7 @@ void main() {
     // A small-but-real phone viewport: iPhone SE is 375x667.
     await pumpAt(tester, const Size(375, 667));
 
-    expect(find.textContaining("You're on chain!"), findsOneWidget);
+    expect(find.textContaining('Your drive is ready'), findsOneWidget);
     expect(
       scrollableExtent(tester),
       0,
@@ -145,7 +145,7 @@ void main() {
   testWidgets('both offers are on screen, not below the fold', (tester) async {
     await pumpAt(tester, const Size(375, 667));
 
-    for (final label in ['Upload', 'Create Folder']) {
+    for (final label in ['Upload', 'Create folder']) {
       final rect = tester.getRect(find.widgetWithText(ArDriveButtonNew, label));
       expect(rect.bottom, lessThanOrEqualTo(667),
           reason: '"$label" is off the bottom of the screen');
@@ -160,7 +160,7 @@ void main() {
       (tester) async {
     await pumpAt(tester, const Size(375, 667));
 
-    for (final label in ['Upload', 'Create Folder']) {
+    for (final label in ['Upload', 'Create folder']) {
       final button = tester.widget<ArDriveButtonNew>(
         find.widgetWithText(ArDriveButtonNew, label),
       );
@@ -175,7 +175,7 @@ void main() {
     await pumpAt(tester, const Size(375, 667), dark: true);
 
     expect(scrollableExtent(tester), 0);
-    for (final label in ['Upload', 'Create Folder']) {
+    for (final label in ['Upload', 'Create folder']) {
       final button = tester.widget<ArDriveButtonNew>(
         find.widgetWithText(ArDriveButtonNew, label),
       );
@@ -196,7 +196,7 @@ void main() {
     expect(tester.takeException(), isNull);
 
     // And both offers must still be reachable by scrolling to them.
-    for (final label in ['Upload', 'Create Folder']) {
+    for (final label in ['Upload', 'Create folder']) {
       await tester.scrollUntilVisible(
         find.widgetWithText(ArDriveButtonNew, label),
         100,
@@ -229,11 +229,11 @@ void main() {
       // test is about the copy above them, so it renders smaller.
       await pumpAt(tester, const Size(375, 667), textScale: 0.5);
 
-      expect(find.textContaining("You're on chain!"), findsNothing);
+      expect(find.textContaining('Your drive is ready'), findsNothing);
       expect(
         find.textContaining(
             'Files up to 105 KiB each upload free, while your free allowance '
-            'lasts. For larger files, you can pay with Credits.'),
+            'lasts. For larger files, you can pay with credits.'),
         findsOneWidget,
       );
       for (final gone in ['100KB', 'blazingly', 'unlimited', 'FREE']) {

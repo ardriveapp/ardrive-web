@@ -730,7 +730,7 @@ class NewButton extends StatelessWidget {
         );
       },
       isDisabled: isDisabled,
-      name: 'Import from Manifest',
+      name: 'Import from manifest',
       icon: ArDriveIcons.manifest(size: defaultIconSize),
     );
   }

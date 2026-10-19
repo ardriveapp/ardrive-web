@@ -165,17 +165,13 @@ class FileShareDialogState extends State<FileShareDialog> {
               ],
               if (!state.isPublicFile) ...[
                 const SizedBox(height: 16),
-                ArDriveCheckBox(
-                  // [ArDriveCheckBox] only reads `checked` when it is first
-                  // built, so the key forces a fresh one whenever the cubit's
-                  // answer changes.
-                  key: ValueKey(state.keyIsInLink),
-                  checked: state.keyIsInLink,
-                  title: appLocalizationsOf(context).shareFileIncludeKeyInLink,
-                  titleStyle: typography.paragraphSmall(
+                ArDriveToggleSwitch(
+                  text: appLocalizationsOf(context).shareFileIncludeKeyInLink,
+                  textStyle: typography.paragraphSmall(
                     color: colorTokens.textMid,
                   ),
-                  onChange: (value) =>
+                  value: state.keyIsInLink,
+                  onChanged: (value) =>
                       context.read<FileShareCubit>().setKeyIsInLink(value),
                 ),
                 if (state.keyIsInLink)

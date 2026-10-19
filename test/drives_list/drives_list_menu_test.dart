@@ -179,9 +179,9 @@ void main() {
       // A running sync has nothing to do with renaming or sharing a drive.
       await openMenu(tester, isOwner: true, isSyncing: true);
 
-      expect(itemNamed(tester, 'Rename Drive').isDisabled, isFalse);
-      expect(itemNamed(tester, 'Share Drive').isDisabled, isFalse);
-      expect(entryNamed(tester, 'Share Drive').onClick, isNotNull);
+      expect(itemNamed(tester, 'Rename drive').isDisabled, isFalse);
+      expect(itemNamed(tester, 'Share drive').isDisabled, isFalse);
+      expect(entryNamed(tester, 'Share drive').onClick, isNotNull);
     });
   });
 
@@ -191,12 +191,12 @@ void main() {
       await openMenu(tester, isOwner: true);
 
       expect(find.text('Sync this drive'), findsOneWidget);
-      expect(find.text('Rename Drive'), findsOneWidget);
-      expect(find.text('Share Drive'), findsOneWidget);
+      expect(find.text('Rename drive'), findsOneWidget);
+      expect(find.text('Share drive'), findsOneWidget);
       expect(find.text('Hide'), findsOneWidget);
       expect(find.text('Unhide'), findsNothing);
       // There is nothing to detach from: it is your drive.
-      expect(find.text('Detach Drive'), findsNothing);
+      expect(find.text('Detach drive'), findsNothing);
     });
 
     testWidgets('a drive shared with you: detach, and nothing owners-only',
@@ -204,11 +204,11 @@ void main() {
       await openMenu(tester, isOwner: false);
 
       expect(find.text('Sync this drive'), findsOneWidget);
-      expect(find.text('Share Drive'), findsOneWidget);
-      expect(find.text('Detach Drive'), findsOneWidget);
+      expect(find.text('Share drive'), findsOneWidget);
+      expect(find.text('Detach drive'), findsOneWidget);
       // Renaming and hiding are the owner's, and an item that cannot work is
       // worse than one that is not there.
-      expect(find.text('Rename Drive'), findsNothing);
+      expect(find.text('Rename drive'), findsNothing);
       expect(find.text('Hide'), findsNothing);
       expect(find.text('Unhide'), findsNothing);
     });

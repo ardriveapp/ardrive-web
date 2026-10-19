@@ -209,7 +209,7 @@ class _ProfileCardState extends State<ProfileCard> {
                               context,
                               content: ArDriveStandardModalNew(
                                 hasCloseButton: true,
-                                title: 'About Your Wallets',
+                                title: 'About your wallets',
                                 description:
                                     'Your ${state.user.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana'} wallet is used to sign in. '
                                     'A unique Arweave wallet is automatically derived from it to store your data permanently on the Arweave network.\n\n'
@@ -242,7 +242,7 @@ class _ProfileCardState extends State<ProfileCard> {
                   [
                     const SizedBox(height: 8),
                     _ProfileMenuAccordionItem(
-                      text: 'Switch Gateway',
+                      text: 'Switch gateway',
                       onTap: () {
                         setState(() {
                           _showProfileCard = false;
@@ -265,7 +265,7 @@ class _ProfileCardState extends State<ProfileCard> {
                     ),
                     const SizedBox(height: 8),
                     _ProfileMenuAccordionItem(
-                      text: 'Switch GraphQL Server',
+                      text: 'Switch GraphQL server',
                       onTap: () {
                         setState(() {
                           _showProfileCard = false;
@@ -275,7 +275,7 @@ class _ProfileCardState extends State<ProfileCard> {
                     ),
                     const SizedBox(height: 8),
                     _ProfileMenuAccordionItem(
-                      text: 'Switch Turbo Services',
+                      text: 'Switch Turbo services',
                       onTap: () {
                         setState(() {
                           _showProfileCard = false;
@@ -289,7 +289,7 @@ class _ProfileCardState extends State<ProfileCard> {
                       child: ArDriveToggleSwitch(
                         alignRight: true,
                         value: context.read<ConfigService>().config.autoSync,
-                        text: 'Automatic Sync',
+                        text: 'Automatic sync',
                         textStyle: typography.paragraphNormal(
                           fontWeight: ArFontWeight.semiBold,
                           color: colorTokens.textMid,
@@ -364,7 +364,7 @@ class _ProfileCardState extends State<ProfileCard> {
                             .read<ConfigService>()
                             .config
                             .enableSyncFromSnapshot,
-                        text: 'Sync From Snapshots',
+                        text: 'Sync from snapshots',
                         textStyle: typography.paragraphNormal(
                           fontWeight: ArFontWeight.semiBold,
                           color: colorTokens.textMid,

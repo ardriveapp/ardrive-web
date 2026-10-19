@@ -328,7 +328,7 @@ void main() {
 
   group('level 1: which drive, and for how long', () {
     testWidgets('a single-drive sync names the drive', (tester) async {
-      // The banner said "Syncing Drive" and never named it, on either
+      // The banner said "Syncing drive" and never named it, on either
       // breakpoint. The cubit knows which drive from the first frame; the
       // drives list is the only thing that knows what it is called.
       await tester.pumpWidget(host());
@@ -342,7 +342,7 @@ void main() {
       await openMenu(tester);
 
       expect(find.text("Syncing 'Family Photos'..."), findsOneWidget);
-      expect(find.text('Syncing Drive'), findsNothing);
+      expect(find.text('Syncing drive'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -376,7 +376,7 @@ void main() {
       );
       await openMenu(tester);
 
-      expect(find.text('Syncing Drive'), findsOneWidget);
+      expect(find.text('Syncing drive'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -389,7 +389,7 @@ void main() {
       await startSyncing(tester);
       await openMenu(tester);
 
-      expect(find.text('Syncing All Drives'), findsOneWidget);
+      expect(find.text('Syncing all drives'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -593,7 +593,7 @@ void main() {
       );
       await openMenu(tester);
 
-      expect(find.text('Syncing All Drives'), findsOneWidget);
+      expect(find.text('Syncing all drives'), findsOneWidget);
       expect(find.text('Completing sync...'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
@@ -617,7 +617,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(syncStatusHeaderKey),
-          matching: find.text('Sync Incomplete - Errors Detected'),
+          matching: find.text('Sync incomplete: errors detected'),
         ),
         findsOneWidget,
       );
@@ -641,7 +641,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(syncStatusHeaderKey),
-          matching: find.text('Drives Could Not Be Loaded'),
+          matching: find.text('Drives could not be loaded'),
         ),
         findsOneWidget,
       );
@@ -664,7 +664,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(syncStatusHeaderKey),
-          matching: find.text('Wallet Changed'),
+          matching: find.text('Wallet changed'),
         ),
         findsOneWidget,
       );
@@ -687,7 +687,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(syncStatusHeaderKey),
-          matching: find.text('Sync Cancelled'),
+          matching: find.text('Sync cancelled'),
         ),
         findsOneWidget,
       );

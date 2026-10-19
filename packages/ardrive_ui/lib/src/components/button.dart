@@ -305,6 +305,38 @@ class ArDriveButtonNew extends StatefulWidget {
   // Only applies to primary
   final Widget? customContent;
 
+  /// The width that fits [text] on one line in this button, and at least
+  /// [minWidth].
+  ///
+  /// A button's width is fixed, so a label longer than the width it was given
+  /// wraps inside it. Use this where the label can be longer than the usual
+  /// width, such as one that names its action or counts files.
+  static double fittedWidth(
+    BuildContext context,
+    String text, {
+    required double minWidth,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: ArDriveTypographyNew.of(context).paragraphLarge(
+          fontWeight: ArFontWeight.semiBold,
+        ),
+      ),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+
+    // The button's own padding is 10 on each side. The extra 8 covers what
+    // this measure cannot see, such as letter spacing the button's theme
+    // adds, and rounding.
+    final width = painter.width + 28;
+    painter.dispose();
+
+    return width > minWidth ? width.ceilToDouble() : minWidth;
+  }
+
   @override
   State<ArDriveButtonNew> createState() => _ArDriveButtonNewState();
 }

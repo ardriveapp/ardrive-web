@@ -102,7 +102,7 @@ class NoDrivesPage extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'Getting Started',
+                                    'Getting started',
                                     style: typography.heading2(
                                       color: colorTokens.textHigh,
                                       fontWeight: ArFontWeight.semiBold,
@@ -186,7 +186,7 @@ class NoDrivesPage extends StatelessWidget {
                 children: [
                   const SizedBox(height: 24),
                   Text(
-                    'Getting Started',
+                    'Getting started',
                     style: typography.heading2(
                       color: colorTokens.textHigh,
                       fontWeight: ArFontWeight.semiBold,
@@ -243,7 +243,7 @@ ArDriveLoginModal _privateDrivesCard({
         ArDriveIcons.privateDrive(),
         const SizedBox(height: 12),
         Text(
-          'Private Drive',
+          'Private drive',
           style: typography.paragraphXLarge(
             fontWeight: ArFontWeight.semiBold,
             color: colorTokens.textHigh,
@@ -289,7 +289,7 @@ ArDriveLoginModal _publicDrivesCard({
         ArDriveIcons.publicDrive(),
         const SizedBox(height: 12),
         Text(
-          'Public Drive',
+          'Public drive',
           style: typography.paragraphXLarge(
             fontWeight: ArFontWeight.semiBold,
             color: colorTokens.textHigh,

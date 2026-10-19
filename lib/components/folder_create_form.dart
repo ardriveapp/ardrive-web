@@ -142,7 +142,7 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
               action: () => context
                   .read<FolderCreateCubit>()
                   .submit(folderName: _folderNameController.text),
-              title: appLocalizationsOf(context).createEmphasized,
+              title: appLocalizationsOf(context).createFolderEmphasized,
             ),
           ],
         ),

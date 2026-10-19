@@ -72,6 +72,6 @@ void main() {
     await pump(tester, info(freeStatus: FreeUploadStatus.free));
 
     expect(find.textContaining('Cost: 0 credits'), findsOneWidget);
-    expect(find.textContaining('free thanks to Turbo'), findsOneWidget);
+    expect(find.textContaining('are free with Turbo'), findsOneWidget);
   });
 }

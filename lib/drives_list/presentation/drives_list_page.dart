@@ -600,7 +600,7 @@ class _DrivesListEmpty extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Getting Started',
+            'Getting started',
             // heading4, like every other state of this page. At heading2 an
             // empty state was larger than the page's own title.
             style: typography.heading4(

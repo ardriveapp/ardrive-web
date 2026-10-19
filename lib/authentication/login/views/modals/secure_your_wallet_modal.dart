@@ -129,7 +129,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               Align(
                 alignment: Alignment.topCenter,
                 child: Text(
-                  widget.showTutorials ? 'Secure Your Wallet' : 'Welcome Back',
+                  widget.showTutorials ? 'Secure your wallet' : 'Welcome back',
                   style: typography.heading2(
                       color: colorTokens.textHigh,
                       fontWeight: ArFontWeight.bold),
@@ -214,7 +214,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                 },
               ),
               const SizedBox(height: 20),
-              Text('Confirm Password',
+              Text('Confirm password',
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),

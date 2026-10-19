@@ -171,7 +171,7 @@ void main() {
 
     // What the wait is, in words - the same words the top bar and the modal
     // use for it.
-    expect(find.text('Syncing All Drives'), findsOneWidget);
+    expect(find.text('Syncing all drives'), findsOneWidget);
     expect(find.text('Downloading drive snapshots...'), findsOneWidget);
     // How long it has been going on.
     expect(find.textContaining('s elapsed'), findsOneWidget);
@@ -236,7 +236,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Syncing Drive'), findsOneWidget);
+    expect(find.text('Syncing drive'), findsOneWidget);
     expect(
       find.text('Invoices will open when the sync finishes'),
       findsOneWidget,
@@ -342,7 +342,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 1100));
 
-      expect(find.text('Syncing All Drives'), findsOneWidget);
+      expect(find.text('Syncing all drives'), findsOneWidget);
       expect(
         find.text('Photos will open when the sync finishes'),
         findsOneWidget,
@@ -378,7 +378,7 @@ void main() {
       // Rendered, not merely present: every line has to start on screen and
       // end on screen.
       for (final text in [
-        'Syncing All Drives',
+        'Syncing all drives',
         'Family Photos And Videos Nineteen Ninety Nine To Today '
             'will open when the sync finishes',
         'Updating transaction statuses for pending uploads...',
@@ -419,14 +419,14 @@ void main() {
     // content now, so an overflow here is a real regression and must fail.
     expect(tester.takeException(), isNull);
 
-    expect(find.text('Drive Not Synced'), findsOneWidget);
+    expect(find.text('Drive not synced'), findsOneWidget);
     expect(find.widgetWithText(ArDriveButtonNew, 'Sync this drive'),
         findsOneWidget);
 
     // Nothing about it reads as work in progress.
     expect(find.byType(LinearProgressIndicator), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.text('Syncing All Drives'), findsNothing);
+    expect(find.text('Syncing all drives'), findsNothing);
     expect(find.textContaining('s elapsed'), findsNothing);
 
     await tester.pumpWidget(const SizedBox());
@@ -434,7 +434,7 @@ void main() {
 
   /// A sync that ran, finished and found nothing must not be drawn as a sync
   /// that never happened. Before this the card came back word for word -
-  /// "Drive Not Synced", "Sync now to see your files and folders", the same
+  /// "Drive not synced", "Sync now to see your files and folders", the same
   /// Sync Now button - so pressing it read as a button that did nothing.
   group('the unsynced card after a sync that found nothing', () {
     /// How many layout overflows the card produces, drained so they do not
@@ -473,7 +473,7 @@ void main() {
 
       await pumpCard(tester, syncFoundNothing: true);
 
-      expect(find.text('Nothing Found Yet'), findsOneWidget);
+      expect(find.text('Nothing found yet'), findsOneWidget);
       expect(
         find.textContaining('The sync finished, but nothing for this drive'),
         findsOneWidget,
@@ -481,10 +481,10 @@ void main() {
 
       // Not the card that was already acted on, and not the button that was
       // already pressed.
-      expect(find.text('Drive Not Synced'), findsNothing);
+      expect(find.text('Drive not synced'), findsNothing);
       expect(find.widgetWithText(ArDriveButtonNew, 'Sync this drive'),
           findsNothing);
-      expect(find.text('Check Again'), findsOneWidget);
+      expect(find.text('Check again'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -494,10 +494,10 @@ void main() {
 
       await pumpCard(tester, syncFoundNothing: false);
 
-      expect(find.text('Drive Not Synced'), findsOneWidget);
+      expect(find.text('Drive not synced'), findsOneWidget);
       expect(find.widgetWithText(ArDriveButtonNew, 'Sync this drive'),
           findsOneWidget);
-      expect(find.text('Nothing Found Yet'), findsNothing);
+      expect(find.text('Nothing found yet'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -525,9 +525,9 @@ void main() {
 
       await pumpCard(tester, syncFoundNothing: true, size: desktopSize);
 
-      expect(find.text('Nothing Found Yet'), findsOneWidget);
-      expect(find.text('Check Again'), findsOneWidget);
-      expect(find.text('Drive Not Synced'), findsNothing);
+      expect(find.text('Nothing found yet'), findsOneWidget);
+      expect(find.text('Check again'), findsOneWidget);
+      expect(find.text('Drive not synced'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -598,7 +598,7 @@ void main() {
       await tester.pumpWidget(unavailable());
       await tester.pump();
 
-      expect(find.text('Your Drives Could Not Be Loaded'), findsOneWidget);
+      expect(find.text('Your drives could not be loaded'), findsOneWidget);
       expect(
         find.textContaining('Your drives are safe'),
         findsOneWidget,
@@ -607,7 +607,7 @@ void main() {
       // The three things the old screen did that this one may not: claim the
       // list is empty, offer a drive to create, and pretend work is still
       // going on.
-      expect(find.textContaining('Getting Started'), findsNothing);
+      expect(find.textContaining('Getting started'), findsNothing);
       expect(find.textContaining('Create new'), findsNothing);
       expect(find.byType(LinearProgressIndicator), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -620,7 +620,7 @@ void main() {
       await tester.pumpWidget(unavailable());
       await tester.pump();
 
-      await tester.tap(find.text('Try Again'));
+      await tester.tap(find.text('Try again'));
       await tester.pump();
 
       verify(() => driveDetailCubit.retryLoadingDrives()).called(1);
@@ -637,7 +637,7 @@ void main() {
           await tester.pumpWidget(unavailable(theme: theme, size: size));
           await tester.pump();
 
-          expect(find.text('Your Drives Could Not Be Loaded'), findsOneWidget);
+          expect(find.text('Your drives could not be loaded'), findsOneWidget);
           expect(tester.takeException(), isNull);
 
           await tester.pumpWidget(const SizedBox());

@@ -71,7 +71,7 @@ class _NetworkSwitchContent extends StatelessWidget {
               if (onBack != null) const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Switch Network',
+                  'Switch network',
                   style: typography.heading4(
                     fontWeight: ArFontWeight.bold,
                     color: colorTokens.textHigh,
@@ -118,7 +118,7 @@ class _NetworkSwitchContent extends StatelessWidget {
                   ? 'Switching...'
                   : state.isAdding
                       ? 'Adding Network...'
-                      : 'Switch Network',
+                      : 'Switch network',
               onPressed: state.isSwitching || state.isAdding
                   ? null
                   : () =>
@@ -172,7 +172,7 @@ class _NetworkComparisonCard extends StatelessWidget {
         children: [
           // Current network
           _NetworkRow(
-            label: 'Current Network',
+            label: 'Current network',
             chainId: currentChainId,
             isActive: true,
           ),
@@ -186,7 +186,7 @@ class _NetworkComparisonCard extends StatelessWidget {
           const SizedBox(height: 16),
           // Required network
           _NetworkRow(
-            label: 'Required Network',
+            label: 'Required network',
             chainId: requiredChainId,
             isActive: false,
           ),

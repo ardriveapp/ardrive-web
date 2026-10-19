@@ -366,7 +366,7 @@ class _LargeDesktopView extends StatelessWidget {
                               children: [
                                 SettingsSubmenu(
                                   child: ArDriveClickArea(
-                                    tooltip: 'Advanced Settings',
+                                    tooltip: 'Advanced settings',
                                     child: Icon(
                                       Icons.settings,
                                       color: ArDriveTheme.of(context)
@@ -445,7 +445,7 @@ class _SmallDesktopView extends StatelessWidget {
                               children: [
                                 SettingsSubmenu(
                                   child: ArDriveClickArea(
-                                    tooltip: 'Advanced Settings',
+                                    tooltip: 'Advanced settings',
                                     child: Icon(
                                       Icons.settings,
                                       color: ArDriveTheme.of(context)
@@ -526,7 +526,7 @@ class _TabletView extends StatelessWidget {
                         children: [
                           SettingsSubmenu(
                             child: ArDriveClickArea(
-                              tooltip: 'Advanced Settings',
+                              tooltip: 'Advanced settings',
                               child: Icon(
                                 Icons.settings,
                                 color: ArDriveTheme.of(context)
@@ -594,7 +594,7 @@ class _PhoneView extends StatelessWidget {
                         children: [
                           SettingsSubmenu(
                             child: ArDriveClickArea(
-                              tooltip: 'Advanced Settings',
+                              tooltip: 'Advanced settings',
                               child: Icon(
                                 Icons.settings,
                                 color: ArDriveTheme.of(context)

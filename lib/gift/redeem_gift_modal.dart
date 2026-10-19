@@ -103,7 +103,7 @@ class _RedeemGiftModalState extends State<RedeemGiftModal>
                   giftCode: _giftCodeController.text,
                   email: _emailController.text));
             },
-            title: appLocalizationsOf(context).confirm,
+            title: appLocalizationsOf(context).redeemGift,
           )
         ],
         content: BlocConsumer<RedeemGiftBloc, RedeemGiftState>(

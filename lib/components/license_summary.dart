@@ -90,12 +90,12 @@ class LicenseSummary extends StatelessWidget {
     final summary = <String, String>{};
 
     if (udlLicenseParams.licenseFeeAmount != null) {
-      summary['License Fee'] = '${udlLicenseParams.licenseFeeAmount}';
-      summary['License Currency'] =
+      summary['License fee'] = '${udlLicenseParams.licenseFeeAmount}';
+      summary['License currency'] =
           udlCurrencyValues[udlLicenseParams.licenseFeeCurrency]!;
     }
     if (udlLicenseParams.commercialUse != UdlCommercialUse.unspecified) {
-      summary['Commercial Use'] =
+      summary['Commercial use'] =
           udlCommercialUseValues[udlLicenseParams.commercialUse]!;
     }
     if (udlLicenseParams.derivations != UdlDerivation.unspecified) {

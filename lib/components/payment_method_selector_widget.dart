@@ -424,7 +424,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
               ),
               children: [
                 TextSpan(
-                  text: 'Add Credits',
+                  text: 'Add credits',
                   style: ArDriveTypography.body
                       .captionBold(
                         color: ArDriveTheme.of(context)

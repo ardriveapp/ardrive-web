@@ -342,7 +342,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         widget.item.isOwner) ...[
                       ArDriveIconButton(
                         icon: ArDriveIcons.image(),
-                        tooltip: 'Create Thumbnail',
+                        tooltip: 'Create thumbnail',
                         onPressed: () {
                           showArDriveDialog(
                             context,
@@ -584,7 +584,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             textAlign: TextAlign.right,
           ),
           // TODO: Localize
-          itemTitle: 'Signature Type',
+          itemTitle: 'Signature type',
         ),
       ],
     ];
@@ -636,7 +636,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             textAlign: TextAlign.right,
           ),
           // TODO: Localize
-          itemTitle: 'Signature Type',
+          itemTitle: 'Signature type',
         ),
       ],
       const SizedBox(height: 24),
@@ -1193,7 +1193,10 @@ class DetailsPanelItem extends StatelessWidget {
                   Flexible(
                     flex: 1,
                     child: Text(
-                      itemTitle,
+                      // "ID" stays on the line of the word before it, so a
+                      // narrow panel wraps "Metadata / transaction ID" rather
+                      // than leaving "ID" on a line of its own.
+                      itemTitle.replaceAll(' ID', '\u00A0ID'),
                       style: typography.paragraphNormal(
                         fontWeight: ArFontWeight.bold,
                       ),

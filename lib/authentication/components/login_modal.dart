@@ -86,7 +86,7 @@ class ArDriveLoginModal extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 22.0, right: 22.0),
                     child: SettingsSubmenu(
                       child: ArDriveClickArea(
-                        tooltip: 'Advanced Settings',
+                        tooltip: 'Advanced settings',
                         child: Icon(
                           Icons.settings,
                           color: colorTokens.iconLow,

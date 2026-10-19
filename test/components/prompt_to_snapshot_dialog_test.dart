@@ -54,7 +54,7 @@ void main() {
 
     expect(find.text('Make this drive load faster'), findsOneWidget);
     expect(find.text('Create snapshot'), findsOneWidget);
-    expect(find.text('Snapshot Recommended'), findsNothing);
+    expect(find.text('Snapshot recommended'), findsNothing);
     for (final word in ['rive state', 'rtifact', 'ublish']) {
       expect(find.textContaining(word), findsNothing,
           reason: 'users see one term, snapshot, not "$word"');
@@ -66,7 +66,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Create snapshot'), findsOneWidget);
-    expect(find.text('Snapshot Recommended'), findsOneWidget);
+    expect(find.text('Snapshot recommended'), findsOneWidget);
     expect(find.text('Make this drive load faster'), findsNothing);
   });
 }

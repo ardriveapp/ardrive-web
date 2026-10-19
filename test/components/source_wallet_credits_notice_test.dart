@@ -233,7 +233,7 @@ void main() {
 
         for (final upsell in [
           'Use Turbo Credits',
-          'Add Credits',
+          'Add credits',
           'add Turbo credits'
         ]) {
           expect(
@@ -244,7 +244,7 @@ void main() {
         }
       });
 
-      testWidgets('with Turbo chosen and AR enough, still no "Add Credits"',
+      testWidgets('with Turbo chosen and AR enough, still no "Add credits"',
           (tester) async {
         await pump(
           tester,
@@ -253,7 +253,7 @@ void main() {
         );
 
         expect(find.textContaining('Solana wallet'), findsOneWidget);
-        expect(find.textContaining('Add Credits', findRichText: true),
+        expect(find.textContaining('Add credits', findRichText: true),
             findsNothing);
       });
 
@@ -294,18 +294,18 @@ void main() {
 
     /// Somebody who genuinely has no credits anywhere keeps every top-up route.
     group('in $mode mode, with no credits anywhere', () {
-      testWidgets('keeps "Add Credits" when Turbo is chosen', (tester) async {
+      testWidgets('keeps "Add credits" when Turbo is chosen', (tester) async {
         await pump(tester, info(arFine: true), useOptionCards: cards);
 
-        expect(find.textContaining('Add Credits', findRichText: true),
+        expect(find.textContaining('Add credits', findRichText: true),
             findsWidgets);
       });
 
-      testWidgets('keeps "Add Credits" when both are short', (tester) async {
+      testWidgets('keeps "Add credits" when both are short', (tester) async {
         await pump(tester, info(), useOptionCards: cards);
 
         expect(
-          find.textContaining('Add Credits to upload', findRichText: true),
+          find.textContaining('Add credits to upload', findRichText: true),
           findsWidgets,
         );
         expect(

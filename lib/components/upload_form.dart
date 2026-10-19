@@ -385,7 +385,7 @@ class _UploadingManifestsWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
 
     return ArDriveStandardModalNew(
-      title: 'Uploading Manifests',
+      title: 'Uploading manifests',
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 400),
         child: Column(
@@ -1394,7 +1394,7 @@ class _SelectPaymentMethodManifestUploadState
           }
         },
         child: ArDriveStandardModalNew(
-          title: 'Upload Settings',
+          title: 'Upload settings',
           width: kMediumDialogWidth,
           content: Column(
             children: [
@@ -1556,7 +1556,7 @@ class _UploadConflictWithFailedFilesWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveStandardModalNew(
-      title: 'Retry Failed Uploads?',
+      title: 'Retry failed uploads?',
       content: SizedBox(
         width: kMediumDialogWidth,
         child: Column(
@@ -1629,9 +1629,9 @@ class _UploadFileConflictWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveStandardModalNew(
-      // Wide enough for its content and for Skip, Cancel and Replace on one
-      // row; at the standard width the third button wrapped.
-      width: kMediumDialogWidth + 48,
+      // Wide enough for its content and for Cancel, Skip and Upload as new
+      // version on one row; narrower, the third button wraps to a second row.
+      width: kMediumDialogWidth + 144,
       title: appLocalizationsOf(context)
           .duplicateFiles(state.conflictingFileNames.length),
       content: SizedBox(
@@ -1700,7 +1700,8 @@ class _UploadFileConflictWidget extends StatelessWidget {
               .read<UploadCubit>()
               .prepareUploadPlanAndCostEstimates(
                   uploadAction: UploadActions.replace),
-          title: appLocalizationsOf(context).replace,
+          title: appLocalizationsOf(context)
+              .uploadAsNewVersion(state.conflictingFileNames.length),
         ),
       ],
     );
@@ -2111,9 +2112,13 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
           onPressed: () {
             context.read<UploadCubit>().reviewUpload();
           },
-          text: appLocalizationsOf(context).upload,
+          text: uploadButtonLabel(context, state.readyState.numberOfFiles),
           typography: typography,
-          maxWidth: 100,
+          maxWidth: ArDriveButtonNew.fittedWidth(
+            context,
+            uploadButtonLabel(context, state.readyState.numberOfFiles),
+            minWidth: 100,
+          ),
           maxHeight: 40,
           variant: ButtonVariant.primary,
         ),
@@ -2265,9 +2270,13 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
           onPressed: () {
             context.read<UploadCubit>().reviewUpload();
           },
-          text: appLocalizationsOf(context).upload,
+          text: uploadButtonLabel(context, state.readyState.numberOfFiles),
           typography: typography,
-          maxWidth: 100,
+          maxWidth: ArDriveButtonNew.fittedWidth(
+            context,
+            uploadButtonLabel(context, state.readyState.numberOfFiles),
+            minWidth: 100,
+          ),
           maxHeight: 40,
           variant: ButtonVariant.primary,
         ),
@@ -2671,7 +2680,7 @@ class _UploadShowingWarningWidget extends StatelessWidget {
 
             return context.read<UploadCubit>().checkFilesAboveLimit();
           },
-          title: appLocalizationsOf(context).proceed,
+          title: appLocalizationsOf(context).uploadAnyway,
         ),
       ],
     );
@@ -3129,14 +3138,24 @@ List<ArDriveButtonNew> getModalActions(
       onPressed: () {
         context.read<UploadCubit>().initialScreenUpload();
       },
-      text: appLocalizationsOf(context).upload,
+      text: uploadButtonLabel(context, state.numberOfFiles),
       typography: typography,
-      maxWidth: 100,
+      maxWidth: ArDriveButtonNew.fittedWidth(
+        context,
+        uploadButtonLabel(context, state.numberOfFiles),
+        minWidth: 100,
+      ),
       maxHeight: 40,
       variant: ButtonVariant.primary,
     ),
   ];
 }
+
+/// The label of the button that starts an upload, such as "Upload 3 files".
+String uploadButtonLabel(BuildContext context, int numberOfFiles) =>
+    numberOfFiles > 0
+        ? appLocalizationsOf(context).uploadNFiles(numberOfFiles)
+        : appLocalizationsOf(context).upload;
 
 String getLiteralArNSName(ANTRecord record, ARNSUndername? undername) {
   if (undername != null) {

@@ -362,7 +362,7 @@ void main() {
 
     testWidgets('and the card that says a sync already looked does too',
         (tester) async {
-      // The same tiles, with the longer "Check Again" copy in them.
+      // The same tiles, with the longer "Check again" copy in them.
       await pumpCard(
         tester,
         isSyncing: false,
@@ -370,7 +370,7 @@ void main() {
         textScale: 2.0,
       );
 
-      final button = find.widgetWithText(ArDriveButtonNew, 'Check Again');
+      final button = find.widgetWithText(ArDriveButtonNew, 'Check again');
       expect(button, findsOneWidget);
 
       await tester.ensureVisible(button);
