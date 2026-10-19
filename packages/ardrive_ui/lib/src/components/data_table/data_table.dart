@@ -510,8 +510,16 @@ class _ArDriveDataTableState<T extends IndexedItem>
 
         _cachedRows = widget.rows;
 
-        // The same page, or the last one if the rows it showed are gone.
-        selectPage(_selectedPage);
+        // In the order the reader picked from a column header, not the order
+        // the rows were handed over in. A folder filling during a sync passes
+        // through here on every batch that adds a row, and taking the rows as
+        // given flipped the list between the two orders under the pointer.
+        if (_sortedColumn != null) {
+          _sortRows(_sortedColumn!);
+        } else {
+          // The same page, or the last one if the rows it showed are gone.
+          selectPage(_selectedPage);
+        }
       } else {
         if (_sortedColumn != null) {
           _sortRows(_sortedColumn!);
