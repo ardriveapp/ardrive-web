@@ -16,7 +16,6 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail_bloc.dart';
-import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -78,14 +77,14 @@ class DriveExplorerItemTile extends TableRowWidget {
                 style: _driveExplorerItemTileTextStyle(
                     isHidden, typography, colorTokens)),
             ArDriveTooltip(
-              message: formatDateToUtcString(lastUpdated),
-              child: Text(yMMdDateFormatter.format(lastUpdated),
+              message: formatDateTime(lastUpdated),
+              child: Text(formatDate(lastUpdated),
                   style: _driveExplorerItemTileTextStyle(
                       isHidden, typography, colorTokens)),
             ),
             ArDriveTooltip(
-              message: formatDateToUtcString(dateCreated),
-              child: Text(yMMdDateFormatter.format(dateCreated),
+              message: formatDateTime(dateCreated),
+              child: Text(formatDate(dateCreated),
                   style: _driveExplorerItemTileTextStyle(
                       isHidden, typography, colorTokens)),
             ),

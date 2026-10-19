@@ -4,6 +4,7 @@ import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -673,7 +674,7 @@ class DriveListRow extends StatelessWidget {
   Widget _created(BuildContext context, {bool underHeading = false}) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final date = DateFormat.yMMMd().format(drive.dateCreated);
+    final date = formatDate(drive.dateCreated);
 
     return Text(
       underHeading
@@ -796,7 +797,7 @@ String formatDriveSyncState(
   }
 
   return appLocalizationsOf(context)
-      .driveSyncedOnDate(DateFormat.yMMMd().format(lastSyncedAt));
+      .driveSyncedOnDate(formatDate(lastSyncedAt));
 }
 
 /// A row's tap, read the way a file manager reads it.
