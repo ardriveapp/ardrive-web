@@ -140,8 +140,14 @@ void main() {
 
       expect(find.text('Drive access key'), findsNothing);
       expect(
-        find.textContaining('Anyone can access this private drive'),
+        find.textContaining('can open every file in the drive'),
         findsOneWidget,
+      );
+      expect(
+        find.textContaining('Anyone can access this private drive'),
+        findsNothing,
+        reason: 'the warning says what the link opens; a notice under it '
+            'only repeated it',
       );
     });
 
@@ -209,9 +215,10 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text('Anyone with the link can open this folder and the rest '
-              "of 'My Drive'."),
-          findsOneWidget,
+          find.textContaining('the rest of'),
+          findsNothing,
+          reason: 'the warning says what the link opens; a notice under it '
+              'only repeated it',
         );
         expect(
           find.textContaining('Anyone can access this private drive'),

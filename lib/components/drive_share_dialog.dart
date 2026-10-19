@@ -128,7 +128,7 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                                 ),
                       ),
                       if (state.keyIsInLink)
-                        _HelperText(
+                        _KeyInLinkWarning(
                           // There is no folder key: a folder in a private
                           // drive is opened with the drive's key, which opens
                           // the rest of the drive too. A folder share must say
@@ -138,22 +138,27 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                                   .shareFolderKeyInLinkWarning(state.drive.name)
                               : appLocalizationsOf(context)
                                   .shareDriveKeyInLinkWarning,
-                          color: colorTokens.strokeRed,
                         ),
                     },
-                    const SizedBox(height: 20),
-                    Text(
-                      // A keyless private link does *not* grant access on its
-                      // own, so it must not be described as though it does -
-                      // that copy predates the key ever being optional.
-                      _notice(context, state),
-                      // Guidance, not the headline. As `paragraphLarge` it was
-                      // the largest text in a dialog whose actual subject is
-                      // the two fields above it.
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textMid,
+                    // With the key in the link, the warning above already says
+                    // what the link opens. A notice under it only repeated it,
+                    // and in larger type than the warning itself.
+                    if (!state.keyIsInLink) ...{
+                      const SizedBox(height: 20),
+                      Text(
+                        // A keyless private link does *not* grant access on
+                        // its own, so it must not be described as though it
+                        // does - that copy predates the key ever being
+                        // optional.
+                        _notice(context, state),
+                        // Guidance, not the headline. As `paragraphLarge` it
+                        // was the largest text in a dialog whose actual
+                        // subject is the two fields above it.
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textMid,
+                        ),
                       ),
-                    ),
+                    },
                   } else if (state is DriveShareLoadFail)
                     Text(
                       appLocalizationsOf(context).shareDriveFailure,
@@ -187,23 +192,70 @@ class DriveShareDialogState extends State<DriveShareDialog> {
       );
 
   /// What the link grants on its own, said of the folder when it names one.
+  /// Not shown with the key in the link, where the warning says it.
   String _notice(BuildContext context, DriveShareLoadSuccess state) {
     final l10n = appLocalizationsOf(context);
-    final driveName = state.drive.name;
 
     if (state.drive.isPublic) {
       return state.isFolder
           ? l10n.shareFolderPublicNotice
           : l10n.anyoneCanAccessThisDrivePublic;
     }
-    if (state.keyIsInLink) {
-      return state.isFolder
-          ? l10n.shareFolderPrivateNotice(driveName)
-          : l10n.anyoneCanAccessThisDrivePrivate;
-    }
     return state.isFolder
-        ? l10n.shareFolderKeylessNotice(driveName)
+        ? l10n.shareFolderKeylessNotice(state.drive.name)
         : l10n.shareDriveKeylessNotice;
+  }
+}
+
+/// The one sentence in this dialog that must be read before the link is sent.
+///
+/// The download dialog's treatment for its integrity warning: the icon and the
+/// border carry the severity in `textRed`, and the sentence stays `textHigh`.
+/// Small red text, which this was, is short of AA on the modal in both themes,
+/// and in dark mode it was close to unreadable.
+class _KeyInLinkWarning extends StatelessWidget {
+  const _KeyInLinkWarning(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorTokens.containerL1,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorTokens.textRed),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            // The sentence says everything the icon does.
+            child: ExcludeSemantics(
+              child: ArDriveIcons.triangle(
+                size: 16,
+                color: colorTokens.textRed,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: ArDriveTypographyNew.of(context).paragraphSmall(
+                color: colorTokens.textHigh,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

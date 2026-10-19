@@ -3085,16 +3085,6 @@
       }
     }
   },
-  "shareFolderPrivateNotice": "Anyone with the link can open this folder and the rest of '{driveName}'.",
-  "@shareFolderPrivateNotice": {
-    "description": "Shown under a private folder link that has the drive key embedded",
-    "placeholders": {
-      "driveName": {
-        "type": "String",
-        "example": "Family Photos"
-      }
-    }
-  },
   "sharedFileChooseVersion": "Choose which version to download.",
   "@sharedFileChooseVersion": {
     "description": "Helper line above the recipient's list of file versions"
