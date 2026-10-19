@@ -468,11 +468,11 @@
   "@replace": {
     "description": "Replaces an existing file with the one being uploaded"
   },
-  "syncThisDrive": "Sync This Drive",
+  "syncThisDrive": "Sync this drive",
   "@syncThisDrive": {
     "description": "Menu option to sync only the current drive"
   },
-  "deepSyncThisDrive": "Deep Sync This Drive",
+  "deepSyncThisDrive": "Deep sync this drive",
   "@deepSyncThisDrive": {
     "description": "Menu option to deep sync only the current drive"
   },
@@ -518,7 +518,7 @@
   "@decentralizedPermanent": {
     "description": "Permanence requires patience"
   },
-  "deepResync": "Deep Resync",
+  "deepResync": "Deep resync",
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
@@ -921,7 +921,7 @@
   "@warning": {
     "description": "Title of a warning dialog"
   },
-  "yourDrives": "Your Drives",
+  "yourDrives": "Your drives",
   "@yourDrives": {
     "description": "Title of the page a login lands on: the list of every drive this wallet can open"
   },
@@ -929,7 +929,7 @@
   "@driveSharedWithMe": {
     "description": "Marker on a drive owned by somebody else and attached by this user"
   },
-  "driveNeverSynced": "Never synced",
+  "driveNeverSynced": "Not synced on this device",
   "@driveNeverSynced": {
     "description": "Sync state of a drive whose history has never been read on this device. Deliberately not \"Empty\" - nothing has looked"
   },
@@ -943,7 +943,7 @@
   },
   "driveSyncFailed": "Last sync failed",
   "@driveSyncFailed": {
-    "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from 'Never synced', which means nobody has looked yet."
+    "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from driveNeverSynced, which means nobody has looked yet."
   },
   "driveSyncingNow": "Syncing...",
   "@driveSyncingNow": {
@@ -1053,7 +1053,7 @@
   "@syncThisDriveDescription": {
     "description": "Description for the sync drive action card"
   },
-  "syncAllDrives": "Sync All Drives",
+  "syncAllDrives": "Sync all drives",
   "syncAllDrivesDescription": "Sync all your drives at once to ensure all content is up to date.",
   "@syncAllDrivesDescription": {
     "description": "Description for the sync all drives action card"
@@ -1712,10 +1712,6 @@
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
   },
-  "allDrivesScope": "All drives",
-  "@allDrivesScope": {
-    "description": "Sidebar scope showing every drive that is not hidden."
-  },
   "hidingFile": "Hiding file",
   "@hidingFile": {
     "description": "Hiding file"
@@ -1953,6 +1949,112 @@
   "searchFiles": "Search files",
   "@searchFiles": {
     "description": "Tooltip on the mobile app bar's search control"
+  },
+  "searchBoxHint": "Search files, folders and drives",
+  "@searchBoxHint": {
+    "description": "Placeholder in the search box at the top of the page"
+  },
+  "searchCoverageSearched": "Searched {searched} of {total} drives.",
+  "@searchCoverageSearched": {
+    "description": "First sentence of the note with search results when some drives are not synced on this device, so their files and folders could not be searched. Always followed by one of the searchCoverage sentences below",
+    "placeholders": {
+      "searched": { "type": "num", "format": "compact" },
+      "total": { "type": "num", "format": "compact" }
+    }
+  },
+  "searchCoverageSyncOthers": "{count, plural, =1{Sync the other one to search it.} other{Sync the other {count} to search them.}}",
+  "@searchCoverageSyncOthers": {
+    "description": "Follows searchCoverageSearched: offers to sync the drives that were not searched",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageNoneSynced": "{count, plural, =1{Your drive isn't synced on this device yet.} other{None of your {count} drives are synced on this device yet.}}",
+  "@searchCoverageNoneSynced": {
+    "description": "Note with search results when no drive is synced on this device, so only drive names could be searched. Always followed by searchCoverageSyncThem or another of the searchCoverage sentences",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncing": "{count, plural, =1{Syncing the other one now. Results update when it finishes.} other{Syncing the other {count} now. Results update when they finish.}}",
+  "@searchCoverageSyncing": {
+    "description": "Follows searchCoverageSearched while the drives that were not searched are syncing",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncThem": "{count, plural, =1{Sync it to search its files.} other{Sync them to search their files.}}",
+  "@searchCoverageSyncThem": {
+    "description": "Follows searchCoverageNoneSynced: offers to sync the drives",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncingThem": "{count, plural, =1{Syncing it now. Results update when it finishes.} other{Syncing them now. Results update when they finish.}}",
+  "@searchCoverageSyncingThem": {
+    "description": "Follows searchCoverageNoneSynced while the drives are syncing",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncingSome": "{count, plural, =1{Syncing one of them now. Results update when it finishes.} other{Syncing {count} of them now. Results update when they finish.}}",
+  "@searchCoverageSyncingSome": {
+    "description": "Follows searchCoverageSearched or searchCoverageNoneSynced while a sync runs that covers only some of the drives that were not searched, such as one started from a drive's own page",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageOtherSyncRunning": "{count, plural, =1{Another sync is running. You can sync it when that finishes.} other{Another sync is running. You can sync these when it finishes.}}",
+  "@searchCoverageOtherSyncRunning": {
+    "description": "Follows searchCoverageSearched while a sync of other drives runs; only one sync runs at a time",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncFailed": "{count, plural, =1{1 drive couldn't be synced, so its files weren't searched.} other{{count} drives couldn't be synced, so their files weren't searched.}}",
+  "@searchCoverageSyncFailed": {
+    "description": "Follows searchCoverageSearched when the sync started from search ended with some drives still not synced",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncRefused": "Sync couldn't start right now. Try again in a moment.",
+  "@searchCoverageSyncRefused": {
+    "description": "Follows searchCoverageSearched when the sync started from search did not start: an upload or another task that cannot be interrupted was running, or the browser tab was in the background"
+  },
+  "searchCoverageSyncOthersLink": "{count, plural, =1{Sync the other one} other{Sync the other {count}}}",
+  "@searchCoverageSyncOthersLink": {
+    "description": "Link after searchCoverageSearched in the search box's dropdown; syncs the drives that were not searched",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchCoverageSyncNotStarted": "Sync couldn't start.",
+  "@searchCoverageSyncNotStarted": {
+    "description": "Short form of searchCoverageSyncRefused, in the search box's dropdown, followed by the searchCoverageTryAgain link"
+  },
+  "searchCoverageTryAgain": "Try again",
+  "@searchCoverageTryAgain": {
+    "description": "Link in the search box's dropdown that starts the sync again after it failed or could not start"
+  },
+  "searchSyncDrives": "{count, plural, =1{Sync 1 drive} other{Sync {count} drives}}",
+  "@searchSyncDrives": {
+    "description": "Button with search results that syncs the drives that were not searched, then searches again",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchClear": "Clear search",
+  "@searchClear": {
+    "description": "Screen reader label and tooltip of the x that empties a search field"
+  },
+  "searchDriveResult": "{privacy, select, private{Private drive} other{Public drive}}",
+  "@searchDriveResult": {
+    "description": "Second line of a search result that is a drive",
+    "placeholders": { "privacy": { "type": "String", "example": "public" } }
+  },
+  "searchSeeAllResults": "See all results",
+  "@searchSeeAllResults": {
+    "description": "Last row of the search box's dropdown; opens every result in the search dialog"
+  },
+  "searchSeeAllResultsCount": "{count, plural, =1{See 1 result} other{See all {count} results}}",
+  "@searchSeeAllResultsCount": {
+    "description": "Last row of the search box's dropdown when it lists only some of the results; opens every result in the search dialog",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
+  },
+  "searchSearching": "Searching...",
+  "@searchSearching": {
+    "description": "Shown in the search box's dropdown while the first results for a query load"
+  },
+  "searchNoMatches": "No files, folders or drives match \u201c{query}\u201d.",
+  "@searchNoMatches": {
+    "description": "Shown in the search box's dropdown when nothing matches",
+    "placeholders": { "query": { "type": "String", "example": "report" } }
+  },
+  "searchResultCount": "{count, plural, =0{No results} =1{1 result} other{{count} results}}",
+  "@searchResultCount": {
+    "description": "Read aloud by screen readers when search results change",
+    "placeholders": { "count": { "type": "num", "format": "compact" } }
   },
   "driveListDrivesHaveChangesDetail": "The files and sizes below were read earlier. Syncing brings them up to date.",
   "@driveListDrivesHaveChangesDetail": {
@@ -2499,7 +2601,7 @@
   "@private": {
     "description": "A private entity"
   },
-  "privateDrives": "Private Drives",
+  "privateDrives": "Private drives",
   "@privateDrives": {
     "description": "Private drives accordion title"
   },
@@ -2523,7 +2625,7 @@
   "@public": {
     "description": "A public entity"
   },
-  "publicDrives": "Public Drives",
+  "publicDrives": "Public drives",
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
@@ -2649,10 +2751,6 @@
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
-  "resync": "Resync",
-  "@resync": {
-    "description": "Sync button Text"
-  },
   "sync": "Sync",
   "resyncTooltip": "Drive Synchronization",
   "@resyncTooltip": {
@@ -2731,7 +2829,7 @@
   "@sendGift": {},
   "share": "Share",
   "@share": {},
-  "sharedDrives": "Shared Drives",
+  "sharedDrives": "Shared drives",
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list"
   },
@@ -3222,10 +3320,6 @@
   "@subscribeEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },
-  "syncNow": "Sync Now",
-  "@syncNow": {
-    "description": "Button text to sync an unsynced drive"
-  },
   "syncingOnlyOneDrive": "Syncing your drive...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
@@ -3344,7 +3438,7 @@
   },
   "syncSummaryEntities": "{count, plural, =1{1 item changed} other{{count} items changed}}",
   "@syncSummaryEntities": {
-    "description": "Summary of a sync that changed something. Says \"changed\", not \"new\": a rename, move or new version writes a revision too. Never says how many drives, because the sync only knows how many it walked",
+    "description": "Summary of a sync that changed something. Says \"changed\", not \"new\": a rename, move or new version writes a revision too. A sync that read every drive it covered from the start says syncSummaryFirstRead instead",
     "placeholders": {
       "count": {
         "type": "int",
@@ -3368,7 +3462,47 @@
       }
     }
   },
-  "syncSummarySkippedEntities": "{count, plural, =1{1 update could not be read} other{{count} updates could not be read}}",
+  "syncSummaryFirstRead": "{count, plural, =1{Synced 1 drive ({items})} other{Synced {count} drives ({items})}}",
+  "@syncSummaryFirstRead": {
+    "description": "Summary of a sync that read every drive it covered from the start, as a first sync on a device does. Nothing changed from the reader's point of view, so it does not say \"changed\". {items} is syncSummaryItemCount",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      },
+      "items": {
+        "type": "String",
+        "example": "29 items"
+      }
+    }
+  },
+  "syncSummaryFirstReadInDrive": "Synced {driveName} ({items})",
+  "@syncSummaryFirstReadInDrive": {
+    "description": "Summary of a single drive sync that read the drive from the start. {items} is syncSummaryItemCount",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Photos"
+      },
+      "items": {
+        "type": "String",
+        "example": "29 items"
+      }
+    }
+  },
+  "syncSummaryItemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@syncSummaryItemCount": {
+    "description": "How many files and folders a first sync read, inside syncSummaryFirstRead",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "29"
+      }
+    }
+  },
+  "syncSummarySkippedEntities":"{count, plural, =1{1 update could not be read} other{{count} updates could not be read}}",
   "@syncSummarySkippedEntities": {
     "description": "How many updates a sync had to leave out because their metadata could not be read. Counts transactions, not files",
     "placeholders": {

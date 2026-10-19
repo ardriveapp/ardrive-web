@@ -307,7 +307,7 @@ void main() {
 
       expect(find.text('Nothing has been synced yet'), findsOneWidget);
 
-      await tester.tap(find.text('Sync All Drives'));
+      await tester.tap(find.text('Sync all drives'));
       expect(syncedAll, 1);
     });
 
@@ -326,7 +326,7 @@ void main() {
       // The per-drive answer is on the row by then; a banner over the top of
       // it would be a nag, not information.
       expect(find.text('Nothing has been synced yet'), findsNothing);
-      expect(find.text('Sync All Drives'), findsNothing);
+      expect(find.text('Sync all drives'), findsNothing);
     });
 
     testWidgets('the sync-everything offer fits a 320px screen',
@@ -339,7 +339,7 @@ void main() {
         width: 320,
       );
 
-      expect(find.text('Sync All Drives'), findsOneWidget);
+      expect(find.text('Sync all drives'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -351,7 +351,11 @@ void main() {
     /// Which layout the rows are actually in, read off the geometry.
     bool rowsAreStacked(WidgetTester tester) {
       final nameX = tester.getTopLeft(find.text('Photos')).dx;
-      final itemsX = tester.getTopLeft(find.text('2 files')).dx;
+      // Bare under the table's heading, worded when stacked.
+      final itemsX = tester
+          .getTopLeft(find.byWidgetPredicate(
+              (w) => w is Text && (w.data == '2' || w.data == '2 files')))
+          .dx;
 
       return itemsX < nameX;
     }
@@ -400,7 +404,7 @@ void main() {
       await pumpBody(tester, neverSynced, width: 1280);
 
       final button = tester.getSize(
-        find.widgetWithText(ArDriveButtonNew, 'Sync All Drives'),
+        find.widgetWithText(ArDriveButtonNew, 'Sync all drives'),
       );
 
       // With no width of its own the button expands to the content column:
@@ -408,7 +412,7 @@ void main() {
       // that nothing is wrong yet.
       expect(button.width, lessThan(320));
 
-      await tester.tap(find.text('Sync All Drives'));
+      await tester.tap(find.text('Sync all drives'));
       expect(syncedAll, 1);
     });
 
@@ -496,7 +500,7 @@ void main() {
         DrivesListLoaded(drives: [drive(id: 'a', name: 'Photos')]),
       );
 
-      expect(find.text('Your Drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsOneWidget);
       expect(
         find.text(
           'Choose a drive to open it. Nothing here has been fetched from the '

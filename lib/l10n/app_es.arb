@@ -1721,10 +1721,6 @@
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
-  "resync": "Resincronizar",
-  "@resync": {
-    "description": "Sync button Text"
-  },
   "resyncTooltip": "Actualizar todas las unidades",
   "@resyncTooltip": {
     "description": "resync tooltip text"
@@ -2092,10 +2088,6 @@
   "sync": "Sincronizar",
   "@sync": {
     "description": "Sync button tooltip"
-  },
-  "syncNow": "Sincronizar Ahora",
-  "@syncNow": {
-    "description": "Button text to sync an unsynced drive"
   },
   "syncingOnlyOneDrive": "Sincronizando la unidad...",
   "@syncingOnlyOneDrive": {

@@ -1721,10 +1721,6 @@
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
-  "resync": "重新同步",
-  "@resync": {
-    "description": "Sync button Text"
-  },
   "resyncTooltip": "重新整理所有磁碟機",
   "@resyncTooltip": {
     "description": "resync tooltip text"
@@ -2092,10 +2088,6 @@
   "sync": "同步",
   "@sync": {
     "description": "Sync button tooltip"
-  },
-  "syncNow": "立即同步",
-  "@syncNow": {
-    "description": "Button text to sync an unsynced drive"
   },
   "syncingOnlyOneDrive": "正在同步處理你的檔案盤 ...",
   "@syncingOnlyOneDrive": {

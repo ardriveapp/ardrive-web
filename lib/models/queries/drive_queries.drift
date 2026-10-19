@@ -253,6 +253,18 @@ deleteLicensesByDriveId:
     DELETE FROM licenses
     WHERE driveId = :driveId;
 
+-- The three searches rank before they limit: a name that is the query, then
+-- one that starts with it, then the rest. Ordered by name alone, a common term
+-- filled the limit with names that merely contain it, and the name the reader
+-- typed in full could be cut before anything ranked it. LIKE ignores ASCII
+-- case, so the ranks do too. `rankSearchResults` orders the combined results
+-- by the same rule, and finer.
+--
+-- Ranking means sorting every match rather than stopping at the first 50 in
+-- name order, so files and folders are ranked by rowid and name alone and
+-- joined to their drive and folder only after the limit. Joined first, every
+-- match was joined and sorted whole: two to three times slower for a common
+-- term in 200,000 files.
 searchFiles ($query = '', $limit = 50, $offset = 0) AS FileSearchResult:
     SELECT
         f.*,
@@ -260,13 +272,32 @@ searchFiles ($query = '', $limit = 50, $offset = 0) AS FileSearchResult:
         parent_folder.id AS parent_folder_id,
         d.name AS drive_name,
         d.id AS drive_id,
-        d.privacy AS drive_privacy
-    FROM file_entries f
+        d.privacy AS drive_privacy,
+        d.rootFolderId AS drive_root_folder_id,
+        d.isHidden AS drive_is_hidden
+    FROM (
+        SELECT rowid AS match_rowid
+        FROM file_entries
+        WHERE name LIKE '%' || :query || '%'
+        ORDER BY
+            CASE
+                WHEN name LIKE :query THEN 0
+                WHEN name LIKE :query || '%' THEN 1
+                ELSE 2
+            END,
+            name
+        LIMIT :limit OFFSET :offset
+    ) matched
+    JOIN file_entries f ON f.rowid = matched.match_rowid
     JOIN drives d ON d.id = f.driveId
     LEFT JOIN folder_entries parent_folder ON parent_folder.id = f.parentFolderId
-    WHERE f.name LIKE '%' || :query || '%'
-    ORDER BY f.name
-    LIMIT :limit OFFSET :offset;
+    ORDER BY
+        CASE
+            WHEN f.name LIKE :query THEN 0
+            WHEN f.name LIKE :query || '%' THEN 1
+            ELSE 2
+        END,
+        f.name;
 
 searchFolders ($query = '', $limit = 50, $offset = 0) AS FolderSearchResult:
     SELECT
@@ -275,18 +306,59 @@ searchFolders ($query = '', $limit = 50, $offset = 0) AS FolderSearchResult:
         parent_folder.id AS parent_folder_id,
         d.name AS drive_name,
         d.id AS drive_id,
-        d.privacy AS drive_privacy
-    FROM folder_entries f
+        d.privacy AS drive_privacy,
+        d.rootFolderId AS drive_root_folder_id,
+        d.isHidden AS drive_is_hidden
+    FROM (
+        SELECT rowid AS match_rowid
+        FROM folder_entries
+        WHERE name LIKE '%' || :query || '%'
+            AND parentFolderId IS NOT NULL  -- Exclude root folders
+        ORDER BY
+            CASE
+                WHEN name LIKE :query THEN 0
+                WHEN name LIKE :query || '%' THEN 1
+                ELSE 2
+            END,
+            name
+        LIMIT :limit OFFSET :offset
+    ) matched
+    JOIN folder_entries f ON f.rowid = matched.match_rowid
     JOIN drives d ON d.id = f.driveId
     LEFT JOIN folder_entries parent_folder ON parent_folder.id = f.parentFolderId
-    WHERE f.name LIKE '%' || :query || '%'
-        AND f.parentFolderId IS NOT NULL  -- Exclude root folders
-    ORDER BY f.name
-    LIMIT :limit OFFSET :offset;
+    ORDER BY
+        CASE
+            WHEN f.name LIKE :query THEN 0
+            WHEN f.name LIKE :query || '%' THEN 1
+            ELSE 2
+        END,
+        f.name;
 
 searchDrives ($query = '', $limit = 50, $offset = 0):
     SELECT *
     FROM drives
     WHERE name LIKE '%' || :query || '%'
-    ORDER BY name
+    ORDER BY
+        CASE
+            WHEN name LIKE :query THEN 0
+            WHEN name LIKE :query || '%' THEN 1
+            ELSE 2
+        END,
+        name
     LIMIT :limit OFFSET :offset;
+
+-- Every drive, and whether its files and folders are on this device, by the
+-- drive page's own test (`DriveDetailCubit._hasRootFolderMetadata`): a sync has
+-- walked it, or its root folder has a revision, which a sync writes and so does
+-- creating the drive here. A drive only discovered at login has neither, and
+-- search cannot see anything in it but its name.
+searchCoverageDrives:
+    SELECT
+        d.id,
+        d.isHidden,
+        (COALESCE(d.lastBlockHeight, 0) > 0
+            OR EXISTS (
+                SELECT 1 FROM folder_revisions r
+                WHERE r.driveId = d.id AND r.folderId = d.rootFolderId
+            )) AS has_contents
+    FROM drives d;

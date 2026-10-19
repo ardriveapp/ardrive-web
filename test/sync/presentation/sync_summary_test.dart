@@ -61,12 +61,14 @@ void main() {
     int skippedEntityCount = 0,
     bool isSingleDriveSync = false,
     String? driveName,
+    int firstReadDriveCount = 0,
   }) =>
       SyncComplete(
         entitiesSynced: entitiesSynced,
         skippedEntityCount: skippedEntityCount,
         isSingleDriveSync: isSingleDriveSync,
         driveName: driveName,
+        firstReadDriveCount: firstReadDriveCount,
         completedAt: DateTime(2026, 8, 29),
         sequence: 1,
       );
@@ -123,6 +125,56 @@ void main() {
       )),
       '12 items changed in Photos',
     );
+  });
+
+  group('a first read', () {
+    // A first sync on a device reads every drive for the first time. "29 items
+    // changed" said something had changed when nothing had: the drives were
+    // read. Here every item came from one of the drives, so the two numbers
+    // do belong in one sentence.
+    test('says how many drives it read, and how many items', () {
+      expect(
+        summaryOf(finished(entitiesSynced: 29, firstReadDriveCount: 2)),
+        'Synced 2 drives (29 items)',
+      );
+    });
+
+    test('of one drive is not "1 drives" or "1 items"', () {
+      expect(
+        summaryOf(finished(entitiesSynced: 1, firstReadDriveCount: 1)),
+        'Synced 1 drive (1 item)',
+      );
+    });
+
+    test('of one named drive names it', () {
+      expect(
+        summaryOf(finished(
+          entitiesSynced: 46,
+          isSingleDriveSync: true,
+          driveName: 'Photos',
+          firstReadDriveCount: 1,
+        )),
+        'Synced Photos (46 items)',
+      );
+    });
+
+    test('still says what could not be read', () {
+      expect(
+        summaryOf(finished(
+          entitiesSynced: 29,
+          skippedEntityCount: 2,
+          firstReadDriveCount: 2,
+        )),
+        'Synced 2 drives (29 items) · 2 updates could not be read',
+      );
+    });
+
+    test('of empty drives is still "up to date"', () {
+      expect(
+        summaryOf(finished(firstReadDriveCount: 2)),
+        'Up to date, nothing new',
+      );
+    });
   });
 
   test('items that could not be read are said out loud', () {

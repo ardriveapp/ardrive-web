@@ -223,21 +223,34 @@ void main() {
     testWidgets('every drive-wide action, in one place', (tester) async {
       await openMenu(tester);
 
-      expect(find.text('Resync'), findsOneWidget);
-      expect(find.text('Deep Resync'), findsOneWidget);
+      expect(find.text('Sync all drives'), findsOneWidget);
+      expect(find.text('Deep resync'), findsOneWidget);
       expect(find.text('Sync history'), findsOneWidget);
     });
 
-    testWidgets('and says Sync All Drives before anything has been synced',
+    testWidgets('names syncing everything one way, synced before or not',
         (tester) async {
-      // "Resync" promises a repeat of something that has not happened. On a
-      // wallet where nothing has been walked it is simply the wrong word.
+      // One name for one action. The menu used to say "Resync" after a first
+      // sync and "Sync All Drives" before one, beside a banner and a card that
+      // said "Sync All Drives" too.
       withDrives([drive('never-walked')]);
 
       await openMenu(tester);
 
-      expect(find.text('Sync All Drives'), findsWidgets);
-      expect(find.text('Resync'), findsNothing);
+      expect(find.text('Sync all drives'), findsOneWidget);
+    });
+
+    testWidgets('and the button reads "Sync" before anything has synced',
+        (tester) async {
+      // The page's own banner says "Sync all drives" then; the same words
+      // on this button put the action on the page twice.
+      withDrives([drive('never-walked')]);
+
+      await tester.pumpWidget(host());
+      await tester.pump();
+
+      expect(find.text('Sync'), findsOneWidget);
+      expect(find.text('Sync all drives'), findsNothing);
     });
   });
 
@@ -254,9 +267,9 @@ void main() {
 
       await openMenu(tester);
 
-      expect(itemNamed(tester, 'Resync').isDisabled, isTrue);
-      expect(itemNamed(tester, 'Deep Resync').isDisabled, isTrue);
-      expect(entryNamed(tester, 'Resync').onClick, isNull);
+      expect(itemNamed(tester, 'Sync all drives').isDisabled, isTrue);
+      expect(itemNamed(tester, 'Deep resync').isDisabled, isTrue);
+      expect(entryNamed(tester, 'Sync all drives').onClick, isNull);
     });
 
     testWidgets('but the record stays reachable', (tester) async {
