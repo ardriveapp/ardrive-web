@@ -453,7 +453,7 @@ void main() {
 
   /// It sat at the top of the plus menu and inside Advanced, so a public
   /// drive listed it twice. Advanced is where the sidebar menu keeps it.
-  testWidgets('the plus menu lists Import from Manifest only under Advanced',
+  testWidgets('the plus menu lists Import from manifest only under Advanced',
       (tester) async {
     final website = _drive(
       ownerAddress: fakeUserJson.walletAddress,
@@ -478,6 +478,6 @@ void main() {
     );
 
     expect(find.text('Advanced'), findsOneWidget);
-    expect(find.text('Import from Manifest'), findsNothing);
+    expect(find.text('Import from manifest'), findsNothing);
   });
 }

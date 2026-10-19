@@ -274,7 +274,7 @@ class AppShellState extends State<AppShell> {
                 : GestureDetector(
                     onTap: () => showMigratePrivateDrivesModal(context),
                     child: Text(
-                      'Please update your Private Drives',
+                      'Please update your private drives',
                       style: typography
                           .paragraphNormal(
                             color: colorTokens.textOnPrimary,

@@ -248,7 +248,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
 
         return ArDriveStandardModalNew(
           width: kLargeDialogWidth,
-          title: 'Import from Manifest',
+          title: 'Import from manifest',
           content: Form(
             key: _formKey,
             child: Column(

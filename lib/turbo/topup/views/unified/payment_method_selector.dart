@@ -41,7 +41,7 @@ class PaymentMethodSelector extends StatelessWidget {
 
         // Card option
         _PaymentMethodOption(
-          title: 'Credit or Debit Card',
+          title: 'Credit or debit card',
           subtitle: 'Visa, Mastercard, Amex, Discover',
           icon: Icons.credit_card,
           isSelected: selectedMethod == PaymentMethod.card,

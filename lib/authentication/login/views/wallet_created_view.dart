@@ -44,11 +44,11 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
 
   final _pageInfo = [
     _PageInfo(
-        title: 'What is a Seed Phrase?',
+        title: 'What is a seed phrase?',
         description:
             "A seed phrase is a unique set of words acting as your wallet's master key. It generates your wallet whenever you log in. You can store it in a password manager or secure offline location for added protection."),
     _PageInfo(
-        title: 'What is a Keyfile?',
+        title: 'What is a keyfile?',
         description:
             'A keyfile is another way to access your wallet. It contains encrypted information that helps us authenticate your identity. Keep it secure alongside your seed phrase.'),
     _PageInfo(
