@@ -105,7 +105,8 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
               ),
             ),
           );
-        } else if (state is FetchEstimationError || state is EstimationLoadError) {
+        } else if (state is FetchEstimationError ||
+            state is EstimationLoadError) {
           return TurboErrorView(
             errorType: TurboErrorType.fetchEstimationInformationFailed,
             onDismiss: () {},
@@ -132,7 +133,6 @@ class _TopUpEstimationViewState extends State<TopUpEstimationView> {
       },
     );
   }
-
 }
 
 /// Payment method buttons for Card and Crypto
@@ -204,7 +204,8 @@ class _CardPaymentButton extends StatelessWidget {
     final buttonDisabled = isDisabled || isBelowMinimum;
 
     // For disabled state, use themeFgMuted for better contrast against themeAccentDisabled background
-    final textColor = buttonDisabled ? colors.themeFgMuted : colors.themeFgOnAccent;
+    final textColor =
+        buttonDisabled ? colors.themeFgMuted : colors.themeFgOnAccent;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -216,7 +217,7 @@ class _CardPaymentButton extends StatelessWidget {
             size: 18,
             color: textColor,
           ),
-          text: 'Pay with Card',
+          text: 'Pay with card',
           fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
             fontWeight: ArFontWeight.bold,
             color: textColor,
@@ -276,7 +277,7 @@ class _CryptoPaymentButton extends StatelessWidget {
         size: 18,
         color: isDisabled ? colors.themeFgDisabled : colors.themeFgDefault,
       ),
-      text: 'Pay with Crypto',
+      text: 'Pay with crypto',
       fontStyle: ArDriveTypographyNew.of(context).paragraphLarge(
         fontWeight: ArFontWeight.bold,
         color: isDisabled ? colors.themeFgDisabled : colors.themeFgDefault,
@@ -692,7 +693,9 @@ class _BalanceView extends StatefulWidget {
 }
 
 class _BalanceViewState extends State<_BalanceView> {
-  List<Widget> balanceContents(bool isMobile, ArdriveTypographyNew typography) => [
+  List<Widget> balanceContents(
+          bool isMobile, ArdriveTypographyNew typography) =>
+      [
         Flexible(
           flex: 1,
           child: Column(
@@ -788,10 +791,8 @@ class PriceEstimateView extends StatelessWidget {
             appLocalizationsOf(context).unableToFetchEstimateAtThisTime,
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.bold,
-              color: ArDriveTheme.of(context)
-                  .themeData
-                  .colors
-                  .themeErrorDefault,
+              color:
+                  ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
             ),
           );
         }
@@ -803,18 +804,21 @@ class PriceEstimateView extends StatelessWidget {
               children: [
                 Text(
                   '$fiatCurrency $fiatAmount = ${convertWinstonToLiteralString(estimatedCredits)} ${appLocalizationsOf(context).credits}',
-                  style: typography.paragraphNormal(fontWeight: ArFontWeight.bold),
+                  style:
+                      typography.paragraphNormal(fontWeight: ArFontWeight.bold),
                 ),
                 Transform.translate(
                   offset: const Offset(0, 4),
                   child: Text(
                     ' ~ ',
-                    style: typography.paragraphNormal(fontWeight: ArFontWeight.bold),
+                    style: typography.paragraphNormal(
+                        fontWeight: ArFontWeight.bold),
                   ),
                 ),
                 Text(
                   '$estimatedStorage $storageUnit',
-                  style: typography.paragraphNormal(fontWeight: ArFontWeight.bold),
+                  style:
+                      typography.paragraphNormal(fontWeight: ArFontWeight.bold),
                 ),
               ],
             ),

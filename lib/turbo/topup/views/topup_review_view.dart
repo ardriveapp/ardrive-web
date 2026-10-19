@@ -156,7 +156,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Confirm Payment',
+                      'Confirm payment',
                       style: typography.heading5(
                         fontWeight: ArFontWeight.bold,
                         color: colors.themeFgDefault,
@@ -460,7 +460,7 @@ class _PayingWithSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Credit Card',
+                      'Credit card',
                       style: typography.paragraphNormal(
                         fontWeight: ArFontWeight.semiBold,
                         color: colors.themeFgDefault,

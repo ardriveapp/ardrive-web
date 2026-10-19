@@ -306,7 +306,7 @@ class TransactionSuccessView extends StatelessWidget {
 
           // Success message
           Text(
-            'Payment Successful!',
+            'Payment successful!',
             style: typography.heading4(
               fontWeight: ArFontWeight.bold,
               color: colorTokens.textHigh,
@@ -426,7 +426,7 @@ class TransactionErrorView extends StatelessWidget {
 
           // Error title
           Text(
-            'Payment Failed',
+            'Payment failed',
             style: typography.heading4(
               fontWeight: ArFontWeight.bold,
               color: colorTokens.textHigh,
@@ -470,7 +470,7 @@ class TransactionErrorView extends StatelessWidget {
               if (canRetry && onRetry != null)
                 Expanded(
                   child: ArDriveButton(
-                    text: 'Try Again',
+                    text: 'Try again',
                     onPressed: onRetry,
                   ),
                 ),

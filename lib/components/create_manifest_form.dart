@@ -272,7 +272,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Manifest Created Successfully',
+              'Manifest created successfully',
               style: typography.heading3(
                 fontWeight: ArFontWeight.bold,
               ),
@@ -346,7 +346,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       justSelectName: true,
       updateARNSRecords: false,
       customLoadingText: 'Fetching ArNS names...',
-      customNameSelectionTitle: 'Assign ArNS Name to New Manifest',
+      customNameSelectionTitle: 'Assign ArNS name to new manifest',
       onSelectionConfirmed: (selection) {
         context.read<CreateManifestCubit>().selectArns(
               selection.selectedName,
@@ -370,7 +370,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
   }) {
     return ArDriveStandardModalNew(
       width: kMediumDialogWidth,
-      title: 'Assign ArNS Name?',
+      title: 'Assign ArNS name?',
       description:
           'You have ArNS names associated with your address. Do you want to assign one to this new manifest? You can always do this later.',
       actions: [
@@ -600,7 +600,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                           style: textStyle,
                           children: [
                             TextSpan(
-                              text: 'Fallback TxId\n',
+                              text: 'Fallback page\n',
                               style: typography.paragraphLarge(
                                 color: colorTokens.textHigh,
                                 fontWeight: ArFontWeight.bold,
@@ -647,7 +647,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         ModalAction(
           isEnable: state.canUpload,
           action: () => readCubitContext.uploadManifest(),
-          title: appLocalizationsOf(context).confirmEmphasized,
+          title: appLocalizationsOf(context).createManifestEmphasized,
         ),
       ],
     );
@@ -930,13 +930,13 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               child: ArDriveClickArea(
                 child: ArDriveTooltip(
                   message:
-                      'The fallback specifies a default content to show if the requested path cannot be found.\nThis is typically used for handling missing pages or errors, like a \'404 Not Found\' page.',
+                      'The page shown when a path in the manifest does not exist, such as a 404 page.\nEnter the transaction ID of its file.',
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Fallback TxId',
+                        'Fallback page',
                         style: typography.paragraphNormal(
                           color: colorTokens.textLow,
                           fontWeight: ArFontWeight.semiBold,
@@ -956,7 +956,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: ArDriveTextFieldNew(
-                hintText: 'TxId',
+                hintText: 'Transaction ID',
                 onChanged: (value) {
                   cubit.setFallbackTxId(value);
                 },

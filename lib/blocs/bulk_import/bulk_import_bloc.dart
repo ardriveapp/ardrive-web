@@ -132,7 +132,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
       final paymentError = _isBulkImportPaymentError(e);
       emit(BulkImportError(
         paymentError
-            ? 'Your free upload allowance has been used up. Add Credits to '
+            ? 'Your free upload allowance has been used up. Add credits to '
                 'continue importing.'
             : 'An unexpected error occurred during the import process. '
                 'Please try again.',
@@ -262,12 +262,12 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
 
     if (successfulFiles == 0) {
       final paymentError = _isBulkImportPaymentError(lastImportError) ||
-          (importResult?.failures.any(
-                  (f) => _isBulkImportPaymentError(f.originalError)) ??
+          (importResult?.failures
+                  .any((f) => _isBulkImportPaymentError(f.originalError)) ??
               false);
       emit(BulkImportError(
         paymentError
-            ? 'Your free upload allowance has been used up. Add Credits to '
+            ? 'Your free upload allowance has been used up. Add credits to '
                 'continue importing.'
             : 'Failed to import any files. Please check the manifest and '
                 'try again.',

@@ -72,7 +72,7 @@ class _AmountEntryContent extends StatelessWidget {
               if (onBack != null) const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Enter Amount',
+                  'Enter amount',
                   style: typography.heading4(
                     fontWeight: ArFontWeight.bold,
                     color: colorTokens.textHigh,

@@ -855,7 +855,7 @@ Future<void> showSupportModal({
                 context,
                 content: ArDriveStandardModalNew(
                   hasCloseButton: true,
-                  title: 'Logs Exported',
+                  title: 'Logs exported',
                   content: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

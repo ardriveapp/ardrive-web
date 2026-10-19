@@ -124,7 +124,7 @@ class _CreateUndernameViewState extends State<CreateUndernameView> {
 
         return ArDriveStandardModalNew(
           width: kMediumDialogWidth,
-          title: 'Create Undername',
+          title: 'Create undername',
           content: content,
           actions: actions,
         );

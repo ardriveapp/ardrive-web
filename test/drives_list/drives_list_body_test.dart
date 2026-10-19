@@ -177,7 +177,7 @@ void main() {
       await pumpBody(tester, const DrivesListLoading());
 
       expect(find.text('Loading your drives...'), findsOneWidget);
-      expect(find.text('Getting Started'), findsNothing);
+      expect(find.text('Getting started'), findsNothing);
       expect(find.text('Create new public drive'), findsNothing);
     });
   });
@@ -187,7 +187,7 @@ void main() {
         (tester) async {
       await pumpBody(tester, DrivesListEmpty());
 
-      expect(find.text('Getting Started'), findsOneWidget);
+      expect(find.text('Getting started'), findsOneWidget);
       expect(find.text('Create new public drive'), findsOneWidget);
       expect(find.text('Create new private drive'), findsOneWidget);
     });
@@ -197,21 +197,21 @@ void main() {
     testWidgets('says what happened and offers to try again', (tester) async {
       await pumpBody(tester, DrivesListUnavailable());
 
-      expect(find.text('Your Drives Could Not Be Loaded'), findsOneWidget);
-      expect(find.text('Try Again'), findsOneWidget);
+      expect(find.text('Your drives could not be loaded'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
     });
 
     testWidgets('never offers to create a drive instead', (tester) async {
       await pumpBody(tester, DrivesListUnavailable());
 
-      expect(find.text('Getting Started'), findsNothing);
+      expect(find.text('Getting started'), findsNothing);
       expect(find.text('Create new public drive'), findsNothing);
       expect(find.text('Create new private drive'), findsNothing);
     });
 
     testWidgets('trying again is what the button does', (tester) async {
       await pumpBody(tester, DrivesListUnavailable());
-      await tester.tap(find.text('Try Again'));
+      await tester.tap(find.text('Try again'));
 
       expect(triedAgain, 1);
     });
@@ -541,7 +541,7 @@ void main() {
       );
 
       expect(find.text('No private drives yet'), findsOneWidget);
-      expect(find.text('Getting Started'), findsNothing,
+      expect(find.text('Getting started'), findsNothing,
           reason: 'that is the account with no drives at all, not this');
     });
 
@@ -553,7 +553,7 @@ void main() {
       );
 
       expect(find.text('No drives shared with you'), findsOneWidget);
-      expect(find.text('Attach Drive'), findsOneWidget);
+      expect(find.text('Attach drive'), findsOneWidget);
     });
 
     testWidgets('while the others do not offer attaching', (tester) async {
@@ -562,7 +562,7 @@ void main() {
         const DrivesListLoaded(drives: [], scope: DriveScope.public),
       );
 
-      expect(find.text('Attach Drive'), findsNothing);
+      expect(find.text('Attach drive'), findsNothing);
     });
   });
 }

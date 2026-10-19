@@ -193,7 +193,7 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
 
       if (isTurboPaymentError(e)) {
         return const DriveStateUploadResult.failed(
-          'Turbo declined the payment for this snapshot. Add Credits or '
+          'Turbo declined the payment for this snapshot. Add credits or '
           'pay with AR, then try again.',
         );
       }

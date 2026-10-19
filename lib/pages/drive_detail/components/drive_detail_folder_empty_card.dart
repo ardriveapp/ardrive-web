@@ -247,7 +247,8 @@ class _NewUserEmptyRootFolder extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    const String headerText = 'You\'re on chain!';
+    final String headerText =
+        appLocalizationsOf(context).newUserEmptyDriveTitle;
     final String descriptionText = appLocalizationsOf(context)
         .newUserEmptyDriveDescription(_freeUploadLimit(context));
 
@@ -536,7 +537,7 @@ class _ActionCard {
       variant: variant,
       compact: compact,
       context: context,
-      title: 'Upload Files',
+      title: 'Upload files',
       description:
           'Upload a file, or a selection of files into your new drive.',
       buttonText: 'Upload',
@@ -566,9 +567,9 @@ class _ActionCard {
       variant: variant,
       compact: compact,
       context: context,
-      title: 'Create a Folder',
+      title: 'Create a folder',
       description: 'Create folders to keep your drive organized.',
-      buttonText: 'Create Folder',
+      buttonText: 'Create folder',
       onPressed: () {
         PlausibleEventTracker.trackClickCreateFolderEmptyState(page);
 
@@ -585,10 +586,10 @@ class _ActionCard {
       required PlausiblePageView page}) {
     return _buildActionCard(
       context: context,
-      title: 'Upload a Folder',
+      title: 'Upload a folder',
       description:
           'Upload existing folders from your computer, other file storage apps, or an external HD.',
-      buttonText: 'Upload Folder',
+      buttonText: 'Upload folder',
       onPressed: () {
         PlausibleEventTracker.trackClickUploadFolderEmptyState(page);
 
@@ -607,10 +608,10 @@ class _ActionCard {
       {required PlausiblePageView page}) {
     return _buildActionCard(
       context: context,
-      title: 'Create a Pin',
+      title: 'Create a pin',
       description:
           'Pin any permaweb file to your drive, to create inspiration boards, recipe collections, or NFT galleries.',
-      buttonText: 'Create Pin',
+      buttonText: 'Create pin',
       onPressed: () {
         PlausibleEventTracker.trackClickCreatePinEmptyState(page);
 

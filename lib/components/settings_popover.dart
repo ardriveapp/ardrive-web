@@ -42,7 +42,7 @@ class SettingsSubmenu extends StatelessWidget {
                 .dropdownTheme
                 .backgroundColor,
             child: const ArDriveDropdownItemTile(
-              name: 'Set Gateway',
+              name: 'Set gateway',
             ),
           ),
         ),
@@ -58,7 +58,7 @@ class SettingsSubmenu extends StatelessWidget {
                 .dropdownTheme
                 .backgroundColor,
             child: const ArDriveDropdownItemTile(
-              name: 'Set GraphQL Server',
+              name: 'Set GraphQL server',
             ),
           ),
         ),
@@ -74,7 +74,7 @@ class SettingsSubmenu extends StatelessWidget {
                 .dropdownTheme
                 .backgroundColor,
             child: const ArDriveDropdownItemTile(
-              name: 'Set Turbo Services',
+              name: 'Set Turbo services',
             ),
           ),
         ),

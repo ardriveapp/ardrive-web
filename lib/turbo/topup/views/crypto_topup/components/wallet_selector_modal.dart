@@ -46,7 +46,7 @@ class WalletSelectorModal extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Connect Wallet',
+                'Connect wallet',
                 style: typography.heading5(
                   fontWeight: ArFontWeight.bold,
                   color: colors.themeFgDefault,

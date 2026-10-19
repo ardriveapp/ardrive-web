@@ -342,7 +342,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         widget.item.isOwner) ...[
                       ArDriveIconButton(
                         icon: ArDriveIcons.image(),
-                        tooltip: 'Create Thumbnail',
+                        tooltip: 'Create thumbnail',
                         onPressed: () {
                           showArDriveDialog(
                             context,
@@ -584,7 +584,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             textAlign: TextAlign.right,
           ),
           // TODO: Localize
-          itemTitle: 'Signature Type',
+          itemTitle: 'Signature type',
         ),
       ],
     ];
@@ -636,7 +636,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             textAlign: TextAlign.right,
           ),
           // TODO: Localize
-          itemTitle: 'Signature Type',
+          itemTitle: 'Signature type',
         ),
       ],
       const SizedBox(height: 24),

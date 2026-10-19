@@ -89,8 +89,7 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
                 context,
                 content: ArDriveStandardModalNew(
                   title: appLocalizationsOf(context).error,
-                  description:
-                      appLocalizationsOf(context).actionFailedTryAgain,
+                  description: appLocalizationsOf(context).actionFailedTryAgain,
                 ),
               );
             }
@@ -142,7 +141,7 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
               action: () => context
                   .read<FolderCreateCubit>()
                   .submit(folderName: _folderNameController.text),
-              title: appLocalizationsOf(context).createEmphasized,
+              title: appLocalizationsOf(context).createFolderEmphasized,
             ),
           ],
         ),

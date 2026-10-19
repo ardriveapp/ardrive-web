@@ -125,7 +125,7 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
 
     return ArDriveStandardModalNew(
       width: 500,
-      title: 'Switch Gateway',
+      title: 'Switch gateway',
       content: Form(
         key: _formKey,
         child: Column(

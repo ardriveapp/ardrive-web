@@ -216,7 +216,7 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          widget.isTokenAmount ? 'Token Amount' : 'Amount',
+          widget.isTokenAmount ? 'Token amount' : 'Amount',
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
             color: colors.themeFgDefault,

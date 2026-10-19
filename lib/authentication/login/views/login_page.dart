@@ -110,10 +110,8 @@ class _LoginPageState extends State<LoginPage> {
                 progressDescription: Text(
                   'This may take a moment.',
                   style: ArDriveTypographyNew.of(context).paragraphNormal(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colorTokens
-                        .textLow,
+                    color:
+                        ArDriveTheme.of(context).themeData.colorTokens.textLow,
                     fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
@@ -366,7 +364,7 @@ class _LargeDesktopView extends StatelessWidget {
                               children: [
                                 SettingsSubmenu(
                                   child: ArDriveClickArea(
-                                    tooltip: 'Advanced Settings',
+                                    tooltip: 'Advanced settings',
                                     child: Icon(
                                       Icons.settings,
                                       color: ArDriveTheme.of(context)
@@ -445,7 +443,7 @@ class _SmallDesktopView extends StatelessWidget {
                               children: [
                                 SettingsSubmenu(
                                   child: ArDriveClickArea(
-                                    tooltip: 'Advanced Settings',
+                                    tooltip: 'Advanced settings',
                                     child: Icon(
                                       Icons.settings,
                                       color: ArDriveTheme.of(context)
@@ -526,7 +524,7 @@ class _TabletView extends StatelessWidget {
                         children: [
                           SettingsSubmenu(
                             child: ArDriveClickArea(
-                              tooltip: 'Advanced Settings',
+                              tooltip: 'Advanced settings',
                               child: Icon(
                                 Icons.settings,
                                 color: ArDriveTheme.of(context)
@@ -594,7 +592,7 @@ class _PhoneView extends StatelessWidget {
                         children: [
                           SettingsSubmenu(
                             child: ArDriveClickArea(
-                              tooltip: 'Advanced Settings',
+                              tooltip: 'Advanced settings',
                               child: Icon(
                                 Icons.settings,
                                 color: ArDriveTheme.of(context)

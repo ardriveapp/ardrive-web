@@ -31,7 +31,7 @@ class PaymentMethodSelector extends StatelessWidget {
       children: [
         // Section header
         Text(
-          'Payment Method',
+          'Payment method',
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
             color: colors.themeFgMuted,
@@ -53,7 +53,7 @@ class PaymentMethodSelector extends StatelessWidget {
 
         // Crypto option
         _PaymentMethodOption(
-          title: 'Pay with Crypto',
+          title: 'Pay with crypto',
           subtitle: 'ARIO • ETH • SOL • USDC — No KYC required',
           icon: Icons.account_balance_wallet,
           isSelected: selectedMethod == PaymentMethod.crypto,

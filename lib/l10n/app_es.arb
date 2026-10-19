@@ -6,11 +6,11 @@
   "@addButtonTurbo": {
     "description": "text for add button"
   },
-  "addnewManifestEmphasized": "AÑADIR NUEVO MANIFIESTO",
+  "addnewManifestEmphasized": "Añadir nuevo manifiesto",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
   },
-  "addProfileEmphasized": "AÑADIR PERFIL",
+  "addProfileEmphasized": "Añadir perfil",
   "@addProfileEmphasized": {
     "description": "Add a wallet. Emphasized with upper case"
   },
@@ -98,15 +98,15 @@
   "@attachDrive": {
     "description": "Attach a shared drive"
   },
-  "attachDriveEmphasized": "VINCULAR UNIDAD",
+  "attachDriveEmphasized": "Vincular unidad",
   "@attachDriveEmphasized": {
     "description": "Attach a shared drive. Emphasized with upper case"
   },
-  "attachEmphasized": "VINCULAR",
+  "attachEmphasized": "Vincular",
   "@attachEmphasized": {
     "description": "The action of attaching a drive. Emphasized with upper case"
   },
-  "attachingDriveEmphasized": "VINCULANDO UNIDAD...",
+  "attachingDriveEmphasized": "Vinculando unidad...",
   "@attachingDriveEmphasized": {
     "description": "Drive attach form. Emphasized with upper case"
   },
@@ -118,7 +118,7 @@
   "@backButtonOnboarding": {
     "description": "Text of the back button onboarding"
   },
-  "backEmphasized": "ANTERIOR",
+  "backEmphasized": "Anterior",
   "@backEmphasized": {
     "description": "Go back. Emphasized with upper case"
   },
@@ -183,7 +183,7 @@
   "@cancel": {
     "description": "Cancel button"
   },
-  "cancelEmphasized": "CANCELAR",
+  "cancelEmphasized": "Cancelar",
   "@cancelEmphasized": {
     "description": "Cancel button. Emphasized with upper case"
   },
@@ -199,7 +199,7 @@
   "@close": {
     "description": "close"
   },
-  "closeEmphasized": "CERRAR",
+  "closeEmphasized": "Cerrar",
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
@@ -215,7 +215,7 @@
   "@confirmed": {
     "description": "Status tooltip for transactions that are confirmed by the network"
   },
-  "confirmEmphasized": "CONFIRMAR",
+  "confirmEmphasized": "Confirmar",
   "@confirmEmphasized": {
     "description": "Confirm the prompted question"
   },
@@ -247,7 +247,7 @@
   "@congestionWarning": {
     "description": "Congestion warning"
   },
-  "continueEmphasized": "CONTINUAR",
+  "continueEmphasized": "Continuar",
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
@@ -329,19 +329,19 @@
   "@createAndConfirmPassword": {
     "description": "Asks the user to create a password"
   },
-  "createDriveEmphasized": "CREAR UNIDAD",
+  "createDriveEmphasized": "Crear unidad",
   "@createDriveEmphasized": {
     "description": "Action of creating a new drive. Emphasized with upper case"
   },
-  "createEmphasized": "CREAR",
+  "createEmphasized": "Crear",
   "@createEmphasized": {
     "description": "Create a drive. Emphasized with upper case"
   },
-  "createFolderEmphasized": "CREAR CARPETA",
+  "createFolderEmphasized": "Crear carpeta",
   "@createFolderEmphasized": {
     "description": "The action of creating a folder. Emphasized with upper case"
   },
-  "createHereEmphasized": "CREAR AQUÍ",
+  "createHereEmphasized": "Crear aquí",
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
@@ -349,7 +349,7 @@
   "@createManifest": {
     "description": "To create a manifest"
   },
-  "createManifestEmphasized": "CREAR MANIFIESTO",
+  "createManifestEmphasized": "Crear manifiesto",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
@@ -387,11 +387,11 @@
   "@syncAllDrivesOnLogin": {
     "description": "Toggle to enable/disable syncing all drives when logging in"
   },
-  "creatingDriveEmphasized": "CREANDO UNIDAD...",
+  "creatingDriveEmphasized": "Creando unidad...",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"
   },
-  "creatingFolderEmphasized": "CREANDO CARPETA...",
+  "creatingFolderEmphasized": "Creando carpeta...",
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
   },
@@ -409,7 +409,7 @@
   "@currency": {},
   "customAmount": "Cantidad personalizada",
   "@customAmount": {},
-  "darkModeEmphasized": "MODO OSCURO",
+  "darkModeEmphasized": "Modo oscuro",
   "@darkModeEmphasized": {
     "description": "Refers to the dark theme of the app. Emphasized with upper case"
   },
@@ -447,7 +447,7 @@
       }
     }
   },
-  "detachEmphasized": "DESVINCULAR",
+  "detachEmphasized": "Desvincular",
   "@detachEmphasized": {
     "description": "Example: To DETACH a drive. Emphasized in upper case"
   },
@@ -484,7 +484,7 @@
   "@diveInButtonOnboarding": {
     "description": "Text of the last button of the onboarding"
   },
-  "doneEmphasized": "HECHO",
+  "doneEmphasized": "Hecho",
   "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
@@ -786,7 +786,7 @@
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
-  "failedToCreateManifestEmphasized": "LA CREACIÓN DEL MANIFIESTO HA FALLADO",
+  "failedToCreateManifestEmphasized": "La creación del manifiesto ha fallado",
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
@@ -986,7 +986,7 @@
   "@fix": {
     "description": "Fix an orphan item"
   },
-  "fixEmphasized": "REPARAR",
+  "fixEmphasized": "Reparar",
   "@fixEmphasized": {
     "description": "Fix an orphan item. Emphasized with upper case"
   },
@@ -1186,7 +1186,7 @@
   "@invalidWalletFileDescription": {
     "description": "Invalid wallet file description"
   },
-  "itemActivityEmphasized": "ACTIVIDAD",
+  "itemActivityEmphasized": "Actividad",
   "@itemActivityEmphasized": {
     "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
   },
@@ -1194,7 +1194,7 @@
   "@itemContains": {
     "description": "Used like so: 'Contains 15 folders, 10 files'"
   },
-  "itemDetailsEmphasized": "DETALLES",
+  "itemDetailsEmphasized": "Detalles",
   "@itemDetailsEmphasized": {
     "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"
   },
@@ -1212,7 +1212,7 @@
       }
     }
   },
-  "itemPreviewEmphasized": "VISTA PREVIA",
+  "itemPreviewEmphasized": "Vista previa",
   "@itemPreviewEmphasized": {
     "description": "Item preview"
   },
@@ -1241,11 +1241,11 @@
   },
   "leaveAnEmailToReceiveAReceipt": "Para recibir un recibo, indica una dirección de correo electrónico.",
   "@leaveAnEmailToReceiveAReceipt": {},
-  "letsGetStartedEmphasized": "COMENCEMOS",
+  "letsGetStartedEmphasized": "Comencemos",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
   },
-  "lightModeEmphasized": "MODO CLARO",
+  "lightModeEmphasized": "Modo claro",
   "@lightModeEmphasized": {
     "description": "Refers to the light theme of the app. Emphasized with upper case"
   },
@@ -1277,7 +1277,7 @@
   "@logOut": {
     "description": "The action of logging out"
   },
-  "logOutEmphasized": "CERRAR SESIÓN",
+  "logOutEmphasized": "Cerrar sesión",
   "@logOutEmphasized": {
     "description": "The action of logging out. Emphasized with upper case"
   },
@@ -1305,15 +1305,15 @@
   "@move": {
     "description": "Action of moving certain file or folder"
   },
-  "moveFileEmphasized": "MOVER ARCHIVO",
+  "moveFileEmphasized": "Mover archivo",
   "@moveFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
   },
-  "moveFolderEmphasized": "MOVER CARPETA",
+  "moveFolderEmphasized": "Mover carpeta",
   "@moveFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
   },
-  "moveHereEmphasized": "MOVER AQUÍ",
+  "moveHereEmphasized": "Mover aquí",
   "@moveHereEmphasized": {
     "description": "Move the entity to the current folder. Emphasized with upper case"
   },
@@ -1321,11 +1321,11 @@
   "@moveItems": {
     "description": "Move Items dialog title"
   },
-  "movingFileEmphasized": "MOVIENDO ARCHIVO...",
+  "movingFileEmphasized": "Moviendo archivo...",
   "@movingFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
   },
-  "movingFolderEmphasized": "MOVIENDO CARPETA...",
+  "movingFolderEmphasized": "Moviendo carpeta...",
   "@movingFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
   },
@@ -1359,7 +1359,7 @@
   "@networkUnreachable": {
     "description": "Indicates that there were some issues while connecting to the internet"
   },
-  "neverDeletedEmphasized": "NUNCA SE BORRARÁ",
+  "neverDeletedEmphasized": "Nunca se borrará",
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
   },
@@ -1379,7 +1379,7 @@
   "@newString": {
     "description": "New entity (folder, file, drive, manifest, attached drive)"
   },
-  "newStringEmphasized": "NUEVO",
+  "newStringEmphasized": "Nuevo",
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
@@ -1395,7 +1395,7 @@
   "@next": {
     "description": "Action of going to the next page"
   },
-  "nextEmphasized": "SIGUIENTE",
+  "nextEmphasized": "Siguiente",
   "@nextEmphasized": {
     "description": "Next step"
   },
@@ -1427,7 +1427,7 @@
   "@ok": {
     "description": "OK button"
   },
-  "okEmphasized": "BIEN",
+  "okEmphasized": "Bien",
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
@@ -1491,7 +1491,7 @@
   "@paymentDetails": {},
   "paymentSuccessful": "Pago realizado con éxito",
   "@paymentSuccessful": {},
-  "payPerFileEmphasized": "PAGA SOLO POR LO QUE SUBAS",
+  "payPerFileEmphasized": "Paga solo por lo que subas",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"
   },
@@ -1499,7 +1499,7 @@
   "@pending": {
     "description": "Status tooltip for transactions which are waiting to be minted"
   },
-  "personalDrivesEmphasized": "UNIDADES PERSONALES",
+  "personalDrivesEmphasized": "Unidades personales",
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
@@ -1531,7 +1531,7 @@
   "@pleaseTryAgain": {
     "description": "Please try again."
   },
-  "preparingManifestEmphasized": "PREPARANDO MANIFIESTO...",
+  "preparingManifestEmphasized": "Preparando manifiesto...",
   "@preparingManifestEmphasized": {
     "description": "The manifest is being prepared for the upload"
   },
@@ -1589,11 +1589,11 @@
   "@proceed": {
     "description": "Proceed"
   },
-  "proceedCongestionEmphasized": "PROCEDER",
+  "proceedCongestionEmphasized": "Proceder",
   "@proceedCongestionEmphasized": {
     "description": "Proceed being aware of the network congestion. Emphasized with upper case"
   },
-  "proceedEmphasized": "PROCEDER",
+  "proceedEmphasized": "Proceder",
   "@proceedEmphasized": {
     "description": "Proceed but capitalized"
   },
@@ -1667,11 +1667,11 @@
   "@rawTransactionUnknownType": {
     "description": "Shown on the transaction viewer when the contents cannot be identified, leaving download as the only action"
   },
-  "recreateFolderEmphasized": "RECREAR CARPETA",
+  "recreateFolderEmphasized": "Recrear carpeta",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
   },
-  "recreatingFolderEmphasized": "RECREANDO CARPETA...",
+  "recreatingFolderEmphasized": "Recreando carpeta...",
   "@recreatingFolderEmphasized": {
     "description": "Folder is being recreated. Emphasized with upper case"
   },
@@ -1689,35 +1689,35 @@
   "@renameDrive": {
     "description": "The action of renaming a drive"
   },
-  "renameDriveEmphasized": "RENOMBRAR UNIDAD",
+  "renameDriveEmphasized": "Renombrar unidad",
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
-  "renameEmphasized": "RENOMBRAR",
+  "renameEmphasized": "Renombrar",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
   },
-  "renameFileEmphasized": "RENOMBRAR ARCHIVO",
+  "renameFileEmphasized": "Renombrar archivo",
   "@renameFileEmphasized": {
     "description": "The action of renaming a file. Emphasized with upper case"
   },
-  "renameFolderEmphasized": "RENOMBRAR CARPETA",
+  "renameFolderEmphasized": "Renombrar carpeta",
   "@renameFolderEmphasized": {
     "description": "The action of renaming a folder. Emphasized with upper case"
   },
-  "renamingDriveEmphasized": "RENOMBRANDO UNIDAD...",
+  "renamingDriveEmphasized": "Renombrando unidad...",
   "@renamingDriveEmphasized": {
     "description": "The drive is being renamed. Emphasized with upper case"
   },
-  "renamingFileEmphasized": "RENOMBRANDO ARCHIVO...",
+  "renamingFileEmphasized": "Renombrando archivo...",
   "@renamingFileEmphasized": {
     "description": "File is being renamed. Emphasized with upper case"
   },
-  "renamingFolderEmphasized": "RENOMBRANDO CARPETA...",
+  "renamingFolderEmphasized": "Renombrando carpeta...",
   "@renamingFolderEmphasized": {
     "description": "Folder is being renamed. Emphasized with upper case"
   },
-  "replaceEmphasized": "REEMPLAZAR",
+  "replaceEmphasized": "Reemplazar",
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
@@ -1739,7 +1739,7 @@
   "tablePageNumber": "Página {page}",
   "tablePageRange": "{first}-{last} de {total}",
   "tablePreviousPage": "Página anterior",
-  "secondsFromForeverEmphasized": "A SEGUNDOS DE LA ETERNIDAD",
+  "secondsFromForeverEmphasized": "A segundos de la eternidad",
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"
   },
@@ -1747,7 +1747,7 @@
   "@securityWalletOverlay": {
     "description": "The text on the security overlay text on login"
   },
-  "selectWalletEmphasized": "SELECCIONAR MONEDERO",
+  "selectWalletEmphasized": "Seleccionar monedero",
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
@@ -1757,7 +1757,7 @@
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list"
   },
-  "sharedDrivesEmphasized": "UNIDADES COMPARTIDAS",
+  "sharedDrivesEmphasized": "Unidades compartidas",
   "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
@@ -2027,7 +2027,7 @@
   "@skip": {
     "description": "Skip"
   },
-  "skipEmphasized": "OMITIR",
+  "skipEmphasized": "Omitir",
   "@skipEmphasized": {
     "description": "Example: to SKIP a conflict"
   },
@@ -2081,7 +2081,7 @@
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
   },
-  "subscribeEmphasized": "SUSCRIBIRSE",
+  "subscribeEmphasized": "Suscribirse",
   "@subscribeEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },
@@ -2136,7 +2136,7 @@
       }
     }
   },
-  "targetFolderEmphasized": "CARPETA DE DESTINO",
+  "targetFolderEmphasized": "Carpeta de destino",
   "@targetFolderEmphasized": {
     "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
   },
@@ -2170,7 +2170,7 @@
   },
   "total": "Total",
   "@total": {},
-  "totalPrivacyControlEmphasized": "CONTROL TOTAL DE TU PRIVACIDAD",
+  "totalPrivacyControlEmphasized": "Control total de tu privacidad",
   "@totalPrivacyControlEmphasized": {
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
@@ -2180,11 +2180,11 @@
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
   },
-  "tryAgainEmphasized": "INTENTAR NUEVAMENTE",
+  "tryAgainEmphasized": "Intentar nuevamente",
   "@tryAgainEmphasized": {
     "description": "Try it again. Emphasized with upper case"
   },
-  "tryLaterCongestionEmphasized": "INTENTAR MÁS TARDE",
+  "tryLaterCongestionEmphasized": "Intentar más tarde",
   "@tryLaterCongestionEmphasized": {
     "description": "Try to upload later. Emphasized with upper case"
   },
@@ -2248,7 +2248,7 @@
   "@unlock": {
     "description": "Unlock a file or drive."
   },
-  "unlockEmphasized": "DESBLOQUEAR",
+  "unlockEmphasized": "Desbloquear",
   "@unlockEmphasized": {
     "description": "Unlock the wallet with its password. Emphasized with upper case"
   },
@@ -2264,7 +2264,7 @@
   "@uploadedBy": {
     "description": "Refers to the one that uploaded the data of a pinned file"
   },
-  "uploadEmphasized": "CARGAR",
+  "uploadEmphasized": "Cargar",
   "@uploadEmphasized": {
     "description": "The action of uploading certain item"
   },
@@ -2280,7 +2280,7 @@
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
   },
-  "uploadingManifestEmphasized": "CARGANDO MANIFIESTO...",
+  "uploadingManifestEmphasized": "Cargando manifiesto...",
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
@@ -2318,7 +2318,7 @@
   "@usdPriceNotAvailable": {
     "description": "Fallback message for when the USD price is not available"
   },
-  "useArconnectEmphasized": "USAR ARCONNECT",
+  "useArconnectEmphasized": "Usar ArConnect",
   "@useArconnectEmphasized": {
     "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
   },
@@ -2394,7 +2394,7 @@
   "@walletSwitch": {
     "description": "The wallet has changed. The user must log in again"
   },
-  "warningEmphasized": "ADVERTENCIA",
+  "warningEmphasized": "Advertencia",
   "@warningEmphasized": {
     "description": "Congestion warning. Emphasized with upper case"
   },
@@ -2424,11 +2424,11 @@
   "@welcomeBack": {
     "description": "welcome back"
   },
-  "welcomeBackEmphasized": "BIENVENIDO/A DE NUEVO",
+  "welcomeBackEmphasized": "Bienvenido/a de nuevo",
   "@welcomeBackEmphasized": {
     "description": "Welcoming for an existing user. Emphasized with upper case"
   },
-  "welcomeBackUserEmphasized": "BIENVENIDO/A DE NUEVO, {username}",
+  "welcomeBackUserEmphasized": "Bienvenido/a de nuevo, {username}",
   "@welcomeBackUserEmphasized": {
     "description": "Welcoming to the user. Emphasized with upper case",
     "placeholders": {
@@ -2446,15 +2446,15 @@
   "@welcomeTo_description": {
     "description": "Brief description of ArDrive as welcoming"
   },
-  "welcomeTo_main": "BIENVENIDO/A A",
+  "welcomeTo_main": "Bienvenido/a a",
   "@welcomeTo_main": {
     "description": "Highly emphasized text giving welcome"
   },
-  "welcomeToThePermawebEmphasized": "BIENVENIDO/A A LA PERMAWEB",
+  "welcomeToThePermawebEmphasized": "Bienvenido/a a la permaweb",
   "@welcomeToThePermawebEmphasized": {
     "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
   },
-  "weReSorryEmphasized": "¡LO SENTIMOS!",
+  "weReSorryEmphasized": "¡Lo sentimos!",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },

@@ -290,7 +290,7 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildToggleButton(
-            label: 'Plain Text',
+            label: 'Plain text',
             isSelected: !_showHtml,
             onTap: () => setState(() => _showHtml = false),
             colors: colors,

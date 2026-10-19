@@ -96,7 +96,7 @@ class _GraphQLEndpointDialogState extends State<GraphQLEndpointDialog> {
 
     return ArDriveStandardModalNew(
       width: 500,
-      title: 'Switch GraphQL Server',
+      title: 'Switch GraphQL server',
       content: Form(
         key: _formKey,
         child: SizedBox(

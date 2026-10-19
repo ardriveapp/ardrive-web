@@ -208,7 +208,7 @@ void main() {
       );
 
       expect(find.text('Create a drive first'), findsOneWidget);
-      expect(find.text('New Drive'), findsOneWidget);
+      expect(find.text('New drive'), findsOneWidget);
     });
 
     testWidgets('says that files live in drives', (tester) async {
@@ -226,7 +226,7 @@ void main() {
     testWidgets('closes and starts a new drive', (tester) async {
       await openNeedsDrive(tester);
 
-      await tester.tap(find.text('New Drive'));
+      await tester.tap(find.text('New drive'));
       await tester.pumpAndSettle();
 
       expect(created, 1);

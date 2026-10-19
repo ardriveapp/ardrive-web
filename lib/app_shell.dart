@@ -255,7 +255,7 @@ class AppShellState extends State<AppShell> {
                               color: colorTokens.textOnPrimary),
                         ),
                         TextSpan(
-                          text: 'Update Now!',
+                          text: 'Update now!',
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
                               showMigratePrivateDrivesModal(context);

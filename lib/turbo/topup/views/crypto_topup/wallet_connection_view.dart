@@ -83,7 +83,7 @@ class _WalletConnectionContent extends StatelessWidget {
               if (onBack != null) const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Connect Wallet',
+                  'Connect wallet',
                   style: typography.heading4(
                     fontWeight: ArFontWeight.bold,
                     color: colorTokens.textHigh,
@@ -266,7 +266,7 @@ class _WalletOptionsState extends State<_WalletOptions> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Available Wallets',
+          'Available wallets',
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
             color: colorTokens.textHigh,
@@ -376,7 +376,7 @@ class _WalletNotInstalledContent extends StatelessWidget {
               if (onBack != null) const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Wallet Not Found',
+                  'Wallet not found',
                   style: typography.heading4(
                     fontWeight: ArFontWeight.bold,
                     color: colorTokens.textHigh,
@@ -444,7 +444,7 @@ class _WalletNotInstalledContent extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ArDriveButton(
-              text: 'Choose Different Token',
+              text: 'Choose different token',
               style: ArDriveButtonStyle.secondary,
               onPressed: onBack,
             ),
@@ -495,7 +495,7 @@ class _NetworkSwitchingIndicator extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Switching Network',
+                  'Switching network',
                   style: typography.paragraphNormal(
                     fontWeight: ArFontWeight.semiBold,
                     color: colorTokens.textHigh,

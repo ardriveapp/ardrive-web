@@ -94,7 +94,7 @@ class _CopyLogsButtonState extends State<CopyLogsButton> {
     final typography = ArDriveTypographyNew.of(context);
 
     return ArDriveButtonNew(
-      text: copied ? 'Copied' : 'Copy Logs',
+      text: copied ? 'Copied' : 'Copy logs',
       typography: typography,
       variant: ButtonVariant.primary,
       onPressed: () async {
