@@ -328,9 +328,10 @@ class ArDriveButtonNew extends StatefulWidget {
       textScaler: MediaQuery.textScalerOf(context),
     )..layout();
 
-    // The button's own padding is 10 on each side. The extra 4 keeps a label
-    // that measures exactly to the edge from wrapping on rounding.
-    final width = painter.width + 24;
+    // The button's own padding is 10 on each side. The extra 8 covers what
+    // this measure cannot see, such as letter spacing the button's theme
+    // adds, and rounding.
+    final width = painter.width + 28;
     painter.dispose();
 
     return width > minWidth ? width.ceilToDouble() : minWidth;
