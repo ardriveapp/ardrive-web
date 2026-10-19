@@ -1,5 +1,6 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/copyable_share_artifact.dart';
+import 'package:ardrive/components/share_warning.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/theme/theme.dart';
@@ -88,32 +89,9 @@ class FileShareDialogState extends State<FileShareDialog> {
             // into one.
             else if (state is FileShareLoadSuccess) ...[
               if (state.isPending)
-                Container(
-                  padding: const EdgeInsets.all(12),
+                ShareWarning(
+                  appLocalizationsOf(context).shareFilePendingWarning,
                   margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: colorTokens.containerL1,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    children: [
-                      ArDriveIcons.triangle(
-                        size: 16,
-                        color: colorTokens.strokeRed,
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          // TODO(PE-9103): extract to ARB localization files
-                          'Warning: This file is currently pending and may not be immediately accessible.',
-                          style: typography.paragraphSmall(
-                            fontWeight: ArFontWeight.semiBold,
-                            color: colorTokens.strokeRed,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               CopyableShareArtifact(
                 label: appLocalizationsOf(context).shareFileLinkLabel,
@@ -179,9 +157,8 @@ class FileShareDialogState extends State<FileShareDialog> {
                       context.read<FileShareCubit>().setKeyIsInLink(value),
                 ),
                 if (state.keyIsInLink)
-                  _HelperText(
+                  ShareWarning(
                     appLocalizationsOf(context).shareFileKeyInLinkWarning,
-                    color: colorTokens.strokeRed,
                   ),
                 const SizedBox(height: 16),
                 ArDriveToggleSwitch(

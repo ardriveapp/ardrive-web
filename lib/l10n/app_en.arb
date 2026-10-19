@@ -3208,6 +3208,10 @@
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
   },
+  "shareFilePendingWarning": "This file is still pending, so it may not open right away for the person you send it to.",
+  "@shareFilePendingWarning": {
+    "description": "Warning in the file share dialog when the file's upload has not been confirmed yet, so the link may not work immediately."
+  },
   "showMenu": "Show Menu",
   "@showMenu": {
     "description": "show menu text"
