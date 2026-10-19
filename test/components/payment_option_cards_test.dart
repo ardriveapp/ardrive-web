@@ -82,8 +82,8 @@ void main() {
     await pump(tester, info());
 
     expect(find.text('Turbo Credits'), findsOneWidget);
-    expect(find.text('0.0041 Credits'), findsOneWidget);
-    expect(find.text('2.0370 Credits available'), findsOneWidget);
+    expect(find.text('0.0041 credits'), findsOneWidget);
+    expect(find.text('2.0370 credits available'), findsOneWidget);
     expect(find.text('Wallet (AR)'), findsOneWidget);
     expect(find.text('0.0079 AR'), findsOneWidget);
     expect(find.text('1.0619 AR available'), findsOneWidget);
@@ -103,7 +103,7 @@ void main() {
     await pump(tester, info(arFine: false, creditsFine: false));
 
     expect(find.text('Not enough AR, 1.0619 available'), findsOneWidget);
-    expect(find.text('Not enough Credits, 2.0370 available'), findsOneWidget);
+    expect(find.text('Not enough credits, 2.0370 available'), findsOneWidget);
   });
 
   testWidgets('says when there are no credits yet', (tester) async {
@@ -137,7 +137,7 @@ void main() {
       (tester) async {
     await pump(tester, info(creditsFine: false));
 
-    expect(find.text('Not enough Credits, 2.0370 available'), findsOneWidget);
+    expect(find.text('Not enough credits, 2.0370 available'), findsOneWidget);
     expect(find.text('Add Credits to upload.'), findsOneWidget);
     expect(
       find.textContaining('Insufficient Credit balance', findRichText: true),

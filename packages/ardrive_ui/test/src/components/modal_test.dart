@@ -241,6 +241,39 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets(
+      'ArDriveStandardModalNew makes a lone action primary unless it names '
+      'a variant', (tester) async {
+    Future<ButtonVariant> variantOf(ModalAction action) async {
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: ArDriveStandardModalNew(title: 'Title', actions: [action]),
+          ),
+        ),
+      );
+
+      return tester
+          .widget<ArDriveButtonNew>(find.byType(ArDriveButtonNew))
+          .variant;
+    }
+
+    expect(
+      await variantOf(ModalAction(action: () {}, title: 'Ok')),
+      ButtonVariant.primary,
+    );
+    expect(
+      await variantOf(
+        ModalAction(
+          action: () {},
+          title: 'Cancel',
+          variant: ButtonVariant.secondary,
+        ),
+      ),
+      ButtonVariant.secondary,
+    );
+  });
 }
 
 class _TestWidget extends StatelessWidget {
