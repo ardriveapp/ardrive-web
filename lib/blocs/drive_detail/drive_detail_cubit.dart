@@ -530,6 +530,21 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // ticks of this folder leave the selection to the reader.
     var revealedSelectedItem = false;
 
+    // A different folder takes the details panel's item with it: what was
+    // picked out of the last folder is not in this one, and the panel kept
+    // describing it while the reader moved on. The drive info panel is about
+    // the drive, which has not changed, and a search result names the item it
+    // wants shown. Re-opening the folder in view - a sort, a refresh - is not
+    // moving on, so the reader's pick survives that.
+    final inView = state;
+    if (selectedItemId == null &&
+        _selectedItem is! DriveDataItem &&
+        inView is DriveDetailLoadSuccess &&
+        (folderId ?? inView.currentDrive.rootFolderId) !=
+            inView.folderInView.folder.id) {
+      _selectedItem = null;
+    }
+
     // A new folder redraws immediately whatever the last one did: the throttle
     // exists to stop a folder flickering as it fills, not to delay one being
     // opened.
