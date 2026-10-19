@@ -293,7 +293,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                       index == 0
                           // TODO: localize
                           ? 'Wallet Balance: ${widget.uploadMethodInfo.arBalance} AR'
-                          : 'Turbo Balance: ${widget.uploadMethodInfo.turboCredits} Credits',
+                          : 'Turbo Balance: ${widget.uploadMethodInfo.turboCredits} credits',
                       style: widget.useNewArDriveUI
                           ? typography.paragraphNormal(
                               color: colorTokens.textLow,
@@ -610,7 +610,7 @@ class _SourceWalletCreditsNoticeState
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          '${convertWinstonToLiteralString(widget.credits.balance)} Credits are on your $chain '
+          '${convertWinstonToLiteralString(widget.credits.balance)} credits are on your $chain '
           'wallet ${truncateString(widget.credits.sourceAddress, offsetStart: 6, offsetEnd: 4)}.',
           style: widget.useNewArDriveUI
               ? typography.paragraphNormal(

@@ -1074,7 +1074,7 @@
   "@forgetWalletTitle": {
     "description": "Modal title to forget wallet"
   },
-  "freeTurboTransaction": "費用：0 AR\n這筆小額交易免費，感謝使用 Turbo。",
+  "freeTurboTransaction": "費用：0 積分\n這筆小額交易免費，感謝使用 Turbo。",
   "@freeTurboTransaction": {
     "description": "Message explaining that your upload will be free thanks to Turbo"
   },

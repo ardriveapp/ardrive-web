@@ -2,6 +2,7 @@ import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/components/upload_options.dart';
+import 'package:ardrive/components/upload_review_cost.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -17,6 +18,7 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/payment_method/bloc/upload_payment_method_bloc.dart';
 import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_view.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
+import 'package:ardrive/blocs/upload/upload_progress_summary.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/components/help_info_modals.dart';
@@ -1773,11 +1775,8 @@ class _PreparingUploadWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (state is UploadPreparationInitialized &&
-                (state as UploadPreparationInitialized).showLoadingFiles) ...[
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-            ],
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
             if (state is UploadPreparationInProgress &&
                 (state as UploadPreparationInProgress).isArConnect)
               Text(
@@ -2120,6 +2119,7 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
         ),
       ],
       children: [
+        UploadReviewCost(paymentInfo: state.readyState.paymentInfo),
         if (state.readyState.params.arnsUnderName != null) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
@@ -2273,6 +2273,7 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
         ),
       ],
       children: [
+        UploadReviewCost(paymentInfo: state.readyState.paymentInfo),
         if (state.readyState.params.arnsUnderName != null) ...[
           Text(
             'ArNS Name: ',
@@ -2707,6 +2708,7 @@ class _UploadInProgressWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = state.progress;
+    final summary = UploadProgressSummary.from(progress);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
     return ArDriveStandardModalNew(
@@ -2774,11 +2776,14 @@ class _UploadInProgressWidget extends StatelessWidget {
             title: state.isCanceling
                 ? 'Canceling...'
                 : appLocalizationsOf(context).cancel,
+            // A lone action is primary by default, and Cancel is not the
+            // main action here.
+            variant: ButtonVariant.secondary,
           ),
       ],
       width: kLargeDialogWidth,
       title:
-          '${appLocalizationsOf(context).uploadingNFiles(state.progress.numberOfItems)} ${(state.totalProgress * 100).toStringAsFixed(2)}%',
+          '${appLocalizationsOf(context).uploadingNFiles(summary.numberOfFiles)} ${summary.percent}%',
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2795,7 +2800,7 @@ class _UploadInProgressWidget extends StatelessWidget {
                     itemBuilder: (BuildContext context, int index) {
                       final task = progress.tasks.values.elementAt(index);
 
-                      String? progressText;
+                      String? progressMessage;
                       String status = '';
 
                       // TODO: localize
@@ -2810,8 +2815,7 @@ class _UploadInProgressWidget extends StatelessWidget {
                           status = 'Paused';
                           break;
                         case UploadStatus.creatingMetadata:
-                          status =
-                              'We are preparing your upload. Preparation step 1/2';
+                          status = 'Preparing';
                           break;
                         case UploadStatus.encryting:
                           status = 'Encrypting';
@@ -2832,8 +2836,7 @@ class _UploadInProgressWidget extends StatelessWidget {
                           status = 'Canceled';
                           break;
                         case UploadStatus.creatingBundle:
-                          status =
-                              'We are preparing your upload. Preparation step 2/2';
+                          status = 'Preparing';
                         case UploadStatus.uploadingThumbnail:
                           status = 'Uploading thumbnail...';
                           break;
@@ -2851,19 +2854,27 @@ class _UploadInProgressWidget extends StatelessWidget {
                               task.status == UploadStatus.complete ||
                               task.status == UploadStatus.finalizing;
 
-                      if (task.isProgressAvailable) {
-                        if (statusAvailableForShowingProgress) {
-                          if (task.uploadItem != null) {
-                            progressText =
-                                '${filesize(((task.uploadItem!.size) * task.progress).ceil())}/${filesize(task.uploadItem!.size)}';
-                          }
+                      if (!task.isProgressAvailable &&
+                          task.status == UploadStatus.inProgress) {
+                        // TODO: localize
+                        progressMessage =
+                            'Your upload is in progress, but for large files the progress it not available. Please wait...';
+                      }
+
+                      // Each file at its own size, as on the confirm step. A
+                      // folder has no size to show.
+                      String? progressTextFor(ARFSUploadMetadata file) {
+                        if (!task.isProgressAvailable) {
+                          return progressMessage;
                         }
-                      } else {
-                        if (task.status == UploadStatus.inProgress) {
-                          // TODO: localize
-                          progressText =
-                              'Your upload is in progress, but for large files the progress it not available. Please wait...';
+
+                        if (!statusAvailableForShowingProgress ||
+                            task.uploadItem == null ||
+                            file is! ARFSFileUploadMetadata) {
+                          return null;
                         }
+
+                        return '${filesize(UploadProgressSummary.uploadedBytes(file, task))}/${filesize(file.size)}';
                       }
 
                       return Column(
@@ -2928,9 +2939,9 @@ class _UploadInProgressWidget extends StatelessWidget {
                                               ],
                                             ),
                                           ),
-                                          if (progressText != null)
+                                          if (progressTextFor(file) != null)
                                             Text(
-                                              progressText,
+                                              progressTextFor(file)!,
                                               style: typography.paragraphNormal(
                                                 fontWeight:
                                                     ArFontWeight.semiBold,
@@ -2994,7 +3005,7 @@ class _UploadInProgressWidget extends StatelessWidget {
           ),
           // TODO: localize
           Text(
-            'Total uploaded: ${filesize(state.progress.totalUploaded)} of ${filesize(state.progress.totalSize)}',
+            'Total uploaded: ${filesize(summary.totalUploaded)} of ${filesize(summary.totalSize)}',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colorTokens.textMid,
@@ -3002,7 +3013,7 @@ class _UploadInProgressWidget extends StatelessWidget {
           ),
           // TODO: localize
           Text(
-            'Files uploaded: ${state.progress.numberOfUploadedItems} of ${state.progress.numberOfItems}',
+            'Files uploaded: ${summary.numberOfUploadedFiles} of ${summary.numberOfFiles}',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colorTokens.textMid,

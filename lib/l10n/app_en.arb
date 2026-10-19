@@ -178,7 +178,7 @@
   "@closeAnyway": {
     "description": "Closes the upload problem dialog, leaving wallet-paid files unfinished"
   },
-  "costCredits": "Cost: {credits} Credits",
+  "costCredits": "Cost: {credits} credits",
   "@costCredits": {
     "description": "The total cost estimation of the upload quoted in Turbo Credits",
     "placeholders": {
@@ -759,7 +759,7 @@
       }
     }
   },
-  "amountInCredits": "{amount} Credits",
+  "amountInCredits": "{amount} credits",
   "@amountInCredits": {
     "description": "What an upload costs in Turbo Credits, on the Turbo payment option",
     "placeholders": {
@@ -779,7 +779,7 @@
       }
     }
   },
-  "creditsAvailable": "{balance} Credits available",
+  "creditsAvailable": "{balance} credits available",
   "@creditsAvailable": {
     "description": "The Turbo Credits balance, under the Turbo payment option",
     "placeholders": {
@@ -803,7 +803,7 @@
       }
     }
   },
-  "notEnoughCredits": "Not enough Credits, {balance} available",
+  "notEnoughCredits": "Not enough credits, {balance} available",
   "@notEnoughCredits": {
     "description": "Under the Turbo payment option when the Turbo Credits cannot pay for the upload",
     "placeholders": {
@@ -1664,7 +1664,7 @@
   "@forgetWalletTitle": {
     "description": "Modal title to forget wallet"
   },
-  "freeTurboTransaction": "Cost: 0 AR\nThis small transaction is free thanks to Turbo.",
+  "freeTurboTransaction": "Cost: 0 credits\nThis small transaction is free thanks to Turbo.",
   "@freeTurboTransaction": {
     "description": "Message explaining that your upload will be free thanks to Turbo"
   },
