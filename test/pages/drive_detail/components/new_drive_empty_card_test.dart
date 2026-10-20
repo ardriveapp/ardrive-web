@@ -27,16 +27,15 @@ class _MockConfigService extends Mock implements ConfigService {}
 
 class _MockAppConfig extends Mock implements AppConfig {}
 
-Drive _drive(String id, {int? lastBlockHeight, DateTime? dateCreated}) => Drive(
+Drive _drive(String id) => Drive(
       id: id,
       rootFolderId: 'root',
       ownerAddress: 'owner',
       name: 'My Drive',
       privacy: 'public',
-      dateCreated: dateCreated ?? DateTime(2026, 3, 1),
+      dateCreated: DateTime(2026, 3, 1),
       lastUpdated: DateTime(2026, 3, 1),
       isHidden: false,
-      lastBlockHeight: lastBlockHeight,
     );
 
 /// The page a brand new drive opens on: "Your drive is ready".
@@ -51,7 +50,6 @@ void main() {
   late MockSyncBloc syncCubit;
   late StreamController<SyncState> syncStates;
   late StreamController<SyncProgress> progress;
-  late Drive drive;
 
   void withDrives(List<Drive> drives) => whenListen(
         drivesCubit,
@@ -80,16 +78,13 @@ void main() {
 
     // Exactly one drive is what makes this the new-user page rather than the
     // existing-user one.
-    drive = _drive('drive-a');
-    withDrives([drive]);
+    withDrives([_drive('drive-a')]);
 
     syncCubit = MockSyncBloc();
     syncStates = StreamController<SyncState>.broadcast();
     progress = StreamController<SyncProgress>.broadcast();
     whenListen(syncCubit, syncStates.stream, initialState: SyncIdle());
-    when(() => syncCubit.syncingDriveId).thenReturn(null);
-    when(() => syncCubit.syncingDriveIds).thenReturn(null);
-    when(() => syncCubit.completedDriveIds).thenReturn(const []);
+    when(() => syncCubit.syncingDriveId).thenReturn('drive-a');
     when(() => syncCubit.syncStartTime).thenReturn(DateTime(2026, 4, 1));
     when(() => syncCubit.syncProgressController).thenReturn(progress);
     when(() => syncCubit.syncProgress).thenReturn(SyncProgress.initial());
@@ -107,6 +102,7 @@ void main() {
     double textScale = 1,
     bool isRootFolder = true,
     bool desktop = false,
+    bool contentsStillArriving = false,
   }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -150,10 +146,11 @@ void main() {
                   BlocProvider<SyncCubit>.value(value: syncCubit),
                 ],
                 child: DriveDetailFolderEmptyCard(
-                  drive: drive,
+                  driveId: 'drive-a',
                   parentFolderId: 'root',
                   folderName: 'My Drive',
                   isRootFolder: isRootFolder,
+                  contentsStillArriving: contentsStillArriving,
                 ),
               ),
             ),
@@ -312,23 +309,20 @@ void main() {
 
   /// Sync saves a drive's history oldest first, so on a first sync a folder
   /// lands before anything inside it. A full drive used to flash "Your brand
-  /// new drive!" in that gap.
-  group('while a sync is still reading the drive', () {
-    void syncing() {
+  /// new drive!" in that gap. Whether the gap is open is the cubit's call
+  /// (see its tests); this is what the card does with it.
+  group('while the contents are still arriving', () {
+    Future<void> pumpArriving(WidgetTester tester) async {
       whenListen(syncCubit, syncStates.stream,
           initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
-      when(() => syncCubit.syncingDriveId).thenReturn('drive-a');
+      await pumpAt(tester, const Size(1280, 800), contentsStillArriving: true);
     }
 
     testWidgets('says the sync is running rather than that the drive is new',
         (tester) async {
-      syncing();
-
-      await pumpAt(tester, const Size(1280, 800));
+      await pumpArriving(tester);
 
       expect(find.byType(DriveDetailSyncingCard), findsOneWidget);
-      expect(find.textContaining('will open when the sync finishes'),
-          findsOneWidget);
       expect(find.textContaining('Your drive is ready'), findsNothing);
       expect(find.textContaining('Upload'), findsNothing);
 
@@ -336,64 +330,12 @@ void main() {
     });
 
     testWidgets('names the folder that is waiting', (tester) async {
-      syncing();
-
-      await pumpAt(tester, const Size(1280, 800));
+      await pumpArriving(tester);
 
       expect(find.text('My Drive will open when the sync finishes'),
           findsOneWidget);
 
       await unmount(tester);
-    });
-
-    testWidgets('offers to fill the drive once the sync ends', (tester) async {
-      syncing();
-      await pumpAt(tester, const Size(1280, 800));
-      expect(find.byType(DriveDetailSyncingCard), findsOneWidget);
-
-      when(() => syncCubit.syncingDriveId).thenReturn(null);
-      syncStates.add(SyncComplete(
-        entitiesSynced: 0,
-        sequence: 1,
-        completedAt: DateTime(2026, 4, 1),
-      ));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(DriveDetailSyncingCard), findsNothing);
-      expect(find.textContaining('Your drive is ready'), findsOneWidget);
-    });
-
-    /// A drive walked before has had its emptiness read, not assumed.
-    testWidgets('not for a drive that has been synced before', (tester) async {
-      syncing();
-      drive = _drive('drive-a', lastBlockHeight: 100);
-
-      await pumpAt(tester, const Size(1280, 800));
-
-      expect(find.byType(DriveDetailSyncingCard), findsNothing);
-      expect(find.textContaining('Your drive is ready'), findsOneWidget);
-    });
-
-    /// A drive made after the sync started is not in it, and must not wait
-    /// for the whole run.
-    testWidgets('not for a drive created after the sync started',
-        (tester) async {
-      syncing();
-      drive = _drive('drive-a', dateCreated: DateTime(2026, 4, 2));
-
-      await pumpAt(tester, const Size(1280, 800));
-
-      expect(find.byType(DriveDetailSyncingCard), findsNothing);
-      expect(find.textContaining('Your drive is ready'), findsOneWidget);
-    });
-
-    testWidgets('not while a different drive syncs', (tester) async {
-      syncing();
-      when(() => syncCubit.syncingDriveId).thenReturn('drive-b');
-
-      await pumpAt(tester, const Size(1280, 800));
-
-      expect(find.byType(DriveDetailSyncingCard), findsNothing);
     });
   });
 

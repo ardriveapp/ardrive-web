@@ -475,7 +475,7 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
                             children: [
                               AnimatedSize(
                                 duration: const Duration(milliseconds: 100),
-                                child: _hovering
+                                child: _hovering && !widget.isDisabled
                                     ? Padding(
                                         padding:
                                             const EdgeInsets.only(right: 8),

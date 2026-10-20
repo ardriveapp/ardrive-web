@@ -2,21 +2,24 @@ part of '../drive_detail_page.dart';
 
 class DriveDetailFolderEmptyCard extends StatefulWidget {
   final bool promptToAddFiles;
-  final Drive drive;
+  final String driveId;
   final String parentFolderId;
   final String folderName;
   final bool isRootFolder;
 
+  /// A sync is still reading this drive for the first time, so the folder may
+  /// be empty only so far - see `DriveDetailLoadSuccess.contentsStillArriving`.
+  final bool contentsStillArriving;
+
   const DriveDetailFolderEmptyCard({
     super.key,
     this.promptToAddFiles = false,
-    required this.drive,
+    required this.driveId,
     required this.parentFolderId,
     required this.folderName,
     required this.isRootFolder,
+    this.contentsStillArriving = false,
   });
-
-  String get driveId => drive.id;
 
   @override
   State<DriveDetailFolderEmptyCard> createState() =>
@@ -31,10 +34,7 @@ class _DriveDetailFolderEmptyCardState
     // because its contents have not landed yet. Offering to fill it then is
     // what made a full drive flash "Your brand new drive!", so the panel says
     // the sync is still going until there is something to show or it ends.
-    if (DriveDetailCubit.contentsMayStillArrive(
-      drive: widget.drive,
-      syncCubit: context.watch<SyncCubit>(),
-    )) {
+    if (widget.contentsStillArriving) {
       return DriveDetailSyncingCard(folderName: widget.folderName);
     }
 
