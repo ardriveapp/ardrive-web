@@ -25,7 +25,7 @@ const permanenceArTallyTtl = Duration(minutes: 30);
 const permanenceSpendStoragePrefix = 'permanenceSpend_v1_';
 
 /// How long after this app spends that a count of AR is re-checked soon,
-/// because a transaction it just posted is not yet mined and indexed.
+/// because a transaction it posted a moment ago is not yet mined and indexed.
 const permanenceArRecentSpendWindow = Duration(minutes: 10);
 
 /// The re-check limit for a count made within that window.
@@ -402,7 +402,7 @@ class PermanenceCache {
             // Not a figure to reuse: the network did not answer, or the app
             // spent while it was counting.
             checked: !failed && generation == _generation,
-            // A transaction posted just now is not mined yet, so soon after
+            // A transaction posted a moment ago is not mined yet, so soon after
             // spending the count is checked again sooner.
             ttl: spentLately ? permanenceArRecentTtl : permanenceArTallyTtl,
           );
