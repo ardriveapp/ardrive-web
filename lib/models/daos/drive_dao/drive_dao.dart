@@ -855,6 +855,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       dataTxId: entity.dataTxId!,
       size: entity.size!,
       lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
+      // The time of the revision written with it, as a sync records it. Left
+      // to the column's default, it was set on insert and never again, so a
+      // new version uploaded here kept the first version's date until the
+      // next sync.
+      lastUpdated: Value(entity.createdAt),
       dataContentType: Value(entity.dataContentType),
       pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
       isHidden: Value(entity.isHidden ?? false),

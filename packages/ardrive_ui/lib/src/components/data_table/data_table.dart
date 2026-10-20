@@ -513,17 +513,25 @@ class _ArDriveDataTableState<T extends IndexedItem>
         clearSelection();
       }
 
-      final temp = <T>[];
+      // The caller's rows, whenever it passes new ones. This used to wait for
+      // the number of rows to change, and a row can change without that: a
+      // new version of a file is the same row with a new size, and the table
+      // went on drawing the old one until something was added or removed.
+      if (!identical(widget.rows, oldWidget.rows)) {
+        final currentMultiSelectBox = getMultiSelectBox();
 
-      final currentMultiSelectBox = getMultiSelectBox();
-
-      // Updates the list of selected rows if the list of rows has changed
-      if (_cachedRows.length != widget.rows.length) {
+        // Rows compare by id, so a selection carries over to the new copies
+        // of the same rows. One that is gone is dropped from it: looking it
+        // up threw.
         if (currentMultiSelectBox.selectedItems.isNotEmpty &&
             !widget.lockMultiSelect) {
+          final temp = <T>[];
+
           for (final row in currentMultiSelectBox.selectedItems) {
             final index = widget.rows.indexWhere((element) => element == row);
-            temp.add(widget.rows[index]);
+            if (index >= 0) {
+              temp.add(widget.rows[index]);
+            }
           }
 
           currentMultiSelectBox.clear();
@@ -531,21 +539,17 @@ class _ArDriveDataTableState<T extends IndexedItem>
         }
 
         _cachedRows = widget.rows;
+      }
 
-        // In the order the reader picked from a column header, not the order
-        // the rows were handed over in. A folder filling during a sync passes
-        // through here on every batch that adds a row, and taking the rows as
-        // given flipped the list between the two orders under the pointer.
-        if (_sortedColumn != null) {
-          _sortRows(_sortedColumn!);
-        } else {
-          // The same page, or the last one if the rows it showed are gone.
-          selectPage(_selectedPage);
-        }
+      // In the order the reader picked from a column header, not the order
+      // the rows were handed over in. A folder filling during a sync passes
+      // through here on every batch that adds a row, and taking the rows as
+      // given flipped the list between the two orders under the pointer.
+      if (_sortedColumn != null) {
+        _sortRows(_sortedColumn!);
       } else {
-        if (_sortedColumn != null) {
-          _sortRows(_sortedColumn!);
-        }
+        // The same page, or the last one if the rows it showed are gone.
+        selectPage(_selectedPage);
       }
     }
   }

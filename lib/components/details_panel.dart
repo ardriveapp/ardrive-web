@@ -457,7 +457,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     final typography = ArDriveTypographyNew.of(context);
     return [
       DetailsPanelItem(
-        leading: CopyButton(text: folder.entry.folder.id),
+        leading: _IdValue(id: folder.entry.folder.id),
         itemTitle: appLocalizationsOf(context).folderID,
       ),
       sizedBoxHeight16px,
@@ -492,23 +492,12 @@ class _DetailsPanelState extends State<DetailsPanel> {
       ),
       sizedBoxHeight16px,
       DetailsPanelItem(
-        leading: CopyButton(
-          text: folder.entry.folder.driveId,
-        ),
+        leading: _IdValue(id: folder.entry.folder.driveId),
         itemTitle: appLocalizationsOf(context).driveID,
       ),
       sizedBoxHeight16px,
       DetailsPanelItem(
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _TxIdTextLink(txId: folder.metadataTxId),
-            const SizedBox(width: 12),
-            CopyButton(
-              text: folder.metadataTxId,
-            ),
-          ],
-        ),
+        leading: _IdValue(id: folder.metadataTxId, isTransaction: true),
         itemTitle: appLocalizationsOf(context).metadataTxID,
       ),
     ];
@@ -519,7 +508,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
     return [
       DetailsPanelItem(
-        leading: CopyButton(text: widget.item.id),
+        leading: _IdValue(id: widget.item.id),
         itemTitle: appLocalizationsOf(context).driveID,
       ),
       sizedBoxHeight16px,
@@ -564,16 +553,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       ),
       sizedBoxHeight16px,
       DetailsPanelItem(
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _TxIdTextLink(txId: state.metadataTxId),
-            const SizedBox(width: 12),
-            CopyButton(
-              text: state.metadataTxId,
-            ),
-          ],
-        ),
+        leading: _IdValue(id: state.metadataTxId, isTransaction: true),
         itemTitle: appLocalizationsOf(context).metadataTxID,
       ),
       if (state.drive.isPrivate) ...[
@@ -599,7 +579,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
     return [
       DetailsPanelItem(
-        leading: CopyButton(text: widget.item.id),
+        leading: _IdValue(id: widget.item.id),
         itemTitle: appLocalizationsOf(context).driveID,
       ),
       sizedBoxHeight16px,
@@ -679,7 +659,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
     return [
       DetailsPanelItem(
-        leading: CopyButton(text: item.id),
+        leading: _IdValue(id: item.id),
         itemTitle: appLocalizationsOf(context).fileID,
       ),
       sizedBoxHeight16px,
@@ -719,47 +699,21 @@ class _DetailsPanelState extends State<DetailsPanel> {
       ),
       sizedBoxHeight16px,
       DetailsPanelItem(
-        leading: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _TxIdTextLink(txId: item.dataTxId),
-            const SizedBox(width: 12),
-            CopyButton(
-              text: item.dataTxId,
-            ),
-          ],
-        ),
+        leading: _IdValue(id: item.dataTxId, isTransaction: true),
         itemTitle: appLocalizationsOf(context).dataTxID,
       ),
       sizedBoxHeight16px,
-      if (state is FsEntryInfoSuccess)
+      if (state is FsEntryInfoSuccess) ...[
         DetailsPanelItem(
-          leading: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _TxIdTextLink(txId: state.metadataTxId),
-              const SizedBox(width: 12),
-              CopyButton(
-                text: state.metadataTxId,
-              ),
-            ],
-          ),
+          leading: _IdValue(id: state.metadataTxId, isTransaction: true),
           itemTitle: appLocalizationsOf(context).metadataTxID,
         ),
-      sizedBoxHeight16px,
+        sizedBoxHeight16px,
+      ],
       if (item.fallbackTxId != null) ...[
         DetailsPanelItem(
-          leading: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _TxIdTextLink(txId: item.fallbackTxId!),
-              const SizedBox(width: 12),
-              CopyButton(
-                text: item.fallbackTxId!,
-              ),
-            ],
-          ),
-          itemTitle: 'Manifest Fallback TxID',
+          leading: _IdValue(id: item.fallbackTxId!, isTransaction: true),
+          itemTitle: appLocalizationsOf(context).manifestFallbackTxID,
         ),
         sizedBoxHeight16px,
       ],
@@ -831,6 +785,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
   Widget _buildActivity(FsEntryActivityState state) {
     if (state is FsEntryActivitySuccess) {
       if (state.revisions.isNotEmpty) {
+        final versions = fileVersionNumbers(state.revisions);
+
         return ListView.separated(
           padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
           separatorBuilder: (context, index) => sizedBoxHeight16px,
@@ -884,6 +840,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 licenseState,
                 revision.action,
                 fileRevisionWithLicenseAndTransactions: revision,
+                version: versions[index],
               );
             } else if (revision is DriveRevisionWithTransaction) {
               switch (revision.action) {
@@ -919,7 +876,26 @@ class _DetailsPanelState extends State<DetailsPanel> {
         );
       }
     }
-    return const Center(child: Text('Loading...'));
+
+    // Said, the way the details tab says it: this used to read "Loading..."
+    // for good when the history was empty or could not be read.
+    if (state is FsEntryActivitySuccess || state is FsEntryActivityFailure) {
+      return ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        children: [
+          Text(
+            state is FsEntryActivityFailure
+                ? appLocalizationsOf(context).activityCouldNotBeLoaded
+                : appLocalizationsOf(context).activityNoneRecorded,
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return const Center(child: CircularProgressIndicator());
   }
 
   Widget _buildFileActivity(
@@ -928,10 +904,16 @@ class _DetailsPanelState extends State<DetailsPanel> {
     String action, {
     FileRevisionWithLicenseAndTransactions?
         fileRevisionWithLicenseAndTransactions,
+    int? version,
   }) {
     late String title;
     String? subtitle;
     Widget? leading;
+
+    // A revision that brought new data says how big it was, so versions can
+    // be told apart.
+    final carriesData = action == RevisionAction.create ||
+        action == RevisionAction.uploadNewVersion;
 
     switch (action) {
       case RevisionAction.create:
@@ -959,7 +941,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
         title = appLocalizationsOf(context).fileWasMoved;
         break;
       case RevisionAction.uploadNewVersion:
-        title = appLocalizationsOf(context).fileHadANewRevision;
+        title = version == null
+            ? appLocalizationsOf(context).fileHadANewRevision
+            : appLocalizationsOf(context).fileVersionWasUploaded(version);
         leading = _DownloadOrPreview(
           fileRevision: file,
         );
@@ -1078,7 +1062,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
                           flex: 3,
                           child: Text(
                             formatDateTime(file.unixTime),
-                            style: ArDriveTypography.body.xSmallRegular(),
+                            style: typography.paragraphSmall(
+                              color: colorTokens.textMid,
+                            ),
                           ),
                         ),
                       ],
@@ -1103,7 +1089,9 @@ class _DetailsPanelState extends State<DetailsPanel> {
       default:
         title = appLocalizationsOf(context).fileWasModified;
     }
-    subtitle = formatDateTime(file.unixTime);
+    subtitle = carriesData
+        ? '${formatDateTime(file.unixTime)} · ${filesize(file.size)}'
+        : formatDateTime(file.unixTime);
 
     return DetailsPanelItem(
       leading: leading ?? const SizedBox(),
@@ -1134,17 +1122,88 @@ class _TxIdTextLink extends StatelessWidget {
         },
         child: ArDriveTooltip(
           message: txId,
+          // A link the way the panel's other address is one: see
+          // [TruncatedAddress].
           child: Text(
-            '${txId.substring(0, 4)}...',
-            style: ArDriveTypography.body.buttonNormalRegular().copyWith(
-                  decoration: TextDecoration.underline,
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-                ),
+            shortenId(txId),
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textLink,
+              fontWeight: isBold ? ArFontWeight.bold : ArFontWeight.semiBold,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),
     );
   }
+}
+
+/// An ID in the details: shortened, in full in its tooltip, and with a button
+/// that copies it.
+///
+/// A transaction opens in a block explorer. A file, folder or drive ID has no
+/// page of its own there, so it is only text. Those rows used to show the
+/// copy button alone, with nothing to say which ID it would copy.
+class _IdValue extends StatelessWidget {
+  const _IdValue({required this.id, this.isTransaction = false});
+
+  final String id;
+  final bool isTransaction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: isTransaction
+              ? _TxIdTextLink(txId: id)
+              : ArDriveTooltip(
+                  message: id,
+                  child: Text(
+                    shortenId(id),
+                    style: ArDriveTypographyNew.of(context).paragraphNormal(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+        ),
+        const SizedBox(width: 12),
+        CopyButton(text: id),
+      ],
+    );
+  }
+}
+
+/// An ID short enough for a row of the details: its first six characters and
+/// its last four, enough to tell two apart.
+@visibleForTesting
+String shortenId(String id) =>
+    id.length <= 13 ? id : truncateString(id, offsetStart: 6, offsetEnd: 4);
+
+/// The version number of each revision in a file's history that uploaded
+/// data, by its index in [revisions], which lists the newest first.
+///
+/// Counted from the oldest: the first upload is version 1, and each new
+/// version adds one. A rename or a move is not a version. Anything that is not
+/// a file's revision has none.
+@visibleForTesting
+Map<int, int> fileVersionNumbers(List<Object?> revisions) {
+  final versions = <int, int>{};
+  var version = 0;
+
+  for (var index = revisions.length - 1; index >= 0; index--) {
+    final revision = revisions[index];
+
+    if (revision is FileRevisionWithLicenseAndTransactions &&
+        (revision.action == RevisionAction.create ||
+            revision.action == RevisionAction.uploadNewVersion)) {
+      versions[index] = ++version;
+    }
+  }
+
+  return versions;
 }
 
 class EntityRevision {
@@ -1208,7 +1267,12 @@ class DetailsPanelItem extends StatelessWidget {
                       flex: 3,
                       child: Text(
                         itemSubtitle!,
-                        style: ArDriveTypography.body.xSmallRegular(),
+                        style: typography.paragraphSmall(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colorTokens
+                              .textMid,
+                        ),
                       ),
                     ),
                 ],
