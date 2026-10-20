@@ -1,0 +1,83 @@
+{
+  "name": "drive-id-tag-mismatch",
+  "description": "The Drive-Id tag names a different drive from the one in the payload.",
+  "body": "drive-id-tag-mismatch.bin",
+  "transaction": {
+    "id": "DriveStateFixtureTransactionId0000000000000",
+    "owner": "fOVzBRTBnyt4VrUUYadBH8yras_-jhgpmNgg-5b3vEw",
+    "tags": [
+      {
+        "name": "ArFS",
+        "value": "0.15"
+      },
+      {
+        "name": "Entity-Type",
+        "value": "drive-state"
+      },
+      {
+        "name": "Drive-Id",
+        "value": "11111111-2222-4333-8444-555555555555"
+      },
+      {
+        "name": "Drive-State-Id",
+        "value": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d"
+      },
+      {
+        "name": "State-Version",
+        "value": "0.2"
+      },
+      {
+        "name": "Content-Type",
+        "value": "application/octet-stream"
+      },
+      {
+        "name": "Block-Start",
+        "value": "0"
+      },
+      {
+        "name": "Block-End",
+        "value": "1500000"
+      },
+      {
+        "name": "Data-Start",
+        "value": "0"
+      },
+      {
+        "name": "Data-End",
+        "value": "1500000"
+      },
+      {
+        "name": "Entity-Count",
+        "value": "9"
+      },
+      {
+        "name": "App-Name",
+        "value": "ArDrive-App"
+      },
+      {
+        "name": "App-Platform",
+        "value": "Web"
+      },
+      {
+        "name": "App-Version",
+        "value": "2.88.1"
+      },
+      {
+        "name": "Unix-Time",
+        "value": "1792454400"
+      }
+    ]
+  },
+  "reader": {
+    "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
+    "ownerAddress": "fOVzBRTBnyt4VrUUYadBH8yras_-jhgpmNgg-5b3vEw",
+    "privacy": "public",
+    "driveKey": null,
+    "syncedToBlock": 0
+  },
+  "payloadSha256": "e5b444f753c91263a2520e00949950f85538ff526f5b9c660c5a1229d34ce9d1",
+  "expected": {
+    "outcome": "integrityFailed",
+    "detail": "the Drive-Id tag says 11111111-2222-4333-8444-555555555555 and the payload holds 6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b"
+  }
+}

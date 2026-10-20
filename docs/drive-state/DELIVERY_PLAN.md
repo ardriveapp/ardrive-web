@@ -7,10 +7,17 @@ Tracks the ArFS addition across every repository it touches. The proposal is
 **Status key:** ✅ merged to the feature branch · 🔨 in flight · ⬜ not started ·
 🔒 blocked on a human decision
 
-**Status, 2026-10-17.** The web app's part is on `dev` (#2197, merged
+**Status, 2026-10-20.** The web app's part is on `dev` (#2197, merged
 2026-10-16, then #2267 to #2271) and reads and publishes artifacts on staging.
 Production has both flags off. The spec is in review as ar-io/docs #192.
-Stream B (core-js and the CLI) has not started.
+Stream B is in review: ardrive-core-js #288 (producing, and reading on by
+default in the live paths: folder listing, folder download and the first
+incremental sync of a drive), ardrive-cli #378 (`create-snapshot` publishes artifacts,
+`snapshot-info`), ArDrive desktop #2 (pins core-js), and this repo's golden
+fixtures and cross test, #2297. Decisions of 2026-10-20: reading on by default
+in core-js and the CLI; the CLI's `create-snapshot` replaces JSON snapshots;
+licence details are not produced, since readers read each file's licence from
+its `licenseTxId`.
 
 ---
 
@@ -47,7 +54,9 @@ Three consequences, all favourable:
    cache) is a later phase."* So core-js can parse and compose snapshots but does
    not yet use them when listing a drive. Drive-state should not overtake that;
    it should land behind or alongside the same integration, or it will be a
-   reader nothing calls.
+   reader nothing calls. *Resolved in core-js #288:* listing and downloads
+   read the artifact, then snapshots above it, then GraphQL above those, and
+   a first incremental sync starts from the artifact.
 
 Note `entityTypeValues` (`src/types/type_guards.ts`) still lists only
 `drive | file | folder | drive-signature` — snapshots are identified by their
@@ -316,7 +325,7 @@ it, answering every row.
 |---|---|---|
 | B1.1 | **The SQLite engine** | Must run on Node 18 (both packages' `engines`), with no native build for the CLI's install. `sql.js` (WebAssembly) meets both; `better-sqlite3` is native; `node:sqlite` needs Node 22. Also decides whether core-js can produce in a browser |
 | B1.2 | **Module layout** | `src/drive_state/` beside `src/snapshots/`, mirroring its files: tags, types, query, data, plus envelope and producer |
-| B1.3 | **Where the reader joins sync** | Beside `parseSnapshotData` in `arfsdao_anonymous`, composed with `snapshot_obscuring`, `height_range` and `drive_history_composite`. Not a second range mechanism. Sequenced with core-js's own pending snapshot wiring (`src/snapshots/index.ts`: not yet in the live listing path) |
+| B1.3 | **Where the reader joins sync** | Beside `parseSnapshotData` in `arfsdao_anonymous`, composed with `snapshot_obscuring`, `height_range` and `drive_history_composite`. Not a second range mechanism. Sequenced with core-js's own pending snapshot wiring (`src/snapshots/index.ts`: not yet in the live listing path). #288 wires both: artifact, then snapshots, then GraphQL |
 | B1.4 | **The CLI's metadata cache** | How an imported artifact populates the persistent ArFS entity cache, and how the watermark is stored so the next run continues from `Block-End` |
 | B1.5 | **Producer inputs** | core-js has no local database, so the producer builds from a fresh full listing of the drive. Define the coverage claim it can honestly sign, and refuse to publish over a gap, the same rule as the web app |
 | B1.6 | **Private drives** | Drive key derivation for every identity type the CLI supports, and the guarantee that no key material reaches the payload |
@@ -327,13 +336,13 @@ it, answering every row.
 
 | | Item | Status |
 |---|---|---|
-| B2.1 | Tags, types and GraphQL discovery, owner-filtered | ⬜ |
-| B2.2 | Envelope reader: check the upload's owner, decrypt (private), sniff the encoding, inflate with a bound, open the SQLite through the read gate | ⬜ |
-| B2.3 | Payload reader into core-js's own entity types, not a port of the web app's column names, including the coverage check against the tags | ⬜ |
-| B2.4 | Wire the reader into drive listing and sync (B1.3, B1.4), behind an option that defaults off until B3 passes | ⬜ |
-| B2.5 | Producer: build the SQLite to the spec's schema (2.3), seal it (2.4), and refuse on any gap | ⬜ |
-| B2.6 | CLI: `ardrive create-drive-state` (with `--dry-run`) and an option on drive listing and sync to use artifacts | ⬜ |
-| B2.7 | CLI docs in ar-io-docs, beside the snapshot command | ⬜ |
+| B2.1 | Tags, types and GraphQL discovery, owner-filtered | 🔨 core-js #288 |
+| B2.2 | Envelope reader: check the upload's owner, decrypt (private), sniff the encoding, inflate with a bound, open the SQLite through the read gate | 🔨 core-js #288 |
+| B2.3 | Payload reader into core-js's own entity types, not a port of the web app's column names, including the coverage check against the tags | 🔨 core-js #288 |
+| B2.4 | Wire the reader into drive listing and sync (B1.3, B1.4), behind an option. Decided 2026-10-20: on by default | 🔨 core-js #288 |
+| B2.5 | Producer: build the SQLite to the spec's schema (2.3), seal it (2.4), and refuse on any gap | 🔨 core-js #288 |
+| B2.6 | CLI: `ardrive create-snapshot` publishes artifacts (with `--dry-run`), and listing uses them. Decided 2026-10-20: the existing command, not a new one | 🔨 cli #378 |
+| B2.7 | CLI docs in ar-io-docs, beside the snapshot command | 🔨 generated from the CLI README in #378 |
 
 ### B3. Test
 
@@ -349,6 +358,20 @@ Exit: every row green in CI, and a reviewer who wrote none of it has signed off.
 | B3.6 | Hostile inputs: forged coverage tags, a wrong owner, a wrong drive, a gzip bomb, truncated data | Every one falls back to GraphQL and none is adopted |
 | B3.7 | Scale: a drive of at least 40,000 files, read and produced, with time and memory recorded | The CLI is the better producer for large drives only if that is measured |
 | B3.8 | End to end on a real gateway with a test wallet, never a production upload in CI | The whole path, once, by a human |
+
+**Results, 2026-10-20** (core-js #288, web #2297):
+
+| | Result |
+|---|---|
+| B3.1 | 100 core-js unit tests across the envelope, reader, entities, discovery, source, listing, producer and sync |
+| B3.2 | core-js reaches this app's importer outcome on all 43 golden fixtures, and reads the same rows from every one it uses |
+| B3.3 | This app imports core-js's artifacts with identical folder and file rows; so do two mainnet drives core-js built (5 and 544 entities) |
+| B3.4 | `test/fixtures/drive_state/` here, copied to core-js `tests/fixtures/drive_state/` |
+| B3.5 | core-js tests: base plus later revisions, a newer copy kept against a lagging gateway, a file moved out of a folder |
+| B3.6 | Fixtures for each: coverage, owner, drive, gzip bomb, truncated and tampered ciphertext |
+| B3.7 | 41,767 files, private, Node 18: read 1.9 s plus 0.95 s to entities, 208 MiB; build and seal 3.4 s, 255 MiB. Within every target |
+| B3.8 | Not yet: reads and a `--dry-run` publish ran on mainnet with no spend; one real publish by a person remains |
+
 
 ---
 
