@@ -14,6 +14,12 @@ class ArDriveDropdownItemTile extends StatelessWidget {
   final ArDriveArDriveDropdownItemTileIconAlignment iconAlignment;
   final double? height;
 
+  /// A second, smaller line under [name] saying what the item does. The menu
+  /// sizes its items from [height] and does not measure them, so a tile with
+  /// one needs a [height] with room for it, and its menu a matching
+  /// `maxHeight`; see [describedDropdownItemHeight].
+  final String? description;
+
   const ArDriveDropdownItemTile({
     super.key,
     required this.name,
@@ -22,7 +28,16 @@ class ArDriveDropdownItemTile extends StatelessWidget {
     this.fontStyle,
     this.iconAlignment = ArDriveArDriveDropdownItemTileIconAlignment.left,
     this.height,
+    this.description,
   });
+
+  TextStyle _nameStyle(BuildContext context) =>
+      fontStyle ??
+      ArDriveTypography.body.buttonNormalBold(
+        color: isDisabled
+            ? ArDriveTheme.of(context).themeData.colors.themeAccentDisabled
+            : null,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -58,24 +73,54 @@ class ArDriveDropdownItemTile extends StatelessWidget {
             // scale 2.0, "Deep Resync" ran 58 pixels past the right edge of
             // every menu in the app, with no way for the label to give.
             Flexible(
-              child: Text(
-                name,
-                // Two lines, into the height the row now grows to. One line
-                // ellipsized the label instead of using that room, so at 320px
-                // and text scale 2.0 a command read as a cut-off word - and
-                // "Sync history" is the only way into the record.
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: fontStyle ??
-                    ArDriveTypography.body.buttonNormalBold(
-                      color: isDisabled
-                          ? ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeAccentDisabled
-                          : null,
+              child: description == null
+                  ? Text(
+                      name,
+                      // Two lines, into the height the row now grows to. One
+                      // line ellipsized the label instead of using that room,
+                      // so at 320px and text scale 2.0 a command read as a
+                      // cut-off word - and "Sync history" is the only way into
+                      // the record.
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: _nameStyle(context),
+                    )
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: _nameStyle(context),
+                        ),
+                        const SizedBox(height: 2),
+                        // Capped, because the menu is as wide as its widest
+                        // item: unwrapped, a sentence would stretch it across
+                        // the screen.
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 240),
+                          child: Text(
+                            description!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                ArDriveTypographyNew.of(context).paragraphSmall(
+                              color: isDisabled
+                                  ? ArDriveTheme.of(context)
+                                      .themeData
+                                      .colors
+                                      .themeAccentDisabled
+                                  : ArDriveTheme.of(context)
+                                      .themeData
+                                      .colorTokens
+                                      .textMid,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-              ),
             ),
             if (icon != null &&
                 iconAlignment ==
@@ -96,3 +141,8 @@ class ArDriveDropdownItemTile extends StatelessWidget {
     );
   }
 }
+
+/// The [ArDriveDropdownItemTile.height] for a tile with a description: room
+/// for its name and two lines under it, before text scaling, which the tile
+/// and the menu both apply.
+const double describedDropdownItemHeight = 72;

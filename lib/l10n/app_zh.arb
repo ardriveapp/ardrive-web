@@ -429,10 +429,6 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "deepResyncTooltip": "清空缓存并刷新所有驱动器",
-  "@deepResyncTooltip": {
-    "description": "Deep Sync Tooltip Text"
-  },
   "detachDrive": "是否移除网盘?",
   "@detachDrive": {
     "description": "Detach Drive Title"

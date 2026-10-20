@@ -429,10 +429,6 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "deepResyncTooltip": "कैशे खाली करें और सभी ड्राइव को रिफ़्रेश करें",
-  "@deepResyncTooltip": {
-    "description": "Deep Sync Tooltip Text"
-  },
   "detachDrive": "क्या ड्राइव को अलग करें?",
   "@detachDrive": {
     "description": "Detach Drive Title"

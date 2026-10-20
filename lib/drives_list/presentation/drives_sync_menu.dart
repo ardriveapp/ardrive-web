@@ -1,6 +1,7 @@
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/sync/presentation/sync_history_panel.dart';
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -42,7 +43,15 @@ class DrivesSyncMenu extends StatelessWidget {
         final drivesList = context.watch<DrivesListCubit?>();
         final selection = drivesList?.selectionCount ?? 0;
 
+        final offersRetry = errors != null && errors.failedDriveIds.isNotEmpty;
+
         return ArDriveDropdown(
+          // The two sync items carry a line saying what they do, so they are
+          // taller than the rest, and the menu, which sizes itself from a
+          // single item height, is told the total instead.
+          maxHeight:
+              (2 * describedDropdownItemHeight + (offersRetry ? 2 : 1) * 48) *
+                  MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0),
           anchor: const Aligned(
             follower: Alignment.topRight,
             target: Alignment.bottomRight,
@@ -75,6 +84,9 @@ class DrivesSyncMenu extends StatelessWidget {
                     ? appLocalizationsOf(context)
                         .driveListSyncSelectedCount(selection)
                     : appLocalizationsOf(context).syncAllDrives,
+                description:
+                    appLocalizationsOf(context).syncMenuSyncDescription,
+                height: describedDropdownItemHeight,
                 icon: ArDriveIcons.refresh(color: iconColor),
                 isDisabled: isSyncing,
               ),
@@ -82,11 +94,22 @@ class DrivesSyncMenu extends StatelessWidget {
             ArDriveDropdownItem(
               onClick: isSyncing
                   ? null
-                  : () {
+                  : () async {
+                      // Read before the confirmation: it is a dialog, and the
+                      // menu's context is not this widget's to use after it.
+                      final syncCubit = context.read<SyncCubit>();
+                      final confirmed = await confirmFullResync(
+                        context,
+                        selection > 0
+                            ? FullResyncScope.selected(selection)
+                            : const FullResyncScope.allDrives(),
+                      );
+                      if (!confirmed) return;
+
                       if (drivesList != null) {
                         drivesList.syncSelectedDrives(deep: true);
                       } else {
-                        context.read<SyncCubit>().startSync(deepSync: true);
+                        syncCubit.startSync(deepSync: true);
                       }
                       PlausibleEventTracker.trackResync(
                           type: ResyncType.deepResync);
@@ -96,11 +119,14 @@ class DrivesSyncMenu extends StatelessWidget {
                     ? appLocalizationsOf(context)
                         .driveListDeepResyncSelectedCount(selection)
                     : appLocalizationsOf(context).deepResync,
+                description:
+                    appLocalizationsOf(context).syncMenuFullResyncDescription,
+                height: describedDropdownItemHeight,
                 icon: ArDriveIcons.cloudSync(color: iconColor),
                 isDisabled: isSyncing,
               ),
             ),
-            if (errors != null && errors.failedDriveIds.isNotEmpty)
+            if (offersRetry)
               ArDriveDropdownItem(
                 onClick: isSyncing
                     ? null

@@ -12,6 +12,7 @@ import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
@@ -1052,11 +1053,19 @@ class EntityActionsMenu extends StatelessWidget {
           ArDriveDropdownItem(
             onClick: isSyncing
                 ? null
-                : () {
-                    context.read<SyncCubit>().startSyncForDrive(
-                          driveId: drive!.id,
-                          deepSync: true,
-                        );
+                : () async {
+                    final syncCubit = context.read<SyncCubit>();
+                    final driveId = drive!.id;
+                    if (!await confirmFullResync(
+                      context,
+                      FullResyncScope.drive(drive!.name),
+                    )) {
+                      return;
+                    }
+                    syncCubit.startSyncForDrive(
+                      driveId: driveId,
+                      deepSync: true,
+                    );
                   },
             content: ArDriveDropdownItemTile(
               name: appLocalizationsOf(context).deepSyncThisDrive,

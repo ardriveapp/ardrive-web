@@ -113,7 +113,11 @@ becomes scopes (item 1), the drawer becomes useful; until then it is a second co
   a list glyph says what it opens.
 - **"Deep Resync" is unexplained jargon** in a menu with no room to explain it.
   There is already a written explanation in the ARB — `deepResyncTooltip` — and it
-  is a dead key, referenced by nothing.
+  is a dead key, referenced by nothing. *Resolved:* it is "Full resync" in every
+  menu (the drive menus said "Deep sync"), the sync menu says under each item
+  what it does, a full resync asks first and says it is slow, skips snapshots
+  and deletes nothing, and the dead key is gone. The tooltip was also wrong: a
+  deep sync empties no cache.
 
 ## The initial login sync — where this really hurts
 

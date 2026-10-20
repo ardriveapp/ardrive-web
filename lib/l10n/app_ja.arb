@@ -429,10 +429,6 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "deepResyncTooltip": "キャッシュの削除と全ドライブの更新",
-  "@deepResyncTooltip": {
-    "description": "Deep Sync Tooltip Text"
-  },
   "detachDrive": "ドライブを切り離しますか？",
   "@detachDrive": {
     "description": "Detach Drive Title"

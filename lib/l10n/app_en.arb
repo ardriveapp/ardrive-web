@@ -480,9 +480,9 @@
   "@syncThisDrive": {
     "description": "Menu option to sync only the current drive"
   },
-  "deepSyncThisDrive": "Deep sync this drive",
+  "deepSyncThisDrive": "Full resync this drive",
   "@deepSyncThisDrive": {
-    "description": "Menu option to deep sync only the current drive"
+    "description": "Menu option to reread only the current drive's whole history, without snapshots"
   },
   "syncAllDrivesOnLogin": "Sync all drives on login",
   "@syncAllDrivesOnLogin": {
@@ -526,13 +526,39 @@
   "@decentralizedPermanent": {
     "description": "Permanence requires patience"
   },
-  "deepResync": "Deep resync",
+  "deepResync": "Full resync all drives",
   "@deepResync": {
-    "description": "Deep Sync Button Text"
+    "description": "Sync menu item that rereads every drive's whole history, without snapshots"
   },
-  "deepResyncTooltip": "Empty cache & resync all drives",
-  "@deepResyncTooltip": {
-    "description": "Deep Sync Tooltip Text"
+  "fullResyncConfirmTitle": "Full resync",
+  "@fullResyncConfirmTitle": {
+    "description": "Title of the confirmation shown before a full resync starts"
+  },
+  "fullResyncConfirmAllDrives": "This rereads the entire history of all your drives from Arweave, without using snapshots. It can take a long time for large drives. Nothing on this device is deleted.",
+  "@fullResyncConfirmAllDrives": {
+    "description": "Confirmation body before a full resync of every drive"
+  },
+  "fullResyncConfirmSelectedDrives": "This rereads the entire history of {count, plural, =1{the selected drive} other{the {count} selected drives}} from Arweave, without using snapshots. It can take a long time for large drives. Nothing on this device is deleted.",
+  "@fullResyncConfirmSelectedDrives": {
+    "description": "Confirmation body before a full resync of the ticked drives",
+    "placeholders": { "count": { "type": "num" } }
+  },
+  "fullResyncConfirmDrive": "This rereads the entire history of {driveName} from Arweave, without using snapshots. It can take a long time for large drives. Nothing on this device is deleted.",
+  "@fullResyncConfirmDrive": {
+    "description": "Confirmation body before a full resync of one drive",
+    "placeholders": { "driveName": { "type": "String" } }
+  },
+  "fullResyncConfirmAction": "Full resync",
+  "@fullResyncConfirmAction": {
+    "description": "Button that starts a full resync after confirmation"
+  },
+  "syncMenuSyncDescription": "Gets changes since the last sync.",
+  "@syncMenuSyncDescription": {
+    "description": "Second line under the Sync item in the sync menu"
+  },
+  "syncMenuFullResyncDescription": "Rereads all history. Slower; use it if something looks missing.",
+  "@syncMenuFullResyncDescription": {
+    "description": "Second line under the Full resync item in the sync menu"
   },
   "detachDrive": "Detach drive?",
   "detachDriveAction": "Detach drive",
@@ -1929,7 +1955,7 @@
     "description": "Menu item that syncs only the ticked drives",
     "placeholders": { "count": { "type": "num", "format": "compact" } }
   },
-  "driveListDeepResyncSelectedCount": "Deep resync {count} selected",
+  "driveListDeepResyncSelectedCount": "Full resync {count} selected",
   "@driveListDeepResyncSelectedCount": {
     "description": "Menu item that deep-resyncs only the ticked drives",
     "placeholders": { "count": { "type": "num", "format": "compact" } }
