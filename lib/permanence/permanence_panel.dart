@@ -197,7 +197,9 @@ class PermanenceSummary {
 /// read as "$0" beside a real AR price.
 @visibleForTesting
 String formatUsd(double usd) {
-  if (usd >= 100) {
+  // From the first amount that rounds to $100.00 in cents, so nothing reads
+  // "$100.00" beside "$100".
+  if (usd >= 99.995) {
     return NumberFormat.currency(symbol: r'$', decimalDigits: 0).format(usd);
   }
   if (usd > 0 && usd < 0.01) {

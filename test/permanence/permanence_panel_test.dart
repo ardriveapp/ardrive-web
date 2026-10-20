@@ -109,6 +109,8 @@ void main() {
       expect(formatUsd(100), r'$100');
       expect(formatUsd(1234.56), r'$1,235');
       expect(formatUsd(99.5), r'$99.50');
+      expect(formatUsd(99.999), r'$100');
+      expect(formatUsd(0), r'$0.00');
       expect(formatUsd(0.158), r'$0.16');
       expect(formatUsd(0.004), r'<$0.01');
     });
