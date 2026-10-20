@@ -39,12 +39,10 @@ void main() {
 
   late List<String> ticked;
   late List<DriveListSort> sorted;
-  late int syncedSelected;
 
   setUp(() {
     ticked = [];
     sorted = [];
-    syncedSelected = 0;
   });
 
   Future<void> pumpList(
@@ -74,11 +72,9 @@ void main() {
               ),
               onOpenDrive: (_) {},
               onTryAgain: () {},
-              onSyncAllDrives: () {},
               onSort: sorted.add,
               onToggleSelected: ticked.add,
               onToggleSelectAll: () {},
-              onSyncSelected: () => syncedSelected++,
               onClearSelection: () {},
             ),
           ),
@@ -115,19 +111,21 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets('ticks drives and syncs the ones ticked', (tester) async {
+      testWidgets('ticks drives, and the heading says how many',
+          (tester) async {
         await pumpList(tester, width: width);
 
         await tester.tap(find.byType(ArDriveCheckBox).at(1));
         await tester.pump();
         expect(ticked, ['a']);
 
-        // The list as it is once two are ticked.
+        // The list as it is once two are ticked. Syncing them is the page's
+        // sync button, which reads "Sync 2 selected" by then - see
+        // drives_sync_menu_test.dart.
         await pumpList(tester, width: width, selected: {'a', 'b'});
-        await tester.tap(find.text('Sync selected'));
-        await tester.pump();
 
-        expect(syncedSelected, 1);
+        expect(find.text('2 drives selected'), findsOneWidget);
+        expect(tester.takeException(), isNull);
       });
 
       testWidgets('sorts by a heading', (tester) async {

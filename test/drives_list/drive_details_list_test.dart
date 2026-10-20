@@ -67,7 +67,6 @@ void main() {
               state: twoDrives,
               onOpenDrive: (drive) => opened.add(drive.id),
               onTryAgain: () {},
-              onSyncAllDrives: () {},
               chosenDriveId: chosenDriveId,
               onChoose: chosen.add,
             ),

@@ -42,13 +42,11 @@ void main() {
   var opened = <String>[];
   var ticked = <String>[];
   var triedAgain = 0;
-  var syncedAll = 0;
 
   setUp(() {
     opened = <String>[];
     ticked = <String>[];
     triedAgain = 0;
-    syncedAll = 0;
   });
 
   Future<void> pumpBody(
@@ -79,9 +77,7 @@ void main() {
               state: state,
               onOpenDrive: (drive) => opened.add(drive.id),
               onToggleSelected: offersSelection ? ticked.add : null,
-              onSyncSelected: offersSelection ? () {} : null,
               onTryAgain: () => triedAgain++,
-              onSyncAllDrives: () => syncedAll++,
             ),
           ),
         ),
@@ -245,8 +241,8 @@ void main() {
 
     /// A double-click opens the drive it was aimed at. Nothing a click does
     /// may move the rows between its two halves: a click that ticked the
-    /// drive would bring in the selection strip above the list, and the
-    /// second click would land on a different drive.
+    /// drive once brought in a selection strip above the list, and the second
+    /// click landed on a different drive.
     testWidgets('a double-click opens the drive it was aimed at',
         (tester) async {
       await pumpBody(tester, twoDrives, offersSelection: true);
@@ -294,8 +290,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('offers one sync when nothing has ever been synced',
-        (tester) async {
+    testWidgets(
+        'says nothing has been synced yet, and leaves the offer to the '
+        'page\'s sync button', (tester) async {
       await pumpBody(
         tester,
         DrivesListLoaded(
@@ -307,9 +304,10 @@ void main() {
       );
 
       expect(find.text('Nothing has been synced yet'), findsOneWidget);
-
-      await tester.tap(find.text('Sync all drives'));
-      expect(syncedAll, 1);
+      // The page's split button, above it, is the one place sync lives; the
+      // card used to carry a second red button saying the same.
+      expect(find.text('Sync all drives'), findsNothing);
+      expect(find.byType(ArDriveButtonNew), findsNothing);
     });
 
     testWidgets('and stops offering it once one drive has been synced',
@@ -327,11 +325,9 @@ void main() {
       // The per-drive answer is on the row by then; a banner over the top of
       // it would be a nag, not information.
       expect(find.text('Nothing has been synced yet'), findsNothing);
-      expect(find.text('Sync all drives'), findsNothing);
     });
 
-    testWidgets('the sync-everything offer fits a 320px screen',
-        (tester) async {
+    testWidgets('the never-synced card fits a 320px screen', (tester) async {
       await pumpBody(
         tester,
         DrivesListLoaded(
@@ -340,7 +336,7 @@ void main() {
         width: 320,
       );
 
-      expect(find.text('Sync all drives'), findsOneWidget);
+      expect(find.text('Nothing has been synced yet'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -399,23 +395,6 @@ void main() {
         drive(id: 'b', name: 'Work', hasBeenWalked: false),
       ],
     );
-
-    testWidgets('the sync-everything button is a button, not a slab',
-        (tester) async {
-      await pumpBody(tester, neverSynced, width: 1280);
-
-      final button = tester.getSize(
-        find.widgetWithText(ArDriveButtonNew, 'Sync all drives'),
-      );
-
-      // With no width of its own the button expands to the content column:
-      // about 1200px of primary colour, on the one screen whose message is
-      // that nothing is wrong yet.
-      expect(button.width, lessThan(320));
-
-      await tester.tap(find.text('Sync all drives'));
-      expect(syncedAll, 1);
-    });
 
     testWidgets('a phone in landscape can still reach its drives',
         (tester) async {

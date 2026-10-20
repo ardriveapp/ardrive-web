@@ -2538,5 +2538,13 @@
   "zippingYourFiles": "आपकी फाइल(ों) को ज़िप कर रहें हैं....",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"
+  },
+  "moreSyncOptions": "सिंक के और विकल्प",
+  "@moreSyncOptions": {
+    "description": "Screen reader label for the chevron half of the drives list sync button, which opens every sync action"
+  },
+  "driveListClearSelectionTooltip": "चयन हटाएं",
+  "@driveListClearSelectionTooltip": {
+    "description": "Tooltip and screen reader label for the x that ends a selection on the drives list"
   }
 }

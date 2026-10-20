@@ -2128,6 +2128,14 @@
   "@driveListClearSelection": {
     "description": "Button that unticks every selected drive"
   },
+  "moreSyncOptions": "More sync options",
+  "@moreSyncOptions": {
+    "description": "Screen reader label for the chevron half of the drives list sync button, which opens every sync action"
+  },
+  "driveListClearSelectionTooltip": "Clear selection",
+  "@driveListClearSelectionTooltip": {
+    "description": "Tooltip and screen reader label for the x that ends a selection on the drives list"
+  },
   "@loginCheckingPassword": {
     "description": "Shown on the Continue button while the entered password is being proved against one of the wallet's private drives, which takes several network round trips"
   },

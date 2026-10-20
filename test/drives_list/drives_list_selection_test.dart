@@ -4,6 +4,7 @@ import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,13 +37,11 @@ void main() {
       );
 
   var toggled = <String>[];
-  var syncedSelected = 0;
   var cleared = 0;
   var retried = 0;
 
   setUp(() {
     toggled = <String>[];
-    syncedSelected = 0;
     cleared = 0;
     retried = 0;
   });
@@ -71,10 +70,8 @@ void main() {
               state: state,
               onOpenDrive: (_) {},
               onTryAgain: () {},
-              onSyncAllDrives: () {},
               onToggleSelected: toggled.add,
               onToggleSelectAll: () {},
-              onSyncSelected: () => syncedSelected++,
               onClearSelection: () => cleared++,
               onRetryFailed: () => retried++,
             ),
@@ -98,14 +95,16 @@ void main() {
           reason: 'one per row, plus the header select-all');
     });
 
-    testWidgets('nothing is selected, so no bar is in the way', (tester) async {
+    testWidgets('nothing is selected, so the heading is the page\'s title',
+        (tester) async {
       await pump(tester, twoDrives);
 
-      expect(find.text('Sync selected'), findsNothing);
+      expect(find.text('Your drives'), findsOneWidget);
       expect(find.textContaining('selected'), findsNothing);
     });
 
-    testWidgets('a selection says how many and offers one run', (tester) async {
+    testWidgets('a selection becomes the heading, saying how many',
+        (tester) async {
       await pump(
         tester,
         DrivesListLoaded(
@@ -116,15 +115,13 @@ void main() {
       );
 
       expect(find.text('2 drives selected'), findsOneWidget);
-      expect(find.text('Sync selected'), findsOneWidget);
-
-      await tester.tap(find.text('Sync selected'));
-      await tester.pump();
-
-      expect(syncedSelected, 1);
+      expect(find.text('Your drives'), findsNothing);
+      // What to do with them is the page's one sync button, not a second
+      // button beside the count.
+      expect(find.text('Sync selected'), findsNothing);
     });
 
-    testWidgets('and clearing does not select everything instead',
+    testWidgets('the x clears it, and does not select everything instead',
         (tester) async {
       await pump(
         tester,
@@ -137,10 +134,37 @@ void main() {
 
       expect(find.text('1 drive selected'), findsOneWidget);
 
-      await tester.tap(find.text('Clear'));
+      await tester.tap(find.byTooltip('Clear selection'));
       await tester.pump();
 
-      expect(cleared, 1, reason: 'Clear must clear, not toggle-all');
+      expect(cleared, 1, reason: 'the x must clear, not toggle-all');
+    });
+
+    testWidgets('and so does Esc', (tester) async {
+      await pump(
+        tester,
+        DrivesListLoaded(
+          drives: [drive('a'), drive('b')],
+          scope: DriveScope.all,
+          selected: const {'a'},
+        ),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+
+      expect(cleared, 1);
+    });
+
+    testWidgets('but Esc is left alone when nothing is ticked', (tester) async {
+      await pump(tester, twoDrives);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+
+      expect(cleared, 0,
+          reason: 'with nothing to clear, Esc belongs to whatever is around '
+              'the list - the drive details panel closes on it');
     });
   });
 
@@ -202,7 +226,9 @@ void main() {
 
   /// The two things the first version of this got wrong, both visible in a
   /// screenshot: the column headings vanished, and two red buttons offering
-  /// different scopes sat a hundred pixels apart.
+  /// different scopes sat a hundred pixels apart. And the one the strip that
+  /// fixed them got wrong: appearing above the table, it moved every row down
+  /// on the first tick.
   group('a selection does not cost the table its headings', () {
     final oneTicked = DrivesListLoaded(
       drives: [drive('a'), drive('b')],
@@ -223,43 +249,51 @@ void main() {
       }
     });
 
-    testWidgets('and only one action is offered at a time', (tester) async {
-      await pump(
-        tester,
-        DrivesListLoaded(
-          drives: [
-            drive('a', hasBeenWalked: false),
-            drive('b', hasBeenWalked: false),
-          ],
-          scope: DriveScope.all,
-          selected: const {'a'},
-        ),
-      );
+    testWidgets('and ticking a drive moves nothing below the heading',
+        (tester) async {
+      await pump(tester, twoDrives);
+      final before = tester.getTopLeft(find.text('Name'));
 
-      expect(find.text('Sync selected'), findsOneWidget);
-      expect(
-        find.text('Sync all drives'),
-        findsNothing,
-        reason: 'the reader has just said which drives they meant, so the '
-            'offer to sync every one of them is withdrawn rather than left to '
-            'compete with the one they asked for',
-      );
+      await pump(tester, oneTicked);
+      final after = tester.getTopLeft(find.text('Name'));
+
+      expect(after, before,
+          reason: 'the heading becomes the selection in place; a row of its '
+              'own pushed the list down under the pointer');
     });
 
-    testWidgets('and it comes back when nothing is ticked', (tester) async {
-      await pump(
-        tester,
-        DrivesListLoaded(
-          drives: [
-            drive('a', hasBeenWalked: false),
-            drive('b', hasBeenWalked: false),
-          ],
-          scope: DriveScope.all,
-        ),
-      );
+    testWidgets('nor does it while nothing has synced yet', (tester) async {
+      DrivesListLoaded neverSynced({Set<String> selected = const {}}) =>
+          DrivesListLoaded(
+            drives: [
+              drive('a', hasBeenWalked: false),
+              drive('b', hasBeenWalked: false),
+            ],
+            scope: DriveScope.all,
+            selected: selected,
+          );
 
-      expect(find.text('Sync all drives'), findsWidgets);
-      expect(find.text('Sync selected'), findsNothing);
+      await pump(tester, neverSynced());
+      final before = tester.getTopLeft(find.text('Name'));
+      expect(find.text('Nothing has been synced yet'), findsOneWidget);
+
+      await pump(tester, neverSynced(selected: const {'a'}));
+
+      // The card stays: it is words now, and withdrawing it on the first
+      // tick was the same jump.
+      expect(find.text('Nothing has been synced yet'), findsOneWidget);
+      expect(tester.getTopLeft(find.text('Name')), before);
+    });
+
+    testWidgets('and the title comes back when nothing is ticked',
+        (tester) async {
+      await pump(tester, oneTicked);
+      expect(find.text('Your drives'), findsNothing);
+
+      await pump(tester, twoDrives);
+
+      expect(find.text('Your drives'), findsOneWidget);
+      expect(find.textContaining('selected'), findsNothing);
     });
   });
 }
