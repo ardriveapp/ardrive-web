@@ -918,6 +918,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                   .currentDrive.id,
                                               parentFolderId: driveDetailState
                                                   .folderInView.folder.id,
+                                              folderName: driveDetailState
+                                                  .folderInView.folder.name,
+                                              contentsStillArriving:
+                                                  driveDetailState
+                                                      .contentsStillArriving,
                                               promptToAddFiles: driveDetailState
                                                   .hasWritePermissions,
                                               isRootFolder: driveDetailState
@@ -940,6 +945,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 driveId: driveDetailState.currentDrive.id,
                                 parentFolderId:
                                     driveDetailState.folderInView.folder.id,
+                                folderName:
+                                    driveDetailState.folderInView.folder.name,
+                                contentsStillArriving:
+                                    driveDetailState.contentsStillArriving,
                                 promptToAddFiles:
                                     driveDetailState.hasWritePermissions,
                                 isRootFolder: driveDetailState.folderInView
@@ -1178,6 +1187,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   promptToAddFiles: state.hasWritePermissions,
                   driveId: state.currentDrive.id,
                   parentFolderId: state.folderInView.folder.id,
+                  folderName: state.folderInView.folder.name,
+                  contentsStillArriving: state.contentsStillArriving,
                   isRootFolder:
                       state.folderInView.folder.parentFolderId == null,
                 ),

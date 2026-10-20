@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_detail_syncing_card.dart';
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -11,6 +16,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../test_utils/mocks.dart';
 
 class _MockDrivesCubit extends MockCubit<DrivesState> implements DrivesCubit {}
 
@@ -40,6 +47,9 @@ void main() {
   late _MockDrivesCubit drivesCubit;
   late TurboUploadService turboUploadService;
   late _MockConfigService configService;
+  late MockSyncBloc syncCubit;
+  late StreamController<SyncState> syncStates;
+  late StreamController<SyncProgress> progress;
 
   void withDrives(List<Drive> drives) => whenListen(
         drivesCubit,
@@ -69,6 +79,20 @@ void main() {
     // Exactly one drive is what makes this the new-user page rather than the
     // existing-user one.
     withDrives([_drive('drive-a')]);
+
+    syncCubit = MockSyncBloc();
+    syncStates = StreamController<SyncState>.broadcast();
+    progress = StreamController<SyncProgress>.broadcast();
+    whenListen(syncCubit, syncStates.stream, initialState: SyncIdle());
+    when(() => syncCubit.syncingDriveId).thenReturn('drive-a');
+    when(() => syncCubit.syncStartTime).thenReturn(DateTime(2026, 4, 1));
+    when(() => syncCubit.syncProgressController).thenReturn(progress);
+    when(() => syncCubit.syncProgress).thenReturn(SyncProgress.initial());
+  });
+
+  tearDown(() async {
+    await syncStates.close();
+    await progress.close();
   });
 
   Future<void> pumpAt(
@@ -76,9 +100,20 @@ void main() {
     Size size, {
     bool dark = false,
     double textScale = 1,
+    bool isRootFolder = true,
+    bool desktop = false,
+    bool contentsStillArriving = false,
   }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    // The page picks its phone or desktop layout from MediaQuery, which
+    // `setSurfaceSize` alone leaves at the default 800x600 - a phone.
+    if (desktop) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+    }
 
     await tester.pumpWidget(
       ArDriveTheme(
@@ -105,12 +140,17 @@ void main() {
                     value: turboUploadService),
                 RepositoryProvider<ConfigService>.value(value: configService),
               ],
-              child: BlocProvider<DrivesCubit>.value(
-                value: drivesCubit,
-                child: const DriveDetailFolderEmptyCard(
+              child: MultiBlocProvider(
+                providers: [
+                  BlocProvider<DrivesCubit>.value(value: drivesCubit),
+                  BlocProvider<SyncCubit>.value(value: syncCubit),
+                ],
+                child: DriveDetailFolderEmptyCard(
                   driveId: 'drive-a',
                   parentFolderId: 'root',
-                  isRootFolder: true,
+                  folderName: 'My Drive',
+                  isRootFolder: isRootFolder,
+                  contentsStillArriving: contentsStillArriving,
                 ),
               ),
             ),
@@ -120,6 +160,11 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  /// Leaves the tree before the test ends: the syncing panel's elapsed
+  /// counter owns a periodic timer for as long as it is mounted.
+  Future<void> unmount(WidgetTester tester) =>
+      tester.pumpWidget(const SizedBox());
 
   /// The measurement that matters, taken rather than assumed: a scroll view
   /// whose content is shorter than its viewport has nowhere to scroll to.
@@ -260,5 +305,94 @@ void main() {
 
       expect(find.textContaining('Files up to 97.66 KiB each'), findsOneWidget);
     });
+  });
+
+  /// Sync saves a drive's history oldest first, so on a first sync a folder
+  /// lands before anything inside it. A full drive used to flash "Your brand
+  /// new drive!" in that gap. Whether the gap is open is the cubit's call
+  /// (see its tests); this is what the card does with it.
+  group('while the contents are still arriving', () {
+    Future<void> pumpArriving(WidgetTester tester) async {
+      whenListen(syncCubit, syncStates.stream,
+          initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
+      await pumpAt(tester, const Size(1280, 800), contentsStillArriving: true);
+    }
+
+    testWidgets('says the sync is running rather than that the drive is new',
+        (tester) async {
+      await pumpArriving(tester);
+
+      expect(find.byType(DriveDetailSyncingCard), findsOneWidget);
+      expect(find.textContaining('Your drive is ready'), findsNothing);
+      expect(find.textContaining('Upload'), findsNothing);
+
+      await unmount(tester);
+    });
+
+    testWidgets('names the folder that is waiting', (tester) async {
+      await pumpArriving(tester);
+
+      expect(find.text('My Drive will open when the sync finishes'),
+          findsOneWidget);
+
+      await unmount(tester);
+    });
+  });
+
+  group('an empty folder inside a drive', () {
+    testWidgets('says the folder is empty, not that the drive is new',
+        (tester) async {
+      // Small text, as for the later-drive test above: the test font
+      // overflows these cards' 221px content box at full size.
+      await pumpAt(tester, const Size(1280, 800),
+          isRootFolder: false, textScale: 0.5, desktop: true);
+
+      expect(find.text('This folder is empty'), findsOneWidget);
+      expect(find.text('Upload one or more files into this folder.'),
+          findsOneWidget);
+      expect(find.textContaining('new drive'), findsNothing);
+      expect(find.textContaining('Your drive is ready'), findsNothing);
+    });
+
+    testWidgets('has no confetti', (tester) async {
+      // Small text, as for the later-drive test above: the test font
+      // overflows these cards' 221px content box at full size.
+      await pumpAt(tester, const Size(1280, 800),
+          isRootFolder: false, textScale: 0.5, desktop: true);
+
+      expect(find.byType(ArDriveImage), findsNothing);
+    });
+  });
+
+  /// The four cards on an empty drive used to place their titles up to 11px
+  /// apart, and their buttons up to 7px, because each spread its spare space
+  /// evenly around a description of a different length.
+  testWidgets('the action cards line up across the row', (tester) async {
+    withDrives([_drive('drive-a'), _drive('drive-b')]);
+
+    // Wide enough for all four cards, at a text size that fits their 221px
+    // content box in the test font.
+    await pumpAt(tester, const Size(1600, 1000), textScale: 0.5, desktop: true);
+
+    final titles = [
+      'Upload files',
+      'Upload a folder',
+      'Create a folder',
+      'Create a pin',
+    ];
+    for (final title in titles) {
+      expect(find.text(title), findsOneWidget, reason: title);
+    }
+    expect(tester.takeException(), isNull);
+
+    final titleTops =
+        titles.map((t) => tester.getTopLeft(find.text(t)).dy).toSet();
+    expect(titleTops, hasLength(1), reason: 'titles at $titleTops');
+
+    final buttonTops = tester
+        .widgetList<ArDriveButtonNew>(find.byType(ArDriveButtonNew))
+        .map((b) => tester.getTopLeft(find.byWidget(b)).dy)
+        .toSet();
+    expect(buttonTops, hasLength(1), reason: 'buttons at $buttonTops');
   });
 }

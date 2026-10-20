@@ -1,4 +1,5 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -228,5 +229,61 @@ void main() {
     ));
 
     expect(find.bySubtype<ArDriveTextButton>(), findsOneWidget);
+  });
+
+  /// The login page's buttons show an icon on hover. It used to slide the
+  /// label out to make room, so the button was blank under the pointer and
+  /// stayed blank behind the dialog the click opened.
+  testWidgets('ArDriveButtonNew keeps its label while hovered', (tester) async {
+    const iconKey = Key('hover-icon');
+
+    // A desktop width: phones have no hover, and the button draws no icon.
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: ArDriveButtonNew(
+                text: 'Import wallet',
+                typography: ArDriveTypographyNew.of(context),
+                maxWidth: 380,
+                hoverIcon: const Icon(Icons.wallet, key: iconKey),
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final button = tester.getRect(find.byType(ArDriveButtonNew));
+    expect(find.byKey(iconKey), findsNothing);
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+    await mouse.moveTo(button.center);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(iconKey), findsOneWidget);
+
+    final label = tester.getRect(find.text('Import wallet'));
+    final icon = tester.getRect(find.byKey(iconKey));
+    expect(button.contains(label.center), isTrue,
+        reason: 'the label is still inside the button');
+    expect(icon.right, lessThanOrEqualTo(label.left),
+        reason: 'the icon sits beside the label, not over it');
+    expect(icon.center.dy, closeTo(label.center.dy, 2));
+
+    await mouse.moveTo(Offset.zero);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(iconKey), findsNothing);
+    expect(button.contains(tester.getRect(find.text('Import wallet')).center),
+        isTrue);
   });
 }
