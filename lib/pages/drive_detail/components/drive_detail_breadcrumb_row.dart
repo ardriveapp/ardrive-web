@@ -15,11 +15,16 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
   final String driveName;
   final String rootFolderId;
 
+  /// Whether to mark the trail with a lock. The explorer looks the same inside
+  /// a private drive as a public one otherwise.
+  final bool isPrivate;
+
   const DriveDetailBreadcrumbRow({
     super.key,
     required List<BreadCrumbRowInfo> path,
     required this.driveName,
     required this.rootFolderId,
+    this.isPrivate = false,
   }) : _pathSegments = path;
 
   @override
@@ -113,6 +118,13 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
       );
     }
 
+    Widget buildPrivateLock() {
+      return const Padding(
+        padding: EdgeInsets.only(right: 6),
+        child: PrivateDriveLock(),
+      );
+    }
+
     final showsHome = AppRouterDelegate.canShowDrivesList(
       context.watch<ProfileCubit>().state,
     );
@@ -122,6 +134,11 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     if (_pathSegments.length >= breadCrumbcount) {
       if (showsHome) {
         segments.addAll([buildHome(), buildSeparator(true)]);
+      }
+      // The drive's own name is in the dropdown here, so the lock leads the
+      // trail instead of sitting beside it.
+      if (isPrivate) {
+        segments.add(buildPrivateLock());
       }
       segments.add(_navigateBackIcon(
         context: context,
@@ -150,6 +167,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
             buildHome(),
             buildSeparator(true),
           ],
+          if (isPrivate) buildPrivateLock(),
           GestureDetector(
             onTap: () => context
                 .read<DriveDetailCubit>()

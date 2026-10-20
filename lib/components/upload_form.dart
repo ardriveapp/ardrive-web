@@ -27,6 +27,7 @@ import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license/view_license_definition.dart';
 import 'package:ardrive/components/license_details_popover.dart';
+import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
@@ -893,6 +894,10 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                                           )
                                       ],
                                     ),
+                                    if (!widget.readyState.uploadIsPublic) ...[
+                                      const SizedBox(height: 8),
+                                      const EncryptedUploadNote(),
+                                    ],
                                     const SizedBox(height: 20),
                                     // Content taller than the dialog can
                                     // grow scrolls, rather than running into
@@ -1030,6 +1035,10 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                                         ),
                                       ],
                                     ),
+                                    if (!widget.readyState.uploadIsPublic) ...[
+                                      const SizedBox(height: 8),
+                                      const EncryptedUploadNote(),
+                                    ],
                                     const SizedBox(height: 20),
                                     Column(
                                       mainAxisSize: MainAxisSize.min,

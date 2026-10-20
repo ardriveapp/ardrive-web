@@ -2639,6 +2639,14 @@
   "@private": {
     "description": "A private entity"
   },
+  "privateDriveLabel": "Private drive",
+  "@privateDriveLabel": {
+    "description": "Tooltip and screen reader label for the lock beside a drive's name when the drive is private"
+  },
+  "uploadEncryptedNote": "Encrypted before it leaves this device",
+  "@uploadEncryptedNote": {
+    "description": "Shown in the upload dialogs for a private drive, to say that the files are encrypted on this device before they are sent"
+  },
   "privateDrives": "Private drives",
   "@privateDrives": {
     "description": "Private drives accordion title"
