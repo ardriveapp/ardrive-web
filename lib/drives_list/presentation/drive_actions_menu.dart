@@ -214,11 +214,15 @@ class DriveActionsMenu extends StatelessWidget {
             ),
           ),
       ],
-      child: ArDriveClickArea(
-        tooltip: appLocalizationsOf(context).showMenu,
-        child: Semantics(
-          button: true,
-          label: appLocalizationsOf(context).showMenu,
+      // The name once. The tooltip carries its message to a screen reader as
+      // well, so with a label of its own inside it the button was announced
+      // as "Show menu Show menu".
+      child: Semantics(
+        button: true,
+        label: appLocalizationsOf(context).showMenu,
+        excludeSemantics: true,
+        child: ArDriveClickArea(
+          tooltip: appLocalizationsOf(context).showMenu,
           child: SizedBox(
             width: driveListMenuTapTarget,
             height: driveListMenuTapTarget,
