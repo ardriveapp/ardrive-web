@@ -204,7 +204,9 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
               Positioned(
                 right: 3,
                 bottom: 3,
-                child: _buildFileStatus(context),
+                child: FileStatusDot(
+                  status: item.fileStatusFromTransactions!,
+                ),
               ),
           ],
         ),
@@ -238,25 +240,38 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
             Positioned(
               right: 3,
               bottom: 3,
-              child: _buildFileStatus(context),
+              child: FileStatusDot(
+                status: item.fileStatusFromTransactions!,
+              ),
             ),
         ],
       ),
       backgroundColor: ArDriveTheme.of(context).themeData.backgroundColor,
     );
   }
+}
 
-  /// The dot on a file's icon: amber waiting, green on chain, red not.
-  ///
-  /// It says what it means now. An 8px circle in three colours is the only
-  /// report a file's own journey onto Arweave gets, and it was unlabelled:
-  /// confirming an upload is otherwise silent by design, since it asks about
-  /// one transaction and changes nothing about the drive.
-  Widget _buildFileStatus(BuildContext context) {
+/// The dot on a file's icon: amber waiting, green on chain, red not.
+///
+/// It says what it means now. An 8px circle in three colours is the only
+/// report a file's own journey onto Arweave gets, and it was unlabelled:
+/// confirming an upload is otherwise silent by design, since it asks about
+/// one transaction and changes nothing about the drive.
+///
+/// The table and the grid both draw it, so both say what it means: the grid
+/// had a dot of its own with no tooltip.
+class FileStatusDot extends StatelessWidget {
+  const FileStatusDot({super.key, required this.status});
+
+  /// A [TransactionStatus].
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
     late Color indicatorColor;
     late String meaning;
 
-    switch (item.fileStatusFromTransactions) {
+    switch (status) {
       case TransactionStatus.pending:
         indicatorColor =
             ArDriveTheme.of(context).themeData.colors.themeWarningFg;

@@ -941,6 +941,14 @@
   "@detailsCouldNotBeLoaded": {
     "description": "In the details panel, when reading an item's details failed."
   },
+  "activityCouldNotBeLoaded": "This activity could not be loaded.",
+  "@activityCouldNotBeLoaded": {
+    "description": "In the details panel's Activity tab, when reading an item's history failed."
+  },
+  "activityNoneRecorded": "No activity recorded yet.",
+  "@activityNoneRecorded": {
+    "description": "In the details panel's Activity tab, when this device has no history for the item, such as a drive that has never been synced here."
+  },
   "driveSyncFailed": "Last sync failed",
   "@driveSyncFailed": {
     "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from driveNeverSynced, which means nobody has looked yet."
@@ -1520,6 +1528,16 @@
   "@fileTypeUnsupported": {
     "description": "Message shown when unable to load media file due to unsupported file format"
   },
+  "fileVersionWasUploaded": "Version {version} of this file was uploaded.",
+  "@fileVersionWasUploaded": {
+    "description": "File activity (journal): a new version. Versions are numbered from 1, the first upload.",
+    "placeholders": {
+      "version": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
   "fileWasCreatedWithName": "This file was created with the name {fileName}.",
   "@fileWasCreatedWithName": {
     "description": "File activity (journal): created",
@@ -2098,6 +2116,14 @@
   "manifestName": "Manifest name",
   "@manifestName": {
     "description": "The name of the manifest"
+  },
+  "manifestFallbackTxID": "Manifest fallback transaction ID",
+  "@manifestFallbackTxID": {
+    "description": "In the details panel, the transaction a manifest serves when a path in it is not found"
+  },
+  "manifestFileType": "Manifest",
+  "@manifestFileType": {
+    "description": "The kind of file shown under a manifest's name in its preview, in place of its content type"
   },
   "manifestTransactionUnexpectedlyFailed": "Manifest transaction has unexpectedly failed to upload to the Arweave network...",
   "@manifestTransactionUnexpectedlyFailed": {

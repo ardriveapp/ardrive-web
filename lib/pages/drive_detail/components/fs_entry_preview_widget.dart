@@ -2083,9 +2083,11 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                   ),
                 ),
                 Text(
-                  getFileTypeFromMime(
+                  fileTypeLabel(
                     contentType: contentType,
-                  ).toUpperCase(),
+                    fileName: filename,
+                    manifestLabel: appLocalizationsOf(context).manifestFileType,
+                  ),
                   style: ArDriveTypography.body.smallRegular(
                     color: ArDriveTheme.of(context)
                         .themeData
