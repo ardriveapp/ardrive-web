@@ -1,4 +1,5 @@
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
+import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -85,7 +86,14 @@ class _UploadReadyDialogState extends State<UploadReadyDialog> {
       scrollableContent: true,
       content: SizedBox(
         width: kMediumDialogWidth,
-        child: _Privacy(drive: widget.drive),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Privacy(drive: widget.drive),
+            EncryptedUploadNote(isPrivate: widget.drive.isPrivate),
+          ],
+        ),
       ),
       actions: [
         ModalAction(action: _close, title: l10n.cancel),

@@ -24,6 +24,7 @@ import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/pin_file_dialog.dart';
+import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/components/prompt_to_snapshot_dialog.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/core/activity_tracker.dart';
@@ -585,6 +586,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       .currentDrive.rootFolderId,
                                   path: driveDetailState.pathSegments,
                                   driveName: driveDetailState.currentDrive.name,
+                                  isPrivate:
+                                      driveDetailState.currentDrive.isPrivate,
                                 ),
                                 const Spacer(),
                                 if (driveDetailState.multiselect &&
@@ -1163,6 +1166,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               Flexible(
                 child: MobileFolderNavigation(
                   driveName: state.currentDrive.name,
+                  isPrivate: state.currentDrive.isPrivate,
                   path: state.pathSegments,
                   isShowingHiddenFiles: isShowingHiddenFiles,
                 ),
@@ -1345,12 +1349,14 @@ class MobileFolderNavigation extends StatelessWidget {
   final List<BreadCrumbRowInfo> path;
   final String driveName;
   final bool isShowingHiddenFiles;
+  final bool isPrivate;
 
   const MobileFolderNavigation({
     super.key,
     required this.path,
     required this.driveName,
     required this.isShowingHiddenFiles,
+    required this.isPrivate,
   });
 
   @override
@@ -1397,11 +1403,26 @@ class MobileFolderNavigation extends StatelessWidget {
                         padding: path.isEmpty
                             ? const EdgeInsets.only(left: 16, top: 6, bottom: 6)
                             : EdgeInsets.zero,
-                        child: Text(
-                          _pathToName(
-                            path.isEmpty ? driveName : path.last.text,
-                          ),
-                          style: ArDriveTypography.body.buttonNormalBold(),
+                        child: Row(
+                          children: [
+                            // On every folder, not only the root: the name
+                            // shown below the root is the folder's, so the
+                            // lock is the only thing here that says whose.
+                            if (isPrivate)
+                              const Padding(
+                                padding: EdgeInsets.only(right: 8),
+                                child: PrivateDriveLock(),
+                              ),
+                            Expanded(
+                              child: Text(
+                                _pathToName(
+                                  path.isEmpty ? driveName : path.last.text,
+                                ),
+                                style:
+                                    ArDriveTypography.body.buttonNormalBold(),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
