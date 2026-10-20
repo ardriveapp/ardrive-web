@@ -22,6 +22,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibilitySingleton;
   final ArDriveAuth _arDriveAuth;
+  StreamSubscription<User?>? _authSubscription;
 
   ProfileCubit({
     required TurboUploadService turboUploadService,
@@ -35,6 +36,12 @@ class ProfileCubit extends Cubit<ProfileState> {
         _tabVisibilitySingleton = tabVisibilitySingleton,
         _arDriveAuth = arDriveAuth,
         super(ProfileCheckingAvailability()) {
+    // ArDriveAuth publishes the user again whenever it changes, notably when
+    // the background balance refresh after login lands. Without following it,
+    // a balance that fell back to zero at login would stay zero here until
+    // something called [refreshBalance].
+    _authSubscription =
+        _arDriveAuth.onAuthStateChanged().listen(_followAuthUser);
     promptToAuthenticate();
   }
 
@@ -141,7 +148,9 @@ class ProfileCubit extends Cubit<ProfileState> {
 
     emit(
       ProfileLoggedIn(
-        user: user,
+        // The balance refresh that follows login can finish before the
+        // profile is unlocked, so prefer ArDriveAuth's copy of the user.
+        user: _authUserFor(user.walletAddress) ?? user,
         useTurbo: _turboUploadService.useTurboUpload,
       ),
     );
@@ -152,7 +161,34 @@ class ProfileCubit extends Cubit<ProfileState> {
 
     await _arDriveAuth.refreshBalance();
 
-    emit(profile.copyWith(user: _arDriveAuth.currentUser));
+    // Normally already applied through [_followAuthUser]; this keeps the
+    // promise that the new balance is in the state once this completes. The
+    // user may have logged out during the request, which this also checks.
+    _followAuthUser(_authUserFor(profile.user.walletAddress));
+  }
+
+  /// Takes on [user] if it is the user already logged in here. Logging in and
+  /// out are driven by [unlockDefaultProfile] and [logoutProfile], not by this.
+  void _followAuthUser(User? user) {
+    final current = state;
+    if (isClosed ||
+        user == null ||
+        current is! ProfileLoggedIn ||
+        current.user.walletAddress != user.walletAddress) {
+      return;
+    }
+
+    emit(current.copyWith(user: user));
+  }
+
+  /// ArDriveAuth's current user, if it is the one with [walletAddress].
+  User? _authUserFor(String walletAddress) {
+    try {
+      final user = _arDriveAuth.currentUser;
+      return user.walletAddress == walletAddress ? user : null;
+    } on AuthenticationUserIsNotLoggedInException {
+      return null;
+    }
   }
 
   Future<void> logoutProfile() async {
@@ -166,6 +202,12 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     emit(ProfileLoggingOut());
+  }
+
+  @override
+  Future<void> close() async {
+    await _authSubscription?.cancel();
+    return super.close();
   }
 
   Future<void> deleteTables() async {
