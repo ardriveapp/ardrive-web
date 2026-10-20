@@ -71,7 +71,7 @@ class TutorialsViewState extends State<TutorialsView> {
             );
             _goToPreviousPage();
           },
-          title: 'Complete Privacy Control',
+          title: 'Complete privacy control',
           description:
               'When you upload content, you can choose to make it public or private. Private content is encrypted, and viewable only to you and those you share it with.',
           videoUrl:

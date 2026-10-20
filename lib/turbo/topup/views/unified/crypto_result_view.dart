@@ -124,7 +124,7 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            'Payment Successful',
+                            'Payment successful',
                             style: typography.heading5(
                               fontWeight: ArFontWeight.bold,
                             ),
@@ -401,7 +401,7 @@ class CryptoErrorView extends StatelessWidget {
                     children: [
                       // Title - left aligned
                       Text(
-                        'Payment Failed',
+                        'Payment failed',
                         style: typography.heading5(
                           fontWeight: ArFontWeight.bold,
                         ),
@@ -475,7 +475,7 @@ class CryptoErrorView extends StatelessWidget {
                         child: ArDriveButton(
                           maxHeight: 44,
                           maxWidth: 143,
-                          text: canRetry ? 'Try Again' : 'Close',
+                          text: canRetry ? 'Try again' : 'Close',
                           fontStyle: typography.paragraphLarge(
                             fontWeight: ArFontWeight.bold,
                             color: Colors.white,

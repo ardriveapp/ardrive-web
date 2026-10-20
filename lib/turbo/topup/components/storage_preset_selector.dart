@@ -171,7 +171,7 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Storage Amount',
+          'Storage amount',
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
             color: colors.themeFgDefault,

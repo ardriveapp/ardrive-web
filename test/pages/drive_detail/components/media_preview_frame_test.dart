@@ -196,7 +196,7 @@ void main() {
       expect(find.byType(VideoPlayerWidget), findsOneWidget);
       expect(find.byType(FsEntryPreviewFailedMessage), findsOneWidget);
 
-      await tester.tap(find.text('Try Again'));
+      await tester.tap(find.text('Try again'));
       await tester.pump();
 
       verify(() => cubit.retry()).called(1);

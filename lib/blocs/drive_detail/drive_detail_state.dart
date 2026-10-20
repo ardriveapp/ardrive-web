@@ -46,6 +46,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final Map<int, bool> columnVisibility;
   final Key? forceRebuildKey;
 
+  /// Whether this drive's first sync on this device is still reading it, so
+  /// an empty folder may be empty only so far. See
+  /// [DriveDetailCubit.contentsMayStillArrive].
+  final bool contentsStillArriving;
+
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
@@ -66,6 +71,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     this.forceRebuildKey,
     required this.pathSegments,
     this.revealSelectedItem = false,
+    this.contentsStillArriving = false,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -88,8 +94,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     List<BreadCrumbRowInfo>? pathSegments,
     bool? revealSelectedItem,
     Map<int, bool>? columnVisibility,
+    bool? contentsStillArriving,
   }) =>
       DriveDetailLoadSuccess(
+        contentsStillArriving:
+            contentsStillArriving ?? this.contentsStillArriving,
         revealSelectedItem: revealSelectedItem ?? this.revealSelectedItem,
         columnVisibility: columnVisibility ?? this.columnVisibility,
         forceRebuildKey: forceRebuildKey ?? this.forceRebuildKey,
@@ -133,6 +142,7 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         forceRebuildKey,
         selectedItem,
         revealSelectedItem,
+        contentsStillArriving,
       ];
   SelectedItem? maybeSelectedItem() =>
       selectedItems.isNotEmpty ? selectedItems.first : null;

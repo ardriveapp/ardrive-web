@@ -49,7 +49,7 @@ class _LoginCopyButtonState extends State<LoginCopyButton> {
                       ArDriveTheme.of(context).themeData.colors.themeFgMuted),
           label: Text(
             // TODO: create/update localization keys
-            _showCheck ? 'Copied to Clipboard' : 'Copy to Clipboard',
+            _showCheck ? 'Copied to clipboard' : 'Copy to clipboard',
             style: ArDriveTypography.body.smallBold(
                 color: ArDriveTheme.of(context).themeData.colors.themeFgMuted),
           ),

@@ -90,9 +90,9 @@ extension WalletTypeX on WalletType {
 
   /// Display name for the wallet type
   String get displayName => switch (this) {
-        WalletType.arweave => 'Arweave Wallet',
-        WalletType.ethereum => 'Ethereum Wallet',
-        WalletType.solana => 'Solana Wallet',
+        WalletType.arweave => 'Arweave wallet',
+        WalletType.ethereum => 'Ethereum wallet',
+        WalletType.solana => 'Solana wallet',
       };
 
   /// Install URL for the wallet type
@@ -368,7 +368,7 @@ class TokenGroup extends Equatable {
   static List<TokenGroup> get allGroups => [
         // Ethereum wallet tokens
         const TokenGroup(
-          label: 'Requires Ethereum Wallet',
+          label: 'Requires Ethereum wallet',
           tokens: [
             CryptoToken.usdcBase,
             CryptoToken.ethBase,
@@ -378,7 +378,7 @@ class TokenGroup extends Equatable {
         ),
         // Solana wallet tokens
         const TokenGroup(
-          label: 'Requires Solana Wallet',
+          label: 'Requires Solana wallet',
           tokens: [CryptoToken.sol],
         ),
       ];

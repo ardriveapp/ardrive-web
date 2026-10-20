@@ -61,16 +61,16 @@ extension CryptoPaymentStatusX on CryptoPaymentStatus {
 
   /// Human-readable error title
   String get errorTitle => switch (this) {
-        CryptoPaymentStatus.success => 'Payment Complete',
-        CryptoPaymentStatus.pending => 'Payment Pending',
-        CryptoPaymentStatus.failed => 'Payment Failed',
-        CryptoPaymentStatus.userRejected => 'Payment Cancelled',
-        CryptoPaymentStatus.insufficientFunds => 'Insufficient Funds',
-        CryptoPaymentStatus.insufficientGas => 'Insufficient Funds for Gas',
-        CryptoPaymentStatus.networkError => 'Network Error',
-        CryptoPaymentStatus.wrongNetwork => 'Wrong Network',
-        CryptoPaymentStatus.quoteExpired => 'Quote Expired',
-        CryptoPaymentStatus.confirmationTimeout => 'Transaction Pending',
+        CryptoPaymentStatus.success => 'Payment complete',
+        CryptoPaymentStatus.pending => 'Payment pending',
+        CryptoPaymentStatus.failed => 'Payment failed',
+        CryptoPaymentStatus.userRejected => 'Payment cancelled',
+        CryptoPaymentStatus.insufficientFunds => 'Insufficient funds',
+        CryptoPaymentStatus.insufficientGas => 'Insufficient funds for gas',
+        CryptoPaymentStatus.networkError => 'Network error',
+        CryptoPaymentStatus.wrongNetwork => 'Wrong network',
+        CryptoPaymentStatus.quoteExpired => 'Quote expired',
+        CryptoPaymentStatus.confirmationTimeout => 'Transaction pending',
       };
 
   /// Human-readable error message

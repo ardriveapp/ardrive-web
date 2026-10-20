@@ -1,11 +1,11 @@
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/pages/drive_detail/components/email_attachment_list.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 
 class EmailPreviewWidget extends StatefulWidget {
   final FsEntryPreviewEmail state;
@@ -290,7 +290,7 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildToggleButton(
-            label: 'Plain Text',
+            label: 'Plain text',
             isSelected: !_showHtml,
             onTap: () => setState(() => _showHtml = false),
             colors: colors,
@@ -463,7 +463,7 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
     try {
       // Try parsing common email date formats
       final date = DateTime.parse(dateString);
-      return DateFormat('MMM dd, yyyy hh:mm a').format(date);
+      return formatDateTime(date);
     } catch (e) {
       // Return as-is if parsing fails
       return dateString;

@@ -921,7 +921,7 @@ class _SyncButtonMenu extends StatelessWidget {
       ArDriveDropdownItem(
         onClick: () => context.read<AppRouterDelegate>().showDrivesList(),
         content: ArDriveDropdownItemTile(
-          name: appLocalizationsOf(context).allDrivesScope,
+          name: appLocalizationsOf(context).yourDrives,
           icon: ArDriveIcons.arrowRightOutline(color: iconColor),
         ),
       ),

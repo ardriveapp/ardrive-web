@@ -342,7 +342,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         widget.item.isOwner) ...[
                       ArDriveIconButton(
                         icon: ArDriveIcons.image(),
-                        tooltip: 'Create Thumbnail',
+                        tooltip: 'Create thumbnail',
                         onPressed: () {
                           showArDriveDialog(
                             context,
@@ -475,7 +475,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateToUtcString(widget.item.lastUpdated),
+          formatDateTime(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -484,7 +484,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateToUtcString(widget.item.dateCreated),
+          formatDateTime(widget.item.dateCreated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -547,7 +547,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateToUtcString(widget.item.lastUpdated),
+          formatDateTime(widget.item.lastUpdated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -556,7 +556,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateToUtcString(widget.item.dateCreated),
+          formatDateTime(widget.item.dateCreated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -584,7 +584,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             textAlign: TextAlign.right,
           ),
           // TODO: Localize
-          itemTitle: 'Signature Type',
+          itemTitle: 'Signature type',
         ),
       ],
     ];
@@ -613,7 +613,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateToUtcString(state.drive.lastUpdated),
+          formatDateTime(state.drive.lastUpdated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -622,7 +622,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateToUtcString(state.drive.dateCreated),
+          formatDateTime(state.drive.dateCreated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -636,7 +636,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             textAlign: TextAlign.right,
           ),
           // TODO: Localize
-          itemTitle: 'Signature Type',
+          itemTitle: 'Signature type',
         ),
       ],
       const SizedBox(height: 24),
@@ -657,7 +657,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
             return Align(
               alignment: Alignment.centerLeft,
               child: ArDriveButtonNew(
-                text: appLocalizationsOf(context).syncNow,
+                text: appLocalizationsOf(context).syncThisDrive,
                 typography: typography,
                 variant: ButtonVariant.primary,
                 maxWidth: 160,
@@ -693,7 +693,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateToUtcString(item.lastUpdated),
+          formatDateTime(item.lastUpdated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -702,7 +702,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       sizedBoxHeight16px,
       DetailsPanelItem(
         leading: Text(
-          formatDateToUtcString(item.dateCreated),
+          formatDateTime(item.dateCreated),
           style: typography.paragraphNormal(),
           textAlign: TextAlign.right,
         ),
@@ -862,7 +862,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 default:
                   title = appLocalizationsOf(context).folderWasModified;
               }
-              subtitle = formatDateToUtcString(revision.dateCreated);
+              subtitle = formatDateTime(revision.dateCreated);
 
               return DetailsPanelItem(
                 itemSubtitle: subtitle,
@@ -905,7 +905,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   title = appLocalizationsOf(context).driveWasModified;
               }
 
-              subtitle = formatDateToUtcString(revision.dateCreated);
+              subtitle = formatDateTime(revision.dateCreated);
 
               return DetailsPanelItem(
                 itemSubtitle: subtitle,
@@ -1077,7 +1077,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         Flexible(
                           flex: 3,
                           child: Text(
-                            formatDateToUtcString(file.unixTime),
+                            formatDateTime(file.unixTime),
                             style: ArDriveTypography.body.xSmallRegular(),
                           ),
                         ),
@@ -1103,7 +1103,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       default:
         title = appLocalizationsOf(context).fileWasModified;
     }
-    subtitle = formatDateToUtcString(file.unixTime);
+    subtitle = formatDateTime(file.unixTime);
 
     return DetailsPanelItem(
       leading: leading ?? const SizedBox(),
@@ -1193,7 +1193,10 @@ class DetailsPanelItem extends StatelessWidget {
                   Flexible(
                     flex: 1,
                     child: Text(
-                      itemTitle,
+                      // "ID" stays on the line of the word before it, so a
+                      // narrow panel wraps "Metadata / transaction ID" rather
+                      // than leaving "ID" on a line of its own.
+                      itemTitle.replaceAll(' ID', '\u00A0ID'),
                       style: typography.paragraphNormal(
                         fontWeight: ArFontWeight.bold,
                       ),

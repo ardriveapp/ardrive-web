@@ -80,7 +80,7 @@ class _ConfirmationContentState extends State<_ConfirmationContent> {
               if (widget.onBack != null) const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Confirm Payment',
+                  'Confirm payment',
                   style: typography.heading4(
                     fontWeight: ArFontWeight.bold,
                     color: colorTokens.textHigh,
@@ -414,7 +414,7 @@ class _TransactionDetails extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Transaction Details',
+            'Transaction details',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colorTokens.textHigh,

@@ -50,15 +50,21 @@ const double _syncingContentMaxWidth = 420;
 /// the same wait, in the same panel, and it must not offer to create a drive
 /// or claim the user has none.
 class DriveDetailSyncingCard extends StatefulWidget {
-  const DriveDetailSyncingCard({super.key}) : driveListUnavailable = false;
+  const DriveDetailSyncingCard({super.key, this.folderName})
+      : driveListUnavailable = false;
 
   /// The drive list could not be loaded: no progress, no phase, no elapsed
   /// time - nothing is running - just what happened and a way to try again.
   const DriveDetailSyncingCard.driveListUnavailable({super.key})
-      : driveListUnavailable = true;
+      : driveListUnavailable = true,
+        folderName = null;
 
   /// Which of the panel's two jobs this is.
   final bool driveListUnavailable;
+
+  /// The folder waiting to open, when it is not the drive itself: one opened
+  /// while the sync is still reading what is inside it.
+  final String? folderName;
 
   @override
   State<DriveDetailSyncingCard> createState() => _DriveDetailSyncingCardState();
@@ -147,7 +153,8 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
                   isLoadingDrives: syncState is SyncLoadingDrives,
                   syncState: syncState,
                   progress: reportsProgress ? snapshot.data : null,
-                  driveName: _driveName(drivesState, snapshot.data),
+                  driveName: widget.folderName ??
+                      _driveName(drivesState, snapshot.data),
                   canBeStopped: syncState is SyncInProgress,
                   syncCoversThisDrive: _coversSelectedDrive(
                     drivesState,

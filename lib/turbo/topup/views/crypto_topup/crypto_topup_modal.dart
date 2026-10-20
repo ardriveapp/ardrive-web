@@ -187,7 +187,7 @@ class CryptoTopupModal extends StatelessWidget {
     showArDriveDialog(
       context,
       content: ArDriveStandardModal(
-        title: 'Wallet Account Changed',
+        title: 'Wallet account changed',
         content: Text(
           'Your wallet account has changed to ${_truncateAddress(state.newAddress)}. '
           'Would you like to continue with this account?',
@@ -223,7 +223,7 @@ class CryptoTopupModal extends StatelessWidget {
     showArDriveDialog(
       context,
       content: ArDriveStandardModal(
-        title: 'Price Changed',
+        title: 'Price changed',
         content: Text(
           'The price has $direction by $percentChange% since your last quote. '
           'Would you like to continue with the new price?',
@@ -293,7 +293,7 @@ class _SessionExpiredView extends StatelessWidget {
       children: [
         // Title - left aligned per modal design standard
         Text(
-          'Session Expired',
+          'Session expired',
           style: typography.heading5(
             fontWeight: ArFontWeight.bold,
             color: colors.themeFgDefault,
@@ -382,7 +382,7 @@ class _ConcurrentSessionView extends StatelessWidget {
                   children: [
                     // Title
                     Text(
-                      'Active Session Detected',
+                      'Active session detected',
                       style: typography.heading5(
                         fontWeight: ArFontWeight.bold,
                         color: colors.themeFgDefault,
@@ -431,7 +431,7 @@ class _ConcurrentSessionView extends StatelessWidget {
                           child: SizedBox(
                             height: 48,
                             child: ArDriveButton(
-                              text: 'Take Over',
+                              text: 'Take over',
                               onPressed: onTakeOver,
                             ),
                           ),

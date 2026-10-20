@@ -42,6 +42,14 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: const [Locale('en', '')],
+          // The test font gives every character the full font size in width,
+          // about twice a real font, so the key toggle's one-line label would
+          // overflow the dialog here though it fits in the app.
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(0.5)),
+            child: child!,
+          ),
           home: Scaffold(
             body: BlocProvider<FileShareCubit>.value(
               value: cubit,

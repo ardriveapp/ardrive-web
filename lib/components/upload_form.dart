@@ -2,6 +2,7 @@ import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/components/upload_options.dart';
+import 'package:ardrive/components/upload_review_cost.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -17,6 +18,7 @@ import 'package:ardrive/blocs/upload/limits.dart';
 import 'package:ardrive/blocs/upload/payment_method/bloc/upload_payment_method_bloc.dart';
 import 'package:ardrive/blocs/upload/payment_method/view/upload_payment_method_view.dart';
 import 'package:ardrive/blocs/upload/upload_file_checker.dart';
+import 'package:ardrive/blocs/upload/upload_progress_summary.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/components/help_info_modals.dart';
@@ -383,7 +385,7 @@ class _UploadingManifestsWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
 
     return ArDriveStandardModalNew(
-      title: 'Uploading Manifests',
+      title: 'Uploading manifests',
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 400),
         child: Column(
@@ -1392,7 +1394,7 @@ class _SelectPaymentMethodManifestUploadState
           }
         },
         child: ArDriveStandardModalNew(
-          title: 'Upload Settings',
+          title: 'Upload settings',
           width: kMediumDialogWidth,
           content: Column(
             children: [
@@ -1554,7 +1556,7 @@ class _UploadConflictWithFailedFilesWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveStandardModalNew(
-      title: 'Retry Failed Uploads?',
+      title: 'Retry failed uploads?',
       content: SizedBox(
         width: kMediumDialogWidth,
         child: Column(
@@ -1627,9 +1629,9 @@ class _UploadFileConflictWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveStandardModalNew(
-      // Wide enough for its content and for Skip, Cancel and Replace on one
-      // row; at the standard width the third button wrapped.
-      width: kMediumDialogWidth + 48,
+      // Wide enough for its content and for Cancel, Skip and Upload as new
+      // version on one row; narrower, the third button wraps to a second row.
+      width: kMediumDialogWidth + 144,
       title: appLocalizationsOf(context)
           .duplicateFiles(state.conflictingFileNames.length),
       content: SizedBox(
@@ -1698,7 +1700,8 @@ class _UploadFileConflictWidget extends StatelessWidget {
               .read<UploadCubit>()
               .prepareUploadPlanAndCostEstimates(
                   uploadAction: UploadActions.replace),
-          title: appLocalizationsOf(context).replace,
+          title: appLocalizationsOf(context)
+              .uploadAsNewVersion(state.conflictingFileNames.length),
         ),
       ],
     );
@@ -1773,11 +1776,8 @@ class _PreparingUploadWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (state is UploadPreparationInitialized &&
-                (state as UploadPreparationInitialized).showLoadingFiles) ...[
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-            ],
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
             if (state is UploadPreparationInProgress &&
                 (state as UploadPreparationInProgress).isArConnect)
               Text(
@@ -2112,14 +2112,19 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
           onPressed: () {
             context.read<UploadCubit>().reviewUpload();
           },
-          text: appLocalizationsOf(context).upload,
+          text: uploadButtonLabel(context, state.readyState.numberOfFiles),
           typography: typography,
-          maxWidth: 100,
+          maxWidth: ArDriveButtonNew.fittedWidth(
+            context,
+            uploadButtonLabel(context, state.readyState.numberOfFiles),
+            minWidth: 100,
+          ),
           maxHeight: 40,
           variant: ButtonVariant.primary,
         ),
       ],
       children: [
+        UploadReviewCost(paymentInfo: state.readyState.paymentInfo),
         if (state.readyState.params.arnsUnderName != null) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
@@ -2265,14 +2270,19 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
           onPressed: () {
             context.read<UploadCubit>().reviewUpload();
           },
-          text: appLocalizationsOf(context).upload,
+          text: uploadButtonLabel(context, state.readyState.numberOfFiles),
           typography: typography,
-          maxWidth: 100,
+          maxWidth: ArDriveButtonNew.fittedWidth(
+            context,
+            uploadButtonLabel(context, state.readyState.numberOfFiles),
+            minWidth: 100,
+          ),
           maxHeight: 40,
           variant: ButtonVariant.primary,
         ),
       ],
       children: [
+        UploadReviewCost(paymentInfo: state.readyState.paymentInfo),
         if (state.readyState.params.arnsUnderName != null) ...[
           Text(
             'ArNS Name: ',
@@ -2670,7 +2680,7 @@ class _UploadShowingWarningWidget extends StatelessWidget {
 
             return context.read<UploadCubit>().checkFilesAboveLimit();
           },
-          title: appLocalizationsOf(context).proceed,
+          title: appLocalizationsOf(context).uploadAnyway,
         ),
       ],
     );
@@ -2707,6 +2717,7 @@ class _UploadInProgressWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = state.progress;
+    final summary = UploadProgressSummary.from(progress);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
     return ArDriveStandardModalNew(
@@ -2774,11 +2785,14 @@ class _UploadInProgressWidget extends StatelessWidget {
             title: state.isCanceling
                 ? 'Canceling...'
                 : appLocalizationsOf(context).cancel,
+            // A lone action is primary by default, and Cancel is not the
+            // main action here.
+            variant: ButtonVariant.secondary,
           ),
       ],
       width: kLargeDialogWidth,
       title:
-          '${appLocalizationsOf(context).uploadingNFiles(state.progress.numberOfItems)} ${(state.totalProgress * 100).toStringAsFixed(2)}%',
+          '${appLocalizationsOf(context).uploadingNFiles(summary.numberOfFiles)} ${summary.percent}%',
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2795,7 +2809,7 @@ class _UploadInProgressWidget extends StatelessWidget {
                     itemBuilder: (BuildContext context, int index) {
                       final task = progress.tasks.values.elementAt(index);
 
-                      String? progressText;
+                      String? progressMessage;
                       String status = '';
 
                       // TODO: localize
@@ -2810,8 +2824,7 @@ class _UploadInProgressWidget extends StatelessWidget {
                           status = 'Paused';
                           break;
                         case UploadStatus.creatingMetadata:
-                          status =
-                              'We are preparing your upload. Preparation step 1/2';
+                          status = 'Preparing';
                           break;
                         case UploadStatus.encryting:
                           status = 'Encrypting';
@@ -2832,8 +2845,7 @@ class _UploadInProgressWidget extends StatelessWidget {
                           status = 'Canceled';
                           break;
                         case UploadStatus.creatingBundle:
-                          status =
-                              'We are preparing your upload. Preparation step 2/2';
+                          status = 'Preparing';
                         case UploadStatus.uploadingThumbnail:
                           status = 'Uploading thumbnail...';
                           break;
@@ -2851,19 +2863,27 @@ class _UploadInProgressWidget extends StatelessWidget {
                               task.status == UploadStatus.complete ||
                               task.status == UploadStatus.finalizing;
 
-                      if (task.isProgressAvailable) {
-                        if (statusAvailableForShowingProgress) {
-                          if (task.uploadItem != null) {
-                            progressText =
-                                '${filesize(((task.uploadItem!.size) * task.progress).ceil())}/${filesize(task.uploadItem!.size)}';
-                          }
+                      if (!task.isProgressAvailable &&
+                          task.status == UploadStatus.inProgress) {
+                        // TODO: localize
+                        progressMessage =
+                            'Your upload is in progress, but for large files the progress it not available. Please wait...';
+                      }
+
+                      // Each file at its own size, as on the confirm step. A
+                      // folder has no size to show.
+                      String? progressTextFor(ARFSUploadMetadata file) {
+                        if (!task.isProgressAvailable) {
+                          return progressMessage;
                         }
-                      } else {
-                        if (task.status == UploadStatus.inProgress) {
-                          // TODO: localize
-                          progressText =
-                              'Your upload is in progress, but for large files the progress it not available. Please wait...';
+
+                        if (!statusAvailableForShowingProgress ||
+                            task.uploadItem == null ||
+                            file is! ARFSFileUploadMetadata) {
+                          return null;
                         }
+
+                        return '${filesize(UploadProgressSummary.uploadedBytes(file, task))}/${filesize(file.size)}';
                       }
 
                       return Column(
@@ -2928,9 +2948,9 @@ class _UploadInProgressWidget extends StatelessWidget {
                                               ],
                                             ),
                                           ),
-                                          if (progressText != null)
+                                          if (progressTextFor(file) != null)
                                             Text(
-                                              progressText,
+                                              progressTextFor(file)!,
                                               style: typography.paragraphNormal(
                                                 fontWeight:
                                                     ArFontWeight.semiBold,
@@ -2994,7 +3014,7 @@ class _UploadInProgressWidget extends StatelessWidget {
           ),
           // TODO: localize
           Text(
-            'Total uploaded: ${filesize(state.progress.totalUploaded)} of ${filesize(state.progress.totalSize)}',
+            'Total uploaded: ${filesize(summary.totalUploaded)} of ${filesize(summary.totalSize)}',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colorTokens.textMid,
@@ -3002,7 +3022,7 @@ class _UploadInProgressWidget extends StatelessWidget {
           ),
           // TODO: localize
           Text(
-            'Files uploaded: ${state.progress.numberOfUploadedItems} of ${state.progress.numberOfItems}',
+            'Files uploaded: ${summary.numberOfUploadedFiles} of ${summary.numberOfFiles}',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colorTokens.textMid,
@@ -3118,14 +3138,24 @@ List<ArDriveButtonNew> getModalActions(
       onPressed: () {
         context.read<UploadCubit>().initialScreenUpload();
       },
-      text: appLocalizationsOf(context).upload,
+      text: uploadButtonLabel(context, state.numberOfFiles),
       typography: typography,
-      maxWidth: 100,
+      maxWidth: ArDriveButtonNew.fittedWidth(
+        context,
+        uploadButtonLabel(context, state.numberOfFiles),
+        minWidth: 100,
+      ),
       maxHeight: 40,
       variant: ButtonVariant.primary,
     ),
   ];
 }
+
+/// The label of the button that starts an upload, such as "Upload 3 files".
+String uploadButtonLabel(BuildContext context, int numberOfFiles) =>
+    numberOfFiles > 0
+        ? appLocalizationsOf(context).uploadNFiles(numberOfFiles)
+        : appLocalizationsOf(context).upload;
 
 String getLiteralArNSName(ANTRecord record, ARNSUndername? undername) {
   if (undername != null) {

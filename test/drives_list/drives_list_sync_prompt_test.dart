@@ -286,7 +286,7 @@ void main() {
           (tester) async {
         await pumpAt(tester, 1000, textScale: scale);
 
-        final label = find.text('Sync All Drives');
+        final label = find.text('Sync all drives');
         expect(label, findsOneWidget);
 
         final rendered = tester.renderObject<RenderParagraph>(label);

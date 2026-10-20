@@ -55,7 +55,7 @@ class TilesView extends StatelessWidget {
                     ),
                     child: _RoundContainer(
                       padding: const EdgeInsets.all(0),
-                      child: _MilitaryGradeEncryption(),
+                      child: _EncryptionTile(),
                     )),
               )
             ],
@@ -157,11 +157,16 @@ class TilesView extends StatelessWidget {
   }
 }
 
-class _MilitaryGradeEncryption extends StatelessWidget {
+class _EncryptionTile extends StatelessWidget {
+  // The picture's own size. The heading is laid out on it, so both scale and
+  // crop together.
+  static const _pictureSize = Size(252, 320);
+
   @override
   Widget build(BuildContext context) {
     // TODO: replace with ArDriveTheme .isLight method
     final isLightMode = ArDriveTheme.of(context).themeData.name == 'light';
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ClipRRect(
       borderRadius: const BorderRadius.only(
         topLeft: Radius.circular(8),
@@ -169,12 +174,32 @@ class _MilitaryGradeEncryption extends StatelessWidget {
         bottomLeft: Radius.circular(8),
         bottomRight: Radius.circular(8),
       ),
-      child: SvgPicture.asset(
-        isLightMode
-            ? Resources.images.login.bentoBox.bentoBox2LightMode
-            : Resources.images.login.bentoBox.bentoBox2DarkMode,
+      child: FittedBox(
         fit: BoxFit.cover,
         clipBehavior: Clip.antiAliasWithSaveLayer,
+        child: SizedBox.fromSize(
+          size: _pictureSize,
+          child: Stack(
+            children: [
+              SvgPicture.asset(
+                isLightMode
+                    ? Resources.images.login.bentoBox.bentoBox2LightMode
+                    : Resources.images.login.bentoBox.bentoBox2DarkMode,
+              ),
+              Positioned(
+                left: 28,
+                top: 26,
+                right: 28,
+                child: Text(
+                  'AES-256 encryption on your device',
+                  style: ArDriveTypographyNew.of(context).heading6(
+                    color: colorTokens.textMid,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -895,7 +920,7 @@ class _PriceCalculatorState extends State<_PriceCalculator> {
                 top: 24,
                 left: 24,
                 child: Text(
-                  'Price Calculator',
+                  'Price calculator',
                   style: ArDriveTypographyNew.of(context).heading6(
                     color: color,
                     fontWeight: ArFontWeight.semiBold,

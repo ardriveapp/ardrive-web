@@ -184,8 +184,8 @@ void main() {
     await tester.pumpWidget(wrap(ready()));
     await tester.pumpAndSettle();
 
-    expect(find.text('0.003 Credits'), findsOneWidget);
-    expect(find.textContaining('Turbo Balance: 2.5 Credits'), findsOneWidget);
+    expect(find.text('0.003 credits'), findsOneWidget);
+    expect(find.textContaining('Turbo Balance: 2.5 credits'), findsOneWidget);
   });
 
   testWidgets('switching to AR shows the AR price instead', (tester) async {
@@ -419,7 +419,7 @@ void main() {
 
         // What it costs, and the selector that decides who pays, are both
         // readable — not merely present in the tree.
-        await tester.ensureVisible(find.text('0.003 Credits'));
+        await tester.ensureVisible(find.text('0.003 credits'));
         expect(find.byType(PaymentMethodSelector), findsOneWidget);
         await tester.ensureVisible(find.byType(PaymentMethodSelector));
 

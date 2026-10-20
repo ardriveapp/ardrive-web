@@ -78,7 +78,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
             context,
             builder: (context) => ArDriveStandardModalNew(
               width: kLargeDialogWidth,
-              title: 'File Conflicts Detected',
+              title: 'File conflicts detected',
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,7 +146,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
             context,
             content: ArDriveStandardModalNew(
               width: kLargeDialogWidth,
-              title: 'Import Failed',
+              title: 'Import failed',
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,7 +172,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
             context,
             builder: (context) => ArDriveStandardModalNew(
               width: kMediumDialogWidth,
-              title: 'Import Cancelled',
+              title: 'Import cancelled',
               description:
                   'The import process was cancelled.\n$numberOfFilesImported files were imported successfully.',
               actions: [
@@ -189,7 +189,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
         if (state is BulkImportSuccess) {
           return ArDriveStandardModalNew(
             width: modalStandardMaxWidthSize,
-            title: 'Import Successful',
+            title: 'Import successful',
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +216,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
           );
         } else if (state is BulkImportReviewingManifest) {
           return ArDriveStandardModalNew(
-            title: 'Review Files',
+            title: 'Review files',
             width: kLargeDialogWidth,
             content: _BulkImportReviewingManifest(
               manifestTxId: state.manifestTxId,
@@ -248,7 +248,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
 
         return ArDriveStandardModalNew(
           width: kLargeDialogWidth,
-          title: 'Import from Manifest',
+          title: 'Import from manifest',
           content: Form(
             key: _formKey,
             child: Column(

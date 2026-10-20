@@ -62,7 +62,7 @@ class _TokenSelectionContent extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Select Payment Token',
+                'Select payment token',
                 style: typography.heading4(
                   fontWeight: ArFontWeight.bold,
                   color: colorTokens.textHigh,
@@ -205,7 +205,7 @@ class _OtherOptionsSection extends StatelessWidget {
       children: [
         // Section header
         Text(
-          'Other Options',
+          'Other options',
           style: typography.paragraphLarge(
             fontWeight: ArFontWeight.semiBold,
             color: colorTokens.textHigh,
@@ -222,7 +222,7 @@ class _OtherOptionsSection extends StatelessWidget {
 
         // Base Network (L2) - Primary EVM option
         _TokenGroup(
-          title: 'Base Network',
+          title: 'Base network',
           description: 'Low fees, fast transactions',
           tokens: const [
             CryptoToken.ethBase,
@@ -476,7 +476,7 @@ class _PendingTransactionBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Pending Transaction',
+                  'Pending transaction',
                   style: typography.paragraphNormal(
                     fontWeight: ArFontWeight.semiBold,
                     color: colorTokens.textHigh,

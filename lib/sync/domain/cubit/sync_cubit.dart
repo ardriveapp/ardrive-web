@@ -464,7 +464,8 @@ class SyncCubit extends Cubit<SyncState> {
     }
   }
 
-  SyncComplete _syncComplete(SyncTrigger trigger) => SyncComplete(
+  SyncComplete _syncComplete(SyncTrigger trigger, {required bool deep}) =>
+      SyncComplete(
         entitiesSynced: _syncProgress.entitiesSynced,
         skippedEntityCount: _syncProgress.skippedEntityCount,
         isSingleDriveSync: _syncProgress.isSingleDriveSync,
@@ -472,7 +473,20 @@ class SyncCubit extends Cubit<SyncState> {
         trigger: trigger,
         completedAt: DateTime.now(),
         sequence: ++_completedSyncCount,
+        firstReadDriveCount: deep ? 0 : _firstReadDriveCount(),
       );
+
+  /// See [SyncComplete.firstReadDriveCount]. A sync that read some drives from
+  /// the start and some from where they left off reports what changed, as any
+  /// other sync does.
+  ///
+  /// Never a deep resync, though it reads every drive from the start too: what
+  /// it reads is mostly here already, and the count is of what it wrote, so
+  /// "Synced 21 drives (8 items)" undersold it by thousands.
+  int _firstReadDriveCount() {
+    final read = _syncProgress.syncedDriveIds.length;
+    return read > 0 && _syncProgress.firstTimeSyncDriveCount == read ? read : 0;
+  }
 
   SyncCubit({
     required ProfileCubit profileCubit,
@@ -1228,7 +1242,7 @@ class SyncCubit extends Cubit<SyncState> {
       unawaited(_recordSyncRun(SyncRunOutcome.completedWithErrors, trigger));
     } else if (ranToCompletion) {
       _forgetUnreadChangesFor(_syncProgress.syncedDriveIds);
-      _emitIfOpen(_syncComplete(trigger));
+      _emitIfOpen(_syncComplete(trigger, deep: deepSync));
       unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
     } else if (threw) {
       // The failure stands. `onError` has already emitted `SyncFailure`, and
@@ -1469,7 +1483,7 @@ class SyncCubit extends Cubit<SyncState> {
       unawaited(_recordSyncRun(SyncRunOutcome.completedWithErrors, trigger));
     } else if (ranToCompletion) {
       _forgetUnreadChangesFor(_syncProgress.syncedDriveIds);
-      _emitIfOpen(_syncComplete(trigger));
+      _emitIfOpen(_syncComplete(trigger, deep: deepSync));
       unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
     } else if (threw) {
       // The failure stands - see the same branch in [startSync].

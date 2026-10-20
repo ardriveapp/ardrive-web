@@ -1,5 +1,4 @@
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
-import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/presentation/sync_history_panel.dart';
@@ -31,7 +30,6 @@ class DrivesSyncMenu extends StatelessWidget {
         final isSyncing =
             syncState is SyncInProgress || syncState is SyncLoadingDrives;
         final errors = syncState is SyncCompleteWithErrors ? syncState : null;
-        final nothingWalked = _nothingHasEverBeenWalked(context);
 
         // How many drives are ticked, so both actions can say which set they
         // will run over. Watched rather than read: ticking a drive has to
@@ -71,15 +69,12 @@ class DrivesSyncMenu extends StatelessWidget {
                           type: ResyncType.resync);
                     },
               content: ArDriveDropdownItemTile(
-                // "Resync" is wrong before anything has ever synced. The word
-                // promises a repeat of something that has not happened.
+                // One name for syncing everything, wherever it is offered, and
+                // whether or not anything has synced before.
                 name: selection > 0
                     ? appLocalizationsOf(context)
                         .driveListSyncSelectedCount(selection)
-                    // "Resync" is wrong before anything has ever synced.
-                    : nothingWalked
-                        ? appLocalizationsOf(context).syncAllDrives
-                        : appLocalizationsOf(context).resync,
+                    : appLocalizationsOf(context).syncAllDrives,
                 icon: ArDriveIcons.refresh(color: iconColor),
                 isDisabled: isSyncing,
               ),
@@ -136,10 +131,11 @@ class DrivesSyncMenu extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Always "Sync": before anything has synced, the page's own
+                // banner offers "Sync all drives", and the same words on this
+                // button put the action on the page twice.
                 Text(
-                  nothingWalked
-                      ? appLocalizationsOf(context).syncAllDrives
-                      : appLocalizationsOf(context).sync,
+                  appLocalizationsOf(context).sync,
                   style: ArDriveTypographyNew.of(context).paragraphNormal(
                     color:
                         isSyncing ? colorTokens.textLow : colorTokens.textHigh,
@@ -154,19 +150,6 @@ class DrivesSyncMenu extends StatelessWidget {
         );
       },
     );
-  }
-
-  /// Whether nothing in this wallet has ever been walked, which decides whether
-  /// the first action is a sync or a re-sync.
-  static bool _nothingHasEverBeenWalked(BuildContext context) {
-    final drives = context.watch<DrivesCubit>().state;
-
-    if (drives is! DrivesLoadSuccess) {
-      return false;
-    }
-
-    return drives.userDrives.isNotEmpty &&
-        drives.userDrives.every((d) => (d.lastBlockHeight ?? 0) == 0);
   }
 }
 

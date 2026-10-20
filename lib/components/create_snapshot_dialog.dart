@@ -251,7 +251,7 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
         },
       ),
       ModalAction(
-        title: appLocalizationsOf(context).proceedEmphasized,
+        title: appLocalizationsOf(context).createSnapshot,
         action: () {
           createSnapshotCubit.confirmDriveAndHeighRange(drive.id);
         },
@@ -562,7 +562,7 @@ Widget _confirmDialog(
             logger.i('Confirming snapshot creation'),
             await createSnapshotCubit.confirmSnapshotCreation(),
           },
-          title: appLocalizationsOf(context).uploadEmphasized,
+          title: appLocalizationsOf(context).uploadSnapshot,
           isEnable: state.isButtonToUploadEnabled,
         ),
       }

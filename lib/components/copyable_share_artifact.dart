@@ -148,7 +148,6 @@ class _CopyableShareArtifactState extends State<CopyableShareArtifact> {
         CopyButton(
           positionX: 4,
           positionY: 40,
-          copyMessageColor: colorTokens.containerRed,
           showCopyText: true,
           text: widget.text,
           child: Text(

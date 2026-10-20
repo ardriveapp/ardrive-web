@@ -94,7 +94,7 @@ class _SharingFileListenerState extends State<SharingFileListener> {
                     );
                   },
                   // TODO: Localize
-                  title: 'Select Drive',
+                  title: 'Select drive',
                 ),
               ],
               content: SizedBox(

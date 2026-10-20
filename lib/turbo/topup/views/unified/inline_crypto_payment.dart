@@ -323,7 +323,7 @@ class _TokenSelector extends StatelessWidget {
                       border: Border.all(color: colors.themeBorderDefault),
                     ),
                     child: Text(
-                      'No Turbo Fee',
+                      'No Turbo fee',
                       style: typography.caption(
                         fontWeight: ArFontWeight.semiBold,
                         color: colors.themeFgMuted,
@@ -463,7 +463,7 @@ class _WalletConnectionSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Connect Wallet',
+            'Connect wallet',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colors.themeFgDefault,
@@ -823,7 +823,7 @@ class _WalletConnectionSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Sign Message',
+            'Sign message',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colors.themeFgDefault,
@@ -840,7 +840,7 @@ class _WalletConnectionSection extends StatelessWidget {
             child: ArDriveButton(
               text: signatureState.isSigningMessage
                   ? 'Signing...'
-                  : 'Sign Message',
+                  : 'Sign message',
               isDisabled: signatureState.isSigningMessage,
               onPressed: () {
                 bloc.add(const CryptoTopupAOConnectSignatureRequested());
@@ -904,7 +904,7 @@ class _WalletConnectionSection extends StatelessWidget {
               Icon(Icons.swap_horiz, color: colors.themeWarningFg, size: 20),
               const SizedBox(width: 8),
               Text(
-                'Switch Network',
+                'Switch network',
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
                   color: colors.themeWarningFg,

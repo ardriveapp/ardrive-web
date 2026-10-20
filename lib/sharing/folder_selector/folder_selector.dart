@@ -49,7 +49,7 @@ class _FolderSelectorState extends State<FolderSelector> {
               state.drives.where((drive) => !drive.isPrivate).toList();
           final privateDrives =
               state.drives.where((drive) => drive.isPrivate).toList();
-          title = 'Select Drive';
+          title = 'Select drive';
           description = 'Select the drive you want to upload to';
           content = SizedBox(
             child: SingleChildScrollView(
@@ -58,7 +58,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                 children: [
                   if (publicDrives.isNotEmpty) ...[
                     Text(
-                      'Public Drives',
+                      'Public drives',
                       style: ArDriveTypography.body.buttonLargeBold(
                           color: ArDriveTheme.of(context)
                               .themeData
@@ -106,7 +106,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                   ],
                   if (privateDrives.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    Text('Private Drives',
+                    Text('Private drives',
                         style: ArDriveTypography.body.buttonLargeBold()),
                     const Divider(),
                     ListView.builder(
@@ -173,7 +173,7 @@ class _FolderSelectorState extends State<FolderSelector> {
             ),
           );
         } else if (state is SelectingFolderState) {
-          title = 'Select Folder';
+          title = 'Select folder';
           description = 'Select the folder you want to upload to';
           content = SizedBox(
             height: 400,

@@ -53,7 +53,7 @@ void main() {
         'generic network problem', () {
       // Retrying *is* the fix, so this is not the integrity dialog's dead end.
       // But the bytes already delivered are gone, so it is not the network
-      // dialog either: that one offers "Try Again", which to somebody watching
+      // dialog either: that one offers "Try again", which to somebody watching
       // a bar sit at 80% promises the remaining 20%.
       expect(
         classifyDownloadError(
@@ -184,7 +184,7 @@ void main() {
         (tester) async {
       await pumpFailure(tester, FileDownloadFailureReason.unknownError);
 
-      expect(find.text('Try Again'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
     });
 
     testWidgets('never offers a retry for a file that failed its integrity '
@@ -194,7 +194,7 @@ void main() {
       // The whole point of the typed reason: these bytes will fail the same
       // check every time, so the retryable dialog would be an invitation to
       // download them for ever.
-      expect(find.text('Try Again'), findsNothing);
+      expect(find.text('Try again'), findsNothing);
       expect(find.text('OK'), findsOneWidget);
       expect(find.textContaining('nothing was saved'), findsOneWidget);
       // Corrupted bytes are not a routine transport hiccup, and the modal has
@@ -206,10 +206,10 @@ void main() {
         'not call it trying again', (tester) async {
       await pumpFailure(tester, FileDownloadFailureReason.downloadMustRestart);
 
-      expect(find.text('Start Over'), findsOneWidget);
-      // "Try Again" next to a bar that stopped at 80% promises the last 20%,
+      expect(find.text('Start over'), findsOneWidget);
+      // "Try again" next to a bar that stopped at 80% promises the last 20%,
       // and this is precisely the failure where that cannot be delivered.
-      expect(find.text('Try Again'), findsNothing);
+      expect(find.text('Try again'), findsNothing);
       expect(find.textContaining('from the beginning'), findsOneWidget);
       // A dropped connection is an inconvenience, not an alarm. Spending the
       // alert icon here would spend it everywhere.

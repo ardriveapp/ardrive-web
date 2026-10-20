@@ -37,7 +37,7 @@ class SnapshotListItem extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                formatDateToUtcString(snapshot.createdAt),
+                formatDateTime(snapshot.createdAt),
                 style: typography.paragraphNormal(),
               ),
             ),

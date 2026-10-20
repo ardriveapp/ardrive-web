@@ -70,7 +70,7 @@ class PurchaseSummary extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Purchase Summary',
+            'Purchase summary',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.bold,
               color: colors.themeFgDefault,

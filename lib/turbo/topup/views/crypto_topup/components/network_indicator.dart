@@ -14,7 +14,7 @@ String getNetworkName(int chainId) {
     case 84532:
       return 'Base Sepolia (Testnet)';
     default:
-      return 'Unknown Network';
+      return 'Unknown network';
   }
 }
 
@@ -164,7 +164,7 @@ class NetworkWarningBanner extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Wrong Network',
+                'Wrong network',
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
                   color: colorTokens.textHigh,
@@ -185,7 +185,7 @@ class NetworkWarningBanner extends StatelessWidget {
             children: [
               Expanded(
                 child: ArDriveButton(
-                  text: isSwitching ? 'Switching...' : 'Switch Network',
+                  text: isSwitching ? 'Switching...' : 'Switch network',
                   onPressed: isSwitching ? () {} : onSwitchNetwork,
                   isDisabled: isSwitching,
                 ),
@@ -234,7 +234,7 @@ class ManualNetworkSwitchInstructions extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Manual Network Switch',
+            'Manual network switch',
             style: typography.paragraphLarge(
               fontWeight: ArFontWeight.semiBold,
               color: colorTokens.textHigh,
@@ -382,7 +382,7 @@ class _NetworkDetails extends StatelessWidget {
     switch (chainId) {
       case 8453:
         return {
-          'Network Name': 'Base',
+          'Network name': 'Base',
           'RPC URL': 'https://mainnet.base.org',
           'Chain ID': '8453',
           'Currency': 'ETH',
@@ -390,7 +390,7 @@ class _NetworkDetails extends StatelessWidget {
         };
       case 1:
         return {
-          'Network Name': 'Ethereum Mainnet',
+          'Network name': 'Ethereum Mainnet',
           'RPC URL': 'https://eth.llamarpc.com',
           'Chain ID': '1',
           'Currency': 'ETH',

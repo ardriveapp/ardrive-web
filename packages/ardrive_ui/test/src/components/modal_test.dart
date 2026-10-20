@@ -241,6 +241,72 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets(
+      'ArDriveStandardModalNew makes a lone action primary unless it names '
+      'a variant', (tester) async {
+    Future<ButtonVariant> variantOf(ModalAction action) async {
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: ArDriveStandardModalNew(title: 'Title', actions: [action]),
+          ),
+        ),
+      );
+
+      return tester
+          .widget<ArDriveButtonNew>(find.byType(ArDriveButtonNew))
+          .variant;
+    }
+
+    expect(
+      await variantOf(ModalAction(action: () {}, title: 'Ok')),
+      ButtonVariant.primary,
+    );
+    expect(
+      await variantOf(
+        ModalAction(
+          action: () {},
+          title: 'Cancel',
+          variant: ButtonVariant.secondary,
+        ),
+      ),
+      ButtonVariant.secondary,
+    );
+  });
+
+  testWidgets(
+      'ArDriveStandardModalNew keeps short labels at the usual widths and '
+      'widens a button to fit a long one', (tester) async {
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: ArDriveStandardModalNew(
+            title: 'Title',
+            width: 800,
+            actions: [
+              ModalAction(action: () {}, title: 'No'),
+              ModalAction(action: () {}, title: 'Ok'),
+              ModalAction(action: () {}, title: 'Upload as new versions'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final buttons = tester
+        .widgetList<ArDriveButtonNew>(find.byType(ArDriveButtonNew))
+        .toList();
+
+    expect(buttons[0].maxWidth, 100);
+    expect(buttons[1].maxWidth, 110);
+    expect(buttons[2].maxWidth, greaterThan(110));
+
+    // The long label is drawn on one line, as tall as the short one.
+    final longLabel = tester.getSize(find.text('Upload as new versions'));
+    final shortLabel = tester.getSize(find.text('Ok'));
+    expect(longLabel.height, shortLabel.height);
+  });
 }
 
 class _TestWidget extends StatelessWidget {

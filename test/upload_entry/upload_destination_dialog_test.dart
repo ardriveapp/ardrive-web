@@ -135,9 +135,9 @@ void main() {
     testWidgets('marks only the drives nothing has read', (tester) async {
       await openChooser(tester, unsynced: {archive.id});
 
-      expect(find.text('Never synced'), findsOneWidget);
+      expect(find.text('Not synced on this device'), findsOneWidget);
 
-      final hint = tester.getTopLeft(find.text('Never synced')).dy;
+      final hint = tester.getTopLeft(find.text('Not synced on this device')).dy;
       expect(hint, greaterThan(tester.getTopLeft(find.text('Archive')).dy));
     });
 
@@ -208,7 +208,7 @@ void main() {
       );
 
       expect(find.text('Create a drive first'), findsOneWidget);
-      expect(find.text('New Drive'), findsOneWidget);
+      expect(find.text('New drive'), findsOneWidget);
     });
 
     testWidgets('says that files live in drives', (tester) async {
@@ -226,7 +226,7 @@ void main() {
     testWidgets('closes and starts a new drive', (tester) async {
       await openNeedsDrive(tester);
 
-      await tester.tap(find.text('New Drive'));
+      await tester.tap(find.text('New drive'));
       await tester.pumpAndSettle();
 
       expect(created, 1);

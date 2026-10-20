@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:ardrive/utils/snapshots/misdecoded_text.dart';
 import 'package:ardrive/utils/preview_byte_cache.dart';
@@ -1002,6 +1003,186 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     };
   }
 
+  /// What [driveIds] hold permanently, by the year it was uploaded, oldest
+  /// first.
+  ///
+  /// Stricter than [driveContentSummaries], which counts every file row,
+  /// because this is a figure somebody may hold us to:
+  ///
+  /// - **Every version.** Read from the revisions, not the files: a file's
+  ///   earlier versions are stored, and were paid for, as much as its
+  ///   newest.
+  /// - **Each piece of data once.** A file copied to a second folder, or
+  ///   renamed, is another revision over the same data transaction, stored
+  ///   once and paid for once.
+  /// - **Only data that landed.** An upload still pending, or one that
+  ///   failed, is not preserved. Data with no transaction row at all was
+  ///   synced from the network, so it is there.
+  /// - **Not pinned files.** A pin points at somebody else's data, which
+  ///   they paid to store.
+  ///
+  /// A piece of data is dated by the first revision that carried it: when
+  /// it was uploaded, not when its file was first made.
+  Future<Map<int, PermanentData>> permanentDataByYear(
+    Iterable<String> driveIds,
+  ) async {
+    final ids = driveIds.toList();
+
+    if (ids.isEmpty) {
+      return {};
+    }
+
+    final rows = await customSelect(
+      '''
+      SELECT CAST(strftime('%Y', created, 'unixepoch') AS INTEGER) AS year,
+             SUM(size) AS bytes,
+             COUNT(*) AS items
+      FROM (
+        SELECT r.dataTxId, MIN(r.dateCreated) AS created, MAX(r.size) AS size
+        FROM file_revisions r
+        WHERE ${_permanentRevisions(ids)}
+        GROUP BY r.dataTxId
+      )
+      GROUP BY year
+      ORDER BY year
+      ''',
+      variables: [for (final id in ids) Variable.withString(id)],
+      readsFrom: {fileRevisions, networkTransactions},
+    ).get();
+
+    return {
+      for (final row in rows)
+        if (row.read<int?>('year') != null)
+          row.read<int>('year'): PermanentData(
+            bytes: row.read<int?>('bytes') ?? 0,
+            items: row.read<int>('items'),
+          ),
+    };
+  }
+
+  /// How many files in [driveIds] have at least one version stored for
+  /// good, counted as [permanentDataByYear] counts their data. A copy is a
+  /// file of its own here, though its data is counted once there.
+  Future<int> permanentFileCount(Iterable<String> driveIds) async {
+    final ids = driveIds.toList();
+
+    if (ids.isEmpty) {
+      return 0;
+    }
+
+    final row = await customSelect(
+      '''
+      SELECT COUNT(DISTINCT r.fileId) AS files
+      FROM file_revisions r
+      WHERE ${_permanentRevisions(ids)}
+      ''',
+      variables: [for (final id in ids) Variable.withString(id)],
+      readsFrom: {fileRevisions, networkTransactions},
+    ).getSingle();
+
+    return row.read<int>('files');
+  }
+
+  /// Changes whenever [permanentDataByYear] or [permanentFileCount] could:
+  /// when a revision is written, or an upload starts, lands or fails. For
+  /// deciding whether figures already counted still hold, at a fraction of a
+  /// millisecond against a scan of every revision.
+  ///
+  /// Revisions are only ever added, so the newest row's id moves with every
+  /// one written. An upload that lands leaves the pending count; one that
+  /// fails moves to the failed count.
+  Future<String> permanentDataVersion() async {
+    final row = await customSelect(
+      '''
+      SELECT (SELECT MAX(rowid) FROM file_revisions) AS revisions,
+             (SELECT COUNT(*) FROM network_transactions
+               WHERE status = '${TransactionStatus.pending}') AS pending,
+             (SELECT COUNT(*) FROM network_transactions
+               WHERE status = '${TransactionStatus.failed}') AS failed
+      ''',
+      readsFrom: {fileRevisions, networkTransactions},
+    ).getSingle();
+
+    return '${row.read<int?>('revisions')}:${row.read<int>('pending')}'
+        ':${row.read<int>('failed')}';
+  }
+
+  /// The revisions of [ids] whose data is stored for good: not a pin, and
+  /// not an upload still pending or one that failed. Binds one variable per
+  /// drive id.
+  String _permanentRevisions(List<String> ids) => '''
+        r.driveId IN (${List.filled(ids.length, '?').join(', ')})
+        AND r.pinnedDataOwnerAddress IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM network_transactions t
+          WHERE t.id = r.dataTxId
+            AND t.status IN ('${TransactionStatus.pending}',
+                             '${TransactionStatus.failed}')
+        )''';
+
+  /// Which of [txIds] [driveIds] are made of, as sync recorded them: the
+  /// metadata and data of every file revision, the metadata of every folder
+  /// and drive revision, and the bundles any of them travelled in.
+  ///
+  /// What makes a wallet's transaction ArDrive storage, for the AR it paid
+  /// directly - the same drives the permanence panel sizes, known the way
+  /// sync knows them rather than guessed from an App-Name tag.
+  ///
+  /// Asked about the transactions in hand, never for the whole set: a drive
+  /// of 100,000 files is made of 400,000 of them, which took a second and a
+  /// half to read out natively and more on the web, where every row crosses
+  /// to the page from the database worker. Asked in batches of
+  /// [_txLookupBatch], to stay well inside SQLite's limit on variables.
+  Future<Set<String>> arDriveTransactionsAmong(
+    Iterable<String> driveIds,
+    Iterable<String> txIds,
+  ) async {
+    final drives = driveIds.toList();
+    final candidates = txIds.toSet().toList();
+
+    if (drives.isEmpty || candidates.isEmpty) {
+      return {};
+    }
+
+    final drivePlaceholders = List.filled(drives.length, '?').join(', ');
+    final found = <String>{};
+
+    for (var i = 0; i < candidates.length; i += _txLookupBatch) {
+      final batch = candidates.sublist(
+          i, math.min(i + _txLookupBatch, candidates.length));
+      final txPlaceholders = List.filled(batch.length, '?').join(', ');
+      // The transaction first: dataTxId has an index, and for the rest
+      // SQLite checks each row against the batch in one pass.
+      String among(String column, String table) => '''
+        SELECT $column AS tx FROM $table
+        WHERE $column IN ($txPlaceholders) AND driveId IN ($drivePlaceholders)''';
+
+      final rows = await customSelect(
+        [
+          among('dataTxId', 'file_revisions'),
+          among('metadataTxId', 'file_revisions'),
+          among('bundledIn', 'file_revisions'),
+          among('metadataTxId', 'folder_revisions'),
+          among('metadataTxId', 'drive_revisions'),
+          among('bundledIn', 'drive_revisions'),
+        ].join('\nUNION '),
+        variables: [
+          for (var branch = 0; branch < 6; branch++) ...[
+            for (final tx in batch) Variable.withString(tx),
+            for (final drive in drives) Variable.withString(drive),
+          ],
+        ],
+        readsFrom: {fileRevisions, folderRevisions, driveRevisions},
+      ).get();
+
+      found.addAll(rows.map((row) => row.read<String>('tx')));
+    }
+
+    return found;
+  }
+
+  static const _txLookupBatch = 300;
+
   /// Undoes names damaged by reading drive snapshots as Latin-1, in every
   /// table that keeps one: drives, folders and files, and their revisions.
   /// Returns how many it repaired.
@@ -1129,4 +1310,18 @@ class DriveNotFoundException implements Exception {
   String toString() {
     return 'Drive with id $driveId not found';
   }
+}
+
+/// Data stored permanently in one year: see [DriveDao.permanentDataByYear].
+class PermanentData extends Equatable {
+  const PermanentData({required this.bytes, required this.items});
+
+  final int bytes;
+
+  /// Pieces of data, each counted once however many files or versions
+  /// point at it.
+  final int items;
+
+  @override
+  List<Object> get props => [bytes, items];
 }

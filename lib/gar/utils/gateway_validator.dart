@@ -100,7 +100,7 @@ class GatewayValidator {
       final uri = Uri.parse(cleanUrl(url));
       return 'Custom Gateway (${uri.host})';
     } catch (e) {
-      return 'Custom Gateway';
+      return 'Custom gateway';
     }
   }
 }
