@@ -149,7 +149,8 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       return ProfileCardHeader(
                         walletAddress: state.walletAddress,
                         onPressed: () {
-                          openWalletExplorer(state.walletAddress);
+                          openWalletExplorer(state.walletAddress,
+                              isArweave: widget.sourceWalletAddress == null);
                         },
                         isExpanded: true,
                         hasLogoutButton: true,
@@ -166,7 +167,8 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                       walletAddress: state.walletAddress ?? '',
                       onPressed: () {
                         if (state.walletAddress != null) {
-                          openWalletExplorer(state.walletAddress!);
+                          openWalletExplorer(state.walletAddress!,
+                              isArweave: widget.sourceWalletAddress == null);
                         }
                       },
                       isExpanded: true,
