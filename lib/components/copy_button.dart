@@ -89,7 +89,13 @@ class _CopyButtonState extends State<CopyButton> {
     }
 
     if (mounted) {
+      // Tapped again while the last answer still shows: a retry after
+      // "Couldn't copy" that worked says so.
       if (_showCheck) {
+        if (copied != _copied) {
+          setState(() => _copied = copied);
+          _overlayEntry?.markNeedsBuild();
+        }
         return;
       }
 
@@ -122,9 +128,12 @@ class _CopyButtonState extends State<CopyButton> {
     final Offset buttonPosition = button.localToGlobal(Offset.zero);
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final errorColor =
+        ArDriveTheme.of(context).themeData.colors.themeErrorDefault;
+    final localizations = appLocalizationsOf(context);
 
     return OverlayEntry(
-      builder: (context) => Positioned(
+      builder: (_) => Positioned(
         left: buttonPosition.dx - widget.positionX,
         top: buttonPosition.dy - widget.positionY,
         child: Material(
@@ -134,16 +143,9 @@ class _CopyButtonState extends State<CopyButton> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Center(
               child: Text(
-                _copied
-                    ? appLocalizationsOf(context).copied
-                    : appLocalizationsOf(context).couldNotCopy,
+                _copied ? localizations.copied : localizations.couldNotCopy,
                 style: typography.paragraphNormal(
-                  color: _copied
-                      ? null
-                      : ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeErrorDefault,
+                  color: _copied ? null : errorColor,
                 ),
               ),
             ),

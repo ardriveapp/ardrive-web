@@ -23,10 +23,10 @@ void main() {
 
   /// Answers the clipboard write the way the browser would: with the text
   /// taken, or refused.
-  void clipboard(WidgetTester tester, {required bool refuses}) {
+  void clipboard(WidgetTester tester, {required bool Function() refuses}) {
     tester.binding.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-      if (call.method == 'Clipboard.setData' && refuses) {
+      if (call.method == 'Clipboard.setData' && refuses()) {
         throw PlatformException(
           code: 'copy_fail',
           message: 'Clipboard.setData failed',
@@ -41,7 +41,7 @@ void main() {
   group('CopyButton', () {
     testWidgets('says the text was copied when the browser took it',
         (tester) async {
-      clipboard(tester, refuses: false);
+      clipboard(tester, refuses: () => false);
       await tester.pumpWidget(
         wrap(const CopyButton(text: 'a-link', child: Text('Copy link'))),
       );
@@ -59,7 +59,7 @@ void main() {
         (tester) async {
       // A phone's browser refuses a write it does not count as the reader's
       // own, and the button said "Copied!" anyway.
-      clipboard(tester, refuses: true);
+      clipboard(tester, refuses: () => true);
       await tester.pumpWidget(
         wrap(const CopyButton(text: 'a-link', child: Text('Copy link'))),
       );
@@ -69,6 +69,27 @@ void main() {
 
       expect(find.text("Couldn't copy"), findsOneWidget);
       expect(find.text('Copied!'), findsNothing);
+
+      await tester.pump(const Duration(seconds: 2));
+    });
+
+    testWidgets('says so when a retry after a refusal works', (tester) async {
+      var refuses = true;
+      clipboard(tester, refuses: () => refuses);
+      await tester.pumpWidget(
+        wrap(const CopyButton(text: 'a-link', child: Text('Copy link'))),
+      );
+
+      await tester.tap(find.text('Copy link'));
+      await tester.pump();
+      expect(find.text("Couldn't copy"), findsOneWidget);
+
+      refuses = false;
+      await tester.tap(find.text('Copy link'));
+      await tester.pump();
+
+      expect(find.text('Copied!'), findsOneWidget);
+      expect(find.text("Couldn't copy"), findsNothing);
 
       await tester.pump(const Duration(seconds: 2));
     });
