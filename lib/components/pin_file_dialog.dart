@@ -57,8 +57,77 @@ Future<void> showPinFileDialog({
   );
 }
 
-class PinFileDialog extends StatelessWidget {
+/// Whether the ID field says its text is not a valid ID.
+///
+/// Not while it is still being typed: every ID starts out as an incomplete
+/// one, and the field said so from the first character. It says so once the
+/// text is as long as the longest ID, holds a character no ID has, or is
+/// [settled]: pasted, or left.
+@visibleForTesting
+bool showsInvalidIdError(String id, {required bool settled}) {
+  const transactionIdLength = 43;
+  final couldStillBecomeAnId = RegExp(r'^[\w\-+]*$').hasMatch(id);
+
+  return settled || id.length >= transactionIdLength || !couldStillBecomeAnId;
+}
+
+/// How many characters an edit from [before] to [after] put in: what is left
+/// of [after] once the text the two share at each end is taken away.
+///
+/// Typing puts in one, wherever the cursor is and whatever it replaces. A
+/// paste puts in many, even when it replaces text as long as itself.
+@visibleForTesting
+int insertedLength(String before, String after) {
+  var prefix = 0;
+  while (prefix < before.length &&
+      prefix < after.length &&
+      before[prefix] == after[prefix]) {
+    prefix++;
+  }
+  var suffix = 0;
+  while (suffix < before.length - prefix &&
+      suffix < after.length - prefix &&
+      before[before.length - 1 - suffix] == after[after.length - 1 - suffix]) {
+    suffix++;
+  }
+  return after.length - prefix - suffix;
+}
+
+class PinFileDialog extends StatefulWidget {
   const PinFileDialog({super.key});
+
+  @override
+  State<PinFileDialog> createState() => _PinFileDialogState();
+}
+
+class _PinFileDialogState extends State<PinFileDialog> {
+  final _idFocusNode = FocusNode();
+
+  /// Whether the reader is done with the ID: they pasted it, or left the
+  /// field. From then on an invalid ID is said to be one, until the field is
+  /// emptied and a new one is started.
+  bool _idSettled = false;
+  String _lastId = '';
+
+  /// The field is disabled while the ID is looked up, which takes its focus.
+  /// That is not the reader leaving it.
+  bool _lookupRunning = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _idFocusNode.addListener(() {
+      if (!_idFocusNode.hasFocus && _lastId.isNotEmpty && !_lookupRunning) {
+        setState(() => _idSettled = true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _idFocusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,6 +172,7 @@ class PinFileDialog extends StatelessWidget {
           return const SizedBox();
         }
 
+        _lookupRunning = state is PinFileNetworkCheckRunning;
         final idValidationError = _getIdValidationError(context, state);
         final nameValidationError = _getNameValidationError(context, state);
 
@@ -119,12 +189,49 @@ class PinFileDialog extends StatelessWidget {
                   isFieldRequired: true,
                   errorMessage: idValidationError,
                   showErrorMessage: idValidationError != null,
+                  focusNode: _idFocusNode,
                   onChanged: (value) {
+                    if (value.isEmpty) {
+                      // A new ID is being started.
+                      _idSettled = false;
+                    } else if (insertedLength(_lastId, value) > 1) {
+                      // More than one character at once is a paste: the
+                      // reader has given the whole ID.
+                      _idSettled = true;
+                    }
+                    _lastId = value;
                     pinFileBloc.add(
                       FieldsChanged(id: value, name: state.name),
                     );
                   },
                 ),
+                // The field is disabled while the ID is looked up, which
+                // otherwise reads as the dialog having frozen. Beside the
+                // field, not in it: a label put inside the disabled field did
+                // not reach the semantics tree, so a screen reader missed it.
+                if (state is PinFileNetworkCheckRunning)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          appLocalizationsOf(context).lookingUpThisId,
+                          style: ArDriveTypographyNew.of(context)
+                              .paragraphNormal(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colorTokens
+                                .textMid,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ArDriveTextFieldNew(
                   isEnabled: true,
                   label: appLocalizationsOf(context).enterFileName,
@@ -161,7 +268,9 @@ class PinFileDialog extends StatelessWidget {
 
   String? _getIdValidationError(BuildContext context, PinFileState state) {
     if (state.idValidation == IdValidationResult.invalid) {
-      return appLocalizationsOf(context).theIdProvidedIsNotValid;
+      return showsInvalidIdError(state.id, settled: _idSettled)
+          ? appLocalizationsOf(context).theIdProvidedIsNotValid
+          : null;
     } else if (state.idValidation == IdValidationResult.required) {
       return appLocalizationsOf(context).validationRequired;
     }
