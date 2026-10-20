@@ -1049,9 +1049,9 @@
   "@nothingSyncedYetSyncingDescription": {
     "description": "Replaces nothingSyncedYetDescription while a sync is running. It also explains the disabled button beside it. Sets the expectation rather than narrating the interface: it read 'Each row will say what it holds as it arrives', which told the reader to go and watch something instead of saying the one thing the screen could not - how long this takes"
   },
-  "nothingSyncedYetDescription": "Their contents have not been fetched yet.",
+  "nothingSyncedYetDescription": "Sync your drives to see their files and folders.",
   "@nothingSyncedYetDescription": {
-    "description": "Says what the drives list can and cannot show before anything has been synced, and offers the two ways out"
+    "description": "Says what the drives list can and cannot show before anything has been synced, and offers the two ways out. Names the drives itself: it read 'Their contents have not been fetched yet.', and the title above it never says whose"
   },
   "syncThisDriveDescription": "Fetch the latest files and folders from this drive.",
   "syncThisDriveCheckAgainDescription": "Look again for this drive's files and folders on Arweave.",

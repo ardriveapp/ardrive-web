@@ -22,7 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// something at a band of widths nobody had rendered.
 void main() {
   const title = 'Nothing has been synced yet';
-  const description = 'Their contents have not been fetched yet.';
+  const description = 'Sync your drives to see their files and folders.';
   const syncingTitle = 'Fetching your drives';
 
   /// The real face, loaded from the design system's own asset.
