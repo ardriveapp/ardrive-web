@@ -57,6 +57,7 @@ Future<void> promptToCreateManifest(
         BlocProvider(
           create: (context) => CreateManifestCubit(
             drive: drive,
+            initialFolderId: folderId,
             profileCubit: context.read<ProfileCubit>(),
             hasPendingFiles: hasPendingFiles,
             folderRepository: context.read<FolderRepository>(),

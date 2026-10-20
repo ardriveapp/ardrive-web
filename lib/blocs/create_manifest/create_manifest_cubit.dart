@@ -29,6 +29,9 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   final ProfileCubit _profileCubit;
   final Drive _drive;
 
+  /// The folder the picker opens in: the one the user was viewing, if any.
+  final FolderID? _initialFolderId;
+
   final ManifestRepository _manifestRepository;
   final FolderRepository _folderRepository;
   final ARNSRepository _arnsRepository;
@@ -45,12 +48,14 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   CreateManifestCubit({
     required ProfileCubit profileCubit,
     required Drive drive,
+    FolderID? initialFolderId,
     required ManifestRepository manifestRepository,
     required FolderRepository folderRepository,
     required ArDriveAuth auth,
     bool hasPendingFiles = false,
     required ARNSRepository arnsRepository,
   })  : _drive = drive,
+        _initialFolderId = initialFolderId,
         _profileCubit = profileCubit,
         _hasPendingFiles = hasPendingFiles,
         _manifestRepository = manifestRepository,
@@ -79,7 +84,26 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     _hasPendingFiles = await _hasPendingFilesInFolder(rootFolderNode);
     logger.d('Folder has pending files: $_hasPendingFiles');
 
-    await loadFolder(_drive.rootFolderId);
+    final initialFolderId = _initialFolderId;
+    await loadFolder(
+      initialFolderId != null &&
+              _isShownInPicker(rootFolderNode, initialFolderId)
+          ? initialFolderId
+          : _drive.rootFolderId,
+    );
+  }
+
+  /// Whether [folderId] is [node] or sits under it through folders the picker
+  /// shows. The picker leaves out hidden folders, so it never opens in one or
+  /// below one.
+  bool _isShownInPicker(FolderNode node, FolderID folderId) {
+    if (node.folder.id == folderId) {
+      return true;
+    }
+    return node.subfolders.any(
+      (subfolder) =>
+          !subfolder.folder.isHidden && _isShownInPicker(subfolder, folderId),
+    );
   }
 
   /// User has selected a folder and is ready to proceed to name input
