@@ -10,8 +10,9 @@ Tracks the ArFS addition across every repository it touches. The proposal is
 **Status, 2026-10-20.** The web app's part is on `dev` (#2197, merged
 2026-10-16, then #2267 to #2271) and reads and publishes artifacts on staging.
 Production has both flags off. The spec is in review as ar-io/docs #192.
-Stream B is in review: ardrive-core-js #288 (reading, on by default, and
-producing), ardrive-cli #378 (`create-snapshot` publishes artifacts,
+Stream B is in review: ardrive-core-js #288 (producing, and reading on by
+default in the live paths: folder listing, folder download and the first
+incremental sync of a drive), ardrive-cli #378 (`create-snapshot` publishes artifacts,
 `snapshot-info`), ArDrive desktop #2 (pins core-js), and this repo's golden
 fixtures and cross test, #2297. Decisions of 2026-10-20: reading on by default
 in core-js and the CLI; the CLI's `create-snapshot` replaces JSON snapshots;
@@ -53,7 +54,9 @@ Three consequences, all favourable:
    cache) is a later phase."* So core-js can parse and compose snapshots but does
    not yet use them when listing a drive. Drive-state should not overtake that;
    it should land behind or alongside the same integration, or it will be a
-   reader nothing calls.
+   reader nothing calls. *Resolved in core-js #288:* listing and downloads
+   read the artifact, then snapshots above it, then GraphQL above those, and
+   a first incremental sync starts from the artifact.
 
 Note `entityTypeValues` (`src/types/type_guards.ts`) still lists only
 `drive | file | folder | drive-signature` — snapshots are identified by their
@@ -322,7 +325,7 @@ it, answering every row.
 |---|---|---|
 | B1.1 | **The SQLite engine** | Must run on Node 18 (both packages' `engines`), with no native build for the CLI's install. `sql.js` (WebAssembly) meets both; `better-sqlite3` is native; `node:sqlite` needs Node 22. Also decides whether core-js can produce in a browser |
 | B1.2 | **Module layout** | `src/drive_state/` beside `src/snapshots/`, mirroring its files: tags, types, query, data, plus envelope and producer |
-| B1.3 | **Where the reader joins sync** | Beside `parseSnapshotData` in `arfsdao_anonymous`, composed with `snapshot_obscuring`, `height_range` and `drive_history_composite`. Not a second range mechanism. Sequenced with core-js's own pending snapshot wiring (`src/snapshots/index.ts`: not yet in the live listing path) |
+| B1.3 | **Where the reader joins sync** | Beside `parseSnapshotData` in `arfsdao_anonymous`, composed with `snapshot_obscuring`, `height_range` and `drive_history_composite`. Not a second range mechanism. Sequenced with core-js's own pending snapshot wiring (`src/snapshots/index.ts`: not yet in the live listing path). #288 wires both: artifact, then snapshots, then GraphQL |
 | B1.4 | **The CLI's metadata cache** | How an imported artifact populates the persistent ArFS entity cache, and how the watermark is stored so the next run continues from `Block-End` |
 | B1.5 | **Producer inputs** | core-js has no local database, so the producer builds from a fresh full listing of the drive. Define the coverage claim it can honestly sign, and refuse to publish over a gap, the same rule as the web app |
 | B1.6 | **Private drives** | Drive key derivation for every identity type the CLI supports, and the guarantee that no key material reaches the payload |
