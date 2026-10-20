@@ -695,19 +695,26 @@ class _ActionCard {
       );
     }
 
-    // Laid out from the top, with the button held to the bottom, so the cards
-    // in a row line up: icon, title and button at the same height in each,
-    // however many lines its description takes. Spreading the space evenly
-    // moved each title by half the difference in description height.
+    // On a wide screen the cards sit in a row, so each is laid out from the
+    // top with its button held to the bottom: icon, title and button line up
+    // across the row however many lines a description takes. Spreading the
+    // space evenly moved each title by half the difference in description
+    // height. Stacked on a narrower screen there is no row to line up with,
+    // and the spread keeps a short description from leaving a gap.
     //
     // Less padding above and below than at the sides, so the longest
     // description, Create a pin's four lines, fits with room to spare.
+    final inARow =
+        getDeviceType(MediaQuery.sizeOf(context)) == DeviceScreenType.desktop;
+
     return ArDriveCard(
       width: 283,
       height: 283,
       backgroundColor: colorTokens.containerL2,
       contentPadding: const EdgeInsets.symmetric(horizontal: 31, vertical: 24),
       content: Column(
+        mainAxisAlignment:
+            inARow ? MainAxisAlignment.start : MainAxisAlignment.spaceEvenly,
         children: [
           icon.copyWith(size: 25),
           const SizedBox(height: 8),
@@ -723,7 +730,7 @@ class _ActionCard {
                 color: colorTokens.textMid, fontWeight: ArFontWeight.semiBold),
             textAlign: TextAlign.center,
           ),
-          const Spacer(),
+          if (inARow) const Spacer(),
           const SizedBox(height: 12),
           ArDriveButtonNew(
             text: buttonText,
