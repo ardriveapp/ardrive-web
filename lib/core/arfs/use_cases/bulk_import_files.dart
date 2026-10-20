@@ -212,7 +212,8 @@ class BulkImportFiles {
   /// should be imported.
   ///
   /// Returns a [BulkImportResult] containing the successfully imported files
-  /// and any failures that occurred during the process.
+  /// and any failures that occurred during the process. [onFileFailure] is
+  /// called with a file's path in the manifest as soon as that file fails.
   ///
   /// Throws [BulkImportException] if the import process fails entirely.
   Future<BulkImportResult> call({
@@ -235,6 +236,21 @@ class BulkImportFiles {
     final failures = <FileImportFailure>[];
     final folderPathToId = <String, String>{};
     final fileDataTxIdToFile = <String, ManifestFileEntry>{};
+
+    // Every failure is reported by the file's path in the manifest, which is
+    // what identifies it to the user: names repeat across folders.
+    void recordFailure(ManifestFileEntry file, Object error) {
+      failures.add(
+        FileImportFailure(
+          path: file.path,
+          dataTxId: file.dataTxId,
+          error: error is FileImportFailure ? error.error : error.toString(),
+          originalError:
+              error is FileImportFailure ? error.originalError : error,
+        ),
+      );
+      onFileFailure?.call(file.path);
+    }
 
     for (final file in files) {
       fileDataTxIdToFile[file.dataTxId] = file;
@@ -347,7 +363,7 @@ class BulkImportFiles {
           throw BulkImportException('Bulk import cancelled');
         }
 
-        final List<FileEntity> fileEntries = [];
+        final fileEntries = <_FileImportTask>[];
 
         for (final dataTxId in txDetails.keys) {
           try {
@@ -390,25 +406,25 @@ class BulkImportFiles {
               lastModifiedDate: now,
             );
 
-            fileEntries.add(fileEntity);
+            fileEntries.add(_FileImportTask(source: file, entity: fileEntity));
           } catch (e) {
             final file = fileDataTxIdToFile[dataTxId]!;
-            logger.e('Failed to get tx details for file: ${file.name}', e);
-            onFileFailure?.call(file.path);
-            failures.add(
-              FileImportFailure(
-                path: file.path,
-                dataTxId: file.dataTxId,
-                error: e.toString(),
-                originalError: e,
-              ),
-            );
+            logger.e('Failed to get tx details for file: ${file.path}', e);
+            recordFailure(file, e);
           }
         }
 
         logger.d('fileEntries: ${fileEntries.length}');
 
-        final worker = WorkerPool<FileEntity>(
+        // A pool given no tasks never completes, so a batch in which every
+        // file already failed above must not start one.
+        if (fileEntries.isEmpty) continue;
+
+        // The pool discards what `execute` returns and swallows what it
+        // throws (handing it to `onWorkerError`), so both outcomes are
+        // recorded here. Its tasks interleave on one isolate and never run
+        // in parallel, so adding to these lists needs no locking.
+        final worker = WorkerPool<_FileImportTask>(
           numWorkers: 1,
           maxTasksPerWorker:
               // to avoid concurrency issues with ArConnect while signing
@@ -417,23 +433,16 @@ class BulkImportFiles {
                   ? 1
                   : 5,
           taskQueue: fileEntries,
-          onWorkerError: (file, error) {
+          onWorkerError: (task, error) {
             logger.e('Bulk import worker error', error, StackTrace.current);
-            // Record the failure so BulkImportResult carries it (with its
-            // originalError) — the pool otherwise swallows task exceptions.
-            failures.add(error is FileImportFailure
-                ? error
-                : FileImportFailure(
-                    path: file.name ?? '',
-                    dataTxId: file.dataTxId ?? '',
-                    error: error.toString(),
-                    originalError: error,
-                  ));
+            recordFailure(task.source, error);
           },
-          execute: (file) async {
+          execute: (task) async {
             if (_isCancelled) {
               throw BulkImportException('Bulk import cancelled');
             }
+
+            final file = task.entity;
 
             onFileProgress?.call(file.name!);
 
@@ -451,9 +460,9 @@ class BulkImportFiles {
               originalOwnerAddress: originalOwnerAddress,
             );
 
-            onFileUploadSuccess?.call(file.name!);
+            importedFiles.add(fileEntry);
 
-            return fileEntry;
+            onFileUploadSuccess?.call(file.name!);
           },
         );
 
@@ -611,6 +620,14 @@ class BulkImportFiles {
   void reset() {
     _isCancelled = false;
   }
+}
+
+/// A file waiting in the import pool, with the manifest entry it came from.
+class _FileImportTask {
+  final ManifestFileEntry source;
+  final FileEntity entity;
+
+  _FileImportTask({required this.source, required this.entity});
 }
 
 class BulkImportFailure {

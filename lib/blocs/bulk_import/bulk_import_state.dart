@@ -74,14 +74,15 @@ class BulkImportInProgress extends BulkImportState {
     bool? isCreatingFolderHierarchy,
     String? currentFileName,
     int? processedFiles,
+    List<String>? failedPaths,
   }) {
     return BulkImportInProgress(
       manifestTxId: manifestTxId,
       fileIds: fileIds,
       processedFiles: processedFiles ?? this.processedFiles,
-      failedFiles: failedFiles,
+      failedFiles: failedPaths ?? failedFiles,
       currentFileName: currentFileName ?? this.currentFileName,
-      failedPaths: failedPaths,
+      failedPaths: failedPaths ?? this.failedPaths,
       isCreatingFolderHierarchy:
           isCreatingFolderHierarchy ?? this.isCreatingFolderHierarchy,
     );
@@ -119,7 +120,8 @@ class BulkImportError extends BulkImportState {
   final Object? error;
   final bool isPaymentError;
 
-  const BulkImportError(this.message, [this.error, this.isPaymentError = false]);
+  const BulkImportError(this.message,
+      [this.error, this.isPaymentError = false]);
 
   @override
   List<Object?> get props => [message, error, isPaymentError];
