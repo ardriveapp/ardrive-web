@@ -1,7 +1,15 @@
+import 'dart:typed_data';
+
+import 'package:ardrive/permanence/permanence_cache.dart';
+import 'package:ardrive/permanence/permanence_panel.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive_http/ardrive_http.dart';
+import 'package:arweave/arweave.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../test_utils/utils.dart';
 
 class _MockArDriveHTTP extends Mock implements ArDriveHTTP {}
 
@@ -9,6 +17,11 @@ void main() {
   const configFallback = 100000; // stale config value (97.66 KiB)
 
   late _MockArDriveHTTP httpClient;
+
+  setUpAll(() {
+    registerFallbackValue(const Stream<List<int>>.empty());
+    registerFallbackValue(Duration.zero);
+  });
 
   setUp(() {
     httpClient = _MockArDriveHTTP();
@@ -164,6 +177,63 @@ void main() {
       stubInfo('{"version":"0.2.0"}');
       await service.refreshMaxItemBytes();
       expect(service.maxFreeItemSizeBytes, 107520);
+    });
+  });
+
+  group('postDataItem and the permanence panel', () {
+    Future<SpendEntry?> shown() async => (await PermanenceCache.shared
+            .planSpend(
+              owner: 'wallet-a',
+              signsSilently: true,
+              fetch: () async => SpendLookup.found(BigInt.one),
+            ))
+        .shown;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      await PermanenceCache.shared.clear();
+      // The panel has read the credits used.
+      final read = await PermanenceCache.shared.planSpend(
+        owner: 'wallet-a',
+        signsSilently: true,
+        fetch: () async => SpendLookup.found(BigInt.one),
+      );
+      await read.spend;
+    });
+
+    Future<DataItem> dataItem(Wallet wallet) async {
+      final item = DataItem.withBlobData(
+        owner: await wallet.getOwner(),
+        data: Uint8List(8),
+      );
+      await item.sign(ArweaveSigner(wallet));
+      return item;
+    }
+
+    test('makes the credits used be read again once the item is accepted',
+        () async {
+      when(
+        () => httpClient.postBytesAsStream(
+          url: any(named: 'url'),
+          data: any(named: 'data'),
+          onSendProgress: any(named: 'onSendProgress'),
+          headers: any(named: 'headers'),
+          receiveTimeout: any(named: 'receiveTimeout'),
+          sendTimeout: any(named: 'sendTimeout'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            ArDriveHTTPResponse(data: '', statusCode: 200, retryAttempts: 0),
+      );
+
+      final wallet = getTestWallet();
+
+      await makeService().postDataItem(
+        dataItem: await dataItem(wallet),
+        wallet: wallet,
+      );
+
+      expect((await shown())!.invalidated, isTrue);
     });
   });
 }

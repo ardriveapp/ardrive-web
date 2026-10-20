@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/drive_signature_type.dart';
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
@@ -76,6 +77,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
     MetadataCache? metadataCache,
+    PermanenceCache? permanenceCache,
   })  : _arweave = arweave,
         _crypto = crypto,
         _databaseHelpers = databaseHelpers,
@@ -83,7 +85,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
         _secureKeyValueStore = secureKeyValueStore,
         _biometricAuthentication = biometricAuthentication,
         _userRepository = userRepository,
-        _maybeMetadataCache = metadataCache;
+        _maybeMetadataCache = metadataCache,
+        _permanenceCache = permanenceCache ?? PermanenceCache.shared;
 
   final UserRepository _userRepository;
   final ArweaveService _arweave;
@@ -93,6 +96,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
   final ArConnectService _arConnectService;
   final DatabaseHelpers _databaseHelpers;
   MetadataCache? _maybeMetadataCache;
+
+  /// What the permanence panel last read for this wallet.
+  final PermanenceCache _permanenceCache;
 
   User? _currentUser;
 
@@ -279,6 +285,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       await _databaseHelpers.deleteAllTables();
       await _databaseHelpers.clearSessionMemory();
+      await _permanenceCache.clear();
       currentUser = null;
       _userStreamController.add(null);
     } catch (e, stacktrace) {

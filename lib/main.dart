@@ -19,6 +19,7 @@ import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
 import 'package:ardrive/shared/blocs/banner/app_banner_bloc.dart';
@@ -419,6 +420,9 @@ class AppState extends State<App> {
         ),
         RepositoryProvider<PaymentService>(
           create: (_) => _turboPayment,
+        ),
+        RepositoryProvider<PermanenceCache>.value(
+          value: PermanenceCache.shared,
         ),
         RepositoryProvider<PstService>(
           create: (_) => PstService(

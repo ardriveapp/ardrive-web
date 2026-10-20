@@ -14,6 +14,7 @@ import 'package:ardrive/models/file_revision.dart';
 import 'package:ardrive/models/folder_revision.dart';
 import 'package:ardrive/services/license/license_service.dart';
 import 'package:ardrive/services/license/license_state.dart';
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
@@ -156,6 +157,7 @@ class _UploadRepositoryImpl implements UploadRepository {
 
     uploadController.onCompleteTask((tasks) {
       _saveTaskToDB(tasks, conflictingFiles, []);
+      PermanenceCache.shared.spendChanged();
     });
 
     return uploadController;
@@ -244,6 +246,7 @@ class _UploadRepositoryImpl implements UploadRepository {
 
     uploadController.onCompleteTask((task) {
       _saveTaskToDB(task, conflictingFiles, conflictingFolders);
+      PermanenceCache.shared.spendChanged();
     });
 
     return uploadController;

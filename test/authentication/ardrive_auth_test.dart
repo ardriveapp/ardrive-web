@@ -6,9 +6,11 @@ import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/profile_dao.dart';
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -38,6 +40,37 @@ final fakePrivateDriveV1 = TransactionCommonMixinFake()
   ..setTag(EntityTag.drivePrivacy, DrivePrivacyTag.private)
   ..setTag(EntityTag.driveId, 'some_drive_id')
   ..setTag(EntityTag.signatureType, DriveSignatureType.v1.toString());
+
+/// A key value store over a map the test can look into.
+class _KeptValues implements KeyValueStore {
+  _KeptValues(this.values);
+
+  final Map<String, String> values;
+
+  @override
+  Future<bool> putString(String key, String value) async {
+    values[key] = value;
+    return true;
+  }
+
+  @override
+  String? getString(String key) => values[key];
+
+  @override
+  Future<bool> remove(String key) async {
+    values.remove(key);
+    return true;
+  }
+
+  @override
+  Set<String> getKeys() => values.keys.toSet();
+
+  @override
+  Future<bool> putBool(String key, bool value) async => true;
+
+  @override
+  bool? getBool(String key) => null;
+}
 
 void main() {
   late ArDriveAuthImpl arDriveAuth;
@@ -622,6 +655,36 @@ void main() {
         // What was read out of the tables goes with them: drive keys and
         // previewed bytes live in memory, not in a table.
         verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
+      });
+
+      test('clears what the permanence panel kept', () async {
+        final kept = <String, String>{
+          '${permanenceSpendStoragePrefix}walletAddress': 'a reading',
+          'somethingElse': 'stays',
+        };
+        final permanenceCache = PermanenceCache(
+          openStore: () async => _KeptValues(kept),
+        );
+        final auth = ArDriveAuthImpl(
+          arweave: mockArweaveService,
+          userRepository: mockUserRepository,
+          crypto: mockArDriveCrypto,
+          databaseHelpers: mockDatabaseHelpers,
+          arConnectService: mockArConnectService,
+          biometricAuthentication: mockBiometricAuthentication,
+          secureKeyValueStore: mockSecureKeyValueStore,
+          permanenceCache: permanenceCache,
+        );
+        when(() => mockUserRepository.deleteUser())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((invocation) async {});
+
+        await auth.logout();
+
+        expect(kept.keys, ['somethingElse']);
       });
 
       test('says it failed when drive keys could not be cleared from memory',

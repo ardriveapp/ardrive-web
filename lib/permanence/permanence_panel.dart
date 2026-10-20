@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/permanence/ar_spend.dart';
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/permanence/spend_estimate.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -153,6 +154,7 @@ class PermanenceSummary {
     this.costToday,
     this.spend,
     this.loadSpend,
+    this.cachedSpend,
     this.arSpend,
     this.signInChain,
   });
@@ -175,6 +177,10 @@ class PermanenceSummary {
   /// extension shows a prompt for every signature, and one that opens with
   /// a summary nobody asked to sign for reads as something gone wrong.
   final Future<SpendLookup> Function()? loadSpend;
+
+  /// An earlier reading of what the wallet has spent, shown with the time it
+  /// was read until [spend] arrives, or beside the way to read it again.
+  final SpendEntry? cachedSpend;
 
   /// What the wallet paid in AR to upload directly, counted as it arrives.
   /// Null when it could not be asked.
@@ -339,6 +345,7 @@ class PermanencePanel extends StatelessWidget {
           final spendTile = _SpendTile(
             spend: summary.spend,
             loadSpend: summary.loadSpend,
+            cachedSpend: summary.cachedSpend,
             arSpend: summary.arSpend,
           );
           final costTile = _CostTile(cost: summary.costToday);
@@ -533,6 +540,20 @@ String _formatAr(double ar) {
   return '${NumberFormat.decimalPatternDigits(decimalDigits: 2).format(ar)} AR';
 }
 
+/// When a reading was made: the time of day for today, the date for an
+/// earlier day.
+String _formatAsOf(DateTime at, {DateTime? now}) {
+  final local = at.toLocal();
+  final today = (now ?? DateTime.now()).toLocal();
+  final sameDay = local.year == today.year &&
+      local.month == today.month &&
+      local.day == today.day;
+
+  return sameDay
+      ? DateFormat.jm().format(local)
+      : DateFormat.MMMd().format(local);
+}
+
 /// Credits as a bare number, the unit said in the note beneath: two
 /// places once there is a whole credit, four below that, separated by
 /// thousands. A credit is a trillion winc, as an AR is a trillion winston.
@@ -556,10 +577,12 @@ class _SpendTile extends StatefulWidget {
     required this.spend,
     required this.loadSpend,
     required this.arSpend,
+    this.cachedSpend,
   });
 
   final Future<SpendLookup>? spend;
   final Future<SpendLookup> Function()? loadSpend;
+  final SpendEntry? cachedSpend;
   final Future<ArSpendTally>? arSpend;
 
   @override
@@ -617,10 +640,87 @@ class _SpendTileState extends State<_SpendTile> {
                   : 'paid directly in AR, at least',
             );
 
+        // What a reading of the credits shows. [asOf] is set for one that was
+        // read earlier, and says when.
+        Widget settled(
+          SpendLookup? lookup, {
+          DateTime? asOf,
+          String? action,
+          VoidCallback? onAction,
+        }) {
+          final credits = lookup?.creditsWinc;
+          final when = asOf == null ? '' : ', as of ${_formatAsOf(asOf)}';
+
+          if (lookup != null && lookup.tooMany) {
+            return _Tile(
+              label: _label,
+              value: '-',
+              note: 'more top-ups than we can count here$when',
+              extra: arLine(),
+              action: action,
+              onAction: onAction,
+            );
+          }
+
+          if (lookup == null || lookup.failed) {
+            return paidAr != null
+                ? arOnly()
+                : _Tile(
+                    label: _label,
+                    value: '-',
+                    note: "couldn't read your credits",
+                    extra: arLine(),
+                  );
+          }
+
+          if (credits == null || credits == BigInt.zero) {
+            return paidAr != null
+                ? arOnly()
+                : _Tile(
+                    label: _label,
+                    value: '-',
+                    note: (credits == null
+                            ? 'no top-ups found'
+                            : 'no credits used yet') +
+                        when,
+                    extra: arLine(),
+                    action: action,
+                    onAction: onAction,
+                  );
+          }
+
+          return _Tile(
+            label: _label,
+            value: _formatCredits(credits),
+            note: 'Turbo credits used$when',
+            extra: arLine(),
+            action: action,
+            onAction: onAction,
+          );
+        }
+
         // Not read yet: this wallet signs to read them, and the reader has
         // not asked.
         final loadSpend = widget.loadSpend;
+        final earlier = widget.cachedSpend;
         if (spend == null && loadSpend != null) {
+          void ask() {
+            final read = loadSpend();
+            setState(() {
+              spend = read;
+            });
+          }
+
+          // Read before: show that, and leave the signing to the reader.
+          if (earlier != null) {
+            return settled(
+              earlier.lookup,
+              asOf: earlier.fetchedAt,
+              action: 'Refresh credits used',
+              onAction: ask,
+            );
+          }
+
           return _Tile(
             label: _label,
             value: paidAr == null ? '-' : _formatAr(paidAr.ar),
@@ -630,12 +730,7 @@ class _SpendTileState extends State<_SpendTile> {
                     ? 'paid directly in AR'
                     : 'paid directly in AR, at least',
             action: 'Show credits used',
-            onAction: () {
-              final read = loadSpend();
-              setState(() {
-                spend = read;
-              });
-            },
+            onAction: ask,
             extra: paidAr == null ? arLine() : null,
           );
         }
@@ -643,8 +738,14 @@ class _SpendTileState extends State<_SpendTile> {
         return FutureBuilder<SpendLookup>(
           future: spend,
           builder: (context, snapshot) {
-            if (spend != null &&
-                snapshot.connectionState != ConnectionState.done) {
+            final reading = spend != null &&
+                snapshot.connectionState != ConnectionState.done;
+
+            if (reading && earlier != null) {
+              return settled(earlier.lookup, asOf: earlier.fetchedAt);
+            }
+
+            if (reading) {
               return const _Tile(
                 label: _label,
                 value: '...',
@@ -653,47 +754,15 @@ class _SpendTileState extends State<_SpendTile> {
             }
 
             final lookup = snapshot.data;
-            final credits = lookup?.creditsWinc;
 
-            if (lookup != null && lookup.tooMany) {
-              return _Tile(
-                label: _label,
-                value: '-',
-                note: 'more top-ups than we can count here',
-                extra: arLine(),
-              );
+            // A reading that failed leaves the earlier one standing.
+            if (spend != null &&
+                (lookup == null || lookup.failed) &&
+                earlier != null) {
+              return settled(earlier.lookup, asOf: earlier.fetchedAt);
             }
 
-            if (spend == null || lookup == null || lookup.failed) {
-              return paidAr != null
-                  ? arOnly()
-                  : _Tile(
-                      label: _label,
-                      value: '-',
-                      note: "couldn't read your credits",
-                      extra: arLine(),
-                    );
-            }
-
-            if (credits == null || credits == BigInt.zero) {
-              return paidAr != null
-                  ? arOnly()
-                  : _Tile(
-                      label: _label,
-                      value: '-',
-                      note: credits == null
-                          ? 'no top-ups found'
-                          : 'no credits used yet',
-                      extra: arLine(),
-                    );
-            }
-
-            return _Tile(
-              label: _label,
-              value: _formatCredits(credits),
-              note: 'Turbo credits used',
-              extra: arLine(),
-            );
+            return settled(spend == null ? null : lookup);
           },
         );
       },
