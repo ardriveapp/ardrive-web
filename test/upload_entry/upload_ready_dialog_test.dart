@@ -176,14 +176,14 @@ void main() {
       (tester) async {
     await open(tester, drive: photos, state: loaded(photos));
 
-    expect(find.text('Encrypted before it leaves this device'),
+    expect(find.text('Files and their names are encrypted before they leave this device.'),
         findsOneWidget);
   });
 
   testWidgets('and makes no such claim for a public drive', (tester) async {
     await open(tester, drive: website, state: loaded(website));
 
-    expect(find.text('Encrypted before it leaves this device'), findsNothing);
+    expect(find.text('Files and their names are encrypted before they leave this device.'), findsNothing);
   });
 
   /// Public is permanent and visible to anyone, and this is the last moment

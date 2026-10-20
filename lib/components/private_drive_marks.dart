@@ -33,29 +33,41 @@ class PrivateDriveLock extends StatelessWidget {
 
 /// The line the upload dialogs show for a private drive, so the choice made
 /// when the drive was created is visibly still in force.
+///
+/// Draws nothing for a public drive, so each dialog layout can place it
+/// without its own condition.
 class EncryptedUploadNote extends StatelessWidget {
-  const EncryptedUploadNote({super.key});
+  const EncryptedUploadNote({super.key, required this.isPrivate});
+
+  final bool isPrivate;
 
   @override
   Widget build(BuildContext context) {
+    if (!isPrivate) {
+      return const SizedBox.shrink();
+    }
+
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ArDriveIcons.privateDrive(size: 16, color: colorTokens.textMid),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            appLocalizationsOf(context).uploadEncryptedNote,
-            style: typography.paragraphNormal(
-              color: colorTokens.textMid,
-              fontWeight: ArFontWeight.semiBold,
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ArDriveIcons.privateDrive(size: 16, color: colorTokens.textMid),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              appLocalizationsOf(context).uploadEncryptedNote,
+              style: typography.paragraphNormal(
+                color: colorTokens.textMid,
+                fontWeight: ArFontWeight.semiBold,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

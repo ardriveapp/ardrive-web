@@ -1347,7 +1347,7 @@ class MobileFolderNavigation extends StatelessWidget {
     required this.path,
     required this.driveName,
     required this.isShowingHiddenFiles,
-    this.isPrivate = false,
+    required this.isPrivate,
   });
 
   @override

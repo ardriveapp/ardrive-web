@@ -894,10 +894,10 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                                           )
                                       ],
                                     ),
-                                    if (!widget.readyState.uploadIsPublic) ...[
-                                      const SizedBox(height: 8),
-                                      const EncryptedUploadNote(),
-                                    ],
+                                    EncryptedUploadNote(
+                                      isPrivate:
+                                          !widget.readyState.uploadIsPublic,
+                                    ),
                                     const SizedBox(height: 20),
                                     // Content taller than the dialog can
                                     // grow scrolls, rather than running into
@@ -1035,10 +1035,10 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                                         ),
                                       ],
                                     ),
-                                    if (!widget.readyState.uploadIsPublic) ...[
-                                      const SizedBox(height: 8),
-                                      const EncryptedUploadNote(),
-                                    ],
+                                    EncryptedUploadNote(
+                                      isPrivate:
+                                          !widget.readyState.uploadIsPublic,
+                                    ),
                                     const SizedBox(height: 20),
                                     Column(
                                       mainAxisSize: MainAxisSize.min,

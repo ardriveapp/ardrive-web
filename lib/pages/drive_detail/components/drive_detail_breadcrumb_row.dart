@@ -24,7 +24,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     required List<BreadCrumbRowInfo> path,
     required this.driveName,
     required this.rootFolderId,
-    this.isPrivate = false,
+    required this.isPrivate,
   }) : _pathSegments = path;
 
   @override

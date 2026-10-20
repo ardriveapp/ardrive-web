@@ -91,10 +91,7 @@ class _UploadReadyDialogState extends State<UploadReadyDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _Privacy(drive: widget.drive),
-            if (widget.drive.isPrivate) ...[
-              const SizedBox(height: 8),
-              const EncryptedUploadNote(),
-            ],
+            EncryptedUploadNote(isPrivate: widget.drive.isPrivate),
           ],
         ),
       ),
