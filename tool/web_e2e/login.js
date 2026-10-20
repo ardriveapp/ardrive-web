@@ -18,7 +18,7 @@
 // which this does not handle.
 const { chromium } = require('playwright-core');
 const fs = require('fs');
-const { E2E_DIR, CDP_PORT, ensureDirs, credentials } = require('./config');
+const { E2E_DIR, CDP_PORT, ensureDirs, mainPage, credentials } = require('./config');
 
 (async () => {
   const mode = process.argv[2] || 'fresh';
@@ -29,7 +29,7 @@ const { E2E_DIR, CDP_PORT, ensureDirs, credentials } = require('./config');
   const { keyfile, password } = credentials();
   ensureDirs();
   const browser = await chromium.connectOverCDP(`http://127.0.0.1:${CDP_PORT}`);
-  const page = browser.contexts()[0].pages()[0];
+  const page = await mainPage(browser);
   const wait = (ms) => page.waitForTimeout(ms);
   const shot = async (n) => {
     await page.screenshot({ path: `${E2E_DIR}/shots/login-${n}.png` });

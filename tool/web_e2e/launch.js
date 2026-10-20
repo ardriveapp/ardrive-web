@@ -6,7 +6,9 @@
 //
 // Everything it writes goes under E2E_DIR (default ~/.cache/ardrive-e2e):
 // profile/ (the browser profile, so a login survives restarts), net.log
-// (every POST and every guard decision), console.log, shots/.
+// (every POST and every guard decision), console.log, shots/, downloads/
+// (what the app saves: headless Chromium has no save dialog, so one that
+// saves here without asking stands in for it).
 //
 // The guard, on every request the page makes:
 // - Wallet-paid (AR) uploads: POST /tx, POST /chunk and GET /tx/{id}/status,
@@ -208,7 +210,50 @@ async function guardTurbo(route) {
     if (u.protocol === 'http:' || u.protocol === 'https:') log({ ev: 'post', host: u.host, path: u.pathname.slice(0, 80) });
   });
 
+  // Save dialogs. Headless Chromium answers showSaveFilePicker with an
+  // AbortError, so a download could never finish. Every page gets a picker
+  // that chooses $E2E_DIR/downloads/<suggested name> without asking; the
+  // app's own path (createWritable, then a write per chunk) runs unchanged.
+  const downloads = path.join(E2E_DIR, 'downloads');
+  fs.mkdirSync(downloads, { recursive: true });
+  await ctx.exposeBinding('__e2eSave', (_source, name, base64, done) => {
+    const file = path.join(downloads, path.basename(name));
+    if (base64 === null) fs.writeFileSync(file, Buffer.alloc(0));
+    else fs.appendFileSync(file, Buffer.from(base64, 'base64'));
+    if (done) log({ ev: 'download', file, bytes: fs.statSync(file).size });
+  });
+  await ctx.addInitScript(() => {
+    const base64 = (bytes) => {
+      let s = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      return btoa(s);
+    };
+    const toBytes = async (chunk) => {
+      if (chunk && chunk.type === 'write') chunk = chunk.data;
+      if (chunk instanceof Blob) return new Uint8Array(await chunk.arrayBuffer());
+      if (chunk instanceof ArrayBuffer) return new Uint8Array(chunk);
+      if (ArrayBuffer.isView(chunk)) return new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+      return new TextEncoder().encode(String(chunk));
+    };
+    window.showSaveFilePicker = async (options = {}) => {
+      const name = options.suggestedName || 'download';
+      await window.__e2eSave(name, null, false);
+      return {
+        kind: 'file',
+        name,
+        createWritable: async () => new WritableStream({
+          write: async (chunk) => window.__e2eSave(name, base64(await toBytes(chunk)), false),
+          close: () => window.__e2eSave(name, '', true),
+        }),
+      };
+    };
+  });
+
   const page = ctx.pages()[0] || (await ctx.newPage());
+  // step.js and login.js find this tab by its id (config.js mainPage).
+  const session = await ctx.newCDPSession(page);
+  fs.writeFileSync(`${E2E_DIR}/main-target`, (await session.send('Target.getTargetInfo')).targetInfo.targetId);
+  await session.detach();
   page.on('filechooser', async (chooser) => {
     const queue = `${E2E_DIR}/nextfiles.json`;
     let files = [];

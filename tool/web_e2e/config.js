@@ -15,21 +15,43 @@ function ensureDirs() {
   fs.mkdirSync(path.join(E2E_DIR, 'shots'), { recursive: true });
 }
 
-// CHROME, or the newest Chromium Playwright has downloaded.
+// CHROME, or the Chromium build the installed playwright-core was made for.
+// A newer build does not do: with Chrome 156 under playwright-core 1.48 the
+// viewport fell back to 1440x700, then 780x380 after each reconnect, and
+// login.js's coordinate clicks hit the wrong buttons.
 function chromePath() {
   if (process.env.CHROME) return process.env.CHROME;
   const cache = path.join(os.homedir(), '.cache', 'ms-playwright');
-  const builds = fs.existsSync(cache)
-    ? fs.readdirSync(cache).filter((d) => /^chromium-\d+$/.test(d))
-        .sort((a, b) => Number(b.split('-')[1]) - Number(a.split('-')[1]))
-    : [];
-  for (const build of builds) {
-    for (const dir of ['chrome-linux', 'chrome-linux-arm64', 'chrome-linux64']) {
-      const exe = path.join(cache, build, dir, 'chrome');
-      if (fs.existsSync(exe)) return exe;
+  let revision;
+  try {
+    const manifest = path.join(path.dirname(require.resolve('playwright-core')), 'browsers.json');
+    revision = JSON.parse(fs.readFileSync(manifest, 'utf8')).browsers.find((b) => b.name === 'chromium').revision;
+  } catch (e) {}
+  const build = revision && `chromium-${revision}`;
+  for (const dir of ['chrome-linux', 'chrome-linux-arm64', 'chrome-linux64']) {
+    const exe = build && path.join(cache, build, dir, 'chrome');
+    if (exe && fs.existsSync(exe)) return exe;
+  }
+  throw new Error(`No ${build || 'Chromium'} found. Run \`npx playwright-core install chromium\` in tool/web_e2e, or set CHROME.`);
+}
+
+// The tab launch.js opened. A second tab, opened during a test, can come
+// first in the browser's own list, so steps find this one by its target id,
+// which launch.js records.
+async function mainPage(browser) {
+  const pages = browser.contexts()[0].pages();
+  let id = null;
+  try { id = fs.readFileSync(path.join(E2E_DIR, 'main-target'), 'utf8').trim(); } catch (e) {}
+  if (id) {
+    for (const page of pages) {
+      const session = await page.context().newCDPSession(page);
+      const { targetInfo } = await session.send('Target.getTargetInfo');
+      await session.detach();
+      if (targetInfo.targetId === id) return page;
     }
   }
-  throw new Error('No Chromium found. Run `npx playwright-core install chromium` here, or set CHROME.');
+  if (pages.length !== 1) throw new Error(`launch.js's tab is gone and ${pages.length} others are open; restart launch.js`);
+  return pages[0];
 }
 
 // KEY=VALUE lines. Environment variables win over the file.
@@ -65,4 +87,4 @@ function keyfilePath() {
   try { return credentials().keyfile; } catch (e) { return null; }
 }
 
-module.exports = { E2E_DIR, APP_URL, CDP_PORT, CREDENTIALS, ensureDirs, chromePath, credentials, keyfilePath, address };
+module.exports = { E2E_DIR, APP_URL, CDP_PORT, CREDENTIALS, ensureDirs, chromePath, mainPage, credentials, keyfilePath, address };

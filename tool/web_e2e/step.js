@@ -12,7 +12,7 @@
 // for the widgets that have one.
 const { chromium } = require('playwright-core');
 const fs = require('fs');
-const { E2E_DIR, CDP_PORT, ensureDirs } = require('./config');
+const { E2E_DIR, CDP_PORT, ensureDirs, mainPage } = require('./config');
 
 (async () => {
   const [name, body] = process.argv.slice(2);
@@ -22,7 +22,7 @@ const { E2E_DIR, CDP_PORT, ensureDirs } = require('./config');
   }
   ensureDirs();
   const browser = await chromium.connectOverCDP(`http://127.0.0.1:${CDP_PORT}`);
-  const page = browser.contexts()[0].pages()[0];
+  const page = await mainPage(browser);
   const shot = (n) => page.screenshot({ path: `${E2E_DIR}/shots/${n}.png` });
   const wait = (ms) => page.waitForTimeout(ms);
   const queueFiles = (paths) => fs.writeFileSync(`${E2E_DIR}/nextfiles.json`, JSON.stringify(paths));
