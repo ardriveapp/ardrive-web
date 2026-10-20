@@ -513,11 +513,17 @@ class _ArDriveDataTableState<T extends IndexedItem>
         clearSelection();
       }
 
-      // The caller's rows, whenever it passes new ones. This used to wait for
+      // The caller's rows, whenever they are new rows. This used to wait for
       // the number of rows to change, and a row can change without that: a
       // new version of a file is the same row with a new size, and the table
       // went on drawing the old one until something was added or removed.
-      if (!identical(widget.rows, oldWidget.rows)) {
+      //
+      // New rows, not a new list: the file list copies its rows into a new
+      // list on every build, and a rebuild that changed nothing has no work
+      // to do here beyond what it always did.
+      final rowsChanged = !_sameRowObjects(widget.rows, oldWidget.rows);
+
+      if (rowsChanged) {
         final currentMultiSelectBox = getMultiSelectBox();
 
         // Rows compare by id, so a selection carries over to the new copies
@@ -547,11 +553,30 @@ class _ArDriveDataTableState<T extends IndexedItem>
       // given flipped the list between the two orders under the pointer.
       if (_sortedColumn != null) {
         _sortRows(_sortedColumn!);
-      } else {
+      } else if (rowsChanged) {
         // The same page, or the last one if the rows it showed are gone.
         selectPage(_selectedPage);
       }
     }
+  }
+
+  /// Whether [a] and [b] hold the very same row objects, in the same order.
+  ///
+  /// Not `==`: rows compare by id, so a row that changed is equal to the one
+  /// it replaces.
+  static bool _sameRowObjects<R>(List<R> a, List<R> b) {
+    if (identical(a, b)) {
+      return true;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (!identical(a[i], b[i])) {
+        return false;
+      }
+    }
+    return true;
   }
 
   bool _handleEscapeKey(KeyEvent event) {
