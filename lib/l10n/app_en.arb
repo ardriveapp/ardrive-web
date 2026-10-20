@@ -370,6 +370,14 @@
   "@copyTooltip": {
     "description": "Tooltip for copy button"
   },
+  "copied": "Copied!",
+  "@copied": {
+    "description": "Shown beside a copy button once the text is on the clipboard"
+  },
+  "couldNotCopy": "Couldn't copy",
+  "@couldNotCopy": {
+    "description": "Shown beside a copy button when the browser refused to put the text on the clipboard"
+  },
   "copyWalletAddress": "Copy wallet address",
   "@copyWalletAddress": {
     "description": "Tooltip on copy wallet address button"

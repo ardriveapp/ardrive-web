@@ -30,6 +30,10 @@ class CopyButton extends StatefulWidget {
 
 class _CopyButtonState extends State<CopyButton> {
   bool _showCheck = false;
+
+  /// Whether the browser took the text. It can refuse: a phone's browser
+  /// does when it does not count the tap as the reader's own.
+  bool _copied = false;
   OverlayEntry? _overlayEntry;
 
   @override
@@ -57,7 +61,7 @@ class _CopyButtonState extends State<CopyButton> {
       child: ArDriveIconButton(
         tooltip: _showCheck ? '' : appLocalizationsOf(context).copyTooltip,
         onPressed: _copy,
-        icon: _showCheck
+        icon: _showCheck && _copied
             ? ArDriveIcons.checkCirle(
                 size: widget.size,
                 color: ArDriveTheme.of(context)
@@ -70,8 +74,20 @@ class _CopyButtonState extends State<CopyButton> {
     );
   }
 
-  void _copy() {
-    Clipboard.setData(ClipboardData(text: widget.text));
+  Future<void> _copy() async {
+    // Asked for at once, inside the tap: a browser refuses a write that comes
+    // later. Then waited on, because it can refuse this one too, and the
+    // button said "Copied!" either way.
+    final write = Clipboard.setData(ClipboardData(text: widget.text));
+
+    bool copied;
+    try {
+      await write;
+      copied = true;
+    } catch (_) {
+      copied = false;
+    }
+
     if (mounted) {
       if (_showCheck) {
         return;
@@ -79,6 +95,7 @@ class _CopyButtonState extends State<CopyButton> {
 
       setState(() {
         _showCheck = true;
+        _copied = copied;
         if (widget.showCopyText) {
           _overlayEntry = _createOverlayEntry(context);
           Overlay.of(context).insert(_overlayEntry!);
@@ -117,8 +134,17 @@ class _CopyButtonState extends State<CopyButton> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Center(
               child: Text(
-                'Copied!',
-                style: typography.paragraphNormal(),
+                _copied
+                    ? appLocalizationsOf(context).copied
+                    : appLocalizationsOf(context).couldNotCopy,
+                style: typography.paragraphNormal(
+                  color: _copied
+                      ? null
+                      : ArDriveTheme.of(context)
+                          .themeData
+                          .colors
+                          .themeErrorDefault,
+                ),
               ),
             ),
           ),
