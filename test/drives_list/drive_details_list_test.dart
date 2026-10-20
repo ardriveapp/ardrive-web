@@ -207,6 +207,20 @@ void main() {
       expect(pushesAt(1100), isFalse);
     });
 
+    /// At a large text scale the five columns never fit under the list's
+    /// width cap, so the details always covered. Three still fit beside the
+    /// panel on a wide monitor, so they push there now.
+    test('at a large text scale, push where three columns still fit', () {
+      expect(
+        driveDetailsPushList(width: 1664, panelWidth: 480, textScale: 1.5),
+        isTrue,
+      );
+      expect(
+        driveDetailsPushList(width: 1100, panelWidth: 375, textScale: 1.5),
+        isFalse,
+      );
+    });
+
     /// Pushing keeps working wherever three columns fit beside the panel,
     /// whether the list had three or five before it opened.
     test('push wherever three columns stay beside the panel', () {

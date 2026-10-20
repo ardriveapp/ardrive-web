@@ -185,7 +185,7 @@ class DriveListHeader extends StatelessWidget {
     this.showsAllColumns = true,
   });
 
-  /// False for the three columns drawn beside a drive's details - see
+  /// False for the three columns drawn wherever five do not fit - see
   /// [driveListCompactColumnsFrom].
   final bool showsAllColumns;
 
@@ -332,7 +332,7 @@ class DriveListRow extends StatelessWidget {
     this.onChoose,
   });
 
-  /// False for the three columns drawn beside a drive's details - see
+  /// False for the three columns drawn wherever five do not fit - see
   /// [driveListCompactColumnsFrom].
   final bool showsAllColumns;
 
