@@ -2496,6 +2496,31 @@ void main() {
       expect(await fileRows(db), isEmpty);
     });
 
+    test('an object whose name merely starts like SQLite\'s own is refused',
+        () async {
+      await attachDrive(db);
+      for (final sql in [
+        'CREATE VIEW sqlitexv AS SELECT 1',
+        'CREATE TABLE sqlitext (a)',
+        'CREATE INDEX sqlitexi ON file_entries(id)',
+        'CREATE TRIGGER sqlitextr AFTER INSERT ON meta BEGIN SELECT 1; END',
+      ]) {
+        final payload = editArtifact(await exportedPayload(), [sql]);
+
+        final artifact = await sealArtifact(payload, blockEnd: 900);
+
+        final result = await importer.import(
+          candidate: artifact.candidate,
+          body: artifact.body,
+          protection: privateDrive,
+          expectedOwnerAddress: ownerAddress,
+        );
+
+        expect(result.outcome, DriveStateOutcome.integrityFailed, reason: sql);
+        expect(await fileRows(db), isEmpty, reason: sql);
+      }
+    });
+
     test('a State-Version tag that disagrees with the signed payload',
         () async {
       // The same shape as the `Block-Start`/`Block-End` cross-check, and
