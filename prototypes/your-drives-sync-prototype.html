@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE · Your drives sync controls</title>
+<!--
+  PROTOTYPE, throw away. Question: how should the sync controls on Your drives
+  combine? Three variants switchable with ?variant=A|B|C (or the arrows / ← →),
+  each in three scenarios (?scenario=first|synced) with live selection and a
+  simulated sync. Nothing here talks to anything.
+    A  Current: Sync ▾ top right, plus a red button in the banner and in the
+       selection bar.
+    B  Header becomes the selection bar: one split button top right that turns
+       red when there's an obvious action; selecting turns the header row into
+       "✕ N selected".
+    C  List toolbar holds it all: the page header is title only; a toolbar row
+       above the list is always there with the count, ✕ and the split button.
+-->
+<style>
+  :root {
+    --bg: #fafafa; --panel: #ffffff; --line: #e6e6e6; --muted-bg: #e2e2e2;
+    --text: #2b2b2b; --text-mid: #6b6b6b; --text-low: #9a9a9a;
+    --red: #d3161f; --red-hover: #b9131b; --red-soft: #fdecec;
+    --tint: #f1eeee;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.4 "Wavehaus", "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .app { display: flex; min-height: 100vh; }
+  .side { width: 240px; flex: none; background: var(--panel); border-right: 1px solid var(--line); padding: 36px 0 0; }
+  .logo { display: flex; align-items: center; gap: 8px; padding: 0 48px; font-weight: 700; font-size: 26px; letter-spacing: -0.5px; }
+  .logo i { width: 30px; height: 30px; border-radius: 50%; background: var(--red); display: inline-block; box-shadow: inset 0 0 0 8px #fff, 0 0 0 2px var(--red); }
+  .new { margin: 32px 56px 16px; background: #ff1a3c; color: #fff; border: 0; border-radius: 6px; width: 128px; height: 40px; font: 700 18px inherit; font-family: inherit; }
+  .nav { padding: 10px 18px; margin: 0 4px; border-radius: 4px; font-size: 14px; color: var(--text); }
+  .nav.on { background: #e9e9e9; font-weight: 600; }
+  .nav small { float: right; color: var(--text-mid); }
+  .main { flex: 1; min-width: 0; padding: 16px 16px 120px; }
+  .search { height: 48px; width: 400px; max-width: 45%; border-radius: 6px; background: #e9e9e9; border: 1px solid #ccc; display: flex; align-items: center; padding: 0 16px; color: var(--text-mid); font-size: 14px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; }
+  .wallet { height: 46px; padding: 0 22px; border: 1px solid #ccc; border-radius: 6px; display: flex; align-items: center; gap: 10px; font-size: 14px; background: #fff; }
+  .wallet i { width: 28px; height: 28px; border-radius: 50%; background: conic-gradient(#2a2a2a 0 25%, #29c3a0 0 50%, #2a2a2a 0 75%, #e83e8c 0); display: inline-block; }
+  .content { max-width: 1160px; margin: 0 auto; }
+
+  /* Page header */
+  .header { display: flex; align-items: center; justify-content: space-between; min-height: 64px; margin: 24px 0 12px; padding: 0 16px; border-radius: 8px; transition: background .18s; }
+  .header h1 { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.3px; }
+  .header.selecting { background: var(--tint); }
+  .header .count { display: flex; align-items: center; gap: 12px; font-size: 17px; font-weight: 600; }
+
+  /* Buttons */
+  button { font-family: inherit; cursor: pointer; }
+  .btn { height: 44px; padding: 0 20px; border-radius: 6px; border: 1px solid #cfcfcf; background: #fff; color: var(--text); font-size: 15px; display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
+  .btn:hover { background: #f4f4f4; }
+  .btn.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+  .btn.primary:hover { background: var(--red-hover); }
+  .btn.big { height: 56px; min-width: 180px; justify-content: center; font-size: 17px; }
+  .btn.text { border: 0; background: none; color: var(--text-mid); padding: 0 8px; }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .x { width: 36px; height: 36px; border-radius: 50%; border: 0; background: none; font-size: 20px; color: var(--text); display: inline-flex; align-items: center; justify-content: center; }
+  .x:hover { background: rgba(0,0,0,.08); }
+  .chev { font-size: 12px; opacity: .8; }
+
+  /* Split button */
+  .split { display: inline-flex; position: relative; }
+  .split .main-part { border-radius: 6px 0 0 6px; }
+  .split .chev-part { border-radius: 0 6px 6px 0; border-left-width: 0; padding: 0 14px; }
+  .split .btn.primary.chev-part { border-left: 1px solid rgba(255,255,255,.35); }
+  .split .btn.primary { transition: background .18s; }
+
+  /* Menu */
+  .menu-wrap { position: relative; }
+  .menu { position: absolute; right: 0; top: calc(100% + 6px); width: 300px; background: #fff; border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.16); padding: 6px 0; z-index: 20; }
+  .menu button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 10px 18px; font-size: 15px; color: var(--text); }
+  .menu button:hover { background: #f3f3f3; }
+  .menu button small { display: block; color: var(--text-mid); font-size: 12.5px; margin-top: 2px; }
+  .menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+
+  /* Banner + bars */
+  .banner { display: flex; justify-content: space-between; align-items: center; gap: 16px; background: var(--muted-bg); border-radius: 8px; padding: 16px 16px 16px 16px; margin-bottom: 12px; min-height: 88px; }
+  .banner.slim { min-height: 0; padding: 14px 16px; background: #ececec; }
+  .banner b { display: block; font-weight: 500; }
+  .banner span { font-size: 13px; color: var(--text-mid); }
+  .selbar { display: flex; align-items: center; gap: 16px; background: var(--muted-bg); padding: 10px 14px; border-radius: 8px 8px 0 0; }
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff; border: 1px solid var(--line); border-bottom: 0; border-radius: 8px 8px 0 0; padding: 10px 14px; min-height: 64px; transition: background .18s; }
+  .toolbar.selecting { background: var(--tint); }
+  .toolbar .left { display: flex; align-items: center; gap: 12px; color: var(--text-mid); font-size: 14px; }
+  .toolbar .left strong { color: var(--text); font-size: 16px; }
+
+  /* Table */
+  .table { background: #fff; border-radius: 0 0 8px 8px; border: 1px solid var(--line); }
+  .table.round { border-radius: 8px; }
+  .row { display: grid; grid-template-columns: 44px minmax(160px, 2.2fr) 1.6fr .7fr .8fr 1.2fr 40px; align-items: center; min-height: 49px; padding: 0 14px; font-size: 14.5px; }
+  .row + .row { border-top: 1px solid #f1f1f1; }
+  .row.head { color: var(--text); font-size: 14px; min-height: 46px; }
+  .row.sel { background: #f3efef; }
+  .row .muted { color: var(--text-mid); font-size: 12.5px; }
+  .cb { width: 20px; height: 20px; border: 2px solid #333; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; background: #fff; font-size: 13px; line-height: 1; }
+  .cb.on { background: #fff; }
+  .cb.on::after { content: "✓"; font-weight: 700; }
+  .cb.some::after { content: "–"; font-weight: 700; }
+  .name { display: flex; align-items: center; gap: 10px; }
+  .kebab { color: #333; font-weight: 700; text-align: center; letter-spacing: -1px; }
+  .spin { width: 14px; height: 14px; border: 2px solid #fff; border-right-color: transparent; border-radius: 50%; display: inline-block; animation: s .8s linear infinite; }
+  .btn:not(.primary) .spin { border-color: #555; border-right-color: transparent; }
+  @keyframes s { to { transform: rotate(360deg); } }
+
+  /* Phone */
+  .phone .side { display: none; }
+  .phone .main { max-width: 390px; margin: 0 auto; padding: 8px 12px 120px; border-left: 1px dashed #ccc; border-right: 1px dashed #ccc; min-height: 100vh; background: #fff; }
+  .phone .search { display: none; }
+  .phone .header h1 { font-size: 22px; }
+  .phone .header { padding: 0 8px; }
+  .phone .banner { flex-direction: column; align-items: flex-start; }
+  .phone .row { grid-template-columns: 36px 1fr 36px; }
+  .phone .row > :nth-child(3), .phone .row > :nth-child(4), .phone .row > :nth-child(5), .phone .row > :nth-child(6) { display: none; }
+  .phone .split .main-part { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+  .phone .btn.big { min-width: 0; width: 180px; }
+  .phone .menu { width: 270px; }
+
+  /* Prototype chrome: deliberately not ArDrive-looking */
+  .proto { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #111; color: #fff; border-radius: 999px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.35); z-index: 50; font: 13px/1.2 ui-monospace, Menlo, Consolas, monospace; }
+  .proto button { background: #2a2a2a; color: #fff; border: 0; border-radius: 999px; padding: 7px 12px; font: inherit; }
+  .proto button.on { background: #f5c518; color: #111; font-weight: 700; }
+  .proto .lbl { padding: 0 6px; min-width: 260px; text-align: center; }
+  .proto .sep { width: 1px; height: 22px; background: #444; }
+  .statebox { position: fixed; right: 14px; bottom: 76px; background: #111; color: #9fe8a8; font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace; padding: 10px 12px; border-radius: 8px; white-space: pre; z-index: 50; opacity: .9; cursor: pointer; }
+  .note { position: fixed; left: 14px; bottom: 76px; max-width: 360px; background: #fffbe6; border: 1px solid #f0d97a; color: #5a4a00; font-size: 13px; padding: 10px 12px; border-radius: 8px; z-index: 50; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="note" id="note" title="Click to hide" onclick="this.style.display='none'"></div>
+<div class="statebox" id="statebox" title="Click to hide" onclick="this.style.display='none'"></div>
+<div class="proto" id="proto"></div>
+
+<script>
+const DRIVES = [
+  ['ArConnect Archives', 'Sep 9, 2021', 711, '13.17 GiB', false],
+  ['ArDrive Desktop Drive', 'Jun 13, 2025', 20, '9.92 MiB', false],
+  ['Bundled Drive', 'Sep 24, 2021', 32, '941.07 MiB', false],
+  ['CC-ML_Test', 'Sep 5, 2025', 3, '5.32 MiB', true],
+  ['Demo Drive', 'Oct 18, 2021', 46, '136.90 MiB', false],
+  ['Demo Drive 2', 'Oct 7, 2022', 5, '2.46 MiB', false],
+  ['My Private Drive', 'Dec 21, 2021', 773, '9.58 GiB', true],
+  ['My Public Drive', 'Jun 3, 2021', 94, '591.34 MiB', false],
+  ['New Test Drive', 'Apr 24, 2025', 3, '2.43 MiB', false],
+];
+const VARIANTS = {
+  A: 'Current',
+  B: 'Header becomes the selection bar',
+  C: 'List toolbar holds it all',
+};
+const NOTES = {
+  A: 'Today: three sync buttons can be on screen at once (Sync ▾, the banner\'s red button, the selection bar\'s red button). Ticking a box adds a row and pushes the list down.',
+  B: 'One sync control, top right; red when there\'s an obvious action. Ticking a box turns the header row into "✕ N selected" in place: no new row, no jump. Esc or ✕ clears.',
+  C: 'The page header is just the title. A toolbar row above the list is always there and holds the count, ✕ and the one split button, next to the checkboxes. It never appears or disappears.',
+};
+
+const params = new URLSearchParams(location.search);
+const S = {
+  variant: VARIANTS[params.get('variant')] ? params.get('variant') : 'B',
+  scenario: params.get('scenario') === 'synced' ? 'synced' : 'first',
+  phone: params.get('phone') === '1',
+  selected: new Set(),
+  syncing: false,
+  syncTarget: '',
+  menuOpen: false,
+  syncedOnce: false,
+};
+const nothingSynced = () => S.scenario === 'first' && !S.syncedOnce;
+const n = () => S.selected.size;
+// On a phone the row is too narrow for both labels, so both get shorter.
+const selLabel = (k) => S.phone ? `${k} selected` : (k === 1 ? '1 drive selected' : `${k} drives selected`);
+
+function setParam() {
+  const p = new URLSearchParams({ variant: S.variant, scenario: S.scenario });
+  if (S.phone) p.set('phone', '1');
+  history.replaceState(null, '', '?' + p);
+}
+
+function startSync(target) {
+  S.menuOpen = false;
+  S.syncing = true;
+  S.syncTarget = target;
+  render();
+  clearTimeout(S.timer);
+  S.timer = setTimeout(() => {
+    S.syncing = false;
+    S.syncedOnce = true;
+    S.selected.clear();
+    render();
+  }, 3500);
+}
+function stopSync() { clearTimeout(S.timer); S.syncing = false; render(); }
+
+function primaryLabel() {
+  if (S.syncing) return '<span class="spin"></span> Stop syncing';
+  if (n() > 0) return S.phone ? 'Sync' : `Sync ${n()} selected`;
+  if (nothingSynced()) return 'Sync all drives';
+  return 'Sync';
+}
+function primaryIsRed() { return !S.syncing && (n() > 0 || nothingSynced()); }
+function onPrimary() {
+  if (S.syncing) return stopSync();
+  if (n() > 0) return startSync(`${n()} selected`);
+  startSync('all drives');
+}
+
+function menuHtml() {
+  if (!S.menuOpen) return '';
+  const k = n();
+  const dis = S.syncing ? 'disabled' : '';
+  return `<div class="menu" onclick="event.stopPropagation()">
+    <button ${dis} onclick="startSync('${k ? k + ' selected' : 'all drives'}')">${k ? `Sync ${k} selected` : 'Sync all drives'}<small>Gets changes since the last sync.</small></button>
+    <button ${dis} onclick="startSync('${k ? k + ' selected (full)' : 'all drives (full)'}')">${k ? `Full resync ${k} selected` : 'Full resync all drives'}<small>Rereads all history. Slower; use it if something looks missing.</small></button>
+    <hr>
+    <button onclick="S.menuOpen=false;render();alert('Sync history (not part of this prototype)')">Sync history</button>
+  </div>`;
+}
+
+// Today's control: a neutral dropdown button.
+function oldSyncDropdown() {
+  return `<div class="menu-wrap"><button class="btn" onclick="event.stopPropagation();S.menuOpen=!S.menuOpen;render()">${S.syncing ? '<span class="spin"></span> ' : ''}Sync <span class="chev">⌄</span></button>${menuHtml()}</div>`;
+}
+// Proposed control: split button. Left half does the obvious thing; chevron opens the menu.
+function splitButton() {
+  const red = primaryIsRed() ? 'primary' : '';
+  return `<div class="menu-wrap"><div class="split">
+    <button class="btn ${red} main-part" onclick="onPrimary()">${primaryLabel()}</button>
+    <button class="btn ${red} chev-part" aria-label="More sync options" onclick="event.stopPropagation();S.menuOpen=!S.menuOpen;render()"><span class="chev">⌄</span></button>
+  </div>${menuHtml()}</div>`;
+}
+
+function bannerHtml(withButton) {
+  if (!nothingSynced()) return '';
+  const syncing = S.syncing;
+  const title = syncing ? 'Fetching your drives' : 'Nothing has been synced yet';
+  const desc = syncing ? 'Large drives can take a few minutes.' : 'Sync your drives to see their files and folders.';
+  const btn = withButton
+    ? `<button class="btn primary big" ${syncing ? 'disabled' : ''} onclick="startSync('all drives')">${syncing ? '<span class="spin"></span>&nbsp;Syncing...' : 'Sync all drives'}</button>`
+    : '';
+  return `<div class="banner ${withButton ? '' : 'slim'}"><div><b>${title}</b><span>${desc}</span></div>${btn}</div>`;
+}
+
+function tableHtml(roundTop) {
+  const all = n() === DRIVES.length, some = n() > 0 && !all;
+  const head = `<div class="row head"><span class="cb ${all ? 'on' : some ? 'some' : ''}" onclick="toggleAll()"></span><span>Name ↑</span><span>Last synced</span><span>Files</span><span>Size</span><span>Date created</span><span></span></div>`;
+  const synced = !nothingSynced();
+  const rows = DRIVES.map(([name, date, files, size], i) => {
+    const on = S.selected.has(i);
+    return `<div class="row ${on ? 'sel' : ''}"><span class="cb ${on ? 'on' : ''}" onclick="toggle(${i})"></span>
+      <span class="name"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.6"><ellipse cx="12" cy="5.5" rx="7.5" ry="2.8"/><path d="M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13"/><path d="M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8"/></svg>${name}</span>
+      <span class="muted">${synced ? 'Synced just now' : 'Not synced on this device'}</span>
+      <span class="muted">${synced ? files : '-'}</span><span class="muted">${synced ? size : '-'}</span>
+      <span class="muted">${date}</span><span class="kebab">⋮</span></div>`;
+  }).join('');
+  return `<div class="table ${roundTop ? 'round' : ''}">${head}${rows}</div>`;
+}
+
+function variantA() {
+  const header = `<div class="header"><h1>Your drives</h1>${oldSyncDropdown()}</div>`;
+  const selbar = n() > 0
+    ? `<div class="selbar"><span>${selLabel(n())}</span><button class="btn primary" onclick="startSync('${n()} selected')">Sync selected</button><button class="btn text" onclick="clearSel()">Clear</button></div>`
+    : '';
+  return header + bannerHtml(true) + selbar + tableHtml(n() === 0);
+}
+
+function variantB() {
+  const header = n() > 0
+    ? `<div class="header selecting"><span class="count"><button class="x" title="Clear selection (Esc)" onclick="clearSel()">✕</button>${selLabel(n())}</span>${splitButton()}</div>`
+    : `<div class="header"><h1>Your drives</h1>${splitButton()}</div>`;
+  return header + bannerHtml(false) + tableHtml(true);
+}
+
+function variantC() {
+  const header = `<div class="header"><h1>Your drives</h1></div>`;
+  const left = n() > 0
+    ? `<button class="x" title="Clear selection (Esc)" onclick="clearSel()">✕</button><strong>${selLabel(n())}</strong>`
+    : `<span>${DRIVES.length} drives${nothingSynced() ? ' · none synced on this device' : ''}</span>`;
+  const toolbar = `<div class="toolbar ${n() > 0 ? 'selecting' : ''}"><div class="left">${left}</div>${splitButton()}</div>`;
+  return header + bannerHtml(false) + toolbar + tableHtml(false);
+}
+
+function protoHtml() {
+  const keys = Object.keys(VARIANTS);
+  return `<button onclick="cycle(-1)" title="Previous variant (←)">◀</button>
+    <span class="lbl">${S.variant} · ${VARIANTS[S.variant]}</span>
+    <button onclick="cycle(1)" title="Next variant (→)">▶</button>
+    <span class="sep"></span>
+    <button class="${S.scenario === 'first' ? 'on' : ''}" onclick="setScenario('first')">First login</button>
+    <button class="${S.scenario === 'synced' ? 'on' : ''}" onclick="setScenario('synced')">Synced</button>
+    <span class="sep"></span>
+    <button class="${S.phone ? 'on' : ''}" onclick="S.phone=!S.phone;setParam();render()">Phone</button>`;
+}
+
+function render() {
+  const body = { A: variantA, B: variantB, C: variantC }[S.variant]();
+  document.getElementById('root').innerHTML = `
+    <div class="app ${S.phone ? 'phone' : ''}">
+      <aside class="side"><div class="logo"><i></i>ardrive</div><button class="new">New</button>
+        <div class="nav on">⌂&nbsp; Your drives</div><div class="nav">Public drives <small>17</small></div>
+        <div class="nav">Private drives <small>4</small></div><div class="nav">Shared drives <small>0</small></div></aside>
+      <main class="main"><div class="topbar"><div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>&nbsp;&nbsp;Search files, folders and drives</div><div class="wallet"><i></i>iKryOe...ncoRjA</div></div>
+        <div class="content">${body}</div></main>
+    </div>`;
+  document.getElementById('proto').innerHTML = protoHtml();
+  document.getElementById('note').textContent = NOTES[S.variant];
+  document.getElementById('statebox').textContent =
+    `variant:   ${S.variant}\nscenario:  ${S.scenario}${S.syncedOnce ? ' (synced once)' : ''}\nselected:  ${n()}\nsyncing:   ${S.syncing ? S.syncTarget : 'no'}\nmenu:      ${S.menuOpen ? 'open' : 'closed'}\nprimary:   ${S.variant === 'A' ? '(no split button)' : primaryLabel().replace(/<[^>]+>/g, '').trim() + (primaryIsRed() ? '  [red]' : '')}`;
+}
+
+function toggle(i) { S.selected.has(i) ? S.selected.delete(i) : S.selected.add(i); S.menuOpen = false; render(); }
+function toggleAll() { if (n() === DRIVES.length) S.selected.clear(); else DRIVES.forEach((_, i) => S.selected.add(i)); render(); }
+function clearSel() { S.selected.clear(); S.menuOpen = false; render(); }
+function cycle(d) { const k = Object.keys(VARIANTS); S.variant = k[(k.indexOf(S.variant) + d + k.length) % k.length]; S.menuOpen = false; setParam(); render(); }
+function setScenario(s) { S.scenario = s; S.syncedOnce = false; S.syncing = false; clearTimeout(S.timer); S.selected.clear(); S.menuOpen = false; setParam(); render(); }
+
+document.addEventListener('click', () => { if (S.menuOpen) { S.menuOpen = false; render(); } });
+document.addEventListener('keydown', (e) => {
+  if (e.target.closest && e.target.closest('input, textarea, [contenteditable]')) return;
+  if (e.key === 'ArrowLeft') cycle(-1);
+  if (e.key === 'ArrowRight') cycle(1);
+  if (e.key === 'Escape') { if (S.menuOpen) { S.menuOpen = false; render(); } else if (S.variant !== 'A') clearSel(); }
+});
+render();
+</script>
+</body>
+</html>
