@@ -85,6 +85,7 @@ void main() {
     progress = StreamController<SyncProgress>.broadcast();
     whenListen(syncCubit, syncStates.stream, initialState: SyncIdle());
     when(() => syncCubit.syncingDriveId).thenReturn('drive-a');
+    when(() => syncCubit.syncingDriveIds).thenReturn(null);
     when(() => syncCubit.syncStartTime).thenReturn(DateTime(2026, 4, 1));
     when(() => syncCubit.syncProgressController).thenReturn(progress);
     when(() => syncCubit.syncProgress).thenReturn(SyncProgress.initial());
@@ -100,6 +101,7 @@ void main() {
     Size size, {
     bool dark = false,
     double textScale = 1,
+    bool canAddFiles = true,
     bool isRootFolder = true,
     bool desktop = false,
     bool contentsStillArriving = false,
@@ -148,6 +150,7 @@ void main() {
                 child: DriveDetailFolderEmptyCard(
                   driveId: 'drive-a',
                   parentFolderId: 'root',
+                  promptToAddFiles: canAddFiles,
                   folderName: 'My Drive',
                   isRootFolder: isRootFolder,
                   contentsStillArriving: contentsStillArriving,
@@ -304,6 +307,62 @@ void main() {
       await pumpAt(tester, const Size(1280, 800));
 
       expect(find.textContaining('Files up to 97.66 KiB each'), findsOneWidget);
+    });
+  });
+
+  /// Someone who opened a link to another person's drive. The owner's page
+  /// welcomes them to a drive they just made and offers uploads they cannot
+  /// make, so they get one true sentence instead.
+  group('in a drive the reader cannot add to', () {
+    for (final isRootFolder in [true, false]) {
+      testWidgets(
+          'says the folder is empty and offers nothing '
+          '(${isRootFolder ? 'root' : 'subfolder'})', (tester) async {
+        await pumpAt(
+          tester,
+          const Size(1280, 800),
+          canAddFiles: false,
+          isRootFolder: isRootFolder,
+        );
+
+        expect(find.text('This folder is empty.'), findsOneWidget);
+        expect(find.byType(ArDriveButtonNew), findsNothing);
+        for (final ownerCopy in [
+          "You're on chain!",
+          'Your brand new drive!',
+          'Ready to organize your files?',
+          'upload free',
+        ]) {
+          expect(find.textContaining(ownerCopy), findsNothing,
+              reason: ownerCopy);
+        }
+      });
+    }
+
+    testWidgets('says the drive is still loading while a sync reads it',
+        (tester) async {
+      whenListen(syncCubit, const Stream<SyncState>.empty(),
+          initialState: SyncInProgress());
+      when(() => syncCubit.syncingDriveId).thenReturn('drive-a');
+
+      await pumpAt(tester, const Size(1280, 800), canAddFiles: false);
+
+      expect(
+        find.text('This drive is still loading. Its files will appear here.'),
+        findsOneWidget,
+      );
+      expect(find.text('This folder is empty.'), findsNothing);
+    });
+
+    testWidgets('says it is empty while a sync reads a different drive',
+        (tester) async {
+      whenListen(syncCubit, const Stream<SyncState>.empty(),
+          initialState: SyncInProgress());
+      when(() => syncCubit.syncingDriveId).thenReturn('drive-b');
+
+      await pumpAt(tester, const Size(1280, 800), canAddFiles: false);
+
+      expect(find.text('This folder is empty.'), findsOneWidget);
     });
   });
 

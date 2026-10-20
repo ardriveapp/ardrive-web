@@ -3066,6 +3066,34 @@
   "@shareDriveSendKeySeparately": {
     "description": "Helper text under the drive key field explaining the two-artifact handover"
   },
+  "shareFolderPublicNotice": "Anyone with the link can open this folder.",
+  "@shareFolderPublicNotice": {
+    "description": "Shown under a link to a folder in a public drive"
+  },
+  "shareFolderIncludeKeyInLink": "Include the drive key in the link",
+  "@shareFolderIncludeKeyInLink": {
+    "description": "Checkbox that embeds the drive key in a folder share link. Says drive key because there is no folder key: it is the key of the whole drive"
+  },
+  "shareFolderKeyInLinkWarning": "Anyone with this link can open everything in '{driveName}', not just this folder, including files added later. A drive key cannot be changed.",
+  "@shareFolderKeyInLinkWarning": {
+    "description": "Warning shown when the sharer chooses to embed the drive key in a folder share link",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Family Photos"
+      }
+    }
+  },
+  "shareFolderKeylessNotice": "The link alone won’t open this folder. The person you send it to also needs the access key above, which opens everything in '{driveName}', not just this folder.",
+  "@shareFolderKeylessNotice": {
+    "description": "Explains that a private folder link without the key embedded needs the drive key sent separately, and that the key opens the whole drive",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Family Photos"
+      }
+    }
+  },
   "sharedFileChooseVersion": "Choose which version to download.",
   "@sharedFileChooseVersion": {
     "description": "Helper line above the recipient's list of file versions"
@@ -3188,6 +3216,10 @@
   "sharePendingFile": "The file you are trying to share is currently pending and can’t be shared at this time.",
   "@sharePendingFile": {
     "description": "Pending file share dialog text"
+  },
+  "shareFilePendingWarning": "This file is still pending, so the link may not work right away.",
+  "@shareFilePendingWarning": {
+    "description": "Warning in the file share dialog when the file's upload has not been confirmed yet, so the link may not work immediately."
   },
   "showMenu": "Show menu",
   "@showMenu": {
@@ -3611,6 +3643,14 @@
   "syncStillReadingThisDrive": "Still reading this drive, so more items may appear. Selecting several is paused until it finishes.",
   "@syncStillReadingThisDrive": {
     "description": "Shown above the file list while a sync is walking the open drive. Leads with the fact that the list is incomplete - a reader who can now browse a drive mid-sync would otherwise take a short list for the whole of it - and explains the paused selection in the same breath, since both hold for exactly as long."
+  },
+  "readOnlyFolderEmpty": "This folder is empty.",
+  "@readOnlyFolderEmpty": {
+    "description": "Shown in place of the file list when someone opens an empty folder in a drive they cannot add to, such as one shared with them by link."
+  },
+  "readOnlyFolderStillLoading": "This drive is still loading. Its files will appear here.",
+  "@readOnlyFolderStillLoading": {
+    "description": "Shown in place of the file list when someone opens a folder in a drive they cannot add to while the app is still reading that drive, so the folder only looks empty."
   },
   "syncElapsedTime": "{seconds}s elapsed",
   "@syncElapsedTime": {

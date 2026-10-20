@@ -73,7 +73,16 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     // Add the initial drive id in a microtask to properly trigger the drive name loader.
     await Future.microtask(() async {
       if (driveId != null) {
-        driveIdController.text = driveId;
+        // With the cursor at the start. Setting `.text` leaves no cursor, and
+        // the field has focus, so the browser selected the whole ID - in the
+        // brand red Material draws selections with, which read as an error to
+        // someone who had only opened a link. At the start rather than the
+        // end because the field is narrower than an ID, and the cursor
+        // decides which end of it shows.
+        driveIdController.value = TextEditingValue(
+          text: driveId,
+          selection: const TextSelection.collapsed(offset: 0),
+        );
 
         await drivePrivacyLoader();
 

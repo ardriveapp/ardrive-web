@@ -111,8 +111,9 @@ void main() {
         completedAt: DateTime(2026, 3, 4),
       );
 
-  DriveDetailCubit buildCubit() => DriveDetailCubit(
+  DriveDetailCubit buildCubit({String? initialFolderId}) => DriveDetailCubit(
         driveId: driveId,
+        initialFolderId: initialFolderId,
         profileCubit: profileCubit,
         driveDao: driveDao,
         configService: configService,
@@ -909,6 +910,197 @@ void main() {
   /// Reproducing it needs a second tick that carries the *same* folder - which
   /// is what a change to the drive row gives, since the subscription combines
   /// the drive and its contents and re-emits when either moves.
+  /// A folder link opened by somebody who does not have the drive. The drive
+  /// is not on the device when the explorer is built, so the folder cannot be
+  /// opened then; it gets attached and synced, and then `changeDrive` opens
+  /// it. That used to open the root, so a folder link to anybody new was a
+  /// drive link with extra characters.
+  group('a folder link to a drive that is not attached yet', () {
+    Future<void> attachDriveWithSubfolder() async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-1');
+    }
+
+    test('opens the linked folder once the drive arrives', () async {
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(cubit.state, isA<DriveDetailLoadNotFound>(),
+          reason: 'precondition: the drive is not on this device yet');
+
+      await attachDriveWithSubfolder();
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      final state = cubit.state;
+      expect(state, isA<DriveDetailLoadSuccess>());
+      expect(
+        (state as DriveDetailLoadSuccess).folderInView.folder.id,
+        'subfolder-1',
+      );
+    });
+
+    test('opens it once, and the drive at its root after that', () async {
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await attachDriveWithSubfolder();
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        rootFolderId,
+      );
+    });
+
+    /// What the browser showed: the drive's row is written first and the
+    /// drive opens on it, while the sync is still reading its folders.
+    test('opens the linked folder when it arrives after the drive', () async {
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        rootFolderId,
+        reason: 'precondition: the folder is not there yet, so the root opens',
+      );
+
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        'subfolder-1',
+      );
+    });
+
+    test('does not pull the reader back once they have moved on', () async {
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-2');
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      unawaited(cubit.openFolder(folderId: 'subfolder-2'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        'subfolder-2',
+      );
+    });
+
+    test('does not pull back a reader who looked around and came back',
+        () async {
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-2');
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      unawaited(cubit.openFolder(folderId: 'subfolder-2'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      unawaited(cubit.openFolder(folderId: rootFolderId));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        rootFolderId,
+      );
+    });
+
+    test('survives the drive being opened twice before the folder lands',
+        () async {
+      // Attaching a drive writes it and then selects it, so the page can ask
+      // for the same drive more than once while it is still arriving.
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        'subfolder-1',
+      );
+    });
+
+    test('opens the root when the linked folder never arrives', () async {
+      // A link to a folder that was deleted, or that this sync did not reach.
+      final cubit = buildCubit(initialFolderId: 'no-such-folder');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await attachDriveWithSubfolder();
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        rootFolderId,
+      );
+    });
+
+    test('opens a linked folder that lands after its drive was already here',
+        () async {
+      // A folder made on another device, in a drive this one already has.
+      // The drive opens straight away, so no changeDrive follows to open it.
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+
+      final cubit = buildCubit(initialFolderId: 'subfolder-1');
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        rootFolderId,
+        reason: 'precondition: the folder is not there yet, so the root opens',
+      );
+
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id,
+        'subfolder-1',
+      );
+    });
+  });
+
   group('a redraw dropped for an upload', () {
     /// The report that found this: "I uploaded a file, it worked, and I do not
     /// see it in the drive view."
