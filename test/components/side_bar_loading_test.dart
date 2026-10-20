@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
+import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -238,6 +239,44 @@ void main() {
       reason: 'forty drives in a 700px window, nested as the shell nests it, '
           'must leave something below the fold',
     );
+  });
+
+  /// The phone's menu is a separate layout, and it was left out of the fix
+  /// above: its drive list had no scroll view, so a long one could not be
+  /// scrolled and was drawn over the version at the foot of the menu.
+  testWidgets('scrolls on a phone, above the foot of the menu', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      wrap(withDrives([for (var i = 0; i < 40; i++) publicDrive('drive-$i')])),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Drawer), findsOneWidget,
+        reason: 'precondition: this is the phone layout');
+
+    final list = find.ancestor(
+      of: find.text('drive-0'),
+      matching: find.byType(Scrollable),
+    );
+    expect(list, findsOneWidget,
+        reason: 'the drive list must be inside a scroll view');
+
+    final position = tester.state<ScrollableState>(list).position;
+    expect(position.maxScrollExtent, greaterThan(0),
+        reason: 'forty drives on a phone must leave something to scroll to');
+
+    expect(
+      tester.getRect(list).bottom,
+      lessThanOrEqualTo(tester.getRect(find.byType(AppVersionWidget)).top),
+      reason: 'the list ends above the version, rather than over it',
+    );
+
+    await tester.scrollUntilVisible(find.text('drive-39'), 200,
+        scrollable: list);
+    expect(find.text('drive-39'), findsOneWidget);
   });
 
   /// A drive tap has to reach whatever is on screen.
