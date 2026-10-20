@@ -40,6 +40,10 @@ import '../artifact_sql.dart';
 
 const fixturesPath = 'test/fixtures/drive_state';
 
+/// Artifacts ardrive-core-js's producer builds, copied from its
+/// `tests/fixtures/drive_state_from_core`.
+const coreFixturesPath = 'test/fixtures/drive_state_from_core';
+
 /// The drive every fixture is about.
 const fixtureDriveId = '6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b';
 const fixtureRootFolderId = '0f1e2d3c-4b5a-4968-8776-655443322110';

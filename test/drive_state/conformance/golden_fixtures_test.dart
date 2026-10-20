@@ -74,6 +74,54 @@ void main() {
     }
   });
 
+  group('a drive state ardrive-core-js produced', () {
+    test('is here', () => expect(_fromCore(), hasLength(2)));
+
+    for (final entry in _fromCore().entries) {
+      test('${entry.key} imports with the rows core-js wrote', () async {
+        final sidecar = entry.value;
+        final body =
+            File('$coreFixturesPath/${sidecar['body']}').readAsBytesSync();
+        final expected = sidecar['expected']['tables'] as Map<String, dynamic>;
+        final imported = <String, List<Map<String, Object?>>>{};
+
+        final result = await _importChecked(
+          sidecar,
+          body,
+          afterImport: (db) async {
+            for (final table in ['folder_entries', 'file_entries']) {
+              final columns = (expected[table] as List).isEmpty
+                  ? <String>[]
+                  : ((expected[table] as List).first as Map).keys.toList();
+              imported[table] = [
+                for (final row in await db
+                    .customSelect(
+                      'SELECT ${columns.join(', ')} FROM $table ORDER BY id',
+                    )
+                    .get())
+                  {
+                    for (final c in columns)
+                      c: c == 'isHidden'
+                          ? ((row.data[c] == true || row.data[c] == 1) ? 1 : 0)
+                          : row.data[c],
+                  },
+              ];
+            }
+          },
+        );
+
+        expect(result.outcome.name, 'used', reason: result.detail);
+        for (final table in ['folder_entries', 'file_entries']) {
+          final rows = [
+            for (final row in expected[table] as List)
+              Map<String, Object?>.from(row as Map),
+          ]..sort((a, b) => (a['id'] as String).compareTo(b['id'] as String));
+          expect(imported[table], rows, reason: table);
+        }
+      });
+    }
+  });
+
   group('every checked-in fixture gets the outcome it records', () {
     for (final entry in _checkedIn().entries) {
       test(entry.key, () async {
@@ -108,8 +156,9 @@ Map<String, Map<String, dynamic>> _checkedIn() {
 /// reader has to: nothing from [buildGoldenFixtures].
 Future<DriveStateImportResult> _importChecked(
   Map<String, dynamic> sidecar,
-  Uint8List body,
-) async {
+  Uint8List body, {
+  Future<void> Function(Database db)? afterImport,
+}) async {
   final reader = sidecar['reader'] as Map<String, dynamic>;
   final transaction = sidecar['transaction'] as Map<String, dynamic>;
   final privacy = reader['privacy'] as String;
@@ -142,7 +191,7 @@ Future<DriveStateImportResult> _importChecked(
       tags.putIfAbsent(tag['name'] as String, () => tag['value'] as String);
     }
 
-    return await DriveStateImporter(db.driveDao).import(
+    final result = await DriveStateImporter(db.driveDao).import(
       candidate: DriveStateArtifactCandidate(
         txId: transaction['id'] as String,
         ownerAddress: transaction['owner'] as String,
@@ -156,7 +205,21 @@ Future<DriveStateImportResult> _importChecked(
       ).protection!,
       expectedOwnerAddress: reader['ownerAddress'] as String,
     );
+    await afterImport?.call(db);
+    return result;
   } finally {
     await db.close();
   }
+}
+
+/// Sidecars of the artifacts ardrive-core-js's producer builds.
+Map<String, Map<String, dynamic>> _fromCore() {
+  final dir = Directory(coreFixturesPath);
+  if (!dir.existsSync()) return {};
+  return {
+    for (final file in dir.listSync().whereType<File>())
+      if (file.path.endsWith('.json'))
+        file.uri.pathSegments.last:
+            jsonDecode(file.readAsStringSync()) as Map<String, dynamic>,
+  };
 }
