@@ -67,13 +67,13 @@ class FsEntryMoveNameConflict extends FsEntryMoveState {
   bool areAllItemsConflicting() => conflictingItems.length == allItems.length;
 
   List<String> conflictingFileNames() => conflictingItems
-      .whereType<SelectedFile>()
-      .map((e) => e.item.name)
+      .whereType<FileDataTableItem>()
+      .map((e) => e.name)
       .toList();
 
   List<String> conflictingFolderNames() => conflictingItems
-      .whereType<SelectedFolder>()
-      .map((e) => e.item.name)
+      .whereType<FolderDataTableItem>()
+      .map((e) => e.name)
       .toList();
 
   @override
