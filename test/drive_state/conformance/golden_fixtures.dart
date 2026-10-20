@@ -291,7 +291,7 @@ Future<List<GoldenFixture>> buildGoldenFixtures() async {
           ? await _sha256(plaintext)
           : null,
       outcome: result.outcome.name,
-      detail: result.detail,
+      detail: _portableDetail(result.detail),
       tables: result.outcome.name == 'used' ? _tables(plaintext) : null,
     ));
   }
@@ -1279,3 +1279,8 @@ Future<void> _seedDrive(
     );
   }
 }
+
+/// [detail] without what names this machine: SQLite's errors end with the
+/// statement's parameters, which here are a temp path under the user's home.
+String? _portableDetail(String? detail) =>
+    detail?.replaceAll(RegExp(r', parameters: .*$', multiLine: true), '');

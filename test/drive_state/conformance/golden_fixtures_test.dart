@@ -16,10 +16,11 @@ import 'package:test/test.dart';
 import '../../test_utils/utils.dart';
 import 'golden_fixtures.dart';
 
-/// Writes the fixtures when `DRIVE_STATE_WRITE_FIXTURES=1`:
+/// Writes the fixtures when the process environment has
+/// `DRIVE_STATE_WRITE_FIXTURES=1` (a `--dart-define` does not set it):
 ///
-///     flutter test test/drive_state/conformance/golden_fixtures_test.dart \
-///       --dart-define=x=y   # any run with the variable in the environment
+///     DRIVE_STATE_WRITE_FIXTURES=1 flutter test \
+///       test/drive_state/conformance/golden_fixtures_test.dart
 ///
 /// Otherwise checks them: the checked-in bytes still get the outcome they
 /// record from this app's importer, and building them again gives the same
