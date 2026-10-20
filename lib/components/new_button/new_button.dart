@@ -346,6 +346,7 @@ class NewButton extends StatelessWidget {
                     promptToCreateManifest(
                       context,
                       drive: drive!,
+                      folderId: driveDetailState.folderInView.folder.id,
                       // TODO: for big drives, this might will be slow
                       hasPendingFiles:
                           driveDetailState.currentFolderContents.any(
