@@ -473,23 +473,27 @@ Widget _publishedModal(
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
+  // No transaction id: the Snapshots tab lists the new snapshot straight
+  // away, with its id to copy and its confirmation status, which is where a
+  // user who wants either looks.
   return ArDriveStandardModalNew(
-    title: _title,
+    title: 'Snapshot created',
     scrollableContent: true,
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Created a snapshot of ${state.artifact.driveName}. Its '
-          'transaction ID is ${state.txId}.',
+          'Your snapshot of ${state.artifact.driveName} is on its way to '
+          'Arweave. ArDrive starts using it to load this drive faster once '
+          "it's confirmed. You can follow it in the drive's Snapshots tab.",
           style: typography.paragraphNormal(color: colorTokens.textMid),
         ),
       ],
     ),
     actions: [
       ModalAction(
-        title: 'Close',
+        title: 'OK',
         action: () => Navigator.of(context).pop(),
       ),
     ],
