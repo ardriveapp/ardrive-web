@@ -55,6 +55,10 @@ Future<void> promptToCreateDriveState(
 
   return showArDriveDialog(
     context,
+    // Closed only by its own buttons, as the snapshot dialog before it was.
+    // A click outside closed it mid-export, which left the export running
+    // and hid the result of an upload already paid for.
+    barrierDismissible: false,
     content: BlocProvider(
       create: (_) => DriveStateCreationCubit(
         driveId: drive.id,

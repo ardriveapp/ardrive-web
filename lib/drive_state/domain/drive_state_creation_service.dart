@@ -87,6 +87,10 @@ enum DriveStateCreationRefusal {
   /// minutes clears it; publishing now would hand every reader a change it
   /// cannot safely confirm for itself.
   unconfirmedChanges,
+
+  /// The caller cancelled while the drive was being exported. Nobody is
+  /// shown it: the modal that asked has already closed.
+  cancelled,
 }
 
 /// An artifact that has been built and **not sent**.
@@ -235,6 +239,10 @@ class DriveStateCreationService {
     required String driveId,
     required SecretKey? driveKey,
     required Wallet wallet,
+
+    /// Asked during the export. A cancelled modal stops it rather than
+    /// leaving it holding the database for nobody.
+    bool Function()? isCancelled,
   }) async {
     // First, before anything is read and long before anything is sealed. A
     // drive whose completeness cannot be vouched for is not exported at all —
@@ -323,6 +331,7 @@ class DriveStateCreationService {
         producer: await _producer(),
         sink: sink,
         blockEnd: drive.lastBlockHeight ?? 0,
+        isCancelled: isCancelled,
       );
     } on sqlite.ArtifactExportRefused catch (e) {
       return DriveStateCreationResult.refused(
@@ -331,6 +340,8 @@ class DriveStateCreationService {
             DriveStateCreationRefusal.payloadTooLarge,
           sqlite.ArtifactExportRefusal.unconfirmedChanges =>
             DriveStateCreationRefusal.unconfirmedChanges,
+          sqlite.ArtifactExportRefusal.cancelled =>
+            DriveStateCreationRefusal.cancelled,
           sqlite.ArtifactExportRefusal.noSuchDrive ||
           sqlite.ArtifactExportRefusal.emptyDrive =>
             DriveStateCreationRefusal.sealFailed,

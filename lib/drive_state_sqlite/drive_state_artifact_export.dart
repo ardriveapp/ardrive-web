@@ -5,7 +5,7 @@
 /// written here is only which columns move.
 library;
 
-
+import 'package:ardrive/drive_state_sqlite/artifact_attach_lock.dart';
 import 'package:ardrive/drive_state_sqlite/drive_state_artifact_schema.dart';
 import 'package:drift/drift.dart';
 
@@ -26,6 +26,11 @@ enum ArtifactExportRefusal {
   /// Some of the drive's own changes are still waiting to be confirmed on
   /// chain. See `unconfirmedMetadataCountSql`.
   unconfirmedChanges,
+
+  /// The caller stopped wanting it, such as a snapshot modal that was
+  /// cancelled. Checked between tables, so the export holds the database no
+  /// longer than the table it is copying.
+  cancelled,
 }
 
 class ArtifactExportRefused implements Exception {
@@ -91,96 +96,128 @@ Future<DriveStateArtifact> exportDriveState(
   /// The client that built the artifact, as `<App-Name>/<App-Version>`.
   required String producer,
   int? maxBytes,
+
+  /// Asked between tables. When it returns true the export stops, rolls back
+  /// and is refused as [ArtifactExportRefusal.cancelled].
+  bool Function()? isCancelled,
 }) async {
-  final drive = await db
-      .customSelect(
-        'SELECT ownerAddress, privacy FROM drives WHERE id = ?',
-        variables: [Variable<String>(driveId)],
-      )
-      .get();
+  final drive = await db.customSelect(
+    'SELECT ownerAddress, privacy FROM drives WHERE id = ?',
+    variables: [Variable<String>(driveId)],
+  ).get();
   if (drive.isEmpty) {
     throw ArtifactExportRefused(ArtifactExportRefusal.noSuchDrive, driveId);
   }
 
+  void stopIfCancelled() {
+    if (isCancelled?.call() ?? false) {
+      throw ArtifactExportRefused(ArtifactExportRefusal.cancelled, driveId);
+    }
+  }
+
   try {
-    await db.customStatement('ATTACH DATABASE ? AS artifact', [sink.path]);
-    try {
-      await db.customStatement(
-        'PRAGMA artifact.application_id = $artifactApplicationId',
-      );
-      // One database snapshot for the whole export. Without it a local sync
-      // write can commit between the entry copy and the revision copy, and the
-      // artifact then carries mismatched state that passes both the schema gate
-      // and the entity count — an artifact whose files are hidden after import
-      // because their revisions describe a different moment.
-      //
-      // BEGIN comes after ATTACH because SQLite refuses to attach inside a
-      // transaction.
-      await db.customStatement('BEGIN');
-      for (final ddl in artifactSchema.entries) {
+    return await artifactAttachLock.synchronized(() async {
+      // Waiting for the lock can take as long as another export.
+      stopIfCancelled();
+      await detachLeftoverArtifact(db);
+      await db.customStatement('ATTACH DATABASE ? AS artifact', [sink.path]);
+
+      final int entityCount;
+      try {
         await db.customStatement(
-          ddl.value.replaceFirst('CREATE TABLE ', 'CREATE TABLE artifact.'),
+          'PRAGMA artifact.application_id = $artifactApplicationId',
         );
+        // One database snapshot for the whole export. Without it a local sync
+        // write can commit between the entry copy and the revision copy, and
+        // the artifact then carries mismatched state that passes both the
+        // schema gate and the entity count — an artifact whose files are
+        // hidden after import because their revisions describe a different
+        // moment.
+        //
+        // Drift's transaction, never a raw `BEGIN`. The connection is shared
+        // with sync: a raw transaction let a sync batch's own `BEGIN` fail
+        // inside it, and let a refusal's `ROLLBACK` discard sync writes that
+        // landed in it. Drift's makes everything else wait until it ends.
+        //
+        // Opened after ATTACH because SQLite refuses to attach inside a
+        // transaction.
+        entityCount = await db.transaction(() async {
+          for (final ddl in artifactSchema.entries) {
+            await db.customStatement(
+              ddl.value.replaceFirst('CREATE TABLE ', 'CREATE TABLE artifact.'),
+            );
+          }
+
+          for (final entry in artifactProjection.entries) {
+            stopIfCancelled();
+            final table = entry.key;
+            final columns = entry.value.join(', ');
+            // Aliased `t` so the chain-only predicate can name its own row.
+            final qualified = entry.value.map((c) => 't.$c').join(', ');
+            final chainOnly = artifactChainOnlyPredicate[table];
+            await db.customStatement(
+              'INSERT INTO artifact.$table ($columns) '
+              'SELECT $qualified FROM main.$table t '
+              'WHERE t.${driveFilterColumn(table)} = ?'
+              '${chainOnly == null ? '' : ' AND $chainOnly'}',
+              [driveId],
+            );
+          }
+
+          final unconfirmed =
+              (await db.customSelect(unconfirmedMetadataCountSql).getSingle())
+                  .read<int>('c');
+          if (unconfirmed > 0) {
+            throw ArtifactExportRefused(
+              ArtifactExportRefusal.unconfirmedChanges,
+              '$unconfirmed recent ${unconfirmed == 1 ? 'change' : 'changes'} '
+              'to this drive ${unconfirmed == 1 ? 'is' : 'are'} still being '
+              'confirmed on Arweave. Try again in a few minutes.',
+            );
+          }
+          await db.customStatement(unconfirmedTransactionsSql());
+
+          // Entities, not rows: a revision is a version of an entity, not
+          // another one. Folders and files plus the drive itself, matching the
+          // `Entity-Count` tag the proposal specifies.
+          final counted = await db
+              .customSelect(
+                'SELECT ('
+                '(SELECT count(*) FROM artifact.folder_entries) + '
+                '(SELECT count(*) FROM artifact.file_entries) + '
+                '(SELECT count(*) FROM artifact.drives)) AS c',
+              )
+              .getSingle();
+          final count = counted.read<int>('c');
+          if (count == 0) {
+            throw ArtifactExportRefused(
+                ArtifactExportRefusal.emptyDrive, driveId);
+          }
+
+          await db.customStatement(
+            'INSERT INTO artifact.meta '
+            '(version, driveId, ownerAddress, privacy, blockStart, blockEnd, '
+            'entityCount, producer) VALUES (?, ?, ?, ?, 0, ?, ?, ?)',
+            [
+              artifactFormatVersion,
+              driveId,
+              drive.single.read<String>('ownerAddress'),
+              drive.single.read<String>('privacy'),
+              blockEnd,
+              count,
+              producer,
+            ],
+          );
+          return count;
+        });
+      } catch (_) {
+        // The transaction has rolled back. A failure here must not mask the
+        // original error, and the lock's next holder detaches a leftover.
+        try {
+          await db.customStatement('DETACH DATABASE artifact');
+        } catch (_) {}
+        rethrow;
       }
-
-      for (final entry in artifactProjection.entries) {
-        final table = entry.key;
-        final columns = entry.value.join(', ');
-        // Aliased `t` so the chain-only predicate can name its own row.
-        final qualified = entry.value.map((c) => 't.$c').join(', ');
-        final chainOnly = artifactChainOnlyPredicate[table];
-        await db.customStatement(
-          'INSERT INTO artifact.$table ($columns) '
-          'SELECT $qualified FROM main.$table t '
-          'WHERE t.${driveFilterColumn(table)} = ?'
-          '${chainOnly == null ? '' : ' AND $chainOnly'}',
-          [driveId],
-        );
-      }
-
-      final unconfirmed =
-          (await db.customSelect(unconfirmedMetadataCountSql).getSingle())
-              .read<int>('c');
-      if (unconfirmed > 0) {
-        throw ArtifactExportRefused(
-          ArtifactExportRefusal.unconfirmedChanges,
-          '$unconfirmed recent ${unconfirmed == 1 ? 'change' : 'changes'} '
-          'to this drive ${unconfirmed == 1 ? 'is' : 'are'} still being '
-          'confirmed on Arweave. Try again in a few minutes.',
-        );
-      }
-      await db.customStatement(unconfirmedTransactionsSql());
-
-      // Entities, not rows: a revision is a version of an entity, not another
-      // one. Folders and files plus the drive itself, matching the
-      // `Entity-Count` tag the proposal specifies.
-      final counted = await db.customSelect(
-        'SELECT ('
-        '(SELECT count(*) FROM artifact.folder_entries) + '
-        '(SELECT count(*) FROM artifact.file_entries) + '
-        '(SELECT count(*) FROM artifact.drives)) AS c',
-      ).getSingle();
-      final entityCount = counted.read<int>('c');
-      if (entityCount == 0) {
-        throw ArtifactExportRefused(ArtifactExportRefusal.emptyDrive, driveId);
-      }
-
-      await db.customStatement(
-        'INSERT INTO artifact.meta '
-        '(version, driveId, ownerAddress, privacy, blockStart, blockEnd, '
-        'entityCount, producer) VALUES (?, ?, ?, ?, 0, ?, ?, ?)',
-        [
-          artifactFormatVersion,
-          driveId,
-          drive.single.read<String>('ownerAddress'),
-          drive.single.read<String>('privacy'),
-          blockEnd,
-          entityCount,
-          producer,
-        ],
-      );
-
-      await db.customStatement('COMMIT');
 
       await db.customStatement('DETACH DATABASE artifact');
 
@@ -204,17 +241,7 @@ Future<DriveStateArtifact> exportDriveState(
         blockEnd: blockEnd,
         driveId: driveId,
       );
-    } catch (_) {
-      // Both may already have run; a second attempt is harmless and a failure
-      // here must not mask the original error.
-      try {
-        await db.customStatement('ROLLBACK');
-      } catch (_) {}
-      try {
-        await db.customStatement('DETACH DATABASE artifact');
-      } catch (_) {}
-      rethrow;
-    }
+    });
   } finally {
     await sink.dispose();
   }

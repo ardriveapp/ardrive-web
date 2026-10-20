@@ -120,6 +120,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
         driveId: driveId,
         driveKey: driveKey?.key,
         wallet: profile.user.wallet,
+        isCancelled: () => isClosed,
       );
       if (isClosed) return;
 
