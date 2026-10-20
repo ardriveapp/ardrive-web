@@ -242,6 +242,31 @@ void main() {
       expect(target.height, greaterThanOrEqualTo(48));
     });
 
+    /// The tooltip and the button's own label both reached the screen reader,
+    /// which read it as "Show menu Show menu".
+    testWidgets('a screen reader hears its name once', (tester) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        host(
+          Align(
+            alignment: Alignment.topLeft,
+            child: DriveActionsMenu(drive: drive(), isOwner: true),
+          ),
+        ),
+      );
+
+      final menu = find.bySemanticsLabel('Show menu');
+      expect(menu, findsOneWidget);
+      final node = tester.getSemantics(menu);
+      expect(node, containsSemantics(label: 'Show menu', isButton: true));
+      // The web engine reads a node's label and its tooltip out together, so
+      // the tooltip's copy of the name is what made it "Show menu Show menu".
+      expect(node.getSemanticsData().tooltip, isEmpty);
+
+      semantics.dispose();
+    });
+
     testWidgets('and costs a phone no row height at all', (tester) async {
       // 320px is the stacked card, which is what a phone draws. The row's
       // height there is set by its own content; a menu that set it instead
