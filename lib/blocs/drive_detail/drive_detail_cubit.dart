@@ -630,6 +630,61 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     });
   }
 
+  /// A drive or folder link followed in a tab where this explorer is already
+  /// open: pasted into the address bar, or reached with back and forward.
+  ///
+  /// The link was only ever read when the explorer was built, so a tab that
+  /// already had it ignored every later one and the address bar snapped back
+  /// to the folder on screen.
+  ///
+  /// For the drive on screen this opens the folder, or the root for a drive
+  /// link, waiting for a folder its sync has not written yet. For any other
+  /// drive it only holds the folder: selecting that drive is the caller's,
+  /// and [changeDrive] opens the folder when it does.
+  Future<void> followLink({required String driveId, String? folderId}) async {
+    _forgetLinkedFolder();
+
+    final current = state;
+    final showingThisDrive = driveId == _driveId &&
+        current is DriveDetailLoadSuccess &&
+        current.currentDrive.id == driveId;
+
+    if (!showingThisDrive) {
+      if (folderId != null) {
+        _linkedFolder = (driveId: driveId, folderId: folderId);
+      }
+      return;
+    }
+
+    final rootFolderId = current.currentDrive.rootFolderId;
+    final targetId = folderId ?? rootFolderId;
+
+    if (targetId == current.folderInView.folder.id) {
+      return;
+    }
+
+    final folder =
+        await _driveDao.folderById(folderId: targetId).getSingleOrNull();
+
+    if (isClosed || _driveId != driveId) {
+      return;
+    }
+
+    if (folder != null) {
+      openFolder(folderId: targetId);
+      return;
+    }
+
+    // Not on this device yet: the root, as for a visitor's link, and then the
+    // folder when the sync writes it.
+    openFolder(folderId: rootFolderId);
+    _openLinkedFolderWhenItLands(
+      driveId: driveId,
+      folderId: targetId,
+      rootFolderId: rootFolderId,
+    );
+  }
+
   void _forgetLinkedFolder() {
     _linkedFolder = null;
     _linkedFolderWatch?.cancel();
