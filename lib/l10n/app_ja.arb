@@ -2538,5 +2538,13 @@
   "zippingYourFiles": "ファイルを圧縮しています...",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"
+  },
+  "moreSyncOptions": "その他の同期オプション",
+  "@moreSyncOptions": {
+    "description": "Screen reader label for the chevron half of the drives list sync button, which opens every sync action"
+  },
+  "driveListClearSelectionTooltip": "選択を解除",
+  "@driveListClearSelectionTooltip": {
+    "description": "Tooltip and screen reader label for the x that ends a selection on the drives list"
   }
 }

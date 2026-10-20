@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/drives_list/domain/drive_list_item.dart';
+import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drives_sync_menu.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -27,6 +29,9 @@ import '../test_utils/mocks.dart';
 
 class _MockProfileNameBloc extends MockBloc<ProfileNameEvent, ProfileNameState>
     implements ProfileNameBloc {}
+
+class _MockDrivesListCubit extends MockCubit<DrivesListState>
+    implements DrivesListCubit {}
 
 /// The drive-wide sync actions, on the page about drives.
 ///
@@ -90,7 +95,7 @@ void main() {
 
   tearDown(() async => states.close());
 
-  Widget host({double textScale = 1}) => Portal(
+  Widget host({double textScale = 1, DrivesListCubit? drivesList}) => Portal(
         child: ArDriveTheme(
           themeData: lightTheme(),
           child: MaterialApp(
@@ -116,6 +121,8 @@ void main() {
                     BlocProvider<SyncCubit>.value(value: syncCubit),
                     BlocProvider<DrivesCubit>.value(value: drivesCubit),
                     BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+                    if (drivesList != null)
+                      BlocProvider<DrivesListCubit>.value(value: drivesList),
                   ],
                   child: const Align(
                     alignment: Alignment.topRight,
@@ -131,7 +138,7 @@ void main() {
   Future<void> openMenu(WidgetTester tester, {double textScale = 1}) async {
     await tester.pumpWidget(host(textScale: textScale));
     await tester.pump();
-    await tester.tap(find.byType(DrivesSyncMenu));
+    await tester.tap(find.byKey(DrivesSyncMenu.moreKey));
     await tester.pump(const Duration(milliseconds: 300));
   }
 
@@ -153,20 +160,39 @@ void main() {
   /// button's own tokens, so these compare against the theme rather than
   /// against hex values that would go stale.
   group('answers a pointer like an outline button', () {
-    BoxDecoration face(WidgetTester tester) => tester
+    /// A half's fill.
+    BoxDecoration face(WidgetTester tester, Key half) => tester
         .widgetList<Container>(find.descendant(
-          of: find.byType(DrivesSyncMenu),
+          of: find.byKey(half),
           matching: find.byType(Container),
         ))
         .map((c) => c.decoration)
         .whereType<BoxDecoration>()
-        .firstWhere((d) => d.border != null);
+        .first;
 
-    Color borderOf(BoxDecoration d) => (d.border! as Border).top.color;
+    /// The one outline around both halves.
+    Color outline(WidgetTester tester) => (tester
+            .widgetList<Container>(find.descendant(
+              of: find.byType(DrivesSyncMenu),
+              matching: find.byType(Container),
+            ))
+            .map((c) => c.decoration)
+            .whereType<BoxDecoration>()
+            .firstWhere((d) => d.border != null)
+            .border! as Border)
+        .top
+        .color;
 
     late ArDriveColorTokens tokens;
 
-    Future<TestGesture> hover(WidgetTester tester) async {
+    /// The colours change over a short animation, which starts on the frame
+    /// after the pointer moves.
+    Future<void> settle(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    Future<TestGesture> hover(WidgetTester tester, Key half) async {
       await tester.pumpWidget(host());
       await tester.pump();
       tokens = lightTheme().colorTokens;
@@ -174,62 +200,71 @@ void main() {
       final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
       await mouse.addPointer(location: Offset.zero);
       addTearDown(mouse.removePointer);
-      await mouse.moveTo(tester.getCenter(find.byType(DrivesSyncMenu)));
-      await tester.pump();
+      await mouse.moveTo(tester.getCenter(find.byKey(half)));
+      await settle(tester);
       return mouse;
     }
 
-    testWidgets('resting', (tester) async {
-      await tester.pumpWidget(host());
-      await tester.pump();
-      tokens = lightTheme().colorTokens;
+    for (final (name, half) in [
+      ('the main half', DrivesSyncMenu.primaryKey),
+      ('the chevron', DrivesSyncMenu.moreKey),
+    ]) {
+      group(name, () {
+        testWidgets('resting', (tester) async {
+          await tester.pumpWidget(host());
+          await tester.pump();
+          tokens = lightTheme().colorTokens;
 
-      expect(face(tester).color, tokens.buttonOutlineDefault);
-      expect(borderOf(face(tester)), tokens.strokeMid);
-    });
+          expect(face(tester, half).color, tokens.buttonOutlineDefault);
+          expect(outline(tester), tokens.strokeMid);
+        });
 
-    testWidgets('under a pointer', (tester) async {
-      await hover(tester);
+        testWidgets('under a pointer', (tester) async {
+          await hover(tester, half);
 
-      expect(face(tester).color, tokens.buttonOutlineHover);
-      expect(borderOf(face(tester)), tokens.strokeHigh);
-      expect(
-        RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1),
-        SystemMouseCursors.click,
-      );
-    });
+          expect(face(tester, half).color, tokens.buttonOutlineHover);
+          expect(outline(tester), tokens.strokeHigh);
+          expect(
+            RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1),
+            SystemMouseCursors.click,
+          );
+        });
 
-    testWidgets('and pressed', (tester) async {
-      final mouse = await hover(tester);
+        testWidgets('and pressed', (tester) async {
+          final mouse = await hover(tester, half);
 
-      await mouse.down(tester.getCenter(find.byType(DrivesSyncMenu)));
-      await tester.pump();
+          await mouse.down(tester.getCenter(find.byKey(half)));
+          await settle(tester);
 
-      expect(face(tester).color, tokens.buttonOutlinePress);
+          expect(face(tester, half).color, tokens.buttonOutlinePress);
 
+          await mouse.up();
+          await settle(tester);
+        });
+
+        testWidgets('and lets go when the pointer leaves', (tester) async {
+          final mouse = await hover(tester, half);
+
+          await mouse.moveTo(const Offset(1, 1));
+          await settle(tester);
+
+          expect(face(tester, half).color, tokens.buttonOutlineDefault);
+          expect(outline(tester), tokens.strokeMid);
+        });
+      });
+    }
+
+    /// The reason the chevron is not a real button: that would swallow this
+    /// tap.
+    testWidgets('the chevron still opens the menu when clicked',
+        (tester) async {
+      final mouse = await hover(tester, DrivesSyncMenu.moreKey);
+
+      await mouse.down(tester.getCenter(find.byKey(DrivesSyncMenu.moreKey)));
       await mouse.up();
-      await tester.pump(const Duration(milliseconds: 300));
-    });
-
-    /// The reason it is not a real button: that would swallow this tap.
-    testWidgets('and still opens its menu when clicked', (tester) async {
-      final mouse = await hover(tester);
-
-      await mouse.down(tester.getCenter(find.byType(DrivesSyncMenu)));
-      await mouse.up();
-      await tester.pump(const Duration(milliseconds: 300));
+      await settle(tester);
 
       expect(find.text('Sync history'), findsOneWidget);
-    });
-
-    testWidgets('and lets go when the pointer leaves', (tester) async {
-      final mouse = await hover(tester);
-
-      await mouse.moveTo(const Offset(1, 1));
-      await tester.pump();
-
-      expect(face(tester).color, tokens.buttonOutlineDefault);
-      expect(borderOf(face(tester)), tokens.strokeMid);
     });
   });
 
@@ -253,18 +288,173 @@ void main() {
 
       expect(find.text('Sync all drives'), findsOneWidget);
     });
+  });
 
-    testWidgets('and the button reads "Sync" before anything has synced',
+  /// The main half does the one obvious thing for the page as it stands, and
+  /// is red only while there is one: nothing has synced yet, or drives are
+  /// ticked. It is the page's only sync button - the never-synced card and the
+  /// selection used to carry red buttons of their own.
+  group('the main half', () {
+    late _MockDrivesListCubit drivesList;
+
+    DriveListItem item(String id, {required bool walked}) => DriveListItem(
+          id: id,
+          name: id,
+          isPrivate: false,
+          isSharedWithMe: false,
+          isHidden: false,
+          dateCreated: DateTime(2026, 1, 1),
+          hasBeenWalked: walked,
+          fileCount: walked ? 1 : null,
+          totalSize: walked ? 1 : null,
+          lastSyncedAt: walked ? DateTime(2026, 1, 1) : null,
+          isSyncing: false,
+          lastSyncFailed: false,
+        );
+
+    void listed({required bool walked, Set<String> selected = const {}}) {
+      whenListen(
+        drivesList,
+        const Stream<DrivesListState>.empty(),
+        initialState: DrivesListLoaded(
+          drives: [item('a', walked: walked), item('b', walked: walked)],
+          selected: selected,
+        ),
+      );
+      when(() => drivesList.selectionCount).thenReturn(selected.length);
+    }
+
+    Text label(WidgetTester tester) => tester.widget<Text>(find.descendant(
+          of: find.byKey(DrivesSyncMenu.primaryKey),
+          matching: find.byType(Text),
+        ));
+
+    Color fillOf(WidgetTester tester) => tester
+        .widgetList<Container>(find.descendant(
+          of: find.byKey(DrivesSyncMenu.primaryKey),
+          matching: find.byType(Container),
+        ))
+        .map((c) => c.decoration)
+        .whereType<BoxDecoration>()
+        .first
+        .color!;
+
+    setUp(() {
+      drivesList = _MockDrivesListCubit();
+      when(() => drivesList.syncSelectedDrives(deep: any(named: 'deep')))
+          .thenReturn(null);
+      when(() => syncCubit.cancelSync()).thenReturn(null);
+    });
+
+    Future<void> pumpMenu(WidgetTester tester) async {
+      await tester.pumpWidget(host(drivesList: drivesList));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    testWidgets('reads "Sync" and is outlined once drives have synced',
         (tester) async {
-      // The page's own banner says "Sync all drives" then; the same words
-      // on this button put the action on the page twice.
-      withDrives([drive('never-walked')]);
+      listed(walked: true);
+      await pumpMenu(tester);
 
-      await tester.pumpWidget(host());
+      expect(label(tester).data, 'Sync');
+      expect(fillOf(tester), lightTheme().colorTokens.buttonOutlineDefault);
+    });
+
+    testWidgets('reads "Sync all drives" in red before anything has synced',
+        (tester) async {
+      listed(walked: false);
+      await pumpMenu(tester);
+
+      expect(label(tester).data, 'Sync all drives');
+      expect(fillOf(tester), lightTheme().colorTokens.buttonPrimaryDefault);
+
+      await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
       await tester.pump();
 
-      expect(find.text('Sync'), findsOneWidget);
-      expect(find.text('Sync all drives'), findsNothing);
+      verify(() => drivesList.syncSelectedDrives(deep: false)).called(1);
+      expect(find.text('Sync history'), findsNothing,
+          reason: 'the main half acts; only the chevron opens the menu');
+    });
+
+    testWidgets('reads "Sync 2 selected" in red with two drives ticked',
+        (tester) async {
+      listed(walked: true, selected: const {'a', 'b'});
+      await pumpMenu(tester);
+
+      expect(label(tester).data, 'Sync 2 selected');
+      expect(fillOf(tester), lightTheme().colorTokens.buttonPrimaryDefault);
+
+      await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
+      await tester.pump();
+
+      verify(() => drivesList.syncSelectedDrives(deep: false)).called(1);
+    });
+
+    testWidgets('offers to stop a sync that can be stopped', (tester) async {
+      listed(walked: false);
+      whenListen(syncCubit, states.stream,
+          initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
+      await pumpMenu(tester);
+
+      expect(label(tester).data, 'Stop syncing');
+      expect(fillOf(tester), lightTheme().colorTokens.buttonOutlineDefault,
+          reason: 'stopping is not the action to draw the eye to');
+
+      await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
+      await tester.pump();
+
+      verify(() => syncCubit.cancelSync()).called(1);
+      verifyNever(() => drivesList.syncSelectedDrives(deep: false));
+    });
+
+    testWidgets('and is unavailable while the drive list refreshes',
+        (tester) async {
+      // `cancelSync` does nothing then - the refresh holds no token - so a
+      // "Stop syncing" here would acknowledge a press and change nothing.
+      listed(walked: true);
+      whenListen(syncCubit, states.stream, initialState: SyncLoadingDrives());
+      await pumpMenu(tester);
+
+      expect(label(tester).data, 'Sync');
+
+      await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
+      await tester.pump();
+
+      verifyNever(() => syncCubit.cancelSync());
+      verifyNever(() => drivesList.syncSelectedDrives(deep: false));
+    });
+
+    testWidgets('without the drives list it syncs every drive', (tester) async {
+      await tester.pumpWidget(host());
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(label(tester).data, 'Sync');
+
+      await tester.tap(find.byKey(DrivesSyncMenu.primaryKey));
+      await tester.pump();
+
+      verify(() => syncCubit.startSync(
+            deepSync: false,
+            skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
+            onlyDriveIds: any(named: 'onlyDriveIds'),
+            trigger: any(named: 'trigger'),
+          )).called(1);
+    });
+
+    testWidgets('fits a 320px phone at twice the text size', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(320, 640));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      listed(walked: false);
+
+      await tester.pumpWidget(host(drivesList: drivesList, textScale: 2));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.byKey(DrivesSyncMenu.primaryKey)).height,
+        tester.getSize(find.byKey(DrivesSyncMenu.moreKey)).height,
+        reason: 'the halves stay one control as the text grows',
+      );
     });
   });
 

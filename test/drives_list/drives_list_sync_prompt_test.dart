@@ -6,20 +6,19 @@ import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// The one card this page offers, and the only breakpoint it owns.
+/// The card a first login lands on.
 ///
-/// The card is two columns - words on the left, the one action on the right -
-/// wherever two columns fit, and stacked only where they genuinely do not.
-/// The width that separates the two is measured off the type the card is drawn
-/// in, in the face it is drawn in, rather than picked: this feature has
-/// already shipped a breakpoint chosen by eye twice, and both times it clipped
-/// something at a band of widths nobody had rendered.
+/// It is words only. It used to carry a red "Sync all drives" of its own, with
+/// a measured breakpoint deciding whether that button sat beside the words or
+/// under them - and below it, at some widths and text scales, it stretched to
+/// a full-width slab. The page's split sync button, right above the card, now
+/// reads "Sync all drives" in red for as long as the card is shown, so the
+/// card says why and the button is how.
 void main() {
   const title = 'Nothing has been synced yet';
   const description = 'Sync your drives to see their files and folders.';
@@ -27,9 +26,9 @@ void main() {
 
   /// The real face, loaded from the design system's own asset.
   ///
-  /// Without this every measurement below is taken in the test font, whose
-  /// glyphs are a square em each - a "measurement" that has nothing to do with
-  /// what a user sees and would put the breakpoint hundreds of pixels out.
+  /// Without this every layout below is taken in the test font, whose glyphs
+  /// are a square em each - an overflow check that has nothing to do with what
+  /// a user sees.
   ///
   /// Loaded here rather than inside a test: `testWidgets` runs in a fake-async
   /// zone where a real file read never completes, so the same code in a test
@@ -105,7 +104,6 @@ void main() {
               ),
               onOpenDrive: (_) {},
               onTryAgain: () {},
-              onSyncAllDrives: () {},
             ),
           ),
         ),
@@ -132,122 +130,6 @@ void main() {
 
     return size;
   }
-
-  Rect rectOf(WidgetTester tester, Finder finder) =>
-      tester.getRect(finder.first);
-
-  /// The card's text column - the title and the sentence under it, together.
-  final wordsColumn =
-      find.ancestor(of: find.text(title), matching: find.byType(Column)).first;
-
-  group('the breakpoint', () {
-    testWidgets('is at least the width the title actually measures',
-        (tester) async {
-      final measured = <double>[];
-
-      // Both typographies, because which one is used is decided on the screen
-      // width and the card can be two columns under either: the desktop face
-      // is a point larger, and the constant has to clear the larger of them.
-      for (final screenWidth in [400.0, 1200.0]) {
-        await tester.binding.setSurfaceSize(Size(screenWidth, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        late TextStyle style;
-        await tester.pumpWidget(
-          host(
-            Builder(
-              builder: (context) {
-                style = ArDriveTypographyNew.of(context).paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                );
-
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        final painter = TextPainter(
-          text: TextSpan(text: title, style: style),
-          textDirection: TextDirection.ltr,
-        )..layout();
-
-        measured.add(painter.width);
-      }
-
-      final widest = measured.reduce((a, b) => a > b ? a : b);
-
-      expect(
-        driveListSyncPromptTextMinimum,
-        greaterThanOrEqualTo(widest),
-        reason: 'below this the card\'s own title wraps, and two columns stop '
-            'being a heading beside a button. Measured: $measured',
-      );
-
-      // And it is a measurement, not a round number well clear of one: a
-      // minimum with 40px of slack in it has stopped being measured.
-      expect(
-        driveListSyncPromptTextMinimum,
-        lessThan(widest + 40),
-        reason: 'the constant has drifted away from what it measures. '
-            'Measured: $measured',
-      );
-    });
-
-    testWidgets('draws two columns at exactly the width it names',
-        (tester) async {
-      // The narrowest card the rule admits, plus the page padding either side.
-      const surface = driveListSyncPromptTextMinimum + 16 + 180 + 32 + 32;
-
-      expect(
-        driveListSyncPromptShowsColumns(
-          surface - 32,
-          textMinimum: driveListSyncPromptTextMinimum,
-          buttonWidth: 180,
-        ),
-        isTrue,
-      );
-
-      await pumpAt(tester, surface);
-
-      // The whole text column, not just its first line: the description wraps
-      // underneath the title, and a button centred against the column sits
-      // below the title's own bottom edge while still being beside the words.
-      final words = rectOf(tester, wordsColumn);
-      final button = rectOf(tester, find.byType(ArDriveButtonNew));
-
-      expect(button.left, greaterThanOrEqualTo(words.right),
-          reason: 'the button is meant to be the second column, not the '
-              'second row');
-      expect(button.top, lessThan(words.bottom),
-          reason: 'a button that starts below the words is stacked, whatever '
-              'its horizontal position');
-      expect(button.bottom, greaterThan(words.top));
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('stacks one pixel below it', (tester) async {
-      const surface = driveListSyncPromptTextMinimum + 16 + 180 + 32 + 32 - 1;
-
-      expect(
-        driveListSyncPromptShowsColumns(
-          surface - 32,
-          textMinimum: driveListSyncPromptTextMinimum,
-          buttonWidth: 180,
-        ),
-        isFalse,
-      );
-
-      await pumpAt(tester, surface);
-
-      final words = rectOf(tester, wordsColumn);
-      final button = rectOf(tester, find.byType(ArDriveButtonNew));
-
-      expect(button.top, greaterThanOrEqualTo(words.bottom),
-          reason: 'two columns do not fit here, so the card has to stack');
-      expect(tester.takeException(), isNull);
-    });
-  });
 
   group('the card says which of the two it is', () {
     // The offer and the strip are on one screen. While a sync ran, this card
@@ -278,37 +160,6 @@ void main() {
   });
 
   group('the reader\'s text scale', () {
-    // `ArDriveButtonNew` applies `maxWidth` as a fixed SizedBox width and
-    // ellipsizes the label inside it, so a constant 180 is not a maximum - it
-    // is the width, and at 2.0 the page's one offer read "Sync All Dri...".
-    for (final scale in [1.0, 1.3, 1.6, 2.0]) {
-      testWidgets('does not clip the button\'s label at ${scale}x',
-          (tester) async {
-        await pumpAt(tester, 1000, textScale: scale);
-
-        final label = find.text('Sync all drives');
-        expect(label, findsOneWidget);
-
-        final rendered = tester.renderObject<RenderParagraph>(label);
-        expect(
-          rendered.didExceedMaxLines || rendered.size.width < 1,
-          isFalse,
-          reason: 'the label does not fit the width it was given',
-        );
-
-        // The painted text against the width it was allowed: an ellipsized
-        // label is one whose intrinsic width is wider than its box.
-        final intrinsic = rendered.getMaxIntrinsicWidth(double.infinity);
-        expect(
-          rendered.size.width,
-          greaterThanOrEqualTo(intrinsic - 0.5),
-          reason: '"Sync All Drives" is cut short at a text scale of $scale',
-        );
-
-        expect(tester.takeException(), isNull);
-      });
-    }
-
     testWidgets('takes the drives list off columns before it clips them',
         (tester) async {
       // The breakpoint used to be pure pixels, so at a large text scale the
@@ -340,15 +191,19 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('never gives the button the whole width, stacked or not',
-        (tester) async {
-      for (final width in [320.0, 700.0, 1200.0]) {
-        final card = await pumpAt(tester, width);
-        final button = rectOf(tester, find.byType(ArDriveButtonNew));
+    testWidgets('nor at twice the text size', (tester) async {
+      await pumpAt(tester, 320, textScale: 2);
 
-        expect(button.width, lessThan(card.width - 32),
-            reason: 'a full-width slab of primary colour on the one screen '
-                'whose message is "nothing is wrong yet" reads as an alarm '
+      expect(find.text(title), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('carries no button of its own, at any width', (tester) async {
+      for (final width in [320.0, 700.0, 1200.0]) {
+        await pumpAt(tester, width);
+
+        expect(find.byType(ArDriveButtonNew), findsNothing,
+            reason: 'the page\'s sync button is the one place sync lives '
                 '(at ${width.toInt()}px)');
       }
     });
