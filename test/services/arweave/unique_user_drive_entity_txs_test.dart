@@ -237,8 +237,11 @@ void main() {
   /// The same listing has each drive's whole history, so it also says when
   /// the drive was made: its oldest transaction, by the same order.
   group('creation times', () {
-    Future<Map<String, DateTime>> timesFor(List<List<_Tx>> pages) =>
-        serviceWith(pages).getUserDriveCreationTimes(owner);
+    Future<Map<String, DateTime>> timesFor(List<List<_Tx>> pages) async {
+      final service = serviceWith(pages);
+      await service.getUniqueUserDriveEntityTxs(owner);
+      return service.cachedUserDriveCreationTimes(owner);
+    }
 
     DateTime at(int unixTime) =>
         DateTime.fromMillisecondsSinceEpoch(unixTime * 1000);
@@ -293,30 +296,50 @@ void main() {
       );
     });
 
-    /// No date rather than 1970: the stored one is kept instead.
-    test('leave out a drive whose oldest has no usable Unix-Time', () async {
+    /// It cannot date the drive, and ranked as the oldest it would hide the
+    /// transaction that can.
+    test('pass over a transaction with no usable Unix-Time', () async {
       final bad = driveTx('bad', height: block - 1, unixTime: 0);
       bad.tags.removeWhere((t) => t.name == EntityTag.unixTime);
 
       expect(
         await timesFor([
-          [hide, bad],
+          [hide, bad, create],
+        ]),
+        {driveId: at(1791778064)},
+      );
+    });
+
+    /// No date rather than 1970: the stored one is kept instead.
+    test('leave out a drive with no usable Unix-Time at all', () async {
+      final bad = driveTx('bad', height: block, unixTime: 0);
+      bad.tags.removeWhere((t) => t.name == EntityTag.unixTime);
+
+      expect(
+        await timesFor([
+          [bad],
         ]),
         isEmpty,
       );
     });
 
-    test('cost no request once the listing is cached', () async {
+    /// Read from the cache only, so asking can never fail discovery or
+    /// cost a request.
+    test('are empty until the listing is cached, and for another wallet',
+        () async {
       final service = serviceWith([
         [hide, create],
       ]);
 
+      expect(service.cachedUserDriveCreationTimes(owner), isEmpty);
+
       await service.getUniqueUserDriveEntityTxs(owner);
-      // A second request would run off the end of the one page given.
-      expect(
-        await service.getUserDriveCreationTimes(owner),
-        {driveId: at(1791778064)},
-      );
+      expect(service.cachedUserDriveCreationTimes(owner),
+          {driveId: at(1791778064)});
+      expect(service.cachedUserDriveCreationTimes('someone-else'), isEmpty);
+
+      service.clearUserDriveTxsCache();
+      expect(service.cachedUserDriveCreationTimes(owner), isEmpty);
     });
   });
 }

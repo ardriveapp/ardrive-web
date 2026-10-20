@@ -331,8 +331,8 @@ void main() {
 
   group('Fix 2: updateUserDrives cache', () {
     setUp(() {
-      when(() => mockArweave.getUserDriveCreationTimes(any()))
-          .thenAnswer((_) async => {});
+      when(() => mockArweave.cachedUserDriveCreationTimes(any()))
+          .thenReturn({});
     });
 
     /// The drive list's own listing says when each drive was made; the
@@ -341,8 +341,8 @@ void main() {
       final createdAt = DateTime(2025, 1, 1);
       when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
           .thenAnswer((_) async => {});
-      when(() => mockArweave.getUserDriveCreationTimes(ownerAddress))
-          .thenAnswer((_) async => {'drive-id': createdAt});
+      when(() => mockArweave.cachedUserDriveCreationTimes(ownerAddress))
+          .thenReturn({'drive-id': createdAt});
       when(() => mockDriveDao.updateUserDrives(any(), any(),
           creationTimes: any(named: 'creationTimes'))).thenAnswer((_) async {});
 

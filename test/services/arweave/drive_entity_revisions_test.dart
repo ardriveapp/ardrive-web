@@ -291,6 +291,44 @@ void main() {
     expect(names, ['Photos']);
   });
 
+  /// One failure decides the answer, so the reads still to start are not
+  /// made: they would only be thrown away.
+  test('stops reading at the first failure', () async {
+    service.bodies = {
+      for (var i = 1; i < 20; i++) 'tx-$i': body('Name $i'),
+    };
+
+    final names = await namesFor([
+      [
+        for (var i = 0; i < 20; i++)
+          driveTx('tx-$i', height: block + i, unixTime: i + 1),
+      ],
+    ]);
+
+    expect(names, isNull);
+    // tx-0 fails; only the reads already started alongside it run.
+    expect(service.read.length, lessThanOrEqualTo(3));
+  });
+
+  test('reads nothing once it is told to stop', () async {
+    service.bodies = {'a': body('Photos')};
+    final retry = _PagedRetry([
+      [driveTx('a', height: block, unixTime: 1)],
+      [driveTx('b', height: block + 1, unixTime: 2)],
+    ]);
+    service.graphQLRetry = retry;
+
+    final revisions = await service.getDriveEntityRevisions(
+      driveId,
+      ownerAddress: owner,
+      isCancelled: () => true,
+    );
+
+    expect(revisions, isNull);
+    expect(retry.asked, hasLength(1), reason: 'no second page');
+    expect(service.read, isEmpty);
+  });
+
   test('reads nothing past its limit, and says so', () async {
     final names = await namesFor([
       [

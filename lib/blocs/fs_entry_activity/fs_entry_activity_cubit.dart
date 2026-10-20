@@ -113,6 +113,8 @@ class FsEntryActivityCubit extends Cubit<FsEntryActivityState> {
             driveId,
             ownerAddress: drive.ownerAddress,
             driveKey: driveKey?.key,
+            // Closing the panel or leaving the tab stops the reads.
+            isCancelled: () => isClosed || _hasLocalDriveHistory,
           );
 
           if (entities != null) {

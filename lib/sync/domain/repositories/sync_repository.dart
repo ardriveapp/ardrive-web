@@ -2109,9 +2109,10 @@ class _SyncRepository implements SyncRepository {
       onDriveUnlocked: onDriveUnlocked,
     );
 
-    // Read from the listing the call above just made, so no extra request.
+    // From the listing the call above just made. Cached only: if a finished
+    // sync has cleared it since, stored dates are left alone this pass.
     final creationTimes =
-        await _arweave.getUserDriveCreationTimes(await wallet.getAddress());
+        _arweave.cachedUserDriveCreationTimes(await wallet.getAddress());
 
     await _driveDao.updateUserDrives(
       userDriveEntities,

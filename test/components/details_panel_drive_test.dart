@@ -135,6 +135,7 @@ void main() {
         any(),
         ownerAddress: any(named: 'ownerAddress'),
         driveKey: any(named: 'driveKey'),
+          isCancelled: any(named: 'isCancelled'),
       ),
     ).thenAnswer((_) => networkHistory?.call() ?? Future.value(null));
     networkReads = arweave;
@@ -410,6 +411,7 @@ void main() {
               any(),
               ownerAddress: any(named: 'ownerAddress'),
               driveKey: any(named: 'driveKey'),
+          isCancelled: any(named: 'isCancelled'),
             ),
           );
         },

@@ -173,7 +173,7 @@ class ArweaveService {
 
   /// When each of the cached user's drives was created: the commit time of
   /// its oldest drive transaction, keyed by drive id. Filled and cleared with
-  /// [_cachedUserDriveTxs]. See [getUserDriveCreationTimes].
+  /// [_cachedUserDriveTxs]. See [cachedUserDriveCreationTimes].
   Map<String, DateTime>? _cachedUserDriveCreationTimes;
 
   /// Cache for raw entity data bytes fetched during [getUniqueUserDriveEntities].
@@ -1053,11 +1053,11 @@ class ArweaveService {
     return data.bodyBytes;
   }
 
-  /// The most drive revisions [getDriveEntityRevisions] will read: ten pages
+  /// The most drive revisions [getDriveEntityRevisions] will read: two pages
   /// of the history query. A drive is renamed or hidden a handful of times,
   /// so this is never reached by a real one; it bounds what a tab opening
   /// can cost.
-  static const maxDriveRevisionsRead = 1000;
+  static const maxDriveRevisionsRead = 200;
 
   /// Every revision of a drive's own entity, oldest first: its creation and
   /// each rename, hide and unhide, without its folders or files.
@@ -1070,15 +1070,20 @@ class ArweaveService {
   /// commit time inside a block. A revision that does not parse, or whose
   /// owner is not [ownerAddress], is left out, as sync leaves it out.
   ///
-  /// `null` when the history could not be read in full: the query failed,
-  /// a revision's metadata could not be fetched, or there are more than
-  /// [maxDriveRevisionsRead]. Partial history is not returned, because a
-  /// missing first revision would make the next one read as the creation.
+  /// `null` when the history could not be read: the query failed, any
+  /// revision's metadata could not be fetched, there are more than
+  /// [maxDriveRevisionsRead], or [isCancelled] said to stop. A fetch that
+  /// fails is not skipped, because a missing first revision would make the
+  /// next one read as the creation. The first failure stops the reads still
+  /// to start.
   Future<List<DriveEntity>?> getDriveEntityRevisions(
     String driveId, {
     required String ownerAddress,
     SecretKey? driveKey,
+    bool Function()? isCancelled,
   }) async {
+    bool stopped() => isCancelled?.call() ?? false;
+
     final txs = <TransactionCommonMixin>[];
 
     try {
@@ -1109,7 +1114,7 @@ class ArweaveService {
               ),
         );
 
-        if (txs.length > maxDriveRevisionsRead) {
+        if (txs.length > maxDriveRevisionsRead || stopped()) {
           return null;
         }
 
@@ -1136,20 +1141,27 @@ class ArweaveService {
       });
 
     final bodies = List<Uint8List?>.filled(ordered.length, null);
+    var failed = false;
     await runPooled(
       concurrency: _configService.config.maxConcurrentDataFetches.clamp(1, 100),
       itemCount: ordered.length,
       task: (i) async {
+        // One failure already decides the answer, so the rest are not read.
+        if (failed || stopped()) {
+          failed = true;
+          return;
+        }
         try {
           bodies[i] = await getEntityDataFromNetwork(txId: ordered[i].id);
         } catch (e) {
+          failed = true;
           logger.w('Could not read drive revision ${ordered[i].id}: $e');
         }
       },
       onItemDone: null,
     );
 
-    if (bodies.contains(null)) {
+    if (failed || bodies.contains(null)) {
       return null;
     }
 
@@ -1230,7 +1242,9 @@ class ArweaveService {
           newestByDriveId[driveId] = tx;
         }
 
-        if (driveId != null) {
+        // A transaction with no usable Unix-Time cannot date the drive, and
+        // ranking it would hide the one that can.
+        if (driveId != null && _commitTimeOrZero(tx) > 0) {
           final oldest = oldestByDriveId[driveId];
           if (oldest == null || _isNewerDriveEntityTx(oldest, than: tx)) {
             oldestByDriveId[driveId] = tx;
@@ -1247,15 +1261,11 @@ class ArweaveService {
 
     final drives = newestByDriveId.values.toList();
 
-    final creationTimes = <String, DateTime>{};
-    for (final entry in oldestByDriveId.entries) {
-      final commitTime = _commitTimeOrZero(entry.value);
-      // No usable Unix-Time: no date at all, rather than 1970.
-      if (commitTime > 0) {
-        creationTimes[entry.key] =
-            DateTime.fromMillisecondsSinceEpoch(commitTime);
-      }
-    }
+    final creationTimes = {
+      for (final entry in oldestByDriveId.entries)
+        entry.key:
+            DateTime.fromMillisecondsSinceEpoch(_commitTimeOrZero(entry.value)),
+    };
 
     // Cache the result — cleared by clearUserDriveTxsCache()
     _cachedUserDriveTxsAddress = userAddress;
@@ -1265,18 +1275,18 @@ class ArweaveService {
     return drives;
   }
 
-  /// When each of a user's drives was created, keyed by drive id: the commit
-  /// time of the oldest drive transaction the drive list found for it.
+  /// When each of [userAddress]'s drives was created, keyed by drive id: the
+  /// commit time of the oldest drive transaction with a usable Unix-Time
+  /// that [getUniqueUserDriveEntityTxs] found for it.
   ///
-  /// Read from the same listing as [getUniqueUserDriveEntityTxs], which sees
-  /// every drive transaction the wallet signed and keeps only the newest, so
-  /// this costs no request when that listing is cached. A drive missing from
-  /// the map has no creation time worth showing.
-  Future<Map<String, DateTime>> getUserDriveCreationTimes(
-    String userAddress, {
-    int maxRetries = defaultMaxRetries,
-  }) async {
-    await getUniqueUserDriveEntityTxs(userAddress, maxRetries: maxRetries);
+  /// Read from that listing's cache only, never the network, so it cannot
+  /// fail or cost a request. Empty when the listing is not cached for this
+  /// address, for instance because a finished sync cleared it; a drive
+  /// missing from the map keeps the creation date it has.
+  Map<String, DateTime> cachedUserDriveCreationTimes(String userAddress) {
+    if (_cachedUserDriveTxsAddress != userAddress) {
+      return const {};
+    }
     return _cachedUserDriveCreationTimes ?? const {};
   }
 

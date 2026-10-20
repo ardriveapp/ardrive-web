@@ -110,6 +110,7 @@ void main() {
           any(),
           ownerAddress: any(named: 'ownerAddress'),
           driveKey: any(named: 'driveKey'),
+          isCancelled: any(named: 'isCancelled'),
         ),
       ).thenAnswer((_) => answer());
 
@@ -185,6 +186,7 @@ void main() {
         driveId,
         ownerAddress: ownerAddress,
         driveKey: null,
+        isCancelled: any(named: 'isCancelled'),
       ),
     ).called(1);
 
@@ -264,6 +266,7 @@ void main() {
         any(),
         ownerAddress: any(named: 'ownerAddress'),
         driveKey: any(named: 'driveKey'),
+          isCancelled: any(named: 'isCancelled'),
       ),
     );
 
@@ -289,6 +292,7 @@ void main() {
         any(),
         ownerAddress: any(named: 'ownerAddress'),
         driveKey: any(named: 'driveKey'),
+          isCancelled: any(named: 'isCancelled'),
       ),
     );
 
@@ -313,6 +317,39 @@ void main() {
     await cubit.close();
   });
 
+  /// The reads still to start are not made for a panel nobody is looking at.
+  test('tells the read to stop once the panel is closed', () async {
+    await discoverDrive();
+    final answer = Completer<List<DriveEntity>?>();
+    networkAnswers(() => answer.future);
+
+    final drive = await driveDao.driveById(driveId: driveId).getSingle();
+    final cubit = cubitFor(drive);
+
+    await untilCalled(
+      () => arweave.getDriveEntityRevisions(
+        any(),
+        ownerAddress: any(named: 'ownerAddress'),
+        driveKey: any(named: 'driveKey'),
+        isCancelled: any(named: 'isCancelled'),
+      ),
+    );
+    final isCancelled = verify(
+      () => arweave.getDriveEntityRevisions(
+        any(),
+        ownerAddress: any(named: 'ownerAddress'),
+        driveKey: any(named: 'driveKey'),
+        isCancelled: captureAny(named: 'isCancelled'),
+      ),
+    ).captured.single as bool Function();
+
+    expect(isCancelled(), isFalse);
+    await cubit.close();
+    expect(isCancelled(), isTrue);
+
+    answer.complete(null);
+  });
+
   group('a private drive', () {
     test('is read with its own key, unlocked with the profile key', () async {
       await discoverDrive(privacy: DrivePrivacyTag.private);
@@ -327,6 +364,7 @@ void main() {
           driveId,
           ownerAddress: ownerAddress,
           driveKey: captureAny(named: 'driveKey'),
+          isCancelled: any(named: 'isCancelled'),
         ),
       ).captured;
 
@@ -353,6 +391,7 @@ void main() {
           any(),
           ownerAddress: any(named: 'ownerAddress'),
           driveKey: any(named: 'driveKey'),
+          isCancelled: any(named: 'isCancelled'),
         ),
       );
 
