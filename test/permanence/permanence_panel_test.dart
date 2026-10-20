@@ -86,6 +86,33 @@ void main() {
       expect(find.text('1.50 AR'), findsOneWidget);
     });
 
+    /// A few MiB costs cents to store. Whole dollars read that as "$0" beside
+    /// a real AR price.
+    testWidgets('of a few MiB is in cents, not "\$0"', (tester) async {
+      // 0.0316 AR at $5 an AR: about 16 cents.
+      await pump(
+        tester,
+        summary(
+          costToday: Future.value(NetworkCost(
+            winston: BigInt.from(316) * BigInt.from(10).pow(8),
+            usdPerAr: 5,
+          )),
+        ),
+      );
+
+      expect(find.text(r'$0.16'), findsOneWidget);
+      expect(find.text(r'$0'), findsNothing);
+    });
+
+    test('is whole dollars from \$100, cents below, and never \$0 for a cost',
+        () {
+      expect(formatUsd(100), r'$100');
+      expect(formatUsd(1234.56), r'$1,235');
+      expect(formatUsd(99.5), r'$99.50');
+      expect(formatUsd(0.158), r'$0.16');
+      expect(formatUsd(0.004), r'<$0.01');
+    });
+
     testWidgets('says so when the network cannot be reached', (tester) async {
       await pump(tester, summary(costToday: Future.value(null)));
 
