@@ -53,15 +53,18 @@ class DriveExplorerItemTile extends TableRowWidget {
               child: Row(
                 children: [
                   Flexible(
-                    child: Text(
-                      name,
-                      style: typography.paragraphNormal(
-                        color: isHidden ? Colors.grey : null,
-                        fontWeight: ArFontWeight.semiBold,
+                    child: ArDriveTooltip(
+                      message: name,
+                      child: Text(
+                        name,
+                        style: typography.paragraphNormal(
+                          color: isHidden ? Colors.grey : null,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        softWrap: false,
                       ),
-                      overflow: TextOverflow.fade,
-                      maxLines: 1,
-                      softWrap: false,
                     ),
                   ),
                   if (hasArnsNames(dataTableItem) &&
@@ -372,6 +375,30 @@ class DriveExplorerItemTileTrailing extends StatefulWidget {
   final ArDriveDataTableItem item;
   final Drive drive;
   final Alignment alignment;
+
+  /// The menu button and its padding.
+  static const double _menuWidth = 40;
+
+  /// The pin indicator (32) and a 4 gap.
+  static const double _pinWidth = 36;
+
+  /// A ghost folder's **Fix** button sits beside the menu button. In English
+  /// the pair is 102 wide, which overflowed the 100 the slot used to have by
+  /// 2, and the label's width changes with the language, so this leaves room
+  /// rather than fitting the one measured width.
+  static const double _ghostFolderWidth = 120;
+
+  /// The width the trailing slot needs for [item]: the menu button, plus the
+  /// **Fix** button or the pin indicator when the row has one.
+  static double widthFor(ArDriveDataTableItem item) {
+    if (item is FolderDataTableItem && item.isGhostFolder && item.isOwner) {
+      return _ghostFolderWidth;
+    }
+    if (item is FileDataTableItem && item.pinnedDataOwnerAddress != null) {
+      return _menuWidth + _pinWidth;
+    }
+    return _menuWidth;
+  }
 
   @override
   State<DriveExplorerItemTileTrailing> createState() =>

@@ -212,6 +212,7 @@ Widget _buildDataListContent(
           forceDisableMultiSelect:
               context.read<DriveDetailCubit>().forceDisableMultiselect,
           columns: columns,
+          trailingWidth: DriveExplorerItemTileTrailing.widthFor,
           trailing: (file) => isMultiselecting
               ? const SizedBox.shrink()
               : DriveExplorerItemTileTrailing(
