@@ -204,12 +204,10 @@ class _DrivesListChrome extends StatelessWidget {
         Widget bodyWith({
           String? chosenDriveId,
           void Function(String driveId)? onChoose,
-          bool allowCompactColumns = false,
         }) =>
             DrivesListBody(
               chosenDriveId: chosenDriveId,
               onChoose: onChoose,
-              allowCompactColumns: allowCompactColumns,
               state: state,
               // Selecting is how a drive is opened from anywhere on this route,
               // the sidebar included.
@@ -351,7 +349,6 @@ class DrivesListBody extends StatelessWidget {
     this.syncMenu,
     this.chosenDriveId,
     this.onChoose,
-    this.allowCompactColumns = false,
   });
 
   /// The drive whose details are open beside the list, if any.
@@ -360,11 +357,6 @@ class DrivesListBody extends StatelessWidget {
   /// A click on a row: show that drive's details. Null where there is no
   /// room for them, which is also how a row knows to show focus instead.
   final void Function(String driveId)? onChoose;
-
-  /// Whether the list may drop to three columns - see
-  /// [driveListCompactColumnsFrom]. True only while a drive's details push
-  /// the list narrower, since those are what the two dropped columns show.
-  final bool allowCompactColumns;
 
   final DrivesListState state;
   final void Function(DriveListItem drive) onOpenDrive;
@@ -434,7 +426,6 @@ class DrivesListBody extends StatelessWidget {
         onSyncChanged: onSyncChanged,
         chosenDriveId: chosenDriveId,
         onChoose: onChoose,
-        allowCompactColumns: allowCompactColumns,
       );
     }
 
@@ -642,12 +633,10 @@ class _DrivesListLoadedView extends StatelessWidget {
     this.onSyncChanged,
     this.chosenDriveId,
     this.onChoose,
-    this.allowCompactColumns = false,
   });
 
   final String? chosenDriveId;
   final void Function(String driveId)? onChoose;
-  final bool allowCompactColumns;
 
   final DrivesListLoaded state;
   final void Function(DriveListItem drive) onOpenDrive;
@@ -690,15 +679,18 @@ class _DrivesListLoadedView extends StatelessWidget {
               constraints.maxWidth,
               textScale: textScale,
             );
-            // Three columns rather than cards while a drive's details push
-            // the list narrower: a card is taller than a row, so turning the
-            // rows into cards would move every one of them under the pointer.
+            // Three columns wherever five do not fit and three do, not only
+            // beside a drive's details. Cards have no checkboxes, headings or
+            // sorting, and the sidebar takes enough width that windows from
+            // 950 to about 1120px wide got cards and lost Sync selected,
+            // while narrower windows without the sidebar kept the table. The
+            // two columns dropped, files and created, are in a drive's
+            // details.
             final showsColumns = showsAllColumns ||
-                (allowCompactColumns &&
-                    driveListShowsCompactColumns(
-                      constraints.maxWidth,
-                      textScale: textScale,
-                    ));
+                driveListShowsCompactColumns(
+                  constraints.maxWidth,
+                  textScale: textScale,
+                );
 
             // The whole page scrolls, not just the list inside it. A phone in
             // landscape - 568x264, which is also a portrait phone at a large
@@ -1421,7 +1413,6 @@ class _DriveDetailsHost extends StatefulWidget {
   final Widget Function({
     String? chosenDriveId,
     void Function(String driveId)? onChoose,
-    bool allowCompactColumns,
   }) buildBody;
 
   @override
@@ -1516,7 +1507,6 @@ class _DriveDetailsHostState extends State<_DriveDetailsHost> {
                     child: widget.buildBody(
                       chosenDriveId: drive?.id,
                       onChoose: _choose,
-                      allowCompactColumns: pushes,
                     ),
                   ),
                   // The explorer's animation, the explorer's width.

@@ -3,6 +3,7 @@ import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
+import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -349,15 +350,15 @@ void main() {
     final oneDrive = DrivesListLoaded(drives: [drive(id: 'a', name: 'Photos')]);
 
     /// Which layout the rows are actually in, read off the geometry.
+    ///
+    /// By the size, which both column layouts keep (the three-column one
+    /// drops the file count): beside the name in a row of columns, on a line
+    /// under it in a stacked card.
     bool rowsAreStacked(WidgetTester tester) {
-      final nameX = tester.getTopLeft(find.text('Photos')).dx;
-      // Bare under the table's heading, worded when stacked.
-      final itemsX = tester
-          .getTopLeft(find.byWidgetPredicate(
-              (w) => w is Text && (w.data == '2' || w.data == '2 files')))
-          .dx;
+      final nameY = tester.getCenter(find.text('Photos')).dy;
+      final sizeY = tester.getCenter(find.text(filesize(100))).dy;
 
-      return itemsX < nameX;
+      return sizeY - nameY > 4;
     }
 
     /// The whole band the two used to disagree across, not the two widths
@@ -367,7 +368,7 @@ void main() {
     /// on its own - inside 16px of padding either side - so between them a
     /// table header sat over a column of cards. That band was reachable at an
     /// ordinary desktop window size.
-    for (var width = 640.0; width <= 1000.0; width += 20) {
+    for (final width in [560.0, 600.0, 620.0, 627.0, 628.0, 640.0, 700.0, 760.0, 820.0, 847.0, 848.0, 900.0, 1000.0]) {
       testWidgets('at ${width.toInt()}px they are the same layout',
           (tester) async {
         await pumpBody(tester, oneDrive, width: width);
