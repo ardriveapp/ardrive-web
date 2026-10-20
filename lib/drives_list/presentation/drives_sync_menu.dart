@@ -351,7 +351,6 @@ class _SplitButtonState extends State<_SplitButton> {
             duration: _fade,
             curve: Curves.easeOut,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            alignment: Alignment.center,
             decoration: BoxDecoration(
               color: _fill(
                 tokens,
@@ -360,22 +359,27 @@ class _SplitButtonState extends State<_SplitButton> {
                 pressed: _primaryPressed,
               ),
             ),
-            // The label changes length with the selection; the width follows
-            // it rather than jumping.
-            child: AnimatedSize(
-              duration: _fade,
-              curve: Curves.easeOut,
-              alignment: Alignment.centerRight,
-              child: Text(
-                widget.primaryLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: widget.labelStyle.copyWith(
-                  color: widget.emphasis
-                      ? tokens.textOnPrimary
-                      : primaryEnabled
-                          ? tokens.textHigh
-                          : tokens.textLow,
+            // As wide as its label and no wider: given more room, a centred
+            // box would fill it, and the button would become a slab. The
+            // label changes length with the selection; the width follows it
+            // rather than jumping.
+            child: Align(
+              widthFactor: 1,
+              child: AnimatedSize(
+                duration: _fade,
+                curve: Curves.easeOut,
+                alignment: Alignment.centerRight,
+                child: Text(
+                  widget.primaryLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: widget.labelStyle.copyWith(
+                    color: widget.emphasis
+                        ? tokens.textOnPrimary
+                        : primaryEnabled
+                            ? tokens.textHigh
+                            : tokens.textLow,
+                  ),
                 ),
               ),
             ),
@@ -400,7 +404,6 @@ class _SplitButtonState extends State<_SplitButton> {
           duration: _fade,
           curve: Curves.easeOut,
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: _fill(
               tokens,
@@ -409,9 +412,12 @@ class _SplitButtonState extends State<_SplitButton> {
               pressed: _morePressed,
             ),
           ),
-          child: ArDriveIcons.chevronDown(
-            size: 16,
-            color: widget.emphasis ? tokens.textOnPrimary : tokens.textMid,
+          child: Align(
+            widthFactor: 1,
+            child: ArDriveIcons.chevronDown(
+              size: 16,
+              color: widget.emphasis ? tokens.textOnPrimary : tokens.textMid,
+            ),
           ),
         ),
       ),

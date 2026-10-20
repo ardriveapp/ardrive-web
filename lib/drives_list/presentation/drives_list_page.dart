@@ -902,37 +902,49 @@ class _DrivesListLoadedView extends StatelessWidget {
           color: selecting ? tint : tint.withOpacity(0),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: _selectionFade,
-                layoutBuilder: (current, previous) => Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [...previous, if (current != null) current],
-                ),
-                child: selecting
-                    ? _SelectionHeading(
-                        key: const ValueKey('selecting'),
-                        count: state.selected.length,
-                        onClear: onClearSelection!,
-                      )
-                    : Text(
-                        appLocalizationsOf(context).yourDrives,
-                        key: const ValueKey('title'),
-                        style: typography.heading3(
-                          color: colorTokens.textHigh,
-                          fontWeight: ArFontWeight.bold,
+        child: LayoutBuilder(
+          builder: (context, constraints) => Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: _selectionFade,
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [...previous, if (current != null) current],
+                  ),
+                  child: selecting
+                      ? _SelectionHeading(
+                          key: const ValueKey('selecting'),
+                          count: state.selected.length,
+                          onClear: onClearSelection!,
+                        )
+                      : Text(
+                          appLocalizationsOf(context).yourDrives,
+                          key: const ValueKey('title'),
+                          style: typography.heading3(
+                            color: colorTokens.textHigh,
+                            fontWeight: ArFontWeight.bold,
+                          ),
                         ),
-                      ),
+                ),
               ),
-            ),
-            if (syncMenu != null) ...[
-              const SizedBox(width: 16),
-              syncMenu!,
+              if (syncMenu != null) ...[
+                const SizedBox(width: 16),
+                // Its own width, capped at half the row, so on a narrow screen
+                // its label is cut short rather than pushed off the edge: a row
+                // hands a child unlimited width, and at 320px and twice the text
+                // size "Sync all drives" ran 197px off the screen. A cap rather
+                // than a Flexible, which would split the free space with the
+                // title and leave the button short of the right edge.
+                ConstrainedBox(
+                  constraints:
+                      BoxConstraints(maxWidth: constraints.maxWidth / 2),
+                  child: syncMenu!,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

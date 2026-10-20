@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
+import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
 import 'package:ardrive/drives_list/presentation/drives_sync_menu.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -95,7 +96,12 @@ void main() {
 
   tearDown(() async => states.close());
 
-  Widget host({double textScale = 1, DrivesListCubit? drivesList}) => Portal(
+  Widget host({
+    double textScale = 1,
+    DrivesListCubit? drivesList,
+    Widget? child,
+  }) =>
+      Portal(
         child: ArDriveTheme(
           themeData: lightTheme(),
           child: MaterialApp(
@@ -124,10 +130,11 @@ void main() {
                     if (drivesList != null)
                       BlocProvider<DrivesListCubit>.value(value: drivesList),
                   ],
-                  child: const Align(
-                    alignment: Alignment.topRight,
-                    child: DrivesSyncMenu(),
-                  ),
+                  child: child ??
+                      const Align(
+                        alignment: Alignment.topRight,
+                        child: DrivesSyncMenu(),
+                      ),
                 ),
               ),
             ),
@@ -440,6 +447,60 @@ void main() {
             trigger: any(named: 'trigger'),
           )).called(1);
     });
+
+    /// Where the page actually puts it: at the end of the heading row, beside
+    /// a title that takes the rest. A row hands a child that is not flexible
+    /// unlimited width, and the main half's label is flexible so it can be
+    /// cut short - which needs a bounded width to be cut short within.
+    for (final (width, scale) in [(1280.0, 1.0), (320.0, 2.0)]) {
+      testWidgets(
+          'sits in the page heading at ${width.toInt()}px and text scale '
+          '$scale', (tester) async {
+        await tester.binding.setSurfaceSize(Size(width, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        listed(walked: false);
+
+        await tester.pumpWidget(host(
+          drivesList: drivesList,
+          textScale: scale,
+          child: DrivesListBody(
+            state: DrivesListLoaded(
+              drives: [item('a', walked: false), item('b', walked: false)],
+            ),
+            onOpenDrive: (_) {},
+            onTryAgain: () {},
+            syncMenu: const DrivesSyncMenu(),
+          ),
+        ));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(tester.takeException(), isNull);
+        // The heading's tinted container: the outermost animated container
+        // around the button.
+        final heading = tester.getRect(find
+            .ancestor(
+              of: find.byKey(DrivesSyncMenu.moreKey),
+              matching: find.byType(AnimatedContainer),
+            )
+            .last);
+        final chevron = tester.getRect(find.byKey(DrivesSyncMenu.moreKey));
+
+        expect(chevron.right, lessThanOrEqualTo(width),
+            reason: 'the chevron is on screen, so the button fits the row');
+        expect(
+            chevron.right, moreOrLessEquals(heading.right - 16 - 1, epsilon: 1),
+            reason: 'the button ends where the heading does, inside its '
+                'padding, however much room the title leaves it');
+        // On a wide screen there is room to spare, and a box that filled it
+        // would be a slab across the heading; it stays the width of its
+        // label. On a phone it is capped at half the row instead.
+        expect(
+          tester.getSize(find.byKey(DrivesSyncMenu.primaryKey)).width,
+          width >= 1000 ? lessThan(320) : lessThanOrEqualTo(width / 2),
+          reason: 'as wide as its label, never a slab across the heading',
+        );
+      });
+    }
 
     testWidgets('fits a 320px phone at twice the text size', (tester) async {
       await tester.binding.setSurfaceSize(const Size(320, 640));
