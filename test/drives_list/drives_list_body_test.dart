@@ -3,6 +3,7 @@ import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
+import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -349,15 +350,15 @@ void main() {
     final oneDrive = DrivesListLoaded(drives: [drive(id: 'a', name: 'Photos')]);
 
     /// Which layout the rows are actually in, read off the geometry.
+    ///
+    /// By the size, which both column layouts keep (the three-column one
+    /// drops the file count): beside the name in a row of columns, on a line
+    /// under it in a stacked card.
     bool rowsAreStacked(WidgetTester tester) {
-      final nameX = tester.getTopLeft(find.text('Photos')).dx;
-      // Bare under the table's heading, worded when stacked.
-      final itemsX = tester
-          .getTopLeft(find.byWidgetPredicate(
-              (w) => w is Text && (w.data == '2' || w.data == '2 files')))
-          .dx;
+      final nameY = tester.getCenter(find.text('Photos')).dy;
+      final sizeY = tester.getCenter(find.text(filesize(100))).dy;
 
-      return itemsX < nameX;
+      return sizeY - nameY > 4;
     }
 
     /// The whole band the two used to disagree across, not the two widths

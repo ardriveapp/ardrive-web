@@ -119,9 +119,10 @@ const double _iconSize = 20;
 /// The narrowest a row may be and still be drawn as three columns - name,
 /// last synced and size - at a text scale of 1.
 ///
-/// Only ever used while a drive's details are open beside the list, because
-/// the two columns it drops, files and created, are what that panel shows for
-/// the drive it is about. Derived the same way as [driveListColumnsFrom]: the
+/// Used wherever the five columns do not fit, so a list in a mid-width window
+/// keeps its checkboxes, headings and sorting rather than turning into
+/// cards. The two columns it drops, files and created, are what a drive's
+/// details show. Derived the same way as [driveListColumnsFrom]: the
 /// last synced column keeps its [driveListSyncColumnMinimum], now as four of
 /// twelve shares rather than four of seventeen.
 const double driveListCompactColumnsFrom = 540;
@@ -139,11 +140,12 @@ bool driveListShowsCompactColumns(
 /// Whether a drive's details, [panelWidth] wide, push a list that has
 /// [width] to itself, or cover its right side instead.
 ///
-/// They push, as the explorer's do, while the list can keep its rows as rows:
-/// it has columns now, and still has at least the three beside the panel.
-/// Otherwise they cover. Pushing a list of cards, or pushing a list of rows
-/// into cards, changes how tall every row is, and every row would move under
-/// the pointer between the two clicks of a double-click.
+/// They push, as the explorer's do, while the list keeps at least the three
+/// columns beside the panel. Otherwise they cover. Pushing a list of cards,
+/// or pushing a list of rows into cards, changes how tall every row is, and
+/// every row would move under the pointer between the two clicks of a
+/// double-click. A list that has three columns beside the panel had at least
+/// three without it, so only the narrower width is measured.
 ///
 /// The list caps its own width at [driveListMaxContentWidth], so that is the
 /// width it measures, as it does itself.
@@ -152,16 +154,10 @@ bool driveDetailsPushList({
   required double panelWidth,
   double textScale = 1,
 }) {
-  bool keepsRows(double available, {required bool compact}) {
-    final listWidth = math.min(available, driveListMaxContentWidth);
+  final listWidth = math.min(width - panelWidth, driveListMaxContentWidth);
 
-    return driveListShowsColumns(listWidth, textScale: textScale) ||
-        (compact &&
-            driveListShowsCompactColumns(listWidth, textScale: textScale));
-  }
-
-  return keepsRows(width, compact: false) &&
-      keepsRows(width - panelWidth, compact: true);
+  return driveListShowsColumns(listWidth, textScale: textScale) ||
+      driveListShowsCompactColumns(listWidth, textScale: textScale);
 }
 
 /// The share of a wide row each column gets.
