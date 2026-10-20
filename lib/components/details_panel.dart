@@ -209,6 +209,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
             driveId: widget.item.driveId,
             maybeSelectedItem: widget.item,
             driveDao: context.read<DriveDao>(),
+            arweave: context.read<ArweaveService>(),
+            profileCubit: context.read<ProfileCubit>(),
           ),
           child: BlocBuilder<FsEntryActivityCubit, FsEntryActivityState>(
             builder: (context, state) {
@@ -626,27 +628,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       ),
       if (onSync != null) ...[
         const SizedBox(height: 16),
-        // Offered, never done for the reader: opening a drive's details is
-        // not asking for it to sync. One sync at a time, so it waits out a
-        // running one - the same rule as the drive's own card.
-        Builder(
-          builder: (context) {
-            final isSyncing =
-                context.watch<SyncCubit>().state is SyncInProgress;
-
-            return Align(
-              alignment: Alignment.centerLeft,
-              child: ArDriveButtonNew(
-                text: appLocalizationsOf(context).syncThisDrive,
-                typography: typography,
-                variant: ButtonVariant.primary,
-                maxWidth: 160,
-                isDisabled: isSyncing,
-                onPressed: isSyncing ? null : onSync,
-              ),
-            );
-          },
-        ),
+        _syncThisDriveButton(onSync),
       ],
     ];
   }
@@ -843,31 +825,17 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 version: versions[index],
               );
             } else if (revision is DriveRevisionWithTransaction) {
-              switch (revision.action) {
-                case RevisionAction.create:
-                  title = appLocalizationsOf(context)
-                      .driveWasCreatedWithName(revision.name);
-                  break;
-                case RevisionAction.rename:
-                  title = appLocalizationsOf(context)
-                      .driveWasRenamed(revision.name);
-                  break;
-                case RevisionAction.hide:
-                  title = appLocalizationsOf(context).driveWasHidden;
-                  break;
-                case RevisionAction.unhide:
-                  title = appLocalizationsOf(context).driveWasUnhidden;
-                  break;
-                default:
-                  title = appLocalizationsOf(context).driveWasModified;
-              }
-
-              subtitle = formatDateTime(revision.dateCreated);
-
-              return DetailsPanelItem(
-                itemSubtitle: subtitle,
-                itemTitle: title,
-                expandLeading: false,
+              return _driveActivityItem(
+                action: revision.action,
+                name: revision.name,
+                date: revision.dateCreated,
+              );
+            } else if (revision is DriveRevisionsCompanion) {
+              // Read from the network for a drive not synced here.
+              return _driveActivityItem(
+                action: revision.action.value,
+                name: revision.name.value,
+                date: revision.dateCreated.value,
               );
             }
 
@@ -875,6 +843,24 @@ class _DetailsPanelState extends State<DetailsPanel> {
           },
         );
       }
+    }
+
+    if (state is FsEntryActivityDriveNotSynced) {
+      return ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+        children: [
+          Text(
+            appLocalizationsOf(context).driveActivityNeedsSync,
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+            ),
+          ),
+          if (widget.onSync != null) ...[
+            const SizedBox(height: 16),
+            _syncThisDriveButton(widget.onSync!),
+          ],
+        ],
+      );
     }
 
     // Said, the way the details tab says it: this used to read "Loading..."
@@ -896,6 +882,59 @@ class _DetailsPanelState extends State<DetailsPanel> {
     }
 
     return const Center(child: CircularProgressIndicator());
+  }
+
+  Widget _driveActivityItem({
+    required String action,
+    required String name,
+    required DateTime date,
+  }) {
+    final String title;
+    switch (action) {
+      case RevisionAction.create:
+        title = appLocalizationsOf(context).driveWasCreatedWithName(name);
+        break;
+      case RevisionAction.rename:
+        title = appLocalizationsOf(context).driveWasRenamed(name);
+        break;
+      case RevisionAction.hide:
+        title = appLocalizationsOf(context).driveWasHidden;
+        break;
+      case RevisionAction.unhide:
+        title = appLocalizationsOf(context).driveWasUnhidden;
+        break;
+      default:
+        title = appLocalizationsOf(context).driveWasModified;
+    }
+
+    return DetailsPanelItem(
+      itemSubtitle: formatDateTime(date),
+      itemTitle: title,
+      expandLeading: false,
+    );
+  }
+
+  /// Offered, never done for the reader: opening a drive's details is not
+  /// asking for it to sync. One sync at a time, so it waits out a running
+  /// one - the same rule as the drive's own card.
+  Widget _syncThisDriveButton(VoidCallback onSync) {
+    return Builder(
+      builder: (context) {
+        final isSyncing = context.watch<SyncCubit>().state is SyncInProgress;
+
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: ArDriveButtonNew(
+            text: appLocalizationsOf(context).syncThisDrive,
+            typography: ArDriveTypographyNew.of(context),
+            variant: ButtonVariant.primary,
+            maxWidth: 160,
+            isDisabled: isSyncing,
+            onPressed: isSyncing ? null : onSync,
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildFileActivity(

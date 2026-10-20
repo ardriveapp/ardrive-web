@@ -399,14 +399,21 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       );
 
   /// Adds or updates the user's drives with the provided drive entities.
+  ///
+  /// Each entity is a drive's newest revision, so its time is when the drive
+  /// last changed, not when it was made. [creationTimes], keyed by drive id,
+  /// says when it was made. A drive missing from it keeps the creation date
+  /// it already has, and a new one takes its newest revision's time.
   Future<void> updateUserDrives(
     Map<DriveEntity, DriveKey?> driveEntities,
-    SecretKey? profileKey,
-  ) =>
+    SecretKey? profileKey, {
+    Map<String, DateTime> creationTimes = const {},
+  }) =>
       db.batch(
         (b) async {
           for (final entry in driveEntities.entries) {
             final entity = entry.key;
+            final createdAt = creationTimes[entity.id];
 
             var driveCompanion = DrivesCompanion.insert(
               id: entity.id!,
@@ -414,7 +421,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               ownerAddress: entity.ownerAddress,
               rootFolderId: entity.rootFolderId!,
               privacy: entity.privacy!,
-              dateCreated: Value(entity.createdAt),
+              dateCreated: Value(createdAt ?? entity.createdAt),
               lastUpdated: Value(entity.createdAt),
               isHidden: Value(entity.isHidden ?? false),
               signatureType: Value.absentIfNull(entity.signatureType?.value),
@@ -425,11 +432,19 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
                   driveCompanion, profileKey!, entry.value!);
             }
 
+            // `copyWith(dateCreated: null)` kept the value rather than
+            // dropping it, so every pass wrote the newest revision's time over
+            // the creation date. Absent leaves the stored one alone; a known
+            // creation time replaces it, which also repairs a drive that pass
+            // got wrong.
+            final onConflict = createdAt == null
+                ? driveCompanion.copyWith(dateCreated: const Value.absent())
+                : driveCompanion;
+
             b.insert(
               drives,
               driveCompanion,
-              onConflict: DoUpdate(
-                  (dynamic _) => driveCompanion.copyWith(dateCreated: null)),
+              onConflict: DoUpdate((dynamic _) => onConflict),
             );
 
             b.insert(
@@ -482,9 +497,14 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     // exactly the drive-without-a-root-folder state this placeholder exists to
     // rule out. `updateUserDrives` gets this for free from `db.batch`.
     await db.transaction(() async {
+      // Absent, not null: `copyWith(dateCreated: null)` keeps the value, and
+      // [entity] is the drive's newest revision, so a re-attach wrote the
+      // rename's date over the creation date.
       await into(drives).insert(
         companion,
-        onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
+        onConflict: DoUpdate(
+          (_) => companion.copyWith(dateCreated: const Value.absent()),
+        ),
       );
 
       await into(folderEntries).insert(

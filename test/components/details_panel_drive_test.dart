@@ -1,6 +1,7 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
@@ -37,6 +38,7 @@ void main() {
   late MockArDriveAuth auth;
   late int closed;
   late int synced;
+  late MockArweaveService networkReads;
 
   setUp(() async {
     db = getTestDb();
@@ -106,7 +108,11 @@ void main() {
         );
   }
 
-  Future<void> pumpPanel(WidgetTester tester, {bool withSync = true}) async {
+  Future<void> pumpPanel(
+    WidgetTester tester, {
+    bool withSync = true,
+    Future<List<DriveEntity>?> Function()? networkHistory,
+  }) async {
     await tester.binding.setSurfaceSize(const Size(1400, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     // What `MediaQuery` reports, which is what picks the panel's desktop
@@ -124,6 +130,15 @@ void main() {
         ownerAddress: any(named: 'ownerAddress'),
       ),
     ).thenAnswer((_) => const Stream.empty());
+    when(
+      () => arweave.getDriveEntityRevisions(
+        any(),
+        ownerAddress: any(named: 'ownerAddress'),
+        driveKey: any(named: 'driveKey'),
+          isCancelled: any(named: 'isCancelled'),
+      ),
+    ).thenAnswer((_) => networkHistory?.call() ?? Future.value(null));
+    networkReads = arweave;
 
     // On the real clock: the panel's cubits read the database, and that work
     // never finishes on the test's fake one - nor does closing it afterwards.
@@ -192,6 +207,35 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
       });
 
+  /// Opens the Activity tab and lets its read finish, on the real clock.
+  ///
+  /// The tab's contents, and the cubit that reads its history, are built only
+  /// once the tab is switched to. Built on the fake clock, its database reads
+  /// never finish, and neither does closing them.
+  Future<void> openActivity(WidgetTester tester) async {
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Activity'));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+    });
+    await tester.pump();
+  }
+
+  DriveEntity revision(String name, DateTime at, {bool isHidden = false}) =>
+      DriveEntity(
+        id: driveId,
+        name: name,
+        rootFolderId: rootFolderId,
+        privacy: DrivePrivacyTag.public,
+        authMode: DriveAuthModeTag.none,
+        isHidden: isHidden,
+      )
+        ..ownerAddress = fakeUserJson.walletAddress
+        ..txId = 'tx-$name-${at.millisecondsSinceEpoch}'
+        ..createdAt = at;
+
   Finder toolbarAction(String tooltip) => find.byWidgetPredicate(
         (w) => w is ArDriveIconButton && w.tooltip == tooltip,
       );
@@ -259,6 +303,120 @@ void main() {
     expect(toolbarAction('Download'), findsNothing);
 
     await takeDown(tester);
+  });
+
+  /// The tab waited on history only a sync stores, and said "Loading..." for
+  /// good. It reads the drive's own history from the network instead.
+  group('the activity of a drive never synced', () {
+    /// Runs [body] on the panel's Activity tab, and takes the panel down on
+    /// the real clock even when [body] fails: left to the framework, closing
+    /// its database streams never finishes and the run hangs.
+    Future<void> onActivity(
+      WidgetTester tester,
+      Future<void> Function() body, {
+      bool withSync = true,
+      Future<List<DriveEntity>?> Function()? networkHistory,
+    }) async {
+      await pumpPanel(
+        tester,
+        withSync: withSync,
+        networkHistory: networkHistory,
+      );
+      try {
+        await openActivity(tester);
+        await body();
+      } finally {
+        await takeDown(tester);
+      }
+    }
+
+    testWidgets('lists its history from the network, newest first',
+        (tester) async {
+      await onActivity(
+        tester,
+        networkHistory: () async => [
+          revision('Photos', DateTime(2025, 1, 1)),
+          revision('Pics', DateTime(2025, 6, 1)),
+        ],
+        () async {
+          final renamed = find.text('This drive was renamed to Pics.');
+          final created =
+              find.text('This drive was created with the name Photos.');
+          expect(renamed, findsOneWidget);
+          expect(created, findsOneWidget);
+          expect(
+            tester.getTopLeft(renamed).dy,
+            lessThan(tester.getTopLeft(created).dy),
+          );
+          expect(find.text('No activity recorded yet.'), findsNothing);
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+    });
+
+    testWidgets('says to sync it when the history cannot be read',
+        (tester) async {
+      await onActivity(tester, networkHistory: () async => null, () async {
+        expect(
+          find.text('Sync this drive to see its activity.'),
+          findsOneWidget,
+        );
+        expect(find.text('No activity recorded yet.'), findsNothing);
+
+        // The same offer as the details tab, and it is the drive's own sync.
+        final syncs = find.text('Sync this drive');
+        expect(syncs, findsOneWidget);
+        await tester.tap(syncs);
+        await tester.pump();
+        expect(synced, 1);
+      });
+    });
+
+    testWidgets('offers no sync where there is none to offer', (tester) async {
+      await onActivity(
+        tester,
+        withSync: false,
+        networkHistory: () async => null,
+        () async {
+          expect(
+            find.text('Sync this drive to see its activity.'),
+            findsOneWidget,
+          );
+          expect(find.text('Sync this drive'), findsNothing);
+        },
+      );
+    });
+
+    testWidgets('a synced drive shows its own history and reads nothing',
+        (tester) async {
+      await tester.runAsync(() async {
+        await markDriveRead();
+        // What the activity joins each revision to.
+        await db.into(db.networkTransactions).insert(
+              NetworkTransactionsCompanion.insert(id: 'drive-tx'),
+            );
+      });
+
+      await onActivity(
+        tester,
+        networkHistory: () async => [revision('Other', DateTime(2020))],
+        () async {
+          expect(
+            find.text('This drive was created with the name Photos.'),
+            findsOneWidget,
+          );
+          expect(find.textContaining('Other'), findsNothing);
+          verifyNever(
+            () => networkReads.getDriveEntityRevisions(
+              any(),
+              ownerAddress: any(named: 'ownerAddress'),
+              driveKey: any(named: 'driveKey'),
+          isCancelled: any(named: 'isCancelled'),
+            ),
+          );
+        },
+      );
+    });
   });
 
   /// The test above is one end of the rule. The read that decides it is a

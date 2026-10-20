@@ -67,3 +67,34 @@ extension DriveEntityExtensions on DriveEntity {
     return null;
   }
 }
+
+/// The revisions a drive's entities make, oldest entity first, as sync would
+/// record them from an empty history: the first is the creation, and each one
+/// after it is a rename, hide or unhide of the one before. An entity that
+/// changes none of those makes no revision.
+///
+/// The same rule `_addNewDriveEntityRevisions` in the sync repository
+/// applies, for a history that is shown and never stored.
+List<DriveRevisionsCompanion> driveRevisionsFromEntities(
+  Iterable<DriveEntity> entities,
+) {
+  final revisions = <DriveRevisionsCompanion>[];
+  DriveRevisionsCompanion? latest;
+
+  for (final entity in entities) {
+    final action = entity.getPerformedRevisionAction(latest);
+    if (action == null) {
+      continue;
+    }
+
+    final revision = entity.toRevisionCompanion(performedAction: action);
+    if (revision.action.value.isEmpty) {
+      continue;
+    }
+
+    revisions.add(revision);
+    latest = revision;
+  }
+
+  return revisions;
+}
