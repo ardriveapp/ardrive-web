@@ -947,7 +947,11 @@
   },
   "activityNoneRecorded": "No activity recorded yet.",
   "@activityNoneRecorded": {
-    "description": "In the details panel's Activity tab, when this device has no history for the item, such as a drive that has never been synced here."
+    "description": "In the details panel's Activity tab, when this device has no history for a file or folder. A drive with none reads its history from the network instead, and says driveActivityNeedsSync when it cannot."
+  },
+  "driveActivityNeedsSync": "Sync this drive to see its activity.",
+  "@driveActivityNeedsSync": {
+    "description": "The activity tab of a drive not synced on this device, when its history could not be read from the network either. A Sync this drive button follows it"
   },
   "driveSyncFailed": "Last sync failed",
   "@driveSyncFailed": {

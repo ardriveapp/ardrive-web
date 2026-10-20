@@ -356,6 +356,93 @@ void main() {
       expect(rootFolder!.name, equals(driveName));
     });
   });
+
+  /// The drive list reads each drive's newest revision, so the time on it is
+  /// when the drive last changed. "Date created" showed that: a renamed drive
+  /// was dated from the rename.
+  group('DriveDao drive creation date', () {
+    const driveId = 'dated-drive-id';
+    final created = DateTime(2025, 1, 1);
+    final renamed = DateTime(2026, 3, 1);
+    final hidden = DateTime(2026, 9, 1);
+
+    DriveEntity newest({required DateTime at, String name = 'Pics'}) =>
+        DriveEntity(
+          id: driveId,
+          name: name,
+          rootFolderId: 'dated-root-id',
+          privacy: DrivePrivacyTag.public,
+          authMode: DriveAuthModeTag.none,
+        )
+          ..ownerAddress = 'owner-address'
+          ..createdAt = at;
+
+    Future<Drive> stored() => driveDao.driveById(driveId: driveId).getSingle();
+
+    setUp(() {
+      db = getTestDb();
+      driveDao = db.driveDao;
+    });
+
+    tearDown(() => db.close());
+
+    test('dates a drive from its creation, not its newest revision', () async {
+      await driveDao.updateUserDrives(
+        {newest(at: renamed): null},
+        null,
+        creationTimes: {driveId: created},
+      );
+
+      final drive = await stored();
+      expect(drive.dateCreated, created);
+      expect(drive.lastUpdated, renamed);
+    });
+
+    test('keeps the creation date when a later pass does not know it',
+        () async {
+      await driveDao.updateUserDrives(
+        {newest(at: renamed): null},
+        null,
+        creationTimes: {driveId: created},
+      );
+
+      await driveDao.updateUserDrives({newest(at: hidden): null}, null);
+
+      final drive = await stored();
+      expect(drive.dateCreated, created);
+      expect(drive.lastUpdated, hidden);
+    });
+
+    /// Drives already stored carry the newest revision's date. The next time
+    /// the drive list is read they are put right.
+    test('repairs a creation date an earlier pass got wrong', () async {
+      await driveDao.updateUserDrives({newest(at: renamed): null}, null);
+      expect((await stored()).dateCreated, renamed);
+
+      await driveDao.updateUserDrives(
+        {newest(at: renamed): null},
+        null,
+        creationTimes: {driveId: created},
+      );
+
+      expect((await stored()).dateCreated, created);
+    });
+
+    test('a re-attach keeps the creation date', () async {
+      await driveDao.updateUserDrives(
+        {newest(at: renamed): null},
+        null,
+        creationTimes: {driveId: created},
+      );
+
+      await driveDao.writeDriveEntity(
+        name: 'Pics',
+        entity: newest(at: hidden),
+      );
+
+      expect((await stored()).dateCreated, created);
+    });
+  });
 }
 
 /// Expected entity IDs and paths from mocked DB setup

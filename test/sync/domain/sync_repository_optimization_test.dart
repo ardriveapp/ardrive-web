@@ -330,6 +330,32 @@ void main() {
   });
 
   group('Fix 2: updateUserDrives cache', () {
+    setUp(() {
+      when(() => mockArweave.getUserDriveCreationTimes(any()))
+          .thenAnswer((_) async => {});
+    });
+
+    /// The drive list's own listing says when each drive was made; the
+    /// entities it hands over only say when each last changed.
+    test('passes each drive\'s creation time to the database', () async {
+      final createdAt = DateTime(2025, 1, 1);
+      when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
+          .thenAnswer((_) async => {});
+      when(() => mockArweave.getUserDriveCreationTimes(ownerAddress))
+          .thenAnswer((_) async => {'drive-id': createdAt});
+      when(() => mockDriveDao.updateUserDrives(any(), any(),
+          creationTimes: any(named: 'creationTimes'))).thenAnswer((_) async {});
+
+      await syncRepository.updateUserDrives(
+        wallet: mockWallet,
+        password: 'pass',
+        cipherKey: SecretKey([1, 2, 3]),
+      );
+
+      verify(() => mockDriveDao.updateUserDrives(any(), any(),
+          creationTimes: {'drive-id': createdAt})).called(1);
+    });
+
     test('two callers that overlap share one fetch', () async {
       final gate = Completer<void>();
       when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
@@ -337,7 +363,8 @@ void main() {
         await gate.future;
         return {};
       });
-      when(() => mockDriveDao.updateUserDrives(any(), any()))
+      when(() => mockDriveDao.updateUserDrives(any(), any(),
+          creationTimes: any(named: 'creationTimes')))
           .thenAnswer((_) async {});
 
       final first = syncRepository.updateUserDrives(
@@ -366,7 +393,8 @@ void main() {
       // nothing short of a page reload to recover it.
       when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
           .thenAnswer((_) async => {});
-      when(() => mockDriveDao.updateUserDrives(any(), any()))
+      when(() => mockDriveDao.updateUserDrives(any(), any(),
+          creationTimes: any(named: 'creationTimes')))
           .thenAnswer((_) async {});
 
       await syncRepository.updateUserDrives(
@@ -394,7 +422,8 @@ void main() {
         if (calls == 1) throw Exception('gateway down');
         return {};
       });
-      when(() => mockDriveDao.updateUserDrives(any(), any()))
+      when(() => mockDriveDao.updateUserDrives(any(), any(),
+          creationTimes: any(named: 'creationTimes')))
           .thenAnswer((_) async {});
 
       await expectLater(
@@ -420,7 +449,8 @@ void main() {
             any(),
             any(),
           )).thenAnswer((_) async => {});
-      when(() => mockDriveDao.updateUserDrives(any(), any()))
+      when(() => mockDriveDao.updateUserDrives(any(), any(),
+          creationTimes: any(named: 'creationTimes')))
           .thenAnswer((_) async {});
 
       // First call

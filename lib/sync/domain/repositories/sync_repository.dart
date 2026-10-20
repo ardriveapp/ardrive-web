@@ -2109,7 +2109,15 @@ class _SyncRepository implements SyncRepository {
       onDriveUnlocked: onDriveUnlocked,
     );
 
-    await _driveDao.updateUserDrives(userDriveEntities, cipherKey);
+    // Read from the listing the call above just made, so no extra request.
+    final creationTimes =
+        await _arweave.getUserDriveCreationTimes(await wallet.getAddress());
+
+    await _driveDao.updateUserDrives(
+      userDriveEntities,
+      cipherKey,
+      creationTimes: creationTimes,
+    );
   }
 
   @override

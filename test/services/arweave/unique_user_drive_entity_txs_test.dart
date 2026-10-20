@@ -233,4 +233,90 @@ void main() {
       );
     }
   });
+
+  /// The same listing has each drive's whole history, so it also says when
+  /// the drive was made: its oldest transaction, by the same order.
+  group('creation times', () {
+    Future<Map<String, DateTime>> timesFor(List<List<_Tx>> pages) =>
+        serviceWith(pages).getUserDriveCreationTimes(owner);
+
+    DateTime at(int unixTime) =>
+        DateTime.fromMillisecondsSinceEpoch(unixTime * 1000);
+
+    test('are the oldest transaction, in any order and across pages', () async {
+      final orders = [
+        [
+          [secondRename, firstRename, hide, create],
+        ],
+        [
+          [create, hide],
+          [firstRename, secondRename],
+        ],
+        [
+          [hide],
+          [secondRename],
+          [create, firstRename],
+        ],
+      ];
+
+      for (final pages in orders) {
+        expect(
+          await timesFor(pages),
+          {driveId: at(1791778064)},
+          reason: 'pages: $pages',
+        );
+      }
+    });
+
+    test('a lower block is older than an earlier Unix-Time in a higher one',
+        () async {
+      final earlierClock =
+          driveTx('earlier-clock', height: block + 1, unixTime: 1);
+
+      expect(
+        await timesFor([
+          [earlierClock, create],
+        ]),
+        {driveId: at(1791778064)},
+      );
+    });
+
+    test('are kept per drive', () async {
+      final other =
+          driveTx('other', height: block, unixTime: 1700000000, drive: 'd2');
+
+      expect(
+        await timesFor([
+          [hide, other, create],
+        ]),
+        {driveId: at(1791778064), 'd2': at(1700000000)},
+      );
+    });
+
+    /// No date rather than 1970: the stored one is kept instead.
+    test('leave out a drive whose oldest has no usable Unix-Time', () async {
+      final bad = driveTx('bad', height: block - 1, unixTime: 0);
+      bad.tags.removeWhere((t) => t.name == EntityTag.unixTime);
+
+      expect(
+        await timesFor([
+          [hide, bad],
+        ]),
+        isEmpty,
+      );
+    });
+
+    test('cost no request once the listing is cached', () async {
+      final service = serviceWith([
+        [hide, create],
+      ]);
+
+      await service.getUniqueUserDriveEntityTxs(owner);
+      // A second request would run off the end of the one page given.
+      expect(
+        await service.getUserDriveCreationTimes(owner),
+        {driveId: at(1791778064)},
+      );
+    });
+  });
 }

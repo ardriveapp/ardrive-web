@@ -19,3 +19,7 @@ class FsEntryActivitySuccess<T> extends FsEntryActivityState {
 }
 
 class FsEntryActivityFailure extends FsEntryActivityState {}
+
+/// A drive with no history on this device whose history could not be read
+/// from the network either, so the only way to see it is to sync it.
+class FsEntryActivityDriveNotSynced extends FsEntryActivityState {}

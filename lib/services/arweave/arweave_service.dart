@@ -171,6 +171,11 @@ class ArweaveService {
   String? _cachedUserDriveTxsAddress;
   List<TransactionCommonMixin>? _cachedUserDriveTxs;
 
+  /// When each of the cached user's drives was created: the commit time of
+  /// its oldest drive transaction, keyed by drive id. Filled and cleared with
+  /// [_cachedUserDriveTxs]. See [getUserDriveCreationTimes].
+  Map<String, DateTime>? _cachedUserDriveCreationTimes;
+
   /// Cache for raw entity data bytes fetched during [getUniqueUserDriveEntities].
   /// Keyed by transaction ID. Allows [getLatestDriveEntityWithId] to re-parse
   /// the data with a different key without re-downloading from the gateway.
@@ -190,6 +195,7 @@ class ArweaveService {
   void clearUserDriveTxsCache() {
     _cachedUserDriveTxsAddress = null;
     _cachedUserDriveTxs = null;
+    _cachedUserDriveCreationTimes = null;
     _cachedEntityDataBytes.clear();
   }
 
@@ -1047,6 +1053,126 @@ class ArweaveService {
     return data.bodyBytes;
   }
 
+  /// The most drive revisions [getDriveEntityRevisions] will read: ten pages
+  /// of the history query. A drive is renamed or hidden a handful of times,
+  /// so this is never reached by a real one; it bounds what a tab opening
+  /// can cost.
+  static const maxDriveRevisionsRead = 1000;
+
+  /// Every revision of a drive's own entity, oldest first: its creation and
+  /// each rename, hide and unhide, without its folders or files.
+  ///
+  /// For showing the history of a drive that has not been synced on this
+  /// device. It only reads: nothing is stored, so a later sync starts from
+  /// exactly where it would have.
+  ///
+  /// Ordered as sync orders them, by block height, pending last, then by
+  /// commit time inside a block. A revision that does not parse, or whose
+  /// owner is not [ownerAddress], is left out, as sync leaves it out.
+  ///
+  /// `null` when the history could not be read in full: the query failed,
+  /// a revision's metadata could not be fetched, or there are more than
+  /// [maxDriveRevisionsRead]. Partial history is not returned, because a
+  /// missing first revision would make the next one read as the creation.
+  Future<List<DriveEntity>?> getDriveEntityRevisions(
+    String driveId, {
+    required String ownerAddress,
+    SecretKey? driveKey,
+  }) async {
+    final txs = <TransactionCommonMixin>[];
+
+    try {
+      String? cursor;
+      while (true) {
+        final result = await graphQLRetry.execute(
+          DriveEntityHistoryQuery(
+            variables: DriveEntityHistoryArguments(
+              driveId: driveId,
+              ownerAddress: ownerAddress,
+              entityType: EntityTypeTag.drive,
+              after: cursor,
+            ),
+          ),
+        );
+
+        final data = result.data;
+        if (data == null) {
+          return null;
+        }
+
+        final edges = data.transactions.edges;
+        txs.addAll(
+          edges.map((e) => e.node).where(
+                (tx) => doesTagsContainValidArFSVersion(
+                  tx.tags.map((t) => Tag(t.name, t.value)).toList(),
+                ),
+              ),
+        );
+
+        if (txs.length > maxDriveRevisionsRead) {
+          return null;
+        }
+
+        if (!data.transactions.pageInfo.hasNextPage || edges.isEmpty) {
+          break;
+        }
+        cursor = edges.last.cursor;
+      }
+    } catch (e) {
+      logger.w('Could not read the drive history of $driveId: $e');
+      return null;
+    }
+
+    // A private drive's revision with no IV cannot be decrypted; sync skips
+    // it without a request, and so does this.
+    final readable = driveKey == null
+        ? txs
+        : txs.where((tx) => tx.getTag(EntityTag.cipherIv) != null).toList();
+
+    final ordered = [...readable]..sort((a, b) {
+        if (_isNewerDriveEntityTx(a, than: b)) return 1;
+        if (_isNewerDriveEntityTx(b, than: a)) return -1;
+        return 0;
+      });
+
+    final bodies = List<Uint8List?>.filled(ordered.length, null);
+    await runPooled(
+      concurrency: _configService.config.maxConcurrentDataFetches.clamp(1, 100),
+      itemCount: ordered.length,
+      task: (i) async {
+        try {
+          bodies[i] = await getEntityDataFromNetwork(txId: ordered[i].id);
+        } catch (e) {
+          logger.w('Could not read drive revision ${ordered[i].id}: $e');
+        }
+      },
+      onItemDone: null,
+    );
+
+    if (bodies.contains(null)) {
+      return null;
+    }
+
+    final revisions = <DriveEntity>[];
+    for (var i = 0; i < ordered.length; i++) {
+      try {
+        final entity = await DriveEntity.fromTransaction(
+          ordered[i],
+          _crypto,
+          bodies[i]!,
+          driveKey,
+        );
+        if (entity.ownerAddress == ownerAddress) {
+          revisions.add(entity);
+        }
+      } on EntityTransactionParseException {
+        logger.w('Skipping drive revision ${ordered[i].id}: it does not parse');
+      }
+    }
+
+    return revisions;
+  }
+
   /// Gets the newest drive entity transaction for each of a user's drives.
   ///
   /// One transaction per Drive-Id, across every page. The query sorts
@@ -1071,6 +1197,10 @@ class ArweaveService {
     // Insertion-ordered, and replacing a value keeps its key's place, so the
     // list comes out in the order each drive was first seen.
     final newestByDriveId = <String?, TransactionCommonMixin>{};
+
+    // The other end of each drive's history, for its creation time. The
+    // newest transaction alone gave a renamed drive the rename's date.
+    final oldestByDriveId = <String, TransactionCommonMixin>{};
     String cursor = '';
 
     while (true) {
@@ -1099,6 +1229,13 @@ class ArweaveService {
         if (seen == null || _isNewerDriveEntityTx(tx, than: seen)) {
           newestByDriveId[driveId] = tx;
         }
+
+        if (driveId != null) {
+          final oldest = oldestByDriveId[driveId];
+          if (oldest == null || _isNewerDriveEntityTx(oldest, than: tx)) {
+            oldestByDriveId[driveId] = tx;
+          }
+        }
       }
 
       final hasNextPage =
@@ -1110,11 +1247,37 @@ class ArweaveService {
 
     final drives = newestByDriveId.values.toList();
 
+    final creationTimes = <String, DateTime>{};
+    for (final entry in oldestByDriveId.entries) {
+      final commitTime = _commitTimeOrZero(entry.value);
+      // No usable Unix-Time: no date at all, rather than 1970.
+      if (commitTime > 0) {
+        creationTimes[entry.key] =
+            DateTime.fromMillisecondsSinceEpoch(commitTime);
+      }
+    }
+
     // Cache the result — cleared by clearUserDriveTxsCache()
     _cachedUserDriveTxsAddress = userAddress;
     _cachedUserDriveTxs = drives;
+    _cachedUserDriveCreationTimes = creationTimes;
 
     return drives;
+  }
+
+  /// When each of a user's drives was created, keyed by drive id: the commit
+  /// time of the oldest drive transaction the drive list found for it.
+  ///
+  /// Read from the same listing as [getUniqueUserDriveEntityTxs], which sees
+  /// every drive transaction the wallet signed and keeps only the newest, so
+  /// this costs no request when that listing is cached. A drive missing from
+  /// the map has no creation time worth showing.
+  Future<Map<String, DateTime>> getUserDriveCreationTimes(
+    String userAddress, {
+    int maxRetries = defaultMaxRetries,
+  }) async {
+    await getUniqueUserDriveEntityTxs(userAddress, maxRetries: maxRetries);
+    return _cachedUserDriveCreationTimes ?? const {};
   }
 
   /// Whether [tx] is a later revision of its drive than [than].
