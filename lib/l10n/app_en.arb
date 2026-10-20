@@ -3876,6 +3876,10 @@
   "@theIdProvidedIsNotValid": {
     "description": "Indicates that the ID you typed doesn't follow the ID pattern"
   },
+  "lookingUpThisId": "Looking up this ID...",
+  "@lookingUpThisId": {
+    "description": "Under the New File Pin dialog's ID field, beside a spinner, while the app checks the ID on the network. The field is disabled meanwhile"
+  },
   "theresBeenAProblem": "There's been a problem.",
   "@theresBeenAProblem": {},
   "thinkTwiceBeforeUploading": "Think twice before uploading all your teenage love poetry...",
