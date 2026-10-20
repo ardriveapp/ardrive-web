@@ -141,6 +141,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// one they have left again by the time the linked folder lands.
   StreamSubscription? _readerMovedWatch;
 
+  /// Counts [followLink] calls, so a lookup for an older link that finishes
+  /// after a newer one cannot open its folder over the newer one's.
+  int _followedLinks = 0;
+
   DriveDetailCubit({
     required String driveId,
     String? initialFolderId,
@@ -721,6 +725,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// and [changeDrive] opens the folder when it does.
   Future<void> followLink({required String driveId, String? folderId}) async {
     _forgetLinkedFolder();
+    final link = ++_followedLinks;
 
     final current = state;
     final showingThisDrive = driveId == _driveId &&
@@ -728,9 +733,37 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         current.currentDrive.id == driveId;
 
     if (!showingThisDrive) {
-      if (folderId != null) {
-        _linkedFolder = (driveId: driveId, folderId: folderId);
+      if (folderId == null) {
+        return;
       }
+
+      final linkedFolder = (driveId: driveId, folderId: folderId);
+      _linkedFolder = linkedFolder;
+
+      // Another drive: its changeDrive is still to come and opens the folder.
+      if (driveId != _driveId) {
+        return;
+      }
+
+      // This drive, but not showing a folder: still opening, or waiting for
+      // its root. No changeDrive will come, so wait for the folder here.
+      final drive =
+          await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+
+      // A changeDrive already under way may have taken the folder over.
+      if (isClosed ||
+          link != _followedLinks ||
+          _driveId != driveId ||
+          drive == null ||
+          _linkedFolder != linkedFolder) {
+        return;
+      }
+
+      _openLinkedFolderWhenItLands(
+        driveId: driveId,
+        folderId: folderId,
+        rootFolderId: drive.rootFolderId,
+      );
       return;
     }
 
@@ -744,7 +777,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     final folder =
         await _driveDao.folderById(folderId: targetId).getSingleOrNull();
 
-    if (isClosed || _driveId != driveId) {
+    if (isClosed || link != _followedLinks || _driveId != driveId) {
       return;
     }
 

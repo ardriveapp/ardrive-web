@@ -1173,6 +1173,26 @@ void main() {
       expect(folderInView(cubit), 'subfolder-1');
     });
 
+    test('opens a folder linked while its drive is waiting for its root',
+        () async {
+      // The drive is open but shows no folder yet, so no changeDrive is
+      // coming to pick the folder up.
+      await insertDrive(lastBlockHeight: 0);
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(cubit.state, isA<DriveDetailLoadUnsynced>(),
+          reason: 'precondition: no folder on screen');
+
+      await cubit.followLink(driveId: driveId, folderId: 'subfolder-1');
+
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(folderInView(cubit), 'subfolder-1');
+    });
+
     test('lets go of a folder an earlier link was still waiting for', () async {
       // Two links in a row: the second one is where the reader is going.
       final cubit = await openAtRoot();
