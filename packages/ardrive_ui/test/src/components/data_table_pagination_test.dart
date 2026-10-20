@@ -75,6 +75,9 @@ void main() {
       bool? sizeColumnVisible,
       List<TableColumn>? columns,
       Key? tableKey,
+      int? initialSortColumn,
+      TableSort? initialSortOrder,
+      void Function(int column, TableSort order)? onSortChanged,
     }) async {
       tester.view.physicalSize = Size(width, height);
       tester.view.devicePixelRatio = 1;
@@ -122,6 +125,9 @@ void main() {
                   onChangeMultiSelecting: (_) {},
                   onRowOpen: rowsOpened.add,
                   onScrollOffsetSaved: offsetsSaved.add,
+                  initialSortColumn: initialSortColumn,
+                  initialSortOrder: initialSortOrder,
+                  onSortChanged: onSortChanged,
                   sortRows: (list, column, order) => order == TableSort.asc
                       ? (list.toList()
                         ..sort((a, b) => a.index.compareTo(b.index)))
@@ -535,6 +541,71 @@ void main() {
       await pumpTable(tester, rows: 300, width: 400);
       expect(button('pagination-page-1'), findsNothing);
       expect(range(tester), '1-25 of 300');
+    });
+
+    /// A folder being synced hands the table a longer list on every batch,
+    /// in the order the database returns it. The order the reader chose from
+    /// a column header has to survive that.
+    testWidgets('keeps a header sort when rows are added', (tester) async {
+      List<String> namesInOrder() {
+        final texts = find.textContaining(RegExp(r'^row \d+$'));
+        final found = tester.widgetList<Text>(texts).toList();
+        final ys = [
+          for (var i = 0; i < found.length; i++)
+            tester.getTopLeft(texts.at(i)).dy,
+        ];
+        final order = List.generate(found.length, (i) => i)
+          ..sort((a, b) => ys[a].compareTo(ys[b]));
+        return [for (final i in order) found[i].data!];
+      }
+
+      await pumpTable(tester, rows: 3);
+
+      // Ascending, then descending.
+      await tester.tap(find.text('Name'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Name'));
+      await tester.pumpAndSettle();
+      expect(namesInOrder(), ['row 2', 'row 1', 'row 0']);
+
+      await pumpTable(tester, rows: 4);
+
+      expect(namesInOrder(), ['row 3', 'row 2', 'row 1', 'row 0']);
+    });
+
+    /// The table is rebuilt from scratch after an upload, a rename or a hide.
+    /// It reports the sort the reader picks so the next one can open with it.
+    testWidgets('reports a header sort and opens with one it is given',
+        (tester) async {
+      final sorts = <String>[];
+      await pumpTable(
+        tester,
+        rows: 3,
+        tableKey: const ValueKey('first'),
+        onSortChanged: (column, order) => sorts.add('$column ${order.name}'),
+      );
+
+      await tester.tap(find.text('Name'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Name'));
+      await tester.pumpAndSettle();
+      expect(sorts, ['0 asc', '0 desc']);
+
+      await pumpTable(
+        tester,
+        rows: 4,
+        tableKey: const ValueKey('rebuilt'),
+        initialSortColumn: 0,
+        initialSortOrder: TableSort.desc,
+      );
+
+      final texts = find.textContaining(RegExp(r'^row \d+$'));
+      final ys = {
+        for (final t in tester.widgetList<Text>(texts))
+          t.data!: tester.getTopLeft(find.text(t.data!)).dy,
+      };
+      final order = ys.keys.toList()..sort((a, b) => ys[a]!.compareTo(ys[b]!));
+      expect(order, ['row 3', 'row 2', 'row 1', 'row 0']);
     });
   });
 }

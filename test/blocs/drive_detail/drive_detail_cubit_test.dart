@@ -1864,6 +1864,73 @@ void main() {
       expect(cubit.state, isNot(isA<DriveDetailLoadInProgress>()));
     });
   });
+
+  /// The details panel describes one item. Opening another folder used to
+  /// leave it describing an item from the folder the reader had just left.
+  group('the details panel and a change of folder', () {
+    Future<DriveDetailLoadSuccess> loadedIn(
+      DriveDetailCubit cubit,
+      String folderId,
+    ) async {
+      final state = cubit.state;
+      if (state is DriveDetailLoadSuccess &&
+          state.folderInView.folder.id == folderId) {
+        return state;
+      }
+      return await cubit.stream
+          .where((s) =>
+              s is DriveDetailLoadSuccess &&
+              s.folderInView.folder.id == folderId)
+          .cast<DriveDetailLoadSuccess>()
+          .first
+          .timeout(const Duration(seconds: 5));
+    }
+
+    Future<DriveDetailCubit> withSubfolderSelected() async {
+      await insertDrive(lastBlockHeight: 1);
+      await insertRootFolderRevision();
+      await insertSubfolder('folder-a');
+      await insertSubfolder('folder-b');
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      final atRoot = await loadedIn(cubit, rootFolderId);
+      await cubit.selectDataItem(
+        atRoot.currentFolderContents.firstWhere((i) => i.id == 'folder-a'),
+      );
+      expect((cubit.state as DriveDetailLoadSuccess).showSelectedItemDetails,
+          isTrue);
+
+      return cubit;
+    }
+
+    test('closes when another folder is opened', () async {
+      final cubit = await withSubfolderSelected();
+
+      cubit.openFolder(folderId: 'folder-b');
+      final inB = await loadedIn(cubit, 'folder-b');
+
+      expect(inB.showSelectedItemDetails, isFalse);
+      expect(cubit.selectedItem, isNull);
+    });
+
+    test('stays open when the folder in view is opened again', () async {
+      final cubit = await withSubfolderSelected();
+
+      cubit.sortFolder(contentOrderingMode: OrderingMode.desc);
+      final resorted = await cubit.stream
+          .where((s) =>
+              s is DriveDetailLoadSuccess &&
+              s.contentOrderingMode == OrderingMode.desc)
+          .cast<DriveDetailLoadSuccess>()
+          .first
+          .timeout(const Duration(seconds: 5));
+
+      expect(resorted.showSelectedItemDetails, isTrue);
+      expect(cubit.selectedItem?.id, 'folder-a');
+    });
+  });
 }
 
 /// The state somebody adds after this guard was written.
