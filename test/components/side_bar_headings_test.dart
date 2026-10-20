@@ -274,4 +274,21 @@ void main() {
       verify(() => driveDetailCubit.openFolder()).called(1);
     });
   });
+
+  /// The New button was read as "Show menu New": its tooltip named it as a
+  /// menu, in front of its own word. It is a button called New.
+  testWidgets('a screen reader hears the New button as a button called New',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpSidebar(tester, loggedIn: true);
+
+    final button = find.bySemanticsLabel('New');
+    expect(button, findsOneWidget);
+    final node = tester.getSemantics(button);
+    expect(node, containsSemantics(isButton: true, hasTapAction: true));
+    expect(node.getSemanticsData().tooltip, isEmpty);
+    expect(find.bySemanticsLabel(RegExp('Show menu')), findsNothing);
+
+    semantics.dispose();
+  });
 }

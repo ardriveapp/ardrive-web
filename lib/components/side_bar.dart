@@ -522,53 +522,62 @@ class _AppSideBarState extends State<AppSideBar> {
       currentFolder = state.folderInView;
     }
 
-    return ArDriveClickArea(
-      tooltip: appLocalizationsOf(context).showMenu,
-      child: NewButton(
-        anchor: isMobile
-            ? const Aligned(
-                follower: Alignment.topLeft,
-                target: Alignment.bottomLeft,
-              )
-            : const Aligned(
-                follower: Alignment.topLeft,
-                target: Alignment.topRight,
-              ),
-        drive: currentDrive,
-        driveDetailState: context.read<DriveDetailCubit>().state,
-        currentFolder: currentFolder,
-        customOffset: _isExpanded ? null : const Offset(52, -40),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Container(
-              width: isMobile
-                  ? constraints.maxWidth
-                  : _isExpanded
-                      ? 128
-                      : 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-                shape: _isExpanded ? BoxShape.rectangle : BoxShape.circle,
-                borderRadius: _isExpanded
-                    ? BorderRadius.all(
-                        Radius.circular(isMobile ? 5 : 8),
-                      )
-                    : null,
-              ),
-              child: isExpanded
-                  ? Center(
-                      child: Text(
-                        appLocalizationsOf(context).newString,
-                        style: ArDriveTypography.headline.headline5Bold(
-                          color: Colors.white,
+    // Announced as a button, and named once. Its tooltip said "Show menu",
+    // which a screen reader read out in front of the button's own "New".
+    // Expanded, the word on the button is its name; collapsed, it is a plus
+    // with no word, and the tooltip names it. No label of its own here, and
+    // nothing excluded: the tap that opens the menu is handled inside
+    // [NewButton], below this node.
+    return Semantics(
+      button: true,
+      child: ArDriveClickArea(
+        tooltip: isExpanded ? null : appLocalizationsOf(context).newString,
+        child: NewButton(
+          anchor: isMobile
+              ? const Aligned(
+                  follower: Alignment.topLeft,
+                  target: Alignment.bottomLeft,
+                )
+              : const Aligned(
+                  follower: Alignment.topLeft,
+                  target: Alignment.topRight,
+                ),
+          drive: currentDrive,
+          driveDetailState: context.read<DriveDetailCubit>().state,
+          currentFolder: currentFolder,
+          customOffset: _isExpanded ? null : const Offset(52, -40),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Container(
+                width: isMobile
+                    ? constraints.maxWidth
+                    : _isExpanded
+                        ? 128
+                        : 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color:
+                      ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+                  shape: _isExpanded ? BoxShape.rectangle : BoxShape.circle,
+                  borderRadius: _isExpanded
+                      ? BorderRadius.all(
+                          Radius.circular(isMobile ? 5 : 8),
+                        )
+                      : null,
+                ),
+                child: isExpanded
+                    ? Center(
+                        child: Text(
+                          appLocalizationsOf(context).newString,
+                          style: ArDriveTypography.headline.headline5Bold(
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                    )
-                  : ArDriveIcons.plus(color: Colors.white),
-            );
-          },
+                      )
+                    : ArDriveIcons.plus(color: Colors.white),
+              );
+            },
+          ),
         ),
       ),
     );
