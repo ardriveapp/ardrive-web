@@ -914,10 +914,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                         children: [
                                           Expanded(
                                             child: DriveDetailFolderEmptyCard(
-                                              driveId: driveDetailState
-                                                  .currentDrive.id,
+                                              drive:
+                                                  driveDetailState.currentDrive,
                                               parentFolderId: driveDetailState
                                                   .folderInView.folder.id,
+                                              folderName: driveDetailState
+                                                  .folderInView.folder.name,
                                               promptToAddFiles: driveDetailState
                                                   .hasWritePermissions,
                                               isRootFolder: driveDetailState
@@ -937,9 +939,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                           else
                             Expanded(
                               child: DriveDetailFolderEmptyCard(
-                                driveId: driveDetailState.currentDrive.id,
+                                drive: driveDetailState.currentDrive,
                                 parentFolderId:
                                     driveDetailState.folderInView.folder.id,
+                                folderName:
+                                    driveDetailState.folderInView.folder.name,
                                 promptToAddFiles:
                                     driveDetailState.hasWritePermissions,
                                 isRootFolder: driveDetailState.folderInView
@@ -1176,8 +1180,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 )
               : DriveDetailFolderEmptyCard(
                   promptToAddFiles: state.hasWritePermissions,
-                  driveId: state.currentDrive.id,
+                  drive: state.currentDrive,
                   parentFolderId: state.folderInView.folder.id,
+                  folderName: state.folderInView.folder.name,
                   isRootFolder:
                       state.folderInView.folder.parentFolderId == null,
                 ),

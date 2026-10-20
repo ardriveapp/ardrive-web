@@ -2,17 +2,21 @@ part of '../drive_detail_page.dart';
 
 class DriveDetailFolderEmptyCard extends StatefulWidget {
   final bool promptToAddFiles;
-  final String driveId;
+  final Drive drive;
   final String parentFolderId;
+  final String folderName;
   final bool isRootFolder;
 
   const DriveDetailFolderEmptyCard({
     super.key,
     this.promptToAddFiles = false,
-    required this.driveId,
+    required this.drive,
     required this.parentFolderId,
+    required this.folderName,
     required this.isRootFolder,
   });
+
+  String get driveId => drive.id;
 
   @override
   State<DriveDetailFolderEmptyCard> createState() =>
@@ -22,7 +26,20 @@ class DriveDetailFolderEmptyCard extends StatefulWidget {
 class _DriveDetailFolderEmptyCardState
     extends State<DriveDetailFolderEmptyCard> {
   @override
-  Widget build(BuildContext context) => buildArDriveCard(context);
+  Widget build(BuildContext context) {
+    // A folder read while a sync is still reading its drive may be empty only
+    // because its contents have not landed yet. Offering to fill it then is
+    // what made a full drive flash "Your brand new drive!", so the panel says
+    // the sync is still going until there is something to show or it ends.
+    if (DriveDetailCubit.contentsMayStillArrive(
+      drive: widget.drive,
+      syncCubit: context.watch<SyncCubit>(),
+    )) {
+      return DriveDetailSyncingCard(folderName: widget.folderName);
+    }
+
+    return buildArDriveCard(context);
+  }
 
   Widget buildArDriveCard(BuildContext context) {
     ArDriveTypographyNew.of(context);
@@ -109,9 +126,9 @@ class _EmptyFolder extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final width = MediaQuery.of(context).size.width;
-    const String headerText = 'Ready to organize your files?';
+    const String headerText = 'This folder is empty';
     const String descriptionText =
-        'This folder is empty. You can move existing files into this folder, or upload new content.';
+        'Upload files to it, or move files here from elsewhere in your drive.';
 
     return PlausiblePageViewWrapper(
       pageView: PlausiblePageView.folderEmptyPage,
@@ -137,7 +154,8 @@ class _EmptyFolder extends StatelessWidget {
               _ActionCard.uploadFile(context,
                   driveId: driveId,
                   parentFolderId: parentFolderId,
-                  page: PlausiblePageView.folderEmptyPage),
+                  page: PlausiblePageView.folderEmptyPage,
+                  intoFolder: true),
               const SizedBox(height: 20),
               _ActionCard.uploadFolder(context,
                   driveId: driveId,
@@ -153,37 +171,27 @@ class _EmptyFolder extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // No confetti: an empty folder is not an occasion, and the
+            // celebration belongs to the drive that was just made.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 66),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  ArDriveImage(
-                      image: AssetImage(Resources.images.login.confetti)),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _buildHeaderText(
-                          context: context,
-                          text: headerText,
-                          style:
-                              typography.display(fontWeight: ArFontWeight.bold),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildDescriptionText(
-                          context: context,
-                          text: descriptionText,
-                          style: typography.heading5(
-                            color: colorTokens.textLow,
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                        ),
-                      ],
+                  _buildHeaderText(
+                    context: context,
+                    text: headerText,
+                    style: typography.display(fontWeight: ArFontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildDescriptionText(
+                    context: context,
+                    text: descriptionText,
+                    style: typography.heading5(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold,
                     ),
                   ),
-                  ArDriveImage(
-                      image: AssetImage(Resources.images.login.confetti)),
                 ],
               ),
             ),
@@ -193,7 +201,8 @@ class _EmptyFolder extends StatelessWidget {
                 _ActionCard.uploadFile(context,
                     driveId: driveId,
                     parentFolderId: parentFolderId,
-                    page: PlausiblePageView.folderEmptyPage),
+                    page: PlausiblePageView.folderEmptyPage,
+                    intoFolder: true),
                 _ActionCard.uploadFolder(context,
                     driveId: driveId,
                     parentFolderId: parentFolderId,
@@ -532,14 +541,16 @@ class _ActionCard {
     required PlausiblePageView page,
     ButtonVariant variant = ButtonVariant.secondary,
     bool compact = false,
+    bool intoFolder = false,
   }) {
     return _buildActionCard(
       variant: variant,
       compact: compact,
       context: context,
       title: 'Upload files',
-      description:
-          'Upload a file, or a selection of files into your new drive.',
+      description: intoFolder
+          ? 'Upload one or more files into this folder.'
+          : 'Upload one or more files into your new drive.',
       buttonText: 'Upload',
       onPressed: () {
         PlausibleEventTracker.trackClickUploadFileEmptyState(page);
@@ -684,15 +695,19 @@ class _ActionCard {
       );
     }
 
+    // Laid out from the top, with the button held to the bottom, so the cards
+    // in a row line up: icon, title and button at the same height in each,
+    // however many lines its description takes. Spreading the space evenly
+    // moved each title by half the difference in description height.
     return ArDriveCard(
       width: 283,
       height: 283,
       backgroundColor: colorTokens.containerL2,
       contentPadding: const EdgeInsets.all(31),
       content: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           icon.copyWith(size: 25),
+          const SizedBox(height: 12),
           Text(
             title,
             style:
@@ -705,7 +720,8 @@ class _ActionCard {
                 color: colorTokens.textMid, fontWeight: ArFontWeight.semiBold),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          const Spacer(),
+          const SizedBox(height: 16),
           ArDriveButtonNew(
             text: buttonText,
             typography: typography,

@@ -342,7 +342,7 @@ class ArDriveButtonNew extends StatefulWidget {
 }
 
 class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
-  var offsetY = 0.0;
+  var _hovering = false;
 
   @override
   Widget build(BuildContext context) {
@@ -449,7 +449,7 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
                     ? null
                     : (hovering) {
                         setState(() {
-                          offsetY = hovering ? -1 : 0;
+                          _hovering = hovering;
                         });
                       },
                 style: style,
@@ -466,23 +466,27 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
                             ? Transform.translate(
                                 offset: const Offset(0, -2), child: text)
                             : text
-                        : Stack(
-                            fit: StackFit.expand,
-                            alignment: Alignment.center,
+                        // The icon joins the label on hover rather than
+                        // replacing it. Sliding the label out left the button
+                        // blank exactly when the pointer was on it, and blank
+                        // behind a dialog the click had opened.
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              AnimatedPositioned(
-                                  // FIXME: this is a hack to make the text align properly
-                                  // and will need to be updated for different typography
-                                  top: 12 + offsetY * buttonH,
-                                  duration: const Duration(milliseconds: 100),
-                                  child:
-                                      SizedBox(height: buttonH, child: text)),
-                              if (widget.hoverIcon != null)
-                                AnimatedSlide(
-                                  offset: Offset(0, offsetY + 1),
-                                  duration: const Duration(milliseconds: 100),
-                                  child: widget.hoverIcon!,
-                                )
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 100),
+                                child: _hovering
+                                    ? Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 8),
+                                        child: SizedBox.square(
+                                          dimension: 24,
+                                          child: widget.hoverIcon,
+                                        ),
+                                      )
+                                    : const SizedBox(height: 24),
+                              ),
+                              Flexible(child: text),
                             ],
                           )),
           ),

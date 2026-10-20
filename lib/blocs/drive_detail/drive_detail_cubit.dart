@@ -72,7 +72,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// changes only this, and the folder contents arrive identical.
   Drive? _lastDrive;
 
-  /// The drive whose root revision this screen is waiting on, if any.
+  /// The drive this screen is waiting to open, if any: for its root revision,
+  /// or for the first of its contents while a sync is still reading it.
   ///
   /// Only a sync writing that drive can end the wait, so a sync that ends
   /// without doing it has to be noticed - see [_recoverIfStillWaiting].
@@ -232,6 +233,39 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
 
     // (registered by _listenForSyncCompletion, above)
+  }
+
+  /// Whether an empty folder in [drive] may only be empty *so far*.
+  ///
+  /// Sync saves a drive's history oldest first, one batch at a time, so a
+  /// folder lands before anything in it. While a sync is reading a drive for
+  /// the first time on this device, an empty folder says nothing about what
+  /// the drive holds - and showing the empty-drive card then is what made a
+  /// full drive flash "Your brand new drive!" before its files appeared.
+  ///
+  /// Never true of a drive walked before (its block height has advanced):
+  /// its emptiness was read, not assumed. Nor of a drive created after the
+  /// sync started, such as one just made in this app: that run is not reading
+  /// it, and holding it would make a new drive wait for the whole run.
+  static bool contentsMayStillArrive({
+    required Drive drive,
+    required SyncCubit syncCubit,
+  }) {
+    if ((drive.lastBlockHeight ?? 0) > 0) {
+      return false;
+    }
+
+    if (!SyncCubit.syncTouchesDrive(
+      state: syncCubit.state,
+      syncingDriveId: syncCubit.syncingDriveId,
+      completedDriveIds: syncCubit.completedDriveIds,
+      runDriveIds: syncCubit.syncingDriveIds,
+      driveId: drive.id,
+    )) {
+      return false;
+    }
+
+    return !drive.dateCreated.isAfter(syncCubit.syncStartTime);
   }
 
   /// Ends a wait for a root revision that is never going to arrive.
@@ -664,13 +698,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           // drive mid-sync is immediate. After that, at most one redraw per
           // [_folderRedrawInterval] for as long as a sync is writing this
           // drive; once nothing is, every tick lands as before.
-          if (SyncCubit.syncTouchesDrive(
-            state: _syncCubit.state,
-            syncingDriveId: _syncCubit.syncingDriveId,
-            completedDriveIds: _syncCubit.completedDriveIds,
-            runDriveIds: _syncCubit.syncingDriveIds,
-            driveId: driveId,
-          )) {
+          //
+          // Only once the folder is on screen. While the loading panel is
+          // still up, the tick being dropped could be the one that ends it.
+          if (this.state is DriveDetailLoadSuccess &&
+              SyncCubit.syncTouchesDrive(
+                state: _syncCubit.state,
+                syncingDriveId: _syncCubit.syncingDriveId,
+                completedDriveIds: _syncCubit.completedDriveIds,
+                runDriveIds: _syncCubit.syncingDriveIds,
+                driveId: driveId,
+              )) {
             final last = _lastFolderRedraw;
             final now = DateTime.now();
 
@@ -833,7 +871,24 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               emit(DriveDetailLoadUnsynced(drive: drive));
               return;
             }
+
+            // The root revision is in, but on a first walk it lands before
+            // anything inside it, so the drive stays on the loading panel
+            // until its first contents do. Ended by the tick that writes them,
+            // or, for a drive that really is empty, by the sync finishing.
+            if (this.state is! DriveDetailLoadSuccess &&
+                contentsMayStillArrive(drive: drive, syncCubit: _syncCubit)) {
+              _awaitingRootRevisionFor = driveId;
+
+              if (this.state is! DriveDetailLoadInProgress) {
+                emit(DriveDetailLoadInProgress());
+              }
+
+              return;
+            }
           }
+
+          _awaitingRootRevisionFor = null;
 
           final currentFolderContents = parseEntitiesToDatatableItem(
             folder: folderContents,
