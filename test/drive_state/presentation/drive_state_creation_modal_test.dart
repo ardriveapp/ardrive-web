@@ -532,8 +532,10 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('a published artifact reports its id without overflowing',
-        (tester) async {
+    testWidgets(
+        'a published artifact says it worked and where to find it, '
+        'without its id', (tester) async {
+      const txId = 'PmwoP4jL1ZQVAKGSCP2NmFCiwYbnUpKMPZmKGpKQwvE';
       await openModal(
         tester,
         DriveStateCreationPublished(
@@ -541,23 +543,25 @@ void main() {
             driveName: 'Quarterly Financial Reporting And Archived '
                 'Correspondence 2019-2026',
           ),
-          // A real Arweave transaction id: 43 unbroken base64url characters,
-          // which is wider than a small phone's modal and has nowhere to
-          // wrap.
-          txId: 'PmwoP4jL1ZQVAKGSCP2NmFCiwYbnUpKMPZmKGpKQwvE',
+          txId: txId,
         ),
         surface: smallPhone,
       );
 
       expectFitsOnScreen(tester, smallPhone);
 
+      expect(find.text('Snapshot created'), findsOneWidget);
       expect(
-        find.textContaining('PmwoP4jL1ZQVAKGSCP2NmFCiwYbnUpKMPZmKGpKQwvE'),
+        find.textContaining('Quarterly Financial Reporting'),
         findsOneWidget,
       );
+      expect(find.textContaining('Snapshots tab'), findsOneWidget);
+      // The Snapshots tab shows the id, with a copy button; the modal does
+      // not repeat it as text nobody can copy.
+      expect(find.textContaining(txId), findsNothing);
 
-      await tester.ensureVisible(find.text('Close'));
-      await tester.tap(find.text('Close'));
+      await tester.ensureVisible(find.text('OK'));
+      await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
 
       expect(find.byType(DriveStateCreationModal), findsNothing);
