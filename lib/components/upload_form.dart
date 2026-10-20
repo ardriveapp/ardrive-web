@@ -1946,46 +1946,55 @@ class _UploadReadyWidget extends StatelessWidget {
                           onTap: () {
                             showLicensingInfoModal(context: context);
                           },
-                          child: ArDriveIcons.question(
-                            color: colorTokens.textLow,
+                          // The same mark as the thumbnails option beside it.
+                          child: ArDriveIcons.info(
+                            color: colorTokens.textMid,
                             size: 16,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  ReactiveForm(
-                    formGroup: context.watch<UploadCubit>().licenseCategoryForm,
-                    child: ReactiveDropdownField<LicenseCategory?>(
-                      alignment: AlignmentDirectional.centerStart,
-                      isExpanded: true,
-                      formControlName: 'licenseCategory',
-                      decoration: InputDecoration(
-                        isDense: true,
-                        labelStyle: typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
+                  // Apart from the heading: the open menu lines its selected
+                  // item up with the field and reaches above it, and at the
+                  // usual spacing it covered "License".
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: ReactiveForm(
+                      formGroup:
+                          context.watch<UploadCubit>().licenseCategoryForm,
+                      child: ReactiveDropdownField<LicenseCategory?>(
+                        alignment: AlignmentDirectional.centerStart,
+                        isExpanded: true,
+                        formControlName: 'licenseCategory',
+                        decoration: InputDecoration(
+                          isDense: true,
+                          labelStyle: typography.paragraphNormal(
+                            fontWeight: ArFontWeight.semiBold,
+                          ),
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
                         ),
-                        border: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                      ),
-                      showErrors: (control) => control.dirty && control.invalid,
-                      validationMessages:
-                          kValidationMessages(appLocalizationsOf(context)),
-                      items: [null, ...LicenseCategory.values].map(
-                        (value) {
-                          return DropdownMenuItem(
-                            value: value,
-                            child: Text(
-                              licenseCategoryNames[value] ??
-                                  appLocalizationsOf(context).noLicense,
-                              style: typography.paragraphSmall(
-                                fontWeight: ArFontWeight.semiBold,
-                                color: colorTokens.textMid,
+                        showErrors: (control) =>
+                            control.dirty && control.invalid,
+                        validationMessages:
+                            kValidationMessages(appLocalizationsOf(context)),
+                        items: [null, ...LicenseCategory.values].map(
+                          (value) {
+                            return DropdownMenuItem(
+                              value: value,
+                              child: Text(
+                                licenseCategoryNames[value] ??
+                                    appLocalizationsOf(context).noLicense,
+                                style: typography.paragraphSmall(
+                                  fontWeight: ArFontWeight.semiBold,
+                                  color: colorTokens.textMid,
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ).toList(),
+                            );
+                          },
+                        ).toList(),
+                      ),
                     ),
                   ),
                   if (state.shouldShowCustomManifestCheckbox)

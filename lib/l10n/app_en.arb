@@ -841,6 +841,10 @@
   "@configure": {
     "description": "Upload dialog button that goes on to setting up the chosen license"
   },
+  "chooseALicenseType": "Choose a license type",
+  "@chooseALicenseType": {
+    "description": "Shown in the Creative Commons type picker until the uploader picks one. No license is preselected: it is recorded with the file permanently"
+  },
   "licenseHeading": "License",
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"

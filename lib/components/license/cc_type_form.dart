@@ -19,6 +19,8 @@ class CcTypeForm extends StatefulWidget {
 class _CcTypeFormState extends State<CcTypeForm> {
   @override
   Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final inputBorder = OutlineInputBorder(
       borderSide: BorderSide(
         color: ArDriveTheme.of(context)
@@ -46,8 +48,14 @@ class _CcTypeFormState extends State<CcTypeForm> {
                 Flexible(
                   child: LabeledInput(
                     labelText: 'Type',
-                    child: ReactiveDropdownField(
+                    child: ReactiveDropdownField<LicenseMeta>(
                       formControlName: 'ccTypeField',
+                      hint: Text(
+                        appLocalizationsOf(context).chooseALicenseType,
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textMid,
+                        ),
+                      ),
                       decoration: InputDecoration(
                         enabledBorder: inputBorder,
                         focusedBorder: inputBorder,
@@ -62,7 +70,12 @@ class _CcTypeFormState extends State<CcTypeForm> {
                           .map(
                             (e) => DropdownMenuItem(
                               value: e,
-                              child: Text(e.name),
+                              child: Text(
+                                e.name,
+                                style: typography.paragraphNormal(
+                                  color: colorTokens.textHigh,
+                                ),
+                              ),
                             ),
                           )
                           .toList(),
@@ -73,16 +86,22 @@ class _CcTypeFormState extends State<CcTypeForm> {
             ),
             ReactiveFormConsumer(
               builder: (_, form, __) {
-                final LicenseMeta selectedLicenseMeta =
+                final LicenseMeta? selectedLicenseMeta =
                     form.control('ccTypeField').value;
 
-                return Text(
-                  selectedLicenseMeta.shortName,
-                  style: ArDriveTypography.body.buttonNormalBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDisabled,
+                // Nothing is chosen until the uploader chooses.
+                if (selectedLicenseMeta == null) {
+                  return const SizedBox.shrink();
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    selectedLicenseMeta.shortName,
+                    style: typography.paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textMid,
+                    ),
                   ),
                 );
               },
