@@ -378,5 +378,55 @@ void main() {
         ],
       );
     });
+
+    group('a name conflict lists the conflicting items', () {
+      test('by file name and by folder name', () {
+        final file = createMockFileDataTableItem(name: 'a.txt');
+        final folder = createMockFolderDataTableItem(name: 'docs');
+        final other = createMockFileDataTableItem(name: 'b.txt');
+
+        final state = FsEntryMoveNameConflict(
+          conflictingItems: [file, folder],
+          folderInView: createMockFolderEntry(),
+          destinationName: 'dest',
+          allItems: [file, folder, other],
+        );
+
+        expect(state.conflictingFileNames(), ['a.txt']);
+        expect(state.conflictingFolderNames(), ['docs']);
+      });
+
+      blocTest<FsEntryMoveBloc, FsEntryMoveState>(
+        'emitted by a submit carries the clashing file\'s name',
+        build: () => FsEntryMoveBloc(
+          crypto: ArDriveCrypto(),
+          arweave: arweave,
+          turboUploadService: turboUploadService,
+          syncCubit: syncBloc,
+          driveId: driveId,
+          driveDao: driveDao,
+          profileCubit: profileCubit,
+          selectedItems: [
+            createMockFileDataTableItem(
+              driveId: driveId,
+              name: '${conflictTestFolderId}0',
+            ),
+          ],
+          platform: FakePlatform(operatingSystem: 'android'),
+        ),
+        act: (bloc) async => bloc.add(FsEntryMoveSubmit(
+          folderInView: await driveDao
+              .folderById(folderId: conflictTestFolderId)
+              .getSingle(),
+          showHiddenItems: false,
+        )),
+        expect: () => [
+          isA<FsEntryMoveNameConflict>().having(
+              (s) => s.conflictingFileNames(),
+              'conflictingFileNames',
+              ['${conflictTestFolderId}0']),
+        ],
+      );
+    });
   });
 }
