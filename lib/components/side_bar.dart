@@ -144,7 +144,14 @@ class _AppSideBarState extends State<AppSideBar> {
                     const SizedBox(
                       height: 16,
                     ),
-                    _buildDriveNav(isMobile: true),
+                    // The part that scrolls, as on desktop. Laid out at its
+                    // full height, a long drive list could not be scrolled and
+                    // drew over the dev tools link and the version below it.
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: _buildDriveNav(isMobile: true),
+                      ),
+                    ),
                   ],
                 ),
               ),
