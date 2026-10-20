@@ -385,7 +385,7 @@ class _UploadingManifestsWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
 
     return ArDriveStandardModalNew(
-      title: 'Uploading manifests',
+      title: 'Uploading deployments',
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 400),
         child: Column(
@@ -440,7 +440,7 @@ class _UploadingManifestsWidget extends StatelessWidget {
               ),
             ),
             Text(
-              'Uploaded ${state.completedCount} of ${state.manifestFiles.length} manifests',
+              'Uploaded ${state.completedCount} of ${state.manifestFiles.length} deployments',
               style: typography.paragraphNormal(),
             ),
           ],
@@ -947,7 +947,7 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Update Manifest(s)',
+                                        'Update deployments',
                                         style: typography.heading5(
                                           fontWeight: ArFontWeight.bold,
                                         ),
@@ -1399,7 +1399,7 @@ class _SelectPaymentMethodManifestUploadState
           content: Column(
             children: [
               Text(
-                'One or more manifests are bigger than our free Turbo upload limit. You can select the payment method for each manifest below.',
+                'One or more deployments are bigger than our free Turbo upload limit. You can select the payment method for each deployment below.',
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
                 ),
@@ -1990,7 +1990,7 @@ class _UploadReadyWidget extends StatelessWidget {
                   ),
                   if (state.shouldShowCustomManifestCheckbox)
                     ArDriveCheckBox(
-                      title: 'Convert this file to an Arweave manifest.',
+                      title: 'Publish this manifest file as a deployment.',
                       checked: state.uploadFileAsCustomManifest,
                       useNewIcons: true,
                       titleStyle: typography.paragraphNormal(
@@ -2165,7 +2165,7 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
-                    'Updated manifest(s):',
+                    'Updated deployments:',
                     style: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
                       color: colorTokens.textLow,
@@ -2317,7 +2317,7 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
-                    'Updated manifest(s):',
+                    'Updated deployments:',
                     style: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
                       color: colorTokens.textLow,

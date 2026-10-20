@@ -27,7 +27,7 @@ class _AutoDeployWidgetState extends State<AutoDeployWidget> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Updating manifest with the new assets...',
+                'Updating the deployment with the new files...',
                 style: typography.paragraphLarge(fontWeight: ArFontWeight.bold),
               ),
               const SizedBox(height: 16),
@@ -46,7 +46,7 @@ class _AutoDeployWidgetState extends State<AutoDeployWidget> {
         }
 
         return Text(
-          'AutoDeploy: Uploading manifest...',
+          'AutoDeploy: Uploading deployment...',
           style: typography.paragraphLarge(fontWeight: ArFontWeight.bold),
         );
       },
