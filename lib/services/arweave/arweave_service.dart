@@ -8,6 +8,7 @@ import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/arweave/arweave_service_exception.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/arweave/error/gateway_error.dart';
@@ -2557,11 +2558,17 @@ class ArweaveService {
   Future<void> postTx(
     Transaction transaction, {
     bool dryRun = false,
-  }) =>
-      client.transactions.post(
-        transaction,
-        dryRun: dryRun,
-      );
+  }) async {
+    await client.transactions.post(
+      transaction,
+      dryRun: dryRun,
+    );
+
+    if (!dryRun) {
+      // Posted, so paid for: the permanence panel's figures have moved.
+      PermanenceCache.shared.spendChanged();
+    }
+  }
 
   /// Uploads a transaction using the same chunked flow as file data uploads:
   /// header then chunks with [maxConcurrentUploadCount] (default 1) to avoid
@@ -2590,7 +2597,13 @@ class ArweaveService {
           dryRun: dryRun,
         ),
         dryRun: dryRun,
-        onTransactionPosted: onTransactionPosted,
+        onTransactionPosted: () {
+          if (!dryRun) {
+            PermanenceCache.shared.spendChanged();
+          }
+
+          onTransactionPosted?.call();
+        },
       );
 
   /// Drains an upload's event stream, reporting the header post the first time

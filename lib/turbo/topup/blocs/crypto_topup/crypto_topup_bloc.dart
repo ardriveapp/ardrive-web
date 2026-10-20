@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/turbo/services/crypto_payment_service.dart';
 import 'package:ardrive/turbo/services/crypto_transaction_storage.dart';
 import 'package:ardrive/turbo/services/ethereum_wallet_service.dart';
@@ -1225,6 +1226,9 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       final storageValues = _calculateStorageValues(_currentQuote!);
       newBalanceStorageEstimate = storageValues.newStorage;
     }
+
+    // Credits were added: what the permanence panel read is out of date.
+    PermanenceCache.shared.spendChanged();
 
     emit(CryptoTopupSuccess(
       txId: event.txId,

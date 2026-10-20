@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/permanence/ar_spend.dart';
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/permanence/permanence_panel.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -191,6 +194,89 @@ void main() {
       expect(reads, 1);
       expect(find.text('92.08'), findsOneWidget);
       expect(find.text('Show credits used'), findsNothing);
+    });
+
+    group('read before', () {
+      final readAt = DateTime.now().subtract(const Duration(hours: 1));
+      SpendEntry earlier(double amount) => SpendEntry(
+            lookup: SpendLookup.found(BigInt.from(amount * 1e12)),
+            fetchedAt: readAt,
+          );
+
+      testWidgets('is shown, with when, while it is read again',
+          (tester) async {
+        final reading = Completer<SpendLookup>();
+        final summary = PermanenceSummary(
+          totalBytes: 2 * gb,
+          fileCount: 1200,
+          driveCount: 3,
+          bytesByYear: const {2022: gb, 2024: gb},
+          spend: reading.future,
+          cachedSpend: earlier(10),
+        );
+
+        await pump(tester, summary);
+
+        expect(find.text('10.00'), findsOneWidget);
+        expect(find.textContaining('as of'), findsOneWidget);
+        expect(find.text('...'), findsNothing);
+
+        reading.complete(SpendLookup.found(BigInt.from(12e12)));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('12.00'), findsOneWidget);
+        expect(find.textContaining('as of'), findsNothing);
+      });
+
+      testWidgets('stays when reading it again failed', (tester) async {
+        await pump(
+          tester,
+          PermanenceSummary(
+            totalBytes: 2 * gb,
+            fileCount: 1200,
+            driveCount: 3,
+            bytesByYear: const {2022: gb, 2024: gb},
+            spend: Future.value(const SpendLookup.failed()),
+            cachedSpend: earlier(10),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('10.00'), findsOneWidget);
+        expect(find.textContaining('as of'), findsOneWidget);
+      });
+
+      testWidgets('for a wallet that would prompt is not read until asked',
+          (tester) async {
+        var reads = 0;
+        await pump(
+          tester,
+          PermanenceSummary(
+            totalBytes: 2 * gb,
+            fileCount: 1200,
+            driveCount: 3,
+            bytesByYear: const {2022: gb, 2024: gb},
+            cachedSpend: earlier(10),
+            loadSpend: () {
+              reads++;
+              return credits(12);
+            },
+          ),
+        );
+
+        expect(reads, 0);
+        expect(find.text('10.00'), findsOneWidget);
+        expect(find.textContaining('as of'), findsOneWidget);
+        expect(find.text('Refresh credits used'), findsOneWidget);
+
+        await tester.tap(find.text('Refresh credits used'));
+        await tester.pump();
+        await tester.pump();
+
+        expect(reads, 1);
+        expect(find.text('12.00'), findsOneWidget);
+      });
     });
 
     testWidgets('of credits not yet used says so', (tester) async {

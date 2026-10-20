@@ -11,8 +11,8 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/gar/domain/repositories/gar_repository.dart';
 import 'package:ardrive/gar/presentation/widgets/gateway_input_modal.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/permanence/permanence_panel.dart';
-import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
@@ -503,9 +503,11 @@ class _ProfileCardState extends State<ProfileCard> {
                   const SizedBox(height: 4),
                   ArDriveClickArea(
                     child: GestureDetector(
-                      onTap: () {
+                      onTap: () async {
                         // Everything below is asked for here, when the panel
                         // opens, and shown as it arrives - never on the card.
+                        // What was read lately is reused, not asked again.
+                        final cache = context.read<PermanenceCache>();
                         final paymentUrl = context
                                 .read<ConfigService>()
                                 .config
@@ -549,32 +551,60 @@ class _ProfileCardState extends State<ProfileCard> {
                               stats.driveIds,
                               txIds,
                             );
-                        final arSpend = LocalKeyValueStore.getInstance().then(
-                          (store) async => tallyArSpend(
-                            // v4: counts made without the tips direct
-                            // uploads sent, or before the drives' own
-                            // transactions decided what is ArDrive's.
-                            storageKey: 'permanenceArSpend_v4_$owner',
-                            read: store.getString,
-                            write: (key, value) => store.putString(key, value),
-                            knownAmong: knownAmong,
-                            fetchPage: ({required minHeight, after}) async =>
-                                arweave.getArDriveFeesPage(
-                              owner: owner,
-                              minHeight: minHeight,
+                        final arSpend = cache.arSpend(
+                          owner: owner,
+                          count: (onFailure) =>
+                              LocalKeyValueStore.getInstance().then(
+                            (store) async => countArSpend(
+                              onFailure: onFailure,
+                              // v4: counts made without the tips direct
+                              // uploads sent, or before the drives' own
+                              // transactions decided what is ArDrive's.
+                              storageKey: 'permanenceArSpend_v4_$owner',
+                              read: store.getString,
+                              write: (key, value) =>
+                                  store.putString(key, value),
                               knownAmong: knownAmong,
-                              after: after,
+                              fetchPage: ({required minHeight, after}) async =>
+                                  arweave.getArDriveFeesPage(
+                                owner: owner,
+                                minHeight: minHeight,
+                                knownAmong: knownAmong,
+                                after: after,
+                              ),
                             ),
                           ),
                         );
 
                         // What the network charges today for the same size,
                         // from the configured gateway, with AR's dollar price.
-                        final costToday = loadNetworkCost(
+                        final costToday = cache.costToday(
+                          bytes: permanentBytes,
                           price: () =>
                               arweave.getPrice(byteSize: permanentBytes),
-                          usdPerAr: fetchUsdPerAr(paymentUrl),
+                          usdPerAr: () => fetchUsdPerAr(paymentUrl),
                         );
+
+                        final signInChain = switch (walletTypeOfSourceAddress(
+                          context
+                              .read<ArDriveAuth>()
+                              .currentUser
+                              .sourceWalletAddress,
+                        )) {
+                          WalletType.ethereum => 'Ethereum',
+                          WalletType.solana => 'Solana',
+                          _ => null,
+                        };
+
+                        final spendPlan = await cache.planSpend(
+                          owner: owner,
+                          signsSilently: signsSilently,
+                          fetch: readSpend,
+                        );
+
+                        if (!context.mounted) {
+                          return;
+                        }
 
                         setState(() {
                           _showProfileCard = false;
@@ -591,18 +621,10 @@ class _ProfileCardState extends State<ProfileCard> {
                                 year.key: year.value.bytes,
                             },
                             costToday: costToday,
-                            spend: signsSilently ? readSpend() : null,
-                            loadSpend: signsSilently ? null : readSpend,
-                            signInChain: switch (walletTypeOfSourceAddress(
-                              context
-                                  .read<ArDriveAuth>()
-                                  .currentUser
-                                  .sourceWalletAddress,
-                            )) {
-                              WalletType.ethereum => 'Ethereum',
-                              WalletType.solana => 'Solana',
-                              _ => null,
-                            },
+                            spend: spendPlan.spend,
+                            loadSpend: spendPlan.loadSpend,
+                            cachedSpend: spendPlan.shown,
+                            signInChain: signInChain,
                             arSpend: arSpend,
                           ),
                         );

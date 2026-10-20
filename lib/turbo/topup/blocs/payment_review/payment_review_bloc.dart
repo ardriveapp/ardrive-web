@@ -1,3 +1,4 @@
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/models/payment_model.dart';
 import 'package:ardrive/turbo/topup/models/price_estimate.dart';
@@ -57,6 +58,8 @@ class PaymentReviewBloc extends Bloc<PaymentReviewEvent, PaymentReviewState> {
       final paymentStatus = await turbo.confirmPayment();
 
       if (paymentStatus == PaymentStatus.success) {
+        // Credits were added: what the permanence panel read is out of date.
+        PermanenceCache.shared.spendChanged();
         _emitPaymentSuccess(emit);
       } else {
         _emitPaymentReviewError(emit);
