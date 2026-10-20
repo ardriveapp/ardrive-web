@@ -276,6 +276,34 @@ void main() {
         expect(find.textContaining('as of'), findsOneWidget);
       });
 
+      testWidgets('of none, beside AR paid directly, still offers a refresh',
+          (tester) async {
+        await pump(
+          tester,
+          PermanenceSummary(
+            totalBytes: 2 * gb,
+            fileCount: 1200,
+            driveCount: 3,
+            bytesByYear: const {2022: gb, 2024: gb},
+            cachedSpend: SpendEntry(
+              lookup: const SpendLookup.none(),
+              fetchedAt: readAt,
+            ),
+            loadSpend: () => credits(12),
+            arSpend: Future.value(ArSpendTally(
+              winston: BigInt.from(0.5e12),
+              uploads: 3,
+              lastHeight: 100,
+            )),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('0.5 AR'), findsOneWidget);
+        expect(find.textContaining('as of'), findsOneWidget);
+        expect(find.text('Refresh credits used'), findsOneWidget);
+      });
+
       testWidgets('for a wallet that would prompt is not read until asked',
           (tester) async {
         var reads = 0;

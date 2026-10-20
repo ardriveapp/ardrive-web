@@ -235,5 +235,33 @@ void main() {
 
       expect((await shown())!.invalidated, isTrue);
     });
+
+    test('leaves the credits used alone when the item is refused', () async {
+      when(
+        () => httpClient.postBytesAsStream(
+          url: any(named: 'url'),
+          data: any(named: 'data'),
+          onSendProgress: any(named: 'onSendProgress'),
+          headers: any(named: 'headers'),
+          receiveTimeout: any(named: 'receiveTimeout'),
+          sendTimeout: any(named: 'sendTimeout'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            ArDriveHTTPResponse(data: '', statusCode: 500, retryAttempts: 0),
+      );
+      final wallet = getTestWallet();
+
+      await expectLater(
+        makeService().postDataItem(
+          dataItem: await dataItem(wallet),
+          wallet: wallet,
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      // Still current: nothing to show beside it.
+      expect(await shown(), isNull);
+    });
   });
 }

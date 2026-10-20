@@ -24,6 +24,21 @@ const permanenceArTallyTtl = Duration(minutes: 30);
 /// only: nothing here can sign or spend.
 const permanenceSpendStoragePrefix = 'permanenceSpend_v1_';
 
+/// How long after this app spends that a count of AR is re-checked soon,
+/// because a transaction it just posted is not yet mined and indexed.
+const permanenceArRecentSpendWindow = Duration(minutes: 10);
+
+/// The re-check limit for a count made within that window.
+const permanenceArRecentTtl = Duration(minutes: 1);
+
+/// Whether something read at [at] is still current at [now] under [ttl]. A
+/// clock that moved backward makes the age negative: not current.
+bool _within(DateTime now, DateTime at, Duration ttl) {
+  final age = now.difference(at);
+
+  return age >= Duration.zero && age < ttl;
+}
+
 /// The Turbo credits a wallet has used, and when they were read.
 class SpendEntry {
   const SpendEntry({
@@ -39,7 +54,7 @@ class SpendEntry {
   final bool invalidated;
 
   bool isFresh(DateTime now) =>
-      !invalidated && now.difference(fetchedAt) < permanenceSpendTtl;
+      !invalidated && _within(now, fetchedAt, permanenceSpendTtl);
 
   SpendEntry asInvalidated() => SpendEntry(
         lookup: lookup,
@@ -108,10 +123,18 @@ class SpendPlan {
 }
 
 class _ArEntry {
-  const _ArEntry(this.tally, this.checkedAt, {this.checked = true});
+  const _ArEntry(
+    this.tally,
+    this.checkedAt, {
+    this.checked = true,
+    this.ttl = permanenceArTallyTtl,
+  });
 
   final ArSpendTally tally;
   final DateTime checkedAt;
+
+  /// How long the count is reused.
+  final Duration ttl;
 
   /// Whether the network answered the last time it was asked, and the count
   /// is not a lower bound.
@@ -155,9 +178,12 @@ class PermanenceCache {
   final _prices = <int, (BigInt, DateTime)>{};
   (double, DateTime)? _rate;
   final _spend = <String, SpendEntry>{};
-  final _spendReads = <String, Future<SpendLookup>>{};
+  final _spendReads = <String, (int, Future<SpendLookup>)>{};
   final _arTallies = <String, _ArEntry>{};
-  final _arCounts = <String, Future<ArSpendTally>>{};
+  final _arCounts = <String, (int, Future<ArSpendTally>)>{};
+
+  /// When this app last spent, for the AR count's shorter limit.
+  DateTime? _lastSpendAt;
 
   // The network's price.
 
@@ -174,10 +200,10 @@ class PermanenceCache {
     final cachedPrice = _prices[bytes];
     final cachedRate = _rate;
 
-    final priceFresh = cachedPrice != null &&
-        now.difference(cachedPrice.$2) < permanencePriceTtl;
+    final priceFresh =
+        cachedPrice != null && _within(now, cachedPrice.$2, permanencePriceTtl);
     final rateFresh =
-        cachedRate != null && now.difference(cachedRate.$2) < permanenceRateTtl;
+        cachedRate != null && _within(now, cachedRate.$2, permanenceRateTtl);
 
     // Started together, as the panel always did.
     final pricing = priceFresh ? null : price();
@@ -199,7 +225,7 @@ class PermanenceCache {
       }
 
       _prices.removeWhere(
-        (_, entry) => now.difference(entry.$2) >= permanencePriceTtl,
+        (_, entry) => !_within(now, entry.$2, permanencePriceTtl),
       );
       _prices[bytes] = (winston, now);
     }
@@ -274,37 +300,58 @@ class PermanenceCache {
   Future<SpendLookup> _readSpend(
     String owner,
     Future<SpendLookup> Function() fetch,
-  ) =>
-      _spendReads[owner] ??= () async {
-        final generation = _generation;
-        final epoch = _epoch;
+  ) {
+    // A read that began before the app last spent might not include it: it
+    // is not joined.
+    final running = _spendReads[owner];
 
-        try {
-          final lookup = await fetch();
+    if (running != null && running.$1 == _generation) {
+      return running.$2;
+    }
 
-          // A failed read says nothing about the credits, so it replaces
-          // nothing.
-          if (!lookup.failed && epoch == _epoch) {
-            final entry = SpendEntry(
-              lookup: lookup,
-              fetchedAt: _now(),
-              // The app spent while this was being read: it might not count it.
-              invalidated: generation != _generation,
-            );
+    final generation = _generation;
+    final epoch = _epoch;
 
-            _spend[owner] = entry;
-            await _storeSpend(owner, entry);
-          }
+    final read = () async {
+      try {
+        final lookup = await fetch();
 
-          return lookup;
-        } finally {
+        // A failed read says nothing about the credits, so it replaces
+        // nothing.
+        if (!lookup.failed && epoch == _epoch) {
+          final entry = SpendEntry(
+            lookup: lookup,
+            fetchedAt: _now(),
+            // The app spent while this was being read: it might not count it.
+            invalidated: generation != _generation,
+          );
+
+          _spend[owner] = entry;
+          await _storeSpend(owner, entry, epoch);
+        }
+
+        return lookup;
+      } finally {
+        if (_spendReads[owner]?.$1 == generation && epoch == _epoch) {
           _spendReads.remove(owner);
         }
-      }();
+      }
+    }();
 
-  Future<void> _storeSpend(String owner, SpendEntry entry) async {
+    _spendReads[owner] = (generation, read);
+
+    return read;
+  }
+
+  Future<void> _storeSpend(String owner, SpendEntry entry, int epoch) async {
     try {
       final store = await _openStore();
+
+      // Signed out while the store was opening: nothing is kept.
+      if (epoch != _epoch) {
+        return;
+      }
+
       await store.putString(_spendKey(owner), entry.toJson());
     } catch (e) {
       logger.w('Could not keep the Turbo credits used: $e');
@@ -326,33 +373,52 @@ class PermanenceCache {
     if (held != null &&
         held.checked &&
         held.tally.complete &&
-        _now().difference(held.checkedAt) < permanenceArTallyTtl) {
+        _within(_now(), held.checkedAt, held.ttl)) {
       return Future.value(held.tally);
     }
 
-    return _arCounts[owner] ??= () async {
-      final generation = _generation;
-      final epoch = _epoch;
-      var failed = false;
+    final running = _arCounts[owner];
 
+    if (running != null && running.$1 == _generation) {
+      return running.$2;
+    }
+
+    final generation = _generation;
+    final epoch = _epoch;
+    var failed = false;
+
+    final counting = () async {
       try {
         final tally = await count(() => failed = true);
 
         if (epoch == _epoch) {
+          final now = _now();
+          final spentLately = _lastSpendAt != null &&
+              _within(now, _lastSpendAt!, permanenceArRecentSpendWindow);
+
           _arTallies[owner] = _ArEntry(
             tally,
-            _now(),
+            now,
             // Not a figure to reuse: the network did not answer, or the app
             // spent while it was counting.
             checked: !failed && generation == _generation,
+            // A transaction posted just now is not mined yet, so soon after
+            // spending the count is checked again sooner.
+            ttl: spentLately ? permanenceArRecentTtl : permanenceArTallyTtl,
           );
         }
 
         return tally;
       } finally {
-        _arCounts.remove(owner);
+        if (_arCounts[owner]?.$1 == generation && epoch == _epoch) {
+          _arCounts.remove(owner);
+        }
       }
     }();
+
+    _arCounts[owner] = (generation, counting);
+
+    return counting;
   }
 
   // What changes them.
@@ -364,27 +430,40 @@ class PermanenceCache {
   /// on it.
   void spendChanged() {
     _generation++;
+    _lastSpendAt = _now();
 
     _spend.updateAll((_, entry) => entry.asInvalidated());
     _arTallies.updateAll(
-      (_, entry) => _ArEntry(entry.tally, entry.checkedAt, checked: false),
+      (_, entry) => _ArEntry(
+        entry.tally,
+        entry.checkedAt,
+        checked: false,
+        ttl: entry.ttl,
+      ),
     );
 
     unawaited(_invalidateStored());
   }
 
   Future<void> _invalidateStored() async {
+    final epoch = _epoch;
+
     try {
       final store = await _openStore();
 
       for (final key in await store.getKeys()) {
+        // Signed out meanwhile: clear() has removed, or is removing, these.
+        if (epoch != _epoch) {
+          return;
+        }
+
         if (!key.startsWith(permanenceSpendStoragePrefix)) {
           continue;
         }
 
         final entry = SpendEntry.fromJson(await store.getString(key));
 
-        if (entry != null && !entry.invalidated) {
+        if (entry != null && !entry.invalidated && epoch == _epoch) {
           await store.putString(key, entry.asInvalidated().toJson());
         }
       }
@@ -404,6 +483,7 @@ class PermanenceCache {
     _spendReads.clear();
     _arTallies.clear();
     _arCounts.clear();
+    _lastSpendAt = null;
 
     try {
       final store = await _openStore();
