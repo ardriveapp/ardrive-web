@@ -33,6 +33,14 @@ void main() {
       expect(label('image/png', 'screenshot'), 'PNG');
     });
 
+    test('reads a content type without its parameters', () {
+      expect(
+        label('application/x.arweave-manifest+json; charset=utf-8', 'site'),
+        'Manifest',
+      );
+      expect(label('text/plain; charset=utf-8', 'notes'), 'PLAIN');
+    });
+
     test('shows any other type as it is, in its own case', () {
       expect(
         label('application/vnd.ms-excel', 'export'),

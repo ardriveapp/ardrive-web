@@ -544,6 +544,14 @@ class _ArDriveDataTableState<T extends IndexedItem>
           currentMultiSelectBox.addAll(temp);
         }
 
+        // The selected row too, or Enter opens the copy it replaced: a file
+        // at its old version.
+        final selected = _selectedItem;
+        if (selected != null) {
+          final index = widget.rows.indexWhere((row) => row == selected);
+          _selectedItem = index >= 0 ? widget.rows[index] : null;
+        }
+
         _cachedRows = widget.rows;
       }
 

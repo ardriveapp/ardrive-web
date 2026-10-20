@@ -16,7 +16,10 @@ String fileTypeLabel({
   required String fileName,
   required String manifestLabel,
 }) {
-  if (contentType == ContentType.manifest) {
+  // Without parameters: `text/plain; charset=utf-8` is `text/plain`.
+  final mediaType = contentType.split(';').first.trim();
+
+  if (mediaType == ContentType.manifest) {
     return manifestLabel;
   }
 
@@ -25,7 +28,7 @@ String fileTypeLabel({
     return extension.toUpperCase();
   }
 
-  final subtype = contentType.substring(contentType.lastIndexOf('/') + 1);
+  final subtype = mediaType.substring(mediaType.lastIndexOf('/') + 1);
   if (_shortWord.hasMatch(subtype)) {
     return subtype.toUpperCase();
   }

@@ -1,5 +1,7 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A row that compares by its id alone, as the app's rows do: a new version
@@ -18,13 +20,19 @@ void main() {
   group('ArDriveDataTable rows', () {
     late StateSetter setRows;
     late List<_Row> rows;
+    _Row? selected;
 
-    Future<void> pumpTable(WidgetTester tester, List<_Row> initial) async {
+    Future<void> pumpTable(
+      WidgetTester tester,
+      List<_Row> initial, {
+      void Function(_Row row)? onRowOpen,
+    }) async {
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
       rows = initial;
+      selected = null;
 
       await tester.pumpWidget(
         ArDriveApp(
@@ -45,6 +53,11 @@ void main() {
                       Text('${row.size} B'),
                     ]),
                     rowsPerPageText: 'Rows per page',
+                    onRowOpen: onRowOpen,
+                    // Held by the caller, as the explorer holds it: the row
+                    // object that was tapped, which a new version replaces.
+                    selectedRow: selected,
+                    onRowTap: (row) => setState(() => selected = row),
                     onChangeMultiSelecting: (_) {},
                     sortRows: (list, column, order) {
                       final sorted = list.toList()
@@ -80,6 +93,34 @@ void main() {
 
       expect(find.text('918 B'), findsOneWidget);
       expect(find.text('640 B'), findsNothing);
+    });
+
+    testWidgets('opens the new copy of the selected row on Enter',
+        (tester) async {
+      final opened = <_Row>[];
+      await pumpTable(
+        tester,
+        const [
+          _Row(0, id: 'a', size: 640),
+          _Row(1, id: 'b', size: 10),
+        ],
+        onRowOpen: opened.add,
+      );
+
+      await tester.tap(find.text('a'), kind: PointerDeviceKind.mouse);
+      // Past the double-click window, so the next key is not a second click.
+      await tester.pumpAndSettle(const Duration(seconds: 1));
+
+      setRows(() => rows = const [
+            _Row(0, id: 'a', size: 918),
+            _Row(1, id: 'b', size: 10),
+          ]);
+      await tester.pumpAndSettle();
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+
+      expect(opened.map((row) => row.size), [918]);
     });
   });
 }
