@@ -196,7 +196,24 @@ class PermanenceSummary {
   int? get firstYear => bytesByYear.isEmpty ? null : bytesByYear.keys.first;
 }
 
-final _usd = NumberFormat.currency(symbol: r'$', decimalDigits: 0);
+/// Dollars as the cost today is shown: whole dollars from $100 up, cents
+/// below that, and "<$0.01" for less than a cent.
+///
+/// It was whole dollars throughout, so a few MiB, which costs cents to store,
+/// read as "$0" beside a real AR price.
+@visibleForTesting
+String formatUsd(double usd) {
+  // From the first amount that rounds to $100.00 in cents, so nothing reads
+  // "$100.00" beside "$100".
+  if (usd >= 99.995) {
+    return NumberFormat.currency(symbol: r'$', decimalDigits: 0).format(usd);
+  }
+  if (usd > 0 && usd < 0.01) {
+    return r'<$0.01';
+  }
+  return NumberFormat.currency(symbol: r'$', decimalDigits: 2).format(usd);
+}
+
 final _count = NumberFormat.decimalPattern();
 
 /// Sizes to one decimal place until that stops meaning anything. The profile
@@ -515,7 +532,7 @@ class _CostTile extends StatelessWidget {
 
         return _Tile(
           label: _label,
-          value: _usd.format(usd),
+          value: formatUsd(usd),
           note: _note,
           extra: _formatAr(network.ar),
         );
