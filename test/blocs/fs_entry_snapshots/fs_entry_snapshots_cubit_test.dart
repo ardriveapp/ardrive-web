@@ -1,7 +1,10 @@
 import 'package:ardrive/blocs/fs_entry_snapshots/fs_entry_snapshots_cubit.dart';
+import 'package:ardrive/blocs/fs_entry_snapshots/models/snapshot_display_item.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/models/enums.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/utils/snapshot_events.dart';
 import 'package:ardrive/utils/snapshots/snapshots_cache.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -154,6 +157,41 @@ void main() {
 
     expect(discovery.calls, 1);
     expect(state.snapshots.map((s) => s.txId), ['old-snapshot']);
+    await cubit.close();
+  });
+
+  // Creating a snapshot resets the drive's count before announcing it, as the
+  // older snapshot dialog's DriveSnapshotted does, so the tab that lists the
+  // new snapshot stops recommending one in the same update.
+  test('a snapshot created from the tab clears "Snapshot recommended"',
+      () async {
+    olderSnapshots([]);
+    CountOfTxsSyncedWithGql.countForDrive(
+      driveId,
+      defaultNumberOfTxsBeforeSnapshot,
+    );
+    final cubit = FsEntrySnapshotsCubit(
+      driveId: driveId,
+      ownerAddress: _owner,
+      arweaveService: arweave,
+    );
+    expect((await loaded(cubit)).shouldRecommendSnapshot, isTrue);
+
+    final next = cubit.stream.first;
+    CountOfTxsSyncedWithGql.resetForDrive(driveId);
+    SnapshotEventBus.instance.emitSnapshotCreated(SnapshotDisplayItem(
+      txId: 'just-created',
+      driveId: driveId,
+      blockStart: 0,
+      blockEnd: 100,
+      createdAt: DateTime.now(),
+      status: TransactionStatus.pending,
+    ));
+
+    final state = await next as FsEntrySnapshotsSuccess;
+    expect(state.snapshots.map((s) => s.txId), ['just-created']);
+    expect(state.shouldRecommendSnapshot, isFalse);
+    SnapshotEventBus.instance.consumePendingSnapshot(driveId, 'just-created');
     await cubit.close();
   });
 }
