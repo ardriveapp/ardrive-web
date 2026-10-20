@@ -140,7 +140,7 @@ drive.
 
 **Test drives.** Open them by double-clicking their row in *All drives*.
 - **New Test Drive** (public): use it for anything public-only, such as
-  thumbnails, manifests, or converting a file to a manifest.
+  thumbnails, deployments, or publishing a manifest file as a deployment.
 - **Private Drive Test** (private): for private uploads. The example link
   below points into it.
 - **The three `UAT-TESTONLY-DELETEME` drives**: also fine to use, but they
@@ -255,10 +255,12 @@ leaves a failed entry for that file in the drive.
 (`turbo` or `turbo-testnet`): an image with thumbnails makes three (data,
 thumbnail, metadata), and without makes two.
 
-**Manifests.** Make one with New → Advanced → New Manifest (free on a
-preview). Uploading into a folder that has one opens the *Update Manifest(s)*
-panel beside the dialog. It closes with "Close «" in the header, and Options
-→ Update manifests opens it again. The phone layout has no panel.
+**Deployments (manifests).** Make one with New → Advanced → New deployment
+(free on a preview). Click Advanced and then New deployment in the same step:
+the submenu closes again within a second. Uploading into a folder that has one
+opens the *Update deployments* panel beside the dialog. It closes with "Close «"
+in the header, and Options → Update deployments opens it again. The phone
+layout has no panel.
 
 **Payment choice on a preview.** Testnet Turbo makes files up to 5 MiB free,
 so the payment cards, and with them wallet-paid upload, only appear for

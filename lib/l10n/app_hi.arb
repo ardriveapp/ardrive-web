@@ -6,7 +6,7 @@
   "@addButtonTurbo": {
     "description": "text for add button"
   },
-  "addnewManifestEmphasized": "नया मैनिफ़ेस्ट जोड़ें",
+  "addnewManifestEmphasized": "नया डिप्लॉयमेंट",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
   },
@@ -38,7 +38,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "मैनिफ़ेस्ट एक खास तरह की फ़ाइल होती है, जो किसी भी संख्या में Arweave ट्रांज़ैक्शन को फ़्रेंडली पाथ नेम में मैप करती है।",
+  "aManifestIsASpecialKindOfFile": "डिप्लॉयमेंट किसी फ़ोल्डर को एक ही Arweave पते पर पब्लिश करता है, जिसमें हर फ़ाइल का अपना आसान पाथ होता है। इसे Arweave मैनिफ़ेस्ट के रूप में सेव किया जाता है।",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -227,11 +227,11 @@
   "@conflictingFiles": {
     "description": "Files conflict with already existing items"
   },
-  "conflictingManifestFound": "परस्पर-विरोधी मैनिफ़ेस्ट पाया गया",
+  "conflictingManifestFound": "परस्पर-विरोधी डिप्लॉयमेंट पाया गया",
   "@conflictingManifestFound": {
     "description": "There is an on-chain entity with the same name"
   },
-  "conflictingManifestFoundChooseNewName": "इस लोकेशन पर इसी नाम का एक मैनिफ़ेस्ट पहले से मौजूद है। क्या आप जारी रखना चाहते हैं और इस मैनिफ़ेस्ट को एक नए वर्ज़न के तौर पर अपलोड करना चाहते हैं?",
+  "conflictingManifestFoundChooseNewName": "इस लोकेशन पर इसी नाम का एक डिप्लॉयमेंट पहले से मौजूद है। क्या आप जारी रखना चाहते हैं और इस डिप्लॉयमेंट को एक नए वर्ज़न के तौर पर अपलोड करना चाहते हैं?",
   "@conflictingManifestFoundChooseNewName": {
     "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
   },
@@ -345,11 +345,11 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "नया मैनिफेस्ट ",
+  "createManifest": "नया डिप्लॉयमेंट",
   "@createManifest": {
     "description": "To create a manifest"
   },
-  "createManifestEmphasized": "मैनिफ़ेस्ट बनाएं",
+  "createManifestEmphasized": "डिप्लॉयमेंट बनाएं",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
@@ -586,6 +586,24 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
+  "manifestsToUpdate": "{count, plural, =1{अपडेट करने के लिए 1 डिप्लॉयमेंट} other{अपडेट करने के लिए {count} डिप्लॉयमेंट}}",
+  "@manifestsToUpdate": {
+    "description": "Upload options summary: how many manifests the upload will update",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "updateManifests": "डिप्लॉयमेंट अपडेट करें",
+  "@updateManifests": {
+    "description": "Upload options link that opens the choice of manifests to update with the new files"
+  },
+  "uploadAsManifest": "डिप्लॉयमेंट के रूप में अपलोड करें",
+  "@uploadAsManifest": {
+    "description": "Upload options summary: the file will be converted to an Arweave manifest"
+  },
   "syncThisDriveDescription": "इस ड्राइव से नवीनतम फ़ाइलें और फ़ोल्डर प्राप्त करें।",
   "@syncThisDriveDescription": {
     "description": "Description for the sync drive action card"
@@ -782,7 +800,7 @@
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
-  "failedToCreateManifestEmphasized": "मैनिफ़ेस्ट बनाने में असफल रहा",
+  "failedToCreateManifestEmphasized": "डिप्लॉयमेंट बनाने में असफल रहा",
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
@@ -884,6 +902,10 @@
   "fileSize": "फ़ाइल का साइज़",
   "@fileSize": {
     "description": "The size of a file"
+  },
+  "filesPendingManifestExplanation": "इस फ़ोल्डर की कुछ फ़ाइलें अभी पेंडिंग हैं। हम पेंडिंग फ़ाइलों के साथ डिप्लॉयमेंट बनाने की सलाह नहीं देते। क्या आप जारी रखना चाहते हैं?",
+  "@filesPendingManifestExplanation": {
+    "description": "Warns the user about creating manifests with pending files"
   },
   "filesTooLarge": "{numberOfFiles, plural, zero{} one{1 फ़ाइल बहुत बड़ी है} other{{numberOfFiles} फ़ाइलें बहुत बड़ी हैं}}",
   "@filesTooLarge": {
@@ -1122,7 +1144,7 @@
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
   },
-  "insufficientBalanceForManifest": "मुहैया किए गए {walletBalance} AR का वॉलेट बैलेंस {totalCost} AR की लागत वाले इस मैनिफ़ेस्ट ट्रांज़ैक्शन के लिए काफ़ी नहीं है...",
+  "insufficientBalanceForManifest": "मुहैया किए गए {walletBalance} AR का वॉलेट बैलेंस {totalCost} AR की लागत वाले इस डिप्लॉयमेंट ट्रांज़ैक्शन के लिए काफ़ी नहीं है...",
   "@insufficientBalanceForManifest": {
     "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
     "placeholders": {
@@ -1158,7 +1180,7 @@
   "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
-  "insufficientFundsForCreateAManifest": "आपके पास इस समय मैनिफ़ेस्ट बनाने के लिए पर्याप्त फ़ंड नहीं है। अपने अकाउंट में फ़ंड जोड़ने के लिए कृपया टॉप अप पेज पर जाएं।",
+  "insufficientFundsForCreateAManifest": "आपके पास इस समय डिप्लॉयमेंट बनाने के लिए पर्याप्त फ़ंड नहीं है। अपने अकाउंट में फ़ंड जोड़ने के लिए कृपया टॉप अप पेज पर जाएं।",
   "@insufficientFundsForCreateAManifest": {
     "description": "Show that needs funds to create a Manifest"
   },
@@ -1277,11 +1299,19 @@
   "@logOutEmphasized": {
     "description": "The action of logging out. Emphasized with upper case"
   },
-  "manifestName": "मैनिफ़ेस्ट का नाम",
+  "manifestName": "डिप्लॉयमेंट का नाम",
   "@manifestName": {
     "description": "The name of the manifest"
   },
-  "manifestTransactionUnexpectedlyFailed": "मैनिफ़ेस्ट ट्रांज़ैक्शन Arweave नेटवर्क पर अपलोड होने में अचानक से फ़ेल हो गया...",
+  "manifestFallbackTxID": "फ़ॉलबैक पेज",
+  "@manifestFallbackTxID": {
+    "description": "In the details panel, the transaction a manifest serves when a path in it is not found"
+  },
+  "manifestFileType": "डिप्लॉयमेंट",
+  "@manifestFileType": {
+    "description": "The kind of file shown under a manifest's name in its preview, in place of its content type"
+  },
+  "manifestTransactionUnexpectedlyFailed": "डिप्लॉयमेंट ट्रांज़ैक्शन Arweave नेटवर्क पर अपलोड होने में अचानक से फ़ेल हो गया...",
   "@manifestTransactionUnexpectedlyFailed": {
     "description": "The manifest transaction did not succeed being uploaded"
   },
@@ -1527,7 +1557,7 @@
   "@pleaseTryAgain": {
     "description": "Please try again."
   },
-  "preparingManifestEmphasized": "मैनिफ़ेस्ट तैयार हो रहा है...",
+  "preparingManifestEmphasized": "डिप्लॉयमेंट तैयार हो रहा है...",
   "@preparingManifestEmphasized": {
     "description": "The manifest is being prepared for the upload"
   },
@@ -2276,7 +2306,7 @@
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
   },
-  "uploadingManifestEmphasized": "मैनिफ़ेस्ट अपलोड हो रहा है...",
+  "uploadingManifestEmphasized": "डिप्लॉयमेंट अपलोड हो रहा है...",
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
@@ -2405,7 +2435,7 @@
   "@waitForDownload": {
     "description": "User must to wait this download"
   },
-  "walletChangedDuringManifestCreation": "मुहैया किया गया वॉलेट मैनिफ़ेस्ट बनाने के दौरान अचानक से बदल गया...",
+  "walletChangedDuringManifestCreation": "मुहैया किया गया वॉलेट डिप्लॉयमेंट बनाने के दौरान अचानक से बदल गया...",
   "@walletChangedDuringManifestCreation": {
     "description": "The wallet has been changed while the creation of the manifest was in process"
   },

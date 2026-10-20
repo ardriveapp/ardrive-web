@@ -220,7 +220,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       if (state is CreateManifestUploadInProgress) {
         return ProgressDialog(
           useNewArDriveUI: true,
-          title: 'Creating Manifest...',
+          title: 'Creating deployment...',
           progressDescription: Text(
             _getProgressDescription(state.progress),
             style: typography.paragraphLarge(
@@ -273,7 +273,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Manifest created successfully',
+              'Deployment created successfully',
               style: typography.heading3(
                 fontWeight: ArFontWeight.bold,
               ),
@@ -282,7 +282,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             const SizedBox(height: 8),
             if (!state.nameAssignedByArNS) ...[
               Text(
-                'Your manifest has been created.',
+                'Your deployment has been created.',
                 style: typography.paragraphNormal(
                   color: colorTokens.textMid,
                 ),
@@ -291,7 +291,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             if (state.nameAssignedByArNS) ...[
               const SizedBox(height: 8),
               Text(
-                'Your manifest has been assigned an ArNS name',
+                'Your deployment has been assigned an ArNS name',
                 style: typography.paragraphNormal(
                   color: colorTokens.textMid,
                 ),
@@ -318,9 +318,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
   String _getProgressDescription(CreateManifestUploadProgress progress) {
     switch (progress) {
       case CreateManifestUploadProgress.preparingManifest:
-        return 'Preparing Manifest...';
+        return 'Preparing deployment...';
       case CreateManifestUploadProgress.uploadingManifest:
-        return 'Uploading Manifest...';
+        return 'Uploading deployment...';
       case CreateManifestUploadProgress.assigningArNS:
         return 'Assigning ArNS Name...';
       case CreateManifestUploadProgress.completed:
@@ -347,7 +347,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       justSelectName: true,
       updateARNSRecords: false,
       customLoadingText: 'Fetching ArNS names...',
-      customNameSelectionTitle: 'Assign ArNS name to new manifest',
+      customNameSelectionTitle: 'Assign ArNS name to new deployment',
       onSelectionConfirmed: (selection) {
         context.read<CreateManifestCubit>().selectArns(
               selection.selectedName,
@@ -373,7 +373,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       width: kMediumDialogWidth,
       title: 'Assign ArNS name?',
       description:
-          'You have ArNS names associated with your address. Do you want to assign one to this new manifest? You can always do this later.',
+          'You have ArNS names associated with your address. Do you want to assign one to this new deployment? You can always do this later.',
       actions: [
         ModalAction(
           action: () {
@@ -931,7 +931,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               child: ArDriveClickArea(
                 child: ArDriveTooltip(
                   message:
-                      'The page shown when a path in the manifest does not exist, such as a 404 page.\nEnter the transaction ID of its file.',
+                      'The page shown when a path in the deployment does not exist, such as a 404 page.\nEnter the transaction ID of its file.',
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
@@ -987,7 +987,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Hidden files and folders are not added to the manifest.',
+                        'Hidden files and folders are not added to the deployment.',
                         style: typography.paragraphNormal(
                           color: colorTokens.textMid,
                           fontWeight: ArFontWeight.semiBold,

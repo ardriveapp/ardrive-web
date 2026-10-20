@@ -6,7 +6,7 @@
   "@addButtonTurbo": {
     "description": "text for add button"
   },
-  "addnewManifestEmphasized": "Add new manifest",
+  "addnewManifestEmphasized": "New deployment",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
   },
@@ -38,7 +38,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "A manifest is a special kind of file that maps any number of Arweave transactions to friendly path names.",
+  "aManifestIsASpecialKindOfFile": "A deployment publishes a folder at one Arweave address, with each file at a friendly path. It's stored as an Arweave manifest.",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -292,11 +292,11 @@
   "@conflictingFiles": {
     "description": "Files conflict with already existing items"
   },
-  "conflictingManifestFound": "Conflicting manifest was found",
+  "conflictingManifestFound": "Conflicting deployment was found",
   "@conflictingManifestFound": {
     "description": "There is an on-chain entity with the same name"
   },
-  "conflictingManifestFoundChooseNewName": "A manifest with the same name already exists at this location. Do you want to continue and upload this manifest as a new version?",
+  "conflictingManifestFoundChooseNewName": "A deployment with the same name already exists at this location. Do you want to continue and upload this deployment as a new version?",
   "@conflictingManifestFoundChooseNewName": {
     "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
   },
@@ -426,11 +426,11 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "New manifest",
+  "createManifest": "New deployment",
   "@createManifest": {
     "description": "To create a manifest"
   },
-  "createManifestEmphasized": "Create manifest",
+  "createManifestEmphasized": "Create deployment",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
@@ -871,7 +871,7 @@
   "@licenseHeading": {
     "description": "Heading of the license choice in the upload options"
   },
-  "manifestsToUpdate": "{count, plural, =1{1 manifest to update} other{{count} manifests to update}}",
+  "manifestsToUpdate": "{count, plural, =1{1 deployment to update} other{{count} deployments to update}}",
   "@manifestsToUpdate": {
     "description": "Upload options summary: how many manifests the upload will update",
     "placeholders": {
@@ -927,11 +927,11 @@
       }
     }
   },
-  "updateManifests": "Update manifests",
+  "updateManifests": "Update deployments",
   "@updateManifests": {
     "description": "Upload options link that opens the choice of manifests to update with the new files"
   },
-  "uploadAsManifest": "Upload as a manifest",
+  "uploadAsManifest": "Upload as a deployment",
   "@uploadAsManifest": {
     "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
@@ -1310,7 +1310,7 @@
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
-  "failedToCreateManifestEmphasized": "Failed to create manifest",
+  "failedToCreateManifestEmphasized": "Failed to create deployment",
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
@@ -1501,7 +1501,7 @@
   "@filesPending": {
     "description": "E.g. \"there are some files pending\""
   },
-  "filesPendingManifestExplanation": "Some of the files in this folder are still pending. We do not recommend creating a manifest with pending files. Would you like to proceed?",
+  "filesPendingManifestExplanation": "Some of the files in this folder are still pending. We do not recommend creating a deployment with pending files. Would you like to proceed?",
   "@filesPendingManifestExplanation": {
     "description": "Warns the user about creating manifests with pending files"
   },
@@ -1794,7 +1794,7 @@
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
   },
-  "insufficientBalanceForManifest": "Provided wallet balance of {walletBalance} AR is not enough for this manifest transaction costing {totalCost} AR...",
+  "insufficientBalanceForManifest": "Provided wallet balance of {walletBalance} AR is not enough for this deployment transaction costing {totalCost} AR...",
   "@insufficientBalanceForManifest": {
     "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
     "placeholders": {
@@ -1830,7 +1830,7 @@
   "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
-  "insufficientFundsForCreateAManifest": "You do not have sufficient funds to create a manifest at this time. Please go to the top up page to add funds to your account.",
+  "insufficientFundsForCreateAManifest": "You do not have sufficient funds to create a deployment at this time. Please go to the top up page to add funds to your account.",
   "@insufficientFundsForCreateAManifest": {
     "description": "Show that needs funds to create a Manifest"
   },
@@ -2151,19 +2151,19 @@
   "@logOutEmphasized": {
     "description": "The action of logging out. Emphasized with upper case"
   },
-  "manifestName": "Manifest name",
+  "manifestName": "Deployment name",
   "@manifestName": {
     "description": "The name of the manifest"
   },
-  "manifestFallbackTxID": "Manifest fallback transaction ID",
+  "manifestFallbackTxID": "Fallback page",
   "@manifestFallbackTxID": {
     "description": "In the details panel, the transaction a manifest serves when a path in it is not found"
   },
-  "manifestFileType": "Manifest",
+  "manifestFileType": "Deployment",
   "@manifestFileType": {
     "description": "The kind of file shown under a manifest's name in its preview, in place of its content type"
   },
-  "manifestTransactionUnexpectedlyFailed": "Manifest transaction has unexpectedly failed to upload to the Arweave network...",
+  "manifestTransactionUnexpectedlyFailed": "Deployment transaction has unexpectedly failed to upload to the Arweave network...",
   "@manifestTransactionUnexpectedlyFailed": {
     "description": "The manifest transaction did not succeed being uploaded"
   },
@@ -2615,7 +2615,7 @@
   "@pleaseTryAgain": {
     "description": "Please try again."
   },
-  "preparingManifestEmphasized": "Preparing manifest...",
+  "preparingManifestEmphasized": "Preparing deployment...",
   "@preparingManifestEmphasized": {
     "description": "The manifest is being prepared for the upload"
   },
@@ -4143,7 +4143,7 @@
   "@uploadNeedsDriveDescription": {
     "description": "Explains that uploads go into a drive, for somebody who has none yet"
   },
-  "uploadingManifestEmphasized": "Uploading manifest...",
+  "uploadingManifestEmphasized": "Uploading deployment...",
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
@@ -4276,7 +4276,7 @@
   "@walletAddress": {
     "description": "E.g. \"The wallet address is... ABCDEFGH\""
   },
-  "walletChangedDuringManifestCreation": "Provided wallet has unexpectedly changed during manifest creation...",
+  "walletChangedDuringManifestCreation": "Provided wallet has unexpectedly changed during deployment creation...",
   "@walletChangedDuringManifestCreation": {
     "description": "The wallet has been changed while the creation of the manifest was in process"
   },

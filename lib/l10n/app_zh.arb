@@ -6,7 +6,7 @@
   "@addButtonTurbo": {
     "description": "text for add button"
   },
-  "addnewManifestEmphasized": "添加新的MANIFEST",
+  "addnewManifestEmphasized": "新建部署",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
   },
@@ -38,7 +38,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "一个manifest是一种特殊的文件, 可以将一些Arweave交易处理为可使用的路径.",
+  "aManifestIsASpecialKindOfFile": "部署会将一个文件夹发布到同一个 Arweave 地址，每个文件都有易读的路径。它以 Arweave manifest 的形式保存。",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -227,11 +227,11 @@
   "@conflictingFiles": {
     "description": "Files conflict with already existing items"
   },
-  "conflictingManifestFound": "manifest有冲突",
+  "conflictingManifestFound": "部署有冲突",
   "@conflictingManifestFound": {
     "description": "There is an on-chain entity with the same name"
   },
-  "conflictingManifestFoundChooseNewName": "同名manifest已在此处存在. 你想要继续并且将manifest进行更新吗?",
+  "conflictingManifestFoundChooseNewName": "同名部署已在此处存在。你想要继续并将此部署作为新版本上传吗？",
   "@conflictingManifestFoundChooseNewName": {
     "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
   },
@@ -345,11 +345,11 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "新建清单",
+  "createManifest": "新建部署",
   "@createManifest": {
     "description": "To create a manifest"
   },
-  "createManifestEmphasized": "创建MANIFEST",
+  "createManifestEmphasized": "创建部署",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
@@ -586,6 +586,24 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
+  "manifestsToUpdate": "{count, plural, =1{1 个部署待更新} other{{count} 个部署待更新}}",
+  "@manifestsToUpdate": {
+    "description": "Upload options summary: how many manifests the upload will update",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "updateManifests": "更新部署",
+  "@updateManifests": {
+    "description": "Upload options link that opens the choice of manifests to update with the new files"
+  },
+  "uploadAsManifest": "作为部署上传",
+  "@uploadAsManifest": {
+    "description": "Upload options summary: the file will be converted to an Arweave manifest"
+  },
   "syncThisDriveDescription": "获取此网盘的最新文件和文件夹。",
   "@syncThisDriveDescription": {
     "description": "Description for the sync drive action card"
@@ -782,7 +800,7 @@
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
-  "failedToCreateManifestEmphasized": "创建MANIFEST失败",
+  "failedToCreateManifestEmphasized": "创建部署失败",
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
@@ -884,6 +902,10 @@
   "fileSize": "文件大小",
   "@fileSize": {
     "description": "The size of a file"
+  },
+  "filesPendingManifestExplanation": "此文件夹中的部分文件仍在处理中。我们不建议使用处理中的文件创建部署。要继续吗？",
+  "@filesPendingManifestExplanation": {
+    "description": "Warns the user about creating manifests with pending files"
   },
   "filesTooLarge": "{numberOfFiles, plural, zero{} other{文件大小过大。}}",
   "@filesTooLarge": {
@@ -1122,7 +1144,7 @@
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
   },
-  "insufficientBalanceForManifest": "所使用的钱包内的{walletBalance}AR不足以支付manifest交易所需要的{totalCost}AR...",
+  "insufficientBalanceForManifest": "所使用的钱包内的{walletBalance}AR不足以支付部署交易所需要的{totalCost}AR...",
   "@insufficientBalanceForManifest": {
     "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
     "placeholders": {
@@ -1158,7 +1180,7 @@
   "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
-  "insufficientFundsForCreateAManifest": "你没有足够的余额来创建Manifest. 请到账户的充值页面进行充值.",
+  "insufficientFundsForCreateAManifest": "你没有足够的余额来创建部署. 请到账户的充值页面进行充值.",
   "@insufficientFundsForCreateAManifest": {
     "description": "Show that needs funds to create a Manifest"
   },
@@ -1277,11 +1299,19 @@
   "@logOutEmphasized": {
     "description": "The action of logging out. Emphasized with upper case"
   },
-  "manifestName": "Manifest名称",
+  "manifestName": "部署名称",
   "@manifestName": {
     "description": "The name of the manifest"
   },
-  "manifestTransactionUnexpectedlyFailed": "Manifest交易在上传到Arweave网络过程中失败...",
+  "manifestFallbackTxID": "备用页面",
+  "@manifestFallbackTxID": {
+    "description": "In the details panel, the transaction a manifest serves when a path in it is not found"
+  },
+  "manifestFileType": "部署",
+  "@manifestFileType": {
+    "description": "The kind of file shown under a manifest's name in its preview, in place of its content type"
+  },
+  "manifestTransactionUnexpectedlyFailed": "部署交易在上传到Arweave网络过程中失败...",
   "@manifestTransactionUnexpectedlyFailed": {
     "description": "The manifest transaction did not succeed being uploaded"
   },
@@ -1527,7 +1557,7 @@
   "@pleaseTryAgain": {
     "description": "Please try again."
   },
-  "preparingManifestEmphasized": "准备MANIFEST中...",
+  "preparingManifestEmphasized": "准备部署中...",
   "@preparingManifestEmphasized": {
     "description": "The manifest is being prepared for the upload"
   },
@@ -2276,7 +2306,7 @@
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
   },
-  "uploadingManifestEmphasized": "上传MANIFEST中...",
+  "uploadingManifestEmphasized": "上传部署中...",
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
@@ -2405,7 +2435,7 @@
   "@waitForDownload": {
     "description": "User must to wait this download"
   },
-  "walletChangedDuringManifestCreation": "创建MANIFEST时钱包被异常切换...",
+  "walletChangedDuringManifestCreation": "创建部署时钱包被异常切换...",
   "@walletChangedDuringManifestCreation": {
     "description": "The wallet has been changed while the creation of the manifest was in process"
   },

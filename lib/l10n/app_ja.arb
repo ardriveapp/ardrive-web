@@ -6,7 +6,7 @@
   "@addButtonTurbo": {
     "description": "text for add button"
   },
-  "addnewManifestEmphasized": "新規マニフェストを追加する",
+  "addnewManifestEmphasized": "新規デプロイ",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
   },
@@ -38,7 +38,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "マニフェストとは、任意の数のArweaveの取引をわかりやすいパス名にマッピングした特殊なファイルです。",
+  "aManifestIsASpecialKindOfFile": "デプロイは、フォルダーを1つのArweaveアドレスで公開し、各ファイルにわかりやすいパスを割り当てます。Arweaveマニフェストとして保存されます。",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -227,11 +227,11 @@
   "@conflictingFiles": {
     "description": "Files conflict with already existing items"
   },
-  "conflictingManifestFound": "競合するマニフェストが見つかりました",
+  "conflictingManifestFound": "競合するデプロイが見つかりました",
   "@conflictingManifestFound": {
     "description": "There is an on-chain entity with the same name"
   },
-  "conflictingManifestFoundChooseNewName": "同じ名前のマニフェストがすでにこの場所に存在します。続行して、このマニフェストを新しいバージョンとしてアップロードしますか？",
+  "conflictingManifestFoundChooseNewName": "同じ名前のデプロイがすでにこの場所に存在します。続行して、このデプロイを新しいバージョンとしてアップロードしますか？",
   "@conflictingManifestFoundChooseNewName": {
     "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
   },
@@ -345,11 +345,11 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "新規マニフェスト",
+  "createManifest": "新規デプロイ",
   "@createManifest": {
     "description": "To create a manifest"
   },
-  "createManifestEmphasized": "マニフェストを作成する",
+  "createManifestEmphasized": "デプロイを作成する",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
@@ -586,6 +586,24 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
+  "manifestsToUpdate": "{count, plural, =1{更新するデプロイ: 1件} other{更新するデプロイ: {count}件}}",
+  "@manifestsToUpdate": {
+    "description": "Upload options summary: how many manifests the upload will update",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "updateManifests": "デプロイを更新",
+  "@updateManifests": {
+    "description": "Upload options link that opens the choice of manifests to update with the new files"
+  },
+  "uploadAsManifest": "デプロイとしてアップロード",
+  "@uploadAsManifest": {
+    "description": "Upload options summary: the file will be converted to an Arweave manifest"
+  },
   "syncThisDriveDescription": "このドライブから最新のファイルとフォルダを取得します。",
   "@syncThisDriveDescription": {
     "description": "Description for the sync drive action card"
@@ -782,7 +800,7 @@
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
-  "failedToCreateManifestEmphasized": "マニフェストの作成に失敗しました",
+  "failedToCreateManifestEmphasized": "デプロイの作成に失敗しました",
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
@@ -884,6 +902,10 @@
   "fileSize": "ファイルサイズ",
   "@fileSize": {
     "description": "The size of a file"
+  },
+  "filesPendingManifestExplanation": "このフォルダー内の一部のファイルはまだ保留中です。保留中のファイルを含むデプロイの作成はおすすめしません。続行しますか？",
+  "@filesPendingManifestExplanation": {
+    "description": "Warns the user about creating manifests with pending files"
   },
   "filesTooLarge": "{numberOfFiles, plural, zero{} other{{numberOfFiles} 複数のファイルのサイズが大きすぎます}}",
   "@filesTooLarge": {
@@ -1122,7 +1144,7 @@
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
   },
-  "insufficientBalanceForManifest": "指定されたウォレットの残高が{walletBalance} ARでは、{totalCost} ARかかるこのマニフェストの取引に十分ではありません…",
+  "insufficientBalanceForManifest": "指定されたウォレットの残高が{walletBalance} ARでは、{totalCost} ARかかるこのデプロイの取引に十分ではありません…",
   "@insufficientBalanceForManifest": {
     "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
     "placeholders": {
@@ -1158,7 +1180,7 @@
   "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
-  "insufficientFundsForCreateAManifest": "現在、マニフェストを作成するための十分な資金がありません。トップアップページに移動して、アカウントに資金を追加してください。",
+  "insufficientFundsForCreateAManifest": "現在、デプロイを作成するための十分な資金がありません。トップアップページに移動して、アカウントに資金を追加してください。",
   "@insufficientFundsForCreateAManifest": {
     "description": "Show that needs funds to create a Manifest"
   },
@@ -1277,11 +1299,19 @@
   "@logOutEmphasized": {
     "description": "The action of logging out. Emphasized with upper case"
   },
-  "manifestName": "マニフェスト名",
+  "manifestName": "デプロイ名",
   "@manifestName": {
     "description": "The name of the manifest"
   },
-  "manifestTransactionUnexpectedlyFailed": "マニフェストの取引がArweaveネットワークへのアップロードに予期せずに失敗しました…",
+  "manifestFallbackTxID": "フォールバックページ",
+  "@manifestFallbackTxID": {
+    "description": "In the details panel, the transaction a manifest serves when a path in it is not found"
+  },
+  "manifestFileType": "デプロイ",
+  "@manifestFileType": {
+    "description": "The kind of file shown under a manifest's name in its preview, in place of its content type"
+  },
+  "manifestTransactionUnexpectedlyFailed": "デプロイの取引がArweaveネットワークへのアップロードに予期せずに失敗しました…",
   "@manifestTransactionUnexpectedlyFailed": {
     "description": "The manifest transaction did not succeed being uploaded"
   },
@@ -1527,7 +1557,7 @@
   "@pleaseTryAgain": {
     "description": "Please try again."
   },
-  "preparingManifestEmphasized": "マニフェストを準備しています…",
+  "preparingManifestEmphasized": "デプロイを準備しています…",
   "@preparingManifestEmphasized": {
     "description": "The manifest is being prepared for the upload"
   },
@@ -2276,7 +2306,7 @@
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
   },
-  "uploadingManifestEmphasized": "マニフェストをアップロードしています…",
+  "uploadingManifestEmphasized": "デプロイをアップロードしています…",
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
@@ -2405,7 +2435,7 @@
   "@waitForDownload": {
     "description": "User must to wait this download"
   },
-  "walletChangedDuringManifestCreation": "指定されたウォレットがマニフェストの作成中に予期せずに変更されました…",
+  "walletChangedDuringManifestCreation": "指定されたウォレットがデプロイの作成中に予期せずに変更されました…",
   "@walletChangedDuringManifestCreation": {
     "description": "The wallet has been changed while the creation of the manifest was in process"
   },
