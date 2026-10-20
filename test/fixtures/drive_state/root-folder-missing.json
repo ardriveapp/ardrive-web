@@ -1,0 +1,83 @@
+{
+  "name": "root-folder-missing",
+  "description": "The drive's root folder is in no table.",
+  "body": "root-folder-missing.bin",
+  "transaction": {
+    "id": "DriveStateFixtureTransactionId0000000000000",
+    "owner": "fOVzBRTBnyt4VrUUYadBH8yras_-jhgpmNgg-5b3vEw",
+    "tags": [
+      {
+        "name": "ArFS",
+        "value": "0.15"
+      },
+      {
+        "name": "Entity-Type",
+        "value": "drive-state"
+      },
+      {
+        "name": "Drive-Id",
+        "value": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b"
+      },
+      {
+        "name": "Drive-State-Id",
+        "value": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d"
+      },
+      {
+        "name": "State-Version",
+        "value": "0.2"
+      },
+      {
+        "name": "Content-Type",
+        "value": "application/octet-stream"
+      },
+      {
+        "name": "Block-Start",
+        "value": "0"
+      },
+      {
+        "name": "Block-End",
+        "value": "1500000"
+      },
+      {
+        "name": "Data-Start",
+        "value": "0"
+      },
+      {
+        "name": "Data-End",
+        "value": "1500000"
+      },
+      {
+        "name": "Entity-Count",
+        "value": "8"
+      },
+      {
+        "name": "App-Name",
+        "value": "ArDrive-App"
+      },
+      {
+        "name": "App-Platform",
+        "value": "Web"
+      },
+      {
+        "name": "App-Version",
+        "value": "2.88.1"
+      },
+      {
+        "name": "Unix-Time",
+        "value": "1792454400"
+      }
+    ]
+  },
+  "reader": {
+    "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
+    "ownerAddress": "fOVzBRTBnyt4VrUUYadBH8yras_-jhgpmNgg-5b3vEw",
+    "privacy": "public",
+    "driveKey": null,
+    "syncedToBlock": 0
+  },
+  "payloadSha256": "9f5f8388ca20d6e4b30e1f5ca44012273704f1284450e81fe8a43895f5fa27b7",
+  "expected": {
+    "outcome": "integrityFailed",
+    "detail": "the payload's drive row names root folder 0f1e2d3c-4b5a-4968-8776-655443322110, which no section carries and this client does not hold"
+  }
+}

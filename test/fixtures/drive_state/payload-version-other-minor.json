@@ -1,0 +1,83 @@
+{
+  "name": "payload-version-other-minor",
+  "description": "The tag says the reader's version and meta.version says 0.1.",
+  "body": "payload-version-other-minor.bin",
+  "transaction": {
+    "id": "DriveStateFixtureTransactionId0000000000000",
+    "owner": "fOVzBRTBnyt4VrUUYadBH8yras_-jhgpmNgg-5b3vEw",
+    "tags": [
+      {
+        "name": "ArFS",
+        "value": "0.15"
+      },
+      {
+        "name": "Entity-Type",
+        "value": "drive-state"
+      },
+      {
+        "name": "Drive-Id",
+        "value": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b"
+      },
+      {
+        "name": "Drive-State-Id",
+        "value": "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d"
+      },
+      {
+        "name": "State-Version",
+        "value": "0.2"
+      },
+      {
+        "name": "Content-Type",
+        "value": "application/octet-stream"
+      },
+      {
+        "name": "Block-Start",
+        "value": "0"
+      },
+      {
+        "name": "Block-End",
+        "value": "1500000"
+      },
+      {
+        "name": "Data-Start",
+        "value": "0"
+      },
+      {
+        "name": "Data-End",
+        "value": "1500000"
+      },
+      {
+        "name": "Entity-Count",
+        "value": "9"
+      },
+      {
+        "name": "App-Name",
+        "value": "ArDrive-App"
+      },
+      {
+        "name": "App-Platform",
+        "value": "Web"
+      },
+      {
+        "name": "App-Version",
+        "value": "2.88.1"
+      },
+      {
+        "name": "Unix-Time",
+        "value": "1792454400"
+      }
+    ]
+  },
+  "reader": {
+    "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
+    "ownerAddress": "fOVzBRTBnyt4VrUUYadBH8yras_-jhgpmNgg-5b3vEw",
+    "privacy": "public",
+    "driveKey": null,
+    "syncedToBlock": 0
+  },
+  "payloadSha256": "a38ce5fbc3e53f0829173bab48c14d52f1a313c1b3d6f2a926d4004381ef27ec",
+  "expected": {
+    "outcome": "integrityFailed",
+    "detail": "State-Version is tagged 0.2 and the payload declares 0.1"
+  }
+}
