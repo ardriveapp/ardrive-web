@@ -556,8 +556,10 @@ class _AppSideBarState extends State<AppSideBar> {
                         : 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentBrand,
                   shape: _isExpanded ? BoxShape.rectangle : BoxShape.circle,
                   borderRadius: _isExpanded
                       ? BorderRadius.all(
