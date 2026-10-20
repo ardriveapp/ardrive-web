@@ -197,9 +197,12 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         manifestTxId: manifestTxId,
         fileIds: files.map((f) => f.id).toList(),
         processedFiles: processedFiles,
-        failedFiles: failedPaths,
+        // Each state gets its own copy of the failures, never this list,
+        // which grows: a state whose list grew with it would equal the next
+        // one and the bloc would drop the update.
+        failedFiles: const [],
         currentFileName: files.first.name,
-        failedPaths: failedPaths,
+        failedPaths: const [],
         isCreatingFolderHierarchy: true,
       ));
 
@@ -241,6 +244,13 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
             ));
           }
         },
+        onFileFailure: (path) {
+          failedPaths.add(path);
+          final state = this.state;
+          if (state is BulkImportInProgress) {
+            emit(state.copyWith(failedPaths: List.of(failedPaths)));
+          }
+        },
         onCreateFolderHierarchyEnd: () {
           final state = this.state;
           if (state is BulkImportInProgress) {
@@ -251,19 +261,23 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         userCipherKey: _ardriveAuth.currentUser.cipherKey,
       );
     } catch (e) {
-      failedPaths.add(files.first.path);
-      logger.e('Failed to import file: ${files.first.path}', e);
+      logger.e('Bulk import failed', e);
       lastImportError = e;
     }
 
     final totalFiles = files.length;
-    final successfulFiles = processedFiles;
-    final failedFiles = failedPaths;
+    // The result names every file imported and every file that failed. When
+    // the call threw instead, the files reported imported before it did are
+    // on the drive and none of the rest are.
+    final successfulFiles =
+        importResult?.importedFiles.length ?? processedFiles;
+    final failedFiles =
+        importResult?.failures.length ?? totalFiles - processedFiles;
 
     if (successfulFiles == 0) {
       final paymentError = _isBulkImportPaymentError(lastImportError) ||
-          (importResult?.failures.any(
-                  (f) => _isBulkImportPaymentError(f.originalError)) ??
+          (importResult?.failures
+                  .any((f) => _isBulkImportPaymentError(f.originalError)) ??
               false);
       emit(BulkImportError(
         paymentError
@@ -279,7 +293,7 @@ class BulkImportBloc extends Bloc<BulkImportEvent, BulkImportState> {
         manifestTxId: manifestTxId,
         totalFiles: totalFiles,
         successfulFiles: successfulFiles,
-        failedFiles: failedFiles.length,
+        failedFiles: failedFiles,
       ));
     }
   }
