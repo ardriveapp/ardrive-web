@@ -54,7 +54,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
                 alignment: Alignment.topCenter,
                 child: Text(
                   // FIXME: Add localization key
-                  'Import Wallet',
+                  'Import wallet',
                   style: typography.heading2(
                       color: colorTokens.textHigh,
                       fontWeight: ArFontWeight.bold),
@@ -70,7 +70,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 40),
-              Text('Seed Phrase',
+              Text('Seed phrase',
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
@@ -81,7 +81,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
                 showObfuscationToggle: true,
                 obscureText: true,
                 // TODO: create/update localization key
-                hintText: 'Enter Seed Phrase',
+                hintText: 'Enter seed phrase',
                 textInputAction: TextInputAction.next,
                 minLines: 3,
                 maxLines: 3,
@@ -103,7 +103,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
               const LinedTextDivider(),
               const SizedBox(height: 40),
               ArDriveButtonNew(
-                  text: 'Use Keyfile',
+                  text: 'Use keyfile',
                   typography: typography,
                   variant: ButtonVariant.outline,
                   onPressed: () async {

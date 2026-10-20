@@ -558,6 +558,7 @@ class ModalAction {
     this.isEnable = true,
     this.customWidth,
     this.customHeight,
+    this.variant,
   });
 
   final String title;
@@ -565,6 +566,10 @@ class ModalAction {
   final bool isEnable;
   final double? customWidth;
   final double? customHeight;
+
+  /// Overrides the variant [ArDriveStandardModalNew] picks from the action's
+  /// position, where a lone action is primary.
+  final ButtonVariant? variant;
 }
 
 Future<void> showAnimatedDialog(
@@ -831,11 +836,14 @@ class ArDriveStandardModalNew extends StatelessWidget {
         if (actions.isNotEmpty)
           ArDriveButtonNew(
             maxHeight: actions[0].customHeight ?? 40,
-            maxWidth: actions[0].customWidth ?? 100,
+            maxWidth: actions[0].customWidth ??
+                ArDriveButtonNew.fittedWidth(context, actions[0].title,
+                    minWidth: 100),
             typography: typography,
-            variant: actions.length > 1
-                ? ButtonVariant.secondary
-                : ButtonVariant.primary,
+            variant: actions[0].variant ??
+                (actions.length > 1
+                    ? ButtonVariant.secondary
+                    : ButtonVariant.primary),
             text: actions.first.title,
             onPressed: actions.first.action,
           ),
@@ -844,10 +852,13 @@ class ArDriveStandardModalNew extends StatelessWidget {
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButtonNew(
               maxHeight: actions[1].customHeight ?? 40,
-              maxWidth: actions[1].customWidth ?? 110,
-              variant: actions.length > 2
-                  ? ButtonVariant.secondary
-                  : ButtonVariant.primary,
+              maxWidth: actions[1].customWidth ??
+                  ArDriveButtonNew.fittedWidth(context, actions[1].title,
+                      minWidth: 110),
+              variant: actions[1].variant ??
+                  (actions.length > 2
+                      ? ButtonVariant.secondary
+                      : ButtonVariant.primary),
               isDisabled: !actions[1].isEnable,
               text: actions[1].title,
               onPressed: actions[1].action,
@@ -861,9 +872,11 @@ class ArDriveStandardModalNew extends StatelessWidget {
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButtonNew(
               typography: typography,
-              variant: ButtonVariant.primary,
+              variant: actions[2].variant ?? ButtonVariant.primary,
               maxHeight: actions[2].customHeight ?? 40,
-              maxWidth: actions[2].customWidth ?? 110,
+              maxWidth: actions[2].customWidth ??
+                  ArDriveButtonNew.fittedWidth(context, actions[2].title,
+                      minWidth: 110),
               isDisabled: !actions[2].isEnable,
               text: actions[2].title,
               onPressed: actions[2].action,

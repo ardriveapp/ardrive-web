@@ -6,15 +6,15 @@
   "@addButtonTurbo": {
     "description": "text for add button"
   },
-  "addnewManifestEmphasized": "ADD NEW MANIFEST",
+  "addnewManifestEmphasized": "Add new manifest",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
   },
-  "addProfileEmphasized": "ADD PROFILE",
+  "addProfileEmphasized": "Add profile",
   "@addProfileEmphasized": {
     "description": "Add a wallet. Emphasized with upper case"
   },
-  "addressCopied": "Address Copied!",
+  "addressCopied": "Address copied!",
   "@addressCopied": {
     "description": "Tooltip on copy wallet address button"
   },
@@ -94,19 +94,19 @@
   "@ardriveIsOptimizedForLargeScreens": {
     "description": "Screen not supported page"
   },
-  "attachDrive": "Attach Drive",
+  "attachDrive": "Attach drive",
   "@attachDrive": {
     "description": "Attach a shared drive"
   },
-  "attachDriveEmphasized": "ATTACH DRIVE",
+  "attachDriveEmphasized": "Attach drive",
   "@attachDriveEmphasized": {
     "description": "Attach a shared drive. Emphasized with upper case"
   },
-  "attachEmphasized": "ATTACH",
+  "attachEmphasized": "Attach",
   "@attachEmphasized": {
     "description": "The action of attaching a drive. Emphasized with upper case"
   },
-  "attachingDriveEmphasized": "ATTACHING DRIVE...",
+  "attachingDriveEmphasized": "Attaching drive...",
   "@attachingDriveEmphasized": {
     "description": "Drive attach form. Emphasized with upper case"
   },
@@ -118,7 +118,7 @@
   "@backButtonOnboarding": {
     "description": "Text of the back button onboarding"
   },
-  "backEmphasized": "BACK",
+  "backEmphasized": "Back",
   "@backEmphasized": {
     "description": "Go back. Emphasized with upper case"
   },
@@ -132,11 +132,11 @@
       }
     }
   },
-  "biometricLoginDisabled": "Biometric Login Disabled",
+  "biometricLoginDisabled": "Biometric login disabled",
   "@biometricLoginDisabled": {
     "description": "Biometric Login is Disabled."
   },
-  "biometricLoginEnabled": "Biometric Login Enabled",
+  "biometricLoginEnabled": "Biometric login enabled",
   "@biometricLoginEnabled": {
     "description": "Biometric Login is Enabled."
   },
@@ -160,7 +160,7 @@
   "@biometricTemporarilyDisabled": {
     "description": "Biometric is locked out"
   },
-  "bundleTxID": "Bundle Tx ID",
+  "bundleTxID": "Bundle transaction ID",
   "@bundleTxID": {
     "description": "The bundle transaction ID of the bundled item"
   },
@@ -168,17 +168,17 @@
   "@bundlingAndSigningUpload": {
     "description": "The app is bundling together and signing the transactions"
   },
-  "buyCredits": "Buy Credits",
+  "buyCredits": "Buy credits",
   "@buyCredits": {},
   "actionFailedTryAgain": "Something went wrong. Please check your connection and try again.",
   "@actionFailedTryAgain": {
     "description": "Generic failure message for metadata operations (rename, move, create, etc.)"
   },
-  "closeAnyway": "Close Anyway",
+  "closeAnyway": "Close anyway",
   "@closeAnyway": {
     "description": "Closes the upload problem dialog, leaving wallet-paid files unfinished"
   },
-  "costCredits": "Cost: {credits} Credits",
+  "costCredits": "Cost: {credits} credits",
   "@costCredits": {
     "description": "The total cost estimation of the upload quoted in Turbo Credits",
     "placeholders": {
@@ -192,19 +192,19 @@
   "@freeAllowanceUsedUpTitle": {
     "description": "Title of the dialog shown when a Turbo action is rejected because the free allowance is exhausted"
   },
-  "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires Credits. Add Credits and try again.",
+  "freeAllowanceUsedUpDescription": "Your free upload allowance has been used up, so this action now requires credits. Add credits and try again.",
   "@freeAllowanceUsedUpDescription": {
     "description": "Body of the free-allowance-used-up dialog"
   },
-  "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires Credits or AR.",
+  "freeAllowanceUsedUpUploadNote": "Free allowance used up. This upload requires credits or AR.",
   "@freeAllowanceUsedUpUploadNote": {
     "description": "Note shown above the payment method selector when an upload would have been free on size but the wallet's free allowance is used up"
   },
-  "freeAllowanceExceededUploadNote": "This upload exceeds your free allowance and will need Credits or AR.",
+  "freeAllowanceExceededUploadNote": "This upload exceeds your free allowance and will need credits or AR.",
   "@freeAllowanceExceededUploadNote": {
     "description": "Note shown above the payment method selector when an upload is size-eligible for the free tier but larger than the wallet's remaining free allowance, so part or all of it needs payment"
   },
-  "newUserEmptyDriveDescription": "You've made your first blockchain transaction. You can now use your drive to store, share and organize any kind of file. Files up to {limit} each upload free, while your free allowance lasts.",
+  "newUserEmptyDriveDescription": "You can now use your drive to store, share and organize any kind of file. Files up to {limit} each upload free, while your free allowance lasts.",
   "@newUserEmptyDriveDescription": {
     "description": "Shown on the empty page of a wallet's first drive. limit is the largest file Turbo uploads free, as a size",
     "placeholders": {
@@ -214,7 +214,7 @@
       }
     }
   },
-  "existingUserEmptyDriveDescription": "Files up to {limit} each upload free, while your free allowance lasts. For larger files, you can pay with Credits. Here are some things you can do next.",
+  "existingUserEmptyDriveDescription": "Files up to {limit} each upload free, while your free allowance lasts. For larger files, you can pay with credits. Here are some things you can do next.",
   "@existingUserEmptyDriveDescription": {
     "description": "Shown on the empty page of a new drive in a wallet that already has drives, above the actions it offers. limit is the largest file Turbo uploads free, as a size",
     "placeholders": {
@@ -232,11 +232,11 @@
   "@cancel": {
     "description": "Cancel button"
   },
-  "cancelEmphasized": "CANCEL",
+  "cancelEmphasized": "Cancel",
   "@cancelEmphasized": {
     "description": "Cancel button. Emphasized with upper case"
   },
-  "changeTheme": "Change Theme",
+  "changeTheme": "Change theme",
   "@changeTheme": {
     "description": "Theme switcher tooltip"
   },
@@ -248,7 +248,7 @@
   "@close": {
     "description": "close"
   },
-  "closeEmphasized": "CLOSE",
+  "closeEmphasized": "Close",
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
@@ -260,11 +260,11 @@
   "@collapse": {
     "description": "E.g.: Collapse the image"
   },
-  "collapseSideBar": "Collapse Sidebar",
+  "collapseSideBar": "Collapse sidebar",
   "@collapseSideBar": {
     "description": "Collapse side bar tooltip"
   },
-  "computingSnapshotData": "Computing Snapshot Data",
+  "computingSnapshotData": "Computing snapshot data",
   "@computingSnapshotData": {
     "description": "Computing Snapshot Data"
   },
@@ -278,7 +278,7 @@
   "@confirmed": {
     "description": "Status tooltip for transactions that are confirmed by the network"
   },
-  "confirmEmphasized": "CONFIRM",
+  "confirmEmphasized": "Confirm",
   "@confirmEmphasized": {
     "description": "Confirm the prompted question"
   },
@@ -316,13 +316,13 @@
   "@congestionWarningShort": {
     "description": "Concise message shown inline when network is congested"
   },
-  "continueEmphasized": "CONTINUE",
+  "continueEmphasized": "Continue",
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "cookieConsent": "Cookie Consent",
+  "cookieConsent": "Cookie consent",
   "@cookieConsent": {},
-  "cookieConsentBodyPart1": "Our payment provider, Stripe, uses cookies to enable users to purchase Credits. These cookies are required for the purchasing of Credits.",
+  "cookieConsentBodyPart1": "Our payment provider, Stripe, uses cookies to enable users to purchase credits. These cookies are required for the purchasing of credits.",
   "@cookieConsentBodyPart1": {},
   "cookieConsentBodyPart2": "By clicking “Accept” you consent to this use of cookies.",
   "@cookieConsentBodyPart2": {},
@@ -330,27 +330,27 @@
   "@copyAccessKey": {
     "description": "Label of the button that copies the access key on the share file dialog"
   },
-  "copyBundleTxID": "Copy Bundle Tx ID",
+  "copyBundleTxID": "Copy bundle transaction ID",
   "@copyBundleTxID": {
     "description": "Copy transaction ID of the Bundle transaction"
   },
-  "copyDataTxID": "Copy Data Tx ID",
+  "copyDataTxID": "Copy data transaction ID",
   "@copyDataTxID": {
     "description": "Copy the transaction ID of the Data transaction"
   },
-  "copyDriveID": "Copy Drive ID",
+  "copyDriveID": "Copy drive ID",
   "@copyDriveID": {
     "description": "Tooltip of the copy icon for the Drive ID"
   },
-  "copyDriveTxID": "Copy Drive Tx ID",
+  "copyDriveTxID": "Copy drive transaction ID",
   "@copyDriveTxID": {
     "description": "Copy transaction ID of Drive tooltip"
   },
-  "copyFileID": "Copy File ID",
+  "copyFileID": "Copy file ID",
   "@copyFileID": {
     "description": "Tooltip of the copy icon for the File ID"
   },
-  "copyFolderID": "Copy Folder ID",
+  "copyFolderID": "Copy folder ID",
   "@copyFolderID": {
     "description": "Tooltip of the copy icon for the Folder ID"
   },
@@ -358,11 +358,11 @@
   "@copyLink": {
     "description": "Copy the link for sharing an entity"
   },
-  "copyMetadataTxID": "Copy Metadata Tx ID",
+  "copyMetadataTxID": "Copy metadata transaction ID",
   "@copyMetadataTxID": {
     "description": "Copy the transaction ID of the Metadata transaction"
   },
-  "copyRootFolderTxID": "Copy Root folder Tx ID",
+  "copyRootFolderTxID": "Copy root folder transaction ID",
   "@copyRootFolderTxID": {
     "description": "Copy transaction ID of Root Folder tooltip"
   },
@@ -370,7 +370,7 @@
   "@copyTooltip": {
     "description": "Tooltip for copy button"
   },
-  "copyWalletAddress": "Copy Wallet Address",
+  "copyWalletAddress": "Copy wallet address",
   "@copyWalletAddress": {
     "description": "Tooltip on copy wallet address button"
   },
@@ -402,35 +402,35 @@
   "@createAndConfirmPassword": {
     "description": "Asks the user to create a password"
   },
-  "createDriveEmphasized": "CREATE DRIVE",
+  "createDriveEmphasized": "Create drive",
   "@createDriveEmphasized": {
     "description": "Action of creating a new drive. Emphasized with upper case"
   },
-  "createEmphasized": "CREATE",
+  "createEmphasized": "Create",
   "@createEmphasized": {
     "description": "Create a drive. Emphasized with upper case"
   },
-  "createFolderEmphasized": "CREATE FOLDER",
+  "createFolderEmphasized": "Create folder",
   "@createFolderEmphasized": {
     "description": "The action of creating a folder. Emphasized with upper case"
   },
-  "createHereEmphasized": "CREATE HERE",
+  "createHereEmphasized": "Create here",
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "New Manifest",
+  "createManifest": "New manifest",
   "@createManifest": {
     "description": "To create a manifest"
   },
-  "createManifestEmphasized": "CREATE MANIFEST",
+  "createManifestEmphasized": "Create manifest",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
-  "createNewFilePin": "Create a New File Pin",
+  "createNewFilePin": "Create a new file pin",
   "@createNewFilePin": {
     "description": "E.g.: I want to \"Create a New File Pin\""
   },
-  "createNewSnapshot": "Create New Snapshot",
+  "createNewSnapshot": "Create new snapshot",
   "@createNewSnapshot": {
     "description": "The action of snapshotting a drive"
   },
@@ -448,7 +448,7 @@
       }
     }
   },
-  "goBack": "Go Back",
+  "goBack": "Go back",
   "@goBack": {
     "description": "Returns to the previous dialog"
   },
@@ -460,7 +460,7 @@
   "@leaveFilesUnfinishedTitle": {
     "description": "Title of the confirmation before closing the upload problem dialog with wallet-paid files unfinished"
   },
-  "reUpload": "Re-Upload",
+  "reUpload": "Re-upload",
   "@reUpload": {
     "description": "Uploads the files that did not finish again"
   },
@@ -468,27 +468,27 @@
   "@replace": {
     "description": "Replaces an existing file with the one being uploaded"
   },
-  "syncThisDrive": "Sync This Drive",
+  "syncThisDrive": "Sync this drive",
   "@syncThisDrive": {
     "description": "Menu option to sync only the current drive"
   },
-  "deepSyncThisDrive": "Deep Sync This Drive",
+  "deepSyncThisDrive": "Deep sync this drive",
   "@deepSyncThisDrive": {
     "description": "Menu option to deep sync only the current drive"
   },
-  "syncAllDrivesOnLogin": "Sync All Drives on Login",
+  "syncAllDrivesOnLogin": "Sync all drives on login",
   "@syncAllDrivesOnLogin": {
     "description": "Toggle to enable/disable syncing all drives when logging in"
   },
-  "creatingDriveEmphasized": "CREATING DRIVE...",
+  "creatingDriveEmphasized": "Creating drive...",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"
   },
-  "creatingFolderEmphasized": "CREATING FOLDER...",
+  "creatingFolderEmphasized": "Creating folder...",
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
   },
-  "creditCard": "Credit Card",
+  "creditCard": "Credit card",
   "@creditCard": {},
   "credits": "Credits",
   "@credits": {},
@@ -500,13 +500,13 @@
   "@creditsWillBeAutomaticallyAddedToYourTurboBalance": {},
   "currency": "Currency",
   "@currency": {},
-  "customAmount": "Custom Amount",
+  "customAmount": "Custom amount",
   "@customAmount": {},
-  "darkModeEmphasized": "DARK MODE",
+  "darkModeEmphasized": "Dark mode",
   "@darkModeEmphasized": {
     "description": "Refers to the dark theme of the app. Emphasized with upper case"
   },
-  "dataTxID": "Data Tx ID",
+  "dataTxID": "Data transaction ID",
   "@dataTxID": {
     "description": "The transaction ID of the entity Data transaction"
   },
@@ -518,7 +518,7 @@
   "@decentralizedPermanent": {
     "description": "Permanence requires patience"
   },
-  "deepResync": "Deep Resync",
+  "deepResync": "Deep resync",
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
@@ -526,8 +526,8 @@
   "@deepResyncTooltip": {
     "description": "Deep Sync Tooltip Text"
   },
-  "detachDrive": "Detach Drive?",
-  "detachDriveAction": "Detach Drive",
+  "detachDrive": "Detach drive?",
+  "detachDriveAction": "Detach drive",
   "@detachDriveAction": {
     "description": "Menu command that opens the detach confirmation. The dialog's own title keeps its question mark; a list of commands should not read as a list of questions"
   },
@@ -544,7 +544,7 @@
       }
     }
   },
-  "detachEmphasized": "DETACH",
+  "detachEmphasized": "Detach",
   "@detachEmphasized": {
     "description": "Example: To DETACH a drive. Emphasized in upper case"
   },
@@ -556,7 +556,7 @@
   "@deviceNotSupportBiometrics": {
     "description": "Biometric is not supported"
   },
-  "developerDocs": "Developer Docs",
+  "developerDocs": "Developer docs",
   "@developerDocs": {
     "description": "Link to developer documentation"
   },
@@ -589,7 +589,7 @@
   "@diveInButtonOnboarding": {
     "description": "Text of the last button of the onboarding"
   },
-  "doneEmphasized": "DONE",
+  "doneEmphasized": "Done",
   "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
@@ -653,7 +653,7 @@
   "@downloadReconnecting": {
     "description": "Status label that replaces Downloading while a download that lost its connection picks itself back up"
   },
-  "downloadStartOver": "Start Over",
+  "downloadStartOver": "Start over",
   "@downloadStartOver": {
     "description": "Action on the download failure dialog that restarts a download from the beginning. Deliberately not Try Again, which would imply the download continues from where it stopped"
   },
@@ -679,19 +679,19 @@
   "@downloadVerifyingDescription": {
     "description": "Description of the download dialog shown while the integrity check runs. Says the file is already saved, because the check never holds up saving"
   },
-  "downloadWalletKeyfile": "Download Wallet Keyfile",
+  "downloadWalletKeyfile": "Download wallet keyfile",
   "@downloadWalletKeyfile": {},
-  "dragAndDropButtonTitle": "Browse Json",
+  "dragAndDropButtonTitle": "Browse JSON",
   "@dragAndDropButtonTitle": {
     "description": "text of title drag and drop"
   },
-  "dragAndDropDescription": "Drag & Drop your Keyfile",
+  "dragAndDropDescription": "Drag and drop your keyfile",
   "@dragAndDropDescription": {
     "description": "text of description drag and drop"
   },
   "driveDoingInitialSetupMessage": "Your drive is doing it's initial setup. This may take a few minutes. Please wait before taking any action.",
   "@driveDoingInitialSetupMessage": {},
-  "driveNotSynced": "Drive Not Synced",
+  "driveNotSynced": "Drive not synced",
   "@driveNotSynced": {
     "description": "Title shown when a drive has metadata but content has not been synced"
   },
@@ -699,7 +699,7 @@
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
   },
-  "driveSyncFoundNothing": "Nothing Found Yet",
+  "driveSyncFoundNothing": "Nothing found yet",
   "@driveSyncFoundNothing": {
     "description": "Title of the unsynced drive card after a sync has already run against it and found no root metadata, so the card does not repeat the screen the user just pressed Sync Now on"
   },
@@ -707,7 +707,7 @@
   "@driveSyncFoundNothingDescription": {
     "description": "Says what the sync actually did, so a second identical card does not read as a button that did nothing"
   },
-  "checkAgain": "Check Again",
+  "checkAgain": "Check again",
   "@checkAgain": {
     "description": "Action on the unsynced drive card once a sync has already looked and found nothing. Deliberately not Sync Now, which was the button that was already pressed"
   },
@@ -723,7 +723,7 @@
   "@driveSyncAlreadyRunningForThisDrive": {
     "description": "Shown on the unsynced drive card when the running sync already covers this drive - its own sync, or a sync of all drives - so the unavailable Sync buttons are accounted for"
   },
-  "driveListUnavailable": "Your Drives Could Not Be Loaded",
+  "driveListUnavailable": "Your drives could not be loaded",
   "@driveListUnavailable": {
     "description": "Shown when the drive list could not be read at all. Never says the user has no drives - whether they do is not known"
   },
@@ -745,7 +745,7 @@
       }
     }
   },
-  "addCreditsToUpload": "Add Credits to upload.",
+  "addCreditsToUpload": "Add credits to upload.",
   "@addCreditsToUpload": {
     "description": "Link under the upload payment options, when neither balance can pay, that opens the Turbo Credits top-up"
   },
@@ -759,7 +759,7 @@
       }
     }
   },
-  "amountInCredits": "{amount} Credits",
+  "amountInCredits": "{amount} credits",
   "@amountInCredits": {
     "description": "What an upload costs in Turbo Credits, on the Turbo payment option",
     "placeholders": {
@@ -779,7 +779,7 @@
       }
     }
   },
-  "creditsAvailable": "{balance} Credits available",
+  "creditsAvailable": "{balance} credits available",
   "@creditsAvailable": {
     "description": "The Turbo Credits balance, under the Turbo payment option",
     "placeholders": {
@@ -803,7 +803,7 @@
       }
     }
   },
-  "notEnoughCredits": "Not enough Credits, {balance} available",
+  "notEnoughCredits": "Not enough credits, {balance} available",
   "@notEnoughCredits": {
     "description": "Under the Turbo payment option when the Turbo Credits cannot pay for the upload",
     "placeholders": {
@@ -813,7 +813,7 @@
       }
     }
   },
-  "notEnoughCreditsOrAr": "You don't have enough Credits or AR for this upload.",
+  "notEnoughCreditsOrAr": "You don't have enough credits or AR for this upload.",
   "@notEnoughCreditsOrAr": {
     "description": "Under the upload payment options when neither the Turbo Credits nor the wallet's AR can pay for the upload"
   },
@@ -825,7 +825,7 @@
   "@paymentOptionWallet": {
     "description": "Upload payment option: pay with AR from the wallet"
   },
-  "assignName": "Assign Name",
+  "assignName": "Assign name",
   "@assignName": {
     "description": "Upload dialog button that goes on to choosing an ArNS name"
   },
@@ -909,11 +909,11 @@
   "@uploadWithThumbnails": {
     "description": "Upload options checkbox: also make and upload thumbnails for the images"
   },
-  "uploadFailedPartial": "Some files didn't finish uploading. They'll show as failed in your drive. Select Re-Upload to try them again.",
+  "uploadFailedPartial": "Some files didn't finish uploading. They'll show as failed in your drive. Select Re-upload to try them again.",
   "@uploadFailedPartial": {
     "description": "Upload problem dialog text when some Turbo uploads did not finish"
   },
-  "uploadProblemTitle": "Problem with Upload",
+  "uploadProblemTitle": "Problem with upload",
   "@uploadProblemTitle": {
     "description": "Title of the dialog listing files that did not finish uploading"
   },
@@ -921,7 +921,7 @@
   "@warning": {
     "description": "Title of a warning dialog"
   },
-  "yourDrives": "Your Drives",
+  "yourDrives": "Your drives",
   "@yourDrives": {
     "description": "Title of the page a login lands on: the list of every drive this wallet can open"
   },
@@ -929,7 +929,7 @@
   "@driveSharedWithMe": {
     "description": "Marker on a drive owned by somebody else and attached by this user"
   },
-  "driveNeverSynced": "Never synced",
+  "driveNeverSynced": "Not synced on this device",
   "@driveNeverSynced": {
     "description": "Sync state of a drive whose history has never been read on this device. Deliberately not \"Empty\" - nothing has looked"
   },
@@ -943,7 +943,7 @@
   },
   "driveSyncFailed": "Last sync failed",
   "@driveSyncFailed": {
-    "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from 'Never synced', which means nobody has looked yet."
+    "description": "Shown on a drive row when the most recent sync could not read that drive. Distinct from driveNeverSynced, which means nobody has looked yet."
   },
   "driveSyncingNow": "Syncing...",
   "@driveSyncingNow": {
@@ -1053,7 +1053,7 @@
   "@syncThisDriveDescription": {
     "description": "Description for the sync drive action card"
   },
-  "syncAllDrives": "Sync All Drives",
+  "syncAllDrives": "Sync all drives",
   "syncAllDrivesDescription": "Sync all your drives at once to ensure all content is up to date.",
   "@syncAllDrivesDescription": {
     "description": "Description for the sync all drives action card"
@@ -1066,7 +1066,7 @@
   "@driveIssuesDetected": {
     "description": "Orphan folders detected, the user must navigate through the contents to reach them"
   },
-  "driveKey": "Drive Key",
+  "driveKey": "Drive key",
   "@driveKey": {
     "description": "Drive Key form field label"
   },
@@ -1074,11 +1074,11 @@
   "@driveName": {
     "description": "The name of certain drive"
   },
-  "drivePrivacyDescriptionPrivate": "Private Drives offer state-of-the-art security, you control access.",
+  "drivePrivacyDescriptionPrivate": "Files in a private drive are encrypted. Only people you share them with can open them.",
   "@drivePrivacyDescriptionPrivate": {
     "description": "Explains private drives."
   },
-  "drivePrivacyDescriptionPublic": "Public Drives are discoverable, others can find and view the contents.",
+  "drivePrivacyDescriptionPublic": "Anyone can find a public drive and view its files.",
   "@drivePrivacyDescriptionPublic": {
     "description": "Explains public drives."
   },
@@ -1086,7 +1086,7 @@
   "@driveRoot": {
     "description": "The folder entity that is at the top of the folder hierarchy"
   },
-  "driveSyncedOfDrivesCount": "{drivesSynced} of {drivesCount} Drives Synced",
+  "driveSyncedOfDrivesCount": "{drivesSynced} of {drivesCount} drives synced",
   "@driveSyncedOfDrivesCount": {
     "description": "Show the number of drives synced and the number of user's drives",
     "placeholders": {
@@ -1102,7 +1102,7 @@
       }
     }
   },
-  "driveTxID": "Drive Tx ID",
+  "driveTxID": "Drive transaction ID",
   "@driveTxID": {
     "description": "The transaction ID of the drive"
   },
@@ -1138,7 +1138,7 @@
   "@driveWasUnhidden": {
     "description": "This drive was unhidden."
   },
-  "duplicateFiles": "{numberOfDuplicateFiles, plural, zero{} one{A duplicate file found} other{Duplicate files found}}",
+  "duplicateFiles": "{numberOfDuplicateFiles, plural, zero{} one{A file with this name already exists} other{Files with these names already exist}}",
   "@duplicateFiles": {
     "description": "Count of conflicting items",
     "placeholders": {
@@ -1162,7 +1162,7 @@
   },
   "email": "Email",
   "@email": {},
-  "enableBiometricLogin": "Enable Biometric Login",
+  "enableBiometricLogin": "Enable biometric login",
   "@enableBiometricLogin": {
     "description": "Enable Biometric Login"
   },
@@ -1182,17 +1182,17 @@
   "@enableStorageAccess": {
     "description": "enable camera access"
   },
-  "enableStorageAccessTitle": "Enable Storage Access",
+  "enableStorageAccessTitle": "Enable storage access",
   "@enableStorageAccessTitle": {
     "description": "enable camera access"
   },
   "enter": "Enter",
   "@enter": {},
-  "enterFileKey": "Enter File Key",
+  "enterFileKey": "Enter file key",
   "@enterFileKey": {
     "description": "File Key form field label"
   },
-  "enterFileName": "Enter File Name",
+  "enterFileName": "Enter file name",
   "@enterFileName": {
     "description": "To type the name of the file"
   },
@@ -1200,7 +1200,7 @@
   "@enterPassword": {
     "description": "Please enter password"
   },
-  "enterTxIdOrFileId": "Enter Transaction ID or File ID",
+  "enterTxIdOrFileId": "Enter transaction ID or file ID",
   "@enterTxIdOrFileId": {
     "description": "Indicates that you must enter a Transaction ID or a File ID"
   },
@@ -1228,7 +1228,7 @@
   },
   "errorFetchingQuote": "Error fetching new quote, try again.",
   "@errorFetchingQuote": {},
-  "estimatedStorage": "Estimated Storage",
+  "estimatedStorage": "Estimated storage",
   "@estimatedStorage": {},
   "expand": "Expand",
   "@expand": {
@@ -1238,7 +1238,7 @@
   "@expandSideBar": {
     "description": "Expand side bar tooltip"
   },
-  "exportDriveContents": "Export Drive Contents",
+  "exportDriveContents": "Export drive contents",
   "@exportDriveContents": {
     "description": "Export the data of a drive into a CSV file"
   },
@@ -1264,7 +1264,7 @@
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
-  "failedToCreateManifestEmphasized": "FAILED TO CREATE MANIFEST",
+  "failedToCreateManifestEmphasized": "Failed to create manifest",
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
@@ -1345,7 +1345,7 @@
   "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
   },
-  "downloadNetworkError": "Network Error",
+  "downloadNetworkError": "Network error",
   "@downloadNetworkError": {
     "description": "Title for network error during download"
   },
@@ -1361,7 +1361,7 @@
   "@downloadNeedsKeyDescription": {
     "description": "Explains that the download was refused because the file is encrypted and no key was supplied"
   },
-  "downloadFileNotFound": "File Not Found",
+  "downloadFileNotFound": "File not found",
   "@downloadFileNotFound": {
     "description": "Title when downloaded file is not found on any gateway"
   },
@@ -1369,7 +1369,7 @@
   "@downloadFileNotFoundDescription": {
     "description": "Description when downloaded file is not found"
   },
-  "downloadRateLimited": "Too Many Requests",
+  "downloadRateLimited": "Too many requests",
   "@downloadRateLimited": {
     "description": "Title when download is rate limited"
   },
@@ -1451,7 +1451,7 @@
   "@fileSize": {
     "description": "The size of a file"
   },
-  "filesPending": "Files Pending",
+  "filesPending": "Files pending",
   "@filesPending": {
     "description": "E.g. \"there are some files pending\""
   },
@@ -1497,7 +1497,7 @@
       }
     }
   },
-  "filesWithTheSameNameAlreadyExists": "{numberOfFiles, plural, zero{} one{A file with the same name already exists at this location. Do you want to continue and upload this file as a new version?} other{{numberOfFiles} files with the same name already exists at this location. Do you want to continue and upload these files as a new version?}}",
+  "filesWithTheSameNameAlreadyExists": "{numberOfFiles, plural, zero{} one{A file with this name is already here. Uploading adds a new version of it.} other{{numberOfFiles} files with these names are already here. Uploading adds a new version of each.}}",
   "@filesWithTheSameNameAlreadyExists": {
     "description": "Asks the user what to do with the items conflicting names",
     "placeholders": {
@@ -1660,11 +1660,11 @@
   "@forgetWalletDescription": {
     "description": "Modal description to forget wallet"
   },
-  "forgetWalletTitle": "Forget Wallet?",
+  "forgetWalletTitle": "Forget wallet?",
   "@forgetWalletTitle": {
     "description": "Modal title to forget wallet"
   },
-  "freeTurboTransaction": "Cost: 0 AR\nThis small transaction is free thanks to Turbo.",
+  "freeTurboTransaction": "Cost: 0 credits\nUploads this small are free with Turbo.",
   "@freeTurboTransaction": {
     "description": "Message explaining that your upload will be free thanks to Turbo"
   },
@@ -1676,13 +1676,13 @@
   "@getAWallet": {
     "description": "Text for the link that redirects the user to the 'Claim a token' page of ArWeave"
   },
-  "giftCode": "Gift Code",
+  "giftCode": "Gift code",
   "@giftCode": {},
-  "giftCredits": "Gift Credits",
+  "giftCredits": "Gift credits",
   "@giftCredits": {},
-  "giftRedeemed": "Gift Redeemed!",
+  "giftRedeemed": "Gift redeemed!",
   "@giftRedeemed": {},
-  "goToDeviceSettings": "Go to Settings",
+  "goToDeviceSettings": "Go to settings",
   "@goToDeviceSettings": {
     "description": "Go to device settings"
   },
@@ -1690,7 +1690,7 @@
   "@goToFirst": {
     "description": "Action of going to the first page"
   },
-  "goToLast": "Go to Last",
+  "goToLast": "Go to last",
   "@goToLast": {
     "description": "Action of going to the latest page"
   },
@@ -1702,7 +1702,7 @@
   "@help": {
     "description": "Link to a form for collecting feedback from the user"
   },
-  "helpCenter": "Help Center",
+  "helpCenter": "Help center",
   "@helpCenter": {},
   "hide": "Hide",
   "@hide": {
@@ -1711,10 +1711,6 @@
   "hiddenDrives": "Hidden",
   "@hiddenDrives": {
     "description": "Sidebar scope for drives the user has hidden."
-  },
-  "allDrivesScope": "All drives",
-  "@allDrivesScope": {
-    "description": "Sidebar scope showing every drive that is not hidden."
   },
   "hidingFile": "Hiding file",
   "@hidingFile": {
@@ -1770,33 +1766,33 @@
       }
     }
   },
-  "insufficientFundsForCreateADrive": "You do not have sufficient funds to create a Drive at this time. Please go to the top up page to add funds to your account.",
+  "insufficientFundsForCreateADrive": "You do not have sufficient funds to create a drive at this time. Please go to the top up page to add funds to your account.",
   "@insufficientFundsForCreateADrive": {
     "description": "Show that needs funds to create a Drive"
   },
-  "insufficientFundsForCreateAFolder": "You do not have sufficient funds to create a Folder at this time. Please go to the top up page to add funds to your account.",
+  "insufficientFundsForCreateAFolder": "You do not have sufficient funds to create a folder at this time. Please go to the top up page to add funds to your account.",
   "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
-  "insufficientFundsForCreateAManifest": "You do not have sufficient funds to create a Manifest at this time. Please go to the top up page to add funds to your account.",
+  "insufficientFundsForCreateAManifest": "You do not have sufficient funds to create a manifest at this time. Please go to the top up page to add funds to your account.",
   "@insufficientFundsForCreateAManifest": {
     "description": "Show that needs funds to create a Manifest"
   },
-  "insufficientFundsForUploadFiles": "You do not have sufficient funds to upload Files at this time. Please go to the top up page to add funds to your account.",
+  "insufficientFundsForUploadFiles": "You do not have sufficient funds to upload files at this time. Please go to the top up page to add funds to your account.",
   "@insufficientFundsForUploadFiles": {
     "description": "Show that needs funds to upload files"
   },
-  "insufficientFundsForUploadFolders": "You do not have sufficient funds to upload Folders at this time. Please go to the top up page to add funds to your account.",
+  "insufficientFundsForUploadFolders": "You do not have sufficient funds to upload folders at this time. Please go to the top up page to add funds to your account.",
   "@insufficientFundsForUploadFolders": {
     "description": "Show that needs funds to upload folders"
   },
   "invalidCode": "Invalid code",
   "@invalidCode": {},
-  "invalidKeyFile": "Invalid Keyfile",
+  "invalidKeyFile": "Invalid keyfile",
   "@invalidKeyFile": {
     "description": "Invalid Keyfile"
   },
-  "invalidWalletFile": "Invalid Wallet File",
+  "invalidWalletFile": "Invalid wallet file",
   "@invalidWalletFile": {
     "description": "Wallet file is not a json or a text"
   },
@@ -1804,7 +1800,7 @@
   "@invalidWalletFileDescription": {
     "description": "Invalid wallet file description"
   },
-  "itemActivityEmphasized": "ACTIVITY",
+  "itemActivityEmphasized": "Activity",
   "@itemActivityEmphasized": {
     "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
   },
@@ -1812,7 +1808,7 @@
   "@itemContains": {
     "description": "Used like so: 'Contains 15 folders, 10 files'"
   },
-  "itemDetailsEmphasized": "DETAILS",
+  "itemDetailsEmphasized": "Details",
   "@itemDetailsEmphasized": {
     "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"
   },
@@ -1830,7 +1826,7 @@
       }
     }
   },
-  "itemPreviewEmphasized": "PREVIEW",
+  "itemPreviewEmphasized": "Preview",
   "@itemPreviewEmphasized": {
     "description": "Item preview"
   },
@@ -1840,7 +1836,7 @@
   "@lastModified": {
     "description": "Last modified date of the file in the local disk"
   },
-  "lastModifiedDate": "Last Modified {date}",
+  "lastModifiedDate": "Last modified {date}",
   "@lastModifiedDate": {
     "description": "Last modified date of the file in the local disk",
     "placeholders": {
@@ -1853,17 +1849,17 @@
   "@lastUpdated": {
     "description": "The timestamp of the transaction"
   },
-  "learnMore": "Learn More",
+  "learnMore": "Learn more",
   "@learnMore": {
     "description": "Link to a document explaining manifests in detail"
   },
   "leaveAnEmailToReceiveAReceipt": "To receive a receipt, please provide an email.",
   "@leaveAnEmailToReceiveAReceipt": {},
-  "letsGetStartedEmphasized": "LET'S GET STARTED",
+  "letsGetStartedEmphasized": "Let's get started",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
   },
-  "lightModeEmphasized": "LIGHT MODE",
+  "lightModeEmphasized": "Light mode",
   "@lightModeEmphasized": {
     "description": "Refers to the light theme of the app. Emphasized with upper case"
   },
@@ -2095,7 +2091,7 @@
   "@logOut": {
     "description": "The action of logging out"
   },
-  "logOutEmphasized": "LOG OUT",
+  "logOutEmphasized": "Log out",
   "@logOutEmphasized": {
     "description": "The action of logging out. Emphasized with upper case"
   },
@@ -2107,7 +2103,7 @@
   "@manifestTransactionUnexpectedlyFailed": {
     "description": "The manifest transaction did not succeed being uploaded"
   },
-  "metadataTxID": "Metadata Tx ID",
+  "metadataTxID": "Metadata transaction ID",
   "@metadataTxID": {
     "description": "The transaction ID of the entity Metadata transaction"
   },
@@ -2115,7 +2111,7 @@
   "@monthlyCharges": {
     "description": "Payment philosophy"
   },
-  "moreInfo": "More Info",
+  "moreInfo": "More info",
   "@moreInfo": {
     "description": "More info"
   },
@@ -2123,31 +2119,31 @@
   "@move": {
     "description": "Action of moving certain file or folder"
   },
-  "moveFileEmphasized": "MOVE FILE",
+  "moveFileEmphasized": "Move file",
   "@moveFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
   },
-  "moveFolderEmphasized": "MOVE FOLDER",
+  "moveFolderEmphasized": "Move folder",
   "@moveFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
   },
-  "moveHereEmphasized": "MOVE HERE",
+  "moveHereEmphasized": "Move here",
   "@moveHereEmphasized": {
     "description": "Move the entity to the current folder. Emphasized with upper case"
   },
-  "moveItems": "Move Items",
+  "moveItems": "Move items",
   "@moveItems": {
     "description": "Move Items dialog title"
   },
-  "movingFileEmphasized": "MOVING FILE...",
+  "movingFileEmphasized": "Moving file...",
   "@movingFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
   },
-  "movingFolderEmphasized": "MOVING FOLDER...",
+  "movingFolderEmphasized": "Moving folder...",
   "@movingFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
   },
-  "movingItemsEmphasized": "Moving Items",
+  "movingItemsEmphasized": "Moving items",
   "@movingItemsEmphasized": {
     "description": "Moving Items dialog title"
   },
@@ -2171,13 +2167,13 @@
   "@nameConflict": {
     "description": "A conflict of names between two entities"
   },
-  "nameOnCard": "Name on Card",
+  "nameOnCard": "Name on card",
   "@nameOnCard": {},
   "networkUnreachable": "We are unable to connect to the network. Please try again later.",
   "@networkUnreachable": {
     "description": "Indicates that there were some issues while connecting to the internet"
   },
-  "neverDeletedEmphasized": "NEVER DELETED",
+  "neverDeletedEmphasized": "Never deleted",
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
   },
@@ -2185,35 +2181,35 @@
   "@needHelpReachOut": {
     "description": "Support modal header message"
   },
-  "newDrive": "New Drive",
+  "newDrive": "New drive",
   "@newDrive": {
     "description": "Create a new drive entity"
   },
-  "newFilePin": "New File Pin",
+  "newFilePin": "New file pin",
   "@newFilePin": {
     "description": "E.g.: I want to create a \"New File Pin\""
   },
-  "newFolder": "New Folder",
+  "newFolder": "New folder",
   "@newFolder": {
     "description": "Create a new folder entity"
   },
-  "newNote": "New Note",
+  "newNote": "New note",
   "@newNote": {
     "description": "Create a new markdown note"
   },
-  "createNewNote": "Create New Note",
+  "createNewNote": "Create new note",
   "@createNewNote": {
     "description": "Title for note creation modal"
   },
-  "editNote": "Edit Note",
+  "editNote": "Edit note",
   "@editNote": {
     "description": "Title for note editing modal"
   },
-  "saveEmphasized": "SAVE",
+  "saveEmphasized": "Save",
   "@saveEmphasized": {
     "description": "Save button text (emphasized/uppercase)"
   },
-  "noteName": "Note Name",
+  "noteName": "Note name",
   "@noteName": {
     "description": "Label for note name input field"
   },
@@ -2245,7 +2241,7 @@
   "@previewOnly": {
     "description": "Preview-only view mode"
   },
-  "discardChanges": "Discard Changes?",
+  "discardChanges": "Discard changes?",
   "@discardChanges": {
     "description": "Dialog title when discarding unsaved note changes"
   },
@@ -2253,7 +2249,7 @@
   "@discardChangesDescription": {
     "description": "Dialog message when discarding unsaved note changes"
   },
-  "discardEmphasized": "DISCARD",
+  "discardEmphasized": "Discard",
   "@discardEmphasized": {
     "description": "Discard button text, emphasized with upper case"
   },
@@ -2267,7 +2263,7 @@
       }
     }
   },
-  "noteLargeFileWarningTitle": "Large File Warning",
+  "noteLargeFileWarningTitle": "Large file warning",
   "@noteLargeFileWarningTitle": {
     "description": "Title for warning dialog when opening a large file"
   },
@@ -2293,11 +2289,11 @@
   "@markdownEditorStrikethrough": {
     "description": "Tooltip for strikethrough formatting button in markdown editor"
   },
-  "markdownEditorBulletList": "Bullet List",
+  "markdownEditorBulletList": "Bullet list",
   "@markdownEditorBulletList": {
     "description": "Tooltip for bullet list button in markdown editor"
   },
-  "markdownEditorNumberedList": "Numbered List",
+  "markdownEditorNumberedList": "Numbered list",
   "@markdownEditorNumberedList": {
     "description": "Tooltip for numbered list button in markdown editor"
   },
@@ -2305,15 +2301,15 @@
   "@markdownEditorQuote": {
     "description": "Tooltip for quote button in markdown editor"
   },
-  "markdownEditorInlineCode": "Inline Code",
+  "markdownEditorInlineCode": "Inline code",
   "@markdownEditorInlineCode": {
     "description": "Tooltip for inline code button in markdown editor"
   },
-  "markdownEditorCodeBlock": "Code Block",
+  "markdownEditorCodeBlock": "Code block",
   "@markdownEditorCodeBlock": {
     "description": "Tooltip for code block button in markdown editor"
   },
-  "markdownEditorInsertLink": "Insert Link",
+  "markdownEditorInsertLink": "Insert link",
   "@markdownEditorInsertLink": {
     "description": "Tooltip for insert link button in markdown editor"
   },
@@ -2353,7 +2349,7 @@
   "@markdownImageAltText": {
     "description": "Default alt text for images in markdown preview"
   },
-  "newSnapshot": "New Snapshot",
+  "newSnapshot": "New snapshot",
   "@newSnapshot": {
     "description": "The action of snapshotting a drive"
   },
@@ -2365,11 +2361,11 @@
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
-  "createNew": "Create New",
+  "createNew": "Create new",
   "@createNew": {
     "description": "Tooltip for the New button to create new items"
   },
-  "userProfile": "User Profile",
+  "userProfile": "User profile",
   "@userProfile": {
     "description": "Tooltip for the user profile button"
   },
@@ -2377,7 +2373,7 @@
   "@next": {
     "description": "Action of going to the next page"
   },
-  "nextEmphasized": "NEXT",
+  "nextEmphasized": "Next",
   "@nextEmphasized": {
     "description": "Next step"
   },
@@ -2429,7 +2425,7 @@
   "@onboarding2Description": {
     "description": "Description of 2nd page of onboarding"
   },
-  "onboarding2Title": "Pay Per File, Not Per Month",
+  "onboarding2Title": "Pay per file, not per month",
   "@onboarding2Title": {
     "description": "Title of 2nd page of onboarding"
   },
@@ -2437,7 +2433,7 @@
   "@onboarding3Description": {
     "description": "Description of 4th page of onboarding"
   },
-  "onboarding3Title": "Total Privacy Control",
+  "onboarding3Title": "Total privacy control",
   "@onboarding3Title": {
     "description": "Title of 4th page of onboarding"
   },
@@ -2487,13 +2483,13 @@
   },
   "pay": "Pay",
   "@pay": {},
-  "paymentDetails": "Payment Details",
+  "paymentDetails": "Payment details",
   "@paymentDetails": {},
-  "paymentMethod": "Payment Method",
+  "paymentMethod": "Payment method",
   "@paymentMethod": {
     "description": "Label for payment method selection"
   },
-  "paymentMethodCard": "Credit/Debit Card",
+  "paymentMethodCard": "Credit/debit card",
   "@paymentMethodCard": {
     "description": "Card payment option label"
   },
@@ -2501,7 +2497,7 @@
   "@paymentMethodCrypto": {
     "description": "Cryptocurrency payment option label"
   },
-  "paymentSuccessful": "Payment Successful!",
+  "paymentSuccessful": "Payment successful!",
   "@paymentSuccessful": {},
   "paymentSummaryPaid": "Paid",
   "@paymentSummaryPaid": {
@@ -2515,7 +2511,7 @@
   "@paymentSummaryNewBalance": {
     "description": "Label for new balance in payment summary"
   },
-  "payPerFileEmphasized": "PAY PER FILE",
+  "payPerFileEmphasized": "Pay per file",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"
   },
@@ -2523,7 +2519,7 @@
   "@pending": {
     "description": "Status tooltip for transactions which are waiting to be minted"
   },
-  "personalDrivesEmphasized": "PERSONAL DRIVES",
+  "personalDrivesEmphasized": "Personal drives",
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
@@ -2555,7 +2551,7 @@
   "@pleaseTryAgain": {
     "description": "Please try again."
   },
-  "preparingManifestEmphasized": "PREPARING MANIFEST...",
+  "preparingManifestEmphasized": "Preparing manifest...",
   "@preparingManifestEmphasized": {
     "description": "The manifest is being prepared for the upload"
   },
@@ -2605,7 +2601,7 @@
   "@private": {
     "description": "A private entity"
   },
-  "privateDrives": "Private Drives",
+  "privateDrives": "Private drives",
   "@privateDrives": {
     "description": "Private drives accordion title"
   },
@@ -2613,11 +2609,11 @@
   "@proceed": {
     "description": "Proceed"
   },
-  "proceedCongestionEmphasized": "PROCEED",
+  "proceedCongestionEmphasized": "Proceed",
   "@proceedCongestionEmphasized": {
     "description": "Proceed being aware of the network congestion. Emphasized with upper case"
   },
-  "proceedEmphasized": "PROCEED",
+  "proceedEmphasized": "Proceed",
   "@proceedEmphasized": {
     "description": "Proceed but capitalized"
   },
@@ -2629,7 +2625,7 @@
   "@public": {
     "description": "A public entity"
   },
-  "publicDrives": "Public Drives",
+  "publicDrives": "Public drives",
   "@publicDrives": {
     "description": "Public drives accordion title"
   },
@@ -2691,17 +2687,17 @@
   "@rawTransactionUnknownType": {
     "description": "Shown on the transaction viewer when the contents cannot be identified, leaving download as the only action"
   },
-  "recreateFolderEmphasized": "RECREATE FOLDER",
+  "recreateFolderEmphasized": "Recreate folder",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
   },
-  "recreatingFolderEmphasized": "RECREATING FOLDER...",
+  "recreatingFolderEmphasized": "Recreating folder...",
   "@recreatingFolderEmphasized": {
     "description": "Folder is being recreated. Emphasized with upper case"
   },
   "redeemGift": "Redeem gift",
   "@redeemGift": {},
-  "redeemYourGift": "Redeem Your Gift",
+  "redeemYourGift": "Redeem your gift",
   "@redeemYourGift": {},
   "redemptionErrorDescription": "Redemption was unsuccessful",
   "@redemptionErrorDescription": {},
@@ -2719,48 +2715,44 @@
   "@rename": {
     "description": "The action of renaming; imperative form"
   },
-  "renameDrive": "Rename Drive",
+  "renameDrive": "Rename drive",
   "@renameDrive": {
     "description": "The action of renaming a drive"
   },
-  "renameDriveEmphasized": "RENAME DRIVE",
+  "renameDriveEmphasized": "Rename drive",
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
-  "renameEmphasized": "RENAME",
+  "renameEmphasized": "Rename",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
   },
-  "renameFileEmphasized": "RENAME FILE",
+  "renameFileEmphasized": "Rename file",
   "@renameFileEmphasized": {
     "description": "The action of renaming a file. Emphasized with upper case"
   },
-  "renameFolderEmphasized": "RENAME FOLDER",
+  "renameFolderEmphasized": "Rename folder",
   "@renameFolderEmphasized": {
     "description": "The action of renaming a folder. Emphasized with upper case"
   },
-  "renamingDriveEmphasized": "RENAMING DRIVE...",
+  "renamingDriveEmphasized": "Renaming drive...",
   "@renamingDriveEmphasized": {
     "description": "The drive is being renamed. Emphasized with upper case"
   },
-  "renamingFileEmphasized": "RENAMING FILE...",
+  "renamingFileEmphasized": "Renaming file...",
   "@renamingFileEmphasized": {
     "description": "File is being renamed. Emphasized with upper case"
   },
-  "renamingFolderEmphasized": "RENAMING FOLDER...",
+  "renamingFolderEmphasized": "Renaming folder...",
   "@renamingFolderEmphasized": {
     "description": "Folder is being renamed. Emphasized with upper case"
   },
-  "replaceEmphasized": "REPLACE",
+  "replaceEmphasized": "Replace",
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
-  "resync": "Resync",
-  "@resync": {
-    "description": "Sync button Text"
-  },
   "sync": "Sync",
-  "resyncTooltip": "Drive Synchronization",
+  "resyncTooltip": "Drive synchronization",
   "@resyncTooltip": {
     "description": "resync tooltip text"
   },
@@ -2774,7 +2766,7 @@
   },
   "review": "Review",
   "@review": {},
-  "rootFolderTxID": "Root Folder Tx ID",
+  "rootFolderTxID": "Root folder transaction ID",
   "@rootFolderTxID": {
     "description": "The transaction ID of the Root Folder entity"
   },
@@ -2821,7 +2813,7 @@
   "@tablePreviousPage": {
     "description": "Accessible name of the file table's previous page button"
   },
-  "secondsFromForeverEmphasized": "SECONDS FROM FOREVER",
+  "secondsFromForeverEmphasized": "Seconds from forever",
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"
   },
@@ -2829,7 +2821,7 @@
   "@securityWalletOverlay": {
     "description": "The text on the security overlay text on login"
   },
-  "selectWalletEmphasized": "SELECT WALLET",
+  "selectWalletEmphasized": "Select wallet",
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
@@ -2837,11 +2829,11 @@
   "@sendGift": {},
   "share": "Share",
   "@share": {},
-  "sharedDrives": "Shared Drives",
+  "sharedDrives": "Shared drives",
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list"
   },
-  "sharedDrivesEmphasized": "SHARED DRIVES",
+  "sharedDrivesEmphasized": "Shared drives",
   "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
@@ -2877,6 +2869,19 @@
   "@sharedFileDetailsMetadata": {
     "description": "Label of the metadata transaction row in the shared file details drawer"
   },
+  "sharedFileDetailsModified": "Modified",
+  "@sharedFileDetailsModified": {
+    "description": "Label of the row in the shared file details drawer showing when the file was last modified on the uploader's computer, before it was uploaded"
+  },
+  "sharedFileDetailsModifiedTooltip": "Last modified on the uploader's computer: {date}",
+  "@sharedFileDetailsModifiedTooltip": {
+    "description": "Tooltip on the Modified row in the shared file details drawer",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "sharedFileDetailsOwner": "Shared by",
   "@sharedFileDetailsOwner": {
     "description": "Label of the owner address row in the shared file details drawer"
@@ -2884,6 +2889,10 @@
   "sharedFileDetailsTransaction": "Transaction",
   "@sharedFileDetailsTransaction": {
     "description": "Label of the data transaction row in the shared file details drawer"
+  },
+  "sharedFileDetailsUploaded": "Uploaded",
+  "@sharedFileDetailsUploaded": {
+    "description": "Label of the row in the shared file details drawer showing when this version of the file was uploaded"
   },
   "sharedFileEncryptedFileTitle": "Encrypted file",
   "@sharedFileEncryptedFileTitle": {
@@ -3021,7 +3030,7 @@
   "@sharedFileViewSharedVersion": {
     "description": "Button that takes the recipient back to the version the sender actually shared, after they have viewed the latest one"
   },
-  "shareDrive": "Share Drive",
+  "shareDrive": "Share drive",
   "@shareDrive": {
     "description": "The action of sharing a drive link"
   },
@@ -3138,7 +3147,7 @@
   "@shareFailedFile": {
     "description": "Failed file share dialog text"
   },
-  "shareFile": "Share File",
+  "shareFile": "Share file",
   "@shareFile": {
     "description": "The action of sharing a file link"
   },
@@ -3194,15 +3203,15 @@
   "@shareLogsDescription": {},
   "shareLogsEmailBody": "ArDrive user logs are attached.",
   "@shareLogsEmailBody": {},
-  "shareLogsEmailSubject": "ArDrive Logs",
+  "shareLogsEmailSubject": "ArDrive logs",
   "@shareLogsEmailSubject": {},
-  "shareLogsNativeShareSubject": "ArDrive Logs",
+  "shareLogsNativeShareSubject": "ArDrive logs",
   "@shareLogsNativeShareSubject": {},
   "shareLogsNativeShareText": "ArDrive user logs are attached.",
   "@shareLogsNativeShareText": {},
-  "shareLogsText": "Share Logs",
+  "shareLogsText": "Share logs",
   "@shareLogsText": {},
-  "shareLogsWithEmailText": "Send Email",
+  "shareLogsWithEmailText": "Send email",
   "@shareLogsWithEmailText": {},
   "sharePendingFile": "The file you are trying to share is currently pending and can’t be shared at this time.",
   "@sharePendingFile": {
@@ -3212,7 +3221,7 @@
   "@shareFilePendingWarning": {
     "description": "Warning in the file share dialog when the file's upload has not been confirmed yet, so the link may not work immediately."
   },
-  "showMenu": "Show Menu",
+  "showMenu": "Show menu",
   "@showMenu": {
     "description": "show menu text"
   },
@@ -3228,7 +3237,7 @@
   "@skip": {
     "description": "Skip"
   },
-  "skipEmphasized": "SKIP",
+  "skipEmphasized": "Skip",
   "@skipEmphasized": {
     "description": "Example: to SKIP a conflict"
   },
@@ -3246,7 +3255,7 @@
       }
     }
   },
-  "snapshotFailed": "Snapshot Failed",
+  "snapshotFailed": "Snapshot failed",
   "@snapshotFailed": {
     "description": "Snapshot Failed"
   },
@@ -3260,7 +3269,7 @@
       }
     }
   },
-  "snapshotRecommended": "Snapshot Recommended",
+  "snapshotRecommended": "Snapshot recommended",
   "@snapshotRecommended": {
     "description": "Indicates that making a drive snapshot is recommended "
   },
@@ -3276,7 +3285,7 @@
   "@snapshotRecommendedDontAskAgain": {
     "description": "Explains where you can make a snapshot."
   },
-  "snapshotSize": "Snapshot Size: {size}",
+  "snapshotSize": "Snapshot size: {size}",
   "@snapshotSize": {
     "description": "Snapshot Size",
     "placeholders": {
@@ -3290,7 +3299,7 @@
   "@snapshotSuceeded": {
     "description": "Snapshot Succeeded"
   },
-  "snapshotsEmphasized": "SNAPSHOTS",
+  "snapshotsEmphasized": "Snapshots",
   "@snapshotsEmphasized": {
     "description": "Snapshots tab title emphasized with upper case"
   },
@@ -3298,7 +3307,7 @@
   "@snapshot": {
     "description": "A single snapshot item"
   },
-  "blockRange": "Block Range",
+  "blockRange": "Block range",
   "@blockRange": {
     "description": "Label for snapshot block range"
   },
@@ -3356,13 +3365,9 @@
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
   },
-  "subscribeEmphasized": "SUBSCRIBE",
+  "subscribeEmphasized": "Subscribe",
   "@subscribeEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
-  },
-  "syncNow": "Sync Now",
-  "@syncNow": {
-    "description": "Button text to sync an unsynced drive"
   },
   "syncingOnlyOneDrive": "Syncing your drive...",
   "@syncingOnlyOneDrive": {
@@ -3378,7 +3383,7 @@
       }
     }
   },
-  "syncingAllDrives": "Syncing All Drives",
+  "syncingAllDrives": "Syncing all drives",
   "@syncingAllDrives": {
     "description": "Title shown when syncing all user drives"
   },
@@ -3418,7 +3423,7 @@
       }
     }
   },
-  "syncingSingleDrive": "Syncing Drive",
+  "syncingSingleDrive": "Syncing drive",
   "@syncingSingleDrive": {
     "description": "Title shown when syncing a single drive"
   },
@@ -3430,7 +3435,7 @@
   "@syncingPleaseWait": {
     "description": "Syncing drives"
   },
-  "syncCancelled": "Sync Cancelled",
+  "syncCancelled": "Sync cancelled",
   "@syncCancelled": {
     "description": "Sync operation was cancelled"
   },
@@ -3462,7 +3467,7 @@
       }
     }
   },
-  "syncComplete": "Sync Complete",
+  "syncComplete": "Sync complete",
   "@syncComplete": {
     "description": "Title of the summary a finished sync ends on"
   },
@@ -3482,7 +3487,7 @@
   },
   "syncSummaryEntities": "{count, plural, =1{1 item changed} other{{count} items changed}}",
   "@syncSummaryEntities": {
-    "description": "Summary of a sync that changed something. Says \"changed\", not \"new\": a rename, move or new version writes a revision too. Never says how many drives, because the sync only knows how many it walked",
+    "description": "Summary of a sync that changed something. Says \"changed\", not \"new\": a rename, move or new version writes a revision too. A sync that read every drive it covered from the start says syncSummaryFirstRead instead",
     "placeholders": {
       "count": {
         "type": "int",
@@ -3506,7 +3511,47 @@
       }
     }
   },
-  "syncSummarySkippedEntities": "{count, plural, =1{1 update could not be read} other{{count} updates could not be read}}",
+  "syncSummaryFirstRead": "{count, plural, =1{Synced 1 drive ({items})} other{Synced {count} drives ({items})}}",
+  "@syncSummaryFirstRead": {
+    "description": "Summary of a sync that read every drive it covered from the start, as a first sync on a device does. Nothing changed from the reader's point of view, so it does not say \"changed\". {items} is syncSummaryItemCount",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "2"
+      },
+      "items": {
+        "type": "String",
+        "example": "29 items"
+      }
+    }
+  },
+  "syncSummaryFirstReadInDrive": "Synced {driveName} ({items})",
+  "@syncSummaryFirstReadInDrive": {
+    "description": "Summary of a single drive sync that read the drive from the start. {items} is syncSummaryItemCount",
+    "placeholders": {
+      "driveName": {
+        "type": "String",
+        "example": "Photos"
+      },
+      "items": {
+        "type": "String",
+        "example": "29 items"
+      }
+    }
+  },
+  "syncSummaryItemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@syncSummaryItemCount": {
+    "description": "How many files and folders a first sync read, inside syncSummaryFirstRead",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern",
+        "example": "29"
+      }
+    }
+  },
+  "syncSummarySkippedEntities":"{count, plural, =1{1 update could not be read} other{{count} updates could not be read}}",
   "@syncSummarySkippedEntities": {
     "description": "How many updates a sync had to leave out because their metadata could not be read. Counts transactions, not files",
     "placeholders": {
@@ -3517,7 +3562,7 @@
       }
     }
   },
-  "syncCompleteWithErrors": "Sync Incomplete - Errors Detected",
+  "syncCompleteWithErrors": "Sync incomplete: errors detected",
   "@syncCompleteWithErrors": {
     "description": "Title when sync completes but some drives failed"
   },
@@ -3547,11 +3592,11 @@
   "@syncDownloadingSnapshots": {
     "description": "Status message shown while snapshots are prefetched for all drives"
   },
-  "retryFailedDrives": "Retry Failed",
+  "retryFailedDrives": "Retry failed",
   "@retryFailedDrives": {
     "description": "Button to retry syncing only the drives that failed"
   },
-  "syncFailed": "Drives Could Not Be Loaded",
+  "syncFailed": "Drives could not be loaded",
   "@syncFailed": {
     "description": "Top bar title for a sync that could not be done at all, as against one that got through some drives and not others"
   },
@@ -3559,7 +3604,7 @@
   "@syncFailedDetail": {
     "description": "What a failed sync means for what is on screen: the drive list is whatever was last read, not what is out there"
   },
-  "syncWalletChanged": "Wallet Changed",
+  "syncWalletChanged": "Wallet changed",
   "@syncWalletChanged": {
     "description": "Top bar title for a sync that stopped because the connected ArConnect wallet is no longer the one the session was signed in with"
   },
@@ -3779,11 +3824,11 @@
       }
     }
   },
-  "targetFolderEmphasized": "TARGET FOLDER",
+  "targetFolderEmphasized": "Target folder",
   "@targetFolderEmphasized": {
     "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
   },
-  "termsAndConditions": "Terms and Conditions",
+  "termsAndConditions": "Terms and conditions",
   "@termsAndConditions": {
     "description": "terms and conditions"
   },
@@ -3827,17 +3872,17 @@
   },
   "total": "Total",
   "@total": {},
-  "totalPrivacyControlEmphasized": "TOTAL PRIVACY CONTROL",
+  "totalPrivacyControlEmphasized": "Total privacy control",
   "@totalPrivacyControlEmphasized": {
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
-  "tryAgain": "Try Again",
+  "tryAgain": "Try again",
   "@tryAgain": {},
   "tryAgainDownloadingFile": "This can happen if the file was only uploaded recently. Please try again later.",
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
   },
-  "tryAgainEmphasized": "TRY AGAIN",
+  "tryAgainEmphasized": "Try again",
   "@tryAgainEmphasized": {
     "description": "Try it again. Emphasized with upper case"
   },
@@ -3849,7 +3894,7 @@
   "@troubleshootingDescription": {
     "description": "Description of troubleshooting/diagnostic logs"
   },
-  "tryLaterCongestionEmphasized": "TRY LATER",
+  "tryLaterCongestionEmphasized": "Try later",
   "@tryLaterCongestionEmphasized": {
     "description": "Try to upload later. Emphasized with upper case"
   },
@@ -3857,15 +3902,15 @@
   "@tryOnAnotherDevice": {
     "description": "Screen not supported page"
   },
-  "noTurboFee": "No Turbo Fee",
+  "noTurboFee": "No Turbo fee",
   "@noTurboFee": {
     "description": "Label indicating no turbo fee for certain crypto payments"
   },
-  "turboAddCreditsBlurb": "Add Credits using your card for faster uploads.",
+  "turboAddCreditsBlurb": "Add credits using your card for faster uploads.",
   "@turboAddCreditsBlurb": {
     "description": "text placeholder for turbo balance when no user"
   },
-  "turboCustomAmount": "Custom Amount (min {min} - max {max})",
+  "turboCustomAmount": "Custom amount (min {min} - max {max})",
   "@turboCustomAmount": {
     "description": "Describes the range of credits the user can choose",
     "placeholders": {
@@ -3889,7 +3934,7 @@
   "@turboErrorMessageServer": {},
   "turboErrorMessageSessionExpired": "Your session has expired. Please refresh to continue.",
   "@turboErrorMessageSessionExpired": {},
-  "turboSessionExpiredTitle": "Session Expired",
+  "turboSessionExpiredTitle": "Session expired",
   "@turboSessionExpiredTitle": {},
   "turboErrorMessageUnknown": "The payment was not successful. Please check your card information and try again.",
   "@turboErrorMessageUnknown": {},
@@ -3957,7 +4002,7 @@
   "@unlock": {
     "description": "Unlock a file or drive."
   },
-  "unlockEmphasized": "UNLOCK",
+  "unlockEmphasized": "Unlock",
   "@unlockEmphasized": {
     "description": "Unlock the wallet with its password. Emphasized with upper case"
   },
@@ -3965,7 +4010,7 @@
   "@upload": {
     "description": "The action of uploading certain item"
   },
-  "uploadDragAndDrop": "Upload File",
+  "uploadDragAndDrop": "Upload file",
   "@uploadDragAndDrop": {
     "description": "The action of uploading a file"
   },
@@ -3973,11 +4018,11 @@
   "@uploadedBy": {
     "description": "Refers to the one that uploaded the data of a pinned file"
   },
-  "uploadEmphasized": "UPLOAD",
+  "uploadEmphasized": "Upload",
   "@uploadEmphasized": {
     "description": "The action of uploading certain item"
   },
-  "uploadFailed": "Upload Failed",
+  "uploadFailed": "Upload failed",
   "@uploadFailed": {
     "description": "Upload Failed dialog title"
   },
@@ -3989,7 +4034,7 @@
   "@uploadInProgressKeepTabOpen": {
     "description": "Warning in the upload progress dialog while an upload paid from the wallet balance (AR) is running"
   },
-  "uploadFailedWalletFiles": "Some files didn't finish uploading. Select Re-Upload to finish them.",
+  "uploadFailedWalletFiles": "Some files didn't finish uploading. Select Re-upload to finish them.",
   "@uploadFailedWalletFiles": {
     "description": "Explanation in the upload problem dialog when files paid for from the wallet balance (AR) failed"
   },
@@ -3997,11 +4042,11 @@
   "@uploadFailedWalletKeepTabOpen": {
     "description": "Warning in the upload problem dialog when files paid for from the wallet balance (AR) failed and can still be re-uploaded from this tab only"
   },
-  "uploadFiles": "Upload File(s)",
+  "uploadFiles": "Upload file(s)",
   "@uploadFiles": {
     "description": "Upload files to the Weave"
   },
-  "uploadFolder": "Upload Folder",
+  "uploadFolder": "Upload folder",
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
   },
@@ -4010,11 +4055,11 @@
     "description": "Title of the dialog that gets a drive ready before files are chosen for it",
     "placeholders": { "driveName": { "type": "String" } }
   },
-  "uploadChooseFiles": "Choose Files",
+  "uploadChooseFiles": "Choose files",
   "@uploadChooseFiles": {
     "description": "Opens the file picker for an upload to the drive the dialog names"
   },
-  "uploadChooseFolder": "Choose Folder",
+  "uploadChooseFolder": "Choose folder",
   "@uploadChooseFolder": {
     "description": "Opens the folder picker for an upload to the drive the dialog names"
   },
@@ -4030,7 +4075,7 @@
   "@uploadNeedsDriveDescription": {
     "description": "Explains that uploads go into a drive, for somebody who has none yet"
   },
-  "uploadingManifestEmphasized": "UPLOADING MANIFEST...",
+  "uploadingManifestEmphasized": "Uploading manifest...",
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
@@ -4045,7 +4090,7 @@
       }
     }
   },
-  "uploadingSnapshot": "Uploading Snapshot",
+  "uploadingSnapshot": "Uploading snapshot",
   "@uploadingSnapshot": {
     "description": "Uploading Snapshot"
   },
@@ -4060,6 +4105,33 @@
       }
     }
   },
+  "uploadAsNewVersion": "{numberOfFiles, plural, zero{} one{Upload as new version} other{Upload as new versions}}",
+  "@uploadAsNewVersion": {
+    "description": "Button on the duplicate file dialog that uploads the files as new versions of the ones already there",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "uploadAnyway": "Upload anyway",
+  "@uploadAnyway": {
+    "description": "Button on the large file warning that starts the upload"
+  },
+  "uploadSnapshot": "Upload snapshot",
+  "@uploadSnapshot": {
+    "description": "Button on the snapshot cost step that uploads the snapshot"
+  },
+  "createPin": "Create pin",
+  "@createPin": {
+    "description": "Button that creates a file pin"
+  },
+  "newUserEmptyDriveTitle": "Your drive is ready",
+  "@newUserEmptyDriveTitle": {
+    "description": "Heading on a new user's first, empty drive"
+  },
   "uploadYourFirstFile": "Upload your first file",
   "@uploadYourFirstFile": {
     "description": "Empty folder"
@@ -4068,7 +4140,7 @@
   "@usdPriceNotAvailable": {
     "description": "Fallback message for when the USD price is not available"
   },
-  "useArconnectEmphasized": "USE ARCONNECT",
+  "useArconnectEmphasized": "Use ArConnect",
   "@useArconnectEmphasized": {
     "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
   },
@@ -4116,11 +4188,11 @@
   "@validationSharedFileIncorrectFileKey": {
     "description": "The user entered an incorrect file key"
   },
-  "viewInfo": "View Info",
+  "viewInfo": "View info",
   "@viewInfo": {
     "description": "View the activity and details of the entity"
   },
-  "viewOnly": "View Only",
+  "viewOnly": "View only",
   "@viewOnly": {
     "description": "The user has no permission to edit, only to view"
   },
@@ -4144,11 +4216,11 @@
   "@walletChangeDetected": {
     "description": "The wallet has changed. The user must log in again"
   },
-  "walletSwitch": "Wallet Switch",
+  "walletSwitch": "Wallet switch",
   "@walletSwitch": {
     "description": "The wallet has changed. The user must log in again"
   },
-  "warningEmphasized": "WARNING",
+  "warningEmphasized": "Warning",
   "@warningEmphasized": {
     "description": "Congestion warning. Emphasized with upper case"
   },
@@ -4178,11 +4250,11 @@
   "@welcomeBack": {
     "description": "welcome back"
   },
-  "welcomeBackEmphasized": "WELCOME BACK",
+  "welcomeBackEmphasized": "Welcome back",
   "@welcomeBackEmphasized": {
     "description": "Welcoming for an existing user. Emphasized with upper case"
   },
-  "welcomeBackUserEmphasized": "WELCOME BACK, {username}",
+  "welcomeBackUserEmphasized": "Welcome back, {username}",
   "@welcomeBackUserEmphasized": {
     "description": "Welcoming to the user. Emphasized with upper case",
     "placeholders": {
@@ -4200,15 +4272,15 @@
   "@welcomeTo_description": {
     "description": "Brief description of ArDrive as welcoming"
   },
-  "welcomeTo_main": "WELCOME TO",
+  "welcomeTo_main": "Welcome to",
   "@welcomeTo_main": {
     "description": "Highly emphasized text giving welcome"
   },
-  "welcomeToThePermawebEmphasized": "WELCOME TO THE PERMAWEB",
+  "welcomeToThePermawebEmphasized": "Welcome to the permaweb",
   "@welcomeToThePermawebEmphasized": {
     "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
   },
-  "weReSorryEmphasized": "WE'RE SORRY!",
+  "weReSorryEmphasized": "We're sorry!",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },
@@ -4222,7 +4294,7 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
-  "yourCreditsWillBeAddedToYourAccount": "Your Credits will be added to your account soon. You can close this window.",
+  "yourCreditsWillBeAddedToYourAccount": "Your credits will be added to your account soon. You can close this window.",
   "@yourCreditsWillBeAddedToYourAccount": {},
   "yourPasswordCannotBeCahngedOrRetrivied": "Your password cannot be changed or retrieved, so please keep this safe.",
   "@yourPasswordCannotBeCahngedOrRetrivied": {},

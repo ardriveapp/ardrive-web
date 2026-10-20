@@ -71,7 +71,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
         if (state is FsEntryLicenseLoadInProgress) {
           showProgressDialog(
             context,
-            title: 'Licensing Items',
+            title: 'Licensing items',
             // TODO: Localize
             // title: appLocalizationsOf(context).licensingItemsEmphasized,
           );
@@ -294,7 +294,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
             final modalTitle = licenseCategory == LicenseCategory.udl
                 ? 'Configure Universal Data License'
                 : licenseCategory == LicenseCategory.cc
-                    ? 'Configure Creative Commons License'
+                    ? 'Configure Creative Commons license'
                     : 'Unsupported license type';
             return ArDriveScrollBar(
               child: SingleChildScrollView(

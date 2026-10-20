@@ -1074,7 +1074,7 @@
   "@forgetWalletTitle": {
     "description": "Modal title to forget wallet"
   },
-  "freeTurboTransaction": "लागत: 0 AR\nTurbo को धन्यवाद कि यह छोटा सा ट्रांज़ैक्शन फ़्री है।",
+  "freeTurboTransaction": "लागत: 0 क्रेडिट्स\nTurbo को धन्यवाद कि यह छोटा सा ट्रांज़ैक्शन फ़्री है।",
   "@freeTurboTransaction": {
     "description": "Message explaining that your upload will be free thanks to Turbo"
   },
@@ -1721,10 +1721,6 @@
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
-  "resync": "रीसिंक करें",
-  "@resync": {
-    "description": "Sync button Text"
-  },
   "resyncTooltip": "सभी ड्राइव को रिफ़्रेश करें",
   "@resyncTooltip": {
     "description": "resync tooltip text"
@@ -2093,10 +2089,6 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
-  "syncNow": "अभी सिंक करें",
-  "@syncNow": {
-    "description": "Button text to sync an unsynced drive"
-  },
   "syncingOnlyOneDrive": "आपकी ड्राइव सिंक हो रही है...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
@@ -2306,6 +2298,33 @@
   "uploadingSnapshot": "स्नैपशॉट अपलोड हो रहा है",
   "@uploadingSnapshot": {
     "description": "Uploading Snapshot"
+  },
+  "uploadAsNewVersion": "{numberOfFiles, plural, zero{} one{नए संस्करण के रूप में अपलोड करें} other{नए संस्करणों के रूप में अपलोड करें}}",
+  "@uploadAsNewVersion": {
+    "description": "Button on the duplicate file dialog that uploads the files as new versions of the ones already there",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "uploadAnyway": "फिर भी अपलोड करें",
+  "@uploadAnyway": {
+    "description": "Button on the large file warning that starts the upload"
+  },
+  "uploadSnapshot": "स्नैपशॉट अपलोड करें",
+  "@uploadSnapshot": {
+    "description": "Button on the snapshot cost step that uploads the snapshot"
+  },
+  "createPin": "पिन बनाएं",
+  "@createPin": {
+    "description": "Button that creates a file pin"
+  },
+  "newUserEmptyDriveTitle": "आपकी ड्राइव तैयार है",
+  "@newUserEmptyDriveTitle": {
+    "description": "Heading on a new user's first, empty drive"
   },
   "uploadNFiles": "{numberOfFiles, plural, zero{} one{1 फ़ाइल अपलोड करें} other{{numberOfFiles} फ़ाइलें अपलोड करें}}",
   "@uploadNFiles": {

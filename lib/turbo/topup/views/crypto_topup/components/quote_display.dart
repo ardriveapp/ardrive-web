@@ -40,7 +40,7 @@ class QuoteDisplay extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Quote Details',
+                'Quote details',
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
                   color: colorTokens.textHigh,

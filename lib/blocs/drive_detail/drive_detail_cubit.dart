@@ -72,11 +72,23 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// changes only this, and the folder contents arrive identical.
   Drive? _lastDrive;
 
-  /// The drive whose root revision this screen is waiting on, if any.
+  /// The drive this screen is waiting to open, if any: for its root revision,
+  /// or for the first of its contents while a sync is still reading it.
   ///
   /// Only a sync writing that drive can end the wait, so a sync that ends
   /// without doing it has to be noticed - see [_recoverIfStillWaiting].
   String? _awaitingRootRevisionFor;
+
+  /// Whether each drive's root folder came from the network rather than from
+  /// this device: the difference between a drive a sync is reading for the
+  /// first time and one just made here, which both have a block height of 0.
+  ///
+  /// Decided the first time this screen shows the drive with an empty folder,
+  /// and kept: a sync rewrites a new drive's root as confirmed when it reads
+  /// it back, and the drive on screen must not turn into a loading panel
+  /// because of it. A root not there at all is from the network by
+  /// definition: it has not arrived yet.
+  final _rootFromNetwork = <String, bool>{};
   bool _isExplicitSync = false;
 
   /// Bumped by every [openFolder]. Cancelling `_folderSubscription` does not
@@ -275,6 +287,60 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // (registered by _listenForSyncCompletion, above)
   }
 
+  /// Whether an empty folder in [drive] may only be empty *so far*.
+  ///
+  /// Sync saves a drive's history oldest first, one batch at a time, so a
+  /// folder lands before anything in it. While a sync is reading a drive for
+  /// the first time on this device, an empty folder says nothing about what
+  /// the drive holds - and showing the empty-drive card then is what made a
+  /// full drive flash "Your brand new drive!" before its files appeared.
+  ///
+  /// Only for a drive whose root came from the network ([_rootFromNetwork]),
+  /// never one just made on this device. Never for one walked before (its
+  /// block height has advanced), whose emptiness was read, not assumed. And
+  /// only while a sync is walking it: not while the drive list loads, which
+  /// reads no folder.
+  bool contentsMayStillArrive(Drive drive) {
+    if (_rootFromNetwork[drive.id] != true ||
+        (drive.lastBlockHeight ?? 0) > 0) {
+      return false;
+    }
+
+    return _syncCubit.state is SyncInProgress &&
+        SyncCubit.syncTouchesDrive(
+          state: _syncCubit.state,
+          syncingDriveId: _syncCubit.syncingDriveId,
+          completedDriveIds: _syncCubit.completedDriveIds,
+          runDriveIds: _syncCubit.syncingDriveIds,
+          driveId: drive.id,
+        );
+  }
+
+  /// Whether [drive]'s root folder was read from the network, or is not here
+  /// yet. Sync records what it reads as confirmed; a drive made on this device
+  /// writes its own root as pending, until its upload is confirmed. A root
+  /// with no transaction row at all was not written here, since a local
+  /// write adds both in one transaction.
+  Future<bool> _rootIsFromNetwork(Drive drive) async {
+    final root = await _driveDao
+        .latestFolderRevisionByFolderId(
+          driveId: drive.id,
+          folderId: drive.rootFolderId,
+        )
+        .getSingleOrNull();
+
+    if (root == null) {
+      return true;
+    }
+
+    final transaction = await (_driveDao.select(_driveDao.networkTransactions)
+          ..where((t) => t.id.equals(root.metadataTxId)))
+        .getSingleOrNull();
+
+    return transaction == null ||
+        transaction.status == TransactionStatus.confirmed;
+  }
+
   /// Ends a wait for a root revision that is never going to arrive.
   ///
   /// The panel waits rather than claiming "Drive Not Synced" while a sync is
@@ -340,6 +406,18 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       if (SyncCubit.syncHasFinished(syncState)) {
         _recoverIfStillWaiting();
         _refreshAfterDroppedRedraws();
+      }
+
+      // The sync moving on can end a first read without writing a row, and
+      // so without a tick to redraw the folder: an empty folder left saying
+      // it is still being read after the reading has stopped.
+      final current = state;
+      if (current is DriveDetailLoadSuccess) {
+        final stillArriving = contentsMayStillArrive(current.currentDrive);
+
+        if (stillArriving != current.contentsStillArriving) {
+          emit(current.copyWith(contentsStillArriving: stillArriving));
+        }
       }
 
       // A drive list that has since been read means the failure screen is out
@@ -842,13 +920,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           // drive mid-sync is immediate. After that, at most one redraw per
           // [_folderRedrawInterval] for as long as a sync is writing this
           // drive; once nothing is, every tick lands as before.
-          if (SyncCubit.syncTouchesDrive(
-            state: _syncCubit.state,
-            syncingDriveId: _syncCubit.syncingDriveId,
-            completedDriveIds: _syncCubit.completedDriveIds,
-            runDriveIds: _syncCubit.syncingDriveIds,
-            driveId: driveId,
-          )) {
+          //
+          // Only once the folder is on screen. While the loading panel is
+          // still up, the tick being dropped could be the one that ends it.
+          if (this.state is DriveDetailLoadSuccess &&
+              SyncCubit.syncTouchesDrive(
+                state: _syncCubit.state,
+                syncingDriveId: _syncCubit.syncingDriveId,
+                completedDriveIds: _syncCubit.completedDriveIds,
+                runDriveIds: _syncCubit.syncingDriveIds,
+                driveId: driveId,
+              )) {
             final last = _lastFolderRedraw;
             final now = DateTime.now();
 
@@ -942,6 +1024,18 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           final driveIsEmpty =
               folderContents.files.isEmpty && folderContents.subfolders.isEmpty;
 
+          if (driveIsEmpty &&
+              (drive.lastBlockHeight ?? 0) == 0 &&
+              !_rootFromNetwork.containsKey(driveId)) {
+            _rootFromNetwork[driveId] = await _rootIsFromNetwork(drive);
+
+            if (isClosed ||
+                driveId != _driveId ||
+                loadGeneration != _folderLoadGeneration) {
+              return;
+            }
+          }
+
           // A drive that renders with nothing in it is ambiguous: it may be
           // genuinely empty, or its contents may simply never have synced.
           // Telling someone their drive is empty when we have not actually
@@ -971,6 +1065,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             }
 
             if (rootFolderRevision == null) {
+              _rootFromNetwork[driveId] = true;
+
               // Unless a sync is writing this drive right now, in which case
               // the root revision has simply not landed *yet*.
               //
@@ -1011,7 +1107,24 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               emit(DriveDetailLoadUnsynced(drive: drive));
               return;
             }
+
+            // The root revision is in, but on a first walk it lands before
+            // anything inside it, so the drive stays on the loading panel
+            // until its first contents do. Ended by the tick that writes them,
+            // or, for a drive that really is empty, by the sync finishing.
+            if (this.state is! DriveDetailLoadSuccess &&
+                contentsMayStillArrive(drive)) {
+              _awaitingRootRevisionFor = driveId;
+
+              if (this.state is! DriveDetailLoadInProgress) {
+                emit(DriveDetailLoadInProgress());
+              }
+
+              return;
+            }
           }
+
+          _awaitingRootRevisionFor = null;
 
           final currentFolderContents = parseEntitiesToDatatableItem(
             folder: folderContents,
@@ -1069,6 +1182,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 currentFolderContents: currentFolderContents,
                 pathSegments: pathSegments,
                 driveIsEmpty: driveIsEmpty,
+                contentsStillArriving: contentsMayStillArrive(drive),
                 showSelectedItemDetails: _selectedItem != null,
                 revealSelectedItem: _revealSelectedItem,
                 // The table is kept when the folder is unchanged, so one
@@ -1099,6 +1213,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 rowsPerPage: _rowsPerPage,
                 availableRowsPerPage: availableRowsPerPage,
                 driveIsEmpty: driveIsEmpty,
+                contentsStillArriving: contentsMayStillArrive(drive),
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,

@@ -44,11 +44,11 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
 
   final _pageInfo = [
     _PageInfo(
-        title: 'What is a Seed Phrase?',
+        title: 'What is a seed phrase?',
         description:
             "A seed phrase is a unique set of words acting as your wallet's master key. It generates your wallet whenever you log in. You can store it in a password manager or secure offline location for added protection."),
     _PageInfo(
-        title: 'What is a Keyfile?',
+        title: 'What is a keyfile?',
         description:
             'A keyfile is another way to access your wallet. It contains encrypted information that helps us authenticate your identity. Keep it secure alongside your seed phrase.'),
     _PageInfo(
@@ -196,7 +196,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
             alignment: Alignment.topCenter,
             child: Text(
               // FIXME: Add localization key
-              'Wallet Created',
+              'Wallet created',
               style: typography.heading2(
                   color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
             ),
@@ -214,7 +214,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
           if (widget.mnemonic != null) ...[
             ArDriveButtonNew(
               typography: typography,
-              text: 'Copy Seed Phrase',
+              text: 'Copy seed phrase',
               variant: ButtonVariant.outline,
               onPressed: () {
                 PlausibleEventTracker.trackClickCopySeedPhraseButton();
@@ -241,7 +241,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
           ],
           ArDriveButtonNew(
             typography: typography,
-            text: 'Download Keyfile',
+            text: 'Download keyfile',
             variant: ButtonVariant.outline,
             onPressed: () async {
               final ioUtils = ArDriveIOUtils();
@@ -256,7 +256,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
                   // ignore: use_build_context_synchronously
                   context,
                   content: ArDriveStandardModalNew(
-                    title: 'Download Successful',
+                    title: 'Download successful',
                     description:
                         'Your wallet keyfile has been downloaded successfully. You can find it in your Downloads folder.',
                     actions: [
@@ -282,7 +282,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
           const SizedBox(height: 40),
           ArDriveButtonNew(
             typography: typography,
-            text: _isTermsChecked ? 'Go to App' : 'Check to Continue',
+            text: _isTermsChecked ? 'Go to app' : 'Check to continue',
             isDisabled: !_isTermsChecked,
             variant: ButtonVariant.primary,
             onPressed: () async {

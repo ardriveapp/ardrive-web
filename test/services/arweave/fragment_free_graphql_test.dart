@@ -49,6 +49,7 @@ final _documents = <String, DocumentNode>{
       TRANSACTION_DETAILS_WITH_SIGNATURE_QUERY_DOCUMENT,
   'DRIVE_STATE_ENTITY_HISTORY_QUERY_DOCUMENT':
       DRIVE_STATE_ENTITY_HISTORY_QUERY_DOCUMENT,
+  'WALLET_AR_DRIVE_FEES_QUERY_DOCUMENT': WALLET_AR_DRIVE_FEES_QUERY_DOCUMENT,
 };
 
 /// What [selectionSet] selects, as one path per field: the path of aliases or

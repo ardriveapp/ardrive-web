@@ -43,7 +43,7 @@ class _PrivateDriveMigrationDialogState
             state is PrivateDriveMigrationFailed ? state.error : null;
 
         return ArDriveStandardModalNew(
-          title: 'Update Private Drives',
+          title: 'Update private drives',
           hasCloseButton: false,
           content: Column(
             mainAxisSize: MainAxisSize.min,

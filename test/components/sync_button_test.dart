@@ -284,7 +284,7 @@ void main() {
 
     final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
     // The same name the sync modal gives this event, not a third one.
-    expect(tooltip.message, contains('Syncing All Drives'));
+    expect(tooltip.message, contains('Syncing all drives'));
     expect(tooltip.message, contains('Downloading drive snapshots...'));
   });
 
@@ -608,7 +608,7 @@ void main() {
 
       // Beside the indicator that was turning for it - the same surface a
       // successful background sync reports at, and clearly not a success.
-      expect(find.text('Sync Incomplete - Errors Detected'), findsOneWidget);
+      expect(find.text('Sync incomplete: errors detected'), findsOneWidget);
       expect(find.text('2 of 5 drives could not be synced'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
@@ -626,7 +626,7 @@ void main() {
       final pill = tester.widget<Container>(
         find
             .ancestor(
-              of: find.text('Sync Incomplete - Errors Detected'),
+              of: find.text('Sync incomplete: errors detected'),
               matching: find.byType(Container),
             )
             .first,
@@ -651,7 +651,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 10));
       await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
-      expect(find.text('Sync Incomplete - Errors Detected'), findsNothing,
+      expect(find.text('Sync incomplete: errors detected'), findsNothing,
           reason: 'precondition: the announcement has had its few seconds');
 
       await openMenu(tester);
@@ -659,8 +659,8 @@ void main() {
       // Retry lives on the drives list now - see
       // `test/drives_list/drives_sync_menu_test.dart`. What this menu owes is
       // the way to the page that carries it.
-      expect(find.text('Retry Failed'), findsNothing);
-      expect(find.text('All drives'), findsOneWidget);
+      expect(find.text('Retry failed'), findsNothing);
+      expect(find.text('Your drives'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -678,11 +678,11 @@ void main() {
       stateController.add(failed(trigger: SyncTrigger.userInitiated));
       await tester.pump(const Duration(milliseconds: 10));
 
-      expect(find.text('Sync Incomplete - Errors Detected'), findsOneWidget);
+      expect(find.text('Sync incomplete: errors detected'), findsOneWidget);
       expect(find.text('2 of 5 drives could not be synced'), findsOneWidget);
 
       await openMenu(tester);
-      expect(find.text('All drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -706,7 +706,7 @@ void main() {
       stateController.add(SyncFailure(error: Exception('the gateway said no')));
       await tester.pump(const Duration(milliseconds: 10));
 
-      expect(find.text('Drives Could Not Be Loaded'), findsOneWidget);
+      expect(find.text('Drives could not be loaded'), findsOneWidget);
       expect(
           find.text(
               'The network could not be reached to read your drive list.'),
@@ -724,14 +724,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 10));
       await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
-      expect(find.text('Drives Could Not Be Loaded'), findsNothing,
+      expect(find.text('Drives could not be loaded'), findsNothing,
           reason: 'precondition: the announcement has had its few seconds');
 
       // The failure outlives it, in the surface a partial failure uses: the
       // menu the indicator opens, and the indicator's own red triangle.
       await openMenu(tester);
 
-      expect(find.text('All drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -742,7 +742,7 @@ void main() {
 
       stateController.add(SyncFailure(error: Exception('the gateway said no')));
       await tester.pump(const Duration(milliseconds: 10));
-      expect(find.text('Drives Could Not Be Loaded'), findsOneWidget,
+      expect(find.text('Drives could not be loaded'), findsOneWidget,
           reason: 'precondition: the failure is on screen');
 
       // The retry runs and this time the drive list arrives.
@@ -751,7 +751,7 @@ void main() {
       stateController.add(SyncIdle());
       await tester.pump(const Duration(milliseconds: 10));
 
-      expect(find.text('Drives Could Not Be Loaded'), findsNothing);
+      expect(find.text('Drives could not be loaded'), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
 
       // And the indicator goes with it: the failure is resolved, nothing is
@@ -783,7 +783,7 @@ void main() {
           findsNothing);
 
       await openMenu(tester);
-      expect(find.text('All drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -801,7 +801,7 @@ void main() {
       stateController.add(SyncWalletMismatch());
       await tester.pump(const Duration(milliseconds: 10));
 
-      expect(find.text('Wallet Changed'), findsOneWidget);
+      expect(find.text('Wallet changed'), findsOneWidget);
       expect(
         find.text('You were signed out because your wallet changed.'),
         findsOneWidget,
@@ -812,7 +812,7 @@ void main() {
       await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
       final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
-      expect(tooltip.message, contains('Wallet Changed'));
+      expect(tooltip.message, contains('Wallet changed'));
       expect(
         tooltip.message,
         contains('You were signed out because your wallet changed.'),
@@ -834,7 +834,7 @@ void main() {
               .colorTokens;
 
       expect(
-        tester.widget<Text>(find.text('Wallet Changed')).style?.color,
+        tester.widget<Text>(find.text('Wallet changed')).style?.color,
         colorTokens.textRed,
       );
 
@@ -854,11 +854,11 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 10));
 
-      expect(find.text('Sync Cancelled'), findsOneWidget);
+      expect(find.text('Sync cancelled'), findsOneWidget);
       expect(find.text('Completed 1 of 3 drives'), findsOneWidget);
 
       final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
-      expect(tooltip.message, contains('Sync Cancelled'));
+      expect(tooltip.message, contains('Sync cancelled'));
       expect(tooltip.message, contains('Completed 1 of 3 drives'));
 
       await tester.pumpWidget(const SizedBox());
@@ -887,7 +887,7 @@ void main() {
       await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
       verify(() => syncCubit.clearCancelledState()).called(1);
-      expect(find.text('Sync Cancelled'), findsNothing);
+      expect(find.text('Sync cancelled'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });

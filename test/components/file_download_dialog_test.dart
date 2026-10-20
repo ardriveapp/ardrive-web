@@ -91,7 +91,7 @@ void main() {
       );
 
       expect(find.text('Cancel'), findsNothing);
-      expect(find.text('DONE'), findsNothing);
+      expect(find.text('Done'), findsNothing);
     });
   });
 
@@ -120,7 +120,7 @@ void main() {
             reason: 'for $verdict');
         expect(find.text('holiday.mp4'), findsOneWidget,
             reason: 'for $verdict');
-        expect(find.text('DONE'), findsOneWidget, reason: 'for $verdict');
+        expect(find.text('Done'), findsOneWidget, reason: 'for $verdict');
 
         // No claim about the bytes, in either direction.
         expect(find.textContaining('matches what was originally'), findsNothing,

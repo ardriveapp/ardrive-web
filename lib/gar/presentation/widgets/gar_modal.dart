@@ -172,7 +172,7 @@ class _ArIOGatewaySelectorModalContentState extends State<_ArIOGatewaySelectorMo
         }
 
         return ProgressDialog(
-          title: 'Loading Gateways',
+          title: 'Loading gateways',
           useNewArDriveUI: true,
           actions: [
             ModalAction(

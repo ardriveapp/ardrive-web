@@ -305,12 +305,44 @@ class ArDriveButtonNew extends StatefulWidget {
   // Only applies to primary
   final Widget? customContent;
 
+  /// The width that fits [text] on one line in this button, and at least
+  /// [minWidth].
+  ///
+  /// A button's width is fixed, so a label longer than the width it was given
+  /// wraps inside it. Use this where the label can be longer than the usual
+  /// width, such as one that names its action or counts files.
+  static double fittedWidth(
+    BuildContext context,
+    String text, {
+    required double minWidth,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: ArDriveTypographyNew.of(context).paragraphLarge(
+          fontWeight: ArFontWeight.semiBold,
+        ),
+      ),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+
+    // The button's own padding is 10 on each side. The extra 8 covers what
+    // this measure cannot see, such as letter spacing the button's theme
+    // adds, and rounding.
+    final width = painter.width + 28;
+    painter.dispose();
+
+    return width > minWidth ? width.ceilToDouble() : minWidth;
+  }
+
   @override
   State<ArDriveButtonNew> createState() => _ArDriveButtonNewState();
 }
 
 class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
-  var offsetY = 0.0;
+  var _hovering = false;
 
   @override
   Widget build(BuildContext context) {
@@ -417,7 +449,7 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
                     ? null
                     : (hovering) {
                         setState(() {
-                          offsetY = hovering ? -1 : 0;
+                          _hovering = hovering;
                         });
                       },
                 style: style,
@@ -434,23 +466,27 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
                             ? Transform.translate(
                                 offset: const Offset(0, -2), child: text)
                             : text
-                        : Stack(
-                            fit: StackFit.expand,
-                            alignment: Alignment.center,
+                        // The icon joins the label on hover rather than
+                        // replacing it. Sliding the label out left the button
+                        // blank exactly when the pointer was on it, and blank
+                        // behind a dialog the click had opened.
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              AnimatedPositioned(
-                                  // FIXME: this is a hack to make the text align properly
-                                  // and will need to be updated for different typography
-                                  top: 12 + offsetY * buttonH,
-                                  duration: const Duration(milliseconds: 100),
-                                  child:
-                                      SizedBox(height: buttonH, child: text)),
-                              if (widget.hoverIcon != null)
-                                AnimatedSlide(
-                                  offset: Offset(0, offsetY + 1),
-                                  duration: const Duration(milliseconds: 100),
-                                  child: widget.hoverIcon!,
-                                )
+                              AnimatedSize(
+                                duration: const Duration(milliseconds: 100),
+                                child: _hovering && !widget.isDisabled
+                                    ? Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 8),
+                                        child: SizedBox.square(
+                                          dimension: 24,
+                                          child: widget.hoverIcon,
+                                        ),
+                                      )
+                                    : const SizedBox(height: 24),
+                              ),
+                              Flexible(child: text),
                             ],
                           )),
           ),

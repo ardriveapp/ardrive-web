@@ -1074,7 +1074,7 @@
   "@forgetWalletTitle": {
     "description": "Modal title to forget wallet"
   },
-  "freeTurboTransaction": "成本：0 AR\n多亏 Turbo，这笔小额交易免费。",
+  "freeTurboTransaction": "成本：0 积分\n多亏 Turbo，这笔小额交易免费。",
   "@freeTurboTransaction": {
     "description": "Message explaining that your upload will be free thanks to Turbo"
   },
@@ -1721,10 +1721,6 @@
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
-  "resync": "重新同步",
-  "@resync": {
-    "description": "Sync button Text"
-  },
   "resyncTooltip": "刷新所有驱动器",
   "@resyncTooltip": {
     "description": "resync tooltip text"
@@ -2093,10 +2089,6 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
-  "syncNow": "立即同步",
-  "@syncNow": {
-    "description": "Button text to sync an unsynced drive"
-  },
   "syncingOnlyOneDrive": "同步你的网盘中...",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
@@ -2306,6 +2298,33 @@
   "uploadingSnapshot": "正在上传快照",
   "@uploadingSnapshot": {
     "description": "Uploading Snapshot"
+  },
+  "uploadAsNewVersion": "{numberOfFiles, plural, zero{} other{作为新版本上传}}",
+  "@uploadAsNewVersion": {
+    "description": "Button on the duplicate file dialog that uploads the files as new versions of the ones already there",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "uploadAnyway": "仍然上传",
+  "@uploadAnyway": {
+    "description": "Button on the large file warning that starts the upload"
+  },
+  "uploadSnapshot": "上传快照",
+  "@uploadSnapshot": {
+    "description": "Button on the snapshot cost step that uploads the snapshot"
+  },
+  "createPin": "创建 Pin",
+  "@createPin": {
+    "description": "Button that creates a file pin"
+  },
+  "newUserEmptyDriveTitle": "你的网盘已就绪",
+  "@newUserEmptyDriveTitle": {
+    "description": "Heading on a new user's first, empty drive"
   },
   "uploadNFiles": "{numberOfFiles, plural, zero{} other{上传{numberOfFiles}个文件}}",
   "@uploadNFiles": {

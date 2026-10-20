@@ -81,8 +81,9 @@ class DriveListItem extends Equatable {
   ///
   /// Null has two meanings, separated by [hasBeenWalked]: never synced at all,
   /// or synced by a build that did not yet write this down. The row says
-  /// "Never synced" for the first and a bare "Synced" for the second, because
-  /// claiming a time we do not have is the failure this whole series is about.
+  /// "Not synced on this device" for the first and a bare "Synced" for the
+  /// second, because claiming a time we do not have is the failure this whole
+  /// series is about.
   final DateTime? lastSyncedAt;
 
   /// Whether a sync covering this drive is running right now.

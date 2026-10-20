@@ -135,14 +135,14 @@ void main() {
     );
 
     expect(dialogTitle(photos), findsOneWidget);
-    expect(find.text('Choose Files'), findsOneWidget);
+    expect(find.text('Choose files'), findsOneWidget);
   });
 
   testWidgets('and reads in the dark theme', (tester) async {
     await open(tester, drive: photos, state: loaded(photos), dark: true);
 
     expect(dialogTitle(photos), findsOneWidget);
-    expect(find.text('Choose Files'), findsOneWidget);
+    expect(find.text('Choose files'), findsOneWidget);
   });
 
   /// A long drive name at twice the text size is taller than a short phone.
@@ -162,7 +162,7 @@ void main() {
       size: const Size(320, 640),
     );
 
-    expect(find.text('Choose Files'), findsOneWidget);
+    expect(find.text('Choose files'), findsOneWidget);
   });
 
   testWidgets('names the drive and says it is private', (tester) async {
@@ -188,7 +188,7 @@ void main() {
       state: loaded(photos, folderId: 'holidays'),
     );
 
-    await tester.tap(find.text('Choose Files'));
+    await tester.tap(find.text('Choose files'));
     await tester.pumpAndSettle();
 
     expect(chosen, ['holidays']);
@@ -203,8 +203,8 @@ void main() {
       isFolderUpload: true,
     );
 
-    expect(find.text('Choose Folder'), findsOneWidget);
-    expect(find.text('Choose Files'), findsNothing);
+    expect(find.text('Choose folder'), findsOneWidget);
+    expect(find.text('Choose files'), findsNothing);
   });
 
   testWidgets('can be cancelled without starting anything', (tester) async {

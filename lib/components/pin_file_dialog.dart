@@ -148,7 +148,7 @@ class PinFileDialog extends StatelessWidget {
             ),
             ModalAction(
               action: () => pinFileBloc.add(const PinFileSubmit()),
-              title: appLocalizationsOf(context).create,
+              title: appLocalizationsOf(context).createPin,
               // FIXME: "isEnabled"
               isEnable: state is PinFileFieldsValid &&
                   state.nameValidation == NameValidationResult.valid,

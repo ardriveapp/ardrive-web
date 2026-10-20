@@ -53,7 +53,7 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
                     labelText:
                         // TODO: Localize
                         // appLocalizationsOf(context).udlLicenseFee,
-                        'License Fee',
+                        'License fee',
                     child: ReactiveTextField(
                       formControlName: 'licenseFeeAmount',
                       cursorColor: ArDriveTheme.of(context)
@@ -105,7 +105,7 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
               labelText:
                   // TODO: Localize
                   // appLocalizationsOf(context).udlCommercialUse,
-                  'Commercial Use',
+                  'Commercial use',
               child: ReactiveDropdownField(
                 formControlName: 'commercialUse',
                 decoration: InputDecoration(

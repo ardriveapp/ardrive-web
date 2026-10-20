@@ -38,7 +38,7 @@ class _ThumbnailCreationModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveStandardModalNew(
-      title: 'Create Thumbnail',
+      title: 'Create thumbnail',
       content: BlocConsumer<ThumbnailCreationBloc, ThumbnailCreationState>(
         listener: (context, state) {
           if (state is ThumbnailCreationSuccess) {

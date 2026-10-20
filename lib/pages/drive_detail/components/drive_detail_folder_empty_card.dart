@@ -4,14 +4,21 @@ class DriveDetailFolderEmptyCard extends StatefulWidget {
   final bool promptToAddFiles;
   final String driveId;
   final String parentFolderId;
+  final String folderName;
   final bool isRootFolder;
+
+  /// A sync is still reading this drive for the first time, so the folder may
+  /// be empty only so far - see `DriveDetailLoadSuccess.contentsStillArriving`.
+  final bool contentsStillArriving;
 
   const DriveDetailFolderEmptyCard({
     super.key,
     required this.promptToAddFiles,
     required this.driveId,
     required this.parentFolderId,
+    required this.folderName,
     required this.isRootFolder,
+    this.contentsStillArriving = false,
   });
 
   @override
@@ -22,7 +29,17 @@ class DriveDetailFolderEmptyCard extends StatefulWidget {
 class _DriveDetailFolderEmptyCardState
     extends State<DriveDetailFolderEmptyCard> {
   @override
-  Widget build(BuildContext context) => buildArDriveCard(context);
+  Widget build(BuildContext context) {
+    // A folder read while a sync is still reading its drive may be empty only
+    // because its contents have not landed yet. Offering to fill it then is
+    // what made a full drive flash "Your brand new drive!", so the panel says
+    // the sync is still going until there is something to show or it ends.
+    if (widget.contentsStillArriving) {
+      return DriveDetailSyncingCard(folderName: widget.folderName);
+    }
+
+    return buildArDriveCard(context);
+  }
 
   Widget buildArDriveCard(BuildContext context) {
     ArDriveTypographyNew.of(context);
@@ -172,9 +189,9 @@ class _EmptyFolder extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final width = MediaQuery.of(context).size.width;
-    const String headerText = 'Ready to organize your files?';
+    const String headerText = 'This folder is empty';
     const String descriptionText =
-        'This folder is empty. You can move existing files into this folder, or upload new content.';
+        'Upload files to it, or move files here from elsewhere in your drive.';
 
     return PlausiblePageViewWrapper(
       pageView: PlausiblePageView.folderEmptyPage,
@@ -200,7 +217,8 @@ class _EmptyFolder extends StatelessWidget {
               _ActionCard.uploadFile(context,
                   driveId: driveId,
                   parentFolderId: parentFolderId,
-                  page: PlausiblePageView.folderEmptyPage),
+                  page: PlausiblePageView.folderEmptyPage,
+                  intoFolder: true),
               const SizedBox(height: 20),
               _ActionCard.uploadFolder(context,
                   driveId: driveId,
@@ -216,37 +234,27 @@ class _EmptyFolder extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // No confetti: an empty folder is not an occasion, and the
+            // celebration belongs to the drive that was just made.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 66),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  ArDriveImage(
-                      image: AssetImage(Resources.images.login.confetti)),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _buildHeaderText(
-                          context: context,
-                          text: headerText,
-                          style:
-                              typography.display(fontWeight: ArFontWeight.bold),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildDescriptionText(
-                          context: context,
-                          text: descriptionText,
-                          style: typography.heading5(
-                            color: colorTokens.textLow,
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                        ),
-                      ],
+                  _buildHeaderText(
+                    context: context,
+                    text: headerText,
+                    style: typography.display(fontWeight: ArFontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildDescriptionText(
+                    context: context,
+                    text: descriptionText,
+                    style: typography.heading5(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold,
                     ),
                   ),
-                  ArDriveImage(
-                      image: AssetImage(Resources.images.login.confetti)),
                 ],
               ),
             ),
@@ -256,7 +264,8 @@ class _EmptyFolder extends StatelessWidget {
                 _ActionCard.uploadFile(context,
                     driveId: driveId,
                     parentFolderId: parentFolderId,
-                    page: PlausiblePageView.folderEmptyPage),
+                    page: PlausiblePageView.folderEmptyPage,
+                    intoFolder: true),
                 _ActionCard.uploadFolder(context,
                     driveId: driveId,
                     parentFolderId: parentFolderId,
@@ -310,7 +319,8 @@ class _NewUserEmptyRootFolder extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    const String headerText = 'You\'re on chain!';
+    final String headerText =
+        appLocalizationsOf(context).newUserEmptyDriveTitle;
     final String descriptionText = appLocalizationsOf(context)
         .newUserEmptyDriveDescription(_freeUploadLimit(context));
 
@@ -594,14 +604,16 @@ class _ActionCard {
     required PlausiblePageView page,
     ButtonVariant variant = ButtonVariant.secondary,
     bool compact = false,
+    bool intoFolder = false,
   }) {
     return _buildActionCard(
       variant: variant,
       compact: compact,
       context: context,
-      title: 'Upload Files',
-      description:
-          'Upload a file, or a selection of files into your new drive.',
+      title: 'Upload files',
+      description: intoFolder
+          ? 'Upload one or more files into this folder.'
+          : 'Upload one or more files into your new drive.',
       buttonText: 'Upload',
       onPressed: () {
         PlausibleEventTracker.trackClickUploadFileEmptyState(page);
@@ -629,9 +641,9 @@ class _ActionCard {
       variant: variant,
       compact: compact,
       context: context,
-      title: 'Create a Folder',
+      title: 'Create a folder',
       description: 'Create folders to keep your drive organized.',
-      buttonText: 'Create Folder',
+      buttonText: 'Create folder',
       onPressed: () {
         PlausibleEventTracker.trackClickCreateFolderEmptyState(page);
 
@@ -648,10 +660,10 @@ class _ActionCard {
       required PlausiblePageView page}) {
     return _buildActionCard(
       context: context,
-      title: 'Upload a Folder',
+      title: 'Upload a folder',
       description:
           'Upload existing folders from your computer, other file storage apps, or an external HD.',
-      buttonText: 'Upload Folder',
+      buttonText: 'Upload folder',
       onPressed: () {
         PlausibleEventTracker.trackClickUploadFolderEmptyState(page);
 
@@ -670,10 +682,10 @@ class _ActionCard {
       {required PlausiblePageView page}) {
     return _buildActionCard(
       context: context,
-      title: 'Create a Pin',
+      title: 'Create a pin',
       description:
           'Pin any permaweb file to your drive, to create inspiration boards, recipe collections, or NFT galleries.',
-      buttonText: 'Create Pin',
+      buttonText: 'Create pin',
       onPressed: () {
         PlausibleEventTracker.trackClickCreatePinEmptyState(page);
 
@@ -746,15 +758,29 @@ class _ActionCard {
       );
     }
 
+    // On a wide screen the cards sit in a row, so each is laid out from the
+    // top with its button held to the bottom: icon, title and button line up
+    // across the row however many lines a description takes. Spreading the
+    // space evenly moved each title by half the difference in description
+    // height. Stacked on a narrower screen there is no row to line up with,
+    // and the spread keeps a short description from leaving a gap.
+    //
+    // Less padding above and below than at the sides, so the longest
+    // description, Create a pin's four lines, fits with room to spare.
+    final inARow =
+        getDeviceType(MediaQuery.sizeOf(context)) == DeviceScreenType.desktop;
+
     return ArDriveCard(
       width: 283,
       height: 283,
       backgroundColor: colorTokens.containerL2,
-      contentPadding: const EdgeInsets.all(31),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 31, vertical: 24),
       content: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment:
+            inARow ? MainAxisAlignment.start : MainAxisAlignment.spaceEvenly,
         children: [
           icon.copyWith(size: 25),
+          const SizedBox(height: 8),
           Text(
             title,
             style:
@@ -767,7 +793,8 @@ class _ActionCard {
                 color: colorTokens.textMid, fontWeight: ArFontWeight.semiBold),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          if (inARow) const Spacer(),
+          const SizedBox(height: 12),
           ArDriveButtonNew(
             text: buttonText,
             typography: typography,
