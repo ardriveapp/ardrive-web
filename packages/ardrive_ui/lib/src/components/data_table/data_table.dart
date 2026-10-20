@@ -40,6 +40,14 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   final TableRowWidget Function(T row) buildRow;
   final Widget Function(T row)? leading;
   final Widget Function(T row)? trailing;
+
+  /// The width [trailing] needs for [row]. The table reserves the widest of
+  /// all rows, so every row and the header keep their columns aligned. Absent,
+  /// the slot is [defaultTrailingWidth] wide.
+  final double Function(T row)? trailingWidth;
+
+  /// The width of the [trailing] slot when [trailingWidth] is absent.
+  static const double defaultTrailingWidth = 100;
   final int Function(T a, T b) Function(int columnIndex)? sort;
   final List<T> Function(List<T> rows, int columnIndex, TableSort sortOrder)?
       sortRows;
@@ -119,6 +127,7 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     required this.rows,
     this.leading,
     this.trailing,
+    this.trailingWidth,
     this.sort,
     this.onChangePage,
     this.rowsPerPage,
@@ -701,6 +710,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
 
   @override
   Widget build(BuildContext context) {
+    // Once per build, for the header and every row to read the same value.
+    final trailingSlot = _trailingSlotWidth();
+
     final columns = List.generate(
       _columns.length,
       (index) => _buildSingleColumn(
@@ -757,8 +769,10 @@ class _ArDriveDataTableState<T extends IndexedItem>
                       child: Row(
                         children: [
                           ...columns,
-                          const SizedBox(
-                            width: 90,
+                          // 10 less than the trailing slot, as the 90 was
+                          // beside its 100.
+                          SizedBox(
+                            width: trailingSlot - 10,
                           ),
                           ArDriveSubmenu(
                             alignmentOffset: const Offset(-150, 10),
@@ -822,6 +836,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
                                 widget.buildRow(_currentPage[index]).row,
                                 _currentPage[index],
                                 index,
+                                trailingSlot,
                               ),
                             ),
                           ),
@@ -1022,11 +1037,22 @@ class _ArDriveDataTableState<T extends IndexedItem>
     );
   }
 
+  /// The widest [ArDriveDataTable.trailingWidth] over every row, so the
+  /// header and all rows reserve the same space.
+  double _trailingSlotWidth() {
+    final widthOf = widget.trailingWidth;
+    if (widthOf == null || _cachedRows.isEmpty) {
+      return ArDriveDataTable.defaultTrailingWidth;
+    }
+    return _cachedRows.map(widthOf).reduce(max);
+  }
+
   Widget _buildRowSpacing(
     List<TableColumn> columns,
     List<Widget> buildRow,
     T row,
     int index,
+    double trailingSlot,
   ) {
     final multiselect = getMultiSelectBox();
 
@@ -1111,7 +1137,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
                       child: Container(
                         alignment: Alignment.center,
                         height: 44,
-                        width: 100,
+                        width: trailingSlot,
                         child: widget.trailing!.call(row),
                       ),
                     ),

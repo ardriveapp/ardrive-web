@@ -53,15 +53,18 @@ class DriveExplorerItemTile extends TableRowWidget {
               child: Row(
                 children: [
                   Flexible(
-                    child: Text(
-                      name,
-                      style: typography.paragraphNormal(
-                        color: isHidden ? Colors.grey : null,
-                        fontWeight: ArFontWeight.semiBold,
+                    child: ArDriveTooltip(
+                      message: name,
+                      child: Text(
+                        name,
+                        style: typography.paragraphNormal(
+                          color: isHidden ? Colors.grey : null,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        softWrap: false,
                       ),
-                      overflow: TextOverflow.fade,
-                      maxLines: 1,
-                      softWrap: false,
                     ),
                   ),
                   if (hasArnsNames(dataTableItem) &&
@@ -372,6 +375,33 @@ class DriveExplorerItemTileTrailing extends StatefulWidget {
   final ArDriveDataTableItem item;
   final Drive drive;
   final Alignment alignment;
+
+  /// The menu button measures 34 (icon and padding); 40 leaves a little air.
+  static const double _menuWidth = 40;
+
+  /// The pin indicator is 32 wide and sits directly against the menu button.
+  /// With the menu button the pair measures 66, in a slot of 76.
+  static const double _pinWidth = 36;
+
+  /// A ghost folder's **Fix** button and the menu button, measured in every
+  /// language the app ships (the widest is Spanish at 139.4; Hindi is 137.0,
+  /// English 102). `drive_explorer_item_tile_layout_test.dart` repeats the
+  /// measurement and fails if a new label outgrows this. The test machine
+  /// draws Hindi, Japanese and Chinese in a fallback face, so re-measure
+  /// those on a real build when a label changes.
+  static const double _ghostFolderWidth = 144;
+
+  /// The width the trailing slot needs for [item]: the menu button, plus the
+  /// **Fix** button or the pin indicator when the row has one.
+  static double widthFor(ArDriveDataTableItem item) {
+    if (item is FolderDataTableItem && item.isGhostFolder && item.isOwner) {
+      return _ghostFolderWidth;
+    }
+    if (item is FileDataTableItem && item.pinnedDataOwnerAddress != null) {
+      return _menuWidth + _pinWidth;
+    }
+    return _menuWidth;
+  }
 
   @override
   State<DriveExplorerItemTileTrailing> createState() =>
