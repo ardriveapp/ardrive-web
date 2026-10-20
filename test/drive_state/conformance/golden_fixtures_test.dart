@@ -64,8 +64,10 @@ void main() {
       expect(fresh['transaction'], sidecar['transaction'],
           reason: fixture.name);
       expect(fresh['reader'], sidecar['reader'], reason: fixture.name);
-      expect(fresh['payloadSha256'], sidecar['payloadSha256'],
-          reason: fixture.name);
+
+      // Not `payloadSha256`: SQLite writes its own version into the file
+      // header, so the same rows make different bytes on another platform.
+      // The hash describes the checked-in body, which is what readers test.
       // Not `detail`: this app's reason is for people, and carries timings.
       for (final key in ['outcome', 'tables']) {
         expect(fresh['expected'][key], sidecar['expected'][key],
