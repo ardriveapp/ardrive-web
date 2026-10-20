@@ -521,7 +521,7 @@ void main() {
 
       expect(
         find.text(
-          'Their contents have not been fetched yet.',
+          'Sync your drives to see their files and folders.',
         ),
         findsOneWidget,
       );
