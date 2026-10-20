@@ -259,7 +259,14 @@ void main() {
       final menu = find.bySemanticsLabel('Show menu');
       expect(menu, findsOneWidget);
       final node = tester.getSemantics(menu);
-      expect(node, containsSemantics(label: 'Show menu', isButton: true));
+      expect(
+        node,
+        containsSemantics(
+          label: 'Show menu',
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
       // The web engine reads a node's label and its tooltip out together, so
       // the tooltip's copy of the name is what made it "Show menu Show menu".
       expect(node.getSemanticsData().tooltip, isEmpty);
