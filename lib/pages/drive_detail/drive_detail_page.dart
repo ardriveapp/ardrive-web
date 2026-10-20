@@ -50,6 +50,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/shared/components/plausible_page_view_wrapper.dart';
 import 'package:ardrive/sharing/sharing_file_listener.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
@@ -763,16 +764,24 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           ArDriveDropdownItem(
                                             onClick: isSyncing
                                                 ? null
-                                                : () {
-                                                    context
-                                                        .read<SyncCubit>()
-                                                        .startSyncForDrive(
-                                                          driveId:
-                                                              driveDetailState
-                                                                  .currentDrive
-                                                                  .id,
-                                                          deepSync: true,
-                                                        );
+                                                : () async {
+                                                    final syncCubit = context
+                                                        .read<SyncCubit>();
+                                                    final drive =
+                                                        driveDetailState
+                                                            .currentDrive;
+                                                    if (!await confirmFullResync(
+                                                      context,
+                                                      FullResyncScope.drive(
+                                                        drive.name,
+                                                      ),
+                                                    )) {
+                                                      return;
+                                                    }
+                                                    syncCubit.startSyncForDrive(
+                                                      driveId: drive.id,
+                                                      deepSync: true,
+                                                    );
                                                   },
                                             content: ArDriveDropdownItemTile(
                                               name: appLocalizationsOf(context)
@@ -1478,11 +1487,19 @@ class MobileFolderNavigation extends StatelessWidget {
                       ArDriveDropdownItem(
                         onClick: isSyncing
                             ? null
-                            : () {
-                                context.read<SyncCubit>().startSyncForDrive(
-                                      driveId: state.currentDrive.id,
-                                      deepSync: true,
-                                    );
+                            : () async {
+                                final syncCubit = context.read<SyncCubit>();
+                                final drive = state.currentDrive;
+                                if (!await confirmFullResync(
+                                  context,
+                                  FullResyncScope.drive(drive.name),
+                                )) {
+                                  return;
+                                }
+                                syncCubit.startSyncForDrive(
+                                  driveId: drive.id,
+                                  deepSync: true,
+                                );
                               },
                         content: ArDriveDropdownItemTile(
                           name: appLocalizationsOf(context).deepSyncThisDrive,

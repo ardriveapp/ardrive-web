@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/drives_list/presentation/drives_sync_menu.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -12,12 +14,14 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:provider/provider.dart';
 
 import '../test_utils/mocks.dart';
 
@@ -86,10 +90,15 @@ void main() {
 
   tearDown(() async => states.close());
 
-  Widget host() => Portal(
+  Widget host({double textScale = 1}) => Portal(
         child: ArDriveTheme(
           themeData: lightTheme(),
           child: MaterialApp(
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: TextScaler.linear(textScale)),
+              child: child!,
+            ),
             localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
@@ -97,16 +106,21 @@ void main() {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: const [Locale('en', '')],
-            home: Scaffold(
-              body: MultiBlocProvider(
-                providers: [
-                  BlocProvider<SyncCubit>.value(value: syncCubit),
-                  BlocProvider<DrivesCubit>.value(value: drivesCubit),
-                  BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
-                ],
-                child: const Align(
-                  alignment: Alignment.topRight,
-                  child: DrivesSyncMenu(),
+            // The full resync confirmation is a dialog, and the app's
+            // dialogs report themselves to the activity tracker.
+            home: ChangeNotifierProvider<ActivityTracker>(
+              create: (_) => ActivityTracker(),
+              child: Scaffold(
+                body: MultiBlocProvider(
+                  providers: [
+                    BlocProvider<SyncCubit>.value(value: syncCubit),
+                    BlocProvider<DrivesCubit>.value(value: drivesCubit),
+                    BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+                  ],
+                  child: const Align(
+                    alignment: Alignment.topRight,
+                    child: DrivesSyncMenu(),
+                  ),
                 ),
               ),
             ),
@@ -114,8 +128,8 @@ void main() {
         ),
       );
 
-  Future<void> openMenu(WidgetTester tester) async {
-    await tester.pumpWidget(host());
+  Future<void> openMenu(WidgetTester tester, {double textScale = 1}) async {
+    await tester.pumpWidget(host(textScale: textScale));
     await tester.pump();
     await tester.tap(find.byType(DrivesSyncMenu));
     await tester.pump(const Duration(milliseconds: 300));
@@ -224,7 +238,7 @@ void main() {
       await openMenu(tester);
 
       expect(find.text('Sync all drives'), findsOneWidget);
-      expect(find.text('Deep resync'), findsOneWidget);
+      expect(find.text('Full resync all drives'), findsOneWidget);
       expect(find.text('Sync history'), findsOneWidget);
     });
 
@@ -268,7 +282,7 @@ void main() {
       await openMenu(tester);
 
       expect(itemNamed(tester, 'Sync all drives').isDisabled, isTrue);
-      expect(itemNamed(tester, 'Deep resync').isDisabled, isTrue);
+      expect(itemNamed(tester, 'Full resync all drives').isDisabled, isTrue);
       expect(entryNamed(tester, 'Sync all drives').onClick, isNull);
     });
 
@@ -315,6 +329,115 @@ void main() {
       await openMenu(tester);
 
       expect(find.text('Retry failed'), findsNothing);
+    });
+  });
+
+  // "Deep resync" said nothing about what it did differently, and the drive
+  // menus called the same thing "Deep sync". Both sync items now say what
+  // they do, and the slow one asks first.
+  group('full resync', () {
+    // The real face, so the descriptions are measured as a user sees them:
+    // the test font's glyphs are a square em each, several times wider. Loaded
+    // here because a real file read never completes inside `testWidgets`.
+    setUpAll(() async {
+      final bytes = await File(
+        'packages/ardrive_ui/assets/fonts/Wavehaus-66Book.otf',
+      ).readAsBytes();
+      await (FontLoader('packages/ardrive_ui/Wavehaus')
+            ..addFont(
+              Future.value(ByteData.view(Uint8List.fromList(bytes).buffer)),
+            ))
+          .load();
+    });
+
+    // Pressed through the button, as the items are through `onClick`: the
+    // still-open menu's portal sits above the dialog in this harness and
+    // takes the tap. In the app, choosing the item closes the menu.
+    void pressButton(WidgetTester tester, String title) => tester
+        .widget<ArDriveButtonNew>(find.widgetWithText(ArDriveButtonNew, title))
+        .onPressed!();
+
+    testWidgets('both sync items say what they do, in full', (tester) async {
+      await openMenu(tester);
+
+      for (final description in [
+        'Gets changes since the last sync.',
+        'Rereads all history. Slower; use it if something looks missing.',
+      ]) {
+        expect(find.text(description), findsOneWidget);
+        // At the default text size the sentence fits its two lines rather
+        // than ending in an ellipsis.
+        final paragraph =
+            tester.renderObject<RenderParagraph>(find.text(description));
+        expect(paragraph.didExceedMaxLines, isFalse, reason: description);
+      }
+    });
+
+    testWidgets('asks first, and Cancel starts nothing', (tester) async {
+      await openMenu(tester);
+
+      entryNamed(tester, 'Full resync all drives').onClick!();
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('rereads the entire history of all your drives'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Nothing on this device is deleted'),
+          findsOneWidget);
+
+      pressButton(tester, 'Cancel');
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Nothing on this device is deleted'),
+          findsNothing);
+      verifyNever(() => syncCubit.startSync(
+            deepSync: any(named: 'deepSync'),
+            skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
+            onlyDriveIds: any(named: 'onlyDriveIds'),
+            trigger: any(named: 'trigger'),
+          ));
+    });
+
+    testWidgets('and confirming starts it', (tester) async {
+      await openMenu(tester);
+
+      entryNamed(tester, 'Full resync all drives').onClick!();
+      await tester.pumpAndSettle();
+      pressButton(tester, 'Full resync');
+      await tester.pumpAndSettle();
+
+      verify(() => syncCubit.startSync(
+            deepSync: true,
+            skipTabVisibilityCheck: any(named: 'skipTabVisibilityCheck'),
+            onlyDriveIds: any(named: 'onlyDriveIds'),
+            trigger: any(named: 'trigger'),
+          )).called(1);
+    });
+
+    // The menu sizes itself from a height it is given, not from its items, so
+    // taller items must not push the last one out of reach.
+    testWidgets('the menu still fits a 320px phone at text scale 2.0',
+        (tester) async {
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await openMenu(tester, textScale: 2);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // Inside the menu's box, not below its edge where nothing scrolls to it.
+      final menu = tester.getRect(find
+          .ancestor(
+              of: find.text('Sync history'), matching: find.byType(ArDriveCard))
+          .first);
+      final last = tester.getRect(
+          find.widgetWithText(ArDriveDropdownItemTile, 'Sync history'));
+      // Within the card's border: the dropdown draws its 1px border inside
+      // the height it is given, in every menu, so the last row gives up a
+      // pixel of its bottom padding, never its text.
+      expect(last.bottom, lessThanOrEqualTo(menu.bottom + 2));
     });
   });
 }
