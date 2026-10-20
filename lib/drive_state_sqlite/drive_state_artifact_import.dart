@@ -214,9 +214,11 @@ Future<ArtifactImportRefused?> validateAttachedArtifact(
 
   // A view or trigger here would run this reader's own SELECT against
   // attacker-chosen SQL, so the shape is settled before any row is read.
+  // The `_` is escaped: in LIKE it matches any character, which would also
+  // skip an object named, say, `sqlitex`.
   final objects = await db.customSelect(
     'SELECT type, name, sql FROM $alias.sqlite_master '
-    "WHERE name NOT LIKE 'sqlite_%'",
+    r"WHERE name NOT LIKE 'sqlite\_%' ESCAPE '\'",
   ).get();
   final seen = <String, String>{};
   for (final row in objects) {
