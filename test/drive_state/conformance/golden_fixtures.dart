@@ -1172,7 +1172,7 @@ Future<void> _seedDrive(
     licenseTxId: reportLicence,
     thumbnail: '{"variants":[{"name":"thumbnail","txId":"${_txId()}",'
         '"size":2048,"width":256,"height":256}]}',
-    assignedNames: '["report_fixtures"]',
+    assignedNames: '{"assignedNames":["report_fixtures"]}',
     customJson: '{"department":"finance"}',
     customTags: '{"Fixture-Tag":"report"}',
   );

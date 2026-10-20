@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "54d023fd6155f27ba291aa553857b67638d433604fa6a66217f00b18358bf382",
+  "payloadSha256": "2f41d72bf0b75d98b223c32e078892bdcd625310688215623eac6f93c9dbedfc",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "2 problems, first: *** in database artifact_12 ***\nTree 10 page 10 cell 1: Offset 42405 out of range 3987..4092\nTree 10 page 10 cell 0: Offset 42405 out of range 3987..4092"

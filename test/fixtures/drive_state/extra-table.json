@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "2698584ae9c1507f69fcf5dd04f8bf147333026b68ce68780631452f84ed0a83",
+  "payloadSha256": "d819a05aedab601731183073f618ad5682778613de89f3caa76d19040a585e2c",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "expected [meta, drives, folder_entries, file_entries, drive_revisions, folder_revisions, file_revisions, licenses, transaction_statuses], found [meta, drives, folder_entries, file_entries, drive_revisions, folder_revisions, file_revisions, licenses, transaction_statuses, notes]"

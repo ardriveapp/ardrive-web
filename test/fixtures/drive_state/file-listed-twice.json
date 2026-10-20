@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "4e38b0b4ae940bd78083d2337b291acbf2be44cb21c2fedb27c137145059208f",
+  "payloadSha256": "c33a52fcdb24c8deb18e6b1b2463819f363178697dc74c1d55058649a037a04c",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "the payload is not a readable drive state container: DriveStateFormatException(malformed): file file-report is listed twice"

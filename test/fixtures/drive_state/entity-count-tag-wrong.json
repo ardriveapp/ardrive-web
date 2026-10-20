@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "448dbc8432729b426313b28a9173a94f1e5bf9d1b7a75106b2da796731214433",
+  "payloadSha256": "3eee23036207842c16766af779dcae98a3d3c43d3cc238f13d19a65596c2330a",
   "expected": {
     "outcome": "countMismatch",
     "detail": "Entity-Count declared 10 and the payload holds 9 (3 folders, 5 files, 1 drive)"

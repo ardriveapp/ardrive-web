@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "fb051946bbb2e44cf1ccd82afb4d5b80771697720b6ade3b42f7606fa998d38d",
+  "payloadSha256": "192b73c61de4e9b24e4d50623bd08cf454c13d9ad6745e520243bdc8af6e27af",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "the payload is not a readable drive state container: DriveStateFormatException(malformed): transaction czUYWfBvnjkYzqCClw9Wo6iALD6nsraFK0y7XJTHMnc is listed as \"pending\", which a reader cannot apply"

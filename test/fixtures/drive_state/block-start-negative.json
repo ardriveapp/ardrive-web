@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "abca3b0486129f28ec0ebdff691a27a50b6c89608dc29c79f909e8ea3e6adb60",
+  "payloadSha256": "e554d198beeae1890ee19e948140e09591fd9c9d1c653be9cc7c5fb0c768668f",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "the payload is not a readable drive state container: DriveStateFormatException(malformed): coverage [-1, 1500000] is not a block range"

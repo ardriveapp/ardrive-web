@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "adf27dd63bd4517a47b58f37dfccbdb70238579a086d20a8af114a61a2ba52d2",
+  "payloadSha256": "466aa2be4e04344e3ecedd3c6b94a44f9c9da2ea7aecd6e0ca3b1e735ec29f0a",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "the payload is not a readable drive state container: Bad state: Too many elements"

@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "2b07d7b4472c99c6abb02e6944b72f2ddfaf8e7dbf9b1ca9268152ac4b45918d",
+  "payloadSha256": "ff896ed360ddaba5bd2d33fe77589278f88d8dc8ac5e7e4fe19af6864d88e283",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "table \"meta\" is not the frozen schema"

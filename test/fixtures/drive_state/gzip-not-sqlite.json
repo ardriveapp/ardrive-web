@@ -78,6 +78,6 @@
   "payloadSha256": null,
   "expected": {
     "outcome": "integrityFailed",
-    "detail": "the payload is not a readable drive state container: SqliteException(26): while executing statement, file is not a database, file is not a database (code 26)\n  Causing statement: ATTACH DATABASE ? AS artifact_11, parameters: C:\\Users\\phili\\AppData\\Local\\Temp\\drive_state_6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b894a38/received.db"
+    "detail": "the payload is not a readable drive state container: SqliteException(26): while executing statement, file is not a database, file is not a database (code 26)\n  Causing statement: ATTACH DATABASE ? AS artifact_11, parameters: C:\\Users\\phili\\AppData\\Local\\Temp\\drive_state_6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b904021a/received.db"
   }
 }

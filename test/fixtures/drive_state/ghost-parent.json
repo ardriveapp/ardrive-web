@@ -75,10 +75,10 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "5c1be2336cf0ea08a5c927ff5bb421895ca0d04c1f400a177130147abd7a720c",
+  "payloadSha256": "eb5a735045428867d8b03e37e2e75624181ffc52a29c4115b9b73b0c96898589",
   "expected": {
     "outcome": "used",
-    "detail": "imported=9 of 10 entities (folders=3 files=6 drive=1 kept-local=0 materialised-folders=1) revisions=16 licenses=1 transactions=23 watermark=1500000 parse=16ms merge=22ms",
+    "detail": "imported=9 of 10 entities (folders=3 files=6 drive=1 kept-local=0 materialised-folders=1) revisions=16 licenses=1 transactions=23 watermark=1500000 parse=20ms merge=20ms",
     "tables": {
       "meta": [
         {
@@ -162,7 +162,7 @@
           "isHidden": 0,
           "dateCreated": 1700000100,
           "lastUpdated": 1700000120,
-          "assignedNames": "[\"report_fixtures\"]",
+          "assignedNames": "{\"assignedNames\":[\"report_fixtures\"]}",
           "fallbackTxId": null,
           "originalOwner": null,
           "importSource": null
@@ -395,7 +395,7 @@
           "action": "create",
           "pinnedDataOwnerAddress": null,
           "isHidden": 0,
-          "assignedNames": "[\"report_fixtures\"]",
+          "assignedNames": "{\"assignedNames\":[\"report_fixtures\"]}",
           "fallbackTxId": null,
           "originalOwner": null,
           "importSource": null
@@ -419,7 +419,7 @@
           "action": "rename",
           "pinnedDataOwnerAddress": null,
           "isHidden": 0,
-          "assignedNames": "[\"report_fixtures\"]",
+          "assignedNames": "{\"assignedNames\":[\"report_fixtures\"]}",
           "fallbackTxId": null,
           "originalOwner": null,
           "importSource": null
@@ -443,7 +443,7 @@
           "action": "move",
           "pinnedDataOwnerAddress": null,
           "isHidden": 0,
-          "assignedNames": "[\"report_fixtures\"]",
+          "assignedNames": "{\"assignedNames\":[\"report_fixtures\"]}",
           "fallbackTxId": null,
           "originalOwner": null,
           "importSource": null

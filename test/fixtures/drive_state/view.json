@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "08b47e66158e9a89d5d3cc29f9d8b1671e92c6e4d823566a956dcd2630693e94",
+  "payloadSha256": "017cb1572c7c4660497b0523ddb8c30509abc2195412cd6e61bdc8c9a5cedc14",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "found view \"names\""

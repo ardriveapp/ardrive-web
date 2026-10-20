@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "a38ce5fbc3e53f0829173bab48c14d52f1a313c1b3d6f2a926d4004381ef27ec",
+  "payloadSha256": "dd4f8c954c1f93e1ae32da2d335000005b093efd11820ea114e61b7f21b0991f",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "State-Version is tagged 0.2 and the payload declares 0.1"

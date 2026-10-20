@@ -83,10 +83,10 @@
     "driveKey": "CzBVep_E6Q4zWH2ix-wRNluApcrvFDleg6jN8hc8YYY",
     "syncedToBlock": 0
   },
-  "payloadSha256": "2d485c4d1dc48f7440e92a798382b6e004e4893615afe1a7b54d190e071c5066",
+  "payloadSha256": "f81c811546cc9db6931d3bae1e2b9e1f7f587350be22c0a7a16e71c4f3bad109",
   "expected": {
     "outcome": "used",
-    "detail": "imported=8 of 9 entities (folders=3 files=5 drive=1 kept-local=0 materialised-folders=0) revisions=15 licenses=1 transactions=21 watermark=1500000 parse=23ms merge=15ms",
+    "detail": "imported=8 of 9 entities (folders=3 files=5 drive=1 kept-local=0 materialised-folders=0) revisions=15 licenses=1 transactions=21 watermark=1500000 parse=18ms merge=17ms",
     "tables": {
       "meta": [
         {
@@ -170,7 +170,7 @@
           "isHidden": 0,
           "dateCreated": 1700000100,
           "lastUpdated": 1700000120,
-          "assignedNames": "[\"report_fixtures\"]",
+          "assignedNames": "{\"assignedNames\":[\"report_fixtures\"]}",
           "fallbackTxId": null,
           "originalOwner": null,
           "importSource": null
@@ -380,7 +380,7 @@
           "action": "create",
           "pinnedDataOwnerAddress": null,
           "isHidden": 0,
-          "assignedNames": "[\"report_fixtures\"]",
+          "assignedNames": "{\"assignedNames\":[\"report_fixtures\"]}",
           "fallbackTxId": null,
           "originalOwner": null,
           "importSource": null
@@ -404,7 +404,7 @@
           "action": "rename",
           "pinnedDataOwnerAddress": null,
           "isHidden": 0,
-          "assignedNames": "[\"report_fixtures\"]",
+          "assignedNames": "{\"assignedNames\":[\"report_fixtures\"]}",
           "fallbackTxId": null,
           "originalOwner": null,
           "importSource": null
@@ -428,7 +428,7 @@
           "action": "move",
           "pinnedDataOwnerAddress": null,
           "isHidden": 0,
-          "assignedNames": "[\"report_fixtures\"]",
+          "assignedNames": "{\"assignedNames\":[\"report_fixtures\"]}",
           "fallbackTxId": null,
           "originalOwner": null,
           "importSource": null

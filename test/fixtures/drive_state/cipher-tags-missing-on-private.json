@@ -75,7 +75,7 @@
     "driveKey": "CzBVep_E6Q4zWH2ix-wRNluApcrvFDleg6jN8hc8YYY",
     "syncedToBlock": 0
   },
-  "payloadSha256": "2d485c4d1dc48f7440e92a798382b6e004e4893615afe1a7b54d190e071c5066",
+  "payloadSha256": "f81c811546cc9db6931d3bae1e2b9e1f7f587350be22c0a7a16e71c4f3bad109",
   "expected": {
     "outcome": "privacyMismatch",
     "detail": "drive 6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b is private and DriveStateFixtureTransactionId0000000000000 carries no Cipher tag; a private drive is never published in the clear"

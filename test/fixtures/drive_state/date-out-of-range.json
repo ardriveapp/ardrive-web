@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "ebb4fb07a4b213c78caf3bb386ee9f175e9d0bf40e356c5c62d2ffd2ccd8d8b2",
+  "payloadSha256": "7f251ec7a7eeb7d5411646be615e2ce86d46185ba97930ab52fb0bf55ecadaaa",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "the payload is not a readable drive state container: DriveStateFormatException(malformed): file_entries.dateCreated holds a integer value where the format declares time"

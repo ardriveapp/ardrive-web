@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "02850126d65d891c9efd26085ec455339bee02327d4542785bdeb43da3c67f8d",
+  "payloadSha256": "1894998f8368d7ec0297c89fbb893ee02d3ecf6f533a041fb06384606f53bb92",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "the payload is not a readable drive state container: DriveStateFormatException(malformed): transaction czUYWfBvnjkYzqCClw9Wo6iALD6nsraFK0y7XJTHMnc is listed as \"confirmed\", which a reader cannot apply"

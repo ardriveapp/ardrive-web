@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "80eaaa8fc757889a05198727a262317807b2b3a404ea4435b27d47528636d95e",
+  "payloadSha256": "e33d29d271f7a575fa299911b932a0290d6f2667353efef9101849cd25bdd2b0",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "the payload is not a readable drive state container: DriveStateFormatException(malformed): file_entries.size holds a text value where the format declares integer"
