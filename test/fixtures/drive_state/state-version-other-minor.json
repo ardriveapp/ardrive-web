@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "3eee23036207842c16766af779dcae98a3d3c43d3cc238f13d19a65596c2330a",
+  "payloadSha256": "903f0f88cc430b3639ccea283be79ec5d1fc2e2abe79c0654302bd4743369f54",
   "expected": {
     "outcome": "unknownVersion",
     "detail": "State-Version is 0.1 and this build reads 0.x: the artifact predates a breaking change to the format"

@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "95a302a06fb2d7e4fc99975cba870a801a5db738339473ab162cfb0b696df9eb",
+  "payloadSha256": "d50ecf68ed93c829e939ad3476f75babf6af2c930525b85956a88f0ac480d1e7",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "the folder graph this payload would leave behind contains a cycle: folder-docs -> folder-archive -> folder-docs"

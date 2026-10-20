@@ -83,10 +83,10 @@
     "driveKey": "CzBVep_E6Q4zWH2ix-wRNluApcrvFDleg6jN8hc8YYY",
     "syncedToBlock": 0
   },
-  "payloadSha256": "f81c811546cc9db6931d3bae1e2b9e1f7f587350be22c0a7a16e71c4f3bad109",
+  "payloadSha256": "7b6cb0973aff37afc59a3590b45a48fbed48bea47bfbe5c86fb2da1b377b86ba",
   "expected": {
     "outcome": "used",
-    "detail": "imported=8 of 9 entities (folders=3 files=5 drive=1 kept-local=0 materialised-folders=0) revisions=15 licenses=1 transactions=21 watermark=1500000 parse=18ms merge=17ms",
+    "detail": "imported=8 of 9 entities (folders=3 files=5 drive=1 kept-local=0 materialised-folders=0) revisions=15 licenses=1 transactions=21 watermark=1500000 parse=17ms merge=15ms",
     "tables": {
       "meta": [
         {
@@ -109,7 +109,7 @@
           "privacy": "private",
           "bundledIn": "wkC4FAG6X3Sg4uZgp0ZNXaIHSI76tCTqrzGyJiwTmxo",
           "customJsonMetadata": "{\"project\":\"fixtures\"}",
-          "customGQLTags": "{\"Fixture-Tag\":\"drive\"}",
+          "customGQLTags": "[{\"name\":\"Fixture-Tag\",\"value\":\"drive\"}]",
           "isHidden": 0,
           "signatureType": "1",
           "dateCreated": 1700000000,
@@ -147,7 +147,7 @@
           "dateCreated": 1700000030,
           "lastUpdated": 1700000040,
           "customJsonMetadata": "{\"why\":\"old\"}",
-          "customGQLTags": "{\"Fixture-Tag\":\"folder\"}",
+          "customGQLTags": "[{\"name\":\"Fixture-Tag\",\"value\":\"folder\"}]",
           "isHidden": 1
         }
       ],
@@ -166,7 +166,7 @@
           "thumbnail": "{\"variants\":[{\"name\":\"thumbnail\",\"txId\":\"JbHelS6zOIZpRKnyWLZc5R-OF_JPQuO0fU6rstjoaro\",\"size\":2048,\"width\":256,\"height\":256}]}",
           "pinnedDataOwnerAddress": null,
           "customJsonMetadata": "{\"department\":\"finance\"}",
-          "customGQLTags": "{\"Fixture-Tag\":\"report\"}",
+          "customGQLTags": "[{\"name\":\"Fixture-Tag\",\"value\":\"report\"}]",
           "isHidden": 0,
           "dateCreated": 1700000100,
           "lastUpdated": 1700000120,
@@ -280,7 +280,7 @@
           "action": "create",
           "bundledIn": "1h55U_ks4FUYEDxulNXVsmgomrvPhhS8YSIqsJTl-H4",
           "customJsonMetadata": "{\"project\":\"fixtures\"}",
-          "customGQLTags": "{\"Fixture-Tag\":\"drive\"}",
+          "customGQLTags": "[{\"name\":\"Fixture-Tag\",\"value\":\"drive\"}]",
           "isHidden": 0
         },
         {
@@ -294,7 +294,7 @@
           "action": "rename",
           "bundledIn": "mmKBADaNgcruutyIJlpagOa8D-AK_k4rkAT65BvOI8c",
           "customJsonMetadata": "{\"project\":\"fixtures\"}",
-          "customGQLTags": "{\"Fixture-Tag\":\"drive\"}",
+          "customGQLTags": "[{\"name\":\"Fixture-Tag\",\"value\":\"drive\"}]",
           "isHidden": 0
         }
       ],
@@ -344,7 +344,7 @@
           "dateCreated": 1700000030,
           "action": "create",
           "customJsonMetadata": "{\"why\":\"old\"}",
-          "customGQLTags": "{\"Fixture-Tag\":\"folder\"}",
+          "customGQLTags": "[{\"name\":\"Fixture-Tag\",\"value\":\"folder\"}]",
           "isHidden": 0
         },
         {
@@ -356,7 +356,7 @@
           "dateCreated": 1700000040,
           "action": "hide",
           "customJsonMetadata": "{\"why\":\"old\"}",
-          "customGQLTags": "{\"Fixture-Tag\":\"folder\"}",
+          "customGQLTags": "[{\"name\":\"Fixture-Tag\",\"value\":\"folder\"}]",
           "isHidden": 1
         }
       ],
@@ -376,7 +376,7 @@
           "bundledIn": "15cQMe9bMN5ijmZlx0hziyunxNmWxDXrtCcv2yq7phs",
           "dateCreated": 1700000100,
           "customJsonMetadata": "{\"department\":\"finance\"}",
-          "customGQLTags": "{\"Fixture-Tag\":\"report\"}",
+          "customGQLTags": "[{\"name\":\"Fixture-Tag\",\"value\":\"report\"}]",
           "action": "create",
           "pinnedDataOwnerAddress": null,
           "isHidden": 0,
@@ -400,7 +400,7 @@
           "bundledIn": "15cQMe9bMN5ijmZlx0hziyunxNmWxDXrtCcv2yq7phs",
           "dateCreated": 1700000110,
           "customJsonMetadata": "{\"department\":\"finance\"}",
-          "customGQLTags": "{\"Fixture-Tag\":\"report\"}",
+          "customGQLTags": "[{\"name\":\"Fixture-Tag\",\"value\":\"report\"}]",
           "action": "rename",
           "pinnedDataOwnerAddress": null,
           "isHidden": 0,
@@ -424,7 +424,7 @@
           "bundledIn": "15cQMe9bMN5ijmZlx0hziyunxNmWxDXrtCcv2yq7phs",
           "dateCreated": 1700000120,
           "customJsonMetadata": "{\"department\":\"finance\"}",
-          "customGQLTags": "{\"Fixture-Tag\":\"report\"}",
+          "customGQLTags": "[{\"name\":\"Fixture-Tag\",\"value\":\"report\"}]",
           "action": "move",
           "pinnedDataOwnerAddress": null,
           "isHidden": 0,

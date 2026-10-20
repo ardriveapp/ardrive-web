@@ -936,7 +936,7 @@ Future<void> _seedDrive(
       isPrivate ? 1 : 0,
       _txId(),
       '{"project":"fixtures"}',
-      '{"Fixture-Tag":"drive"}',
+      '[{"name":"Fixture-Tag","value":"drive"}]',
       isPrivate ? '1' : null,
       t0,
       t0 + 500,
@@ -962,7 +962,7 @@ Future<void> _seedDrive(
         action,
         _txId(),
         '{"project":"fixtures"}',
-        '{"Fixture-Tag":"drive"}',
+        '[{"name":"Fixture-Tag","value":"drive"}]',
       ],
     );
   }
@@ -993,7 +993,7 @@ Future<void> _seedDrive(
           r.date,
           r.action,
           hidden ? '{"why":"old"}' : null,
-          hidden ? '{"Fixture-Tag":"folder"}' : null,
+          hidden ? '[{"name":"Fixture-Tag","value":"folder"}]' : null,
           hidden && r.action == 'hide' ? 1 : 0,
         ],
       );
@@ -1012,7 +1012,7 @@ Future<void> _seedDrive(
         revisions.first.date,
         last.date,
         hidden ? '{"why":"old"}' : null,
-        hidden ? '{"Fixture-Tag":"folder"}' : null,
+        hidden ? '[{"name":"Fixture-Tag","value":"folder"}]' : null,
         hidden ? 1 : 0,
       ],
     );
@@ -1174,7 +1174,7 @@ Future<void> _seedDrive(
         '"size":2048,"width":256,"height":256}]}',
     assignedNames: '{"assignedNames":["report_fixtures"]}',
     customJson: '{"department":"finance"}',
-    customTags: '{"Fixture-Tag":"report"}',
+    customTags: '[{"name":"Fixture-Tag","value":"report"}]',
   );
   await tx(reportLicence, 'confirmed', t0 + 100);
   await sql(

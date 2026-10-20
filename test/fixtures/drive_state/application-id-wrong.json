@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "6260570ad3cc11fc78f07808c089200b259567755af59f6e6cdd60330cb1995e",
+  "payloadSha256": "99e1dda6aa3554b0f751e11cd1131eed88dfc7e600fa63a64f00fbe5dec52a14",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "application_id is 1, not an ArDrive drive state artifact"

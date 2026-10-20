@@ -79,7 +79,7 @@
     "driveKey": "CzBVep_E6Q4zWH2ix-wRNluApcrvFDleg6jN8hc8YYY",
     "syncedToBlock": 0
   },
-  "payloadSha256": "f81c811546cc9db6931d3bae1e2b9e1f7f587350be22c0a7a16e71c4f3bad109",
+  "payloadSha256": "7b6cb0973aff37afc59a3590b45a48fbed48bea47bfbe5c86fb2da1b377b86ba",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "the cipher tags on DriveStateFixtureTransactionId0000000000000 are incomplete: Cipher=AES256-GCM Cipher-IV=absent"

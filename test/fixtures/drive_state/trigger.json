@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "0f02e9267f1db35f1d964e15d36118029bbcbdb73c6fef27ef14a4dfccd531ec",
+  "payloadSha256": "b0279f1e26c89cbe19a9e0863fa6c20250c68fd1d53065dc47ec5ca195fec25c",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "found trigger \"t\""
