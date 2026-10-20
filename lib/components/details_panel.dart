@@ -1089,8 +1089,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
       default:
         title = appLocalizationsOf(context).fileWasModified;
     }
+    // Joined with non-breaking spaces, so a narrow panel moves the size to a
+    // line of its own rather than splitting "1.27" from "KiB".
     subtitle = carriesData
-        ? '${formatDateTime(file.unixTime)} · ${filesize(file.size)}'
+        ? '${formatDateTime(file.unixTime)} · '
+            '${filesize(file.size).replaceAll(' ', ' ')}'
         : formatDateTime(file.unixTime);
 
     return DetailsPanelItem(
