@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "a1cd9cea33550b7aeef68a0ab2bcc6d039226bb96b8b36976ace9997dbae340c",
+  "payloadSha256": "f56a4963b5b7e023521fb159476b7cc3f09b883c3d98978c81a001dbe1f93394",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "the payload for 6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b carries rows belonging to 11111111-2222-4333-8444-555555555555"

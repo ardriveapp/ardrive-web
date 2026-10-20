@@ -83,7 +83,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "903f0f88cc430b3639ccea283be79ec5d1fc2e2abe79c0654302bd4743369f54",
+  "payloadSha256": "e5b444f753c91263a2520e00949950f85538ff526f5b9c660c5a1229d34ce9d1",
   "expected": {
     "outcome": "privacyMismatch",
     "detail": "drive 6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b is public and DriveStateFixtureTransactionId0000000000000 declares Cipher=AES256-GCM; a public drive has no key to open it with"

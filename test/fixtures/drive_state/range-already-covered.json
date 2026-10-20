@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 1500001
   },
-  "payloadSha256": "903f0f88cc430b3639ccea283be79ec5d1fc2e2abe79c0654302bd4743369f54",
+  "payloadSha256": "e5b444f753c91263a2520e00949950f85538ff526f5b9c660c5a1229d34ce9d1",
   "expected": {
     "outcome": "rangeAlreadyCovered",
     "detail": "the artifact's coverage ends at 1500000, below the drive's 1500001"

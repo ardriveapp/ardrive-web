@@ -75,10 +75,10 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "903f0f88cc430b3639ccea283be79ec5d1fc2e2abe79c0654302bd4743369f54",
+  "payloadSha256": "e5b444f753c91263a2520e00949950f85538ff526f5b9c660c5a1229d34ce9d1",
   "expected": {
     "outcome": "used",
-    "detail": "imported=8 of 9 entities (folders=3 files=5 drive=1 kept-local=0 materialised-folders=0) revisions=15 licenses=1 transactions=21 watermark=1500000 parse=52ms merge=113ms",
+    "detail": "imported=8 of 9 entities (folders=3 files=5 drive=1 kept-local=0 materialised-folders=0) revisions=15 licenses=1 transactions=21 watermark=1500000 parse=62ms merge=125ms",
     "tables": {
       "meta": [
         {
@@ -121,7 +121,7 @@
           "isHidden": 0
         },
         {
-          "id": "folder-docs",
+          "id": "1a2b3c4d-0001-4000-8000-00000000d0c5",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "Documents",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -132,7 +132,7 @@
           "isHidden": 0
         },
         {
-          "id": "folder-archive",
+          "id": "1a2b3c4d-0002-4000-8000-0000000a7c41",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "Archive",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -145,10 +145,10 @@
       ],
       "file_entries": [
         {
-          "id": "file-report",
+          "id": "2b3c4d5e-0001-4000-8000-0000000e9077",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "report.pdf",
-          "parentFolderId": "folder-docs",
+          "parentFolderId": "1a2b3c4d-0001-4000-8000-00000000d0c5",
           "size": 1024,
           "lastModifiedDate": 1699913600,
           "dataContentType": "application/pdf",
@@ -168,7 +168,7 @@
           "importSource": null
         },
         {
-          "id": "file-pinned",
+          "id": "2b3c4d5e-0002-4000-8000-0000000b1a7e",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "pinned.jpg",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -191,10 +191,10 @@
           "importSource": "arweave"
         },
         {
-          "id": "file-hidden",
+          "id": "2b3c4d5e-0003-4000-8000-0000000d1dde",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "old.txt",
-          "parentFolderId": "folder-archive",
+          "parentFolderId": "1a2b3c4d-0002-4000-8000-0000000a7c41",
           "size": 12,
           "lastModifiedDate": 1699913600,
           "dataContentType": "application/pdf",
@@ -214,10 +214,10 @@
           "importSource": null
         },
         {
-          "id": "file-pending",
+          "id": "2b3c4d5e-0004-4000-8000-0000000be4d1",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "uploading.mov",
-          "parentFolderId": "folder-docs",
+          "parentFolderId": "1a2b3c4d-0001-4000-8000-00000000d0c5",
           "size": 52428800,
           "lastModifiedDate": 1699913600,
           "dataContentType": "application/pdf",
@@ -237,7 +237,7 @@
           "importSource": null
         },
         {
-          "id": "file-failed",
+          "id": "2b3c4d5e-0005-4000-8000-0000000fa11e",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "failed.zip",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -304,7 +304,7 @@
           "isHidden": 0
         },
         {
-          "folderId": "folder-docs",
+          "folderId": "1a2b3c4d-0001-4000-8000-00000000d0c5",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "Docs",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -316,7 +316,7 @@
           "isHidden": 0
         },
         {
-          "folderId": "folder-docs",
+          "folderId": "1a2b3c4d-0001-4000-8000-00000000d0c5",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "Documents",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -328,7 +328,7 @@
           "isHidden": 0
         },
         {
-          "folderId": "folder-archive",
+          "folderId": "1a2b3c4d-0002-4000-8000-0000000a7c41",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "Archive",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -340,7 +340,7 @@
           "isHidden": 0
         },
         {
-          "folderId": "folder-archive",
+          "folderId": "1a2b3c4d-0002-4000-8000-0000000a7c41",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "Archive",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -354,7 +354,7 @@
       ],
       "file_revisions": [
         {
-          "fileId": "file-report",
+          "fileId": "2b3c4d5e-0001-4000-8000-0000000e9077",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "draft.pdf",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -378,7 +378,7 @@
           "importSource": null
         },
         {
-          "fileId": "file-report",
+          "fileId": "2b3c4d5e-0001-4000-8000-0000000e9077",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "report.pdf",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -402,10 +402,10 @@
           "importSource": null
         },
         {
-          "fileId": "file-report",
+          "fileId": "2b3c4d5e-0001-4000-8000-0000000e9077",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "report.pdf",
-          "parentFolderId": "folder-docs",
+          "parentFolderId": "1a2b3c4d-0001-4000-8000-00000000d0c5",
           "size": 1024,
           "lastModifiedDate": 1699913600,
           "dataContentType": "application/pdf",
@@ -426,7 +426,7 @@
           "importSource": null
         },
         {
-          "fileId": "file-pinned",
+          "fileId": "2b3c4d5e-0002-4000-8000-0000000b1a7e",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "pinned.jpg",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -450,10 +450,10 @@
           "importSource": "arweave"
         },
         {
-          "fileId": "file-hidden",
+          "fileId": "2b3c4d5e-0003-4000-8000-0000000d1dde",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "old.txt",
-          "parentFolderId": "folder-archive",
+          "parentFolderId": "1a2b3c4d-0002-4000-8000-0000000a7c41",
           "size": 12,
           "lastModifiedDate": 1699913600,
           "dataContentType": "application/pdf",
@@ -474,10 +474,10 @@
           "importSource": null
         },
         {
-          "fileId": "file-hidden",
+          "fileId": "2b3c4d5e-0003-4000-8000-0000000d1dde",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "old.txt",
-          "parentFolderId": "folder-archive",
+          "parentFolderId": "1a2b3c4d-0002-4000-8000-0000000a7c41",
           "size": 12,
           "lastModifiedDate": 1699913600,
           "dataContentType": "application/pdf",
@@ -498,10 +498,10 @@
           "importSource": null
         },
         {
-          "fileId": "file-pending",
+          "fileId": "2b3c4d5e-0004-4000-8000-0000000be4d1",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "uploading.mov",
-          "parentFolderId": "folder-docs",
+          "parentFolderId": "1a2b3c4d-0001-4000-8000-00000000d0c5",
           "size": 52428800,
           "lastModifiedDate": 1699913600,
           "dataContentType": "application/pdf",
@@ -522,7 +522,7 @@
           "importSource": null
         },
         {
-          "fileId": "file-failed",
+          "fileId": "2b3c4d5e-0005-4000-8000-0000000fa11e",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "name": "failed.zip",
           "parentFolderId": "0f1e2d3c-4b5a-4968-8776-655443322110",
@@ -548,7 +548,7 @@
       ],
       "licenses": [
         {
-          "fileId": "file-report",
+          "fileId": "2b3c4d5e-0001-4000-8000-0000000e9077",
           "driveId": "6e5f8f5a-2d1b-4c3e-9a7b-0c1d2e3f4a5b",
           "dataTxId": "jmFivp-WN14lQg_Nky2sP3pBb4eDt9YD5-s2kPqPTJ0",
           "licenseTxType": "assertion",

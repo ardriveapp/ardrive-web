@@ -75,9 +75,9 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "d50ecf68ed93c829e939ad3476f75babf6af2c930525b85956a88f0ac480d1e7",
+  "payloadSha256": "d737b6d06d898062de6f56327925291b407593c595b52b163015e90eb7832b96",
   "expected": {
     "outcome": "integrityFailed",
-    "detail": "the folder graph this payload would leave behind contains a cycle: folder-docs -> folder-archive -> folder-docs"
+    "detail": "the folder graph this payload would leave behind contains a cycle: 1a2b3c4d-0001-4000-8000-00000000d0c5 -> 1a2b3c4d-0002-4000-8000-0000000a7c41 -> 1a2b3c4d-0001-4000-8000-00000000d0c5"
   }
 }

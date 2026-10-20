@@ -617,10 +617,10 @@ Future<List<GoldenFixture>> buildGoldenFixtures() async {
     'Two folders are each the parent of the other.',
     from: publicGood,
     edit: [
-      "UPDATE folder_entries SET parentFolderId = 'folder-archive' "
-          "WHERE id = 'folder-docs'",
-      "UPDATE folder_entries SET parentFolderId = 'folder-docs' "
-          "WHERE id = 'folder-archive'",
+      "UPDATE folder_entries SET parentFolderId = '1a2b3c4d-0002-4000-8000-0000000a7c41' "
+          "WHERE id = '1a2b3c4d-0001-4000-8000-00000000d0c5'",
+      "UPDATE folder_entries SET parentFolderId = '1a2b3c4d-0001-4000-8000-00000000d0c5' "
+          "WHERE id = '1a2b3c4d-0002-4000-8000-0000000a7c41'",
     ],
   );
   await add(
@@ -1021,12 +1021,12 @@ Future<void> _seedDrive(
   await folder(fixtureRootFolderId, null, [
     (name: 'Fixture drive', action: 'create', date: t0),
   ]);
-  await folder('folder-docs', fixtureRootFolderId, [
+  await folder('1a2b3c4d-0001-4000-8000-00000000d0c5', fixtureRootFolderId, [
     (name: 'Docs', action: 'create', date: t0 + 10),
     (name: 'Documents', action: 'rename', date: t0 + 20),
   ]);
   await folder(
-    'folder-archive',
+    '1a2b3c4d-0002-4000-8000-0000000a7c41',
     fixtureRootFolderId,
     [
       (name: 'Archive', action: 'create', date: t0 + 30),
@@ -1042,7 +1042,7 @@ Future<void> _seedDrive(
     await sql(
       'INSERT INTO folder_entries (id, driveId, name, parentFolderId, path, '
       'dateCreated, lastUpdated, isGhost, isHidden) '
-      "VALUES ('folder-ghost', ?, 'folder-ghost', ?, '', ?, ?, 1, 0)",
+      "VALUES ('1a2b3c4d-0003-4000-8000-0000000960a7', ?, '1a2b3c4d-0003-4000-8000-0000000960a7', ?, '', ?, ?, 1, 0)",
       [fixtureDriveId, fixtureRootFolderId, t0, t0],
     );
   }
@@ -1147,7 +1147,7 @@ Future<void> _seedDrive(
   final reportData = _txId();
   final reportLicence = _txId();
   await file(
-    'file-report',
+    '2b3c4d5e-0001-4000-8000-0000000e9077',
     [
       (
         name: 'draft.pdf',
@@ -1163,7 +1163,7 @@ Future<void> _seedDrive(
       ),
       (
         name: 'report.pdf',
-        parent: 'folder-docs',
+        parent: '1a2b3c4d-0001-4000-8000-00000000d0c5',
         action: 'move',
         date: t0 + 120
       ),
@@ -1180,7 +1180,7 @@ Future<void> _seedDrive(
   await sql(
     'INSERT INTO licenses (fileId, driveId, dataTxId, licenseTxType, '
     'licenseTxId, bundledIn, dateCreated, licenseType, customGQLTags) '
-    "VALUES ('file-report', ?, ?, 'assertion', ?, ?, ?, 'ccBy', ?)",
+    "VALUES ('2b3c4d5e-0001-4000-8000-0000000e9077', ?, ?, 'assertion', ?, ?, ?, 'ccBy', ?)",
     [
       fixtureDriveId,
       reportData,
@@ -1193,7 +1193,7 @@ Future<void> _seedDrive(
 
   // A pin: data owned by another wallet, with a fallback and an import source.
   await file(
-    'file-pinned',
+    '2b3c4d5e-0002-4000-8000-0000000b1a7e',
     [
       (
         name: 'pinned.jpg',
@@ -1211,17 +1211,17 @@ Future<void> _seedDrive(
 
   // Hidden, in the hidden folder.
   await file(
-    'file-hidden',
+    '2b3c4d5e-0003-4000-8000-0000000d1dde',
     [
       (
         name: 'old.txt',
-        parent: 'folder-archive',
+        parent: '1a2b3c4d-0002-4000-8000-0000000a7c41',
         action: 'create',
         date: t0 + 300
       ),
       (
         name: 'old.txt',
-        parent: 'folder-archive',
+        parent: '1a2b3c4d-0002-4000-8000-0000000a7c41',
         action: 'hide',
         date: t0 + 310
       ),
@@ -1233,11 +1233,11 @@ Future<void> _seedDrive(
 
   // Data not yet seen confirmed, and data that failed.
   await file(
-    'file-pending',
+    '2b3c4d5e-0004-4000-8000-0000000be4d1',
     [
       (
         name: 'uploading.mov',
-        parent: 'folder-docs',
+        parent: '1a2b3c4d-0001-4000-8000-00000000d0c5',
         action: 'create',
         date: t0 + 400
       ),
@@ -1247,7 +1247,7 @@ Future<void> _seedDrive(
     size: 50 * 1024 * 1024,
   );
   await file(
-    'file-failed',
+    '2b3c4d5e-0005-4000-8000-0000000fa11e',
     [
       (
         name: 'failed.zip',
@@ -1262,11 +1262,11 @@ Future<void> _seedDrive(
 
   if (ghost) {
     await file(
-      'file-in-ghost-folder',
+      '2b3c4d5e-0006-4000-8000-0000000e9a05',
       [
         (
           name: 'orphan.txt',
-          parent: 'folder-ghost',
+          parent: '1a2b3c4d-0003-4000-8000-0000000960a7',
           action: 'create',
           date: t0 + 420
         ),

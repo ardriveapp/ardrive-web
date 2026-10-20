@@ -75,7 +75,7 @@
     "driveKey": null,
     "syncedToBlock": 0
   },
-  "payloadSha256": "ccb392eb3456abf4173939faf0a9823fa5d00908aab083ba132b1625138a6c49",
+  "payloadSha256": "0ecfa7af102f8563d250eb27134fadd5ad3fc34a0170091ba47a06afe1b04d55",
   "expected": {
     "outcome": "integrityFailed",
     "detail": "the payload's drive row names root folder 0f1e2d3c-4b5a-4968-8776-655443322110, which no section carries and this client does not hold"
