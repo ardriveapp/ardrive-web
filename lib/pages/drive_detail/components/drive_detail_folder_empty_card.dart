@@ -699,15 +699,18 @@ class _ActionCard {
     // in a row line up: icon, title and button at the same height in each,
     // however many lines its description takes. Spreading the space evenly
     // moved each title by half the difference in description height.
+    //
+    // Less padding above and below than at the sides, so the longest
+    // description, Create a pin's four lines, fits with room to spare.
     return ArDriveCard(
       width: 283,
       height: 283,
       backgroundColor: colorTokens.containerL2,
-      contentPadding: const EdgeInsets.all(31),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 31, vertical: 24),
       content: Column(
         children: [
           icon.copyWith(size: 25),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             title,
             style:
@@ -721,7 +724,7 @@ class _ActionCard {
             textAlign: TextAlign.center,
           ),
           const Spacer(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           ArDriveButtonNew(
             text: buttonText,
             typography: typography,
