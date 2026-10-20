@@ -69,6 +69,31 @@ void main() {
     });
   });
 
+  group('insertedLength', () {
+    test('is one for a character typed anywhere', () {
+      expect(insertedLength('', 'a'), 1);
+      expect(insertedLength('abc', 'abcd'), 1);
+      expect(insertedLength('abc', 'aXbc'), 1);
+      // Selecting everything and typing over it.
+      expect(insertedLength('abcdef', 'x'), 1);
+    });
+
+    test('is none for a deletion', () {
+      expect(insertedLength('abcd', 'abc'), 0);
+      expect(insertedLength('abcd', 'ad'), 0);
+    });
+
+    test('is the whole paste, even over text as long as itself', () {
+      expect(insertedLength('', 'abcdef'), 6);
+      expect(insertedLength('abcdef', 'uvwxyz'), 6);
+      expect(insertedLength('abcdef', 'xyz'), 3);
+    });
+
+    test('counts a repeated character once', () {
+      expect(insertedLength('aa', 'aaa'), 1);
+    });
+  });
+
   group('the ID field', () {
     late _MockPinFileBloc bloc;
     late StreamController<PinFileState> states;
@@ -152,6 +177,60 @@ void main() {
       expect(find.text(notValid), findsOneWidget);
     });
 
+    /// Settled is for this ID, not for the dialog: one mistake does not make
+    /// every later ID wrong from its first character.
+    testWidgets('says nothing again once the field is emptied',
+        (tester) async {
+      await pumpDialog(tester);
+      await tester.tap(idField());
+      await tester.enterText(idField(), 'not-a-whole-id');
+      states.add(invalid('not-a-whole-id'));
+      await tester.pump();
+      expect(find.text(notValid), findsOneWidget);
+
+      await tester.enterText(idField(), '');
+      states.add(const PinFileInitial());
+      await tester.pump();
+      await type(tester, 'abc');
+
+      expect(find.text(notValid), findsNothing);
+    });
+
+    /// The lookup disables the field and takes its focus. The reader has not
+    /// left it.
+    testWidgets('does not take the lookup for the reader leaving',
+        (tester) async {
+      await pumpDialog(tester);
+      await tester.tap(idField());
+      await type(tester, 'abc');
+
+      states.add(const PinFileNetworkCheckRunning(
+        id: 'abc',
+        name: '',
+        idValidation: IdValidationResult.validTransactionId,
+        nameValidation: NameValidationResult.required,
+      ));
+      await tester.pump();
+      states.add(invalid('abc'));
+      await tester.pump();
+
+      expect(find.text(notValid), findsNothing);
+    });
+
+    testWidgets('says so at once for a paste over text as long as itself',
+        (tester) async {
+      await pumpDialog(tester);
+      await tester.tap(idField());
+      await type(tester, 'abcdef');
+      expect(find.text(notValid), findsNothing);
+
+      await tester.enterText(idField(), 'uvwxyz');
+      states.add(invalid('uvwxyz'));
+      await tester.pump();
+
+      expect(find.text(notValid), findsOneWidget);
+    });
+
     testWidgets('says so at once for a pasted ID', (tester) async {
       await pumpDialog(tester);
       await tester.tap(idField());
@@ -179,7 +258,6 @@ void main() {
       // Said in words, where a screen reader can reach it: the disabled
       // field hides everything inside it.
       expect(find.bySemanticsLabel('Looking up this ID...'), findsOneWidget);
-      expect(find.text(notValid), findsNothing);
 
       semantics.dispose();
     });
@@ -200,6 +278,7 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text('Looking up this ID...'), findsNothing);
+      expect(find.text(notValid), findsOneWidget);
     });
   });
 }

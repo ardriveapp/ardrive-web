@@ -71,6 +71,28 @@ bool showsInvalidIdError(String id, {required bool settled}) {
   return settled || id.length >= transactionIdLength || !couldStillBecomeAnId;
 }
 
+/// How many characters an edit from [before] to [after] put in: what is left
+/// of [after] once the text the two share at each end is taken away.
+///
+/// Typing puts in one, wherever the cursor is and whatever it replaces. A
+/// paste puts in many, even when it replaces text as long as itself.
+@visibleForTesting
+int insertedLength(String before, String after) {
+  var prefix = 0;
+  while (prefix < before.length &&
+      prefix < after.length &&
+      before[prefix] == after[prefix]) {
+    prefix++;
+  }
+  var suffix = 0;
+  while (suffix < before.length - prefix &&
+      suffix < after.length - prefix &&
+      before[before.length - 1 - suffix] == after[after.length - 1 - suffix]) {
+    suffix++;
+  }
+  return after.length - prefix - suffix;
+}
+
 class PinFileDialog extends StatefulWidget {
   const PinFileDialog({super.key});
 
@@ -82,15 +104,20 @@ class _PinFileDialogState extends State<PinFileDialog> {
   final _idFocusNode = FocusNode();
 
   /// Whether the reader is done with the ID: they pasted it, or left the
-  /// field. From then on an invalid ID is said to be one.
+  /// field. From then on an invalid ID is said to be one, until the field is
+  /// emptied and a new one is started.
   bool _idSettled = false;
   String _lastId = '';
+
+  /// The field is disabled while the ID is looked up, which takes its focus.
+  /// That is not the reader leaving it.
+  bool _lookupRunning = false;
 
   @override
   void initState() {
     super.initState();
     _idFocusNode.addListener(() {
-      if (!_idFocusNode.hasFocus && _lastId.isNotEmpty) {
+      if (!_idFocusNode.hasFocus && _lastId.isNotEmpty && !_lookupRunning) {
         setState(() => _idSettled = true);
       }
     });
@@ -145,6 +172,7 @@ class _PinFileDialogState extends State<PinFileDialog> {
           return const SizedBox();
         }
 
+        _lookupRunning = state is PinFileNetworkCheckRunning;
         final idValidationError = _getIdValidationError(context, state);
         final nameValidationError = _getNameValidationError(context, state);
 
@@ -163,9 +191,12 @@ class _PinFileDialogState extends State<PinFileDialog> {
                   showErrorMessage: idValidationError != null,
                   focusNode: _idFocusNode,
                   onChanged: (value) {
-                    // More than one character at once is a paste: the reader
-                    // has given the whole ID.
-                    if (value.length - _lastId.length > 1) {
+                    if (value.isEmpty) {
+                      // A new ID is being started.
+                      _idSettled = false;
+                    } else if (insertedLength(_lastId, value) > 1) {
+                      // More than one character at once is a paste: the
+                      // reader has given the whole ID.
                       _idSettled = true;
                     }
                     _lastId = value;
@@ -176,8 +207,8 @@ class _PinFileDialogState extends State<PinFileDialog> {
                 ),
                 // The field is disabled while the ID is looked up, which
                 // otherwise reads as the dialog having frozen. Beside the
-                // field, not in it: a disabled field is hidden from screen
-                // readers, and everything inside it with it.
+                // field, not in it: a label put inside the disabled field did
+                // not reach the semantics tree, so a screen reader missed it.
                 if (state is PinFileNetworkCheckRunning)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
