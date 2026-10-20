@@ -209,6 +209,84 @@ void main() {
     });
   });
 
+  group('the attach prompt a drive link opened', () {
+    // A link to a drive the app does not have opens the attach prompt.
+    // Cancelling it used to clear the drive and leave nothing to show: a blank
+    // page for a visitor, and an explorer with no drive for a signed-in user.
+    final parser = AppRouteInformationParser();
+
+    String addressBar(AppRouterDelegate delegate) =>
+        parser.restoreRouteInformation(delegate.currentConfiguration).uri.path;
+
+    Future<void> openLink({String? folder}) => delegate.setNewRoutePath(
+          folder == null
+              ? AppRoutePath.driveDetail(driveId: driveId, driveName: 'Shared')
+              : AppRoutePath.folderDetail(
+                  driveId: driveId,
+                  driveFolderId: folder,
+                ),
+        );
+
+    test('cancelled by a signed-in user lands on the drives list', () async {
+      await openLink(folder: folderId);
+      var notifications = 0;
+      delegate.addListener(() => notifications++);
+
+      delegate.landAfterAttachPrompt(attached: false, loggedIn: true);
+
+      expect(delegate.showingDrivesList, isTrue);
+      expect(delegate.signingIn, isFalse);
+      expect(delegate.driveId, isNull);
+      expect(delegate.driveName, isNull);
+      expect(delegate.driveFolderId, isNull);
+      expect(addressBar(delegate), '/drives');
+      expect(notifications, greaterThan(0));
+    });
+
+    test('cancelled by a visitor lands on sign in', () async {
+      await openLink();
+
+      delegate.landAfterAttachPrompt(attached: false, loggedIn: false);
+
+      expect(delegate.signingIn, isTrue);
+      expect(delegate.showingDrivesList, isFalse);
+      expect(delegate.driveId, isNull);
+      expect(delegate.tryingToViewDrive, isFalse);
+      expect(addressBar(delegate), '/sign-in');
+      // Nothing left for signing in to honour, so they land on Your drives
+      // afterwards rather than back in the dialog.
+      expect(delegate.hasARouteToHonour, isFalse);
+      expect(delegate.pendingInfoDriveId, isNull);
+    });
+
+    test('drops the key the link carried when it is cancelled', () async {
+      await openLink();
+      delegate.sharedRawDriveKey = 'raw-key';
+
+      delegate.landAfterAttachPrompt(attached: false, loggedIn: false);
+
+      expect(delegate.sharedRawDriveKey, isNull);
+      expect(delegate.tryingToViewSharedPrivateDrive, isFalse);
+    });
+
+    test('a successful attach keeps the drive in view', () async {
+      await openLink(folder: folderId);
+      var notifications = 0;
+      delegate.addListener(() => notifications++);
+
+      for (final loggedIn in [true, false]) {
+        delegate.landAfterAttachPrompt(attached: true, loggedIn: loggedIn);
+
+        expect(delegate.driveId, driveId);
+        expect(delegate.driveFolderId, folderId);
+        expect(delegate.showingDrivesList, isFalse);
+        expect(delegate.signingIn, isFalse);
+        expect(delegate.tryingToViewDrive, isTrue);
+      }
+      expect(notifications, 2);
+    });
+  });
+
   group('ordinary navigation', () {
     test('still discards the folder when the drive changes', () async {
       await delegate.setNewRoutePath(

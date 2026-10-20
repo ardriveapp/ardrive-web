@@ -512,16 +512,24 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                                 // started and the drives cubit that would have
                                 // selected the drive are all torn down, leaving
                                 // the visitor on a blank page.
+                                //
+                                // When the drive was not attached (the dialog
+                                // was cancelled, or the drive could not be
+                                // found or opened), the link has nothing left
+                                // to show, so the user lands where a sign in
+                                // lands: the drives list, or the sign in page
+                                // for a visitor.
                                 final attached = await driveDao
                                         .driveById(driveId: linkedDriveId)
                                         .getSingleOrNull() !=
                                     null;
 
-                                if (!attached) {
-                                  driveId = null;
-                                  driveName = null;
-                                }
-                                notifyListeners();
+                                landAfterAttachPrompt(
+                                  attached: attached,
+                                  loggedIn: canShowDrivesList(
+                                    profileCubit.state,
+                                  ),
+                                );
                               });
                             }
                           },
@@ -898,6 +906,44 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     rawTransactionContentType = null;
 
     notifyListeners();
+  }
+
+  /// Where the user goes once the attach prompt a drive link opened is closed.
+  ///
+  /// An attached drive stays in view. Otherwise the link has nothing left to
+  /// show: a logged-in user lands on the drives list, the same place a sign in
+  /// lands when there is no link to honour, and a visitor goes to the sign in
+  /// page, because the explorer only renders for a visitor while a drive is
+  /// being viewed. Without this the explorer had no drive to show and the
+  /// visitor's builder fell through to an empty page.
+  @visibleForTesting
+  void landAfterAttachPrompt({
+    required bool attached,
+    required bool loggedIn,
+  }) {
+    if (attached) {
+      notifyListeners();
+      return;
+    }
+
+    driveId = null;
+    driveName = null;
+    driveFolderId = null;
+    _pendingFolderDriveId = null;
+    _pendingFolderId = null;
+    _routeLink = null;
+    _pendingInfoDriveId = null;
+    sharedDriveKey = null;
+    sharedRawDriveKey = null;
+
+    if (loggedIn) {
+      showDrivesList();
+    } else {
+      signingIn = true;
+      gettingStarted = false;
+      showingDrivesList = false;
+      notifyListeners();
+    }
   }
 
   @override
