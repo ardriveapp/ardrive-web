@@ -56,6 +56,10 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
   /// so tests do not sit through it.
   final Duration turboBalanceRefreshDelay;
 
+  /// Called once an artifact is published, before the Snapshots tab hears of
+  /// it, and whether or not the modal is still open.
+  final void Function()? onPublished;
+
   DriveStateCreationCubit({
     required this.driveId,
     required DriveStateCreationService service,
@@ -64,6 +68,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
     required ProfileCubit profileCubit,
     required DriveDao driveDao,
     this.turboBalanceRefreshDelay = const Duration(seconds: 2),
+    this.onPublished,
 
     /// Overridable so the deadline can be tested without waiting for it. The
     /// production value is [costEstimateTimeout]; nothing but a test passes
@@ -283,6 +288,7 @@ class DriveStateCreationCubit extends Cubit<DriveStateCreationState> {
       // the modal is still open, and the Snapshots tab lists it as pending
       // straight away, as it does an older snapshot.
       if (result.isPublished) {
+        onPublished?.call();
         SnapshotEventBus.instance.emitSnapshotCreated(
           SnapshotDisplayItem(
             txId: result.txId!,

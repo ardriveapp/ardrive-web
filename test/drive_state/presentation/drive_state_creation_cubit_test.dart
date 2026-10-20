@@ -139,6 +139,7 @@ void main() {
   DriveStateCreationCubit cubitWith({
     DriveStateSyncSkipStatus skipStatus =
         const DriveStateSyncSkipStatus.clean(),
+    void Function()? onPublished,
   }) =>
       DriveStateCreationCubit(
         driveId: driveId,
@@ -153,6 +154,7 @@ void main() {
         driveDao: driveDao,
         turboBalanceRefreshDelay: Duration.zero,
         costEstimateTimeout: const Duration(milliseconds: 50),
+        onPublished: onPublished,
       );
 
   group('a cost estimate that never returns', () {
@@ -743,6 +745,43 @@ void main() {
       expect(listed.isPending, isTrue);
       final ready = cubit.state as DriveStateCreationPublished;
       expect(listed.blockEnd, ready.artifact.blockEnd);
+      await cubit.close();
+    });
+
+    // The modal resets "Snapshot recommended" here; the Snapshots tab re-reads
+    // it the moment it hears of the snapshot, so the order matters.
+    test('onPublished runs before the Snapshots tab hears of the snapshot',
+        () async {
+      final order = <String>[];
+      final cubit = cubitWith(onPublished: () => order.add('onPublished'));
+      await cubit.prepare();
+      when(() => uploader.publish(any(), method: any(named: 'method')))
+          .thenAnswer(
+        (_) async => const DriveStateUploadResult.published('tx-ordered'),
+      );
+      final subscription = SnapshotEventBus.instance.stream
+          .listen((_) => order.add('announced'));
+
+      await cubit.publish();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(order, ['onPublished', 'announced']);
+      await subscription.cancel();
+      await cubit.close();
+    });
+
+    test('onPublished is not called when the upload fails', () async {
+      var called = false;
+      final cubit = cubitWith(onPublished: () => called = true);
+      await cubit.prepare();
+      when(() => uploader.publish(any(), method: any(named: 'method')))
+          .thenAnswer(
+        (_) async => const DriveStateUploadResult.failed('declined'),
+      );
+
+      await cubit.publish();
+
+      expect(called, isFalse);
       await cubit.close();
     });
 

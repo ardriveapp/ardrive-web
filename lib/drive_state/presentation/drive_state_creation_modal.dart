@@ -1,4 +1,6 @@
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
+import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/components/payment_method_selector_widget.dart';
@@ -52,6 +54,7 @@ Future<void> promptToCreateDriveState(
   final configService = context.read<ConfigService>();
   final paymentService = context.read<PaymentService>();
   final profileCubit = context.read<ProfileCubit>();
+  final promptToSnapshotBloc = context.read<PromptToSnapshotBloc>();
 
   return showArDriveDialog(
     context,
@@ -78,6 +81,14 @@ Future<void> promptToCreateDriveState(
         ),
         profileCubit: profileCubit,
         driveDao: driveDao,
+        // A published snapshot answers "Snapshot recommended", as the older
+        // snapshot dialog's DriveSnapshotted does. The count is reset here,
+        // synchronously, because the Snapshots tab re-reads it as soon as
+        // the new snapshot is announced, before the bloc handles an event.
+        onPublished: () {
+          CountOfTxsSyncedWithGql.resetForDrive(drive.id);
+          promptToSnapshotBloc.add(DriveSnapshotted(driveId: drive.id));
+        },
       )..prepare(),
       child: DriveStateCreationModal(driveName: drive.name),
     ),
