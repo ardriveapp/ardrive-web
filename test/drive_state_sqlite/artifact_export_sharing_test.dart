@@ -74,10 +74,16 @@ void main() {
     var asked = 0;
 
     await expectLater(
-      // Cancelled on the second check: the first table is already copied.
+      // Asked after the lock, then before each table: cancelled on the
+      // third ask, with the first table already copied.
       export(isCancelled: () => ++asked > 2),
-      throwsA(isA<ArtifactExportRefused>()),
+      throwsA(isA<ArtifactExportRefused>().having(
+        (e) => e.reason,
+        'reason',
+        ArtifactExportRefusal.cancelled,
+      )),
     );
+    expect(asked, 3);
 
     expect(await attached(), isNot(contains('artifact')));
   });
