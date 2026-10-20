@@ -614,8 +614,11 @@ class UploadCubit extends Cubit<UploadState> {
             params: udlFormToLicenseParams(_licenseUdlParamsForm),
           );
         case LicenseCategory.cc:
-          final LicenseMeta licenseMeta =
+          final LicenseMeta? licenseMeta =
               _licenseCcTypeForm.control('ccTypeField').value;
+          // No type is preselected, and Next stays disabled until one is
+          // picked. If this is reached anyway, stay on this step.
+          if (licenseMeta == null) return;
           licenseState = LicenseState(meta: licenseMeta);
         default:
           throw StateError(

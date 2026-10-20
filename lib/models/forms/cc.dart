@@ -12,11 +12,11 @@ const ccLicensesEnabled = [
   ccBySAMeta,
 ];
 
-const ccLicenseDefault = cc0LicenseMeta;
-
+/// Starts with no license chosen. A license is recorded with the file for
+/// good, and CC0 gives up every right to it, so the uploader picks one rather
+/// than inheriting it.
 FormGroup createCcTypeForm() => FormGroup({
       'ccTypeField': FormControl<LicenseMeta>(
         validators: [Validators.required],
-        value: ccLicenseDefault,
       ),
     });
