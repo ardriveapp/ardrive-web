@@ -932,6 +932,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingFolderDriveId = null;
     _pendingFolderId = null;
     _routeLink = null;
+    _pendingInfoDriveId = null;
     sharedDriveKey = null;
     sharedRawDriveKey = null;
 

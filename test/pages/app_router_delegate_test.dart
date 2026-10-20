@@ -253,6 +253,10 @@ void main() {
       expect(delegate.driveId, isNull);
       expect(delegate.tryingToViewDrive, isFalse);
       expect(addressBar(delegate), '/sign-in');
+      // Nothing left for signing in to honour, so they land on Your drives
+      // afterwards rather than back in the dialog.
+      expect(delegate.hasARouteToHonour, isFalse);
+      expect(delegate.pendingInfoDriveId, isNull);
     });
 
     test('drops the key the link carried when it is cancelled', () async {
