@@ -4,17 +4,22 @@ void openViewBlockWallet(String walletAddress) {
   openUrl(url: 'https://viewblock.io/arweave/address/$walletAddress');
 }
 
-/// Opens the appropriate block explorer for the given wallet address.
-/// Detects Ethereum (0x prefix), Solana (base58, 32-44 chars), or Arweave.
-void openWalletExplorer(String address) {
-  if (address.startsWith('0x')) {
-    openUrl(url: 'https://etherscan.io/address/$address');
-  } else if (!address.contains('-') &&
-      !address.contains('_') &&
-      address.length >= 32 &&
-      address.length <= 44) {
-    openUrl(url: 'https://solscan.io/account/$address');
-  } else {
-    openUrl(url: 'https://viewblock.io/arweave/address/$address');
+/// Returns the block explorer URL for [address].
+///
+/// An Arweave address and a Solana address can look alike (43 characters, a
+/// chance of no `-` or `_`), so the caller says which one it holds with
+/// [isArweave]. For a non-Arweave address, `0x` means Ethereum, else Solana.
+String walletExplorerUrl(String address, {required bool isArweave}) {
+  if (isArweave) {
+    return 'https://viewblock.io/arweave/address/$address';
   }
+  if (address.startsWith('0x')) {
+    return 'https://etherscan.io/address/$address';
+  }
+  return 'https://solscan.io/account/$address';
+}
+
+/// Opens the block explorer for the given wallet address.
+void openWalletExplorer(String address, {required bool isArweave}) {
+  openUrl(url: walletExplorerUrl(address, isArweave: isArweave));
 }

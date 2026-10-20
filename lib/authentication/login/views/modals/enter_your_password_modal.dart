@@ -162,7 +162,8 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 return ProfileCardHeader(
                   walletAddress: state.walletAddress,
                   onPressed: () {
-                    openWalletExplorer(state.walletAddress);
+                    openWalletExplorer(state.walletAddress,
+                        isArweave: widget.sourceWalletAddress == null);
                   },
                   isExpanded: true,
                   hasLogoutButton: true,
@@ -179,7 +180,8 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 walletAddress: state.walletAddress ?? '',
                 onPressed: () {
                   if (state.walletAddress != null) {
-                    openWalletExplorer(state.walletAddress!);
+                    openWalletExplorer(state.walletAddress!,
+                        isArweave: widget.sourceWalletAddress == null);
                   }
                 },
                 isExpanded: true,
