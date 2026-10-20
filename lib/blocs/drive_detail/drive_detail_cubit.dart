@@ -277,7 +277,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
   /// Whether [drive]'s root folder was read from the network, or is not here
   /// yet. Sync records what it reads as confirmed; a drive made on this device
-  /// writes its own root as pending, until its upload is confirmed.
+  /// writes its own root as pending, until its upload is confirmed. A root
+  /// with no transaction row at all was not written here, since a local
+  /// write adds both in one transaction.
   Future<bool> _rootIsFromNetwork(Drive drive) async {
     final root = await _driveDao
         .latestFolderRevisionByFolderId(
@@ -294,7 +296,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           ..where((t) => t.id.equals(root.metadataTxId)))
         .getSingleOrNull();
 
-    return transaction?.status == TransactionStatus.confirmed;
+    return transaction == null ||
+        transaction.status == TransactionStatus.confirmed;
   }
 
   /// Ends a wait for a root revision that is never going to arrive.
