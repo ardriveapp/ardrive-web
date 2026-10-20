@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
@@ -920,6 +922,122 @@ void main() {
         arDriveAuth.onAuthStateChanged().listen((user) {
           expect(user, equals(updatedUser));
         });
+      });
+
+      test('completes only once the new balance is in currentUser', () async {
+        arDriveAuth.currentUser = User(
+          password: 'password',
+          wallet: wallet,
+          walletAddress: 'walletAddress',
+          walletBalance: BigInt.one,
+          cipherKey: SecretKey([]),
+          profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
+        );
+
+        // A real request takes a while; an immediate mock answer would land
+        // before an un-awaited refresh returned anyway.
+        when(() => mockUserRepository.getBalance(wallet)).thenAnswer(
+          (_) => Future.delayed(
+            const Duration(milliseconds: 50),
+            () => BigInt.two,
+          ),
+        );
+
+        await arDriveAuth.refreshBalance();
+
+        expect(arDriveAuth.currentUser.walletBalance, BigInt.two);
+      });
+
+      test('keeps the previous balance when the refresh fails', () async {
+        arDriveAuth.currentUser = User(
+          password: 'password',
+          wallet: wallet,
+          walletAddress: 'walletAddress',
+          walletBalance: BigInt.one,
+          cipherKey: SecretKey([]),
+          profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
+        );
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenThrow(Exception('gateway unavailable'));
+
+        await arDriveAuth.refreshBalance();
+
+        expect(arDriveAuth.currentUser.walletBalance, BigInt.one);
+      });
+    });
+
+    group('balance refresh after unlockUser', () {
+      final userWithFallbackBalance = User(
+        password: 'password',
+        wallet: wallet,
+        walletAddress: 'walletAddress',
+        walletBalance: BigInt.zero,
+        cipherKey: SecretKey([]),
+        profileType: ProfileType.json,
+        errorFetchingIOTokens: false,
+      );
+
+      setUp(() {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+        when(() => mockUserRepository.getUser('password'))
+            .thenAnswer((_) async => userWithFallbackBalance);
+      });
+
+      test('publishes the real balance when the background refresh lands',
+          () async {
+        final balanceAnswer = Completer<BigInt>();
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) => balanceAnswer.future);
+
+        final published = <User?>[];
+        final subscription =
+            arDriveAuth.onAuthStateChanged().listen(published.add);
+
+        final user = await arDriveAuth.unlockUser(password: 'password');
+        expect(user.walletBalance, BigInt.zero);
+
+        balanceAnswer.complete(BigInt.from(42));
+        await pumpEventQueue();
+
+        expect(arDriveAuth.currentUser.walletBalance, BigInt.from(42));
+        expect(published.last?.walletBalance, BigInt.from(42));
+
+        await subscription.cancel();
+      });
+
+      test('does not bring the user back when the refresh lands after logout',
+          () async {
+        final balanceAnswer = Completer<BigInt>();
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) => balanceAnswer.future);
+        when(() => mockUserRepository.deleteUser()).thenAnswer((_) async {});
+        when(() => mockSecureKeyValueStore.remove(any()))
+            .thenAnswer((_) async => true);
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((_) async {});
+
+        await arDriveAuth.unlockUser(password: 'password');
+        await arDriveAuth.logout();
+
+        final published = <User?>[];
+        final subscription =
+            arDriveAuth.onAuthStateChanged().listen(published.add);
+
+        balanceAnswer.complete(BigInt.from(42));
+        await pumpEventQueue();
+
+        expect(
+          () => arDriveAuth.currentUser,
+          throwsA(isA<AuthenticationUserIsNotLoggedInException>()),
+        );
+        expect(published, isEmpty);
+
+        await subscription.cancel();
       });
     });
   });

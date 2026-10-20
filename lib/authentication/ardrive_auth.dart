@@ -203,7 +203,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       currentUser = await _userRepository.getUser(password);
 
-      _updateBalance();
+      unawaited(_updateBalance());
 
       if (await _biometricAuthentication.isEnabled()) {
         logger.i('Saving password in secure storage');
@@ -369,21 +369,36 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
     currentUser = await _userRepository.getUser(password);
 
-    _updateBalance();
+    unawaited(_updateBalance());
 
     _userStreamController.add(_currentUser);
 
     return currentUser;
   }
 
-  void _updateBalance() {
-    _userRepository.getBalance(currentUser.wallet).then((value) {
-      _currentUser = _currentUser!.copyWith(walletBalance: value);
+  /// Fetches the balance and publishes the updated user through
+  /// [onAuthStateChanged]. Login runs this in the background, which is how a
+  /// balance that fell back to zero at login gets its real value. Never throws:
+  /// on error the previous balance is kept.
+  Future<void> _updateBalance() async {
+    final user = currentUser;
+
+    try {
+      final balance = await _userRepository.getBalance(user.wallet);
+
+      // The user may have logged out, or another wallet logged in, while the
+      // request was in flight.
+      final latest = _currentUser;
+      if (latest == null || latest.walletAddress != user.walletAddress) {
+        return;
+      }
+
+      _currentUser = latest.copyWith(walletBalance: balance);
       _userStreamController.add(_currentUser);
-    }).catchError((e) {
+    } catch (e) {
       logger.e('Error fetching wallet balance', e);
       // Don't update balance on error - keep previous value
-    });
+    }
   }
 
   Future<void> _saveUser(
@@ -437,10 +452,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
     return json.encode(_currentUser!.wallet.toJwk());
   }
 
+  /// Completes once the refreshed balance is in [currentUser], so a caller
+  /// can read it straight after.
   @override
-  Future<void> refreshBalance() async {
-    _updateBalance();
-  }
+  Future<void> refreshBalance() => _updateBalance();
 }
 
 class AuthenticationGatewayException implements Exception {

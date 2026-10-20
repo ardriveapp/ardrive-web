@@ -30,6 +30,9 @@ abstract class UserRepository {
 }
 
 class _UserRepository implements UserRepository {
+  /// How long login waits for the wallet balance before carrying on without it.
+  static const _loginBalanceTimeout = Duration(seconds: 5);
+
   final ProfileDao _profileDao;
   final ArweaveService _arweave;
   final ArioSDK _arioSDK;
@@ -55,16 +58,15 @@ class _UserRepository implements UserRepository {
     }
 
     final profileDetails = await _profileDao.loadDefaultProfile(password);
+    final walletAddress = await profileDetails.wallet.getAddress();
 
     final user = User(
       profileType: ProfileType.values[profileDetails.details.profileType],
       wallet: profileDetails.wallet,
       cipherKey: profileDetails.key,
       password: password,
-      walletAddress: await profileDetails.wallet.getAddress(),
-      walletBalance: await _arweave.getWalletBalance(
-        await profileDetails.wallet.getAddress(),
-      ),
+      walletAddress: walletAddress,
+      walletBalance: await _getLoginWalletBalance(walletAddress),
       errorFetchingIOTokens: false,
       sourceWalletAddress: profileDetails.details.sourceWalletAddress,
     );
@@ -72,6 +74,26 @@ class _UserRepository implements UserRepository {
     logger.d('Loaded user');
 
     return user;
+  }
+
+  /// The balance shown at login is best-effort. `getWalletBalance` has no
+  /// deadline of its own, and unlocking a profile that is stored locally must
+  /// not hang or fail because the balance endpoint does. On a timeout or an
+  /// error this returns zero, the same value a wallet with no AR shows;
+  /// `ArDriveAuth` refreshes the balance in the background right after login
+  /// and publishes the real value through `onAuthStateChanged`.
+  Future<BigInt> _getLoginWalletBalance(String walletAddress) async {
+    try {
+      return await _arweave
+          .getWalletBalance(walletAddress)
+          .timeout(_loginBalanceTimeout);
+    } catch (e) {
+      logger.w(
+        'Could not fetch the wallet balance at login, showing zero until the '
+        'background refresh: $e',
+      );
+      return BigInt.zero;
+    }
   }
 
   @override
