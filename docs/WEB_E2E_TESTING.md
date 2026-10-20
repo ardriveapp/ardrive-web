@@ -339,13 +339,15 @@ should see. Keep it short: it's the floor, not every case.
 | 11 | Rename a file, then move it to another folder | The new name and place show, and still do after a sync |
 | 12 | Switch to dark mode and back | The drive list and upload dialog are readable in both |
 | 13 | Log out and log back in | Login works; the drives are listed |
+| 14 | Open a drive, then paste a folder link from another drive into the same tab (`location.hash = '#/drives/…/folders/…'` in a step), then go Back | The linked folder opens and the sidebar moves to its drive; Back returns to the first drive |
 
 ### When a bug reaches users
 
 Add a journey for it to the release checklist, in the same change as the fix
 if you can. Journey 7 is there because wallet-paid uploads whose chunks
-failed were never retried (October 2026). The checklist grows from real
-failures, not guesses.
+failed were never retried (October 2026). Journey 14 is there because a link
+pasted into a tab that already had ArDrive open did nothing (October 2026).
+The checklist grows from real failures, not guesses.
 
 ## Known quirks
 
@@ -353,9 +355,6 @@ failures, not guesses.
   gateways the app reads from, so previews and thumbnails of files uploaded
   there 404, with a `PAGEERROR` in the console. That's not a bug.
 
-- **Deep link to an unsynced drive.** On a new profile, a link straight to a
-  drive that hasn't been synced opens a different drive (the first in the
-  list). Sync all drives first.
 - **The sidebar highlight** can stay on a different drive than the one shown.
 - **A file name the drive already has** brings up *A duplicate file found*
   (Cancel or Replace) before the upload dialog. Earlier test runs leave
