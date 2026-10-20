@@ -141,6 +141,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// one they have left again by the time the linked folder lands.
   StreamSubscription? _readerMovedWatch;
 
+  /// Counts [followLink] calls, so a lookup for an older link that finishes
+  /// after a newer one cannot open its folder over the newer one's.
+  int _followedLinks = 0;
+
   DriveDetailCubit({
     required String driveId,
     String? initialFolderId,
@@ -182,9 +186,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     if (initialFolderId != null) {
       Future.microtask(() async {
-        final folder = await _driveDao
+        final found = await _driveDao
             .folderById(folderId: initialFolderId)
             .getSingleOrNull();
+        // Folder IDs are only unique within a drive: a link that pairs this
+        // drive with another drive's folder names nothing here.
+        final folder = found?.driveId == driveId ? found : null;
 
         // Abort if user switched drives during the async operation
         if (_driveId != driveId) return;
@@ -652,7 +659,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       return;
     }
 
-    if (folder != null) {
+    if (folder != null && folder.driveId == driveId) {
       _forgetLinkedFolder();
       openFolder(folderId: folder.id);
       return;
@@ -695,7 +702,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _linkedFolderWatch = _driveDao
         .folderById(folderId: folderId)
         .watchSingleOrNull()
-        .where((folder) => folder != null)
+        .where((folder) => folder?.driveId == driveId)
         .take(1)
         .listen((folder) {
       _forgetLinkedFolder();
@@ -706,6 +713,90 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
       openFolder(folderId: folder!.id);
     });
+  }
+
+  /// A drive or folder link followed in a tab where this explorer is already
+  /// open: pasted into the address bar, or reached with back and forward.
+  ///
+  /// The link was only ever read when the explorer was built, so a tab that
+  /// already had it ignored every later one and the address bar snapped back
+  /// to the folder on screen.
+  ///
+  /// For the drive on screen this opens the folder, or the root for a drive
+  /// link, waiting for a folder its sync has not written yet. For any other
+  /// drive it only holds the folder: selecting that drive is the caller's,
+  /// and [changeDrive] opens the folder when it does.
+  Future<void> followLink({required String driveId, String? folderId}) async {
+    _forgetLinkedFolder();
+    final link = ++_followedLinks;
+
+    final current = state;
+    final showingThisDrive = driveId == _driveId &&
+        current is DriveDetailLoadSuccess &&
+        current.currentDrive.id == driveId;
+
+    if (!showingThisDrive) {
+      if (folderId == null) {
+        return;
+      }
+
+      final linkedFolder = (driveId: driveId, folderId: folderId);
+      _linkedFolder = linkedFolder;
+
+      // Another drive: its changeDrive is still to come and opens the folder.
+      if (driveId != _driveId) {
+        return;
+      }
+
+      // This drive, but not showing a folder: still opening, or waiting for
+      // its root. No changeDrive will come, so wait for the folder here.
+      final drive =
+          await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+
+      // A changeDrive already under way may have taken the folder over.
+      if (isClosed ||
+          link != _followedLinks ||
+          _driveId != driveId ||
+          drive == null ||
+          _linkedFolder != linkedFolder) {
+        return;
+      }
+
+      _openLinkedFolderWhenItLands(
+        driveId: driveId,
+        folderId: folderId,
+        rootFolderId: drive.rootFolderId,
+      );
+      return;
+    }
+
+    final rootFolderId = current.currentDrive.rootFolderId;
+    final targetId = folderId ?? rootFolderId;
+
+    if (targetId == current.folderInView.folder.id) {
+      return;
+    }
+
+    final folder =
+        await _driveDao.folderById(folderId: targetId).getSingleOrNull();
+
+    if (isClosed || link != _followedLinks || _driveId != driveId) {
+      return;
+    }
+
+    if (folder != null && folder.driveId == driveId) {
+      openFolder(folderId: targetId);
+      return;
+    }
+
+    // Not on this device yet: the root, as for a visitor's link, and then the
+    // folder when the sync writes it.
+    openFolder(folderId: rootFolderId);
+    _openLinkedFolderWhenItLands(
+      driveId: driveId,
+      folderId: targetId,
+      rootFolderId: rootFolderId,
+    );
   }
 
   void _forgetLinkedFolder() {

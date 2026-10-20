@@ -1,8 +1,13 @@
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_route_information_parser.dart';
 import 'package:ardrive/pages/app_route_path.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/upload_entry/domain/upload_request.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../test_utils/mocks.dart';
 
 /// How a folder link survives the drive being attached under it.
 ///
@@ -232,6 +237,126 @@ void main() {
     });
   });
 
+  /// A link pasted into a tab that already has the explorer open, or a step
+  /// back or forward through its history. The explorer read the route only
+  /// when it was built, so these changed the address bar and nothing else.
+  group('a link followed in an open tab', () {
+    late MockDriveDetailCubit driveDetail;
+    late MockDrivesCubit drives;
+
+    setUp(() {
+      driveDetail = MockDriveDetailCubit();
+      drives = MockDrivesCubit();
+      when(() => driveDetail.followLink(
+            driveId: any(named: 'driveId'),
+            folderId: any(named: 'folderId'),
+          )).thenAnswer((_) async {});
+      when(() => driveDetail.changeDrive(any())).thenAnswer((_) async {});
+      when(() => drives.selectDrive(any())).thenReturn(null);
+    });
+
+    void driveSelected(String? selectedDriveId) =>
+        when(() => drives.state).thenReturn(DrivesLoadSuccess(
+          selectedDriveId: selectedDriveId,
+          userDrives: [_drive(driveId), _drive(otherDriveId)],
+          sharedDrives: const [],
+          drivesWithAlerts: const [],
+          canCreateNewDrive: true,
+        ));
+
+    const link = RouteLink(driveId: driveId, folderId: folderId);
+
+    test('opens the folder in the drive already on screen', () async {
+      driveSelected(driveId);
+
+      delegate.followRouteLink(
+        link,
+        driveDetail: driveDetail,
+        drives: drives,
+        explorerIsNew: false,
+      );
+
+      verify(() => driveDetail.followLink(driveId: driveId, folderId: folderId))
+          .called(1);
+      verifyNever(() => drives.selectDrive(any()));
+    });
+
+    test('and is not brought back by a later refresh of the drive list',
+        () async {
+      // The folder held for a link is only let go by a selection of its drive,
+      // and none comes when the drive was selected already.
+      await delegate.setNewRoutePath(
+        AppRoutePath.folderDetail(driveId: driveId, driveFolderId: folderId),
+      );
+      driveSelected(driveId);
+
+      delegate.followRouteLink(
+        link,
+        driveDetail: driveDetail,
+        drives: drives,
+        explorerIsNew: false,
+      );
+
+      // The reader moves on, and then the drive list refreshes.
+      delegate.driveFolderId = 'another-folder';
+      delegate.onDriveSelected(driveId);
+
+      expect(delegate.driveFolderId, 'another-folder');
+    });
+
+    test('selects another drive the way the sidebar would', () async {
+      driveSelected(otherDriveId);
+
+      delegate.followRouteLink(
+        link,
+        driveDetail: driveDetail,
+        drives: drives,
+        explorerIsNew: false,
+      );
+
+      verify(() => driveDetail.followLink(driveId: driveId, folderId: folderId))
+          .called(1);
+      verify(() => drives.selectDrive(driveId)).called(1);
+    });
+
+    test('lets an explorer built for the link open it', () async {
+      // Pasted on the drives list: the explorer is built from the link, but
+      // the sidebar is still on the drive selected before.
+      driveSelected(otherDriveId);
+
+      delegate.followRouteLink(
+        link,
+        driveDetail: driveDetail,
+        drives: drives,
+        explorerIsNew: true,
+      );
+
+      verifyNever(() => driveDetail.followLink(
+            driveId: any(named: 'driveId'),
+            folderId: any(named: 'folderId'),
+          ));
+      verify(() => drives.selectDrive(driveId)).called(1);
+    });
+
+    test('sends a visitor with no drives to the drive itself', () async {
+      // Nothing to select it among: the explorer goes there, and offers to
+      // attach it.
+      when(() => drives.state)
+          .thenReturn(DrivesLoadedWithNoDrivesFound(canCreateNewDrive: false));
+      when(() => driveDetail.currentDriveId).thenReturn(otherDriveId);
+
+      delegate.followRouteLink(
+        link,
+        driveDetail: driveDetail,
+        drives: drives,
+        explorerIsNew: false,
+      );
+
+      verify(() => driveDetail.changeDrive(driveId)).called(1);
+      verifyNever(() => drives.selectDrive(any()));
+    });
+  });
+
   /// The drives list can ask for a drive's info panel but cannot open it: the
   /// panel is `DriveDetailCubit.selectDataItem`, and the cubit that page
   /// provides is built against no drive and is a different instance from the
@@ -444,3 +569,14 @@ void main() {
     });
   });
 }
+
+Drive _drive(String id) => Drive(
+      id: id,
+      name: id,
+      rootFolderId: 'root-$id',
+      ownerAddress: 'owner',
+      privacy: 'public',
+      isHidden: false,
+      dateCreated: DateTime(2026),
+      lastUpdated: DateTime(2026),
+    );

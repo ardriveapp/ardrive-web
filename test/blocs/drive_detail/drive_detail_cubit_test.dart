@@ -1101,6 +1101,133 @@ void main() {
     });
   });
 
+  group('a link followed in a tab that already has the explorer open', () {
+    String folderInView(DriveDetailCubit cubit) =>
+        (cubit.state as DriveDetailLoadSuccess).folderInView.folder.id;
+
+    Future<DriveDetailCubit> openAtRoot() async {
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-1');
+      await insertSubfolder('subfolder-2');
+
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(folderInView(cubit), rootFolderId, reason: 'precondition');
+      return cubit;
+    }
+
+    test('opens the folder it names in the drive on screen', () async {
+      final cubit = await openAtRoot();
+
+      await cubit.followLink(driveId: driveId, folderId: 'subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(folderInView(cubit), 'subfolder-1');
+    });
+
+    test('opens the root for a link to the drive itself', () async {
+      // Back from a folder to the drive's own address.
+      final cubit = await openAtRoot();
+      unawaited(cubit.openFolder(folderId: 'subfolder-2'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await cubit.followLink(driveId: driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(folderInView(cubit), rootFolderId);
+    });
+
+    test('opens a folder the sync has not written yet when it lands', () async {
+      final cubit = await openAtRoot();
+
+      await cubit.followLink(driveId: driveId, folderId: 'subfolder-3');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(folderInView(cubit), rootFolderId);
+
+      await insertSubfolder('subfolder-3');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(folderInView(cubit), 'subfolder-3');
+    });
+
+    test('holds the folder for a drive that is not on screen yet', () async {
+      // A link to a drive this device does not have: the folder has to wait
+      // for the drive to be attached and opened.
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(cubit.state, isA<DriveDetailLoadNotFound>(),
+          reason: 'precondition: the drive is not on this device yet');
+
+      await cubit.followLink(driveId: driveId, folderId: 'subfolder-1');
+
+      await insertDrive(lastBlockHeight: 100);
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-1');
+      await cubit.changeDrive(driveId);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(folderInView(cubit), 'subfolder-1');
+    });
+
+    test('does not open another drive\'s folder as this drive\'s', () async {
+      // Folder IDs are unique only within a drive, so a hand-made link can
+      // pair this drive with a folder of another drive on this device.
+      final cubit = await openAtRoot();
+      await db.into(db.folderEntries).insert(
+            FolderEntriesCompanion.insert(
+              id: 'other-drives-folder',
+              driveId: 'other-drive',
+              parentFolderId: const Value('other-root'),
+              name: 'other-drives-folder',
+              path: '',
+            ),
+          );
+
+      await cubit.followLink(driveId: driveId, folderId: 'other-drives-folder');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(folderInView(cubit), rootFolderId);
+    });
+
+    test('opens a folder linked while its drive is waiting for its root',
+        () async {
+      // The drive is open but shows no folder yet, so no changeDrive is
+      // coming to pick the folder up.
+      await insertDrive(lastBlockHeight: 0);
+      final cubit = buildCubit();
+      addTearDown(cubit.close);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(cubit.state, isA<DriveDetailLoadUnsynced>(),
+          reason: 'precondition: no folder on screen');
+
+      await cubit.followLink(driveId: driveId, folderId: 'subfolder-1');
+
+      await insertRootFolderRevision();
+      await insertSubfolder('subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(folderInView(cubit), 'subfolder-1');
+    });
+
+    test('lets go of a folder an earlier link was still waiting for', () async {
+      // Two links in a row: the second one is where the reader is going.
+      final cubit = await openAtRoot();
+
+      await cubit.followLink(driveId: driveId, folderId: 'subfolder-3');
+      await cubit.followLink(driveId: driveId, folderId: 'subfolder-1');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      await insertSubfolder('subfolder-3');
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+
+      expect(folderInView(cubit), 'subfolder-1');
+    });
+  });
+
   group('a redraw dropped for an upload', () {
     /// The report that found this: "I uploaded a file, it worked, and I do not
     /// see it in the drive view."

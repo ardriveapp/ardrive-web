@@ -119,6 +119,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// the drive later must not reopen a panel nobody asked for again.
   String? _pendingInfoDriveId;
 
+  /// The drive and folder the address bar last asked for, until the explorer
+  /// takes it.
+  ///
+  /// The explorer read the route once, when it was built. A link pasted into
+  /// a tab that already had it open, or a step back or forward through its
+  /// history, changed the address bar and nothing else: the next folder the
+  /// explorer drew put the old address back, and a link to another drive left
+  /// the sidebar on the old one. See [followRouteLink].
+  RouteLink? _routeLink;
+
   /// The standing request, for tests. The explorer clears it as it honours it.
   @visibleForTesting
   String? get pendingInfoDriveId => _pendingInfoDriveId;
@@ -416,6 +426,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 shellKey = 'explorer';
                 driveId = driveId ?? rootPath;
 
+                // Handed over once: the explorer follows it, and later builds
+                // pass nothing.
+                final routeLink = _routeLink;
+                _routeLink = null;
+
                 shell = BlocListener<DrivesCubit, DrivesState>(
                   listener: (context, state) {
                     if (state is DrivesLoadSuccess) {
@@ -512,11 +527,21 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                           },
                         ),
                       ],
-                      child: AppShell(
-                        page: DriveDetailPage(
-                          context: navigatorKey.currentContext!,
-                          anonymouslyShowDriveDetail:
-                              anonymouslyShowDriveDetail,
+                      child: _RouteLinkFollower(
+                        link: routeLink,
+                        onFollow: (context, link, {required explorerIsNew}) =>
+                            followRouteLink(
+                          link,
+                          driveDetail: context.read<DriveDetailCubit>(),
+                          drives: context.read<DrivesCubit>(),
+                          explorerIsNew: explorerIsNew,
+                        ),
+                        child: AppShell(
+                          page: DriveDetailPage(
+                            context: navigatorKey.currentContext!,
+                            anonymouslyShowDriveDetail:
+                                anonymouslyShowDriveDetail,
+                          ),
                         ),
                       ),
                     ),
@@ -886,6 +911,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingFolderDriveId =
         configuration.driveFolderId == null ? null : configuration.driveId;
     _pendingFolderId = configuration.driveFolderId;
+    _routeLink = configuration.driveId == null || configuration.drivesList
+        ? null
+        : RouteLink(
+            driveId: configuration.driveId!,
+            folderId: configuration.driveFolderId,
+          );
     sharedDriveKey = configuration.sharedDriveKey;
     sharedRawDriveKey = configuration.sharedRawDriveKey;
     sharedFileId = configuration.sharedFileId;
@@ -898,6 +929,50 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     rawTransactionContentType = configuration.rawTransactionContentType;
   }
 
+  /// Brings the explorer to the drive and folder the address bar named.
+  ///
+  /// An explorer built for this link has already opened it, and only the
+  /// sidebar's drive has to follow. One that was already open opens it here.
+  /// Either way the drive is selected through [DrivesCubit], as a click on it
+  /// in the sidebar would be, so the sidebar shows it and the next refresh of
+  /// the drive list does not take the explorer back to the drive it showed
+  /// before.
+  @visibleForTesting
+  void followRouteLink(
+    RouteLink link, {
+    required DriveDetailCubit driveDetail,
+    required DrivesCubit drives,
+    required bool explorerIsNew,
+  }) {
+    if (!explorerIsNew) {
+      driveDetail.followLink(driveId: link.driveId, folderId: link.folderId);
+    }
+
+    final drivesState = drives.state;
+
+    if (drivesState is! DrivesLoadSuccess || drivesState.hasNoDrives) {
+      // A visitor with no drives yet. Selecting a drive among none only shows
+      // the no-drives screen, so the explorer is sent there itself, which
+      // offers to attach the drive.
+      if (!explorerIsNew && driveDetail.currentDriveId != link.driveId) {
+        driveDetail.changeDrive(link.driveId);
+      }
+      return;
+    }
+
+    if (drivesState.selectedDriveId != link.driveId) {
+      drives.selectDrive(link.driveId);
+      return;
+    }
+
+    // The drive was selected already, so no selection is coming to spend the
+    // folder held for it. Left standing, the next refresh of the drive list
+    // would put that folder back in the address bar wherever the reader had
+    // gone since.
+    _pendingFolderDriveId = null;
+    _pendingFolderId = null;
+  }
+
   void clearState() {
     signingIn = true;
     gettingStarted = false;
@@ -907,6 +982,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveFolderId = null;
     _pendingFolderDriveId = null;
     _pendingFolderId = null;
+    _routeLink = null;
     _pendingInfoDriveId = null;
     _dropPendingUpload();
     // A search somebody ran before logging out is not an instruction to the
@@ -932,4 +1008,70 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
 extension RouterExtensions on Router {
   AppRouterDelegate get delegate => routerDelegate as AppRouterDelegate;
+}
+
+/// A drive, and a folder in it, named by the address bar.
+@immutable
+class RouteLink {
+  const RouteLink({required this.driveId, this.folderId});
+
+  final String driveId;
+
+  /// `null` for a drive link, which opens the drive at its root.
+  final String? folderId;
+}
+
+/// Passes the explorer each [RouteLink] the router hands it, once, after the
+/// frame that brought it.
+///
+/// After the frame because following a link emits from the explorer's cubits,
+/// and their listeners rebuild widgets that are being built right now.
+class _RouteLinkFollower extends StatefulWidget {
+  const _RouteLinkFollower({
+    required this.link,
+    required this.onFollow,
+    required this.child,
+  });
+
+  final RouteLink? link;
+  final void Function(
+    BuildContext context,
+    RouteLink link, {
+    required bool explorerIsNew,
+  }) onFollow;
+  final Widget child;
+
+  @override
+  State<_RouteLinkFollower> createState() => _RouteLinkFollowerState();
+}
+
+class _RouteLinkFollowerState extends State<_RouteLinkFollower> {
+  @override
+  void initState() {
+    super.initState();
+    _follow(widget.link, explorerIsNew: true);
+  }
+
+  @override
+  void didUpdateWidget(_RouteLinkFollower oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(widget.link, oldWidget.link)) {
+      _follow(widget.link, explorerIsNew: false);
+    }
+  }
+
+  void _follow(RouteLink? link, {required bool explorerIsNew}) {
+    if (link == null) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onFollow(context, link, explorerIsNew: explorerIsNew);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
