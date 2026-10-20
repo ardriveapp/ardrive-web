@@ -710,6 +710,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
 
   @override
   Widget build(BuildContext context) {
+    // Once per build, for the header and every row to read the same value.
+    final trailingSlot = _trailingSlotWidth();
+
     final columns = List.generate(
       _columns.length,
       (index) => _buildSingleColumn(
@@ -769,7 +772,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
                           // 10 less than the trailing slot, as the 90 was
                           // beside its 100.
                           SizedBox(
-                            width: _trailingSlotWidth() - 10,
+                            width: trailingSlot - 10,
                           ),
                           ArDriveSubmenu(
                             alignmentOffset: const Offset(-150, 10),
@@ -833,6 +836,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
                                 widget.buildRow(_currentPage[index]).row,
                                 _currentPage[index],
                                 index,
+                                trailingSlot,
                               ),
                             ),
                           ),
@@ -1048,6 +1052,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
     List<Widget> buildRow,
     T row,
     int index,
+    double trailingSlot,
   ) {
     final multiselect = getMultiSelectBox();
 
@@ -1132,7 +1137,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
                       child: Container(
                         alignment: Alignment.center,
                         height: 44,
-                        width: _trailingSlotWidth(),
+                        width: trailingSlot,
                         child: widget.trailing!.call(row),
                       ),
                     ),

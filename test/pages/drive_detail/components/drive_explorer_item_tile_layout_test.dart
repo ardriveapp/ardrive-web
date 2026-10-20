@@ -207,4 +207,119 @@ void main() {
     expect(tester.getRect(name(longName)).right, lessThanOrEqualTo(pin.left));
     expect(pin.right, lessThanOrEqualTo(tester.getRect(menus.at(1)).left));
   });
+
+  group('the trailing controls fit the width reserved for them', () {
+    /// The trailing controls alone, in [locale], with room to spare, so what
+    /// is measured is what they ask for and not what a slot gave them.
+    Future<double> usedWidth(
+      WidgetTester tester,
+      ArDriveDataTableItem item,
+      Locale locale,
+    ) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            locale: locale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 400,
+                  child: DriveExplorerItemTileTrailing(
+                    drive: drive,
+                    item: item,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+
+      final menu = tester.getRect(find.byType(HoverWidget));
+      final leftmost = item is FolderDataTableItem
+          ? tester.getRect(find.byType(ArDriveButton)).left
+          : item is FileDataTableItem && item.pinnedDataOwnerAddress != null
+              ? tester.getRect(find.byType(PinIndicator)).left
+              : menu.left;
+
+      return menu.right - leftmost;
+    }
+
+    const locales = AppLocalizations.supportedLocales;
+
+    testWidgets('an owner\'s ghost folder, in every language', (tester) async {
+      final slot = DriveExplorerItemTileTrailing.widthFor(
+        folder('ghost', ghost: true),
+      );
+
+      final tooWide = <String>[];
+
+      for (final locale in locales) {
+        final used = await usedWidth(
+          tester,
+          folder('ghost', ghost: true),
+          locale,
+        );
+        // ignore: avoid_print
+        print('ghost $locale: $used of $slot');
+        if (used > slot) tooWide.add('$locale: $used');
+      }
+
+      expect(tooWide, isEmpty, reason: 'wider than the $slot reserved');
+    });
+
+    testWidgets('a pinned file and a plain row', (tester) async {
+      final pinned = file('pinned', pinnedBy: 'someone');
+      final plain = file('plain');
+
+      final pinnedUsed = await usedWidth(tester, pinned, const Locale('en'));
+      final plainUsed = await usedWidth(tester, plain, const Locale('en'));
+      // ignore: avoid_print
+      print(
+          'pinned $pinnedUsed of ${DriveExplorerItemTileTrailing.widthFor(pinned)}, '
+          'plain $plainUsed of ${DriveExplorerItemTileTrailing.widthFor(plain)}');
+
+      expect(
+        pinnedUsed,
+        lessThanOrEqualTo(DriveExplorerItemTileTrailing.widthFor(pinned)),
+      );
+      expect(
+        plainUsed,
+        lessThanOrEqualTo(DriveExplorerItemTileTrailing.widthFor(plain)),
+      );
+    });
+
+    testWidgets('a ghost folder the reader does not own has no Fix button',
+        (tester) async {
+      final foreign = FolderDataTableItem(
+        driveId: 'drive',
+        folderId: 'folder-foreign',
+        name: 'foreign',
+        lastUpdated: DateTime(2026, 1, 1),
+        dateCreated: DateTime(2026, 1, 1),
+        contentType: 'folder',
+        index: 0,
+        isOwner: false,
+        isGhostFolder: true,
+      );
+
+      expect(
+        DriveExplorerItemTileTrailing.widthFor(foreign),
+        DriveExplorerItemTileTrailing.widthFor(file('plain')),
+      );
+    });
+  });
 }

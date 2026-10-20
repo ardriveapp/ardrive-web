@@ -59,6 +59,27 @@ void main() {
     expect(slot(tester, 'b'), 70);
   });
 
+  testWidgets('the header spacer stays 10 short of the row slot',
+      (tester) async {
+    await pump(tester, trailingWidth: (row) => row.trailing);
+
+    expect(
+      find.byWidgetPredicate((w) => w is SizedBox && w.width == 70 - 10),
+      findsOneWidget,
+    );
+
+    await pump(tester);
+
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is SizedBox &&
+            w.width == ArDriveDataTable.defaultTrailingWidth - 10,
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('without a trailingWidth the slot is the default',
       (tester) async {
     await pump(tester);
