@@ -186,9 +186,12 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     if (initialFolderId != null) {
       Future.microtask(() async {
-        final folder = await _driveDao
+        final found = await _driveDao
             .folderById(folderId: initialFolderId)
             .getSingleOrNull();
+        // Folder IDs are only unique within a drive: a link that pairs this
+        // drive with another drive's folder names nothing here.
+        final folder = found?.driveId == driveId ? found : null;
 
         // Abort if user switched drives during the async operation
         if (_driveId != driveId) return;
@@ -656,7 +659,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       return;
     }
 
-    if (folder != null) {
+    if (folder != null && folder.driveId == driveId) {
       _forgetLinkedFolder();
       openFolder(folderId: folder.id);
       return;
@@ -699,7 +702,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     _linkedFolderWatch = _driveDao
         .folderById(folderId: folderId)
         .watchSingleOrNull()
-        .where((folder) => folder != null)
+        .where((folder) => folder?.driveId == driveId)
         .take(1)
         .listen((folder) {
       _forgetLinkedFolder();
@@ -781,7 +784,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       return;
     }
 
-    if (folder != null) {
+    if (folder != null && folder.driveId == driveId) {
       openFolder(folderId: targetId);
       return;
     }

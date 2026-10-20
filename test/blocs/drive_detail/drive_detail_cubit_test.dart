@@ -1173,6 +1173,26 @@ void main() {
       expect(folderInView(cubit), 'subfolder-1');
     });
 
+    test('does not open another drive\'s folder as this drive\'s', () async {
+      // Folder IDs are unique only within a drive, so a hand-made link can
+      // pair this drive with a folder of another drive on this device.
+      final cubit = await openAtRoot();
+      await db.into(db.folderEntries).insert(
+            FolderEntriesCompanion.insert(
+              id: 'other-drives-folder',
+              driveId: 'other-drive',
+              parentFolderId: const Value('other-root'),
+              name: 'other-drives-folder',
+              path: '',
+            ),
+          );
+
+      await cubit.followLink(driveId: driveId, folderId: 'other-drives-folder');
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(folderInView(cubit), rootFolderId);
+    });
+
     test('opens a folder linked while its drive is waiting for its root',
         () async {
       // The drive is open but shows no folder yet, so no changeDrive is
