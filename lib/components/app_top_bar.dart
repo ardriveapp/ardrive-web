@@ -1,7 +1,7 @@
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'dart:async';
 
-import 'package:ardrive/blocs/drives/drives_cubit.dart';
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -889,6 +889,13 @@ class _SyncButtonMenu extends StatelessWidget {
 
   final Widget child;
 
+  bool _canShowDrivesList(BuildContext context) {
+    final profile = context.read<ProfileCubit?>();
+
+    return profile == null ||
+        AppRouterDelegate.canShowDrivesList(profile.state);
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = this.status;
@@ -918,13 +925,19 @@ class _SyncButtonMenu extends StatelessWidget {
             icon: ArDriveIcons.x(color: iconColor),
           ),
         ),
-      ArDriveDropdownItem(
-        onClick: () => context.read<AppRouterDelegate>().showDrivesList(),
-        content: ArDriveDropdownItemTile(
-          name: appLocalizationsOf(context).yourDrives,
-          icon: ArDriveIcons.arrowRightOutline(color: iconColor),
+      // Only where the list can actually be shown. For a visitor the router
+      // refuses it, so the item changed the address bar and nothing else - the
+      // same dead control the sidebar row and the breadcrumb already avoid.
+      // Read as nullable: the app always provides the cubit, and a tree that
+      // does not (a widget test of this menu alone) keeps the item.
+      if (_canShowDrivesList(context))
+        ArDriveDropdownItem(
+          onClick: () => context.read<AppRouterDelegate>().showDrivesList(),
+          content: ArDriveDropdownItemTile(
+            name: appLocalizationsOf(context).yourDrives,
+            icon: ArDriveIcons.arrowRightOutline(color: iconColor),
+          ),
         ),
-      ),
     ];
 
     // The dropdown would otherwise size itself as `items.length * 48` and cut

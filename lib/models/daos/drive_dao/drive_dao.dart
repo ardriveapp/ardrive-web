@@ -112,6 +112,56 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     }
   }
 
+  /// Encrypts onto their rows the drive keys that only memory holds.
+  ///
+  /// A private drive opened without a profile stores its key in the memory
+  /// vault alone, because there is no profile key to encrypt it with. Once the
+  /// user signs in there is, and the sync reads a signed-in user's keys from
+  /// the row and nowhere else ([getDriveKey] deliberately never falls back to
+  /// the vault: a private row with no key is how the sync knows it has nothing
+  /// to open an artifact with). So this runs before the profile is announced
+  /// as logged in, and the drive the visitor just opened keeps working.
+  ///
+  /// Returns the ids of the drives whose rows were written.
+  Future<List<DriveID>> persistInMemoryDriveKeys(SecretKey profileKey) async {
+    final written = <DriveID>[];
+
+    try {
+      await _vaultsReady;
+
+      final drives = (await allDrives().get()).where(
+        (drive) => drive.isPrivate && drive.encryptedKey == null,
+      );
+
+      for (final drive in drives) {
+        final driveKey = await _driveKeyVault.get(drive.id);
+
+        if (driveKey == null) {
+          continue;
+        }
+
+        final encryptionRes = await aesGcm.encrypt(
+          await driveKey.key.extractBytes(),
+          secretKey: profileKey,
+        );
+
+        await (update(this.drives)..where((d) => d.id.equals(drive.id))).write(
+          DrivesCompanion(
+            encryptedKey: Value(encryptionRes.concatenation(nonce: false)),
+            driveKeyGenerated: Value(driveKey.generated),
+            keyEncryptionIv: Value(encryptionRes.nonce as Uint8List),
+          ),
+        );
+
+        written.add(drive.id);
+      }
+    } catch (e) {
+      throw _handleError('Error persisting in-memory drive keys', e);
+    }
+
+    return written;
+  }
+
   Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async =>
       _previewCache.get(dataTxId);
 
