@@ -48,8 +48,7 @@ void main() {
     await importDriveState(
       consumer,
       driveId: testDriveId,
-      source:
-          await FileArtifactSource.of('${dir.path}/r.db', artifact.bytes),
+      source: await FileArtifactSource.of('${dir.path}/r.db', artifact.bytes),
       knownOwner: testOwner,
       knownPrivacy: 'private',
       syncedToBlock: 0,
@@ -97,8 +96,7 @@ void main() {
     expect(row.read<String>('path'), '');
   });
 
-  test('a folder this client held as a ghost arrives as a real one',
-      () async {
+  test('a folder this client held as a ghost arrives as a real one', () async {
     // `isGhost` does not travel; the reader supplies it. A folder the chain
     // vouches for is not a ghost, so a reader that had been holding a ghost
     // in its place must come out of the import holding a real folder.
@@ -206,10 +204,9 @@ void main() {
     // making explicit rather than leaving as an accident of the fixture.
     await seedDrive(producer, files: 4, folders: 2);
     const rootId = 'root-$testDriveId';
-    final rootRows = await producer
-        .customSelect('SELECT count(*) AS c FROM folder_entries WHERE id = ?',
-            variables: [const Variable<String>(rootId)])
-        .getSingle();
+    final rootRows = await producer.customSelect(
+        'SELECT count(*) AS c FROM folder_entries WHERE id = ?',
+        variables: [const Variable<String>(rootId)]).getSingle();
     expect(rootRows.read<int>('c'), 0, reason: 'precondition');
 
     final artifact = await exportDriveState(
@@ -295,13 +292,11 @@ void _keyMaterialSurvivesImport() {
     // state in which an import happens at all.
     await seedDrive(consumer, files: 0, folders: 0);
 
-    final before = await consumer
-        .customSelect(
-          'SELECT encryptedKey, keyEncryptionIv, syncCursor, lastBlockHeight '
-          'FROM drives WHERE id = ?',
-          variables: [const Variable<String>(testDriveId)],
-        )
-        .getSingle();
+    final before = await consumer.customSelect(
+      'SELECT encryptedKey, keyEncryptionIv, syncCursor, lastBlockHeight '
+      'FROM drives WHERE id = ?',
+      variables: [const Variable<String>(testDriveId)],
+    ).getSingle();
     expect(before.readNullable<Uint8List>('encryptedKey'), isNotNull);
 
     final artifact = await exportDriveState(
@@ -320,13 +315,11 @@ void _keyMaterialSurvivesImport() {
       syncedToBlock: 0,
     );
 
-    final after = await consumer
-        .customSelect(
-          'SELECT encryptedKey, keyEncryptionIv, syncCursor, lastBlockHeight, '
-          'name FROM drives WHERE id = ?',
-          variables: [const Variable<String>(testDriveId)],
-        )
-        .getSingle();
+    final after = await consumer.customSelect(
+      'SELECT encryptedKey, keyEncryptionIv, syncCursor, lastBlockHeight, '
+      'name FROM drives WHERE id = ?',
+      variables: [const Variable<String>(testDriveId)],
+    ).getSingle();
 
     expect(after.readNullable<Uint8List>('encryptedKey'),
         before.readNullable<Uint8List>('encryptedKey'),

@@ -75,9 +75,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   String _getDescription() {
     final isReturning = !widget.showTutorials;
     final chainName = widget.sourceWalletAddress != null
-        ? (widget.sourceWalletAddress!.startsWith('0x')
-            ? 'Ethereum'
-            : 'Solana')
+        ? (widget.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana')
         : null;
 
     if (isReturning && chainName != null) {
@@ -136,40 +134,20 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
-                  _getDescription(),
+              Text(_getDescription(),
                   textAlign: TextAlign.center,
                   style: typography.paragraphNormal(
                       color: colorTokens.textLow,
                       fontWeight: ArFontWeight.semiBold)),
               const SizedBox(height: 24),
               BlocBuilder<ProfileNameBloc, ProfileNameState>(
-                  builder: (context, state) {
-                    if (state is ProfileNameLoaded) {
-                      return ProfileCardHeader(
-                        walletAddress: state.walletAddress,
-                        onPressed: () {
-                          openWalletExplorer(state.walletAddress,
-                              isArweave: widget.sourceWalletAddress == null);
-                        },
-                        isExpanded: true,
-                        hasLogoutButton: true,
-                        logoutTooltip: 'Forget wallet',
-                        onClickLogout: () {
-                          showArDriveDialog(context,
-                              content: ForgetWalletDialog(
-                                  loginBloc: widget.loginBloc));
-                        },
-                      );
-                    }
-
+                builder: (context, state) {
+                  if (state is ProfileNameLoaded) {
                     return ProfileCardHeader(
-                      walletAddress: state.walletAddress ?? '',
+                      walletAddress: state.walletAddress,
                       onPressed: () {
-                        if (state.walletAddress != null) {
-                          openWalletExplorer(state.walletAddress!,
-                              isArweave: widget.sourceWalletAddress == null);
-                        }
+                        openWalletExplorer(state.walletAddress,
+                            isArweave: widget.sourceWalletAddress == null);
                       },
                       isExpanded: true,
                       hasLogoutButton: true,
@@ -180,8 +158,27 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                                 loginBloc: widget.loginBloc));
                       },
                     );
-                  },
-                ),
+                  }
+
+                  return ProfileCardHeader(
+                    walletAddress: state.walletAddress ?? '',
+                    onPressed: () {
+                      if (state.walletAddress != null) {
+                        openWalletExplorer(state.walletAddress!,
+                            isArweave: widget.sourceWalletAddress == null);
+                      }
+                    },
+                    isExpanded: true,
+                    hasLogoutButton: true,
+                    logoutTooltip: 'Forget wallet',
+                    onClickLogout: () {
+                      showArDriveDialog(context,
+                          content:
+                              ForgetWalletDialog(loginBloc: widget.loginBloc));
+                    },
+                  );
+                },
+              ),
               const SizedBox(height: 32),
               Text('Password',
                   style: typography.paragraphNormal(

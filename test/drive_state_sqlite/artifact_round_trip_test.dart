@@ -158,8 +158,7 @@ void main() {
   });
 
   group('key material', () {
-    test('no wallet, drive key, or sync cursor reaches the artifact',
-        () async {
+    test('no wallet, drive key, or sync cursor reaches the artifact', () async {
       await seedDrive(producer, files: 50, folders: 5);
       final artifact = await export();
 
@@ -180,10 +179,9 @@ void main() {
       // later migration adding a sensitive column to `drives` that a `SELECT *`
       // would pick up. There is no `SELECT *` here — but this fails the build
       // if a new column appears that nobody classified.
-      final columns = await producer
-          .customSelect('SELECT name FROM pragma_table_info(?)',
-              variables: [const Variable<String>('drives')])
-          .get();
+      final columns = await producer.customSelect(
+          'SELECT name FROM pragma_table_info(?)',
+          variables: [const Variable<String>('drives')]).get();
       final live = columns.map((r) => r.read<String>('name')).toSet();
       final classified = {
         ...artifactProjection['drives']!,

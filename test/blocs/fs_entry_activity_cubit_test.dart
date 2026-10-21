@@ -266,7 +266,7 @@ void main() {
         any(),
         ownerAddress: any(named: 'ownerAddress'),
         driveKey: any(named: 'driveKey'),
-          isCancelled: any(named: 'isCancelled'),
+        isCancelled: any(named: 'isCancelled'),
       ),
     );
 
@@ -292,7 +292,7 @@ void main() {
         any(),
         ownerAddress: any(named: 'ownerAddress'),
         driveKey: any(named: 'driveKey'),
-          isCancelled: any(named: 'isCancelled'),
+        isCancelled: any(named: 'isCancelled'),
       ),
     );
 

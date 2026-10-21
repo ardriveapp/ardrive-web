@@ -6,7 +6,8 @@ import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:arweave/arweave.dart';
 
 class D2NStreamedUpload implements StreamedUpload<UploadItem> {
-  D2NStreamedUpload({required Arweave Function() getArweave}) : _getArweave = getArweave;
+  D2NStreamedUpload({required Arweave Function() getArweave})
+      : _getArweave = getArweave;
 
   final Arweave Function() _getArweave;
   UploadAborter? _aborter;

@@ -181,13 +181,13 @@ void main() {
   });
 
   group('postDataItem and the permanence panel', () {
-    Future<SpendEntry?> shown() async => (await PermanenceCache.shared
-            .planSpend(
-              owner: 'wallet-a',
-              signsSilently: true,
-              fetch: () async => SpendLookup.found(BigInt.one),
-            ))
-        .shown;
+    Future<SpendEntry?> shown() async =>
+        (await PermanenceCache.shared.planSpend(
+          owner: 'wallet-a',
+          signsSilently: true,
+          fetch: () async => SpendLookup.found(BigInt.one),
+        ))
+            .shown;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});

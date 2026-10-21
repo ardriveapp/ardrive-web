@@ -159,8 +159,8 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                           const SizedBox(height: 4),
                           Text(
                             appLocalizationsOf(context).attachDriveLookingUp,
-                            style: ArDriveTypographyNew.of(context)
-                                .paragraphSmall(
+                            style:
+                                ArDriveTypographyNew.of(context).paragraphSmall(
                               color: ArDriveTheme.of(context)
                                   .themeData
                                   .colorTokens
@@ -299,11 +299,11 @@ class _DriveInfoRow extends StatelessWidget {
             ),
           ),
           Text(
-              dateStr,
-              style: typography.paragraphSmall(
-                color: colorTokens.textLow,
-              ),
+            dateStr,
+            style: typography.paragraphSmall(
+              color: colorTokens.textLow,
             ),
+          ),
         ],
       ),
     );

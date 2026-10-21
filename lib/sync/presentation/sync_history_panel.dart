@@ -314,10 +314,7 @@ Future<void> showSyncHistoryModal(BuildContext context) {
                 appLocalizationsOf(context)
                     .syncHistoryDescription(syncHistoryLimit),
                 style: ArDriveTypographyNew.of(context).paragraphSmall(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colorTokens
-                      .textMid,
+                  color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
                 ),
               ),
               const SizedBox(height: 12),

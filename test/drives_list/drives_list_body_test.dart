@@ -364,7 +364,21 @@ void main() {
     /// on its own - inside 16px of padding either side - so between them a
     /// table header sat over a column of cards. That band was reachable at an
     /// ordinary desktop window size.
-    for (final width in [560.0, 600.0, 620.0, 627.0, 628.0, 640.0, 700.0, 760.0, 820.0, 847.0, 848.0, 900.0, 1000.0]) {
+    for (final width in [
+      560.0,
+      600.0,
+      620.0,
+      627.0,
+      628.0,
+      640.0,
+      700.0,
+      760.0,
+      820.0,
+      847.0,
+      848.0,
+      900.0,
+      1000.0
+    ]) {
       testWidgets('at ${width.toInt()}px they are the same layout',
           (tester) async {
         await pumpBody(tester, oneDrive, width: width);

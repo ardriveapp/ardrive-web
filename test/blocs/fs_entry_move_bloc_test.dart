@@ -421,10 +421,8 @@ void main() {
           showHiddenItems: false,
         )),
         expect: () => [
-          isA<FsEntryMoveNameConflict>().having(
-              (s) => s.conflictingFileNames(),
-              'conflictingFileNames',
-              ['${conflictTestFolderId}0']),
+          isA<FsEntryMoveNameConflict>().having((s) => s.conflictingFileNames(),
+              'conflictingFileNames', ['${conflictTestFolderId}0']),
         ],
       );
     });

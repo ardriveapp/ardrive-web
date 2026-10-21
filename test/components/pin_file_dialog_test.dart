@@ -48,15 +48,14 @@ void main() {
       expect(showsInvalidIdError('aBcDe-_+0', settled: false), isFalse);
       // A transaction ID passes a file ID's length on its way to its own.
       expect(
-        showsInvalidIdError(fullTransactionId.substring(0, 40),
-            settled: false),
+        showsInvalidIdError(fullTransactionId.substring(0, 40), settled: false),
         isFalse,
       );
     });
 
     test('once it is as long as the longest ID', () {
-      expect(showsInvalidIdError('${fullTransactionId}x', settled: false),
-          isTrue);
+      expect(
+          showsInvalidIdError('${fullTransactionId}x', settled: false), isTrue);
     });
 
     test('once it holds a character no ID has', () {
@@ -179,8 +178,7 @@ void main() {
 
     /// Settled is for this ID, not for the dialog: one mistake does not make
     /// every later ID wrong from its first character.
-    testWidgets('says nothing again once the field is emptied',
-        (tester) async {
+    testWidgets('says nothing again once the field is emptied', (tester) async {
       await pumpDialog(tester);
       await tester.tap(idField());
       await tester.enterText(idField(), 'not-a-whole-id');
@@ -262,8 +260,7 @@ void main() {
       semantics.dispose();
     });
 
-    testWidgets('and stops showing it once the lookup is done',
-        (tester) async {
+    testWidgets('and stops showing it once the lookup is done', (tester) async {
       await pumpDialog(tester);
 
       states.add(const PinFileNetworkCheckRunning(

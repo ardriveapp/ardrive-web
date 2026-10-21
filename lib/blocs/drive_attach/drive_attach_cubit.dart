@@ -181,9 +181,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         return;
       }
 
-      final driveName = typedDriveName.isNotEmpty
-          ? typedDriveName
-          : driveNameController.text;
+      final driveName =
+          typedDriveName.isNotEmpty ? typedDriveName : driveNameController.text;
 
       await _driveDao.writeDriveEntity(
         name: driveName,
@@ -384,6 +383,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     emit(DriveAttachFailure());
   }
+
   /// Parks until nothing uninterruptible is running.
   ///
   /// Bounded, because a flag that never clears must not strand an attach: the
@@ -400,5 +400,4 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       // Timed out or the cubit closed. Fall through and try anyway.
     }
   }
-
 }

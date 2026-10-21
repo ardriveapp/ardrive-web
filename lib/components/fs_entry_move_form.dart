@@ -72,8 +72,7 @@ class FsEntryMoveForm extends StatelessWidget {
               context,
               content: ArDriveStandardModalNew(
                 title: appLocalizationsOf(context).error,
-                description:
-                    appLocalizationsOf(context).actionFailedTryAgain,
+                description: appLocalizationsOf(context).actionFailedTryAgain,
               ),
             );
           }

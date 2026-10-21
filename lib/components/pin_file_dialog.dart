@@ -221,8 +221,8 @@ class _PinFileDialogState extends State<PinFileDialog> {
                         const SizedBox(width: 8),
                         Text(
                           appLocalizationsOf(context).lookingUpThisId,
-                          style: ArDriveTypographyNew.of(context)
-                              .paragraphNormal(
+                          style:
+                              ArDriveTypographyNew.of(context).paragraphNormal(
                             color: ArDriveTheme.of(context)
                                 .themeData
                                 .colorTokens

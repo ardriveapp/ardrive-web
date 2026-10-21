@@ -171,8 +171,7 @@ class FsEntryLicenseBloc
     } catch (error, trace) {
       logger.e('Error licensing entities', error, trace);
       addError('Error licensing entities', trace);
-      emit(FsEntryLicenseFailure(
-          isPaymentError: isTurboPaymentError(error)));
+      emit(FsEntryLicenseFailure(isPaymentError: isTurboPaymentError(error)));
     }
   }
 

@@ -280,8 +280,7 @@ void main() {
       expect(find.text(ownerAddress), findsOneWidget);
     });
 
-    testWidgets('keeps the transaction id one step further in',
-        (tester) async {
+    testWidgets('keeps the transaction id one step further in', (tester) async {
       await pumpPage(tester, ready(), size: wide);
 
       expect(find.text(txId), findsNothing);
@@ -292,8 +291,7 @@ void main() {
       expect(find.text(txId), findsOneWidget);
     });
 
-    testWidgets('says nothing about an owner it does not know',
-        (tester) async {
+    testWidgets('says nothing about an owner it does not know', (tester) async {
       await pumpPage(tester, ready(owner: null), size: wide);
 
       expect(find.text('Shared by'), findsNothing);
