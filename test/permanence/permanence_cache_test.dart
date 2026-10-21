@@ -495,4 +495,119 @@ void main() {
       expect(spendCalls, 2);
     });
   });
+
+  group('a clock that moved backward', () {
+    test('makes every kept figure stale', () async {
+      await open(cache);
+      now = now.subtract(const Duration(hours: 1));
+      await open(cache);
+
+      expect(priceCalls, 2);
+      expect(rateCalls, 2);
+      expect(spendCalls, 2);
+      expect(tallyCalls, 2);
+    });
+  });
+
+  group('the AR count soon after spending', () {
+    test('is checked again within a minute, not half an hour', () async {
+      cache.spendChanged();
+      await tally(cache);
+
+      later(const Duration(seconds: 30));
+      await tally(cache);
+      expect(tallyCalls, 1);
+
+      later(const Duration(seconds: 40));
+      await tally(cache);
+      expect(tallyCalls, 2);
+    });
+
+    test('goes back to half an hour once the window has passed', () async {
+      cache.spendChanged();
+      later(const Duration(minutes: 11));
+      await tally(cache);
+
+      later(const Duration(minutes: 20));
+      await tally(cache);
+      expect(tallyCalls, 1);
+    });
+  });
+
+  group('a read that began before the app spent', () {
+    test('is not joined by a later open', () async {
+      final first = Completer<SpendLookup>();
+      var fetches = 0;
+
+      cache.planSpend(
+        owner: 'wallet-a',
+        signsSilently: true,
+        fetch: () {
+          fetches++;
+          return first.future;
+        },
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(fetches, 1);
+
+      cache.spendChanged();
+      final reopened = await cache.planSpend(
+        owner: 'wallet-a',
+        signsSilently: true,
+        fetch: () async {
+          fetches++;
+          return SpendLookup.found(winston * BigInt.two);
+        },
+      );
+
+      expect(fetches, 2);
+      expect((await reopened.spend)!.creditsWinc, winston * BigInt.two);
+      first.complete(SpendLookup.found(winston));
+    });
+
+    test('is joined by an open that follows with nothing between', () async {
+      final first = Completer<SpendLookup>();
+      var fetches = 0;
+      Future<SpendLookup> fetch() {
+        fetches++;
+        return first.future;
+      }
+
+      cache.planSpend(owner: 'wallet-a', signsSilently: true, fetch: fetch);
+      await Future<void>.delayed(Duration.zero);
+      cache.planSpend(owner: 'wallet-a', signsSilently: true, fetch: fetch);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(fetches, 1);
+      first.complete(SpendLookup.found(winston));
+    });
+  });
+
+  group('logging out while the store opens', () {
+    test('leaves no stored copy of a read that finished', () async {
+      final opening = Completer<KeyValueStore>();
+      var opens = 0;
+      final slow = PermanenceCache(
+        now: () => now,
+        openStore: () {
+          opens++;
+          // The second open (keeping the new reading) waits; the others,
+          // looking for a stored one and clearing, are quick.
+          return opens == 2 ? opening.future : Future.value(store);
+        },
+      );
+
+      final reading = slow
+          .planSpend(owner: 'wallet-a', signsSilently: true, fetch: fetchSpend)
+          .then((p) => p.spend!);
+      await Future<void>.delayed(Duration.zero);
+
+      await slow.clear();
+      opening.complete(store);
+      await reading;
+      await Future<void>.delayed(Duration.zero);
+
+      expect(store.values, isEmpty);
+    });
+  });
 }

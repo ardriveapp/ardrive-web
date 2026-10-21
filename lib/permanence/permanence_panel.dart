@@ -649,12 +649,20 @@ class _SpendTileState extends State<_SpendTile> {
         }
 
         // AR on its own, when there are no credits to show beside it.
-        _Tile arOnly() => _Tile(
+        _Tile arOnly({
+          String when = '',
+          String? action,
+          VoidCallback? onAction,
+        }) =>
+            _Tile(
               label: _label,
               value: _formatAr(paidAr!.ar),
-              note: paidAr.complete
-                  ? 'paid directly in AR'
-                  : 'paid directly in AR, at least',
+              note: (paidAr.complete
+                      ? 'paid directly in AR'
+                      : 'paid directly in AR, at least') +
+                  when,
+              action: action,
+              onAction: onAction,
             );
 
         // What a reading of the credits shows. [asOf] is set for one that was
@@ -681,7 +689,7 @@ class _SpendTileState extends State<_SpendTile> {
 
           if (lookup == null || lookup.failed) {
             return paidAr != null
-                ? arOnly()
+                ? arOnly(when: when, action: action, onAction: onAction)
                 : _Tile(
                     label: _label,
                     value: '-',
@@ -692,7 +700,7 @@ class _SpendTileState extends State<_SpendTile> {
 
           if (credits == null || credits == BigInt.zero) {
             return paidAr != null
-                ? arOnly()
+                ? arOnly(when: when, action: action, onAction: onAction)
                 : _Tile(
                     label: _label,
                     value: '-',
