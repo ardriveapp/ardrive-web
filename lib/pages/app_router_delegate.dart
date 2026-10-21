@@ -140,8 +140,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   /// The private drive a visitor has already been asked a key for, so the
   /// prompt opens once per drive rather than on every state the explorer
-  /// emits while the drive is open.
+  /// emits while the drive is open. A new route asks again.
   String? _keyPromptedForDriveId;
+
+  /// The drive [sharedDriveKey] came with. A key is only ever offered to the
+  /// drive its link named: selecting another drive drops it, so it can't be
+  /// tried on, stored for, or shown in the address bar of a drive it doesn't
+  /// belong to.
+  String? _sharedDriveKeyDriveId;
 
   /// The drive to sync as the explorer builds, for tests.
   @visibleForTesting
@@ -188,6 +194,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @visibleForTesting
   void onDriveSelected(String? selectedDriveId) {
     final selectedDriveChanged = driveId != selectedDriveId;
+
+    if (selectedDriveChanged && selectedDriveId != _sharedDriveKeyDriveId) {
+      sharedDriveKey = null;
+      sharedRawDriveKey = null;
+      _sharedDriveKeyDriveId = null;
+    }
 
     final isTheLinkedDrive = _pendingFolderDriveId != null &&
         _pendingFolderDriveId == selectedDriveId;
@@ -475,7 +487,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                             };
 
                             if (shownDrive != null) {
-                              _ensureVisitorHasDriveKey(context, shownDrive);
+                              unawaited(
+                                _ensureVisitorHasDriveKey(context, shownDrive),
+                              );
                             }
 
                             if (driveDetailCubitState
@@ -718,17 +732,35 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   ///
   /// `startSyncForDrive` marks the drive as syncing before its first await,
   /// so an explorer cubit built right after finds a sync touching its drive
-  /// and waits on the loading panel rather than showing "Drive Not Synced".
+  /// and waits on the loading panel rather than showing "Drive not synced".
   /// Called from the explorer's cubit factory, which covers an explorer built
   /// fresh for the drive, and from the route-link follower, which covers an
   /// explorer that was already open on another drive.
+  ///
+  /// `startSyncForDrive` refuses while another sync runs - a visitor opening
+  /// a second drive while the first still syncs - so a refusal waits for that
+  /// sync to end and tries once more.
   void _startSyncOnOpen(SyncCubit syncCubit, String driveId) {
     if (_syncOnOpenDriveId != driveId) {
       return;
     }
 
     _syncOnOpenDriveId = null;
-    unawaited(syncCubit.startSyncForDrive(driveId: driveId));
+    unawaited(() async {
+      if (await syncCubit.startSyncForDrive(driveId: driveId)) {
+        return;
+      }
+
+      await syncCubit.waitCurrentSync();
+
+      if (syncCubit.isClosed ||
+          await syncCubit.startSyncForDrive(driveId: driveId)) {
+        return;
+      }
+
+      logger.w('Opened drive $driveId was not synced; the explorer will '
+          'offer to sync it.');
+    }());
   }
 
   DriveDetailCubit _driveDetailCubit(BuildContext context, String driveId) {
@@ -1019,6 +1051,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           );
     sharedDriveKey = configuration.sharedDriveKey;
     sharedRawDriveKey = configuration.sharedRawDriveKey;
+    _sharedDriveKeyDriveId =
+        configuration.sharedDriveKey == null ? null : configuration.driveId;
+    _keyPromptedForDriveId = null;
     sharedFileId = configuration.sharedFileId;
     sharedFileKey = configuration.sharedFileKey;
     sharedRawFileKey = configuration.sharedRawFileKey;
@@ -1076,14 +1111,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// Shows a drive somebody opened from the sign-in screen, without a profile.
   ///
   /// The drive row is already written by the time this is called, so the
-  /// explorer finds it and no attach prompt opens. The key, for a private
-  /// drive, goes into the address bar the way a private share link carries
-  /// it, so a reload reopens the drive; it never leaves the browser.
+  /// explorer finds it and no attach prompt opens. A private drive's key is
+  /// already in memory. It is never put in the address bar: a key somebody
+  /// typed would otherwise sit in the browser's history. A reload asks for it
+  /// once instead.
   void openDriveAsVisitor({
     required String driveId,
     String? folderId,
     DriveKey? driveKey,
-    String? rawDriveKey,
   }) {
     signingIn = false;
     gettingStarted = false;
@@ -1097,7 +1132,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _routeLink = RouteLink(driveId: driveId, folderId: folderId);
 
     sharedDriveKey = driveKey;
-    sharedRawDriveKey = rawDriveKey;
+    sharedRawDriveKey = null;
+    _sharedDriveKeyDriveId = driveKey == null ? null : driveId;
 
     _syncOnOpenDriveId = driveId;
     _keyPromptedForDriveId = null;
@@ -1113,11 +1149,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   }
 
   /// Takes a visitor to the sign-in page and keeps the drive they were
-  /// viewing, so a login lands back on it.
-  ///
-  /// The "Log in" button used to log out instead, which runs [clearState] and
-  /// drops the drive; the visitor who signed in to keep what they were
-  /// looking at landed on the drives list without it.
+  /// viewing, so a login lands back on it. Logging out instead would run
+  /// [clearState] and drop the drive.
   void signInKeepingDrive() {
     signingIn = true;
     gettingStarted = false;
@@ -1127,9 +1160,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   /// A visitor's private drive needs its key in memory for anything to
   /// decrypt. The key is there when the drive was just opened or attached; it
-  /// is not after a reload. Then the address bar may still carry it, and if
-  /// it does not, the reader is asked for it once. Cancelling that lands on
-  /// the sign-in screen, because the explorer has nothing it can show.
+  /// is not after a reload. Then a share link may still carry it, and if it
+  /// does not, or the key does not open this drive, the reader is asked for
+  /// it once. Cancelling that lands on the sign-in screen, because the
+  /// explorer has nothing it can show.
+  ///
+  /// A link's key is checked against the drive before it goes into memory:
+  /// whatever is in memory when the visitor signs in is stored on the row
+  /// ([DriveDao.persistInMemoryDriveKeys]), and a wrong key stored there
+  /// would break the drive for that account until it is attached again.
   Future<void> _ensureVisitorHasDriveKey(
     BuildContext context,
     Drive drive,
@@ -1146,11 +1185,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
       return;
     }
 
-    final linkKey = sharedDriveKey;
+    final linkKey = _sharedDriveKeyDriveId == drive.id ? sharedDriveKey : null;
 
     if (linkKey != null) {
-      await driveDao.putDriveKeyInMemory(driveID: drive.id, driveKey: linkKey);
-      return;
+      if (!context.mounted) return;
+
+      if (await _keyOpensDrive(
+          context.read<ArweaveService>(), drive, linkKey)) {
+        await driveDao.putDriveKeyInMemory(
+          driveID: drive.id,
+          driveKey: linkKey,
+        );
+        return;
+      }
     }
 
     if (!context.mounted || _keyPromptedForDriveId == drive.id) {
@@ -1159,7 +1206,15 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
     _keyPromptedForDriveId = drive.id;
 
-    await attachDrive(context: context, driveId: drive.id);
+    try {
+      await attachDrive(context: context, driveId: drive.id);
+    } catch (e) {
+      // Another dialog held the screen. The prompt never opened, so the next
+      // state the explorer emits asks again.
+      logger.w('Could not ask for the key of drive ${drive.id}: $e');
+      _keyPromptedForDriveId = null;
+      return;
+    }
 
     // Attaching put the key in memory and started the drive's sync, or the
     // prompt was cancelled and the explorer has nothing it can show: the same
@@ -1168,6 +1223,27 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
       attached: await driveDao.getDriveKeyFromMemory(drive.id) != null,
       loggedIn: false,
     );
+  }
+
+  /// Whether [key] decrypts [drive]'s latest metadata, read from its owner.
+  /// A network failure counts as no: the reader is asked for the key instead.
+  Future<bool> _keyOpensDrive(
+    ArweaveService arweave,
+    Drive drive,
+    DriveKey key,
+  ) async {
+    try {
+      final entity = await arweave.getLatestDriveEntityWithId(
+        drive.id,
+        driveKey: key.key,
+        driveOwner: drive.ownerAddress,
+      );
+
+      return entity != null;
+    } catch (e) {
+      logger.w('Could not check the link key for drive ${drive.id}: $e');
+      return false;
+    }
   }
 
   void clearState() {
@@ -1182,6 +1258,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _routeLink = null;
     _syncOnOpenDriveId = null;
     _keyPromptedForDriveId = null;
+    _sharedDriveKeyDriveId = null;
     _pendingInfoDriveId = null;
     _dropPendingUpload();
     // A search somebody ran before logging out is not an instruction to the

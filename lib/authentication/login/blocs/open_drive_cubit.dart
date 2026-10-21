@@ -53,7 +53,6 @@ class OpenDriveCubit extends Cubit<OpenDriveState> {
   DriveLinkInputDrive? _target;
   DriveEntity? _entity;
   DriveKey? _driveKey;
-  String? _rawDriveKey;
 
   /// The text in the first field changed.
   void inputChanged(String raw) {
@@ -63,7 +62,12 @@ class OpenDriveCubit extends Cubit<OpenDriveState> {
     _target = null;
     _entity = null;
     _driveKey = null;
-    _rawDriveKey = null;
+
+    // What was found belongs to the old text. Until the new text is looked
+    // up, there is nothing to open, so the button must not offer it.
+    if (state.canOpen) {
+      emit(const OpenDriveInitial());
+    }
 
     if (raw.trim().isEmpty) {
       _backToStart();
@@ -80,12 +84,16 @@ class OpenDriveCubit extends Cubit<OpenDriveState> {
       return;
     }
 
+    final generation = _generation;
     final input = await DriveLinkInput.parse(raw);
 
-    if (isClosed || input is! DriveLinkInputUnrecognised) {
+    if (_isStale(generation) || input is! DriveLinkInputUnrecognised) {
       return;
     }
 
+    // The lookup still waiting on the debounce would only find the same
+    // nothing and clear this message.
+    _debounce?.cancel();
     emit(const OpenDriveUnrecognisedInput());
   }
 
@@ -101,10 +109,15 @@ class OpenDriveCubit extends Cubit<OpenDriveState> {
     _debounce?.cancel();
     final generation = ++_generation;
 
-    if (raw.trim().isEmpty) {
-      _driveKey = null;
-      _rawDriveKey = null;
+    // The accepted key belonged to the old text. Until the new one is
+    // checked, Open must not use it.
+    _driveKey = null;
+
+    if (raw.trim().isEmpty || current.keyAccepted) {
       emit(current.copyWith(name: null, keyRejected: false));
+    }
+
+    if (raw.trim().isEmpty) {
       return;
     }
 
@@ -147,7 +160,6 @@ class OpenDriveCubit extends Cubit<OpenDriveState> {
         driveId: target.driveId,
         folderId: target.folderId,
         driveKey: _driveKey,
-        rawDriveKey: _rawDriveKey,
       ));
     } catch (e, stackTrace) {
       logger.e('Failed to open drive ${target.driveId}', e, stackTrace);
@@ -259,7 +271,6 @@ class OpenDriveCubit extends Cubit<OpenDriveState> {
 
       if (entity == null) {
         _driveKey = null;
-        _rawDriveKey = null;
         emit(current.copyWith(
           name: null,
           keyRejected: true,
@@ -270,7 +281,6 @@ class OpenDriveCubit extends Cubit<OpenDriveState> {
 
       _entity = entity;
       _driveKey = key;
-      _rawDriveKey = rawKey;
       emit(current.copyWith(
         name: entity.name,
         keyRejected: false,

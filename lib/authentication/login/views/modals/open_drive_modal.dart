@@ -10,12 +10,11 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 /// Opens the "Open a drive" dialog from the sign-in screen or anywhere a
 /// visitor can reach.
 void showOpenDriveDialog(BuildContext context) {
-  PlausibleEventTracker.trackClickOpenDriveLink();
-
   showArDriveDialog(
     context,
     useRootNavigator: false,
@@ -29,9 +28,9 @@ void showOpenDriveDialog(BuildContext context) {
   );
 }
 
-/// One field for a Drive ID or any ArDrive link, a key field when the drive
-/// turns out to be private, and one button. See
-/// `docs/OPEN_DRIVE_WITHOUT_SIGNING_IN.md` §3.2 for the states.
+/// One field for a drive ID or any ArDrive link, a key field when the drive
+/// turns out to be private, and one button. The states are in
+/// `open_drive_state.dart`.
 class OpenDriveModal extends StatefulWidget {
   const OpenDriveModal({super.key, required this.router});
 
@@ -95,7 +94,6 @@ class _OpenDriveModalState extends State<OpenDriveModal> {
             driveId: state.driveId,
             folderId: state.folderId,
             driveKey: state.driveKey,
-            rawDriveKey: state.rawDriveKey,
           );
         } else {
           _applyPrefilledKey(state);
@@ -162,7 +160,6 @@ class _OpenDriveModalState extends State<OpenDriveModal> {
                     obscureText: true,
                     showObfuscationToggle: true,
                     label: strings.openDriveKeyLabel,
-                    hintText: strings.driveKey,
                     onChanged: (value) =>
                         context.read<OpenDriveCubit>().keyChanged(value),
                     onFieldSubmitted: (_) => _submit(context, state),
@@ -189,10 +186,13 @@ class _OpenDriveModalState extends State<OpenDriveModal> {
     );
   }
 
-  String _buttonText(dynamic strings, OpenDriveState state) {
-    if (state is OpenDriveOpening) return strings.openDriveOpening;
-    if (state is OpenDriveOtherLink) return strings.openDriveOpenFileButton;
-    return strings.openDriveButton;
+  String _buttonText(AppLocalizations strings, OpenDriveState state) {
+    return switch (state) {
+      OpenDriveOpening() => strings.openDriveOpening,
+      OpenDriveOtherLink(isFile: true) => strings.openDriveOpenFileButton,
+      OpenDriveOtherLink() => strings.openDriveOpenTransactionButton,
+      _ => strings.openDriveButton,
+    };
   }
 
   void _submit(BuildContext context, OpenDriveState state) {
@@ -246,8 +246,10 @@ class _InputStatus extends StatelessWidget {
           strings.openDrivePrivateNeedsKey,
           colorTokens.textLow,
         ),
-      OpenDriveOtherLink() => line(
-          strings.openDriveFileLinkDetected,
+      OpenDriveOtherLink(:final isFile) => line(
+          isFile
+              ? strings.openDriveFileLinkDetected
+              : strings.openDriveTransactionLinkDetected,
           colorTokens.textHigh,
         ),
       OpenDriveNotFound() => line(

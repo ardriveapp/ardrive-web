@@ -1,6 +1,7 @@
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'dart:async';
 
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -14,7 +15,6 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:ardrive/blocs/blocs.dart';
 
 /// The bar's own row, which is all of it. Nothing about a sync is laid out
 /// here: the indicator in the row is the whole of what a sync costs the

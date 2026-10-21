@@ -26,7 +26,6 @@ import 'package:responsive_builder/responsive_builder.dart';
 import 'blocs/blocs.dart';
 import 'components/app_top_bar.dart';
 import 'components/banners/app_announcement_banner.dart';
-import 'components/banners/visitor_banner.dart';
 import 'components/wallet_switch_dialog.dart';
 
 class AppShell extends StatefulWidget {
@@ -127,7 +126,6 @@ class AppShellState extends State<AppShell> {
                           context,
                           message: '', // Configure message when enabling banner
                         ),
-                        const VisitorBanner(),
                         if (state is! PrivateDriveMigrationHidden)
                           _updatePrivateDrivesBanner(context, true),
                         Flexible(
@@ -167,7 +165,6 @@ class AppShellState extends State<AppShell> {
                         context,
                         message: '', // Configure message when enabling banner
                       ),
-                      const VisitorBanner(),
                       if (state is! PrivateDriveMigrationHidden)
                         _updatePrivateDrivesBanner(context, false),
                       Flexible(

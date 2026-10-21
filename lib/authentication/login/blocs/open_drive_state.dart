@@ -120,16 +120,16 @@ class OpenDriveOpened extends OpenDriveState {
     required this.driveId,
     this.folderId,
     this.driveKey,
-    this.rawDriveKey,
   });
 
   final String driveId;
   final String? folderId;
   final DriveKey? driveKey;
-  final String? rawDriveKey;
 
+  /// The key itself is left out: two states for one drive and folder are the
+  /// same answer, and a key has no business in a state's string form.
   @override
-  List<Object?> get props => [driveId, folderId, rawDriveKey];
+  List<Object?> get props => [driveId, folderId, driveKey != null];
 }
 
 class OpenDriveFailure extends OpenDriveState {

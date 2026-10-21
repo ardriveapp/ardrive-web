@@ -83,14 +83,14 @@ class _ProfileCardState extends State<ProfileCard> {
   Widget _notLoggedInView(BuildContext context) {
     return ArDriveButtonNew(
       key: const Key('profileCardLogin'),
-      text: appLocalizationsOf(context).login,
+      text: appLocalizationsOf(context).logIn,
       typography: ArDriveTypographyNew.of(context),
-      variant: ButtonVariant.outline,
+      // The one thing somebody who isn't signed in can do from here.
+      variant: ButtonVariant.primary,
       maxWidth: 100,
       onPressed: () {
         // A visitor looking at a drive keeps it: the sign-in page shows, and
-        // the router lands back on this drive afterwards. Logging out instead
-        // ran `clearState`, dropped the drive, and landed on the drives list.
+        // the router lands back on this drive afterwards.
         final router = context.read<AppRouterDelegate>();
 
         if (router.tryingToViewDrive) {

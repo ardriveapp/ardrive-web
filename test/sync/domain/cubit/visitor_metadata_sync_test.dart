@@ -29,7 +29,7 @@ class _MockActivityTracker extends Mock implements ActivityTracker {}
 /// builds, and the cubit's own start-up path runs a metadata-only sync right
 /// after. With no profile that path has nothing to do, and it used to say so
 /// by emitting idle - over the sync that was running, so the explorer read
-/// "no sync touches this drive" and flashed "Drive Not Synced" over files
+/// "no sync touches this drive" and flashed "Drive not synced" over files
 /// that were seconds away.
 void main() {
   const driveId = 'a2b7ba0a-3b2a-4c1b-8a2f-6d1a0b3c4d5e';
@@ -121,7 +121,7 @@ void main() {
 
     expect(cubit.state, isA<SyncInProgress>(),
         reason: 'the explorer reads this to decide whether the drive it is '
-            'opening is being written; idle here is the "Drive Not Synced" '
+            'opening is being written; idle here is the "Drive not synced" '
             'flash');
     expect(cubit.syncingDriveId, driveId);
   });

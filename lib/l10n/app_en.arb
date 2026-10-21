@@ -2306,14 +2306,6 @@
     "description": "Error message when note file creation fails"
   },
   "view": "View",
-  "visitorBannerMessage": "You're viewing this drive without signing in. Sign in to keep it in your account.",
-  "@visitorBannerMessage": {
-    "description": "Strip above the explorer for a visitor with no profile"
-  },
-  "visitorBannerSignIn": "Sign in",
-  "@visitorBannerSignIn": {
-    "description": "Button on the visitor strip"
-  },
   "@view": {
     "description": "Label for view mode options"
   },
@@ -2545,19 +2537,15 @@
   },
   "ourChannels": "Our channels: ",
   "@ourChannels": {},
-  "openAnotherDrive": "Open another drive",
-  "@openAnotherDrive": {
-    "description": "New button item for a visitor: opens the Open a drive dialog"
-  },
   "openDriveButton": "Open drive",
   "@openDriveButton": {
     "description": "Primary button of the Open a drive dialog"
   },
-  "openDriveDescription": "Paste an ArDrive link or a Drive ID. A private drive also needs the drive key it was shared with.",
+  "openDriveDescription": "Paste an ArDrive link or a drive ID. A private drive also needs the drive key it was shared with.",
   "@openDriveDescription": {
     "description": "Sentence under the Open a drive dialog's title"
   },
-  "openDriveEmptyDescription": "Paste a link or a Drive ID to view a drive without signing in.",
+  "openDriveEmptyDescription": "Paste a link or a drive ID to view a drive without logging in.",
   "@openDriveEmptyDescription": {
     "description": "Empty explorer for a visitor with no local drives"
   },
@@ -2571,7 +2559,11 @@
   },
   "openDriveFileLinkDetected": "That's a link to a file.",
   "@openDriveFileLinkDetected": {
-    "description": "Open a drive dialog: the pasted link points at a file or transaction rather than a drive"
+    "description": "Open a drive dialog: the pasted link points at a file rather than a drive"
+  },
+  "openDriveTransactionLinkDetected": "That's a link to a transaction.",
+  "@openDriveTransactionLinkDetected": {
+    "description": "Open a drive dialog: the pasted link points at a raw transaction rather than a drive"
   },
   "openDriveFoundPrivate": "Drive found: {driveName} (private)",
   "@openDriveFoundPrivate": {
@@ -2591,17 +2583,13 @@
       }
     }
   },
-  "openDriveInputHint": "https://app.ardrive.io/#/drives/... or a Drive ID",
+  "openDriveInputHint": "https://app.ardrive.io/#/drives/... or a drive ID",
   "@openDriveInputHint": {
     "description": "Hint in the Open a drive dialog's first field"
   },
   "openDriveInputLabel": "Drive link or ID",
   "@openDriveInputLabel": {
     "description": "Label of the Open a drive dialog's first field"
-  },
-  "openDriveKeyAgain": "This private drive needs its key again.",
-  "@openDriveKeyAgain": {
-    "description": "Shown when a visitor reopens a private drive whose key is no longer in memory"
   },
   "openDriveKeyLabel": "Drive key",
   "@openDriveKeyLabel": {
@@ -2611,11 +2599,11 @@
   "@openDriveKeyRejected": {
     "description": "Open a drive dialog: the drive key did not decrypt the drive"
   },
-  "openDriveLandingAction": "Open it without signing in",
+  "openDriveLandingAction": "Open it without logging in",
   "@openDriveLandingAction": {
     "description": "Text link on the welcome page that opens the Open a drive dialog"
   },
-  "openDriveLandingQuestion": "Have a drive link or Drive ID?",
+  "openDriveLandingQuestion": "Have a drive link or drive ID?",
   "@openDriveLandingQuestion": {
     "description": "Line above the Open it without signing in link on the welcome page"
   },
@@ -2631,6 +2619,10 @@
   "@openDriveOpenFileButton": {
     "description": "Open a drive dialog button when the pasted link is a file link"
   },
+  "openDriveOpenTransactionButton": "View transaction",
+  "@openDriveOpenTransactionButton": {
+    "description": "Open a drive dialog button when the pasted link is a raw transaction link"
+  },
   "openDriveOpening": "Opening...",
   "@openDriveOpening": {
     "description": "Open a drive dialog button while the drive is being written"
@@ -2643,7 +2635,7 @@
   "@openDriveTitle": {
     "description": "Title of the Open a drive dialog"
   },
-  "openDriveUnrecognisedInput": "That doesn't look like an ArDrive link or Drive ID.",
+  "openDriveUnrecognisedInput": "That doesn't look like an ArDrive link or drive ID.",
   "@openDriveUnrecognisedInput": {
     "description": "Open a drive dialog: the text is neither a link nor an ID"
   },

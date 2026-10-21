@@ -204,7 +204,7 @@ void main() {
     await pump(tester, const OpenDriveUnrecognisedInput());
 
     expect(
-      find.text("That doesn't look like an ArDrive link or Drive ID."),
+      find.text("That doesn't look like an ArDrive link or drive ID."),
       findsOneWidget,
     );
   });

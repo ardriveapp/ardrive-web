@@ -1,15 +1,16 @@
 import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_route_information_parser.dart';
 import 'package:ardrive/pages/app_route_path.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/upload_entry/domain/upload_request.dart';
+import 'package:cryptography/cryptography.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/mocks.dart';
-import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:cryptography/cryptography.dart';
 
 /// How a folder link survives the drive being attached under it.
 ///
@@ -648,6 +649,7 @@ void main() {
       expect(delegate.driveFolderId, isNull);
     });
   });
+
   group('a drive opened from the sign-in screen', () {
     // The row is written before the router hears about it, so the explorer
     // finds the drive and no attach prompt opens. The sync is the one thing
@@ -691,19 +693,38 @@ void main() {
       expect(delegate.driveFolderId, folderId);
     });
 
-    test('puts a private drive\'s key in the address bar, as a share link does',
-        () {
-      const rawKey = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+    test('never puts a private drive\'s key in the address bar', () {
+      // A key typed into the dialog would otherwise sit in the browser's
+      // history. The key is in memory already; a reload asks for it.
       final key = DriveKey(SecretKey(List.filled(32, 0)), true);
 
-      delegate.openDriveAsVisitor(
-        driveId: driveId,
-        driveKey: key,
-        rawDriveKey: rawKey,
-      );
+      delegate.openDriveAsVisitor(driveId: driveId, driveKey: key);
 
       expect(delegate.sharedDriveKey, key);
-      expect(addressBar(delegate), '/drives/$driveId?driveKey=$rawKey');
+      expect(delegate.sharedRawDriveKey, isNull);
+      expect(addressBar(delegate), '/drives/$driveId');
+    });
+
+    test('drops a link\'s key when another drive is selected', () async {
+      const otherDriveId = 'f7acaf5f-8a7f-9b6a-df7a-ba6f5a8b9ca3';
+      const rawKey = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+      await delegate.setNewRoutePath(
+        await parser.parseRouteInformation(
+          RouteInformation(uri: Uri.parse('/drives/$driveId?driveKey=$rawKey')),
+        ),
+      );
+      expect(delegate.sharedDriveKey, isNotNull);
+
+      // The linked drive itself keeps it.
+      delegate.onDriveSelected(driveId);
+      expect(delegate.sharedDriveKey, isNotNull);
+
+      // Another drive must not be offered it, stored with it, or shown with
+      // it in the address bar.
+      delegate.onDriveSelected(otherDriveId);
+      expect(delegate.sharedDriveKey, isNull);
+      expect(delegate.sharedRawDriveKey, isNull);
+      expect(addressBar(delegate), isNot(contains('driveKey')));
     });
 
     test('forgets the pending sync when the state is cleared', () {
@@ -752,11 +773,7 @@ void main() {
 
     test('keeps a private drive\'s key too', () {
       final key = DriveKey(SecretKey(List.filled(32, 0)), true);
-      delegate.openDriveAsVisitor(
-        driveId: driveId,
-        driveKey: key,
-        rawDriveKey: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-      );
+      delegate.openDriveAsVisitor(driveId: driveId, driveKey: key);
 
       delegate.signInKeepingDrive();
 

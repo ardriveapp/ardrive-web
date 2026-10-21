@@ -980,7 +980,7 @@ class SyncCubit extends Cubit<SyncState> {
       // A visitor's explorer starts the sync of the drive they just opened
       // as it builds, and this runs right after from the same start-up path.
       // Emitting idle over that sync told the explorer no sync touched its
-      // drive, and "Drive Not Synced" flashed over files seconds away. A sync
+      // drive, and "Drive not synced" flashed over files seconds away. A sync
       // that is running ends in its own terminal state, so nothing waiting
       // on `waitCurrentSync()` is left hanging by leaving it alone.
       if (state is SyncInProgress) {

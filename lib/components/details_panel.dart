@@ -633,6 +633,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
     ];
   }
 
+  /// Licensing writes to Arweave, so it is offered only to a signed-in owner
+  /// of a file that is not pinned: the row menu gates it the same way. The
+  /// sign-in check matters on its own, because search builds its items as
+  /// owned whatever the drive.
+  bool _canLicense(BuildContext context, FileDataTableItem item) =>
+      item.pinnedDataOwnerAddress == null &&
+      item.isOwner &&
+      context.read<ProfileCubit>().state is ProfileLoggedIn;
+
   List<Widget> _fileDetails(FsEntryInfoState state) {
     final item = widget.item as FileDataTableItem;
     String? pinnedDataOwnerAddress = item.pinnedDataOwnerAddress;
@@ -709,10 +718,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   ? LicenseDetailsPopoverButton(
                       licenseState: state.licenseState!,
                       fileItem: item,
-                      // Licensing writes to Arweave, so only the owner is
-                      // offered it - the row menu already gates it this way.
-                      updateButton:
-                          pinnedDataOwnerAddress == null && item.isOwner,
+                      updateButton: _canLicense(context, item),
                       anchor: const Aligned(
                         follower: Alignment.bottomRight,
                         target: Alignment.topRight,
@@ -724,7 +730,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         ),
                       ),
                     )
-                  : pinnedDataOwnerAddress == null && item.isOwner
+                  : _canLicense(context, item)
                       ? ArDriveButton(
                           text: 'Add',
                           icon: ArDriveIcons.license(

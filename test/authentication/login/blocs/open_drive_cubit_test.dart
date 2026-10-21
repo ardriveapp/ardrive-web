@@ -101,6 +101,60 @@ void main() {
         lookupDelay: Duration.zero,
       );
 
+  group('while the text is changing', () {
+    // The lookup waits for typing to pause. Until it has run on the new text,
+    // what was found belongs to the old text, and Open must not offer it.
+    OpenDriveCubit slow() => OpenDriveCubit(
+          arweave: arweave,
+          driveDao: driveDao,
+          lookupDelay: const Duration(milliseconds: 200),
+        );
+
+    test('an edited ID turns Open off at once', () async {
+      final cubit = slow();
+      cubit.inputChanged(publicDriveId);
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      expect(cubit.state.canOpen, isTrue);
+
+      cubit.inputChanged(privateDriveId);
+      expect(cubit.state.canOpen, isFalse);
+      await cubit.close();
+    });
+
+    test('an edited key turns Open off at once', () async {
+      final cubit = slow();
+      cubit.inputChanged(privateDriveId);
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      cubit.keyChanged(rightKey);
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      expect(cubit.state.canOpen, isTrue);
+
+      cubit.keyChanged(wrongKey);
+      expect(cubit.state.canOpen, isFalse);
+
+      await cubit.open();
+      verifyNever(() => driveDao.writeDriveEntity(
+            name: any(named: 'name'),
+            entity: any(named: 'entity'),
+            driveKey: any(named: 'driveKey'),
+            profileKey: any(named: 'profileKey'),
+          ));
+      await cubit.close();
+    });
+
+    test('text called out on blur stays called out', () async {
+      final cubit = slow();
+      cubit.inputChanged('not a drive');
+      await cubit.inputBlurred('not a drive');
+      expect(cubit.state, isA<OpenDriveUnrecognisedInput>());
+
+      // The lookup that was waiting would find the same nothing and clear it.
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      expect(cubit.state, isA<OpenDriveUnrecognisedInput>());
+      await cubit.close();
+    });
+  });
+
   group('looking up', () {
     blocTest<OpenDriveCubit, OpenDriveState>(
       'a public drive id finds the drive and is ready to open',
@@ -329,7 +383,6 @@ void main() {
         final state = cubit.state;
         expect(state, isA<OpenDriveOpened>());
         expect((state as OpenDriveOpened).driveId, privateDriveId);
-        expect(state.rawDriveKey, rightKey);
         expect(state.driveKey, isNotNull);
 
         final call = verify(() => driveDao.writeDriveEntity(

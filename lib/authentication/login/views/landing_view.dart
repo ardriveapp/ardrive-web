@@ -1,5 +1,8 @@
+import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/authentication/login/views/modals/open_drive_modal.dart';
 import 'package:ardrive/components/app_version_widget.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +10,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../misc/resources.dart';
 import '../../components/login_card.dart';
-import 'package:ardrive/authentication/components/lined_text_divider.dart';
-import 'package:ardrive/authentication/login/views/modals/open_drive_modal.dart';
-import 'package:ardrive/utils/app_localizations_wrapper.dart';
 
 class LandingView extends StatefulWidget {
   const LandingView({
@@ -96,9 +96,14 @@ class _LandingViewState extends State<LandingView> {
               const SizedBox(height: 4),
               Center(
                 child: ArDriveClickArea(
-                  child: GestureDetector(
+                  // An InkWell rather than a bare gesture, so the link takes
+                  // keyboard focus and reads as a button to a screen reader.
+                  child: InkWell(
                     key: const Key('openDriveLandingLink'),
-                    onTap: () => showOpenDriveDialog(context),
+                    onTap: () {
+                      PlausibleEventTracker.trackClickOpenDriveAsVisitor();
+                      showOpenDriveDialog(context);
+                    },
                     child: Text(
                       appLocalizationsOf(context).openDriveLandingAction,
                       textAlign: TextAlign.center,
