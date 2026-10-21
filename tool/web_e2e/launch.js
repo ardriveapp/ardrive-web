@@ -214,15 +214,23 @@ async function guardTurbo(route) {
   // AbortError, so a download could never finish. Every page gets a picker
   // that chooses $E2E_DIR/downloads/<suggested name> without asking; the
   // app's own path (createWritable, then a write per chunk) runs unchanged.
+  // The bytes reach this process as requests to SAVE_URL, which this route
+  // answers; they never leave the browser. Not an exposed binding: every
+  // client attached over CDP, step.js included, hears a binding call, and
+  // one that doesn't know it answers with an error first.
   const downloads = path.join(E2E_DIR, 'downloads');
   fs.mkdirSync(downloads, { recursive: true });
-  await ctx.exposeBinding('__e2eSave', (_source, name, base64, done) => {
-    const file = path.join(downloads, path.basename(name));
-    if (base64 === null) fs.writeFileSync(file, Buffer.alloc(0));
-    else fs.appendFileSync(file, Buffer.from(base64, 'base64'));
-    if (done) log({ ev: 'download', file, bytes: fs.statSync(file).size });
+  const SAVE_URL = 'https://e2e-save.invalid/';
+  await ctx.route(`${SAVE_URL}**`, (route) => {
+    const url = new URL(route.request().url());
+    const file = path.join(downloads, path.basename(decodeURIComponent(url.pathname.slice(1))));
+    const op = url.searchParams.get('op');
+    if (op === 'open') fs.writeFileSync(file, Buffer.alloc(0));
+    if (op === 'write') fs.appendFileSync(file, Buffer.from(route.request().postData() || '', 'base64'));
+    if (op === 'close') log({ ev: 'download', file, bytes: fs.statSync(file).size });
+    return route.fulfill({ status: 200, headers: cors, body: 'ok' });
   });
-  await ctx.addInitScript(() => {
+  await ctx.addInitScript((saveUrl) => {
     const base64 = (bytes) => {
       let s = '';
       for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
@@ -235,19 +243,26 @@ async function guardTurbo(route) {
       if (ArrayBuffer.isView(chunk)) return new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
       return new TextEncoder().encode(String(chunk));
     };
+    // text/plain keeps each request simple, so there is no CORS preflight.
+    const send = async (name, op, body = '') => {
+      const res = await fetch(`${saveUrl}${encodeURIComponent(name)}?op=${op}`, {
+        method: 'POST', headers: { 'content-type': 'text/plain' }, body,
+      });
+      if (!res.ok) throw new Error(`e2e save ${op} failed: ${res.status}`);
+    };
     window.showSaveFilePicker = async (options = {}) => {
       const name = options.suggestedName || 'download';
-      await window.__e2eSave(name, null, false);
+      await send(name, 'open');
       return {
         kind: 'file',
         name,
         createWritable: async () => new WritableStream({
-          write: async (chunk) => window.__e2eSave(name, base64(await toBytes(chunk)), false),
-          close: () => window.__e2eSave(name, '', true),
+          write: async (chunk) => send(name, 'write', base64(await toBytes(chunk))),
+          close: () => send(name, 'close'),
         }),
       };
     };
-  });
+  }, SAVE_URL);
 
   const page = ctx.pages()[0] || (await ctx.newPage());
   // step.js and login.js find this tab by its id (config.js mainPage).
