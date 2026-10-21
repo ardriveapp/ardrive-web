@@ -1,5 +1,8 @@
+import 'package:ardrive/authentication/components/lined_text_divider.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
+import 'package:ardrive/authentication/login/views/modals/open_drive_modal.dart';
 import 'package:ardrive/components/app_version_widget.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -79,7 +82,35 @@ class _LandingViewState extends State<LandingView> {
                         .read<LoginBloc>()
                         .add(const SelectLoginFlow(existingUser: false));
                   }),
-              const SizedBox(height: 72),
+              const SizedBox(height: 40),
+              const LinedTextDivider(),
+              const SizedBox(height: 24),
+              Center(
+                child: ArDriveClickArea(
+                  // An InkWell rather than a bare gesture, so the link takes
+                  // keyboard focus; the semantics say it is a button, which
+                  // an InkWell around plain text does not on its own.
+                  child: Semantics(
+                    button: true,
+                    child: InkWell(
+                      key: const Key('openDriveLandingLink'),
+                      onTap: () {
+                        PlausibleEventTracker.trackClickOpenDriveAsVisitor();
+                        showOpenDriveDialog(context);
+                      },
+                      child: Text(
+                        appLocalizationsOf(context).openDriveLandingAction,
+                        textAlign: TextAlign.center,
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLink,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
               AppVersionWidget(
                 color: colorTokens.textLow,
               ),

@@ -246,6 +246,26 @@ abstract class PlausibleEventTracker {
     );
   }
 
+  /// The "Open a drive without logging in" link on the welcome page.
+  static Future<void> trackClickOpenDriveAsVisitor() {
+    return _trackCustomEvent(
+      page: PlausiblePageView.welcomePage,
+      event: PlausibleCustomEvent.clickOpenDriveAsVisitor,
+    );
+  }
+
+  /// A drive opened from the sign-in screen, with no profile.
+  static Future<void> trackOpenDriveAsVisitor({
+    required DrivePrivacy drivePrivacy,
+  }) {
+    final props = AttachDriveProperties(drivePrivacy: drivePrivacy);
+    return _trackCustomEvent(
+      page: PlausiblePageView.openDrivePage,
+      event: PlausibleCustomEvent.openDriveAsVisitor,
+      props: props.toJson(),
+    );
+  }
+
   /// Return User Page
   static Future<void> trackClickContinueReturnUserButton() {
     return _trackCustomEvent(

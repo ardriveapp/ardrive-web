@@ -726,21 +726,26 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                               ),
                                             ),
                                           ],
-                                          ArDriveDropdownItem(
-                                            onClick: () {
-                                              promptToCreateSnapshot(
-                                                  context,
-                                                  driveDetailState
-                                                      .currentDrive);
-                                            },
-                                            content: _buildItem(
-                                              appLocalizationsOf(context)
-                                                  .createSnapshot,
-                                              ArDriveIcons.iconCreateSnapshot(
-                                                size: defaultIconSize,
+                                          // Snapshots are signed by the
+                                          // owner's wallet; the mobile menu
+                                          // and the row menu already hide
+                                          // this from everyone else.
+                                          if (isDriveOwner)
+                                            ArDriveDropdownItem(
+                                              onClick: () {
+                                                promptToCreateSnapshot(
+                                                    context,
+                                                    driveDetailState
+                                                        .currentDrive);
+                                              },
+                                              content: _buildItem(
+                                                appLocalizationsOf(context)
+                                                    .createSnapshot,
+                                                ArDriveIcons.iconCreateSnapshot(
+                                                  size: defaultIconSize,
+                                                ),
                                               ),
                                             ),
-                                          ),
                                           ArDriveDropdownItem(
                                             onClick: isSyncing
                                                 ? null

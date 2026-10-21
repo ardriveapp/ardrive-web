@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/authentication/login/views/modals/open_drive_modal.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_bloc.dart';
 import 'package:ardrive/components/components.dart';
@@ -621,7 +622,7 @@ class NewButton extends StatelessWidget {
     } else {
       return [
         ArDriveNewButtonItem(
-          onClick: () => attachDrive(context: context),
+          onClick: () => showOpenDriveDialog(context),
           name: appLocalizations.attachDrive,
           icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),
@@ -691,7 +692,7 @@ class NewButton extends StatelessWidget {
     } else {
       return [
         ArDriveNewButtonItem(
-          onClick: () => attachDrive(context: context),
+          onClick: () => showOpenDriveDialog(context),
           name: appLocalizations.attachDrive,
           icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),

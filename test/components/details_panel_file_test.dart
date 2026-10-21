@@ -20,6 +20,13 @@ import 'package:mocktail/mocktail.dart';
 import '../test_utils/fake_user.dart';
 import '../test_utils/utils.dart';
 
+/// Nobody signed in: the panel asks, to decide whether to offer licensing.
+MockProfileCubit _profileCubit() {
+  final cubit = MockProfileCubit();
+  when(() => cubit.state).thenReturn(ProfilePromptAdd());
+  return cubit;
+}
+
 /// A file's details and history, for a file with two versions.
 ///
 /// The ID rows showed a copy button and nothing to say which ID it copied,
@@ -132,7 +139,7 @@ void main() {
           ],
           child: MultiBlocProvider(
             providers: [
-              BlocProvider<ProfileCubit>.value(value: MockProfileCubit()),
+              BlocProvider<ProfileCubit>.value(value: _profileCubit()),
               BlocProvider<SyncCubit>.value(value: sync),
             ],
             child: Portal(

@@ -2537,6 +2537,104 @@
   },
   "ourChannels": "Our channels: ",
   "@ourChannels": {},
+  "openDriveButton": "Open drive",
+  "@openDriveButton": {
+    "description": "Primary button of the Open a drive dialog"
+  },
+  "openDriveDescription": "Paste an ArDrive link or a drive ID. A private drive also needs the drive key it was shared with.",
+  "@openDriveDescription": {
+    "description": "Sentence under the Open a drive dialog's title"
+  },
+  "openDriveEmptyDescription": "Paste a link or a drive ID to view a drive without logging in.",
+  "@openDriveEmptyDescription": {
+    "description": "Empty explorer for a visitor with no local drives"
+  },
+  "openDriveEmptyTitle": "Nothing here yet",
+  "@openDriveEmptyTitle": {
+    "description": "Empty explorer title for a visitor with no local drives"
+  },
+  "openDriveFailed": "Something went wrong while opening the drive. Try again.",
+  "@openDriveFailed": {
+    "description": "Open a drive dialog: writing the drive failed"
+  },
+  "openDriveFileLinkDetected": "That's a link to a file.",
+  "@openDriveFileLinkDetected": {
+    "description": "Open a drive dialog: the pasted link points at a file rather than a drive"
+  },
+  "openDriveTransactionLinkDetected": "That's a link to a transaction.",
+  "@openDriveTransactionLinkDetected": {
+    "description": "Open a drive dialog: the pasted link points at a raw transaction rather than a drive"
+  },
+  "openDriveFoundPrivate": "Drive found: {driveName} (private)",
+  "@openDriveFoundPrivate": {
+    "description": "Open a drive dialog: a private drive's key was accepted",
+    "placeholders": {
+      "driveName": {
+        "type": "String"
+      }
+    }
+  },
+  "openDriveFoundPublic": "Drive found: {driveName} (public)",
+  "@openDriveFoundPublic": {
+    "description": "Open a drive dialog: a public drive was found",
+    "placeholders": {
+      "driveName": {
+        "type": "String"
+      }
+    }
+  },
+  "openDriveInputHint": "https://app.ardrive.io/#/drives/... or a drive ID",
+  "@openDriveInputHint": {
+    "description": "Hint in the Open a drive dialog's first field"
+  },
+  "openDriveInputLabel": "Drive link or ID",
+  "@openDriveInputLabel": {
+    "description": "Label of the Open a drive dialog's first field"
+  },
+  "openDriveKeyLabel": "Drive key",
+  "@openDriveKeyLabel": {
+    "description": "Label of the Open a drive dialog's key field"
+  },
+  "openDriveKeyRejected": "This key doesn't open this drive.",
+  "@openDriveKeyRejected": {
+    "description": "Open a drive dialog: the drive key did not decrypt the drive"
+  },
+  "openDriveLandingAction": "Open a drive without logging in",
+  "@openDriveLandingAction": {
+    "description": "Text link on the welcome page that opens the Open a drive dialog"
+  },
+  "openDriveNetworkError": "Couldn't reach the network. Check your connection and try again.",
+  "@openDriveNetworkError": {
+    "description": "Open a drive dialog: the gateway could not be reached"
+  },
+  "openDriveNotFound": "No drive was found for that ID. Check the link, or ask whoever shared it.",
+  "@openDriveNotFound": {
+    "description": "Open a drive dialog: no drive exists for the ID"
+  },
+  "openDriveOpenFileButton": "Open file",
+  "@openDriveOpenFileButton": {
+    "description": "Open a drive dialog button when the pasted link is a file link"
+  },
+  "openDriveOpenTransactionButton": "View transaction",
+  "@openDriveOpenTransactionButton": {
+    "description": "Open a drive dialog button when the pasted link is a raw transaction link"
+  },
+  "openDriveOpening": "Opening...",
+  "@openDriveOpening": {
+    "description": "Open a drive dialog button while the drive is being written"
+  },
+  "openDrivePrivateNeedsKey": "This is a private drive. Paste the drive key you were given.",
+  "@openDrivePrivateNeedsKey": {
+    "description": "Open a drive dialog: the drive is private and the key field has appeared"
+  },
+  "openDriveTitle": "Open a drive",
+  "@openDriveTitle": {
+    "description": "Title of the Open a drive dialog"
+  },
+  "openDriveUnrecognisedInput": "That doesn't look like an ArDrive link or drive ID.",
+  "@openDriveUnrecognisedInput": {
+    "description": "Open a drive dialog: the text is neither a link nor an ID"
+  },
   "password": "Password",
   "@password": {
     "description": "Label for the 'password' input"

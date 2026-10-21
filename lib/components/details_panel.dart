@@ -633,6 +633,15 @@ class _DetailsPanelState extends State<DetailsPanel> {
     ];
   }
 
+  /// Licensing writes to Arweave, so it is offered only to a signed-in owner
+  /// of a file that is not pinned: the row menu gates it the same way. The
+  /// sign-in check matters on its own, because search builds its items as
+  /// owned whatever the drive.
+  bool _canLicense(BuildContext context, FileDataTableItem item) =>
+      item.pinnedDataOwnerAddress == null &&
+      item.isOwner &&
+      context.read<ProfileCubit>().state is ProfileLoggedIn;
+
   List<Widget> _fileDetails(FsEntryInfoState state) {
     final item = widget.item as FileDataTableItem;
     String? pinnedDataOwnerAddress = item.pinnedDataOwnerAddress;
@@ -709,7 +718,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   ? LicenseDetailsPopoverButton(
                       licenseState: state.licenseState!,
                       fileItem: item,
-                      updateButton: pinnedDataOwnerAddress == null,
+                      updateButton: _canLicense(context, item),
                       anchor: const Aligned(
                         follower: Alignment.bottomRight,
                         target: Alignment.topRight,
@@ -721,7 +730,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         ),
                       ),
                     )
-                  : pinnedDataOwnerAddress == null
+                  : _canLicense(context, item)
                       ? ArDriveButton(
                           text: 'Add',
                           icon: ArDriveIcons.license(
@@ -969,6 +978,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           leading = _FileRevisionOptions(
             fileRevision: FileRevisionBase.fromFileRevisionWithLicense(
                 fileRevisionWithLicenseAndTransactions),
+            drive: widget.currentDrive,
           );
         }
 
@@ -991,6 +1001,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           leading = _FileRevisionOptions(
             fileRevision: FileRevisionBase.fromFileRevisionWithLicense(
                 fileRevisionWithLicenseAndTransactions),
+            drive: widget.currentDrive,
           );
         }
 
@@ -1370,9 +1381,15 @@ class _DownloadOrPreview extends StatelessWidget {
 class _FileRevisionOptions extends StatelessWidget {
   const _FileRevisionOptions({
     required this.fileRevision,
+    required this.drive,
   });
 
   final FileRevisionBase fileRevision;
+
+  /// The drive the revision belongs to, so the menu can tell a public
+  /// revision, which may open in a new window, from a private one, whose
+  /// bytes the gateway serves encrypted.
+  final Drive? drive;
 
   @override
   Widget build(BuildContext context) {
@@ -1380,6 +1397,7 @@ class _FileRevisionOptions extends StatelessWidget {
 
     return EntityActionsMenu(
       item: item,
+      drive: drive,
       isFileRevision: true,
       withInfo: false,
       // bottom right to top left
