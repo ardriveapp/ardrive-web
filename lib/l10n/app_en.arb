@@ -2627,6 +2627,10 @@
   "@openDrivePrivateNeedsKey": {
     "description": "Open a drive dialog: the drive is private and the key field has appeared"
   },
+  "openAnotherDrive": "Open another drive",
+  "@openAnotherDrive": {
+    "description": "New menu item for a visitor; opens the Open a drive dialog"
+  },
   "openDriveTitle": "Open a drive",
   "@openDriveTitle": {
     "description": "Title of the Open a drive dialog"
