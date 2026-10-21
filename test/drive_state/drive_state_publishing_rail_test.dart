@@ -180,11 +180,11 @@ void main() {
 
       // Read off disk rather than asserted from memory: the shipped default is
       // whatever these files say, and a flavour switched on by accident is the
-      // failure this whole rail exists to prevent. Staging is on by decision
-      // (2026-10-16), so staging.ardrive.io exercises the artifact path before
-      // production does; production stays off until staging has soaked.
+      // failure this whole rail exists to prevent. Staging went on by decision
+      // (2026-10-16) so staging.ardrive.io exercised the artifact path first;
+      // production followed in its release (2026-10-20). Dev stays off.
       for (final flavour in ['dev', 'staging', 'prod']) {
-        final on = flavour == 'staging';
+        final on = flavour != 'dev';
 
         test('$flavour.json ships with $name ${on ? 'on' : 'off'}', () {
           expect(read(AppConfig.fromJson(flavourJson(flavour))), on);
