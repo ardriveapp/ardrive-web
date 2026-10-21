@@ -11,6 +11,7 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ardrive/blocs/blocs.dart';
 
 class SharingFileListener extends StatefulWidget {
   const SharingFileListener(
@@ -36,6 +37,14 @@ class _SharingFileListenerState extends State<SharingFileListener> {
         final syncCubit = context.read<SyncCubit>();
         final sharingFileBloc = context.read<SharingFileBloc>();
         if (state is SharingFileReceivedState) {
+          // Uploading needs a wallet. A visitor who shares a file into the app
+          // has nowhere to put it, so the share is dropped here rather than
+          // walked into an upload dialog that cannot start.
+          if (context.read<ProfileCubit>().state is! ProfileLoggedIn) {
+            sharingFileBloc.add(SharingFileCleared());
+            return;
+          }
+
           if (syncCubit.state is SyncInProgress) {
             // Whatever the sync ends as, not `SyncIdle` specifically: a sync
             // that finished with one failed drive rests in

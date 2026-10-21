@@ -1897,6 +1897,29 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       return;
     }
 
+    // The same gate the folder read applies when it finds no root revision:
+    // a drive a sync is writing right now has simply not got its root folder
+    // *yet*. A drive opened a moment ago from the sign-in screen arrives here
+    // on its first tick, before the sync it started has written anything, and
+    // "Drive Not Synced" with a Sync button flashed over the files that were
+    // seconds away. Waiting on the loading panel is ended by the write
+    // itself, or by [_recoverIfStillWaiting] if the sync ends without one.
+    if (SyncCubit.syncTouchesDrive(
+      state: _syncCubit.state,
+      syncingDriveId: _syncCubit.syncingDriveId,
+      completedDriveIds: _syncCubit.completedDriveIds,
+      runDriveIds: _syncCubit.syncingDriveIds,
+      driveId: driveId,
+    )) {
+      _awaitingRootRevisionFor = driveId;
+
+      if (state is! DriveDetailLoadInProgress) {
+        emit(DriveDetailLoadInProgress());
+      }
+
+      return;
+    }
+
     emit(DriveDetailLoadUnsynced(drive: drive));
   }
 

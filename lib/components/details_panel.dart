@@ -709,7 +709,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
                   ? LicenseDetailsPopoverButton(
                       licenseState: state.licenseState!,
                       fileItem: item,
-                      updateButton: pinnedDataOwnerAddress == null,
+                      // Licensing writes to Arweave, so only the owner is
+                      // offered it - the row menu already gates it this way.
+                      updateButton:
+                          pinnedDataOwnerAddress == null && item.isOwner,
                       anchor: const Aligned(
                         follower: Alignment.bottomRight,
                         target: Alignment.topRight,
@@ -721,7 +724,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                         ),
                       ),
                     )
-                  : pinnedDataOwnerAddress == null
+                  : pinnedDataOwnerAddress == null && item.isOwner
                       ? ArDriveButton(
                           text: 'Add',
                           icon: ArDriveIcons.license(

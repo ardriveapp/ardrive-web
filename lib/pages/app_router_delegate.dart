@@ -129,6 +129,24 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// the sidebar on the old one. See [followRouteLink].
   RouteLink? _routeLink;
 
+  /// The drive a visitor just opened from the sign-in screen, whose sync has
+  /// to start the moment there is a `SyncCubit` to start it on.
+  ///
+  /// That cubit lives inside the explorer's provider tree, which does not
+  /// exist on the sign-in screen, so the dialog that wrote the drive cannot
+  /// start the sync itself. The explorer's cubit factory does, once, and the
+  /// detail cubit then shows "Opening..." instead of the unsynced card.
+  String? _syncOnOpenDriveId;
+
+  /// The private drive a visitor has already been asked a key for, so the
+  /// prompt opens once per drive rather than on every state the explorer
+  /// emits while the drive is open.
+  String? _keyPromptedForDriveId;
+
+  /// The drive to sync as the explorer builds, for tests.
+  @visibleForTesting
+  String? get syncOnOpenDriveId => _syncOnOpenDriveId;
+
   /// The standing request, for tests. The explorer clears it as it honours it.
   @visibleForTesting
   String? get pendingInfoDriveId => _pendingInfoDriveId;
@@ -449,6 +467,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                               driveDetailCubitState,
                             );
 
+                            final shownDrive = switch (driveDetailCubitState) {
+                              DriveDetailLoadSuccess(:final currentDrive) =>
+                                currentDrive,
+                              DriveDetailLoadUnsynced(:final drive) => drive,
+                              _ => null,
+                            };
+
+                            if (shownDrive != null) {
+                              _ensureVisitorHasDriveKey(context, shownDrive);
+                            }
+
                             if (driveDetailCubitState
                                 is DriveDetailLoadSuccess) {
                               driveId = driveDetailCubitState.currentDrive.id;
@@ -537,13 +566,18 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                       ],
                       child: _RouteLinkFollower(
                         link: routeLink,
-                        onFollow: (context, link, {required explorerIsNew}) =>
-                            followRouteLink(
-                          link,
-                          driveDetail: context.read<DriveDetailCubit>(),
-                          drives: context.read<DrivesCubit>(),
-                          explorerIsNew: explorerIsNew,
-                        ),
+                        onFollow: (context, link, {required explorerIsNew}) {
+                          _startSyncOnOpen(
+                            context.read<SyncCubit>(),
+                            link.driveId,
+                          );
+                          followRouteLink(
+                            link,
+                            driveDetail: context.read<DriveDetailCubit>(),
+                            drives: context.read<DrivesCubit>(),
+                            explorerIsNew: explorerIsNew,
+                          );
+                        },
                         child: AppShell(
                           page: DriveDetailPage(
                             context: navigatorKey.currentContext!,
@@ -679,7 +713,27 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     );
   }
 
+  /// Starts the sync of a drive a visitor just opened, once, now that there
+  /// is a `SyncCubit` to start it on.
+  ///
+  /// `startSyncForDrive` marks the drive as syncing before its first await,
+  /// so an explorer cubit built right after finds a sync touching its drive
+  /// and waits on the loading panel rather than showing "Drive Not Synced".
+  /// Called from the explorer's cubit factory, which covers an explorer built
+  /// fresh for the drive, and from the route-link follower, which covers an
+  /// explorer that was already open on another drive.
+  void _startSyncOnOpen(SyncCubit syncCubit, String driveId) {
+    if (_syncOnOpenDriveId != driveId) {
+      return;
+    }
+
+    _syncOnOpenDriveId = null;
+    unawaited(syncCubit.startSyncForDrive(driveId: driveId));
+  }
+
   DriveDetailCubit _driveDetailCubit(BuildContext context, String driveId) {
+    _startSyncOnOpen(context.read<SyncCubit>(), driveId);
+
     return DriveDetailCubit(
       driveRepository: DriveRepository(
         driveDao: context.read<DriveDao>(),
@@ -1019,6 +1073,103 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingFolderId = null;
   }
 
+  /// Shows a drive somebody opened from the sign-in screen, without a profile.
+  ///
+  /// The drive row is already written by the time this is called, so the
+  /// explorer finds it and no attach prompt opens. The key, for a private
+  /// drive, goes into the address bar the way a private share link carries
+  /// it, so a reload reopens the drive; it never leaves the browser.
+  void openDriveAsVisitor({
+    required String driveId,
+    String? folderId,
+    DriveKey? driveKey,
+    String? rawDriveKey,
+  }) {
+    signingIn = false;
+    gettingStarted = false;
+    showingDrivesList = false;
+
+    this.driveId = driveId;
+    driveName = null;
+    driveFolderId = folderId;
+    _pendingFolderDriveId = folderId == null ? null : driveId;
+    _pendingFolderId = folderId;
+    _routeLink = RouteLink(driveId: driveId, folderId: folderId);
+
+    sharedDriveKey = driveKey;
+    sharedRawDriveKey = rawDriveKey;
+
+    _syncOnOpenDriveId = driveId;
+    _keyPromptedForDriveId = null;
+
+    notifyListeners();
+  }
+
+  /// Follows a link that is not a drive - a shared file, a raw transaction -
+  /// from the sign-in screen. Both pages render for a visitor already.
+  Future<void> openRouteAsVisitor(AppRoutePath route) async {
+    await setNewRoutePath(route);
+    notifyListeners();
+  }
+
+  /// Takes a visitor to the sign-in page and keeps the drive they were
+  /// viewing, so a login lands back on it.
+  ///
+  /// The "Log in" button used to log out instead, which runs [clearState] and
+  /// drops the drive; the visitor who signed in to keep what they were
+  /// looking at landed on the drives list without it.
+  void signInKeepingDrive() {
+    signingIn = true;
+    gettingStarted = false;
+    showingDrivesList = false;
+    notifyListeners();
+  }
+
+  /// A visitor's private drive needs its key in memory for anything to
+  /// decrypt. The key is there when the drive was just opened or attached; it
+  /// is not after a reload. Then the address bar may still carry it, and if
+  /// it does not, the reader is asked for it once. Cancelling that lands on
+  /// the sign-in screen, because the explorer has nothing it can show.
+  Future<void> _ensureVisitorHasDriveKey(
+    BuildContext context,
+    Drive drive,
+  ) async {
+    if (!drive.isPrivate ||
+        _keyPromptedForDriveId == drive.id ||
+        context.read<ProfileCubit>().state is ProfileLoggedIn) {
+      return;
+    }
+
+    final driveDao = context.read<DriveDao>();
+
+    if (await driveDao.getDriveKeyFromMemory(drive.id) != null) {
+      return;
+    }
+
+    final linkKey = sharedDriveKey;
+
+    if (linkKey != null) {
+      await driveDao.putDriveKeyInMemory(driveID: drive.id, driveKey: linkKey);
+      return;
+    }
+
+    if (!context.mounted || _keyPromptedForDriveId == drive.id) {
+      return;
+    }
+
+    _keyPromptedForDriveId = drive.id;
+
+    await attachDrive(context: context, driveId: drive.id);
+
+    // Attaching put the key in memory and started the drive's sync, or the
+    // prompt was cancelled and the explorer has nothing it can show: the same
+    // landing the attach prompt a link opened uses.
+    landAfterAttachPrompt(
+      attached: await driveDao.getDriveKeyFromMemory(drive.id) != null,
+      loggedIn: false,
+    );
+  }
+
   void clearState() {
     signingIn = true;
     gettingStarted = false;
@@ -1029,6 +1180,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingFolderDriveId = null;
     _pendingFolderId = null;
     _routeLink = null;
+    _syncOnOpenDriveId = null;
+    _keyPromptedForDriveId = null;
     _pendingInfoDriveId = null;
     _dropPendingUpload();
     // A search somebody ran before logging out is not an instruction to the

@@ -1209,19 +1209,22 @@ class EntityActionsMenu extends StatelessWidget {
           ),
         ),
       ],
-      ArDriveDropdownItem(
-        onClick: () {
-          final bloc = context.read<DriveDetailCubit>();
+      // The gateway serves a private file's encrypted bytes, so only a public
+      // drive's files open in a new window - as the row menu already decides.
+      if (drive == null || drive!.isPublic)
+        ArDriveDropdownItem(
+          onClick: () {
+            final bloc = context.read<DriveDetailCubit>();
 
-          bloc.launchPreview((item as FileDataTableItem).dataTxId);
-        },
-        content: _buildItem(
-          appLocalizationsOf(context).preview,
-          ArDriveIcons.newWindow(
-            size: defaultIconSize,
+            bloc.launchPreview((item as FileDataTableItem).dataTxId);
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).preview,
+            ArDriveIcons.newWindow(
+              size: defaultIconSize,
+            ),
           ),
         ),
-      ),
       if (isOwner && !isFileRevision && item is FileDataTableItem) ...[
         ArDriveDropdownItem(
           onClick: () async {

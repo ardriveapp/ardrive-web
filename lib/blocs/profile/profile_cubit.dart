@@ -146,6 +146,11 @@ class ProfileCubit extends Cubit<ProfileState> {
   ) async {
     emit(ProfileLoggingIn());
 
+    // Before anyone hears the user is in: the first sync after login reads a
+    // private drive's key from its row, and a drive opened as a visitor has
+    // none there yet.
+    await _persistVisitorDriveKeys(user);
+
     emit(
       ProfileLoggedIn(
         // The balance refresh that follows login can finish before the
@@ -154,6 +159,31 @@ class ProfileCubit extends Cubit<ProfileState> {
         useTurbo: _turboUploadService.useTurboUpload,
       ),
     );
+  }
+
+  /// A private drive opened before signing in holds its key in memory only.
+  /// Now that there is a profile key, the row gets an encrypted copy, so the
+  /// drive survives a reload and the sync finds the key where it looks for a
+  /// signed-in user. See [DriveDao.persistInMemoryDriveKeys]. Never throws:
+  /// a login must not fail over a drive somebody looked at beforehand.
+  Future<void> _persistVisitorDriveKeys(User user) async {
+    try {
+      final written =
+          await _db.driveDao.persistInMemoryDriveKeys(user.cipherKey);
+
+      if (written.isNotEmpty) {
+        logger.i(
+          'Stored the keys of ${written.length} drive(s) opened before '
+          'signing in',
+        );
+      }
+    } catch (e, stackTrace) {
+      logger.e(
+        'Failed to store the keys of drives opened before signing in',
+        e,
+        stackTrace,
+      );
+    }
   }
 
   Future<void> refreshBalance() async {

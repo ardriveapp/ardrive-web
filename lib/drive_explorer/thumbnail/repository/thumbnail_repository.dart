@@ -81,8 +81,7 @@ class ThumbnailRepository {
       throw Exception('Data transaction not found');
     }
 
-    final driveKey = await _driveDao.getDriveKey(
-        fileDataTableItem.driveId, _arDriveAuth.currentUser.cipherKey);
+    final driveKey = await _driveKeyFor(fileDataTableItem.driveId);
 
     return await _arDriveDownloader.downloadToMemory(
       txId: thumbnailTxId,
@@ -95,6 +94,19 @@ class ThumbnailRepository {
       cipherIvString: dataTx.getTag(EntityTag.cipherIv),
       fileKey: await _driveDao.getFileKey(fileDataTableItem.id, driveKey!.key),
     );
+  }
+
+  /// The drive key for a thumbnail. A visitor has no profile, so their key is
+  /// in the memory vault, which is where download and preview already look.
+  Future<DriveKey?> _driveKeyFor(String driveId) async {
+    try {
+      return await _driveDao.getDriveKey(
+        driveId,
+        _arDriveAuth.currentUser.cipherKey,
+      );
+    } on AuthenticationUserIsNotLoggedInException {
+      return _driveDao.getDriveKeyFromMemory(driveId);
+    }
   }
 
   Future<void> uploadThumbnail({

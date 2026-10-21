@@ -7,6 +7,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../misc/resources.dart';
 import '../../components/login_card.dart';
+import 'package:ardrive/authentication/components/lined_text_divider.dart';
+import 'package:ardrive/authentication/login/views/modals/open_drive_modal.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 
 class LandingView extends StatefulWidget {
   const LandingView({
@@ -79,7 +82,35 @@ class _LandingViewState extends State<LandingView> {
                         .read<LoginBloc>()
                         .add(const SelectLoginFlow(existingUser: false));
                   }),
-              const SizedBox(height: 72),
+              const SizedBox(height: 40),
+              const LinedTextDivider(),
+              const SizedBox(height: 24),
+              Text(
+                appLocalizationsOf(context).openDriveLandingQuestion,
+                textAlign: TextAlign.center,
+                style: typography.paragraphNormal(
+                  color: colorTokens.textLow,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Center(
+                child: ArDriveClickArea(
+                  child: GestureDetector(
+                    key: const Key('openDriveLandingLink'),
+                    onTap: () => showOpenDriveDialog(context),
+                    child: Text(
+                      appLocalizationsOf(context).openDriveLandingAction,
+                      textAlign: TextAlign.center,
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textLink,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
               AppVersionWidget(
                 color: colorTokens.textLow,
               ),

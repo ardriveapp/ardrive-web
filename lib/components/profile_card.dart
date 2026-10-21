@@ -42,6 +42,7 @@ import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:ardrive/pages/app_router_delegate.dart';
 
 class ProfileCard extends StatefulWidget {
   const ProfileCard({
@@ -80,16 +81,25 @@ class _ProfileCardState extends State<ProfileCard> {
   }
 
   Widget _notLoggedInView(BuildContext context) {
-    return InkWell(
-      onTap: () {
+    return ArDriveButtonNew(
+      key: const Key('profileCardLogin'),
+      text: appLocalizationsOf(context).login,
+      typography: ArDriveTypographyNew.of(context),
+      variant: ButtonVariant.outline,
+      maxWidth: 100,
+      onPressed: () {
+        // A visitor looking at a drive keeps it: the sign-in page shows, and
+        // the router lands back on this drive afterwards. Logging out instead
+        // ran `clearState`, dropped the drive, and landed on the drives list.
+        final router = context.read<AppRouterDelegate>();
+
+        if (router.tryingToViewDrive) {
+          router.signInKeepingDrive();
+          return;
+        }
+
         context.read<ProfileCubit>().logoutProfile();
       },
-      child: ArDriveButtonNew(
-        text: appLocalizationsOf(context).login,
-        typography: ArDriveTypographyNew.of(context),
-        variant: ButtonVariant.outline,
-        maxWidth: 100,
-      ),
     );
   }
 

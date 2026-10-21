@@ -15,6 +15,7 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ardrive/blocs/blocs.dart';
 
 /// The bar's own row, which is all of it. Nothing about a sync is laid out
 /// here: the indicator in the row is the whole of what a sync costs the
@@ -890,6 +891,13 @@ class _SyncButtonMenu extends StatelessWidget {
   final Widget child;
 
   @override
+  bool _canShowDrivesList(BuildContext context) {
+    final profile = context.read<ProfileCubit?>();
+
+    return profile == null ||
+        AppRouterDelegate.canShowDrivesList(profile.state);
+  }
+
   Widget build(BuildContext context) {
     final status = this.status;
     final iconColor = ArDriveTheme.of(context).themeData.colors.themeFgDefault;
@@ -918,13 +926,19 @@ class _SyncButtonMenu extends StatelessWidget {
             icon: ArDriveIcons.x(color: iconColor),
           ),
         ),
-      ArDriveDropdownItem(
-        onClick: () => context.read<AppRouterDelegate>().showDrivesList(),
-        content: ArDriveDropdownItemTile(
-          name: appLocalizationsOf(context).yourDrives,
-          icon: ArDriveIcons.arrowRightOutline(color: iconColor),
+      // Only where the list can actually be shown. For a visitor the router
+      // refuses it, so the item changed the address bar and nothing else - the
+      // same dead control the sidebar row and the breadcrumb already avoid.
+      // Read as nullable: the app always provides the cubit, and a tree that
+      // does not (a widget test of this menu alone) keeps the item.
+      if (_canShowDrivesList(context))
+        ArDriveDropdownItem(
+          onClick: () => context.read<AppRouterDelegate>().showDrivesList(),
+          content: ArDriveDropdownItemTile(
+            name: appLocalizationsOf(context).yourDrives,
+            icon: ArDriveIcons.arrowRightOutline(color: iconColor),
+          ),
         ),
-      ),
     ];
 
     // The dropdown would otherwise size itself as `items.length * 48` and cut
