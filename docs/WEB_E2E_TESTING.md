@@ -136,9 +136,10 @@ The app asks for the password each time the browser starts, so after a
 restart use `unlock`. Check the last screenshot,
 `~/.cache/ardrive-e2e/shots/login-4-done.png`: it should show the drive list.
 
-A new profile has synced nothing. *All drives* shows a banner with a
-**Sync All Drives** button: use it once (about two minutes) before opening a
-drive.
+A new profile has synced nothing. *Your drives* shows a red **Sync all
+drives** button at the top right (the main half of a split button; the
+chevron opens the other sync actions): use it once (about two minutes) before
+opening a drive.
 
 **Test drives.** Open them by double-clicking their row in *All drives*.
 - **New Test Drive** (public): use it for anything public-only, such as
@@ -162,8 +163,12 @@ decide the next step.
   `await page.mouse.click(x, y)` at coordinates read off the last screenshot.
   The viewport is always 1440×900. Menu items need a hover before the click.
 - **Labels.** `labels()` lists the accessibility labels Flutter exposes, with
-  their centres, and `clickLabel(text)` clicks one. Many widgets have no
-  label, so the screenshot is the source of truth.
+  their centres, and `clickLabel(text)` clicks one. They exist only once
+  Flutter's semantics tree is on, and it starts off, so by default
+  `labels()` returns nothing and the screenshot is the source of truth. To
+  check what a screen reader hears, turn it on with
+  `await page.evaluate(() => document.querySelector('flt-semantics-placeholder')?.click())`,
+  and do that last: see *Accessibility on* below.
 - **Choosing files.** `queueFiles([paths])` sets what the next file chooser
   receives. Use it before the click that opens the chooser. Files of any
   size work.
@@ -336,7 +341,7 @@ should see. Keep it short: it's the floor, not every case.
 | 4 | Create a folder in a test drive | It appears in the list |
 | 5 | Upload a file under 100 KiB with Turbo | The dialog says it's free; the file appears |
 | 6 | Upload a file over 105 KiB | The dialog shows both payment cards, each with its cost and balance. On Turbo the guard blocks it: *Problem with Upload*, a `BLOCKED` line |
-| 7 | Wallet-paid upload through the fake gateway, failure rate 0.3 (*Failing on purpose*) | *Problem with Upload*; Re-Upload until it completes; `chaos_report.py` says OK. Closing with unfinished wallet-paid files asks to confirm |
+| 7 | Wallet-paid upload through the fake gateway: failure rate 1.0 to bring up the problem dialog, then 0.3 for the Re-Uploads (*Failing on purpose*; at 0.3 alone the uploader often retries its way through with no dialog) | *Problem with Upload*; Re-Upload until it completes; `chaos_report.py` says OK. Closing with unfinished wallet-paid files asks to confirm |
 | 8 | Upload a file the wallet can't afford (72 MB with the test wallet) | The wallet card says *Not enough AR*; Upload is disabled; no keep-tab-open warning |
 | 9 | Preview an image and a PDF, then download a private file | The previews render; *Download finished!*, and the file is in `$E2E_DIR/downloads/` with the bytes that were uploaded (`cmp` it with the original) |
 | 10 | Copy a file's share link and open it | The shared file page shows the file |
@@ -361,8 +366,8 @@ The checklist grows from real failures, not guesses.
 
 - **The sidebar highlight** can stay on a different drive than the one shown.
 - **A file name the drive already has** brings up *A file with this name
-  already exists* (Cancel, Skip or Upload as new version) before the upload
-  dialog. Earlier test runs leave
+  already exists* before the upload dialog: Cancel or Upload as new version,
+  plus Skip when several files are being uploaded. Earlier test runs leave
   names behind, so read the screenshot before clicking Upload.
 - **`launch.js` reads which Turbo services are real** from the checkout it
   runs in, not the build under test. Keep the checkout current with `dev`.
@@ -377,9 +382,11 @@ The checklist grows from real failures, not guesses.
   restart `launch.js` if it happens.
 - **On WSL, run the tools from the Linux file system.** Loading
   `playwright-core` from a checkout under `/mnt/c` takes from 10 s to about a
-  minute, every step; copy `tool/web_e2e` (with its `node_modules`) to your
-  home directory and run it from there. `launch.js` still reads the Turbo
-  services from the copy, so refresh it when `dev` moves.
+  minute, every step. Copy `tool/web_e2e` (with its `node_modules`) and
+  `assets/config` into one folder in your home directory, keeping their
+  places (`<dir>/tool/web_e2e`, `<dir>/assets/config`: `launch.js` reads the
+  Turbo services from `../../assets/config`), and run it from there. Refresh
+  the copy when `dev` moves.
 - **Two launchers** can't share the profile. The second fails with
   `SingletonLock: File exists`. Stop the first.
 - **Accessibility on.** Turning on Flutter's accessibility mode changes what
