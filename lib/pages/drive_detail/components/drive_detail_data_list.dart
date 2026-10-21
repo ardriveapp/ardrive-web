@@ -38,7 +38,8 @@ Widget _buildDataList(
     isMultiselecting: state.multiselect,
     columnVisibility: state.columnVisibility,
     emptyState: emptyState,
-    selectedPage: state.selectedPage,
+    revealSelectedItem: state.revealSelectedItem,
+    rowsPerPage: state.rowsPerPage,
   );
 }
 
@@ -51,7 +52,8 @@ Widget _buildDataListContent(
   required bool isMultiselecting,
   required Map<int, bool> columnVisibility,
   required Widget emptyState,
-  int? selectedPage,
+  bool revealSelectedItem = false,
+  required int rowsPerPage,
 }) {
   return LayoutBuilder(builder: (context, constraints) {
     final typography = ArDriveTypographyNew.of(context);
@@ -142,7 +144,37 @@ Widget _buildDataListContent(
         final table = ArDriveDataTable<ArDriveDataTableItem>(
           key: ValueKey(
               '${folder.id}-${forceRebuildKey.toString()}${columns.length}-${hideState.toString()}'),
-          initialPage: selectedPage,
+          // Back where the reader was in this folder - after a rename or a
+          // sync rebuilds the table as much as after leaving and returning -
+          // unless an item from elsewhere, such as a search result, is to be
+          // shown.
+          initialPage:
+              context.read<DriveDetailCubit>().pageForFolder(folder.id),
+          initialScrollOffset:
+              context.read<DriveDetailCubit>().scrollOffsetForFolder(folder.id),
+          revealRow: revealSelectedItem ? selectedItem : null,
+          onChangePage: (page) =>
+              context.read<DriveDetailCubit>().rememberPage(folder.id, page),
+          onScrollOffsetSaved: (offset) => context
+              .read<DriveDetailCubit>()
+              .rememberScrollOffset(folder.id, offset),
+          // And in the order the reader picked, for the same reason.
+          initialSortColumn:
+              context.read<DriveDetailCubit>().sortForFolder(folder.id)?.column,
+          initialSortOrder:
+              context.read<DriveDetailCubit>().sortForFolder(folder.id)?.order,
+          onSortChanged: (column, order) => context
+              .read<DriveDetailCubit>()
+              .rememberSort(folder.id, column, order),
+          rowsPerPage: rowsPerPage,
+          rowsPerPageOptions: DriveDetailCubit.rowsPerPageOptions,
+          onRowsPerPageChanged: (rowsPerPage) =>
+              context.read<DriveDetailCubit>().setRowsPerPage(rowsPerPage),
+          pageRangeText: (first, last, total) =>
+              appLocalizationsOf(context).tablePageRange(first, last, total),
+          previousPageText: appLocalizationsOf(context).tablePreviousPage,
+          nextPageText: appLocalizationsOf(context).tableNextPage,
+          pageText: (page) => appLocalizationsOf(context).tablePageNumber(page),
           // The sync half of this lock is stated out loud rather than left as
           // a silent no-op - see [SyncingDriveNotice], which is given the
           // same condition so the two cannot drift apart.
@@ -154,8 +186,6 @@ Widget _buildDataListContent(
               ) ||
               !context.watch<ActivityTracker>().isMultiSelectEnabled,
           rowsPerPageText: appLocalizationsOf(context).rowsPerPage,
-          maxItemsPerPage: 100,
-          pageItemsDivisorFactor: 25,
           onSelectedRows: (boxes) {
             final bloc = context.read<DriveDetailCubit>();
 
@@ -182,6 +212,7 @@ Widget _buildDataListContent(
           forceDisableMultiSelect:
               context.read<DriveDetailCubit>().forceDisableMultiselect,
           columns: columns,
+          trailingWidth: DriveExplorerItemTileTrailing.widthFor,
           trailing: (file) => isMultiselecting
               ? const SizedBox.shrink()
               : DriveExplorerItemTileTrailing(

@@ -68,7 +68,6 @@ void main() {
           state: state,
           onOpenDrive: (_) {},
           onTryAgain: () {},
-          onSyncAllDrives: () {},
           onSyncChanged: onSyncChanged ?? () {},
           onRetryFailed: onRetryFailed,
         ),

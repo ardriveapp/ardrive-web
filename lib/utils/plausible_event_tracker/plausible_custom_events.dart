@@ -18,6 +18,8 @@ enum PlausibleCustomEvent {
   /// Welcome to ArDrive Page Events
   clickSignUp,
   clickLogin,
+  clickOpenDriveAsVisitor,
+  openDriveAsVisitor,
 
   /// SignUp Page Events
   clickContinueWithArconnectButton,
@@ -109,6 +111,10 @@ extension PlausibleCustomEventNames on PlausibleCustomEvent {
         return 'clickSignUp';
       case PlausibleCustomEvent.clickLogin:
         return 'clickLogin';
+      case PlausibleCustomEvent.clickOpenDriveAsVisitor:
+        return 'clickOpenDriveAsVisitor';
+      case PlausibleCustomEvent.openDriveAsVisitor:
+        return 'openDriveAsVisitor';
 
       /// SignUp Page Events
       case PlausibleCustomEvent.clickContinueWithArconnectButton:

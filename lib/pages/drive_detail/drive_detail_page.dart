@@ -24,13 +24,13 @@ import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/keyboard_handler.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/pin_file_dialog.dart';
+import 'package:ardrive/components/private_drive_marks.dart';
 import 'package:ardrive/components/prompt_to_snapshot_dialog.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
-import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -51,8 +51,12 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/shared/components/plausible_page_view_wrapper.dart';
 import 'package:ardrive/sharing/sharing_file_listener.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
+import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
+import 'package:ardrive/utils/file_type_label.dart';
+import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/has_arns_name.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -99,6 +103,44 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   bool checkboxEnabled = false;
   final _scrollController = ScrollController();
 
+  /// How far down the phone's list each folder visited was scrolled.
+  ///
+  /// The list is one widget for every folder, so without this a folder opened
+  /// from halfway down its parent opened halfway down too, and going back to
+  /// the parent started it from wherever the child had been left. A folder
+  /// now opens at its top, and the one gone back to opens where it was.
+  final _mobileScrollOffsets = <String, double>{};
+  String? _mobileFolderId;
+
+  void _onMobileFolderShown(String folderId) {
+    if (_mobileFolderId == folderId) {
+      return;
+    }
+
+    final previous = _mobileFolderId;
+    if (previous != null && _scrollController.hasClients) {
+      _mobileScrollOffsets[previous] = _scrollController.offset;
+    }
+    _mobileFolderId = folderId;
+
+    final target = _mobileScrollOffsets[folderId] ?? 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) {
+        return;
+      }
+      final position = _scrollController.position;
+      _scrollController.jumpTo(
+        target.clamp(position.minScrollExtent, position.maxScrollExtent),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -143,10 +185,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                 final cubit = context.read<DriveDetailCubit>();
 
                 // Don't re-trigger changeDrive if we're already viewing/loading
-                // this drive — UNLESS the drive was not found (it may have
-                // been attached since we last checked).
+                // this drive — UNLESS nothing of it is on screen: not found,
+                // or the no-drives screens a visitor gets while the drive a
+                // link named is being attached. In either case it may have
+                // been attached since we last checked.
+                final showingNoDrive = cubit.state is DriveDetailLoadNotFound ||
+                    cubit.state is DriveDetailLoadEmpty ||
+                    cubit.state is DriveDetailDrivesUnavailable;
                 if (cubit.currentDriveId == state.selectedDriveId &&
-                    cubit.state is! DriveDetailLoadNotFound) {
+                    !showingNoDrive) {
                   return;
                 }
 
@@ -539,6 +586,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                       .currentDrive.rootFolderId,
                                   path: driveDetailState.pathSegments,
                                   driveName: driveDetailState.currentDrive.name,
+                                  isPrivate:
+                                      driveDetailState.currentDrive.isPrivate,
                                 ),
                                 const Spacer(),
                                 if (driveDetailState.multiselect &&
@@ -677,21 +726,26 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                               ),
                                             ),
                                           ],
-                                          ArDriveDropdownItem(
-                                            onClick: () {
-                                              promptToCreateSnapshot(
-                                                  context,
-                                                  driveDetailState
-                                                      .currentDrive);
-                                            },
-                                            content: _buildItem(
-                                              appLocalizationsOf(context)
-                                                  .createSnapshot,
-                                              ArDriveIcons.iconCreateSnapshot(
-                                                size: defaultIconSize,
+                                          // Snapshots are signed by the
+                                          // owner's wallet; the mobile menu
+                                          // and the row menu already hide
+                                          // this from everyone else.
+                                          if (isDriveOwner)
+                                            ArDriveDropdownItem(
+                                              onClick: () {
+                                                promptToCreateSnapshot(
+                                                    context,
+                                                    driveDetailState
+                                                        .currentDrive);
+                                              },
+                                              content: _buildItem(
+                                                appLocalizationsOf(context)
+                                                    .createSnapshot,
+                                                ArDriveIcons.iconCreateSnapshot(
+                                                  size: defaultIconSize,
+                                                ),
                                               ),
                                             ),
-                                          ),
                                           ArDriveDropdownItem(
                                             onClick: isSyncing
                                                 ? null
@@ -718,16 +772,24 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                           ArDriveDropdownItem(
                                             onClick: isSyncing
                                                 ? null
-                                                : () {
-                                                    context
-                                                        .read<SyncCubit>()
-                                                        .startSyncForDrive(
-                                                          driveId:
-                                                              driveDetailState
-                                                                  .currentDrive
-                                                                  .id,
-                                                          deepSync: true,
-                                                        );
+                                                : () async {
+                                                    final syncCubit = context
+                                                        .read<SyncCubit>();
+                                                    final drive =
+                                                        driveDetailState
+                                                            .currentDrive;
+                                                    if (!await confirmFullResync(
+                                                      context,
+                                                      FullResyncScope.drive(
+                                                        drive.name,
+                                                      ),
+                                                    )) {
+                                                      return;
+                                                    }
+                                                    syncCubit.startSyncForDrive(
+                                                      driveId: drive.id,
+                                                      deepSync: true,
+                                                    );
                                                   },
                                             content: ArDriveDropdownItemTile(
                                               name: appLocalizationsOf(context)
@@ -879,6 +941,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                   .currentDrive.id,
                                               parentFolderId: driveDetailState
                                                   .folderInView.folder.id,
+                                              folderName: driveDetailState
+                                                  .folderInView.folder.name,
+                                              contentsStillArriving:
+                                                  driveDetailState
+                                                      .contentsStillArriving,
                                               promptToAddFiles: driveDetailState
                                                   .hasWritePermissions,
                                               isRootFolder: driveDetailState
@@ -901,6 +968,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 driveId: driveDetailState.currentDrive.id,
                                 parentFolderId:
                                     driveDetailState.folderInView.folder.id,
+                                folderName:
+                                    driveDetailState.folderInView.folder.name,
+                                contentsStillArriving:
+                                    driveDetailState.contentsStillArriving,
                                 promptToAddFiles:
                                     driveDetailState.hasWritePermissions,
                                 isRootFolder: driveDetailState.folderInView
@@ -1076,6 +1147,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   ) {
     final isShowingHiddenFiles = globalHideState is ShowingHiddenItems;
 
+    _onMobileFolderShown(state.folderInView.folder.id);
+
     final List<ArDriveDataTableItem> filteredItems;
 
     if (isShowingHiddenFiles) {
@@ -1098,6 +1171,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               Flexible(
                 child: MobileFolderNavigation(
                   driveName: state.currentDrive.name,
+                  isPrivate: state.currentDrive.isPrivate,
                   path: state.pathSegments,
                   isShowingHiddenFiles: isShowingHiddenFiles,
                 ),
@@ -1137,6 +1211,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                   promptToAddFiles: state.hasWritePermissions,
                   driveId: state.currentDrive.id,
                   parentFolderId: state.folderInView.folder.id,
+                  folderName: state.folderInView.folder.name,
+                  contentsStillArriving: state.contentsStillArriving,
                   isRootFolder:
                       state.folderInView.folder.parentFolderId == null,
                 ),
@@ -1245,7 +1321,7 @@ class ArDriveItemListTile extends StatelessWidget {
                       ],
                       Flexible(
                         child: Text(
-                          'Last updated: ${yMMdDateFormatter.format(item.lastUpdated)}',
+                          'Last updated: ${formatDate(item.lastUpdated)}',
                           style: ArDriveTypography.body.xSmallRegular(
                             color: ArDriveTheme.of(context)
                                 .themeData
@@ -1278,12 +1354,14 @@ class MobileFolderNavigation extends StatelessWidget {
   final List<BreadCrumbRowInfo> path;
   final String driveName;
   final bool isShowingHiddenFiles;
+  final bool isPrivate;
 
   const MobileFolderNavigation({
     super.key,
     required this.path,
     required this.driveName,
     required this.isShowingHiddenFiles,
+    required this.isPrivate,
   });
 
   @override
@@ -1330,11 +1408,26 @@ class MobileFolderNavigation extends StatelessWidget {
                         padding: path.isEmpty
                             ? const EdgeInsets.only(left: 16, top: 6, bottom: 6)
                             : EdgeInsets.zero,
-                        child: Text(
-                          _pathToName(
-                            path.isEmpty ? driveName : path.last.text,
-                          ),
-                          style: ArDriveTypography.body.buttonNormalBold(),
+                        child: Row(
+                          children: [
+                            // On every folder, not only the root: the name
+                            // shown below the root is the folder's, so the
+                            // lock is the only thing here that says whose.
+                            if (isPrivate)
+                              const Padding(
+                                padding: EdgeInsets.only(right: 8),
+                                child: PrivateDriveLock(),
+                              ),
+                            Expanded(
+                              child: Text(
+                                _pathToName(
+                                  path.isEmpty ? driveName : path.last.text,
+                                ),
+                                style:
+                                    ArDriveTypography.body.buttonNormalBold(),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -1420,11 +1513,19 @@ class MobileFolderNavigation extends StatelessWidget {
                       ArDriveDropdownItem(
                         onClick: isSyncing
                             ? null
-                            : () {
-                                context.read<SyncCubit>().startSyncForDrive(
-                                      driveId: state.currentDrive.id,
-                                      deepSync: true,
-                                    );
+                            : () async {
+                                final syncCubit = context.read<SyncCubit>();
+                                final drive = state.currentDrive;
+                                if (!await confirmFullResync(
+                                  context,
+                                  FullResyncScope.drive(drive.name),
+                                )) {
+                                  return;
+                                }
+                                syncCubit.startSyncForDrive(
+                                  driveId: drive.id,
+                                  deepSync: true,
+                                );
                               },
                         content: ArDriveDropdownItemTile(
                           name: appLocalizationsOf(context).deepSyncThisDrive,
@@ -1705,7 +1806,7 @@ class ArDriveGridItem extends StatelessWidget {
                               // last updated
                               Flexible(
                                 child: Text(
-                                  '${appLocalizationsOf(context).lastUpdated}: ${yMMdDateFormatter.format(item.lastUpdated)}',
+                                  '${appLocalizationsOf(context).lastUpdated}: ${formatDate(item.lastUpdated)}',
                                   style: ArDriveTypography.body
                                       .xSmallRegular()
                                       .copyWith(

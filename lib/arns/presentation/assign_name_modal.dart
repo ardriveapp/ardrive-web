@@ -383,13 +383,13 @@ class _AssignArNSNameModalState extends State<_AssignArNSNameModal> {
 
   String _getTitle(AssignNameState state) {
     if (state is AssignNameEmptyState) {
-      return 'Add ArNS Name';
+      return 'Add ArNS name';
     } else if (state is LoadingNames) {
-      return widget.customLoadingText ?? 'Loading ArNS Names';
+      return widget.customLoadingText ?? 'Loading ArNS names';
     } else if (state is ConfirmingSelection) {
-      return 'Assigning ArNS Name';
+      return 'Assigning ArNS name';
     } else {
-      return widget.customNameSelectionTitle ?? 'Assign ArNS Name';
+      return widget.customNameSelectionTitle ?? 'Assign ArNS name';
     }
   }
 

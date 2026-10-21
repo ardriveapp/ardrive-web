@@ -1,0 +1,384 @@
+{
+  "name": "core-private",
+  "description": "A private drive state built by ardrive-core-js's producer.",
+  "body": "core-private.bin",
+  "transaction": {
+    "id": "CoreJsDriveStateFixtureTransactionId0000000",
+    "owner": "CoreJsDriveStateFixtureOwner000000000000000",
+    "tags": [
+      {
+        "name": "Entity-Type",
+        "value": "drive-state"
+      },
+      {
+        "name": "Drive-Id",
+        "value": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455"
+      },
+      {
+        "name": "Drive-State-Id",
+        "value": "7c1d2e3f-9999-4000-8000-000000000000"
+      },
+      {
+        "name": "State-Version",
+        "value": "0.2"
+      },
+      {
+        "name": "Content-Type",
+        "value": "application/octet-stream"
+      },
+      {
+        "name": "Block-Start",
+        "value": "0"
+      },
+      {
+        "name": "Block-End",
+        "value": "1600000"
+      },
+      {
+        "name": "Data-Start",
+        "value": "0"
+      },
+      {
+        "name": "Data-End",
+        "value": "1600000"
+      },
+      {
+        "name": "Entity-Count",
+        "value": "6"
+      },
+      {
+        "name": "Cipher",
+        "value": "AES256-GCM"
+      },
+      {
+        "name": "Cipher-IV",
+        "value": "-----___CQgHBgUE"
+      },
+      {
+        "name": "ArFS",
+        "value": "0.15"
+      },
+      {
+        "name": "App-Name",
+        "value": "ArDrive-Core"
+      },
+      {
+        "name": "App-Version",
+        "value": "cross-test"
+      },
+      {
+        "name": "Unix-Time",
+        "value": "1792454400"
+      }
+    ]
+  },
+  "reader": {
+    "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+    "ownerAddress": "CoreJsDriveStateFixtureOwner000000000000000",
+    "privacy": "private",
+    "driveKey": "BRIfLDlGU2BteoeUoa67yNXi7_wJFiMwPUpXZHF-i5g",
+    "syncedToBlock": 0
+  },
+  "payloadSha256": "ed726d7aa876e857c9d981c321a36d1a92a8d5945b5b2c3ec1e4ebd0d01cc276",
+  "expected": {
+    "outcome": "used",
+    "tables": {
+      "meta": [
+        {
+          "version": "0.2",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "ownerAddress": "CoreJsDriveStateFixtureOwner000000000000000",
+          "privacy": "private",
+          "blockStart": 0,
+          "blockEnd": 1600000,
+          "entityCount": 6,
+          "producer": "ArDrive-Core/cross-test"
+        }
+      ],
+      "drives": [
+        {
+          "id": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "rootFolderId": "7c1d2e3f-0000-4000-8000-0000000000aa",
+          "ownerAddress": "CoreJsDriveStateFixtureOwner000000000000000",
+          "name": "Core drive renamed",
+          "privacy": "private",
+          "bundledIn": "CoreJsFixtureTx0000000000000000000000000003",
+          "customJsonMetadata": "{}",
+          "customGQLTags": "[]",
+          "isHidden": 0,
+          "signatureType": "1",
+          "dateCreated": 1700000000,
+          "lastUpdated": 1700000100
+        }
+      ],
+      "folder_entries": [
+        {
+          "id": "7c1d2e3f-0000-4000-8000-0000000000aa",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "Core drive",
+          "parentFolderId": null,
+          "dateCreated": 1700000001,
+          "lastUpdated": 1700000001,
+          "customJsonMetadata": "{}",
+          "customGQLTags": "[]",
+          "isHidden": 0
+        },
+        {
+          "id": "7c1d2e3f-0001-4000-8000-0000000000bb",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "Docs",
+          "parentFolderId": "7c1d2e3f-0000-4000-8000-0000000000aa",
+          "dateCreated": 1700000002,
+          "lastUpdated": 1700000003,
+          "customJsonMetadata": "{}",
+          "customGQLTags": "[]",
+          "isHidden": 1
+        }
+      ],
+      "file_entries": [
+        {
+          "id": "7c1d2e3f-1000-4000-8000-000000000001",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "report.pdf",
+          "parentFolderId": "7c1d2e3f-0001-4000-8000-0000000000bb",
+          "size": 2048,
+          "lastModifiedDate": 1699999999,
+          "dataContentType": "application/pdf",
+          "dataTxId": "CoreJsFixtureData0000000000000000000000001",
+          "licenseTxId": null,
+          "bundledIn": "CoreJsFixtureTx0000000000000000000000000013",
+          "thumbnail": "{\"variants\":[{\"name\":\"thumbnail\",\"txId\":\"CoreJsFixtureThumb000000000000000000000001\",\"size\":10,\"width\":4,\"height\":4}]}",
+          "pinnedDataOwnerAddress": null,
+          "customJsonMetadata": "{\"thumbnail\":{\"variants\":[{\"name\":\"thumbnail\",\"txId\":\"CoreJsFixtureThumb000000000000000000000001\",\"size\":10,\"width\":4,\"height\":4}]},\"assignedNames\":[\"core_report\"]}",
+          "customGQLTags": "[]",
+          "isHidden": 0,
+          "dateCreated": 1700000010,
+          "lastUpdated": 1700000020,
+          "assignedNames": "{\"assignedNames\":[\"core_report\"]}",
+          "fallbackTxId": null,
+          "originalOwner": null,
+          "importSource": null
+        },
+        {
+          "id": "7c1d2e3f-1000-4000-8000-000000000002",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "pinned.jpg",
+          "parentFolderId": "7c1d2e3f-0000-4000-8000-0000000000aa",
+          "size": 99,
+          "lastModifiedDate": 1700000030,
+          "dataContentType": null,
+          "dataTxId": "CoreJsFixturePinnedData00000000000000000002",
+          "licenseTxId": null,
+          "bundledIn": "CoreJsFixtureTx0000000000000000000000000015",
+          "thumbnail": null,
+          "pinnedDataOwnerAddress": "CoreJsFixturePinnedOwner000000000000000000",
+          "customJsonMetadata": "{\"pinnedDataOwner\":\"CoreJsFixturePinnedOwner000000000000000000\"}",
+          "customGQLTags": "[]",
+          "isHidden": 0,
+          "dateCreated": 1700000030,
+          "lastUpdated": 1700000030,
+          "assignedNames": null,
+          "fallbackTxId": null,
+          "originalOwner": null,
+          "importSource": null
+        },
+        {
+          "id": "7c1d2e3f-1000-4000-8000-000000000003",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "imported.txt",
+          "parentFolderId": "7c1d2e3f-0001-4000-8000-0000000000bb",
+          "size": 5,
+          "lastModifiedDate": 1700000040,
+          "dataContentType": null,
+          "dataTxId": "CoreJsFixtureData0000000000000000000000003",
+          "licenseTxId": "CoreJsFixtureLicence000000000000000000003",
+          "bundledIn": "CoreJsFixtureTx0000000000000000000000000017",
+          "thumbnail": null,
+          "pinnedDataOwnerAddress": null,
+          "customJsonMetadata": "{\"fallbackTxId\":\"CoreJsFixtureFallback00000000000000000003\"}",
+          "customGQLTags": "[{\"name\":\"Import-Source\",\"value\":\"arweave\"}]",
+          "isHidden": 0,
+          "dateCreated": 1700000040,
+          "lastUpdated": 1700000040,
+          "assignedNames": null,
+          "fallbackTxId": "CoreJsFixtureFallback00000000000000000003",
+          "originalOwner": null,
+          "importSource": "arweave"
+        }
+      ],
+      "drive_revisions": [
+        {
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "rootFolderId": "7c1d2e3f-0000-4000-8000-0000000000aa",
+          "ownerAddress": "CoreJsDriveStateFixtureOwner000000000000000",
+          "name": "Core drive",
+          "privacy": "private",
+          "metadataTxId": "CoreJsFixtureTx0000000000000000000000000000",
+          "dateCreated": 1700000000,
+          "action": "create",
+          "bundledIn": "CoreJsFixtureTx0000000000000000000000000001",
+          "customJsonMetadata": "{}",
+          "customGQLTags": "[]",
+          "isHidden": 0
+        },
+        {
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "rootFolderId": "7c1d2e3f-0000-4000-8000-0000000000aa",
+          "ownerAddress": "CoreJsDriveStateFixtureOwner000000000000000",
+          "name": "Core drive renamed",
+          "privacy": "private",
+          "metadataTxId": "CoreJsFixtureTx0000000000000000000000000002",
+          "dateCreated": 1700000100,
+          "action": "rename",
+          "bundledIn": "CoreJsFixtureTx0000000000000000000000000003",
+          "customJsonMetadata": "{}",
+          "customGQLTags": "[]",
+          "isHidden": 0
+        }
+      ],
+      "folder_revisions": [
+        {
+          "folderId": "7c1d2e3f-0000-4000-8000-0000000000aa",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "Core drive",
+          "parentFolderId": null,
+          "metadataTxId": "CoreJsFixtureTx0000000000000000000000000004",
+          "dateCreated": 1700000001,
+          "action": "create",
+          "customJsonMetadata": "{}",
+          "customGQLTags": "[]",
+          "isHidden": 0
+        },
+        {
+          "folderId": "7c1d2e3f-0001-4000-8000-0000000000bb",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "Docs",
+          "parentFolderId": "7c1d2e3f-0000-4000-8000-0000000000aa",
+          "metadataTxId": "CoreJsFixtureTx0000000000000000000000000006",
+          "dateCreated": 1700000002,
+          "action": "create",
+          "customJsonMetadata": "{\"topic\":\"q3\"}",
+          "customGQLTags": "[]",
+          "isHidden": 0
+        },
+        {
+          "folderId": "7c1d2e3f-0001-4000-8000-0000000000bb",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "Docs",
+          "parentFolderId": "7c1d2e3f-0000-4000-8000-0000000000aa",
+          "metadataTxId": "CoreJsFixtureTx0000000000000000000000000008",
+          "dateCreated": 1700000003,
+          "action": "hide",
+          "customJsonMetadata": "{}",
+          "customGQLTags": "[]",
+          "isHidden": 1
+        }
+      ],
+      "file_revisions": [
+        {
+          "fileId": "7c1d2e3f-1000-4000-8000-000000000001",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "report.pdf",
+          "parentFolderId": "7c1d2e3f-0000-4000-8000-0000000000aa",
+          "size": 2048,
+          "lastModifiedDate": 1699999999,
+          "dataContentType": "application/pdf",
+          "metadataTxId": "CoreJsFixtureTx0000000000000000000000000010",
+          "dataTxId": "CoreJsFixtureData0000000000000000000000001",
+          "licenseTxId": null,
+          "thumbnail": null,
+          "bundledIn": "CoreJsFixtureTx0000000000000000000000000011",
+          "dateCreated": 1700000010,
+          "customJsonMetadata": "{\"department\":\"finance\"}",
+          "customGQLTags": "[{\"name\":\"Topic\",\"value\":\"reports\"}]",
+          "action": "create",
+          "pinnedDataOwnerAddress": null,
+          "isHidden": 0,
+          "assignedNames": null,
+          "fallbackTxId": null,
+          "originalOwner": null,
+          "importSource": null
+        },
+        {
+          "fileId": "7c1d2e3f-1000-4000-8000-000000000001",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "report.pdf",
+          "parentFolderId": "7c1d2e3f-0001-4000-8000-0000000000bb",
+          "size": 2048,
+          "lastModifiedDate": 1699999999,
+          "dataContentType": "application/pdf",
+          "metadataTxId": "CoreJsFixtureTx0000000000000000000000000012",
+          "dataTxId": "CoreJsFixtureData0000000000000000000000001",
+          "licenseTxId": null,
+          "thumbnail": "{\"variants\":[{\"name\":\"thumbnail\",\"txId\":\"CoreJsFixtureThumb000000000000000000000001\",\"size\":10,\"width\":4,\"height\":4}]}",
+          "bundledIn": "CoreJsFixtureTx0000000000000000000000000013",
+          "dateCreated": 1700000020,
+          "customJsonMetadata": "{\"thumbnail\":{\"variants\":[{\"name\":\"thumbnail\",\"txId\":\"CoreJsFixtureThumb000000000000000000000001\",\"size\":10,\"width\":4,\"height\":4}]},\"assignedNames\":[\"core_report\"]}",
+          "customGQLTags": "[]",
+          "action": "move",
+          "pinnedDataOwnerAddress": null,
+          "isHidden": 0,
+          "assignedNames": "{\"assignedNames\":[\"core_report\"]}",
+          "fallbackTxId": null,
+          "originalOwner": null,
+          "importSource": null
+        },
+        {
+          "fileId": "7c1d2e3f-1000-4000-8000-000000000002",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "pinned.jpg",
+          "parentFolderId": "7c1d2e3f-0000-4000-8000-0000000000aa",
+          "size": 99,
+          "lastModifiedDate": 1700000030,
+          "dataContentType": null,
+          "metadataTxId": "CoreJsFixtureTx0000000000000000000000000014",
+          "dataTxId": "CoreJsFixturePinnedData00000000000000000002",
+          "licenseTxId": null,
+          "thumbnail": null,
+          "bundledIn": "CoreJsFixtureTx0000000000000000000000000015",
+          "dateCreated": 1700000030,
+          "customJsonMetadata": "{\"pinnedDataOwner\":\"CoreJsFixturePinnedOwner000000000000000000\"}",
+          "customGQLTags": "[]",
+          "action": "create",
+          "pinnedDataOwnerAddress": "CoreJsFixturePinnedOwner000000000000000000",
+          "isHidden": 0,
+          "assignedNames": null,
+          "fallbackTxId": null,
+          "originalOwner": null,
+          "importSource": null
+        },
+        {
+          "fileId": "7c1d2e3f-1000-4000-8000-000000000003",
+          "driveId": "7c1d2e3f-4a5b-4c6d-8e7f-001122334455",
+          "name": "imported.txt",
+          "parentFolderId": "7c1d2e3f-0001-4000-8000-0000000000bb",
+          "size": 5,
+          "lastModifiedDate": 1700000040,
+          "dataContentType": null,
+          "metadataTxId": "CoreJsFixtureTx0000000000000000000000000016",
+          "dataTxId": "CoreJsFixtureData0000000000000000000000003",
+          "licenseTxId": "CoreJsFixtureLicence000000000000000000003",
+          "thumbnail": null,
+          "bundledIn": "CoreJsFixtureTx0000000000000000000000000017",
+          "dateCreated": 1700000040,
+          "customJsonMetadata": "{\"fallbackTxId\":\"CoreJsFixtureFallback00000000000000000003\"}",
+          "customGQLTags": "[{\"name\":\"Import-Source\",\"value\":\"arweave\"}]",
+          "action": "bulk-import",
+          "pinnedDataOwnerAddress": null,
+          "isHidden": 0,
+          "assignedNames": null,
+          "fallbackTxId": "CoreJsFixtureFallback00000000000000000003",
+          "originalOwner": null,
+          "importSource": "arweave"
+        }
+      ],
+      "licenses": [],
+      "transaction_statuses": [
+        {
+          "id": "CoreJsFixtureData0000000000000000000000003",
+          "status": "pending"
+        }
+      ]
+    }
+  }
+}

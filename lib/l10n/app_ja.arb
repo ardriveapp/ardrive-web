@@ -6,7 +6,7 @@
   "@addButtonTurbo": {
     "description": "text for add button"
   },
-  "addnewManifestEmphasized": "新規マニフェストを追加する",
+  "addnewManifestEmphasized": "新規デプロイ",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
   },
@@ -38,7 +38,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "マニフェストとは、任意の数のArweaveの取引をわかりやすいパス名にマッピングした特殊なファイルです。",
+  "aManifestIsASpecialKindOfFile": "デプロイは、フォルダーを1つのArweaveアドレスで公開し、各ファイルにわかりやすいパスを割り当てます。Arweaveマニフェストとして保存されます。",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -227,11 +227,11 @@
   "@conflictingFiles": {
     "description": "Files conflict with already existing items"
   },
-  "conflictingManifestFound": "競合するマニフェストが見つかりました",
+  "conflictingManifestFound": "競合するデプロイが見つかりました",
   "@conflictingManifestFound": {
     "description": "There is an on-chain entity with the same name"
   },
-  "conflictingManifestFoundChooseNewName": "同じ名前のマニフェストがすでにこの場所に存在します。続行して、このマニフェストを新しいバージョンとしてアップロードしますか？",
+  "conflictingManifestFoundChooseNewName": "同じ名前のデプロイがすでにこの場所に存在します。続行して、このデプロイを新しいバージョンとしてアップロードしますか？",
   "@conflictingManifestFoundChooseNewName": {
     "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
   },
@@ -345,11 +345,11 @@
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "新規マニフェスト",
+  "createManifest": "新規デプロイ",
   "@createManifest": {
     "description": "To create a manifest"
   },
-  "createManifestEmphasized": "マニフェストを作成する",
+  "createManifestEmphasized": "デプロイを作成する",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
@@ -428,10 +428,6 @@
   "deepResync": "深層再同期",
   "@deepResync": {
     "description": "Deep Sync Button Text"
-  },
-  "deepResyncTooltip": "キャッシュの削除と全ドライブの更新",
-  "@deepResyncTooltip": {
-    "description": "Deep Sync Tooltip Text"
   },
   "detachDrive": "ドライブを切り離しますか？",
   "@detachDrive": {
@@ -589,6 +585,24 @@
   "driveNotSyncedDescription": "このドライブのコンテンツを表示するには同期が必要です。今すぐ同期してファイルとフォルダを表示してください。",
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
+  },
+  "manifestsToUpdate": "{count, plural, =1{更新するデプロイ: 1件} other{更新するデプロイ: {count}件}}",
+  "@manifestsToUpdate": {
+    "description": "Upload options summary: how many manifests the upload will update",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "updateManifests": "デプロイを更新",
+  "@updateManifests": {
+    "description": "Upload options link that opens the choice of manifests to update with the new files"
+  },
+  "uploadAsManifest": "デプロイとしてアップロード",
+  "@uploadAsManifest": {
+    "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
   "syncThisDriveDescription": "このドライブから最新のファイルとフォルダを取得します。",
   "@syncThisDriveDescription": {
@@ -786,7 +800,7 @@
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
-  "failedToCreateManifestEmphasized": "マニフェストの作成に失敗しました",
+  "failedToCreateManifestEmphasized": "デプロイの作成に失敗しました",
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
@@ -888,6 +902,10 @@
   "fileSize": "ファイルサイズ",
   "@fileSize": {
     "description": "The size of a file"
+  },
+  "filesPendingManifestExplanation": "このフォルダー内の一部のファイルはまだ保留中です。保留中のファイルを含むデプロイの作成はおすすめしません。続行しますか？",
+  "@filesPendingManifestExplanation": {
+    "description": "Warns the user about creating manifests with pending files"
   },
   "filesTooLarge": "{numberOfFiles, plural, zero{} other{{numberOfFiles} 複数のファイルのサイズが大きすぎます}}",
   "@filesTooLarge": {
@@ -1074,7 +1092,7 @@
   "@forgetWalletTitle": {
     "description": "Modal title to forget wallet"
   },
-  "freeTurboTransaction": "コスト：0 AR\nこの小さな取引は、Turboのおかげで無料です。",
+  "freeTurboTransaction": "コスト：0 クレジット\nこの小さな取引は、Turboのおかげで無料です。",
   "@freeTurboTransaction": {
     "description": "Message explaining that your upload will be free thanks to Turbo"
   },
@@ -1098,7 +1116,7 @@
   "@goToLast": {
     "description": "Action of going to the latest page"
   },
-  "greenCheckMark": "ファイルの横に緑のチェックマークが表示されたら、そのファイルはPermaWebにアップロードされています。",
+  "greenCheckMark": "ファイルの横に緑のチェックマークが表示されたら、そのファイルはpermawebにアップロードされています。",
   "@greenCheckMark": {
     "description": "Describes the indicator of the status of uploaded files"
   },
@@ -1126,7 +1144,7 @@
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
   },
-  "insufficientBalanceForManifest": "指定されたウォレットの残高が{walletBalance} ARでは、{totalCost} ARかかるこのマニフェストの取引に十分ではありません…",
+  "insufficientBalanceForManifest": "指定されたウォレットの残高が{walletBalance} ARでは、{totalCost} ARかかるこのデプロイの取引に十分ではありません…",
   "@insufficientBalanceForManifest": {
     "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
     "placeholders": {
@@ -1162,7 +1180,7 @@
   "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
-  "insufficientFundsForCreateAManifest": "現在、マニフェストを作成するための十分な資金がありません。トップアップページに移動して、アカウントに資金を追加してください。",
+  "insufficientFundsForCreateAManifest": "現在、デプロイを作成するための十分な資金がありません。トップアップページに移動して、アカウントに資金を追加してください。",
   "@insufficientFundsForCreateAManifest": {
     "description": "Show that needs funds to create a Manifest"
   },
@@ -1281,11 +1299,19 @@
   "@logOutEmphasized": {
     "description": "The action of logging out. Emphasized with upper case"
   },
-  "manifestName": "マニフェスト名",
+  "manifestName": "デプロイ名",
   "@manifestName": {
     "description": "The name of the manifest"
   },
-  "manifestTransactionUnexpectedlyFailed": "マニフェストの取引がArweaveネットワークへのアップロードに予期せずに失敗しました…",
+  "manifestFallbackTxID": "フォールバックページ",
+  "@manifestFallbackTxID": {
+    "description": "In the details panel, the transaction a manifest serves when a path in it is not found"
+  },
+  "manifestFileType": "デプロイ",
+  "@manifestFileType": {
+    "description": "The kind of file shown under a manifest's name in its preview, in place of its content type"
+  },
+  "manifestTransactionUnexpectedlyFailed": "デプロイの取引がArweaveネットワークへのアップロードに予期せずに失敗しました…",
   "@manifestTransactionUnexpectedlyFailed": {
     "description": "The manifest transaction did not succeed being uploaded"
   },
@@ -1531,7 +1557,7 @@
   "@pleaseTryAgain": {
     "description": "Please try again."
   },
-  "preparingManifestEmphasized": "マニフェストを準備しています…",
+  "preparingManifestEmphasized": "デプロイを準備しています…",
   "@preparingManifestEmphasized": {
     "description": "The manifest is being prepared for the upload"
   },
@@ -1721,10 +1747,6 @@
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
   },
-  "resync": "再同期",
-  "@resync": {
-    "description": "Sync button Text"
-  },
   "resyncTooltip": "すべてのドライブを更新する",
   "@resyncTooltip": {
     "description": "resync tooltip text"
@@ -1739,6 +1761,10 @@
   "@rowsPerPage": {
     "description": "How many rows per page to use"
   },
+  "tableNextPage": "次のページ",
+  "tablePageNumber": "{page} ページ",
+  "tablePageRange": "{total} 件中 {first}-{last} 件",
+  "tablePreviousPage": "前のページ",
   "secondsFromForeverEmphasized": "永遠から数秒",
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"
@@ -2089,10 +2115,6 @@
   "@sync": {
     "description": "Sync button tooltip"
   },
-  "syncNow": "今すぐ同期",
-  "@syncNow": {
-    "description": "Button text to sync an unsynced drive"
-  },
   "syncingOnlyOneDrive": "ドライブの同期中…",
   "@syncingOnlyOneDrive": {
     "description": "Show the message when the user has only one drive"
@@ -2284,7 +2306,7 @@
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
   },
-  "uploadingManifestEmphasized": "マニフェストをアップロードしています…",
+  "uploadingManifestEmphasized": "デプロイをアップロードしています…",
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
@@ -2302,6 +2324,33 @@
   "uploadingSnapshot": "スナップショットをアップロードする",
   "@uploadingSnapshot": {
     "description": "Uploading Snapshot"
+  },
+  "uploadAsNewVersion": "{numberOfFiles, plural, zero{} other{新しいバージョンとしてアップロード}}",
+  "@uploadAsNewVersion": {
+    "description": "Button on the duplicate file dialog that uploads the files as new versions of the ones already there",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "uploadAnyway": "このままアップロード",
+  "@uploadAnyway": {
+    "description": "Button on the large file warning that starts the upload"
+  },
+  "uploadSnapshot": "スナップショットをアップロード",
+  "@uploadSnapshot": {
+    "description": "Button on the snapshot cost step that uploads the snapshot"
+  },
+  "createPin": "Pinを作成",
+  "@createPin": {
+    "description": "Button that creates a file pin"
+  },
+  "newUserEmptyDriveTitle": "ドライブの準備ができました",
+  "@newUserEmptyDriveTitle": {
+    "description": "Heading on a new user's first, empty drive"
   },
   "uploadNFiles": "{numberOfFiles, plural, zero{} other{{numberOfFiles} 個のファイルをアップロードする}}",
   "@uploadNFiles": {
@@ -2386,7 +2435,7 @@
   "@waitForDownload": {
     "description": "User must to wait this download"
   },
-  "walletChangedDuringManifestCreation": "指定されたウォレットがマニフェストの作成中に予期せずに変更されました…",
+  "walletChangedDuringManifestCreation": "指定されたウォレットがデプロイの作成中に予期せずに変更されました…",
   "@walletChangedDuringManifestCreation": {
     "description": "The wallet has been changed while the creation of the manifest was in process"
   },
@@ -2489,5 +2538,13 @@
   "zippingYourFiles": "ファイルを圧縮しています...",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"
+  },
+  "moreSyncOptions": "その他の同期オプション",
+  "@moreSyncOptions": {
+    "description": "Screen reader label for the chevron half of the drives list sync button, which opens every sync action"
+  },
+  "driveListClearSelectionTooltip": "選択を解除",
+  "@driveListClearSelectionTooltip": {
+    "description": "Tooltip and screen reader label for the x that ends a selection on the drives list"
   }
 }

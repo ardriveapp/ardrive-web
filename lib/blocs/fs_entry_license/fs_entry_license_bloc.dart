@@ -140,7 +140,12 @@ class FsEntryLicenseBloc
         licenseParams = udlFormToLicenseParams(udlParamsForm);
         break;
       case LicenseCategory.cc:
-        _selectedLicenseMeta = ccTypeForm.control('ccTypeField').value;
+        final LicenseMeta? ccLicenseMeta =
+            ccTypeForm.control('ccTypeField').value;
+        // No type is preselected, and Next stays disabled until one is
+        // picked. If this is reached anyway, stay on this step.
+        if (ccLicenseMeta == null) return;
+        _selectedLicenseMeta = ccLicenseMeta;
         licenseParams = null;
         break;
       default:
@@ -166,8 +171,7 @@ class FsEntryLicenseBloc
     } catch (error, trace) {
       logger.e('Error licensing entities', error, trace);
       addError('Error licensing entities', trace);
-      emit(FsEntryLicenseFailure(
-          isPaymentError: isTurboPaymentError(error)));
+      emit(FsEntryLicenseFailure(isPaymentError: isTurboPaymentError(error)));
     }
   }
 

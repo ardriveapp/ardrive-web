@@ -185,7 +185,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     const SizedBox(height: 40),
                     existingUserFlow
                         ? ArDriveButtonNew(
-                            text: 'Import Wallet',
+                            text: 'Import wallet',
                             hoverIcon: Container(
                                 alignment: Alignment.center,
                                 child: SvgPicture.asset(
@@ -205,7 +205,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                   loginBloc: context.read<LoginBloc>());
                             })
                         : ArDriveButtonNew(
-                            text: 'Create a Wallet',
+                            text: 'Create a wallet',
                             typography: typography,
                             variant: ButtonVariant.primary,
                             maxWidth: double.maxFinite,

@@ -4,14 +4,21 @@ class DriveDetailFolderEmptyCard extends StatefulWidget {
   final bool promptToAddFiles;
   final String driveId;
   final String parentFolderId;
+  final String folderName;
   final bool isRootFolder;
+
+  /// A sync is still reading this drive for the first time, so the folder may
+  /// be empty only so far - see `DriveDetailLoadSuccess.contentsStillArriving`.
+  final bool contentsStillArriving;
 
   const DriveDetailFolderEmptyCard({
     super.key,
-    this.promptToAddFiles = false,
+    required this.promptToAddFiles,
     required this.driveId,
     required this.parentFolderId,
+    required this.folderName,
     required this.isRootFolder,
+    this.contentsStillArriving = false,
   });
 
   @override
@@ -22,11 +29,44 @@ class DriveDetailFolderEmptyCard extends StatefulWidget {
 class _DriveDetailFolderEmptyCardState
     extends State<DriveDetailFolderEmptyCard> {
   @override
-  Widget build(BuildContext context) => buildArDriveCard(context);
+  Widget build(BuildContext context) {
+    // A folder read while a sync is still reading its drive may be empty only
+    // because its contents have not landed yet. Offering to fill it then is
+    // what made a full drive flash "Your brand new drive!", so the panel says
+    // the sync is still going until there is something to show or it ends.
+    if (widget.contentsStillArriving) {
+      return DriveDetailSyncingCard(folderName: widget.folderName);
+    }
+
+    return buildArDriveCard(context);
+  }
 
   Widget buildArDriveCard(BuildContext context) {
     ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    // Everything below is written for the drive's owner: upload buttons,
+    // free-allowance copy, "Your brand new drive!". Someone who opened a
+    // shared link to another person's drive can do none of that, so they are
+    // told what is true for them and offered nothing they cannot use.
+    if (!widget.promptToAddFiles) {
+      return ScreenTypeLayout.builder(
+        mobile: (context) => _ReadOnlyEmptyFolder(driveId: widget.driveId),
+        // The same card the owner's empty folder sits in.
+        desktop: (context) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height * 0.8,
+            child: ArDriveCard(
+              width: double.infinity,
+              backgroundColor: colorTokens.containerL1,
+              content: _ReadOnlyEmptyFolder(driveId: widget.driveId),
+            ),
+          ),
+        ),
+      );
+    }
+
     return BlocBuilder<DrivesCubit, DrivesState>(
       builder: (context, state) {
         final isANewUser = (state as DrivesLoadSuccess).userDrives.length == 1;
@@ -95,6 +135,46 @@ class _DriveDetailFolderEmptyCardState
   }
 }
 
+/// An empty folder in a drive the reader cannot write to.
+///
+/// While a sync is still reading the drive, "empty" may not be true yet: a
+/// shared folder opened for the first time is empty right up until its files
+/// arrive. So it says which of the two it is.
+class _ReadOnlyEmptyFolder extends StatelessWidget {
+  const _ReadOnlyEmptyFolder({required this.driveId});
+
+  final String driveId;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final syncCubit = context.watch<SyncCubit>();
+    final stillReading = SyncingDriveNotice.locksMultiSelect(
+      syncCubit.state,
+      syncingDriveId: syncCubit.syncingDriveId,
+      syncingDriveIds: syncCubit.syncingDriveIds,
+      driveId: driveId,
+    );
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
+        child: Text(
+          stillReading
+              ? appLocalizationsOf(context).readOnlyFolderStillLoading
+              : appLocalizationsOf(context).readOnlyFolderEmpty,
+          style: typography.heading5(
+            color: colorTokens.textLow,
+            fontWeight: ArFontWeight.semiBold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
 class _EmptyFolder extends StatelessWidget {
   final String driveId;
   final String parentFolderId;
@@ -109,9 +189,9 @@ class _EmptyFolder extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final width = MediaQuery.of(context).size.width;
-    const String headerText = 'Ready to organize your files?';
+    const String headerText = 'This folder is empty';
     const String descriptionText =
-        'This folder is empty. You can move existing files into this folder, or upload new content.';
+        'Upload files to it, or move files here from elsewhere in your drive.';
 
     return PlausiblePageViewWrapper(
       pageView: PlausiblePageView.folderEmptyPage,
@@ -137,7 +217,8 @@ class _EmptyFolder extends StatelessWidget {
               _ActionCard.uploadFile(context,
                   driveId: driveId,
                   parentFolderId: parentFolderId,
-                  page: PlausiblePageView.folderEmptyPage),
+                  page: PlausiblePageView.folderEmptyPage,
+                  intoFolder: true),
               const SizedBox(height: 20),
               _ActionCard.uploadFolder(context,
                   driveId: driveId,
@@ -153,37 +234,27 @@ class _EmptyFolder extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // No confetti: an empty folder is not an occasion, and the
+            // celebration belongs to the drive that was just made.
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 66),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  ArDriveImage(
-                      image: AssetImage(Resources.images.login.confetti)),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _buildHeaderText(
-                          context: context,
-                          text: headerText,
-                          style:
-                              typography.display(fontWeight: ArFontWeight.bold),
-                        ),
-                        const SizedBox(height: 10),
-                        _buildDescriptionText(
-                          context: context,
-                          text: descriptionText,
-                          style: typography.heading5(
-                            color: colorTokens.textLow,
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                        ),
-                      ],
+                  _buildHeaderText(
+                    context: context,
+                    text: headerText,
+                    style: typography.display(fontWeight: ArFontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildDescriptionText(
+                    context: context,
+                    text: descriptionText,
+                    style: typography.heading5(
+                      color: colorTokens.textLow,
+                      fontWeight: ArFontWeight.semiBold,
                     ),
                   ),
-                  ArDriveImage(
-                      image: AssetImage(Resources.images.login.confetti)),
                 ],
               ),
             ),
@@ -193,7 +264,8 @@ class _EmptyFolder extends StatelessWidget {
                 _ActionCard.uploadFile(context,
                     driveId: driveId,
                     parentFolderId: parentFolderId,
-                    page: PlausiblePageView.folderEmptyPage),
+                    page: PlausiblePageView.folderEmptyPage,
+                    intoFolder: true),
                 _ActionCard.uploadFolder(context,
                     driveId: driveId,
                     parentFolderId: parentFolderId,
@@ -247,9 +319,10 @@ class _NewUserEmptyRootFolder extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    const String headerText = 'You\'re on chain!';
-    const String descriptionText =
-        'You have just made your first blockchain interaction, congratulations! You can now use your new drive to manage, share, and organize just about any multimedia file. Uploads collectively under 100KB are free!';
+    final String headerText =
+        appLocalizationsOf(context).newUserEmptyDriveTitle;
+    final String descriptionText = appLocalizationsOf(context)
+        .newUserEmptyDriveDescription(_freeUploadLimit(context));
 
     return PlausiblePageViewWrapper(
       pageView: PlausiblePageView.newUserDriveEmptyPage,
@@ -388,9 +461,8 @@ class _ExistingUserEmptyRootFolder extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final width = MediaQuery.of(context).size.width;
     const String headerText = 'Your brand new drive!';
-    // add gesture and link to turbo
-    const String descriptionText =
-        'When you are ready to benefit from blazingly fast, unlimited uploading you can try out Turbo. Until then, if your upload is collectively under 100KB, here are some of the awesome FREE things you can do next.';
+    final String descriptionText = appLocalizationsOf(context)
+        .existingUserEmptyDriveDescription(_freeUploadLimit(context));
 
     return PlausiblePageViewWrapper(
       pageView: PlausiblePageView.existingUserDriveEmptyPage,
@@ -532,14 +604,16 @@ class _ActionCard {
     required PlausiblePageView page,
     ButtonVariant variant = ButtonVariant.secondary,
     bool compact = false,
+    bool intoFolder = false,
   }) {
     return _buildActionCard(
       variant: variant,
       compact: compact,
       context: context,
-      title: 'Upload Files',
-      description:
-          'Upload a file, or a selection of files into your new drive.',
+      title: 'Upload files',
+      description: intoFolder
+          ? 'Upload one or more files into this folder.'
+          : 'Upload one or more files into your new drive.',
       buttonText: 'Upload',
       onPressed: () {
         PlausibleEventTracker.trackClickUploadFileEmptyState(page);
@@ -567,9 +641,9 @@ class _ActionCard {
       variant: variant,
       compact: compact,
       context: context,
-      title: 'Create a Folder',
+      title: 'Create a folder',
       description: 'Create folders to keep your drive organized.',
-      buttonText: 'Create Folder',
+      buttonText: 'Create folder',
       onPressed: () {
         PlausibleEventTracker.trackClickCreateFolderEmptyState(page);
 
@@ -586,10 +660,10 @@ class _ActionCard {
       required PlausiblePageView page}) {
     return _buildActionCard(
       context: context,
-      title: 'Upload a Folder',
+      title: 'Upload a folder',
       description:
           'Upload existing folders from your computer, other file storage apps, or an external HD.',
-      buttonText: 'Upload Folder',
+      buttonText: 'Upload folder',
       onPressed: () {
         PlausibleEventTracker.trackClickUploadFolderEmptyState(page);
 
@@ -608,10 +682,10 @@ class _ActionCard {
       {required PlausiblePageView page}) {
     return _buildActionCard(
       context: context,
-      title: 'Create a Pin',
+      title: 'Create a pin',
       description:
           'Pin any permaweb file to your drive, to create inspiration boards, recipe collections, or NFT galleries.',
-      buttonText: 'Create Pin',
+      buttonText: 'Create pin',
       onPressed: () {
         PlausibleEventTracker.trackClickCreatePinEmptyState(page);
 
@@ -684,15 +758,29 @@ class _ActionCard {
       );
     }
 
+    // On a wide screen the cards sit in a row, so each is laid out from the
+    // top with its button held to the bottom: icon, title and button line up
+    // across the row however many lines a description takes. Spreading the
+    // space evenly moved each title by half the difference in description
+    // height. Stacked on a narrower screen there is no row to line up with,
+    // and the spread keeps a short description from leaving a gap.
+    //
+    // Less padding above and below than at the sides, so the longest
+    // description, Create a pin's four lines, fits with room to spare.
+    final inARow =
+        getDeviceType(MediaQuery.sizeOf(context)) == DeviceScreenType.desktop;
+
     return ArDriveCard(
       width: 283,
       height: 283,
       backgroundColor: colorTokens.containerL2,
-      contentPadding: const EdgeInsets.all(31),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 31, vertical: 24),
       content: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment:
+            inARow ? MainAxisAlignment.start : MainAxisAlignment.spaceEvenly,
         children: [
           icon.copyWith(size: 25),
+          const SizedBox(height: 8),
           Text(
             title,
             style:
@@ -705,7 +793,8 @@ class _ActionCard {
                 color: colorTokens.textMid, fontWeight: ArFontWeight.semiBold),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 20),
+          if (inARow) const Spacer(),
+          const SizedBox(height: 12),
           ArDriveButtonNew(
             text: buttonText,
             typography: typography,
@@ -716,4 +805,16 @@ class _ActionCard {
       ),
     );
   }
+}
+
+/// The largest file Turbo uploads free, as the uploader checks it: the limit
+/// Turbo reports, or the configured one until it has. With Turbo uploads
+/// turned off in config, the service provided reports no limit at all, so
+/// this reads the configured one.
+String _freeUploadLimit(BuildContext context) {
+  final turboUploadService = context.read<TurboUploadService>();
+
+  return filesize(turboUploadService is DontUseUploadService
+      ? context.read<ConfigService>().config.allowedDataItemSizeForTurbo
+      : turboUploadService.maxFreeItemSizeBytes);
 }

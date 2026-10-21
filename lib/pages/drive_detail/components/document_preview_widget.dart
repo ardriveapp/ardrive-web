@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:ardrive/components/note_create/note_create_form.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/file_type_label.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -463,8 +465,11 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                   ),
                 ),
                 Text(
-                  getFileTypeFromMime(contentType: widget.contentType)
-                      .toUpperCase(),
+                  fileTypeLabel(
+                    contentType: widget.contentType,
+                    fileName: widget.filename,
+                    manifestLabel: appLocalizationsOf(context).manifestFileType,
+                  ),
                   style: ArDriveTypography.body.smallRegular(
                     color: colors.themeFgDisabled,
                   ),

@@ -8,6 +8,7 @@ import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/theme/theme.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -158,8 +159,8 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                           const SizedBox(height: 4),
                           Text(
                             appLocalizationsOf(context).attachDriveLookingUp,
-                            style: ArDriveTypographyNew.of(context)
-                                .paragraphSmall(
+                            style:
+                                ArDriveTypographyNew.of(context).paragraphSmall(
                               color: ArDriveTheme.of(context)
                                   .themeData
                                   .colorTokens
@@ -265,9 +266,7 @@ class _DriveInfoRow extends StatelessWidget {
     final truncatedOwner = owner.length > 12
         ? '${owner.substring(0, 6)}...${owner.substring(owner.length - 4)}'
         : owner;
-    final date = entity.createdAt;
-    final dateStr =
-        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final dateStr = formatDate(entity.createdAt);
     final privacy = entity.privacy == 'private' ? 'Private' : 'Public';
 
     return Container(
@@ -300,11 +299,11 @@ class _DriveInfoRow extends StatelessWidget {
             ),
           ),
           Text(
-              dateStr,
-              style: typography.paragraphSmall(
-                color: colorTokens.textLow,
-              ),
+            dateStr,
+            style: typography.paragraphSmall(
+              color: colorTokens.textLow,
             ),
+          ),
         ],
       ),
     );

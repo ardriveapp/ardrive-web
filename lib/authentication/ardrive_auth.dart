@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/entities/drive_signature_type.dart';
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/daos.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
@@ -76,6 +77,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
     MetadataCache? metadataCache,
+    PermanenceCache? permanenceCache,
   })  : _arweave = arweave,
         _crypto = crypto,
         _databaseHelpers = databaseHelpers,
@@ -83,7 +85,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
         _secureKeyValueStore = secureKeyValueStore,
         _biometricAuthentication = biometricAuthentication,
         _userRepository = userRepository,
-        _maybeMetadataCache = metadataCache;
+        _maybeMetadataCache = metadataCache,
+        _permanenceCache = permanenceCache ?? PermanenceCache.shared;
 
   final UserRepository _userRepository;
   final ArweaveService _arweave;
@@ -93,6 +96,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
   final ArConnectService _arConnectService;
   final DatabaseHelpers _databaseHelpers;
   MetadataCache? _maybeMetadataCache;
+
+  /// What the permanence panel last read for this wallet.
+  final PermanenceCache _permanenceCache;
 
   User? _currentUser;
 
@@ -180,7 +186,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
       }
 
       currentUser = await _addUser(
-        wallet, password, profileType,
+        wallet,
+        password,
+        profileType,
         sourceWalletAddress: sourceWalletAddress,
       );
 
@@ -203,7 +211,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       currentUser = await _userRepository.getUser(password);
 
-      _updateBalance();
+      unawaited(_updateBalance());
 
       if (await _biometricAuthentication.isEnabled()) {
         logger.i('Saving password in secure storage');
@@ -278,6 +286,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
       }
 
       await _databaseHelpers.deleteAllTables();
+      await _databaseHelpers.clearSessionMemory();
+      await _permanenceCache.clear();
       currentUser = null;
       _userStreamController.add(null);
     } catch (e, stacktrace) {
@@ -325,12 +335,16 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
       late DriveKey checkDriveKey;
       try {
-        logger.d('Attempting to derive drive key for drive: $driveId, sigType: $sigType');
+        logger.d(
+            'Attempting to derive drive key for drive: $driveId, sigType: $sigType');
         checkDriveKey = await _crypto.deriveDriveKey(
             wallet, driveId, password, sigType, driveSignature);
         logger.d('Successfully derived drive key');
       } catch (e, stackTrace) {
-        logger.e('Failed to derive drive key - this may be a signing failure, not wrong password', e, stackTrace);
+        logger.e(
+            'Failed to derive drive key - this may be a signing failure, not wrong password',
+            e,
+            stackTrace);
         throw WrongPasswordException('Password is incorrect');
       }
 
@@ -368,21 +382,36 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
     currentUser = await _userRepository.getUser(password);
 
-    _updateBalance();
+    unawaited(_updateBalance());
 
     _userStreamController.add(_currentUser);
 
     return currentUser;
   }
 
-  void _updateBalance() {
-    _userRepository.getBalance(currentUser.wallet).then((value) {
-      _currentUser = _currentUser!.copyWith(walletBalance: value);
+  /// Fetches the balance and publishes the updated user through
+  /// [onAuthStateChanged]. Login runs this in the background, which is how a
+  /// balance that fell back to zero at login gets its real value. Never throws:
+  /// on error the previous balance is kept.
+  Future<void> _updateBalance() async {
+    final user = currentUser;
+
+    try {
+      final balance = await _userRepository.getBalance(user.wallet);
+
+      // The user may have logged out, or another wallet logged in, while the
+      // request was in flight.
+      final latest = _currentUser;
+      if (latest == null || latest.walletAddress != user.walletAddress) {
+        return;
+      }
+
+      _currentUser = latest.copyWith(walletBalance: balance);
       _userStreamController.add(_currentUser);
-    }).catchError((e) {
+    } catch (e) {
       logger.e('Error fetching wallet balance', e);
       // Don't update balance on error - keep previous value
-    });
+    }
   }
 
   Future<void> _saveUser(
@@ -436,10 +465,10 @@ class ArDriveAuthImpl implements ArDriveAuth {
     return json.encode(_currentUser!.wallet.toJwk());
   }
 
+  /// Completes once the refreshed balance is in [currentUser], so a caller
+  /// can read it straight after.
   @override
-  Future<void> refreshBalance() async {
-    _updateBalance();
-  }
+  Future<void> refreshBalance() => _updateBalance();
 }
 
 class AuthenticationGatewayException implements Exception {

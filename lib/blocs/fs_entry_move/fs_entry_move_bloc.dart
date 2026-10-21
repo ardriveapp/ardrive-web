@@ -90,10 +90,15 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
               ));
             }
           } else {
+            final destinationName = folderInView.parentFolderId == null
+                ? (await _driveDao.driveById(driveId: driveId).getSingle()).name
+                : folderInView.name;
+
             emit(
               FsEntryMoveNameConflict(
                 conflictingItems: conflictingItems,
                 folderInView: folderInView,
+                destinationName: destinationName,
                 allItems: _selectedItems,
               ),
             );
@@ -300,8 +305,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
       for (final prepared in preparedFolderMoves) {
         await _driveDao.writeToFolder(prepared.key);
-        await _driveDao
-            .insertFolderRevision(prepared.value.toRevisionCompanion(
+        await _driveDao.insertFolderRevision(prepared.value.toRevisionCompanion(
           performedAction: RevisionAction.move,
         ));
 

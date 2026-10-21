@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_ui/src/styles/colors/global_colors.dart';
@@ -6,6 +7,7 @@ import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 class TableColumn {
@@ -38,13 +40,42 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   final TableRowWidget Function(T row) buildRow;
   final Widget Function(T row)? leading;
   final Widget Function(T row)? trailing;
+
+  /// The width [trailing] needs for [row]. The table reserves the widest of
+  /// all rows, so every row and the header keep their columns aligned. Absent,
+  /// the slot is [defaultTrailingWidth] wide.
+  final double Function(T row)? trailingWidth;
+
+  /// The width of the [trailing] slot when [trailingWidth] is absent.
+  static const double defaultTrailingWidth = 100;
   final int Function(T a, T b) Function(int columnIndex)? sort;
   final List<T> Function(List<T> rows, int columnIndex, TableSort sortOrder)?
       sortRows;
+
+  /// Called with the zero-based page whenever the page on screen changes,
+  /// including the page a [revealRow] lands on when the table is built.
   final Function(int page)? onChangePage;
-  final int pageItemsDivisorFactor;
-  final int maxItemsPerPage;
+
+  /// How many rows a page holds. Defaults to the first of
+  /// [rowsPerPageOptions]. The table applies a choice from its own picker at
+  /// once and reports it with [onRowsPerPageChanged]; a new value passed in
+  /// later is applied too, keeping the first row on screen in view.
+  final int? rowsPerPage;
+
+  /// The sizes the rows-per-page picker offers, smallest first. The footer is
+  /// only shown when there are more rows than the smallest of them.
+  final List<int> rowsPerPageOptions;
+  final void Function(int rowsPerPage)? onRowsPerPageChanged;
   final String rowsPerPageText;
+
+  /// The footer's "1-25 of 312". Given the one-based first and last row on
+  /// screen and the total.
+  final String Function(int first, int last, int total)? pageRangeText;
+  final String previousPageText;
+  final String nextPageText;
+
+  /// What a screen reader says for a page button, given the one-based page.
+  final String Function(int page)? pageText;
   final Function(List<MultiSelectBox<T>> selectedRows)? onSelectedRows;
   final Function(T row)? onRowTap;
 
@@ -60,7 +91,34 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   final bool lockMultiSelect;
   final T? selectedRow;
   final Function(TableColumn)? onChangeColumnVisibility;
+
+  /// The zero-based page to open on, clamped to the pages there are.
   final int? initialPage;
+
+  /// A row to open on: when the table is built, the page holding it is shown
+  /// instead of [initialPage], and reported through [onChangePage].
+  final T? revealRow;
+
+  /// Where the list starts scrolled to when the table is built, for a table
+  /// rebuilt in place. Applied only to the page [initialPage] chose.
+  final double? initialScrollOffset;
+
+  /// Called as the list scrolls with how far it is scrolled, so the next
+  /// table built for the same rows can be given it back. Reported as it
+  /// happens rather than as the table is taken down, because a table rebuilt
+  /// in place - after a sync - is built before the old one is taken down.
+  final void Function(double offset)? onScrollOffsetSaved;
+
+  /// The column sort to open with, for a table rebuilt in place. Both or
+  /// neither: a column with no order is not a sort.
+  final int? initialSortColumn;
+  final TableSort? initialSortOrder;
+
+  /// Called when the reader picks a sort from a column header, so the next
+  /// table built for the same rows can be given it back. The sort lives in
+  /// this table's state, and a rename, an upload or a hide rebuilds the
+  /// table - which put the list back in the order it was handed over in.
+  final void Function(int column, TableSort order)? onSortChanged;
 
   const ArDriveDataTable({
     super.key,
@@ -69,11 +127,17 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     required this.rows,
     this.leading,
     this.trailing,
+    this.trailingWidth,
     this.sort,
-    this.pageItemsDivisorFactor = 25,
     this.onChangePage,
-    this.maxItemsPerPage = 100,
+    this.rowsPerPage,
+    this.rowsPerPageOptions = const [25, 50, 100],
+    this.onRowsPerPageChanged,
     required this.rowsPerPageText,
+    this.pageRangeText,
+    this.previousPageText = 'Previous page',
+    this.nextPageText = 'Next page',
+    this.pageText,
     this.sortRows,
     this.onSelectedRows,
     this.onRowTap,
@@ -84,6 +148,12 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     this.selectedRow,
     this.onChangeColumnVisibility,
     this.initialPage,
+    this.revealRow,
+    this.initialScrollOffset,
+    this.onScrollOffsetSaved,
+    this.initialSortColumn,
+    this.initialSortOrder,
+    this.onSortChanged,
   });
 
   @override
@@ -106,11 +176,19 @@ class _ArDriveDataTableState<T extends IndexedItem>
   T? _selectedItem;
   List<TableColumn> _columns = [];
 
-  final ScrollController _scrollController = ScrollController();
+  /// A copy of the columns the caller last passed. A copy, because a caller
+  /// that changes its list in place passes the same list again, and the old
+  /// widget's list would already hold the change.
+  List<TableColumn> _callerColumns = [];
 
-  late int _numberOfPages;
+  late final ScrollController _scrollController;
+
+  /// A row [ArDriveDataTable.revealRow] opened on, until it is scrolled into
+  /// view: its page is shown from the top, and the row can be below the fold.
+  T? _scrollToRow;
+  final _scrollToRowKey = GlobalKey(debugLabel: 'revealed row');
+
   late int _selectedPage;
-  late int _pageItemsDivisorFactor;
   late int _numberOfItemsPerPage;
   int? _sortedColumn;
   bool _isMultiSelectingWithLongPress = false;
@@ -147,27 +225,54 @@ class _ArDriveDataTableState<T extends IndexedItem>
   void initState() {
     super.initState();
     _cachedRows = widget.rows;
-    _pageItemsDivisorFactor = widget.pageItemsDivisorFactor;
-    _numberOfItemsPerPage = _pageItemsDivisorFactor;
-    _numberOfPages = _cachedRows.length ~/ _pageItemsDivisorFactor;
+    _numberOfItemsPerPage = _validRowsPerPage(widget.rowsPerPage);
 
-    if (_cachedRows.length % _pageItemsDivisorFactor != 0) {
-      _numberOfPages++;
+    // Sorted before the page is chosen, so [initialPage] and [revealRow] count
+    // against the order the reader will see.
+    if (widget.initialSortColumn != null && widget.initialSortOrder != null) {
+      _sortedColumn = widget.initialSortColumn;
+      _tableSort = widget.initialSortOrder;
+      _cachedRows = _sorted(_cachedRows, _sortedColumn!);
     }
 
-    if (widget.initialPage != null) {
-      _selectedPage = widget.initialPage!;
-    } else {
-      _selectedPage = 0;
-    }
+    // The page to open on: the one holding [revealRow] if there is one,
+    // otherwise [initialPage]. Clamped, because a page number outlives the
+    // rows it was counted against: a folder can shrink between visits.
+    final revealIndex =
+        widget.revealRow == null ? -1 : _cachedRows.indexOf(widget.revealRow!);
+    final revealing = revealIndex >= 0;
+    _selectedPage = _clampPage(
+      revealing
+          ? revealIndex ~/ _numberOfItemsPerPage
+          : widget.initialPage ?? 0,
+    );
 
-    selectPage(_selectedPage);
+    _scrollController = ScrollController(
+      initialScrollOffset: !revealing && widget.initialScrollOffset != null
+          ? widget.initialScrollOffset!
+          : 0,
+    )..addListener(_reportScrollOffset);
+
+    _currentPage = _rowsOfPage(_selectedPage);
+
+    if (widget.revealRow != null) {
+      // Told even when the row was not found, so a caller waiting to hear
+      // that the reveal was handled is never left waiting.
+      final page = _selectedPage;
+      _scrollToRow = revealing ? widget.revealRow : null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        widget.onChangePage?.call(page);
+        _scrollRevealedRowIntoView();
+      });
+    }
 
     HardwareKeyboard.instance.addHandler(_handleKeyDownEvent);
     HardwareKeyboard.instance.addHandler(_handleEscapeKey);
     HardwareKeyboard.instance.addHandler(_handleSelectAllShortcut);
 
-    _columns = widget.columns;
+    _columns = List.of(widget.columns);
+    _callerColumns = List.of(widget.columns);
   }
 
   // These handlers are global, so without this they outlived the table: the
@@ -178,9 +283,18 @@ class _ArDriveDataTableState<T extends IndexedItem>
     HardwareKeyboard.instance.removeHandler(_handleKeyDownEvent);
     HardwareKeyboard.instance.removeHandler(_handleEscapeKey);
     HardwareKeyboard.instance.removeHandler(_handleSelectAllShortcut);
+    _scrollController
+      ..removeListener(_reportScrollOffset)
+      ..dispose();
     _doubleClick.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _reportScrollOffset() {
+    if (_scrollController.hasClients) {
+      widget.onScrollOffsetSaved?.call(_scrollController.offset);
+    }
   }
 
   /// Enter opens the selected row, as it does in any file manager.
@@ -270,18 +384,63 @@ class _ArDriveDataTableState<T extends IndexedItem>
     );
   }
 
-  void recalculatePageForNewNumberOfItemsPerPage(int newItemsPerPage) {
-    setState(() {
-      int newPage =
-          ((_selectedPage) * _numberOfItemsPerPage) ~/ newItemsPerPage;
+  static bool _sameColumns(List<TableColumn> a, List<TableColumn> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].title != b[i].title ||
+          a[i].isVisible != b[i].isVisible ||
+          a[i].index != b[i].index ||
+          a[i].size != b[i].size) {
+        return false;
+      }
+    }
+    return true;
+  }
 
+  int _validRowsPerPage(int? rowsPerPage) {
+    if (rowsPerPage != null && rowsPerPage > 0) {
+      return rowsPerPage;
+    }
+    return widget.rowsPerPageOptions.isEmpty
+        ? 25
+        : widget.rowsPerPageOptions.first;
+  }
+
+  /// Applies a new page size, keeping the first row on screen in view.
+  void _applyRowsPerPage(int newItemsPerPage) {
+    if (newItemsPerPage == _numberOfItemsPerPage) {
+      return;
+    }
+
+    final firstRowOnScreen = _selectedPage * _numberOfItemsPerPage;
+    final hadSelection =
+        _multiSelectBoxes.any((box) => box.selectedItems.isNotEmpty);
+
+    setState(() {
       _numberOfItemsPerPage = newItemsPerPage;
 
-      // Clear the current selection because the items on the page have changed
-      clearSelection();
-
-      selectPage(newPage);
+      // Selections are kept per page, and every page has just changed.
+      _multiSelectBoxes.clear();
+      _isMultiSelectingWithLongPress = false;
+      _shiftSelectionStartIndex = null;
     });
+
+    if (hadSelection) {
+      _afterBuild(() => widget.onSelectedRows?.call([]));
+    }
+
+    selectPage(firstRowOnScreen ~/ newItemsPerPage);
+  }
+
+  /// A size chosen from the footer's picker.
+  ///
+  /// Reported before it is applied, so a listener that counts pages in rows
+  /// already knows the new size when it hears the page that follows.
+  void _onRowsPerPageChosen(int newItemsPerPage) {
+    widget.onRowsPerPageChanged?.call(newItemsPerPage);
+    _applyRowsPerPage(newItemsPerPage);
   }
 
   void _toggleColumnVisibility(int index) {
@@ -297,26 +456,19 @@ class _ArDriveDataTableState<T extends IndexedItem>
     });
   }
 
-  int _recalculateCurrentPage() {
-    // calculate the new total number of items after removing the items
-    int removedItemCount = _cachedRows.length - widget.rows.length;
+  int get _pageCount => _cachedRows.isEmpty
+      ? 1
+      : (_cachedRows.length / _numberOfItemsPerPage).ceil();
 
-    int newTotalItems = _cachedRows.length - removedItemCount;
+  int _clampPage(int page) => page.clamp(0, _pageCount - 1);
 
-    // calculate the new last page index
-    int newLastPageIndex = (newTotalItems / _numberOfItemsPerPage).ceil() - 1;
-
-    if (newLastPageIndex < 0) {
-      newLastPageIndex = 0;
-    }
-
-    // if the current page is greater than the new last page index,
-    // move the user to the last page
-    if (_selectedPage > newLastPageIndex) {
-      return newLastPageIndex;
-    }
-
-    return _selectedPage;
+  List<T> _rowsOfPage(int page) {
+    final start = page * _numberOfItemsPerPage;
+    final end = start + _numberOfItemsPerPage;
+    return _cachedRows.sublist(
+      start.clamp(0, _cachedRows.length),
+      end.clamp(0, _cachedRows.length),
+    );
   }
 
   void clearSelection() {
@@ -342,6 +494,23 @@ class _ArDriveDataTableState<T extends IndexedItem>
   void didUpdateWidget(oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    // The columns follow the caller. They were read once, when the table was
+    // built, so a column the caller hid as the table narrowed - opening the
+    // details panel, or a smaller window - stayed in every row, and the rows
+    // squeezed their cells into a letter's width while the header hid it.
+    // Only a change in what the caller passes counts: a column the reader
+    // hid from the table's own menu stays hidden for a caller that does not
+    // pass it back.
+    if (!_sameColumns(widget.columns, _callerColumns)) {
+      _columns = List.of(widget.columns);
+      _callerColumns = List.of(widget.columns);
+    }
+
+    if (widget.rowsPerPage != oldWidget.rowsPerPage &&
+        widget.rowsPerPage != null) {
+      _applyRowsPerPage(_validRowsPerPage(widget.rowsPerPage));
+    }
+
     if (oldWidget != widget) {
       if (widget.selectedRow != _selectedItem) {
         setState(() {
@@ -353,32 +522,78 @@ class _ArDriveDataTableState<T extends IndexedItem>
         clearSelection();
       }
 
-      final temp = <T>[];
+      // The caller's rows, whenever they are new rows. This used to wait for
+      // the number of rows to change, and a row can change without that: a
+      // new version of a file is the same row with a new size, and the table
+      // went on drawing the old one until something was added or removed.
+      //
+      // New rows, not a new list: the file list copies its rows into a new
+      // list on every build, and a rebuild that changed nothing has no work
+      // to do here beyond what it always did.
+      final rowsChanged = !_sameRowObjects(widget.rows, oldWidget.rows);
 
-      final currentMultiSelectBox = getMultiSelectBox();
+      if (rowsChanged) {
+        final currentMultiSelectBox = getMultiSelectBox();
 
-      // Updates the list of selected rows if the list of rows has changed
-      if (_cachedRows.length != widget.rows.length) {
+        // Rows compare by id, so a selection carries over to the new copies
+        // of the same rows. One that is gone is dropped from it: looking it
+        // up threw.
         if (currentMultiSelectBox.selectedItems.isNotEmpty &&
             !widget.lockMultiSelect) {
+          final temp = <T>[];
+
           for (final row in currentMultiSelectBox.selectedItems) {
             final index = widget.rows.indexWhere((element) => element == row);
-            temp.add(widget.rows[index]);
+            if (index >= 0) {
+              temp.add(widget.rows[index]);
+            }
           }
 
           currentMultiSelectBox.clear();
           currentMultiSelectBox.addAll(temp);
         }
 
-        _cachedRows = widget.rows;
-
-        selectPage(_recalculateCurrentPage());
-      } else {
-        if (_sortedColumn != null) {
-          _sortRows(_sortedColumn!);
+        // The selected row too, or Enter opens the copy it replaced: a file
+        // at its old version.
+        final selected = _selectedItem;
+        if (selected != null) {
+          final index = widget.rows.indexWhere((row) => row == selected);
+          _selectedItem = index >= 0 ? widget.rows[index] : null;
         }
+
+        _cachedRows = widget.rows;
+      }
+
+      // In the order the reader picked from a column header, not the order
+      // the rows were handed over in. A folder filling during a sync passes
+      // through here on every batch that adds a row, and taking the rows as
+      // given flipped the list between the two orders under the pointer.
+      if (_sortedColumn != null) {
+        _sortRows(_sortedColumn!);
+      } else if (rowsChanged) {
+        // The same page, or the last one if the rows it showed are gone.
+        selectPage(_selectedPage);
       }
     }
+  }
+
+  /// Whether [a] and [b] hold the very same row objects, in the same order.
+  ///
+  /// Not `==`: rows compare by id, so a row that changed is equal to the one
+  /// it replaces.
+  static bool _sameRowObjects<R>(List<R> a, List<R> b) {
+    if (identical(a, b)) {
+      return true;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (!identical(a[i], b[i])) {
+        return false;
+      }
+    }
+    return true;
   }
 
   bool _handleEscapeKey(KeyEvent event) {
@@ -493,18 +708,11 @@ class _ArDriveDataTableState<T extends IndexedItem>
     widget.onSelectedRows?.call(_multiSelectBoxes);
   }
 
-  int _getNumberOfPages() {
-    _numberOfPages = _cachedRows.length ~/ _numberOfItemsPerPage;
-
-    if (_cachedRows.length % _numberOfItemsPerPage != 0) {
-      _numberOfPages = _numberOfPages + 1;
-    }
-
-    return _numberOfPages;
-  }
-
   @override
   Widget build(BuildContext context) {
+    // Once per build, for the header and every row to read the same value.
+    final trailingSlot = _trailingSlotWidth();
+
     final columns = List.generate(
       _columns.length,
       (index) => _buildSingleColumn(
@@ -561,8 +769,10 @@ class _ArDriveDataTableState<T extends IndexedItem>
                       child: Row(
                         children: [
                           ...columns,
-                          const SizedBox(
-                            width: 90,
+                          // 10 less than the trailing slot, as the 90 was
+                          // beside its 100.
+                          SizedBox(
+                            width: trailingSlot - 10,
                           ),
                           ArDriveSubmenu(
                             alignmentOffset: const Offset(-150, 10),
@@ -616,6 +826,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
                         return ArDriveClickArea(
                           key: ValueKey(_currentPage[index]),
                           child: _HoverableRow(
+                            key: _currentPage[index] == _scrollToRow
+                                ? _scrollToRowKey
+                                : null,
                             child: Padding(
                               padding: const EdgeInsets.only(top: 5),
                               child: _buildRowSpacing(
@@ -623,6 +836,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
                                 widget.buildRow(_currentPage[index]).row,
                                 _currentPage[index],
                                 index,
+                                trailingSlot,
                               ),
                             ),
                           ),
@@ -661,6 +875,10 @@ class _ArDriveDataTableState<T extends IndexedItem>
               });
 
               _sortRows(index);
+              widget.onSortChanged?.call(index, _tableSort!);
+
+              // A new order is a new list, read from its start.
+              selectPage(0);
             },
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -784,162 +1002,49 @@ class _ArDriveDataTableState<T extends IndexedItem>
     );
   }
 
-  Widget _pageIndicator() {
-    return Padding(
-      padding: const EdgeInsets.all(36.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              ArDriveClickArea(
-                showCursor: _selectedPage > 0,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () {
-                    if (_selectedPage > 0) {
-                      goToPreviousPage();
-                    }
-                  },
-                  child: SizedBox(
-                    height: 32,
-                    width: 32,
-                    child: Center(
-                      child: ArDriveIcons.carretLeft(
-                        color: _selectedPage > 0
-                            ? ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault
-                            : grey,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              if (_getPagesToShow().first > 1) ...[
-                _pageNumber(0),
-                if (_getPagesToShow().first > 2)
-                  Row(
-                    children: [
-                      ArDriveIcons.dots(
-                        size: 24,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                      ),
-                    ],
-                  ),
-              ],
-              ..._getPagesIndicators(),
-              if (_getPagesToShow().last < _getNumberOfPages() &&
-                  _getPagesToShow().last < _getNumberOfPages() - 1)
-                GestureDetector(
-                  onTap: () {
-                    goToLastPage();
-                  },
-                  child: Row(
-                    children: [
-                      ArDriveIcons.dots(
-                        size: 24,
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                      ),
-                      _pageNumber(_getNumberOfPages() - 1),
-                    ],
-                  ),
-                ),
-              ArDriveClickArea(
-                showCursor: _selectedPage + 1 < _getNumberOfPages(),
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () {
-                    if (_selectedPage + 1 < _getNumberOfPages()) {
-                      goToNextPage();
-                    }
-                  },
-                  child: SizedBox(
-                    height: 32,
-                    width: 32,
-                    child: Center(
-                      child: ArDriveIcons.carretRight(
-                        color: _selectedPage + 1 < _getNumberOfPages()
-                            ? ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault
-                            : grey,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  List<int> _getPagesToShow() {
-    late int visiblePages;
-    final int numberOfPages = _getNumberOfPages();
-
-    if (numberOfPages < 5) {
-      visiblePages = numberOfPages;
-    } else {
-      visiblePages = 5;
-    }
-
-    final int half = visiblePages ~/ 2;
-    final int start = _selectedPage + 1 - half;
-    final int end = _selectedPage + 1 + half;
-
-    if (start <= 0) {
-      return List.generate(
-        visiblePages,
-        (index) => index + 1,
-        growable: false,
-      );
-    }
-
-    if (end >= numberOfPages) {
-      return List.generate(
-        visiblePages,
-        (index) => numberOfPages - visiblePages + index + 1,
-        growable: false,
-      );
-    }
-
-    return List.generate(
-      visiblePages,
-      (index) => start + index,
-      growable: false,
-    );
-  }
-
-  /// The pages are counted starting from 0, so, to show correctly add + 1
+  /// The footer: rows per page, the pages, and which rows are on screen.
   ///
-  List<Widget> _getPagesIndicators() {
-    return _getPagesToShow().map((page) {
-      return _pageNumber(page - 1);
-    }).toList();
+  /// Absent when every row fits on a page of the smallest size, where it
+  /// would offer nothing to do.
+  Widget _pageIndicator() {
+    final total = _cachedRows.length;
+    final options =
+        {...widget.rowsPerPageOptions, _numberOfItemsPerPage}.toList()..sort();
+
+    if (total <= options.first) {
+      return const SizedBox.shrink();
+    }
+
+    final firstRow = _selectedPage * _numberOfItemsPerPage + 1;
+    final lastRow = min(firstRow + _numberOfItemsPerPage - 1, total);
+
+    return PaginationFooter(
+      page: _selectedPage,
+      pageCount: _pageCount,
+      rangeText: (widget.pageRangeText ?? _defaultPageRangeText)(
+        firstRow,
+        lastRow,
+        total,
+      ),
+      rowsPerPage: _numberOfItemsPerPage,
+      rowsPerPageOptions: options,
+      rowsPerPageText: widget.rowsPerPageText,
+      previousPageText: widget.previousPageText,
+      nextPageText: widget.nextPageText,
+      pageText: widget.pageText ?? _defaultPageText,
+      onPageSelected: selectPage,
+      onRowsPerPageSelected: _onRowsPerPageChosen,
+    );
   }
 
-  Widget _pageNumber(int page) {
-    return _PageNumber(
-      page: page,
-      isSelected: _selectedPage == page,
-      onPressed: () {
-        selectPage(page);
-      },
-    );
+  /// The widest [ArDriveDataTable.trailingWidth] over every row, so the
+  /// header and all rows reserve the same space.
+  double _trailingSlotWidth() {
+    final widthOf = widget.trailingWidth;
+    if (widthOf == null || _cachedRows.isEmpty) {
+      return ArDriveDataTable.defaultTrailingWidth;
+    }
+    return _cachedRows.map(widthOf).reduce(max);
   }
 
   Widget _buildRowSpacing(
@@ -947,6 +1052,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
     List<Widget> buildRow,
     T row,
     int index,
+    double trailingSlot,
   ) {
     final multiselect = getMultiSelectBox();
 
@@ -1031,7 +1137,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
                       child: Container(
                         alignment: Alignment.center,
                         height: 44,
-                        width: 100,
+                        width: trailingSlot,
                         child: widget.trailing!.call(row),
                       ),
                     ),
@@ -1045,17 +1151,80 @@ class _ArDriveDataTableState<T extends IndexedItem>
   }
 
   void selectPage(int page) {
+    final target = _clampPage(page);
+    final changed = target != _selectedPage;
+
     setState(() {
-      _selectedPage = page;
-
-      int maxIndex = _cachedRows.length < (page + 1) * _numberOfItemsPerPage
-          ? _cachedRows.length
-          : (page + 1) * _numberOfItemsPerPage;
-
-      int minIndex = (_selectedPage * _numberOfItemsPerPage);
-
-      _currentPage = _cachedRows.sublist(minIndex, maxIndex);
+      _selectedPage = target;
+      _currentPage = _rowsOfPage(target);
     });
+
+    if (!changed) {
+      return;
+    }
+
+    // A new page starts at its top, as a new page of anything does. Now when
+    // a click asked for it, so no frame shows the new rows at the old offset;
+    // after the frame when the rows changed during a build.
+    _afterBuild(() {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+    });
+    _afterBuild(() => widget.onChangePage?.call(target));
+  }
+
+  /// Brings [_scrollToRow] on screen, moving as little as it can.
+  ///
+  /// The list only builds the rows it shows, so a row further down has no
+  /// context to scroll to yet: the list jumps to about where it will be, and
+  /// looks again once that frame has built it.
+  void _scrollRevealedRowIntoView([int attempt = 0]) {
+    final row = _scrollToRow;
+    if (!mounted || row == null || !_scrollController.hasClients) {
+      return;
+    }
+
+    final rowContext = _scrollToRowKey.currentContext;
+    if (rowContext != null) {
+      _scrollToRow = null;
+      Scrollable.ensureVisible(
+        rowContext,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+      );
+      Scrollable.ensureVisible(
+        rowContext,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+      );
+      return;
+    }
+
+    final index = _currentPage.indexOf(row);
+    if (index < 0 || attempt >= 3) {
+      _scrollToRow = null;
+      return;
+    }
+
+    final position = _scrollController.position;
+    _scrollController.jumpTo(
+      position.maxScrollExtent * index / max(1, _currentPage.length - 1),
+    );
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _scrollRevealedRowIntoView(attempt + 1),
+    );
+  }
+
+  /// Runs [action] now, or after this frame when called during one: a
+  /// listener told of a page change mid-build must not rebuild in it.
+  void _afterBuild(VoidCallback action) {
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) action();
+      });
+    } else {
+      action();
+    }
   }
 
   void goToNextPage() {
@@ -1063,7 +1232,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
   }
 
   void goToLastPage() {
-    selectPage(_numberOfPages - 1);
+    selectPage(_pageCount - 1);
   }
 
   void goToFirstPage() {
@@ -1074,12 +1243,12 @@ class _ArDriveDataTableState<T extends IndexedItem>
     selectPage(_selectedPage - 1);
   }
 
-  void _sortRows(int index) {
-    final stopwatch = Stopwatch()..start();
-
+  List<T> _sorted(List<T> rows, int index) {
     if (widget.sortRows != null) {
-      _cachedRows = widget.sortRows!(_cachedRows, index, _tableSort!);
-    } else if (widget.sort != null) {
+      return widget.sortRows!(rows, index, _tableSort!);
+    }
+
+    if (widget.sort != null) {
       int sort(a, b) {
         if (_tableSort == TableSort.asc) {
           return widget.sort!.call(index)(a, b);
@@ -1088,8 +1257,16 @@ class _ArDriveDataTableState<T extends IndexedItem>
         }
       }
 
-      _cachedRows.sort(sort);
+      return rows..sort(sort);
     }
+
+    return rows;
+  }
+
+  void _sortRows(int index) {
+    final stopwatch = Stopwatch()..start();
+
+    _cachedRows = _sorted(_cachedRows, index);
 
     selectPage(_selectedPage);
 
@@ -1101,135 +1278,308 @@ class _ArDriveDataTableState<T extends IndexedItem>
   }
 }
 
-class PaginationSelect extends StatefulWidget {
-  const PaginationSelect({
+String _defaultPageRangeText(int first, int last, int total) =>
+    '$first-$last of $total';
+
+String _defaultPageText(int page) => 'Page $page';
+
+/// Which pages the pager shows, zero-based, with null for an ellipsis.
+///
+/// Always the first and last page, the current one and [siblings] either
+/// side of it, with an ellipsis for each gap. A gap of one page shows that
+/// page instead, so there are always the same number of slots: the buttons
+/// do not move under the pointer as the reader pages through.
+@visibleForTesting
+List<int?> paginationSlots(int page, int pageCount, {int siblings = 1}) {
+  final slots = 2 * siblings + 5;
+  if (pageCount <= slots) {
+    return List.generate(pageCount, (i) => i);
+  }
+
+  final last = pageCount - 1;
+  final left = max(page - siblings, 1);
+  final right = min(page + siblings, last - 1);
+  final gapBefore = left > 2;
+  final gapAfter = right < last - 2;
+  final run = slots - 2;
+
+  if (!gapBefore) {
+    return [...List.generate(run, (i) => i), null, last];
+  }
+  if (!gapAfter) {
+    return [0, null, ...List.generate(run, (i) => pageCount - run + i)];
+  }
+  return [0, null, for (var i = left; i <= right; i++) i, null, last];
+}
+
+/// The table's footer: rows per page on the left, the pages in the middle,
+/// and which rows are on screen on the right.
+///
+/// It gives way as the table narrows, most useful last: first the pager
+/// drops to fewer numbers, then the rows-per-page picker goes and the range
+/// moves left, and at the narrowest the pager is its two arrows.
+@visibleForTesting
+class PaginationFooter extends StatelessWidget {
+  const PaginationFooter({
     super.key,
-    required this.maxOption,
-    required this.divisorFactor,
-    required this.onSelect,
-    required this.maxNumber,
-    this.currentNumber,
-  });
-
-  final int maxOption;
-  final int maxNumber;
-  final int divisorFactor;
-  final Function(int) onSelect;
-  final int? currentNumber;
-
-  @override
-  State<PaginationSelect> createState() => _PaginationSelectState();
-}
-
-class _PaginationSelectState extends State<PaginationSelect> {
-  late int currentNumber;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.currentNumber != null) {
-      currentNumber = widget.currentNumber!;
-    } else {
-      if (widget.maxNumber < widget.divisorFactor) {
-        currentNumber = widget.maxNumber;
-      } else {
-        currentNumber = widget.divisorFactor;
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ArDriveDropdown(
-      anchor: const Aligned(
-        follower: Alignment.bottomLeft,
-        target: Alignment.bottomRight,
-      ),
-      items: [
-        for (int i = widget.divisorFactor;
-            i <= widget.maxOption && i <= widget.maxNumber;
-            i += widget.divisorFactor)
-          ArDriveDropdownItem(
-            onClick: () {
-              setState(() {
-                currentNumber = i;
-              });
-              widget.onSelect(currentNumber);
-            },
-            content: Text(
-              i.toString(),
-              style: ArDriveTypography.body.buttonLargeBold(),
-            ),
-          ),
-      ],
-      child: ArDriveClickArea(
-        child: _PageNumber(
-          page: currentNumber - 1,
-          isSelected: false,
-        ),
-      ),
-    );
-  }
-}
-
-class _PageNumber extends StatelessWidget {
-  const _PageNumber({
-    this.onPressed,
     required this.page,
-    required this.isSelected,
+    required this.pageCount,
+    required this.rangeText,
+    required this.rowsPerPage,
+    required this.rowsPerPageOptions,
+    required this.rowsPerPageText,
+    required this.previousPageText,
+    required this.nextPageText,
+    required this.pageText,
+    required this.onPageSelected,
+    required this.onRowsPerPageSelected,
   });
 
   final int page;
-  final bool isSelected;
-  final Function()? onPressed;
+  final int pageCount;
+  final String rangeText;
+  final int rowsPerPage;
+  final List<int> rowsPerPageOptions;
+  final String rowsPerPageText;
+  final String previousPageText;
+  final String nextPageText;
+  final String Function(int page) pageText;
+  final void Function(int page) onPageSelected;
+  final void Function(int rowsPerPage) onRowsPerPageSelected;
+
+  /// Below this, the picker goes and the range moves left.
+  static const double pickerMinWidth = 640;
+
+  /// At or above this, the pager shows a page either side of the current.
+  static const double fullPagerMinWidth = 720;
+
+  /// Below this, the pager is its two arrows.
+  static const double numbersMinWidth = 460;
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveClickArea(
-      child: GestureDetector(
-        onTap: onPressed,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4.0),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                alignment: Alignment.center,
-                padding: const EdgeInsets.fromLTRB(10, 2, 10, 4),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    width: 2,
-                    color: isSelected
-                        ? ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault
-                        : ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeGbMuted,
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+    final hasPages = pageCount > 1;
+
+    Widget range(TextAlign align) => Text(
+          rangeText,
+          key: const ValueKey('pagination-range'),
+          style: typography.paragraphNormal(color: colorTokens.textMid),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: align,
+        );
+
+    Widget pager({required int siblings, bool numbers = true}) => _Pager(
+          page: page,
+          pageCount: pageCount,
+          siblings: siblings,
+          showNumbers: numbers,
+          previousPageText: previousPageText,
+          nextPageText: nextPageText,
+          pageText: pageText,
+          onPageSelected: onPageSelected,
+        );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // In unscaled pixels, so large text reaches the compact layouts
+          // sooner rather than overflowing the roomy ones.
+          final width =
+              constraints.maxWidth / MediaQuery.textScalerOf(context).scale(1);
+
+          if (width >= pickerMinWidth) {
+            return Row(
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: _RowsPerPagePicker(
+                      rowsPerPage: rowsPerPage,
+                      options: rowsPerPageOptions,
+                      label: rowsPerPageText,
+                      onSelected: onRowsPerPageSelected,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(4),
-                  color: isSelected
-                      ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
-                      : null,
                 ),
-                child: Text(
-                  _showSemanticPageNumber(page),
-                  style: ArDriveTypography.body.buttonNormalBold(
-                    color: isSelected
-                        ? ArDriveTheme.of(context)
-                            .themeData
-                            .tableTheme
-                            .backgroundColor
-                        : ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgDefault,
-                  ),
+                if (hasPages)
+                  pager(siblings: width >= fullPagerMinWidth ? 1 : 0),
+                Expanded(child: range(TextAlign.right)),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: range(TextAlign.left)),
+              if (hasPages)
+                pager(siblings: 0, numbers: width >= numbersMinWidth),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _Pager extends StatelessWidget {
+  const _Pager({
+    required this.page,
+    required this.pageCount,
+    required this.siblings,
+    required this.showNumbers,
+    required this.previousPageText,
+    required this.nextPageText,
+    required this.pageText,
+    required this.onPageSelected,
+  });
+
+  final int page;
+  final int pageCount;
+  final int siblings;
+  final bool showNumbers;
+  final String previousPageText;
+  final String nextPageText;
+  final String Function(int page) pageText;
+  final void Function(int page) onPageSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPrevious = page > 0;
+    final hasNext = page < pageCount - 1;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _PagerButton(
+          key: const ValueKey('pagination-previous'),
+          label: previousPageText,
+          onPressed: hasPrevious ? () => onPageSelected(page - 1) : null,
+          builder: (context, hovered) => _ArrowFace(
+            icon: ArDriveIcons.carretLeft,
+            enabled: hasPrevious,
+            hovered: hovered,
+          ),
+        ),
+        if (showNumbers)
+          for (final slot
+              in paginationSlots(page, pageCount, siblings: siblings))
+            if (slot == null)
+              const _Ellipsis()
+            else
+              _PagerButton(
+                key: ValueKey('pagination-page-$slot'),
+                label: pageText(slot + 1),
+                selected: slot == page,
+                onPressed: () => onPageSelected(slot),
+                builder: (context, hovered) => _PageFace(
+                  number: slot + 1,
+                  selected: slot == page,
+                  hovered: hovered,
                 ),
               ),
-            ],
+        _PagerButton(
+          key: const ValueKey('pagination-next'),
+          label: nextPageText,
+          onPressed: hasNext ? () => onPageSelected(page + 1) : null,
+          builder: (context, hovered) => _ArrowFace(
+            icon: ArDriveIcons.carretRight,
+            enabled: hasNext,
+            hovered: hovered,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One of the footer's controls, as a button rather than a tap target: it
+/// is reached with Tab, pressed with Enter or Space, shows a ring while
+/// focused, and tells a screen reader what it is.
+///
+/// Enter is bound here rather than left to the app's shortcuts because the
+/// table around it already listens for Enter, to open the selected row, and
+/// would hear it first.
+class _PagerButton extends StatefulWidget {
+  const _PagerButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    required this.builder,
+    this.selected = false,
+    this.onKeyboardPressed,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  /// Pressed with Enter or Space rather than the pointer, when that should
+  /// do more: a menu opened from the keyboard puts focus in itself.
+  final VoidCallback? onKeyboardPressed;
+  final bool selected;
+  final Widget Function(BuildContext context, bool hovered) builder;
+
+  @override
+  State<_PagerButton> createState() => _PagerButtonState();
+}
+
+class _PagerButtonState extends State<_PagerButton> {
+  bool _hovered = false;
+  bool _focused = false;
+
+  static const _activators = <ShortcutActivator, Intent>{
+    SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+    SingleActivator(LogicalKeyboardKey.numpadEnter): ActivateIntent(),
+    SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onPressed != null;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      selected: widget.selected,
+      label: widget.label,
+      onTap: widget.onPressed,
+      excludeSemantics: true,
+      child: FocusableActionDetector(
+        enabled: enabled,
+        shortcuts: _activators,
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              (widget.onKeyboardPressed ?? widget.onPressed)?.call();
+              return null;
+            },
+          ),
+        },
+        mouseCursor: enabled && !widget.selected
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
+        onShowHoverHighlight: (value) => setState(() => _hovered = value),
+        onShowFocusHighlight: (value) => setState(() => _focused = value),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onPressed,
+          child: Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                width: 2,
+                color: _focused ? colorTokens.strokeHigh : Colors.transparent,
+              ),
+            ),
+            child: widget.builder(
+              context,
+              _hovered && enabled && !widget.selected,
+            ),
           ),
         ),
       ),
@@ -1237,8 +1587,284 @@ class _PageNumber extends StatelessWidget {
   }
 }
 
-String _showSemanticPageNumber(int page) {
-  return (page + 1).toString();
+class _ArrowFace extends StatelessWidget {
+  const _ArrowFace({
+    required this.icon,
+    required this.enabled,
+    required this.hovered,
+  });
+
+  final ArDriveIcon Function({double? size, Color? color}) icon;
+  final bool enabled;
+  final bool hovered;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ArDriveTheme.of(context).themeData;
+
+    return Container(
+      width: 32,
+      height: 32,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: hovered ? theme.colorTokens.containerL1 : null,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: icon(
+        color: enabled ? theme.colors.themeFgDefault : grey,
+      ),
+    );
+  }
+}
+
+class _PageFace extends StatelessWidget {
+  const _PageFace({
+    required this.number,
+    required this.selected,
+    required this.hovered,
+  });
+
+  final int number;
+  final bool selected;
+  final bool hovered;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ArDriveTheme.of(context).themeData;
+
+    return Container(
+      height: 32,
+      constraints: const BoxConstraints(minWidth: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        border: Border.all(
+          width: 2,
+          color: selected
+              ? theme.colors.themeFgDefault
+              : theme.colors.themeGbMuted,
+        ),
+        borderRadius: BorderRadius.circular(4),
+        color: selected
+            ? theme.colors.themeFgDefault
+            : hovered
+                ? theme.colorTokens.containerL1
+                : null,
+      ),
+      child: Text(
+        '$number',
+        style: ArDriveTypography.body.buttonNormalBold(
+          color: selected
+              ? theme.tableTheme.backgroundColor
+              : theme.colors.themeFgDefault,
+        ),
+      ),
+    );
+  }
+}
+
+class _Ellipsis extends StatelessWidget {
+  const _Ellipsis();
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      // A page button's width - its face and the room around it for a focus
+      // ring - so the pager is the same width whichever pages it shows.
+      child: SizedBox(
+        width: 40,
+        height: 40,
+        child: Center(
+          child: ArDriveIcons.dots(
+            size: 20,
+            color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Rows per page" and its menu.
+///
+/// A `MenuAnchor` rather than the app's `ArDriveDropdown`, which only hears
+/// the pointer: here the trigger opens on Enter, the open menu puts focus on
+/// the current size, the arrows move between sizes and Escape closes it.
+class _RowsPerPagePicker extends StatefulWidget {
+  const _RowsPerPagePicker({
+    required this.rowsPerPage,
+    required this.options,
+    required this.label,
+    required this.onSelected,
+  });
+
+  final int rowsPerPage;
+  final List<int> options;
+  final String label;
+  final void Function(int rowsPerPage) onSelected;
+
+  @override
+  State<_RowsPerPagePicker> createState() => _RowsPerPagePickerState();
+}
+
+class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
+  final _controller = MenuController();
+  final _focusNodes = <int, FocusNode>{};
+
+  /// Whether the menu was opened from the keyboard, and so takes focus. Not
+  /// when opened with the pointer, where a focused item would show as a
+  /// highlight nothing is hovering.
+  bool _focusOnOpen = false;
+
+  /// Escape, while the menu is open. The menu hears it itself only when
+  /// focus is inside it, which a menu opened with the pointer does not take.
+  bool _onKey(KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape &&
+        _controller.isOpen) {
+      _controller.close();
+      return true;
+    }
+    return false;
+  }
+
+  void _toggle({required bool fromKeyboard}) {
+    if (_controller.isOpen) {
+      _controller.close();
+      return;
+    }
+    _focusOnOpen = fromKeyboard;
+    _controller.open();
+  }
+
+  FocusNode _nodeFor(int option) => _focusNodes.putIfAbsent(
+        option,
+        () => FocusNode(debugLabel: 'rows per page $option'),
+      );
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    for (final node in _focusNodes.values) {
+      node.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = ArDriveTheme.of(context).themeData;
+    final typography = ArDriveTypographyNew.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: ExcludeSemantics(
+            child: Text(
+              widget.label,
+              style: typography.paragraphNormal(
+                color: theme.colorTokens.textMid,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        MenuAnchor(
+          controller: _controller,
+          // The menu lines up with the button's face, inside the room its
+          // focus ring keeps.
+          alignmentOffset: const Offset(4, 0),
+          onClose: () => HardwareKeyboard.instance.removeHandler(_onKey),
+          onOpen: () {
+            HardwareKeyboard.instance.addHandler(_onKey);
+            if (!_focusOnOpen) {
+              return;
+            }
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _focusNodes[widget.rowsPerPage]?.requestFocus();
+            });
+          },
+          style: MenuStyle(
+            backgroundColor: MaterialStatePropertyAll(
+              theme.dropdownTheme.backgroundColor,
+            ),
+            surfaceTintColor: const MaterialStatePropertyAll(
+              Colors.transparent,
+            ),
+            padding: const MaterialStatePropertyAll(
+              EdgeInsets.symmetric(vertical: 4),
+            ),
+            shape: MaterialStatePropertyAll(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+            ),
+          ),
+          menuChildren: [
+            for (final option in widget.options)
+              MenuItemButton(
+                key: ValueKey('rows-per-page-$option'),
+                focusNode: _nodeFor(option),
+                onPressed: () => widget.onSelected(option),
+                style: ButtonStyle(
+                  minimumSize: const MaterialStatePropertyAll(Size(112, 40)),
+                  overlayColor: MaterialStatePropertyAll(
+                    theme.dropdownTheme.hoverColor,
+                  ),
+                ),
+                leadingIcon: SizedBox(
+                  width: 16,
+                  child: option == widget.rowsPerPage
+                      ? ArDriveIcons.checkmark(
+                          size: 16,
+                          color: theme.colors.themeFgDefault,
+                        )
+                      : null,
+                ),
+                child: Text(
+                  '$option',
+                  style: ArDriveTypography.body.buttonNormalBold(
+                    color: theme.colors.themeFgDefault,
+                  ),
+                ),
+              ),
+          ],
+          builder: (context, controller, child) => _PagerButton(
+            key: const ValueKey('rows-per-page'),
+            label: '${widget.label}: ${widget.rowsPerPage}',
+            onPressed: () => _toggle(fromKeyboard: false),
+            onKeyboardPressed: () => _toggle(fromKeyboard: true),
+            builder: (context, hovered) => Container(
+              height: 32,
+              padding: const EdgeInsets.only(left: 10, right: 6),
+              decoration: BoxDecoration(
+                border: Border.all(width: 2, color: theme.colors.themeGbMuted),
+                borderRadius: BorderRadius.circular(4),
+                color: hovered ? theme.colorTokens.containerL1 : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${widget.rowsPerPage}',
+                    style: ArDriveTypography.body.buttonNormalBold(
+                      color: theme.colors.themeFgDefault,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  ArDriveIcons.carretDown(
+                    size: 20,
+                    color: theme.colors.themeFgDefault,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class MultiSelectBox<T> {
@@ -1275,7 +1901,7 @@ class MultiSelectBox<T> {
 /// the app was affected, which is why this belongs here rather than in any one
 /// of them.
 class _HoverableRow extends StatefulWidget {
-  const _HoverableRow({required this.child});
+  const _HoverableRow({super.key, required this.child});
 
   final Widget child;
 

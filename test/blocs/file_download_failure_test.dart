@@ -49,11 +49,12 @@ void main() {
       );
     });
 
-    test('a resume that cannot be spliced is named as a restart, not as a '
+    test(
+        'a resume that cannot be spliced is named as a restart, not as a '
         'generic network problem', () {
       // Retrying *is* the fix, so this is not the integrity dialog's dead end.
       // But the bytes already delivered are gone, so it is not the network
-      // dialog either: that one offers "Try Again", which to somebody watching
+      // dialog either: that one offers "Try again", which to somebody watching
       // a bar sit at 80% promises the remaining 20%.
       expect(
         classifyDownloadError(
@@ -62,7 +63,8 @@ void main() {
       );
     });
 
-    test('a body larger than the file claimed is reported as a size problem, '
+    test(
+        'a body larger than the file claimed is reported as a size problem, '
         'not as an unknown one', () {
       expect(
         classifyDownloadError(
@@ -71,7 +73,8 @@ void main() {
       );
     });
 
-    test('a file that failed its authentication check is named as one, and '
+    test(
+        'a file that failed its authentication check is named as one, and '
         'never offered a retry', () {
       // The retryable dialog is what the fallback reason renders, and it is
       // exactly wrong here: the bytes are what they are, so "Try again" is an
@@ -100,8 +103,8 @@ void main() {
     test('a file within the ceiling is not a failure', () {
       expect(
         singleFileLimitFailure(
-          DownloadSizeLimit(publicDownloadSafariSizeLimit,
-              DownloadSizeLimitSource.safari),
+          DownloadSizeLimit(
+              publicDownloadSafariSizeLimit, DownloadSizeLimitSource.safari),
           publicDownloadSafariSizeLimit,
         ),
         isNull,
@@ -115,8 +118,8 @@ void main() {
     test('Safari is explained as a browser limitation', () {
       expect(
         singleFileLimitFailure(
-          DownloadSizeLimit(publicDownloadSafariSizeLimit,
-              DownloadSizeLimitSource.safari),
+          DownloadSizeLimit(
+              publicDownloadSafariSizeLimit, DownloadSizeLimitSource.safari),
           publicDownloadSafariSizeLimit + 1,
         ),
         FileDownloadFailureReason.browserDoesNotSupportLargeDownloads,
@@ -126,8 +129,8 @@ void main() {
     test('a phone is not explained as a browser limitation', () {
       expect(
         singleFileLimitFailure(
-          DownloadSizeLimit(privateDownloadMobileSizeLimit,
-              DownloadSizeLimitSource.mobile),
+          DownloadSizeLimit(
+              privateDownloadMobileSizeLimit, DownloadSizeLimitSource.mobile),
           privateDownloadMobileSizeLimit + 1,
         ),
         FileDownloadFailureReason.fileAboveLimit,
@@ -184,17 +187,18 @@ void main() {
         (tester) async {
       await pumpFailure(tester, FileDownloadFailureReason.unknownError);
 
-      expect(find.text('Try Again'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
     });
 
-    testWidgets('never offers a retry for a file that failed its integrity '
+    testWidgets(
+        'never offers a retry for a file that failed its integrity '
         'check, and says nothing was saved', (tester) async {
       await pumpFailure(tester, FileDownloadFailureReason.integrityCheckFailed);
 
       // The whole point of the typed reason: these bytes will fail the same
       // check every time, so the retryable dialog would be an invitation to
       // download them for ever.
-      expect(find.text('Try Again'), findsNothing);
+      expect(find.text('Try again'), findsNothing);
       expect(find.text('OK'), findsOneWidget);
       expect(find.textContaining('nothing was saved'), findsOneWidget);
       // Corrupted bytes are not a routine transport hiccup, and the modal has
@@ -202,14 +206,15 @@ void main() {
       expect(_alertIcon, findsOneWidget);
     });
 
-    testWidgets('a download that cannot be resumed offers a restart, and does '
+    testWidgets(
+        'a download that cannot be resumed offers a restart, and does '
         'not call it trying again', (tester) async {
       await pumpFailure(tester, FileDownloadFailureReason.downloadMustRestart);
 
-      expect(find.text('Start Over'), findsOneWidget);
-      // "Try Again" next to a bar that stopped at 80% promises the last 20%,
+      expect(find.text('Start over'), findsOneWidget);
+      // "Try again" next to a bar that stopped at 80% promises the last 20%,
       // and this is precisely the failure where that cannot be delivered.
-      expect(find.text('Try Again'), findsNothing);
+      expect(find.text('Try again'), findsNothing);
       expect(find.textContaining('from the beginning'), findsOneWidget);
       // A dropped connection is an inconvenience, not an alarm. Spending the
       // alert icon here would spend it everywhere.

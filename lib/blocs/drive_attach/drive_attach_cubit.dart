@@ -73,7 +73,16 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
     // Add the initial drive id in a microtask to properly trigger the drive name loader.
     await Future.microtask(() async {
       if (driveId != null) {
-        driveIdController.text = driveId;
+        // With the cursor at the start. Setting `.text` leaves no cursor, and
+        // the field has focus, so the browser selected the whole ID - in the
+        // brand red Material draws selections with, which read as an error to
+        // someone who had only opened a link. At the start rather than the
+        // end because the field is narrower than an ID, and the cursor
+        // decides which end of it shows.
+        driveIdController.value = TextEditingValue(
+          text: driveId,
+          selection: const TextSelection.collapsed(offset: 0),
+        );
 
         await drivePrivacyLoader();
 
@@ -172,9 +181,8 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
         return;
       }
 
-      final driveName = typedDriveName.isNotEmpty
-          ? typedDriveName
-          : driveNameController.text;
+      final driveName =
+          typedDriveName.isNotEmpty ? typedDriveName : driveNameController.text;
 
       await _driveDao.writeDriveEntity(
         name: driveName,
@@ -375,6 +383,7 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
 
     emit(DriveAttachFailure());
   }
+
   /// Parks until nothing uninterruptible is running.
   ///
   /// Bounded, because a flag that never clears must not strand an attach: the
@@ -391,5 +400,4 @@ class DriveAttachCubit extends Cubit<DriveAttachState> {
       // Timed out or the cubit closed. Fall through and try anyway.
     }
   }
-
 }

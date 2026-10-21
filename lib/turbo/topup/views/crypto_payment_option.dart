@@ -79,7 +79,7 @@ class _CryptoPaymentOptionState extends State<CryptoPaymentOption> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pay with Crypto',
+                      'Pay with crypto',
                       style: ArDriveTypographyNew.of(context).paragraphLarge(
                         fontWeight: ArFontWeight.bold,
                         color: colors.themeFgDefault,

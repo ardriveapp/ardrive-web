@@ -4,12 +4,21 @@ import 'dart:typed_data';
 import 'package:ardrive/components/sandboxed_transaction_view/arweave_sandbox_url.dart';
 import 'package:ardrive/download/download_exceptions.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
+import 'package:ardrive/services/arweave/gateway_http_client.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:arweave/arweave.dart' as arweave_pkg;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart';
+
+/// How much of one gateway's answer has arrived: [received] bytes of [total],
+/// or of an unknown total when the gateway did not declare one.
+///
+/// Called with `received == 0` when an attempt starts, which includes a
+/// fallback gateway taking over from one that failed: the count starts again,
+/// because the bytes the failed gateway sent are thrown away.
+typedef FetchProgress = void Function(int received, int? total);
 
 /// Provides data gateway fallback resilience.
 ///
@@ -31,8 +40,11 @@ class DataGatewayFallback {
   final Map<String, Arweave> _clientCache = {};
 
   /// Injectable so the methods here that talk to a gateway themselves rather
-  /// than through an [Arweave] client - [fetchDataAtMost] and the manifest
-  /// fetch - can be tested without a network.
+  /// than through an [Arweave] client - [fetchData], [fetchDataAtMost] and the
+  /// manifest fetch - can be tested without a network.
+  ///
+  /// Defaults to [gatewayHttpClient], which is fetch-based in the browser.
+  /// That is what makes [_tryGatewayStreamed] streamed on the web at all.
   final Client Function() _clientFactory;
 
   static const _maxGarFallbacks = 2;
@@ -144,7 +156,7 @@ class DataGatewayFallback {
     @visibleForTesting Duration? dataRequestTimeout,
     @visibleForTesting Duration? dataTotalTimeout,
   })  : _arioSDK = arioSDK,
-        _clientFactory = clientFactory ?? Client.new,
+        _clientFactory = clientFactory ?? gatewayHttpClient,
         _dataRequestTimeout = dataRequestTimeout ?? _requestTimeout,
         _dataTotalTimeout = dataTotalTimeout ?? _totalFetchTimeout,
         _syncRequestTimeout = syncRequestTimeout ?? _requestTimeout,
@@ -157,18 +169,43 @@ class DataGatewayFallback {
   /// Used for metadata fetches during sync (called hundreds of times).
   ///
   /// If ALL gateways return 404, throws [TransactionNotFound].
-  Future<Response> fetchData(String txId, Arweave primaryClient) async {
+  ///
+  /// [onProgress], when given, hears the body arrive - see [FetchProgress].
+  ///
+  /// [cancelWhen], when it completes, abandons the fetch: the request in
+  /// flight is aborted, no further gateway is tried, and [FetchCancelled] is
+  /// thrown. A preview the reader has already left must not carry on
+  /// downloading a hundred megabytes nobody will see.
+  Future<Response> fetchData(
+    String txId,
+    Arweave primaryClient, {
+    FetchProgress? onProgress,
+    Future<void>? cancelWhen,
+  }) async {
     // One client for the whole waterfall, so the backstop below has something
     // to hang up with. `Future.timeout` does not cancel what it times out: the
     // read would otherwise carry on buffering - up to the 100 MiB preview cap -
     // and holding its connection long after the caller was told it had failed.
-    // Closing the client aborts the request in flight (`BrowserClient.close`
-    // fires its `AbortController`).
+    // Closing the client aborts the request in flight (`FetchClient.close`
+    // fires its `AbortController`; `BrowserClient.close` aborts its XHRs).
     final httpClient = _clientFactory();
 
+    var isCancelled = false;
+    cancelWhen?.then((_) {
+      isCancelled = true;
+      // Aborts whatever is in flight; the waterfall checks the flag before it
+      // tries anything else.
+      httpClient.close();
+    });
+
     try {
-      return await _serialFetch(txId, primaryClient, httpClient: httpClient)
-          .timeout(_dataTotalTimeout, onTimeout: () {
+      return await _serialFetch(
+        txId,
+        primaryClient,
+        httpClient: httpClient,
+        onProgress: onProgress,
+        isCancelled: () => isCancelled,
+      ).timeout(_dataTotalTimeout, onTimeout: () {
         logger.w('Total fetch timeout exceeded for tx $txId');
         httpClient.close();
 
@@ -284,11 +321,17 @@ class DataGatewayFallback {
     String txId,
     Arweave primaryClient, {
     required Client httpClient,
+    FetchProgress? onProgress,
+    bool Function()? isCancelled,
   }) async {
     final clients = await _buildClientList(primaryClient);
     var all404 = true;
 
     for (final client in clients) {
+      if (isCancelled?.call() ?? false) {
+        throw FetchCancelled(txId);
+      }
+
       final gatewayName = client.api.gatewayUrl.host;
       final isPrimary = client == primaryClient;
 
@@ -312,7 +355,12 @@ class DataGatewayFallback {
         var retryable = false;
 
         try {
-          final response = await _tryGatewayStreamed(client, txId, httpClient);
+          final response = await _tryGatewayStreamed(
+            client,
+            txId,
+            httpClient,
+            onProgress: onProgress,
+          );
           if (!isPrimary) {
             logger.i('Fallback gateway $gatewayName succeeded for tx $txId');
           }
@@ -322,6 +370,11 @@ class DataGatewayFallback {
           retryable = e.statusCode == 404;
           logger.w('Gateway $gatewayName failed for tx $txId: $e');
         } catch (e) {
+          // Aborted on purpose, not a gateway failing.
+          if (isCancelled?.call() ?? false) {
+            throw FetchCancelled(txId);
+          }
+
           all404 = false;
           logger.w('Gateway $gatewayName failed for tx $txId: $e');
         }
@@ -566,15 +619,37 @@ class DataGatewayFallback {
   }
 
   /// Fetch manifest data with serial gateway fallback.
+  ///
+  /// [cancelWhen] abandons the fetch as it does for [fetchData]: the request
+  /// in flight is aborted, no further gateway is tried, and [FetchCancelled]
+  /// is thrown.
   Future<Response> fetchManifestWithFallback(
-      String txId, Arweave primaryClient) async {
+    String txId,
+    Arweave primaryClient, {
+    Future<void>? cancelWhen,
+  }) async {
+    var isCancelled = false;
+    Client? inFlight;
+    cancelWhen?.then((_) {
+      isCancelled = true;
+      inFlight?.close();
+    });
+
     final clients = await _buildClientList(primaryClient);
     var all404 = true;
 
     for (final client in clients) {
+      if (isCancelled) {
+        throw FetchCancelled(txId);
+      }
+
       final gatewayName = client.api.gatewayUrl.host;
       try {
-        final response = await _tryManifestGateway(client, txId);
+        final response = await _tryManifestGateway(
+          client,
+          txId,
+          onClient: (httpClient) => inFlight = httpClient,
+        );
         if (client != primaryClient) {
           logger
               .i('Fallback gateway $gatewayName succeeded for manifest $txId');
@@ -587,6 +662,12 @@ class DataGatewayFallback {
         all404 = false;
         logger.w('Gateway $gatewayName failed for manifest $txId: $e');
       }
+    }
+
+    // Cancelled while the last gateway was answering: whatever it answered -
+    // an abort, a 404 - is not the outcome, the cancel is.
+    if (isCancelled) {
+      throw FetchCancelled(txId);
     }
 
     if (all404) {
@@ -644,8 +725,12 @@ class DataGatewayFallback {
   ///
   /// Reading the body as a stream makes the timeout fire only when no chunk
   /// has arrived for that long. A slow body finishes; a dead gateway is still
-  /// dropped just as quickly. `BrowserClient` reads through a `ReadableStream`,
-  /// so this is chunk-wise on the web too, not only on the VM.
+  /// dropped just as quickly.
+  ///
+  /// On the web that depends on the client being [gatewayHttpClient]. The
+  /// `BrowserClient` this used before completes `send` only once the whole body
+  /// has arrived, so there the budget below was still a deadline on the entire
+  /// transfer, and the body came as one chunk.
   ///
   /// Sync deliberately keeps [_tryGateway]: its reads are a few hundred bytes
   /// each and there are hundreds of them, so a wall clock is the right shape
@@ -655,6 +740,7 @@ class DataGatewayFallback {
     String txId,
     Client httpClient, {
     Duration? requestTimeout,
+    FetchProgress? onProgress,
   }) async {
     final budget = requestTimeout ?? _dataRequestTimeout;
 
@@ -682,10 +768,16 @@ class DataGatewayFallback {
 
       final chunks = <List<int>>[];
       var length = 0;
+      final total = response.contentLength;
+
+      // Zero first, so a fallback gateway reads as starting over rather than
+      // as the bar jumping back on its own.
+      onProgress?.call(0, total);
 
       await for (final chunk in response.stream.timeout(budget)) {
         chunks.add(chunk);
         length += chunk.length;
+        onProgress?.call(length, total);
       }
 
       final body = Uint8List(length);
@@ -732,8 +824,16 @@ class DataGatewayFallback {
   /// land in the waterfall's `catch`, be counted as this gateway failing, and
   /// reach the user as "all gateways failed" once every gateway had returned
   /// the same perfectly good manifest.
-  Future<Response> _tryManifestGateway(Arweave client, String txId) async {
+  ///
+  /// [onClient] is handed the client before the request goes out, so a
+  /// cancelled [fetchManifestWithFallback] can close it.
+  Future<Response> _tryManifestGateway(
+    Arweave client,
+    String txId, {
+    void Function(Client httpClient)? onClient,
+  }) async {
     final httpClient = _clientFactory();
+    onClient?.call(httpClient);
 
     try {
       final response = await httpClient
@@ -760,6 +860,17 @@ class DataGatewayFallback {
       ),
     );
   }
+}
+
+/// A [DataGatewayFallback.fetchData] or
+/// [DataGatewayFallback.fetchManifestWithFallback] that its caller abandoned.
+class FetchCancelled implements Exception {
+  const FetchCancelled(this.txId);
+
+  final String txId;
+
+  @override
+  String toString() => 'FetchCancelled: $txId';
 }
 
 class _ErrorFromStatus implements Exception {

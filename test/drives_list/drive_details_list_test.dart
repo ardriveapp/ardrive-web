@@ -46,7 +46,6 @@ void main() {
   Future<void> pumpList(
     WidgetTester tester, {
     String? chosenDriveId,
-    bool allowCompactColumns = false,
     double width = 1200,
   }) async {
     await tester.binding.setSurfaceSize(Size(width, 900));
@@ -68,10 +67,8 @@ void main() {
               state: twoDrives,
               onOpenDrive: (drive) => opened.add(drive.id),
               onTryAgain: () {},
-              onSyncAllDrives: () {},
               chosenDriveId: chosenDriveId,
               onChoose: chosen.add,
-              allowCompactColumns: allowCompactColumns,
             ),
           ),
         ),
@@ -157,12 +154,7 @@ void main() {
     const narrowed = 700.0;
 
     testWidgets('keeps its rows, as three columns', (tester) async {
-      await pumpList(
-        tester,
-        width: narrowed,
-        chosenDriveId: 'b',
-        allowCompactColumns: true,
-      );
+      await pumpList(tester, width: narrowed, chosenDriveId: 'b');
 
       expect(find.byType(DriveListHeader), findsOneWidget);
       expect(find.text('Size'), findsOneWidget);
@@ -170,12 +162,13 @@ void main() {
       expect(find.text('Date created'), findsNothing);
     });
 
-    /// Without the details, the list's own breakpoints are untouched: at this
-    /// width it is cards, as it always was.
-    testWidgets('and only there', (tester) async {
+    /// And without them: three columns are the list's own layout at this
+    /// width now, not only one the details allow.
+    testWidgets('and without them', (tester) async {
       await pumpList(tester, width: narrowed);
 
-      expect(find.byType(DriveListHeader), findsNothing);
+      expect(find.byType(DriveListHeader), findsOneWidget);
+      expect(find.text('Files'), findsNothing);
     });
   });
 
@@ -207,8 +200,37 @@ void main() {
       expect(pushesAt(1200), isFalse);
     });
 
-    test('and cover a list that is cards already', () {
+    /// At 1100 the list has three columns of its own, and beside the panel
+    /// it would have cards.
+    test('and cover where three columns would become cards', () {
       expect(pushesAt(1100), isFalse);
+    });
+
+    /// At a large text scale the five columns never fit under the list's
+    /// width cap, so the details always covered. Three still fit beside the
+    /// panel on a wide monitor, so they push there now.
+    test('at a large text scale, push where three columns still fit', () {
+      expect(
+        driveDetailsPushList(width: 1664, panelWidth: 480, textScale: 1.5),
+        isTrue,
+      );
+      expect(
+        driveDetailsPushList(width: 1100, panelWidth: 375, textScale: 1.5),
+        isFalse,
+      );
+    });
+
+    /// Pushing keeps working wherever three columns fit beside the panel,
+    /// whether the list had three or five before it opened.
+    test('push wherever three columns stay beside the panel', () {
+      expect(
+        driveDetailsPushList(width: 1100, panelWidth: 375),
+        isTrue,
+      );
+      expect(
+        driveDetailsPushList(width: 1000, panelWidth: 375),
+        isFalse,
+      );
     });
   });
 }

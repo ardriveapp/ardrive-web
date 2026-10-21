@@ -144,7 +144,14 @@ class _AppSideBarState extends State<AppSideBar> {
                     const SizedBox(
                       height: 16,
                     ),
-                    _buildDriveNav(isMobile: true),
+                    // The part that scrolls, as on desktop. Laid out at its
+                    // full height, a long drive list could not be scrolled and
+                    // drew over the dev tools link and the version below it.
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: _buildDriveNav(isMobile: true),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -336,7 +343,7 @@ class _AppSideBarState extends State<AppSideBar> {
               // is what kept the list exactly as tall as the window.
               //
               // No indent of its own. It sat 43px in, so its headings started
-              // a whole icon-and-gap to the right of All drives above them.
+              // a whole icon-and-gap to the right of Your drives above them.
               return _DriveSections(state: state);
             }
 
@@ -366,7 +373,7 @@ class _AppSideBarState extends State<AppSideBar> {
     }
 
     return ArDriveClickArea(
-      tooltip: appLocalizationsOf(context).allDrivesScope,
+      tooltip: appLocalizationsOf(context).yourDrives,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
@@ -515,53 +522,64 @@ class _AppSideBarState extends State<AppSideBar> {
       currentFolder = state.folderInView;
     }
 
-    return ArDriveClickArea(
-      tooltip: appLocalizationsOf(context).showMenu,
-      child: NewButton(
-        anchor: isMobile
-            ? const Aligned(
-                follower: Alignment.topLeft,
-                target: Alignment.bottomLeft,
-              )
-            : const Aligned(
-                follower: Alignment.topLeft,
-                target: Alignment.topRight,
-              ),
-        drive: currentDrive,
-        driveDetailState: context.read<DriveDetailCubit>().state,
-        currentFolder: currentFolder,
-        customOffset: _isExpanded ? null : const Offset(52, -40),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Container(
-              width: isMobile
-                  ? constraints.maxWidth
-                  : _isExpanded
-                      ? 128
-                      : 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
-                shape: _isExpanded ? BoxShape.rectangle : BoxShape.circle,
-                borderRadius: _isExpanded
-                    ? BorderRadius.all(
-                        Radius.circular(isMobile ? 5 : 8),
-                      )
-                    : null,
-              ),
-              child: isExpanded
-                  ? Center(
-                      child: Text(
-                        appLocalizationsOf(context).newString,
-                        style: ArDriveTypography.headline.headline5Bold(
-                          color: Colors.white,
+    // Announced as a button, and named once. Its tooltip said "Show menu",
+    // which a screen reader read out in front of the button's own "New".
+    // Expanded, the word on the button is its name; collapsed, it is a plus
+    // with no word, and the tooltip names it. No label of its own here, and
+    // nothing excluded: the tap that opens the menu is handled inside
+    // [NewButton], below this node.
+    return Semantics(
+      button: true,
+      child: ArDriveClickArea(
+        tooltip: isExpanded ? null : appLocalizationsOf(context).newString,
+        child: NewButton(
+          anchor: isMobile
+              ? const Aligned(
+                  follower: Alignment.topLeft,
+                  target: Alignment.bottomLeft,
+                )
+              : const Aligned(
+                  follower: Alignment.topLeft,
+                  target: Alignment.topRight,
+                ),
+          drive: currentDrive,
+          driveDetailState: context.read<DriveDetailCubit>().state,
+          currentFolder: currentFolder,
+          customOffset: _isExpanded ? null : const Offset(52, -40),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Container(
+                width: isMobile
+                    ? constraints.maxWidth
+                    : _isExpanded
+                        ? 128
+                        : 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeAccentBrand,
+                  shape: _isExpanded ? BoxShape.rectangle : BoxShape.circle,
+                  borderRadius: _isExpanded
+                      ? BorderRadius.all(
+                          Radius.circular(isMobile ? 5 : 8),
+                        )
+                      : null,
+                ),
+                child: isExpanded
+                    ? Center(
+                        child: Text(
+                          appLocalizationsOf(context).newString,
+                          style: ArDriveTypography.headline.headline5Bold(
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                    )
-                  : ArDriveIcons.plus(color: Colors.white),
-            );
-          },
+                      )
+                    : ArDriveIcons.plus(color: Colors.white),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -855,7 +873,7 @@ Future<void> showSupportModal({
                 context,
                 content: ArDriveStandardModalNew(
                   hasCloseButton: true,
-                  title: 'Logs Exported',
+                  title: 'Logs exported',
                   content: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -974,7 +992,7 @@ class _DriveSectionsState extends State<_DriveSections> {
         bool shown(Drive drive) => !(hideHidden && drive.isHidden);
 
         // No padding of its own on either breakpoint: the rows sit on the
-        // same edge as All drives above them.
+        // same edge as Your drives above them.
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
@@ -1102,7 +1120,7 @@ class _AllDrivesRow extends StatelessWidget {
 
     return DriveNavRow(
       icon: DriveScopeRail.iconFor(DriveScope.all),
-      label: appLocalizationsOf(context).allDrivesScope,
+      label: appLocalizationsOf(context).yourDrives,
       showLabel: showLabel,
       isCurrent: scopeIsAll,
       onTap: () {

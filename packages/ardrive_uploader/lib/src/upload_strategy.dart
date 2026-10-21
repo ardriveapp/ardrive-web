@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_uploader/src/data_bundler.dart';
+import 'package:ardrive_uploader/src/streamed_upload.dart';
 import 'package:ardrive_uploader/src/utils/data_bundler_utils.dart';
 import 'package:ardrive_uploader/src/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -15,6 +16,10 @@ abstract class UploadFileStrategy {
     required UploadController controller,
     required bool Function() verifyCancel,
     List<DataItemResult>? signedDataItemResults,
+
+    /// Whether [task] is a retry whose signed transaction, in its upload item,
+    /// should be sent again rather than replaced by a new one.
+    bool resendSignedTransaction = false,
   });
 }
 
@@ -61,6 +66,7 @@ class UploadFileUsingDataItemFiles extends UploadFileStrategy {
     required UploadController controller,
     required bool Function() verifyCancel,
     List<DataItemResult>? signedDataItemResults,
+    bool resendSignedTransaction = false,
   }) async {
     // Use pre-signed data items if available to avoid re-signing
     if (signedDataItemResults != null) {
@@ -225,7 +231,28 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
     required UploadController controller,
     required bool Function() verifyCancel,
     List<DataItemResult>? signedDataItemResults,
+    bool resendSignedTransaction = false,
   }) async {
+    final previous = task.uploadItem;
+    if (resendSignedTransaction && previous is TransactionUploadItem) {
+      if (verifyCancel()) {
+        throw UploadCanceledException('Upload canceled');
+      }
+
+      // Only ever this transaction, whatever went wrong. A failed header post
+      // does not show that the header missed the network: a gateway can
+      // store it and still time out, drop the connection or answer with an
+      // error. Signing a new transaction then would pay twice and leave this
+      // one paid with nothing in it. A later retry sends this one again.
+      final result = await _send(task, wallet, controller);
+      if (result.success) return;
+
+      throw BundleUploadException(
+        message: 'Failed to upload file bundle ${previous.data.id} again',
+        error: result.error,
+      );
+    }
+
     final bundle = await _dataBundler.createDataBundle(
       file: task.file,
       dataItemFiles: dataItems,
@@ -284,6 +311,22 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
       throw UploadCanceledException('Upload canceled');
     }
 
+    final result = await _send(task, wallet, controller);
+
+    if (!result.success) {
+      throw BundleUploadException(
+        message: 'Failed to upload file bundle. Bundle: $bundle',
+        error: result.error,
+      );
+    }
+  }
+
+  /// Sends [task]'s upload item, and marks the task complete when it lands.
+  Future<StreamedUploadResult> _send(
+    FileUploadTask task,
+    Wallet wallet,
+    UploadController controller,
+  ) async {
     final streamedUpload = await _streamedUploadFactory.fromUploadType(task);
 
     task = task.copyWith(
@@ -304,18 +347,15 @@ class UploadFileUsingBundleStrategy extends UploadFileStrategy {
       );
     });
 
-    if (!result.success) {
-      throw BundleUploadException(
-        message: 'Failed to upload file bundle. Bundle: $bundle',
-        error: result.error,
+    if (result.success) {
+      controller.updateProgress(
+        task: task.copyWith(
+          status: UploadStatus.complete,
+        ),
       );
     }
 
-    controller.updateProgress(
-      task: task.copyWith(
-        status: UploadStatus.complete,
-      ),
-    );
+    return result;
   }
 }
 
@@ -337,6 +377,35 @@ class UploadFolderStructureAsBundleStrategy
     required UploadController controller,
     required bool Function() verifyCancel,
   }) async {
+    // A retry sends the transaction the folders were already signed into, as
+    // the file strategy does: its header may be on the network and paid for.
+    final previous = task.uploadItem;
+    if (task.type == UploadType.d2n && previous is TransactionUploadItem) {
+      if (verifyCancel()) {
+        throw UploadCanceledException('Upload canceled');
+      }
+
+      final streamedUpload = await _streamedUploadFactory.fromUploadType(task);
+      var folderTask = task;
+      final result = await streamedUpload.send(previous, wallet, (progress) {
+        folderTask = folderTask.copyWith(progress: progress);
+        controller.updateProgress(task: folderTask);
+      });
+
+      if (result.success) {
+        controller.updateProgress(
+          task: folderTask.copyWith(status: UploadStatus.complete),
+        );
+        return;
+      }
+
+      // Only ever this transaction; see UploadFileUsingBundleStrategy.
+      throw BundleUploadException(
+        message: 'Failed to upload folder bundle ${previous.data.id} again',
+        error: result.error,
+      );
+    }
+
     // creates the bundle for folders
     final bundle = await _dataBundler.createDataBundleForEntities(
       entities: task.folders,

@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/daos/profile_dao.dart';
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/graphql/graphql_api.graphql.dart';
 import 'package:ardrive/user/user.dart';
+import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/metadata_cache.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:cryptography/cryptography.dart';
@@ -36,6 +40,37 @@ final fakePrivateDriveV1 = TransactionCommonMixinFake()
   ..setTag(EntityTag.drivePrivacy, DrivePrivacyTag.private)
   ..setTag(EntityTag.driveId, 'some_drive_id')
   ..setTag(EntityTag.signatureType, DriveSignatureType.v1.toString());
+
+/// A key value store over a map the test can look into.
+class _KeptValues implements KeyValueStore {
+  _KeptValues(this.values);
+
+  final Map<String, String> values;
+
+  @override
+  Future<bool> putString(String key, String value) async {
+    values[key] = value;
+    return true;
+  }
+
+  @override
+  String? getString(String key) => values[key];
+
+  @override
+  Future<bool> remove(String key) async {
+    values.remove(key);
+    return true;
+  }
+
+  @override
+  Set<String> getKeys() => values.keys.toSet();
+
+  @override
+  Future<bool> putBool(String key, bool value) async => true;
+
+  @override
+  bool? getBool(String key) => null;
+}
 
 void main() {
   late ArDriveAuthImpl arDriveAuth;
@@ -606,6 +641,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((invocation) async {});
 
         await arDriveAuth.logout();
 
@@ -615,6 +652,58 @@ void main() {
         verify(() => mockSecureKeyValueStore.remove('biometricEnabled'))
             .called(1);
         verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+        // What was read out of the tables goes with them: drive keys and
+        // previewed bytes live in memory, not in a table.
+        verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
+      });
+
+      test('clears what the permanence panel kept', () async {
+        final kept = <String, String>{
+          '${permanenceSpendStoragePrefix}walletAddress': 'a reading',
+          'somethingElse': 'stays',
+        };
+        final permanenceCache = PermanenceCache(
+          openStore: () async => _KeptValues(kept),
+        );
+        final auth = ArDriveAuthImpl(
+          arweave: mockArweaveService,
+          userRepository: mockUserRepository,
+          crypto: mockArDriveCrypto,
+          databaseHelpers: mockDatabaseHelpers,
+          arConnectService: mockArConnectService,
+          biometricAuthentication: mockBiometricAuthentication,
+          secureKeyValueStore: mockSecureKeyValueStore,
+          permanenceCache: permanenceCache,
+        );
+        when(() => mockUserRepository.deleteUser())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((invocation) async {});
+
+        await auth.logout();
+
+        expect(kept.keys, ['somethingElse']);
+      });
+
+      test('says it failed when drive keys could not be cleared from memory',
+          () async {
+        when(() => mockUserRepository.hasUser())
+            .thenAnswer((invocation) => Future.value(false));
+        when(() => mockUserRepository.deleteUser())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenThrow(Exception('vault would not clear'));
+
+        // A logout that reported success with drive keys still in memory would
+        // be worse than one that says it failed.
+        await expectLater(
+          arDriveAuth.logout(),
+          throwsA(isA<AuthenticationUnknownException>()),
+        );
       });
 
       /// This is for the case when has user is true but the user is not logged in
@@ -626,6 +715,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(false));
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((invocation) async {});
         when(() => mockUserRepository.deleteUser())
             .thenAnswer((invocation) async {});
 
@@ -634,6 +725,9 @@ void main() {
         verifyNever(() => mockSecureKeyValueStore.remove('password'));
         verifyNever(() => mockSecureKeyValueStore.remove('biometricEnabled'));
         verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+        // What was read out of the tables goes with them: drive keys and
+        // previewed bytes live in memory, not in a table.
+        verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
         verify(() => mockUserRepository.deleteUser()).called(1);
         expect(() => arDriveAuth.currentUser,
             throwsA(isA<AuthenticationUserIsNotLoggedInException>()));
@@ -697,6 +791,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((invocation) async {});
 
         await arDriveAuth.login(wallet, 'password', ProfileType.json);
 
@@ -710,6 +806,9 @@ void main() {
         verify(() => mockSecureKeyValueStore.remove('biometricEnabled'))
             .called(1);
         verify(() => mockDatabaseHelpers.deleteAllTables()).called(1);
+        // What was read out of the tables goes with them: drive keys and
+        // previewed bytes live in memory, not in a table.
+        verify(() => mockDatabaseHelpers.clearSessionMemory()).called(1);
         verify(() => mockUserRepository.deleteUser()).called(1);
       });
     });
@@ -814,6 +913,8 @@ void main() {
             .thenAnswer((invocation) => Future.value(true));
         when(() => mockDatabaseHelpers.deleteAllTables())
             .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((invocation) async {});
 
         arDriveAuth.onAuthStateChanged().listen((user) {
           expect(user, isNull);
@@ -884,6 +985,122 @@ void main() {
         arDriveAuth.onAuthStateChanged().listen((user) {
           expect(user, equals(updatedUser));
         });
+      });
+
+      test('completes only once the new balance is in currentUser', () async {
+        arDriveAuth.currentUser = User(
+          password: 'password',
+          wallet: wallet,
+          walletAddress: 'walletAddress',
+          walletBalance: BigInt.one,
+          cipherKey: SecretKey([]),
+          profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
+        );
+
+        // A real request takes a while; an immediate mock answer would land
+        // before an un-awaited refresh returned anyway.
+        when(() => mockUserRepository.getBalance(wallet)).thenAnswer(
+          (_) => Future.delayed(
+            const Duration(milliseconds: 50),
+            () => BigInt.two,
+          ),
+        );
+
+        await arDriveAuth.refreshBalance();
+
+        expect(arDriveAuth.currentUser.walletBalance, BigInt.two);
+      });
+
+      test('keeps the previous balance when the refresh fails', () async {
+        arDriveAuth.currentUser = User(
+          password: 'password',
+          wallet: wallet,
+          walletAddress: 'walletAddress',
+          walletBalance: BigInt.one,
+          cipherKey: SecretKey([]),
+          profileType: ProfileType.json,
+          errorFetchingIOTokens: false,
+        );
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenThrow(Exception('gateway unavailable'));
+
+        await arDriveAuth.refreshBalance();
+
+        expect(arDriveAuth.currentUser.walletBalance, BigInt.one);
+      });
+    });
+
+    group('balance refresh after unlockUser', () {
+      final userWithFallbackBalance = User(
+        password: 'password',
+        wallet: wallet,
+        walletAddress: 'walletAddress',
+        walletBalance: BigInt.zero,
+        cipherKey: SecretKey([]),
+        profileType: ProfileType.json,
+        errorFetchingIOTokens: false,
+      );
+
+      setUp(() {
+        when(() => mockBiometricAuthentication.isEnabled())
+            .thenAnswer((_) async => false);
+        when(() => mockUserRepository.getUser('password'))
+            .thenAnswer((_) async => userWithFallbackBalance);
+      });
+
+      test('publishes the real balance when the background refresh lands',
+          () async {
+        final balanceAnswer = Completer<BigInt>();
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) => balanceAnswer.future);
+
+        final published = <User?>[];
+        final subscription =
+            arDriveAuth.onAuthStateChanged().listen(published.add);
+
+        final user = await arDriveAuth.unlockUser(password: 'password');
+        expect(user.walletBalance, BigInt.zero);
+
+        balanceAnswer.complete(BigInt.from(42));
+        await pumpEventQueue();
+
+        expect(arDriveAuth.currentUser.walletBalance, BigInt.from(42));
+        expect(published.last?.walletBalance, BigInt.from(42));
+
+        await subscription.cancel();
+      });
+
+      test('does not bring the user back when the refresh lands after logout',
+          () async {
+        final balanceAnswer = Completer<BigInt>();
+        when(() => mockUserRepository.getBalance(wallet))
+            .thenAnswer((_) => balanceAnswer.future);
+        when(() => mockUserRepository.deleteUser()).thenAnswer((_) async {});
+        when(() => mockSecureKeyValueStore.remove(any()))
+            .thenAnswer((_) async => true);
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((_) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((_) async {});
+
+        await arDriveAuth.unlockUser(password: 'password');
+        await arDriveAuth.logout();
+
+        final published = <User?>[];
+        final subscription =
+            arDriveAuth.onAuthStateChanged().listen(published.add);
+
+        balanceAnswer.complete(BigInt.from(42));
+        await pumpEventQueue();
+
+        expect(
+          () => arDriveAuth.currentUser,
+          throwsA(isA<AuthenticationUserIsNotLoggedInException>()),
+        );
+        expect(published, isEmpty);
+
+        await subscription.cancel();
       });
     });
   });

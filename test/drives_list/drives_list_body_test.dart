@@ -3,6 +3,7 @@ import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_list_row.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
+import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -41,13 +42,11 @@ void main() {
   var opened = <String>[];
   var ticked = <String>[];
   var triedAgain = 0;
-  var syncedAll = 0;
 
   setUp(() {
     opened = <String>[];
     ticked = <String>[];
     triedAgain = 0;
-    syncedAll = 0;
   });
 
   Future<void> pumpBody(
@@ -78,9 +77,7 @@ void main() {
               state: state,
               onOpenDrive: (drive) => opened.add(drive.id),
               onToggleSelected: offersSelection ? ticked.add : null,
-              onSyncSelected: offersSelection ? () {} : null,
               onTryAgain: () => triedAgain++,
-              onSyncAllDrives: () => syncedAll++,
             ),
           ),
         ),
@@ -177,7 +174,7 @@ void main() {
       await pumpBody(tester, const DrivesListLoading());
 
       expect(find.text('Loading your drives...'), findsOneWidget);
-      expect(find.text('Getting Started'), findsNothing);
+      expect(find.text('Getting started'), findsNothing);
       expect(find.text('Create new public drive'), findsNothing);
     });
   });
@@ -187,7 +184,7 @@ void main() {
         (tester) async {
       await pumpBody(tester, DrivesListEmpty());
 
-      expect(find.text('Getting Started'), findsOneWidget);
+      expect(find.text('Getting started'), findsOneWidget);
       expect(find.text('Create new public drive'), findsOneWidget);
       expect(find.text('Create new private drive'), findsOneWidget);
     });
@@ -197,21 +194,21 @@ void main() {
     testWidgets('says what happened and offers to try again', (tester) async {
       await pumpBody(tester, DrivesListUnavailable());
 
-      expect(find.text('Your Drives Could Not Be Loaded'), findsOneWidget);
-      expect(find.text('Try Again'), findsOneWidget);
+      expect(find.text('Your drives could not be loaded'), findsOneWidget);
+      expect(find.text('Try again'), findsOneWidget);
     });
 
     testWidgets('never offers to create a drive instead', (tester) async {
       await pumpBody(tester, DrivesListUnavailable());
 
-      expect(find.text('Getting Started'), findsNothing);
+      expect(find.text('Getting started'), findsNothing);
       expect(find.text('Create new public drive'), findsNothing);
       expect(find.text('Create new private drive'), findsNothing);
     });
 
     testWidgets('trying again is what the button does', (tester) async {
       await pumpBody(tester, DrivesListUnavailable());
-      await tester.tap(find.text('Try Again'));
+      await tester.tap(find.text('Try again'));
 
       expect(triedAgain, 1);
     });
@@ -244,8 +241,8 @@ void main() {
 
     /// A double-click opens the drive it was aimed at. Nothing a click does
     /// may move the rows between its two halves: a click that ticked the
-    /// drive would bring in the selection strip above the list, and the
-    /// second click would land on a different drive.
+    /// drive once brought in a selection strip above the list, and the second
+    /// click landed on a different drive.
     testWidgets('a double-click opens the drive it was aimed at',
         (tester) async {
       await pumpBody(tester, twoDrives, offersSelection: true);
@@ -293,8 +290,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('offers one sync when nothing has ever been synced',
-        (tester) async {
+    testWidgets(
+        'says nothing has been synced yet, and leaves the offer to the '
+        'page\'s sync button', (tester) async {
       await pumpBody(
         tester,
         DrivesListLoaded(
@@ -306,9 +304,10 @@ void main() {
       );
 
       expect(find.text('Nothing has been synced yet'), findsOneWidget);
-
-      await tester.tap(find.text('Sync All Drives'));
-      expect(syncedAll, 1);
+      // The page's split button, above it, is the one place sync lives; the
+      // card used to carry a second red button saying the same.
+      expect(find.text('Sync all drives'), findsNothing);
+      expect(find.byType(ArDriveButtonNew), findsNothing);
     });
 
     testWidgets('and stops offering it once one drive has been synced',
@@ -326,11 +325,9 @@ void main() {
       // The per-drive answer is on the row by then; a banner over the top of
       // it would be a nag, not information.
       expect(find.text('Nothing has been synced yet'), findsNothing);
-      expect(find.text('Sync All Drives'), findsNothing);
     });
 
-    testWidgets('the sync-everything offer fits a 320px screen',
-        (tester) async {
+    testWidgets('the never-synced card fits a 320px screen', (tester) async {
       await pumpBody(
         tester,
         DrivesListLoaded(
@@ -339,7 +336,7 @@ void main() {
         width: 320,
       );
 
-      expect(find.text('Sync All Drives'), findsOneWidget);
+      expect(find.text('Nothing has been synced yet'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -349,11 +346,15 @@ void main() {
     final oneDrive = DrivesListLoaded(drives: [drive(id: 'a', name: 'Photos')]);
 
     /// Which layout the rows are actually in, read off the geometry.
+    ///
+    /// By the size, which both column layouts keep (the three-column one
+    /// drops the file count): beside the name in a row of columns, on a line
+    /// under it in a stacked card.
     bool rowsAreStacked(WidgetTester tester) {
-      final nameX = tester.getTopLeft(find.text('Photos')).dx;
-      final itemsX = tester.getTopLeft(find.text('2 files')).dx;
+      final nameY = tester.getCenter(find.text('Photos')).dy;
+      final sizeY = tester.getCenter(find.text(filesize(100))).dy;
 
-      return itemsX < nameX;
+      return sizeY - nameY > 4;
     }
 
     /// The whole band the two used to disagree across, not the two widths
@@ -363,7 +364,21 @@ void main() {
     /// on its own - inside 16px of padding either side - so between them a
     /// table header sat over a column of cards. That band was reachable at an
     /// ordinary desktop window size.
-    for (var width = 640.0; width <= 1000.0; width += 20) {
+    for (final width in [
+      560.0,
+      600.0,
+      620.0,
+      627.0,
+      628.0,
+      640.0,
+      700.0,
+      760.0,
+      820.0,
+      847.0,
+      848.0,
+      900.0,
+      1000.0
+    ]) {
       testWidgets('at ${width.toInt()}px they are the same layout',
           (tester) async {
         await pumpBody(tester, oneDrive, width: width);
@@ -394,23 +409,6 @@ void main() {
         drive(id: 'b', name: 'Work', hasBeenWalked: false),
       ],
     );
-
-    testWidgets('the sync-everything button is a button, not a slab',
-        (tester) async {
-      await pumpBody(tester, neverSynced, width: 1280);
-
-      final button = tester.getSize(
-        find.widgetWithText(ArDriveButtonNew, 'Sync All Drives'),
-      );
-
-      // With no width of its own the button expands to the content column:
-      // about 1200px of primary colour, on the one screen whose message is
-      // that nothing is wrong yet.
-      expect(button.width, lessThan(320));
-
-      await tester.tap(find.text('Sync All Drives'));
-      expect(syncedAll, 1);
-    });
 
     testWidgets('a phone in landscape can still reach its drives',
         (tester) async {
@@ -496,7 +494,7 @@ void main() {
         DrivesListLoaded(drives: [drive(id: 'a', name: 'Photos')]),
       );
 
-      expect(find.text('Your Drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsOneWidget);
       expect(
         find.text(
           'Choose a drive to open it. Nothing here has been fetched from the '
@@ -517,7 +515,7 @@ void main() {
 
       expect(
         find.text(
-          'Their contents have not been fetched yet.',
+          'Sync your drives to see their files and folders.',
         ),
         findsOneWidget,
       );
@@ -537,7 +535,7 @@ void main() {
       );
 
       expect(find.text('No private drives yet'), findsOneWidget);
-      expect(find.text('Getting Started'), findsNothing,
+      expect(find.text('Getting started'), findsNothing,
           reason: 'that is the account with no drives at all, not this');
     });
 
@@ -549,7 +547,7 @@ void main() {
       );
 
       expect(find.text('No drives shared with you'), findsOneWidget);
-      expect(find.text('Attach Drive'), findsOneWidget);
+      expect(find.text('Attach drive'), findsOneWidget);
     });
 
     testWidgets('while the others do not offer attaching', (tester) async {
@@ -558,7 +556,7 @@ void main() {
         const DrivesListLoaded(drives: [], scope: DriveScope.public),
       );
 
-      expect(find.text('Attach Drive'), findsNothing);
+      expect(find.text('Attach drive'), findsNothing);
     });
   });
 }

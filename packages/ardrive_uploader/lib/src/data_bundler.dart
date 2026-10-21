@@ -194,12 +194,6 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
     final dataBundleTaskEither =
         createDataBundleTaskEither(TaskEither.of(dataItemList));
 
-    final bundledDataItemTags = [
-      createTag('Bundle-Format', 'binary'),
-      createTag('Bundle-Version', '2.0.0'),
-      ...tags,
-    ];
-
     final taskEither = await dataBundleTaskEither.run();
     final result = taskEither.match(
       (l) {
@@ -232,7 +226,8 @@ class DataTransactionBundler implements DataBundler<TransactionResult> {
           wallet: wallet,
           dataStreamGenerator: r.stream,
           dataSize: size,
-          tags: bundledDataItemTags,
+          // createTransactionTaskEither adds Bundle-Format and Bundle-Version.
+          tags: tags,
           target: target.toString(),
           arweave: arweaveService,
         );

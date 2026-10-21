@@ -30,7 +30,7 @@ class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
   @override
-  int get schemaVersion => 29;
+  int get schemaVersion => 30;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
@@ -200,6 +200,12 @@ class Database extends _$Database {
                 CREATE INDEX IF NOT EXISTS idx_network_transactions_status ON network_transactions(status);
               ''');
               logger.d('Sync performance indexes created');
+            }
+
+            if (from < 30) {
+              logger.d('Migrating schema from v29 to v30');
+
+              await m.addColumn(drives, drives.importedArtifactTxId);
             }
           } catch (e, stacktrace) {
             logger.e(

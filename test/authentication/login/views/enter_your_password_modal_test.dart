@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
@@ -42,6 +44,9 @@ void main() {
   late MockArDriveAuth auth;
   late MockBiometricAuthentication biometrics;
 
+  // The event type is sealed, so a real one stands in for `captureAny`.
+  setUpAll(() => registerFallbackValue(const CleanProfileName()));
+
   setUp(() {
     loginBloc = _MockLoginBloc();
     profileNameBloc = _MockProfileNameBloc();
@@ -74,6 +79,48 @@ void main() {
       initialState: const ProfileNameInitial(null),
     );
   });
+
+  Widget passwordScreen({
+    required bool checkingPassword,
+    ArDriveThemeData? theme,
+    bool showModal = true,
+  }) =>
+      ArDriveTheme(
+        themeData: theme ?? lightTheme(),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [Locale('en', '')],
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<LoginBloc>.value(value: loginBloc),
+              BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+              RepositoryProvider<UserPreferencesRepository>.value(
+                value: userPreferences,
+              ),
+              RepositoryProvider<ArDriveAuth>.value(value: auth),
+              RepositoryProvider<BiometricAuthentication>.value(
+                value: biometrics,
+              ),
+            ],
+            child: Scaffold(
+              body: showModal
+                  ? EnterYourPasswordWidget(
+                      loginBloc: loginBloc,
+                      showWalletCreated: false,
+                      alreadyLoggedIn: true,
+                      checkingPassword: checkingPassword,
+                      passwordFailed: false,
+                    )
+                  : const SizedBox(),
+            ),
+          ),
+        ),
+      );
 
   Future<void> pumpPasswordScreen(
     WidgetTester tester, {
@@ -144,5 +191,52 @@ void main() {
       findsNothing,
       reason: 'nothing is happening yet, so nothing should suggest it is',
     );
+  });
+
+  /// The dialog closes as soon as the login succeeds, and the wallet address
+  /// the modal asks for can still be on its way from the database. Reading
+  /// `context` after that threw in release builds ("Null check operator used
+  /// on a null value"), seen after a reload with the web database in a worker.
+  group('the profile name the modal asks for', () {
+    testWidgets('still loads, without an error, when the modal is gone first',
+        (tester) async {
+      final address = Completer<String?>();
+      when(() => auth.getWalletAddress()).thenAnswer((_) => address.future);
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(passwordScreen(checkingPassword: false));
+      await tester.pump();
+      // The login succeeded and the dialog closed.
+      await tester.pumpWidget(
+          passwordScreen(checkingPassword: false, showModal: false));
+      await tester.pump();
+
+      address.complete('the-wallet-address');
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      final asked = verify(() => profileNameBloc.add(captureAny())).captured;
+      expect(asked, hasLength(1));
+      expect((asked.single as LoadProfileNameBeforeLogin).walletAddress,
+          'the-wallet-address');
+    });
+
+    testWidgets('is asked for once, however often its dependencies change',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(passwordScreen(checkingPassword: false));
+      await tester.pump();
+      await tester.pumpWidget(passwordScreen(
+          checkingPassword: false,
+          theme: ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode())));
+      await tester.pump();
+      await tester.pumpWidget(passwordScreen(checkingPassword: false));
+      await tester.pump();
+
+      verify(() => auth.getWalletAddress()).called(1);
+    });
   });
 }

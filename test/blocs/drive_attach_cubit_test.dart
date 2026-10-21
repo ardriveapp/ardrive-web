@@ -13,6 +13,7 @@ import 'package:arweave/utils.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:cryptography/helpers.dart';
+import 'package:flutter/widgets.dart' show TextSelection;
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 
@@ -143,6 +144,18 @@ void main() {
         verify(() => drivesBloc.selectDrive(validDriveId)).called(1);
       },
     );
+
+    // The field has focus when a link fills it. With no cursor, the browser
+    // selected the whole ID in the brand red, which read as an error.
+    test('a drive id from a link is filled in with the cursor at its start',
+        () async {
+      await driveAttachCubit.initializeForm(driveId: validPrivateDriveId);
+
+      expect(
+        driveAttachCubit.driveIdController.selection,
+        const TextSelection.collapsed(offset: 0),
+      );
+    });
 
     blocTest<DriveAttachCubit, DriveAttachState>(
       'driveKey field is added to form when private drive id is used',

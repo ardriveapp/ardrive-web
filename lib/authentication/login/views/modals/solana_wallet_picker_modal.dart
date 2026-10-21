@@ -34,7 +34,7 @@ class SolanaWalletPickerModal extends StatelessWidget {
             Align(
               alignment: Alignment.topCenter,
               child: Text(
-                'Select Wallet',
+                'Select wallet',
                 style: typography.heading2(
                   color: colorTokens.textHigh,
                   fontWeight: ArFontWeight.bold,

@@ -20,13 +20,14 @@ class LabeledInput extends StatelessWidget {
       children: [
         Text(
           labelText,
+          // Not the disabled colour it was drawn in, which was too faint to
+          // read against the dialog.
           style: ArDriveTheme.of(context)
               .themeData
               .textFieldTheme
               .inputTextStyle
               .copyWith(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDisabled,
+                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),

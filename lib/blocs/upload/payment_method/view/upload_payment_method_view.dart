@@ -16,7 +16,7 @@ class UploadPaymentMethodView extends StatefulWidget {
     this.onTurboTopupSucess,
     this.loadingIndicator,
     this.useNewArDriveUI = false,
-    this.useDropdown = false,
+    this.useOptionCards = false,
   });
 
   final Function(UploadMethod, UploadPaymentMethodInfo, bool)
@@ -25,15 +25,16 @@ class UploadPaymentMethodView extends StatefulWidget {
   final Function()? onTurboTopupSucess;
   final Widget? loadingIndicator;
   final bool useNewArDriveUI;
-  final bool useDropdown;
+  final bool useOptionCards;
 
   @override
-  State<UploadPaymentMethodView> createState() => _UploadPaymentMethodViewState();
+  State<UploadPaymentMethodView> createState() =>
+      _UploadPaymentMethodViewState();
 }
 
 class _UploadPaymentMethodViewState extends State<UploadPaymentMethodView> {
   bool _showCongestionWarning = false;
-  
+
   // Debug flag - set to true to test congestion warning
   static const bool _debugForceCongestionWarning = false;
 
@@ -53,9 +54,10 @@ class _UploadPaymentMethodViewState extends State<UploadPaymentMethodView> {
       }
       return;
     }
-    
+
     try {
-      final mempoolSize = await context.read<ArweaveService>().getMempoolSizeFromArweave();
+      final mempoolSize =
+          await context.read<ArweaveService>().getMempoolSizeFromArweave();
       if (mounted) {
         setState(() {
           _showCongestionWarning = mempoolSize > mempoolWarningSizeLimit;
@@ -92,7 +94,7 @@ class _UploadPaymentMethodViewState extends State<UploadPaymentMethodView> {
           return PaymentMethodSelector(
             useNewArDriveUI: widget.useNewArDriveUI,
             uploadMethodInfo: state.paymentMethodInfo,
-            useDropdown: widget.useDropdown,
+            useOptionCards: widget.useOptionCards,
             showCongestionWarning: _showCongestionWarning,
             onArSelect: () {
               context.read<UploadPaymentMethodBloc>().add(

@@ -1,8 +1,16 @@
+import 'package:ardrive/blocs/blocs.dart';
+import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_route_information_parser.dart';
 import 'package:ardrive/pages/app_route_path.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/upload_entry/domain/upload_request.dart';
+import 'package:cryptography/cryptography.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../test_utils/mocks.dart';
 
 /// How a folder link survives the drive being attached under it.
 ///
@@ -204,6 +212,84 @@ void main() {
     });
   });
 
+  group('the attach prompt a drive link opened', () {
+    // A link to a drive the app does not have opens the attach prompt.
+    // Cancelling it used to clear the drive and leave nothing to show: a blank
+    // page for a visitor, and an explorer with no drive for a signed-in user.
+    final parser = AppRouteInformationParser();
+
+    String addressBar(AppRouterDelegate delegate) =>
+        parser.restoreRouteInformation(delegate.currentConfiguration).uri.path;
+
+    Future<void> openLink({String? folder}) => delegate.setNewRoutePath(
+          folder == null
+              ? AppRoutePath.driveDetail(driveId: driveId, driveName: 'Shared')
+              : AppRoutePath.folderDetail(
+                  driveId: driveId,
+                  driveFolderId: folder,
+                ),
+        );
+
+    test('cancelled by a signed-in user lands on the drives list', () async {
+      await openLink(folder: folderId);
+      var notifications = 0;
+      delegate.addListener(() => notifications++);
+
+      delegate.landAfterAttachPrompt(attached: false, loggedIn: true);
+
+      expect(delegate.showingDrivesList, isTrue);
+      expect(delegate.signingIn, isFalse);
+      expect(delegate.driveId, isNull);
+      expect(delegate.driveName, isNull);
+      expect(delegate.driveFolderId, isNull);
+      expect(addressBar(delegate), '/drives');
+      expect(notifications, greaterThan(0));
+    });
+
+    test('cancelled by a visitor lands on sign in', () async {
+      await openLink();
+
+      delegate.landAfterAttachPrompt(attached: false, loggedIn: false);
+
+      expect(delegate.signingIn, isTrue);
+      expect(delegate.showingDrivesList, isFalse);
+      expect(delegate.driveId, isNull);
+      expect(delegate.tryingToViewDrive, isFalse);
+      expect(addressBar(delegate), '/sign-in');
+      // Nothing left for signing in to honour, so they land on Your drives
+      // afterwards rather than back in the dialog.
+      expect(delegate.hasARouteToHonour, isFalse);
+      expect(delegate.pendingInfoDriveId, isNull);
+    });
+
+    test('drops the key the link carried when it is cancelled', () async {
+      await openLink();
+      delegate.sharedRawDriveKey = 'raw-key';
+
+      delegate.landAfterAttachPrompt(attached: false, loggedIn: false);
+
+      expect(delegate.sharedRawDriveKey, isNull);
+      expect(delegate.tryingToViewSharedPrivateDrive, isFalse);
+    });
+
+    test('a successful attach keeps the drive in view', () async {
+      await openLink(folder: folderId);
+      var notifications = 0;
+      delegate.addListener(() => notifications++);
+
+      for (final loggedIn in [true, false]) {
+        delegate.landAfterAttachPrompt(attached: true, loggedIn: loggedIn);
+
+        expect(delegate.driveId, driveId);
+        expect(delegate.driveFolderId, folderId);
+        expect(delegate.showingDrivesList, isFalse);
+        expect(delegate.signingIn, isFalse);
+        expect(delegate.tryingToViewDrive, isTrue);
+      }
+      expect(notifications, 2);
+    });
+  });
+
   group('ordinary navigation', () {
     test('still discards the folder when the drive changes', () async {
       await delegate.setNewRoutePath(
@@ -229,6 +315,126 @@ void main() {
       delegate.onDriveSelected(driveId);
 
       expect(delegate.driveFolderId, folderId);
+    });
+  });
+
+  /// A link pasted into a tab that already has the explorer open, or a step
+  /// back or forward through its history. The explorer read the route only
+  /// when it was built, so these changed the address bar and nothing else.
+  group('a link followed in an open tab', () {
+    late MockDriveDetailCubit driveDetail;
+    late MockDrivesCubit drives;
+
+    setUp(() {
+      driveDetail = MockDriveDetailCubit();
+      drives = MockDrivesCubit();
+      when(() => driveDetail.followLink(
+            driveId: any(named: 'driveId'),
+            folderId: any(named: 'folderId'),
+          )).thenAnswer((_) async {});
+      when(() => driveDetail.changeDrive(any())).thenAnswer((_) async {});
+      when(() => drives.selectDrive(any())).thenReturn(null);
+    });
+
+    void driveSelected(String? selectedDriveId) =>
+        when(() => drives.state).thenReturn(DrivesLoadSuccess(
+          selectedDriveId: selectedDriveId,
+          userDrives: [_drive(driveId), _drive(otherDriveId)],
+          sharedDrives: const [],
+          drivesWithAlerts: const [],
+          canCreateNewDrive: true,
+        ));
+
+    const link = RouteLink(driveId: driveId, folderId: folderId);
+
+    test('opens the folder in the drive already on screen', () async {
+      driveSelected(driveId);
+
+      delegate.followRouteLink(
+        link,
+        driveDetail: driveDetail,
+        drives: drives,
+        explorerIsNew: false,
+      );
+
+      verify(() => driveDetail.followLink(driveId: driveId, folderId: folderId))
+          .called(1);
+      verifyNever(() => drives.selectDrive(any()));
+    });
+
+    test('and is not brought back by a later refresh of the drive list',
+        () async {
+      // The folder held for a link is only let go by a selection of its drive,
+      // and none comes when the drive was selected already.
+      await delegate.setNewRoutePath(
+        AppRoutePath.folderDetail(driveId: driveId, driveFolderId: folderId),
+      );
+      driveSelected(driveId);
+
+      delegate.followRouteLink(
+        link,
+        driveDetail: driveDetail,
+        drives: drives,
+        explorerIsNew: false,
+      );
+
+      // The reader moves on, and then the drive list refreshes.
+      delegate.driveFolderId = 'another-folder';
+      delegate.onDriveSelected(driveId);
+
+      expect(delegate.driveFolderId, 'another-folder');
+    });
+
+    test('selects another drive the way the sidebar would', () async {
+      driveSelected(otherDriveId);
+
+      delegate.followRouteLink(
+        link,
+        driveDetail: driveDetail,
+        drives: drives,
+        explorerIsNew: false,
+      );
+
+      verify(() => driveDetail.followLink(driveId: driveId, folderId: folderId))
+          .called(1);
+      verify(() => drives.selectDrive(driveId)).called(1);
+    });
+
+    test('lets an explorer built for the link open it', () async {
+      // Pasted on the drives list: the explorer is built from the link, but
+      // the sidebar is still on the drive selected before.
+      driveSelected(otherDriveId);
+
+      delegate.followRouteLink(
+        link,
+        driveDetail: driveDetail,
+        drives: drives,
+        explorerIsNew: true,
+      );
+
+      verifyNever(() => driveDetail.followLink(
+            driveId: any(named: 'driveId'),
+            folderId: any(named: 'folderId'),
+          ));
+      verify(() => drives.selectDrive(driveId)).called(1);
+    });
+
+    test('sends a visitor with no drives to the drive itself', () async {
+      // Nothing to select it among: the explorer goes there, and offers to
+      // attach it.
+      when(() => drives.state)
+          .thenReturn(DrivesLoadedWithNoDrivesFound(canCreateNewDrive: false));
+      when(() => driveDetail.currentDriveId).thenReturn(otherDriveId);
+
+      delegate.followRouteLink(
+        link,
+        driveDetail: driveDetail,
+        drives: drives,
+        explorerIsNew: false,
+      );
+
+      verify(() => driveDetail.changeDrive(driveId)).called(1);
+      verifyNever(() => drives.selectDrive(any()));
     });
   });
 
@@ -443,4 +649,146 @@ void main() {
       expect(delegate.driveFolderId, isNull);
     });
   });
+
+  group('a drive opened from the sign-in screen', () {
+    // The row is written before the router hears about it, so the explorer
+    // finds the drive and no attach prompt opens. The sync is the one thing
+    // the dialog cannot start, since the sync cubit lives inside the explorer;
+    // the router remembers the drive and starts it as the explorer builds.
+    final parser = AppRouteInformationParser();
+
+    String addressBar(AppRouterDelegate delegate) => parser
+        .restoreRouteInformation(delegate.currentConfiguration)
+        .uri
+        .toString();
+
+    test('leaves the sign-in page for the drive, with its sync pending',
+        () async {
+      await delegate.setNewRoutePath(AppRoutePath.signIn());
+      var notifications = 0;
+      delegate.addListener(() => notifications++);
+
+      delegate.openDriveAsVisitor(driveId: driveId);
+
+      expect(delegate.signingIn, isFalse);
+      expect(delegate.gettingStarted, isFalse);
+      expect(delegate.showingDrivesList, isFalse);
+      expect(delegate.driveId, driveId);
+      expect(delegate.driveFolderId, isNull);
+      expect(delegate.syncOnOpenDriveId, driveId);
+      expect(delegate.hasARouteToHonour, isTrue);
+      expect(addressBar(delegate), '/drives/$driveId');
+      expect(notifications, 1);
+    });
+
+    test('opens at the folder a link named', () async {
+      delegate.openDriveAsVisitor(driveId: driveId, folderId: folderId);
+
+      expect(delegate.driveFolderId, folderId);
+      expect(addressBar(delegate), '/drives/$driveId/folders/$folderId');
+
+      // And the folder survives the drive being selected under it, as a
+      // folder link's does.
+      delegate.onDriveSelected(driveId);
+      expect(delegate.driveFolderId, folderId);
+    });
+
+    test('never puts a private drive\'s key in the address bar', () {
+      // A key typed into the dialog would otherwise sit in the browser's
+      // history. The key is in memory already; a reload asks for it.
+      final key = DriveKey(SecretKey(List.filled(32, 0)), true);
+
+      delegate.openDriveAsVisitor(driveId: driveId, driveKey: key);
+
+      expect(delegate.sharedDriveKey, key);
+      expect(delegate.sharedRawDriveKey, isNull);
+      expect(addressBar(delegate), '/drives/$driveId');
+    });
+
+    test('drops a link\'s key when another drive is selected', () async {
+      const otherDriveId = 'f7acaf5f-8a7f-9b6a-df7a-ba6f5a8b9ca3';
+      const rawKey = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+      await delegate.setNewRoutePath(
+        await parser.parseRouteInformation(
+          RouteInformation(uri: Uri.parse('/drives/$driveId?driveKey=$rawKey')),
+        ),
+      );
+      expect(delegate.sharedDriveKey, isNotNull);
+
+      // The linked drive itself keeps it.
+      delegate.onDriveSelected(driveId);
+      expect(delegate.sharedDriveKey, isNotNull);
+
+      // Another drive must not be offered it, stored with it, or shown with
+      // it in the address bar.
+      delegate.onDriveSelected(otherDriveId);
+      expect(delegate.sharedDriveKey, isNull);
+      expect(delegate.sharedRawDriveKey, isNull);
+      expect(addressBar(delegate), isNot(contains('driveKey')));
+    });
+
+    test('forgets the pending sync when the state is cleared', () {
+      delegate.openDriveAsVisitor(driveId: driveId);
+
+      delegate.clearState();
+
+      expect(delegate.syncOnOpenDriveId, isNull);
+      expect(delegate.driveId, isNull);
+      expect(delegate.signingIn, isTrue);
+    });
+
+    test('follows a file link to the shared file page', () async {
+      const fileId = 'd5eaed3d-6e5d-7f4e-bd5f-9f4d3e6f7a81';
+      await delegate.setNewRoutePath(AppRoutePath.signIn());
+
+      await delegate.openRouteAsVisitor(
+        AppRoutePath.sharedFile(sharedFileId: fileId),
+      );
+
+      expect(delegate.signingIn, isFalse);
+      expect(delegate.isViewingSharedFile, isTrue);
+      expect(delegate.sharedFileId, fileId);
+    });
+  });
+
+  group('signing in while viewing a drive', () {
+    // The top bar's "Log in" used to log out, which runs clearState and drops
+    // the drive, so the visitor who signed in to keep what they were looking
+    // at landed on the drives list without it.
+    test('keeps the drive, so the login lands back on it', () {
+      delegate.openDriveAsVisitor(driveId: driveId, folderId: folderId);
+      var notifications = 0;
+      delegate.addListener(() => notifications++);
+
+      delegate.signInKeepingDrive();
+
+      expect(delegate.signingIn, isTrue);
+      expect(delegate.gettingStarted, isFalse);
+      expect(delegate.showingDrivesList, isFalse);
+      expect(delegate.driveId, driveId);
+      expect(delegate.driveFolderId, folderId);
+      expect(delegate.hasARouteToHonour, isTrue);
+      expect(notifications, 1);
+    });
+
+    test('keeps a private drive\'s key too', () {
+      final key = DriveKey(SecretKey(List.filled(32, 0)), true);
+      delegate.openDriveAsVisitor(driveId: driveId, driveKey: key);
+
+      delegate.signInKeepingDrive();
+
+      expect(delegate.sharedDriveKey, key);
+    });
+  });
 }
+
+Drive _drive(String id) => Drive(
+      id: id,
+      name: id,
+      rootFolderId: 'root-$id',
+      ownerAddress: 'owner',
+      privacy: 'public',
+      isHidden: false,
+      dateCreated: DateTime(2026),
+      lastUpdated: DateTime(2026),
+    );

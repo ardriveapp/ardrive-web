@@ -40,6 +40,9 @@ enum PlausiblePageView {
   /// Search
   searchPage,
 
+  /// Open a drive without signing in
+  openDrivePage,
+
   /// Empty State
   folderEmptyPage,
   existingUserDriveEmptyPage,

@@ -175,6 +175,51 @@ void main() {
     });
   });
 
+  group('DriveDao.writeFileEntity', () {
+    setUp(() {
+      db = getTestDb();
+      driveDao = db.driveDao;
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    FileEntity version({
+      required int size,
+      required DateTime createdAt,
+    }) =>
+        FileEntity(
+          id: 'file-id',
+          driveId: 'drive-id',
+          parentFolderId: 'folder-id',
+          name: 'notes.txt',
+          dataTxId: 'data-tx-$size',
+          size: size,
+          lastModifiedDate: DateTime.utc(2026, 1, 1),
+          dataContentType: 'text/plain',
+        )..createdAt = createdAt;
+
+    // A new version uploaded on this device moves the date the explorer and
+    // the details panel show, as syncing that version would.
+    test('dates a new version from its revision, and keeps the first date',
+        () async {
+      final first = DateTime.utc(2026, 10, 20, 1, 44, 47);
+      final second = DateTime.utc(2026, 10, 20, 1, 46, 35);
+
+      await driveDao.writeFileEntity(version(size: 640, createdAt: first));
+      final created =
+          (await driveDao.fileById(fileId: 'file-id').getSingle()).dateCreated;
+
+      await driveDao.writeFileEntity(version(size: 918, createdAt: second));
+      final file = await driveDao.fileById(fileId: 'file-id').getSingle();
+
+      expect(file.size, 918);
+      expect(file.lastUpdated.toUtc(), second);
+      expect(file.dateCreated, created);
+    });
+  });
+
   /// A drive row whose `rootFolderId` has no folder row cannot be opened:
   /// `watchFolderContents` filters the absent folder out and its stream then
   /// never emits, so the explorer sits on a spinner nothing retries. Every path
@@ -277,8 +322,7 @@ void main() {
 
       // lastBlockHeight cannot stand in for this: it defaults to 0, so it
       // cannot tell a freshly created empty drive from an unsynced one.
-      final drive =
-          await driveDao.driveById(driveId: otherDriveId).getSingle();
+      final drive = await driveDao.driveById(driveId: otherDriveId).getSingle();
       expect(drive.lastBlockHeight, equals(0));
 
       await driveDao.insertFolderRevision(
@@ -310,6 +354,93 @@ void main() {
 
       expect(rootFolder, isNotNull);
       expect(rootFolder!.name, equals(driveName));
+    });
+  });
+
+  /// The drive list reads each drive's newest revision, so the time on it is
+  /// when the drive last changed. "Date created" showed that: a renamed drive
+  /// was dated from the rename.
+  group('DriveDao drive creation date', () {
+    const driveId = 'dated-drive-id';
+    final created = DateTime(2025, 1, 1);
+    final renamed = DateTime(2026, 3, 1);
+    final hidden = DateTime(2026, 9, 1);
+
+    DriveEntity newest({required DateTime at, String name = 'Pics'}) =>
+        DriveEntity(
+          id: driveId,
+          name: name,
+          rootFolderId: 'dated-root-id',
+          privacy: DrivePrivacyTag.public,
+          authMode: DriveAuthModeTag.none,
+        )
+          ..ownerAddress = 'owner-address'
+          ..createdAt = at;
+
+    Future<Drive> stored() => driveDao.driveById(driveId: driveId).getSingle();
+
+    setUp(() {
+      db = getTestDb();
+      driveDao = db.driveDao;
+    });
+
+    tearDown(() => db.close());
+
+    test('dates a drive from its creation, not its newest revision', () async {
+      await driveDao.updateUserDrives(
+        {newest(at: renamed): null},
+        null,
+        creationTimes: {driveId: created},
+      );
+
+      final drive = await stored();
+      expect(drive.dateCreated, created);
+      expect(drive.lastUpdated, renamed);
+    });
+
+    test('keeps the creation date when a later pass does not know it',
+        () async {
+      await driveDao.updateUserDrives(
+        {newest(at: renamed): null},
+        null,
+        creationTimes: {driveId: created},
+      );
+
+      await driveDao.updateUserDrives({newest(at: hidden): null}, null);
+
+      final drive = await stored();
+      expect(drive.dateCreated, created);
+      expect(drive.lastUpdated, hidden);
+    });
+
+    /// Drives already stored carry the newest revision's date. The next time
+    /// the drive list is read they are put right.
+    test('repairs a creation date an earlier pass got wrong', () async {
+      await driveDao.updateUserDrives({newest(at: renamed): null}, null);
+      expect((await stored()).dateCreated, renamed);
+
+      await driveDao.updateUserDrives(
+        {newest(at: renamed): null},
+        null,
+        creationTimes: {driveId: created},
+      );
+
+      expect((await stored()).dateCreated, created);
+    });
+
+    test('a re-attach keeps the creation date', () async {
+      await driveDao.updateUserDrives(
+        {newest(at: renamed): null},
+        null,
+        creationTimes: {driveId: created},
+      );
+
+      await driveDao.writeDriveEntity(
+        name: 'Pics',
+        entity: newest(at: hidden),
+      );
+
+      expect((await stored()).dateCreated, created);
     });
   });
 }

@@ -14,7 +14,12 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final bool driveIsEmpty;
   final bool multiselect;
   final bool hasFoldersSelected;
-  final int? selectedPage;
+
+  /// Whether the table, when next built, opens on the page holding
+  /// [selectedItem] rather than the page last seen in this folder. Set when a
+  /// file is picked out from elsewhere, such as search; cleared once the table
+  /// has shown it.
+  final bool revealSelectedItem;
 
   final FolderWithContents folderInView;
 
@@ -41,6 +46,11 @@ class DriveDetailLoadSuccess extends DriveDetailState {
   final Map<int, bool> columnVisibility;
   final Key? forceRebuildKey;
 
+  /// Whether this drive's first sync on this device is still reading it, so
+  /// an empty folder may be empty only so far. See
+  /// [DriveDetailCubit.contentsMayStillArrive].
+  final bool contentsStillArriving;
+
   DriveDetailLoadSuccess({
     required this.currentDrive,
     required this.hasWritePermissions,
@@ -60,7 +70,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     required this.columnVisibility,
     this.forceRebuildKey,
     required this.pathSegments,
-    this.selectedPage,
+    this.revealSelectedItem = false,
+    this.contentsStillArriving = false,
   });
 
   DriveDetailLoadSuccess copyWith({
@@ -81,11 +92,15 @@ class DriveDetailLoadSuccess extends DriveDetailState {
     List<ArDriveDataTableItem>? currentFolderContents,
     Key? forceRebuildKey,
     List<BreadCrumbRowInfo>? pathSegments,
-    int? selectedPage,
+    bool? revealSelectedItem,
+    Map<int, bool>? columnVisibility,
+    bool? contentsStillArriving,
   }) =>
       DriveDetailLoadSuccess(
-        selectedPage: selectedPage ?? this.selectedPage,
-        columnVisibility: columnVisibility,
+        contentsStillArriving:
+            contentsStillArriving ?? this.contentsStillArriving,
+        revealSelectedItem: revealSelectedItem ?? this.revealSelectedItem,
+        columnVisibility: columnVisibility ?? this.columnVisibility,
         forceRebuildKey: forceRebuildKey ?? this.forceRebuildKey,
         selectedItem: selectedItem ?? this.selectedItem,
         hasFoldersSelected: hasFoldersSelected ?? this.hasFoldersSelected,
@@ -126,7 +141,8 @@ class DriveDetailLoadSuccess extends DriveDetailState {
         multiselect,
         forceRebuildKey,
         selectedItem,
-        selectedPage,
+        revealSelectedItem,
+        contentsStillArriving,
       ];
   SelectedItem? maybeSelectedItem() =>
       selectedItems.isNotEmpty ? selectedItems.first : null;

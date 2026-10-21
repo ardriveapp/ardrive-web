@@ -71,7 +71,7 @@ class CryptoConfirmationView extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Confirm Payment',
+                                'Confirm payment',
                                 style: typography.heading5(
                                   fontWeight: ArFontWeight.bold,
                                   color: colors.themeFgDefault,
@@ -239,7 +239,7 @@ class CryptoConfirmationView extends StatelessWidget {
 
   String _getButtonText(CryptoTopupConfirmation state) {
     if (state.quote.isExpired) {
-      return 'Quote Expired';
+      return 'Quote expired';
     }
     if (state.networkState == NetworkState.checking) {
       return 'Checking Network...';
@@ -248,7 +248,7 @@ class CryptoConfirmationView extends StatelessWidget {
       return 'Switching Network...';
     }
     if (state.networkState == NetworkState.needsSwitch) {
-      return 'Switch Network First';
+      return 'Switch network first';
     }
     return 'Confirm & Pay';
   }

@@ -3,7 +3,7 @@ description: Secure, permanent storage
 
 publish_to: 'none'
 
-version: 2.89.0
+version: 2.90.0
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -18,7 +18,7 @@ script_runner:
     linux: /bin/sh
   line_length: 80
   scripts:
-    - setup: flutter clean && flutter pub get && cd packages/ario_sdk && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && flutter pub run build_runner build --delete-conflicting-outputs
+    - setup: flutter clean && flutter pub get && cd packages/ario_sdk && flutter pub get && flutter pub run build_runner build --delete-conflicting-outputs && cd ../../ && flutter pub run build_runner build --delete-conflicting-outputs && bash tool/build_db_worker.sh
     - test: scripts/run_tests.sh
     - check-db: lefthook/database_checker.sh
     - check-flutter: lefthook/version_checker.sh
@@ -57,6 +57,9 @@ dependencies:
   # exception artemis's transport throws rather than out of its toString.
   # Already resolved as a transitive dependency of artemis; declared because
   # it is used.
+  gql: ^0.14.0
+  gql_dedupe_link: ^2.0.3
+  gql_exec: ^0.4.3
   gql_http_link: ^0.4.5
   gql_link: ^0.5.1
   pst:
@@ -64,7 +67,7 @@ dependencies:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v4.0.2
+      ref: v4.1.0
   ario_sdk:
     path: ./packages/ario_sdk
   cryptography: ^2.0.5
@@ -74,6 +77,13 @@ dependencies:
   json_annotation: ^4.8.0
   mime: ^1.0.0
   drift: ^2.12.1
+  # The web database runs sqlite3 compiled to WebAssembly, and the artifact
+  # code reaches its VirtualFileSystem directly to read an attached database
+  # back out. web/sqlite3.wasm must match this version — see tool/check_wasm_version.sh.
+  sqlite3: ^2.4.2
+  # drift's remote protocol between the page and the web database worker
+  # (lib/models/database/web_worker/). Already resolved through drift.
+  stream_channel: ^2.1.2
   path_provider: ^2.0.2
   reactive_forms: ^14.1.0
   rxdart: ^0.27.1
@@ -89,6 +99,9 @@ dependencies:
   package_info_plus: ^4.1.0
   js: ^0.6.3
   collection: ^1.15.0-nullsafety.4
+  # `clock.now()` rather than `DateTime.now()` where a widget test has to
+  # control the time - see lib/sync/presentation/sync_summary.dart.
+  clock: ^1.1.1
   csv: ^6.0.0
   stash_memory: ^5.1.0
   percent_indicator: ^4.0.0
@@ -98,6 +111,12 @@ dependencies:
   flutter_launcher_icons: ^0.13.1
   equatable: ^2.0.5
   http: ^1.1.0
+  # Streams response bodies in the browser, which http 1.2's BrowserClient
+  # (XMLHttpRequest) cannot. Pinned by the override below.
+  fetch_client:
+    git:
+      url: https://github.com/ardriveapp/fetch_client.git
+      ref: master
   stash: ^5.1.0
   path: ^1.8.1
   flutter_svg: ^2.0.10+1
@@ -172,10 +191,13 @@ dependency_overrides:
       url: https://github.com/ardriveapp/flutter_stripe/
       path: packages/stripe_platform_interface
       ref: main
+  # Pinned to the branch that forwards response headers again; master
+  # (bb61a9c) drops every one of them. See ardriveapp/fetch_client
+  # forward-response-headers.
   fetch_client:
     git:
       url: https://github.com/ardriveapp/fetch_client.git
-      ref: master
+      ref: eb659b9e443344f80dcaa60e99a22ae7111bbab9
   fetch_api:
     git:
       url: https://github.com/ardriveapp/fetch_api.git
@@ -184,7 +206,7 @@ dependency_overrides:
   arweave:
     git:
       url: https://github.com/ardriveapp/arweave-dart.git
-      ref: v4.0.2
+      ref: v4.1.0
 
   ardrive_io:
     path: ./packages/ardrive_io
@@ -194,9 +216,6 @@ dependency_overrides:
 dev_dependencies:
   # Used by tests that drive a Timer without waiting for real time.
   fake_async: ^1.3.1
-  # Used by the GraphQL fallback test to build the exception the transport
-  # throws on a non-2xx.
-  gql_exec: ^0.4.3
   integration_test:
     sdk: flutter
   flutter_test:

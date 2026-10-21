@@ -149,11 +149,11 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v4.0.2"
-      resolved-ref: "7bee19d601065b451de0aa2e72027ee30c7f934b"
+      ref: "v4.1.0"
+      resolved-ref: c5afb66921b6dac59041c918bd6538d266654ec7
       url: "https://github.com/ardriveapp/arweave-dart.git"
     source: git
-    version: "4.0.2"
+    version: "4.1.0"
   async:
     dependency: "direct main"
     description:
@@ -363,7 +363,7 @@ packages:
     source: hosted
     version: "0.4.1"
   clock:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: clock
       sha256: cb6d7f03e1de671e34607e909a7213e31d7752be4fb66a86d29fe1eb14bfb5cf
@@ -620,11 +620,11 @@ packages:
     source: git
     version: "1.0.3"
   fetch_client:
-    dependency: "direct overridden"
+    dependency: "direct main"
     description:
       path: "."
-      ref: master
-      resolved-ref: bb61a9c832f04a3939f1f7f4850f137bf4ee679b
+      ref: eb659b9e443344f80dcaa60e99a22ae7111bbab9
+      resolved-ref: eb659b9e443344f80dcaa60e99a22ae7111bbab9
       url: "https://github.com/ardriveapp/fetch_client.git"
     source: git
     version: "1.0.2"
@@ -1103,7 +1103,7 @@ packages:
     source: hosted
     version: "2.1.2"
   gql:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: gql
       sha256: "998304fbb88a3956cfea10cd27a56f8e5d4b3bc110f03c952c18a9310774e8bb"
@@ -1119,7 +1119,7 @@ packages:
     source: hosted
     version: "0.7.1"
   gql_dedupe_link:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: gql_dedupe_link
       sha256: "89681048cf956348e865da872a40081499b8c087fc84dd4d4b9c134bd70d27b3"
@@ -1127,7 +1127,7 @@ packages:
     source: hosted
     version: "2.0.3+1"
   gql_exec:
-    dependency: "direct dev"
+    dependency: "direct main"
     description:
       name: gql_exec
       sha256: "0d1fdb2e4154efbfc1dcf3f35ec36d19c8428ff0d560eb4c45b354f8f871dc50"
@@ -2064,7 +2064,7 @@ packages:
     source: hosted
     version: "2.5.4"
   sqlite3:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: sqlite3
       sha256: "1abbeb84bf2b1a10e5e1138c913123c8aa9d83cd64e5f9a0dd847b3c83063202"
@@ -2120,7 +2120,7 @@ packages:
     source: hosted
     version: "5.1.0"
   stream_channel:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: stream_channel
       sha256: ba2aa5d8cc609d96bbb2899c28934f9e1af5cddbd60a827822ea467161eb54e7

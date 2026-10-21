@@ -1,9 +1,15 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
+import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
+import 'package:ardrive/drive_state/data/drive_state_import.dart';
+import 'package:ardrive/drive_state/data/drive_state_sync_source.dart';
+import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
+import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/entities/drive_entity.dart';
 import 'package:ardrive/entities/file_entity.dart';
@@ -196,6 +202,17 @@ class MonotonicProgressSink {
 }
 
 abstract class SyncRepository {
+  // `syncDriveById` used to live here. It had no callers anywhere in the app -
+  // not on this branch, not on `dev` - and it passed `currentBlockHeight: 0`
+  // into `_syncDrive`, which writes that value back as the drive's
+  // `lastBlockHeight` at the end of a successful sync. Wiring it up would have
+  // reset a drive's watermark to zero.
+  //
+  // Removed rather than repaired: an unreachable method cannot be verified
+  // against a caller's intent, so "correct" has no meaning for it, and a
+  // corrected version would still be a second, untested entry point beside
+  // [syncSingleDrive], which does the same job and is the one the app calls.
+
   /// The total transaction-parse budget, shared out across the drives still to
   /// be synced.
   @visibleForTesting
@@ -229,18 +246,6 @@ abstract class SyncRepository {
 
     return max(1, maxTransactionParseBatchSize ~/ remaining);
   }
-
-  Stream<double> syncDriveById({
-    required String driveId,
-    required String ownerAddress,
-
-    /// This was required because the usage of the `PromptToSnapshotBloc` in the
-    /// `SyncCubit` and the `PromptToSnapshotBloc` is not available in the `SyncRepository`
-    ///
-    /// This functionality should be refactored. The count of synced tx must be done
-    /// at the `SyncRepository` level, not at the `PromptToSnapshotBloc` level.
-    Function(String driveId, int txCount)? txFechedCallback,
-  });
 
   /// Syncs a single drive by its ID, with optional deep sync.
   /// Returns a stream of SyncProgress that can be used to track progress.
@@ -368,6 +373,7 @@ abstract class SyncRepository {
     required SnapshotValidationService snapshotValidationService,
     required ARNSRepository arnsRepository,
     required UserPreferencesRepository userPreferencesRepository,
+    DriveStateSyncSource? driveStateSyncSource,
   }) {
     return _SyncRepository(
       arweave: arweave,
@@ -377,11 +383,34 @@ abstract class SyncRepository {
       snapshotValidationService: snapshotValidationService,
       arnsRepository: arnsRepository,
       userPreferencesRepository: userPreferencesRepository,
+      driveStateSyncSource: driveStateSyncSource,
     );
   }
 }
 
 class _SyncRepository implements SyncRepository {
+  static const _misdecodedNamesRepairedKey = 'misdecodedNamesRepaired_v1';
+
+  /// Runs [DriveDao.repairMisdecodedNames] the first time a sync starts on
+  /// this device, and never again. A failure is logged and tried again on the
+  /// next sync: it must never stop one.
+  Future<void> _repairMisdecodedNamesOnce() async {
+    try {
+      final store = await LocalKeyValueStore.getInstance();
+
+      if (store.getBool(_misdecodedNamesRepairedKey) == true) {
+        return;
+      }
+
+      final repaired = await _driveDao.repairMisdecodedNames();
+      logger.i('Repaired $repaired names damaged by misread snapshots');
+
+      await store.putBool(_misdecodedNamesRepairedKey, true);
+    } catch (e) {
+      logger.w('Could not repair names damaged by misread snapshots: $e');
+    }
+  }
+
   final ArweaveService _arweave;
   final DriveDao _driveDao;
   final ConfigService _configService;
@@ -389,6 +418,23 @@ class _SyncRepository implements SyncRepository {
   final SnapshotValidationService _snapshotValidationService;
   final ARNSRepository _arnsRepository;
   final UserPreferencesRepository _userPreferencesRepository;
+
+  /// The drive state artifact source (`docs/DRIVE_STATE_ARTIFACT.md` §5).
+  ///
+  /// Null until first used, and only ever used behind
+  /// [AppConfig.enableSyncFromDriveState], because building it reads
+  /// [ArweaveService.graphQLRetry] - work no sync should pay for while the
+  /// feature is off.
+  DriveStateSyncSource? _driveStateSyncSource;
+
+  DriveStateSyncSource get _driveStateSource =>
+      _driveStateSyncSource ??= DriveStateSyncSource(
+        arweave: _arweave,
+        discovery: GraphQLDriveStateDiscovery(
+          graphQLRetry: _arweave.graphQLRetry,
+        ),
+        importer: DriveStateImporter(_driveDao),
+      );
 
   final Map<String, GhostFolder> _ghostFolders = {};
   final Set<String> _folderIds = <String>{};
@@ -529,7 +575,9 @@ class _SyncRepository implements SyncRepository {
     required SnapshotValidationService snapshotValidationService,
     required ARNSRepository arnsRepository,
     required UserPreferencesRepository userPreferencesRepository,
-  })  : _arweave = arweave,
+    DriveStateSyncSource? driveStateSyncSource,
+  })  : _driveStateSyncSource = driveStateSyncSource,
+        _arweave = arweave,
         _driveDao = driveDao,
         _configService = configService,
         _snapshotValidationService = snapshotValidationService,
@@ -556,6 +604,11 @@ class _SyncRepository implements SyncRepository {
     _syncedEntityIdsByDrive.clear();
     _pendingSyncedEntityIdsByDrive.clear();
     _resetMetadataFetchCounts();
+
+    // Names a snapshot damaged before snapshots were read as UTF-8 - see
+    // [DriveDao.repairMisdecodedNames]. Once per device, before anything
+    // reads them.
+    await _repairMisdecodedNamesOnce();
 
     // Every emission of this sync, from the first to the last, goes out
     // through one sink, so the number it reports can only ever climb.
@@ -737,7 +790,9 @@ class _SyncRepository implements SyncRepository {
     final numberOfDrivesToSync = drivesToSync.length;
 
     if (numberOfDrivesToSync == 0) {
-      // Probe found no drives with activity — this is a successful no-op sync
+      // Probe found no drives with activity — this is a successful no-op sync.
+      // It examined nothing, and `emptySyncCompleted` says so: a sync that
+      // looked at no drive vouches for no drive.
       logger.i('No drives need syncing');
       // Carry the probe's counts through. "Nothing to do" is exactly the sync
       // where the number of drives it skipped is the whole story.
@@ -751,7 +806,17 @@ class _SyncRepository implements SyncRepository {
       return;
     }
 
-    syncProgress = syncProgress.copyWith(drivesCount: numberOfDrivesToSync);
+    // Name the drives this sync is about to open, before it opens any of them.
+    // The probe above may have set some aside as unchanged; those are neither
+    // synced nor failed, so nothing else in this report distinguishes them
+    // from drives that were read and found clean. See
+    // [SyncProgress.examinedDriveIds] - the publish precondition reads this,
+    // and it is announced up front so that a sync which dies part-way has
+    // still said which drives it may have advanced.
+    syncProgress = syncProgress.copyWith(
+      drivesCount: numberOfDrivesToSync,
+      examinedDriveIds: {for (final drive in drivesToSync) drive.id},
+    );
     yield syncProgress = syncProgressController.raise(syncProgress);
 
     // Batch-fetch snapshots for all drives per owner (1 GQL query per owner
@@ -887,6 +952,7 @@ class _SyncRepository implements SyncRepository {
                 ? 0
                 : _calculateSyncLastBlockHeight(drive.lastBlockHeight ?? 0),
             currentBlockHeight: currentBlockHeight,
+            syncDeep: syncDeep,
             transactionParseBatchSize: _transactionParseBatchSize(syncProgress),
             ownerAddress: drive.ownerAddress,
             txFechedCallback: txFechedCallback,
@@ -1254,23 +1320,6 @@ class _SyncRepository implements SyncRepository {
   }
 
   @override
-  Stream<double> syncDriveById({
-    required String driveId,
-    required String ownerAddress,
-    Function(String driveId, int txCount)? txFechedCallback,
-  }) {
-    _lastSync = DateTime.now();
-    return _syncDrive(
-      driveId,
-      ownerAddress: ownerAddress,
-      lastBlockHeight: 0,
-      currentBlockHeight: 0,
-      transactionParseBatchSize: 200,
-      txFechedCallback: txFechedCallback,
-    );
-  }
-
-  @override
   Stream<SyncProgress> syncSingleDrive({
     required String driveId,
     bool syncDeep = false,
@@ -1290,6 +1339,11 @@ class _SyncRepository implements SyncRepository {
     _pendingSyncedEntityIdsByDrive.clear();
     _resetMetadataFetchCounts();
 
+    // Names a snapshot damaged before snapshots were read as UTF-8 - see
+    // [DriveDao.repairMisdecodedNames]. Once per device, before anything
+    // reads them.
+    await _repairMisdecodedNamesOnce();
+
     // Every emission of this sync, from the first to the last, goes out
     // through one sink, so the number it reports can only ever climb.
     final syncProgressController = MonotonicProgressSink();
@@ -1305,6 +1359,11 @@ class _SyncRepository implements SyncRepository {
       drivesCount: 1,
       isSingleDriveSync: true,
       driveName: drive.name,
+      // The one drive this sync opens. Announced here, before any of its work,
+      // for the reason given on [SyncProgress.examinedDriveIds]. Note the
+      // early return above: a drive that is not in the database is *not*
+      // examined, and `emptySyncCompleted` names nobody.
+      examinedDriveIds: {driveId},
       // Same question this path already answers below when it decides where to
       // start the walk: a deep sync reads from block zero, and so does a drive
       // that has never been synced. Set here rather than left at its default,
@@ -1374,6 +1433,7 @@ class _SyncRepository implements SyncRepository {
               ? 0
               : _calculateSyncLastBlockHeight(drive.lastBlockHeight ?? 0),
           currentBlockHeight: currentBlockHeight,
+          syncDeep: syncDeep,
           transactionParseBatchSize: 200,
           ownerAddress: drive.ownerAddress,
           txFechedCallback: txFechedCallback,
@@ -2049,7 +2109,16 @@ class _SyncRepository implements SyncRepository {
       onDriveUnlocked: onDriveUnlocked,
     );
 
-    await _driveDao.updateUserDrives(userDriveEntities, cipherKey);
+    // From the listing the call above just made. Cached only: if a finished
+    // sync has cleared it since, stored dates are left alone this pass.
+    final creationTimes =
+        _arweave.cachedUserDriveCreationTimes(await wallet.getAddress());
+
+    await _driveDao.updateUserDrives(
+      userDriveEntities,
+      cipherKey,
+      creationTimes: creationTimes,
+    );
   }
 
   @override
@@ -2360,6 +2429,133 @@ class _SyncRepository implements SyncRepository {
     return DateTime.now().isAfter(transactionCreatedDate.add(pendingWaitTime));
   }
 
+  /// Reads this drive's state artifact before the snapshot pass, and returns
+  /// the block height the rest of the sync should start from.
+  ///
+  /// `docs/DRIVE_STATE_ARTIFACT.md` §5 makes the artifact the first of three
+  /// sources; what it covers, the two below it need not. That composition is
+  /// the return value: [lastBlockHeight] raised to the top of the range an
+  /// import actually landed, which the caller feeds to the same
+  /// `obscuredBy`/[HeightRange.difference] arithmetic that already composes
+  /// snapshots - one mechanism, one more range in it.
+  ///
+  /// Four gates, in the order they cost anything:
+  ///
+  ///  * the config flag, off by default, so nothing changes for anyone until
+  ///    it is switched on;
+  ///  * a resolvable [DriveStateProtection]. Both privacies read artifacts:
+  ///    a private drive needs its key, and a public drive needs no key at all
+  ///    because a public drive's artifact is not encrypted (§2.6).
+  ///    What the resolution refuses is a private drive whose key is missing -
+  ///    which used to be indistinguishable from a public drive here, since
+  ///    both arrive as a null key;
+  ///  * [syncDeep], because a deep sync is the one thing an artifact must not
+  ///    accelerate - see below;
+  ///  * a `try` around everything, because no drive may fail over an artifact.
+  ///
+  /// Returns [lastBlockHeight] unchanged on every path but a successful
+  /// import, so the worst an artifact can do to a sync is cost it a query.
+  Future<int> _readDriveStateArtifact({
+    required String driveId,
+    required String ownerAddress,
+    required String privacy,
+    required SecretKey? driveKey,
+    required int lastBlockHeight,
+    required int currentBlockHeight,
+    required bool syncDeep,
+    required SyncCancellationToken token,
+  }) async {
+    // Before anything is fetched. This runs ahead of the fetch loop's own
+    // first check, and the read below downloads a body sized like a snapshot
+    // and will try up to three candidates — so without a check here a user who
+    // cancelled would keep downloading until the read returned, once per drive
+    // under `syncAllDrives`.
+    token.checkCancellation();
+
+    if (!_configService.config.enableSyncFromDriveState) {
+      return lastBlockHeight;
+    }
+
+    // The drive row's own privacy decides which chain an artifact for this
+    // drive must have taken, and the reader carries that value down so the
+    // artifact's cipher-presence can be checked against it. A null key is no
+    // longer the question: for a public drive it is expected, and for a
+    // private one it is the refusal below.
+    final resolved = DriveStateProtection.forDrive(
+      privacy: privacy,
+      driveKey: driveKey,
+    );
+
+    if (resolved.isRefused) {
+      logger.w('${DriveStateOutcomeReporter.logPrefix} $driveId: no artifact '
+          'was read - ${resolved.reason}');
+      return lastBlockHeight;
+    }
+
+    // A deep sync means "distrust what is local and rebuild this drive from
+    // the chain". An artifact is local state - someone else's, arrived at by
+    // the same reasoning this sync has been asked to stop trusting - so
+    // reading one here would answer a request to start over by starting from
+    // a stranger's copy of where we already were.
+    //
+    // That matters more than it sounds, because deep sync is the *only*
+    // remedy the UI offers for a drive that looks wrong, and it is offered in
+    // four places. A user who reaches for it because an artifact left their
+    // drive incomplete would, with the flag on, re-apply the cause, and have
+    // no way out from inside the app.
+    //
+    // Stated here rather than left to fall out of the `lastBlockHeight: 0` the
+    // deep paths already pass, because that exempts nothing: discovery still
+    // runs, the artifact still imports, and `[0, tip]` still collapses to
+    // `[Block-End, tip]`.
+    if (syncDeep) {
+      logger.i('${DriveStateOutcomeReporter.logPrefix} $driveId: deep sync, so '
+          'the artifact is not read and the whole range is walked');
+      return lastBlockHeight;
+    }
+
+    try {
+      final result = await _driveStateSource.read(
+        driveId: driveId,
+        ownerAddress: ownerAddress,
+        protection: resolved.protection!,
+        lastBlockHeight: lastBlockHeight,
+      );
+
+      // Resumed [kBlockHeightLookBack] blocks below `Block-End`, as the
+      // first sync of a session resumes below the drive's own watermark. `Block-End` is the
+      // producer's watermark, which is the node's `/info` height at its last
+      // sync, not a height the GraphQL index had reached: the producer's copy
+      // can lack an entity mined just below it and indexed late. A later
+      // sync of the producer's finds it in its look-back; the artifact keeps
+      // the gap, and a reader starting at `Block-End` would never re-read it
+      // once its watermark moved on. Re-reading the band costs one query and
+      // records nothing twice: revisions no newer than the latest are skipped.
+      final covered = result.coveredThroughBlock;
+      final resumeFrom =
+          covered > 0 ? max(covered - kBlockHeightLookBack, 0) : 0;
+
+      // Never past the tip. The range below is built as
+      // `Range(start: <this>, end: currentBlockHeight)`, and `Range` throws
+      // when start runs past end - which would fail the drive, the one thing
+      // this feature may not do. `Block-End` is a tag on a transaction nobody
+      // has to trust, so an artifact claiming more than this node has seen is
+      // an ordinary thing to meet, not a malformed one.
+      return min(
+        max(lastBlockHeight, resumeFrom),
+        max(lastBlockHeight, currentBlockHeight),
+      );
+    } catch (e) {
+      // [DriveStateSyncSource.read] does not throw, so this is unreachable by
+      // design - which is exactly why it is here. The one thing this feature
+      // may never do is fail a drive, and that promise should not rest on
+      // another file continuing to keep its own.
+      logger.w('${DriveStateOutcomeReporter.logPrefix} $driveId: the artifact '
+          'path threw and was abandoned; syncing normally: $e');
+      return lastBlockHeight;
+    }
+  }
+
   Stream<double> _syncDrive(
     String driveId, {
     SecretKey? cipherKey,
@@ -2371,6 +2567,13 @@ class _SyncRepository implements SyncRepository {
     SyncCancellationToken? cancellationToken,
     List<SnapshotEntityTransaction>? prefetchedSnapshots,
     bool skipPendingTxFetch = false,
+
+    /// The caller asked to rebuild this drive from the chain rather than
+    /// resume from where it left off. Both deep entry points already express
+    /// that by passing `lastBlockHeight: 0`, but a height alone cannot say
+    /// *why* it is zero - a never-synced drive passes zero too - and the drive
+    /// state artifact has to tell those apart. See [_readDriveStateArtifact].
+    bool syncDeep = false,
     void Function()? onMetadataFetchProgress,
   }) async* {
     final token = cancellationToken ?? SyncCancellationToken();
@@ -2395,6 +2598,27 @@ class _SyncRepository implements SyncRepository {
         }
       }
     }
+
+    // The first of the three sources §5 composes: whatever the artifact
+    // covered, the snapshot and GraphQL passes below need not. Off by default,
+    // never on a deep sync, and every failure inside is a fallback - so this
+    // can only ever move the start of the work below forward.
+    final syncFromBlockHeight = await _readDriveStateArtifact(
+      driveId: driveId,
+      ownerAddress: ownerAddress,
+      privacy: drive.privacy,
+      driveKey: driveKey?.key,
+      lastBlockHeight: lastBlockHeight,
+      currentBlockHeight: currentBlockHeight,
+      syncDeep: syncDeep,
+      token: token,
+    );
+
+    // And again after: the artifact read is the longest thing that can happen
+    // before the fetch loop starts, so a cancel arriving during it is observed
+    // here rather than after the first page of GraphQL.
+    token.checkCancellation();
+
     final fetchPhaseStartDT = DateTime.now();
 
     logger.d('Fetching all transactions for drive ${drive.id}');
@@ -2413,17 +2637,50 @@ class _SyncRepository implements SyncRepository {
         final source = prefetchedSnapshots != null ? 'prefetched' : 'per-drive';
         final snapshotsStream = prefetchedSnapshots != null
             ? Stream.fromIterable(prefetchedSnapshots)
-            : _arweave.getAllSnapshotsOfDrive(driveId, lastBlockHeight,
+            : _arweave.getAllSnapshotsOfDrive(driveId, syncFromBlockHeight,
                 ownerAddress: ownerAddress);
 
-        snapshotItems = await SnapshotItem.instantiateAll(
+        final instantiated = await SnapshotItem.instantiateAll(
           snapshotsStream,
-          lastBlockHeight: lastBlockHeight,
+          lastBlockHeight: syncFromBlockHeight,
           arweave: _arweave,
         ).toList();
 
+        // Snapshots whose every block is already accounted for.
+        //
+        // `instantiateAll` hands each snapshot the range left after the
+        // obscuring accumulator - seeded here with everything through
+        // [syncFromBlockHeight] - has taken its share, so one that ends below
+        // that line is left with no sub-ranges at all. It can serve no block:
+        // [SnapshotDriveHistory] maps items by their sub-ranges, and an item
+        // with none belongs to no range and is never read from.
+        //
+        // Dropping it is worth these lines because keeping it costs a network
+        // probe - [SnapshotValidationService] retries a HEAD for up to ~50s
+        // before giving up - whose answer cannot change this sync either way.
+        // The batched prefetch makes these routine rather than rare: it
+        // queries once per owner from the *lowest* start height across their
+        // drives and gives every result to every drive, so a drive that a
+        // drive state artifact moved far ahead is handed the snapshots its
+        // neighbours needed.
+        final coversNothing = <SnapshotItem>[];
+        snapshotItems = <SnapshotItem>[];
+        for (final item in instantiated) {
+          if (item.subRanges.rangeSegments.isEmpty) {
+            coversNothing.add(item);
+          } else {
+            snapshotItems.add(item);
+          }
+        }
+
+        if (coversNothing.isNotEmpty) {
+          logger.i('[snapshot] $driveId: ${coversNothing.length} already '
+              'covered at or below block $syncFromBlockHeight, so not '
+              'probed: ${coversNothing.map((i) => i.txId).join(', ')}');
+        }
+
         logger.i('[snapshot] $driveId: ${snapshotItems.length} usable '
-            'from $source source (above block $lastBlockHeight)');
+            'from $source source (above block $syncFromBlockHeight)');
 
         final beforeValidation = snapshotItems.length;
         List<SnapshotItem> snapshotsVerified = await _snapshotValidationService
@@ -2454,7 +2711,7 @@ class _SyncRepository implements SyncRepository {
       final totalRangeToQueryFor = HeightRange(
         rangeSegments: [
           Range(
-            start: lastBlockHeight,
+            start: syncFromBlockHeight,
             end: currentBlockHeight,
           ),
         ],
@@ -2611,6 +2868,34 @@ class _SyncRepository implements SyncRepository {
 
       logger.d(
           'Done processing all $totalTransactionsProcessed transactions - ${gqlDriveHistory.driveId}');
+
+      // The watermark says every row below it is stored, so it is raised once,
+      // here, after the last chunk has committed. It used to be raised inside
+      // the parse, on any page shorter than the batch: the last page of every
+      // 1000-transaction chunk whenever the batch size does not divide 1000
+      // (it is 200 shared between the drives left to sync), or any page with
+      // a skipped entity, and before that page's own rows were written. A sync
+      // that stopped after that point - a closed tab, a cancel, a failed
+      // fetch - left the drive claiming the tip without the rest of its
+      // history, and later syncs re-read only the look-back below it. A drive
+      // state artifact published from such a drive carried the same claim.
+      //
+      // Only when something was processed, as before: a sync that found no
+      // transactions leaves the watermark where it was. Counted as received:
+      // every one received went into a chunk, and every chunk has committed
+      // by here. `totalTransactionsProcessed` undercounts, since the batch
+      // processor empties the final chunk's list before it is added. `isHidden` is no
+      // longer rewritten with the value from the start of this sync, which
+      // could only undo a hide or unhide applied since. The sync cursor is
+      // reset to pick up files from other instances of the app (a different
+      // tab, window or device).
+      if (totalTransactionsReceived > 0) {
+        await _driveDao.writeToDrive(DrivesCompanion(
+          id: Value(drive.id),
+          lastBlockHeight: Value(currentBlockHeight),
+          syncCursor: const Value(null),
+        ));
+      }
 
       txFechedCallback?.call(drive.id, gqlDriveHistory.txCount);
 
@@ -2898,18 +3183,6 @@ class _SyncRepository implements SyncRepository {
           numberOfDriveEntitiesParsed += items.length - newEntities.length;
 
           yield driveEntityParseProgress();
-
-          // Handle the last page of newEntities, i.e; There's nothing more to sync
-          if (newEntities.length < batchSize) {
-            // Reset the sync cursor after every sync to pick up files from other instances of the app.
-            // (Different tab, different window, mobile, desktop etc)
-            await _driveDao.writeToDrive(DrivesCompanion(
-              id: Value(drive.id),
-              lastBlockHeight: Value(currentBlockHeight),
-              syncCursor: const Value(null),
-              isHidden: Value(drive.isHidden),
-            ));
-          }
 
           // The tally only counts what committed - see
           // [_pendingSyncedEntityIdsByDrive].

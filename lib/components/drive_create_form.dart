@@ -224,7 +224,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
                   action: () => context.read<DriveCreateCubit>().submit(
                         _driveNameController.text,
                       ),
-                  title: appLocalizationsOf(context).createEmphasized,
+                  title: appLocalizationsOf(context).createDriveEmphasized,
                 ),
               ],
             );

@@ -67,7 +67,6 @@ void main() {
               state: const DrivesListLoading(),
               onOpenDrive: (_) {},
               onTryAgain: () {},
-              onSyncAllDrives: () {},
             ),
             theme: entry.value);
 

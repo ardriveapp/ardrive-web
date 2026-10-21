@@ -110,12 +110,25 @@ class ArDriveIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: HoverWidget(
-        tooltip: tooltip,
-        hoverScale: scale == true ? 1.1 : 1.0,
-        child: icon,
+    final onPressed = this.onPressed;
+
+    // A button to a screen reader, named by its tooltip. The tooltip alone
+    // gave it a name and no role, so a reader announced "Share file" with
+    // nothing to say it could be pressed. The tooltip's own node is left out,
+    // or the name is read twice.
+    return Semantics(
+      button: true,
+      enabled: onPressed != null,
+      label: tooltip,
+      onTap: onPressed == null ? null : () => onPressed(),
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onPressed,
+        child: HoverWidget(
+          tooltip: tooltip,
+          hoverScale: scale == true ? 1.1 : 1.0,
+          child: icon,
+        ),
       ),
     );
   }

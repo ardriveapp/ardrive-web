@@ -187,7 +187,7 @@ class CryptoTopupModal extends StatelessWidget {
     showArDriveDialog(
       context,
       content: ArDriveStandardModal(
-        title: 'Wallet Account Changed',
+        title: 'Wallet account changed',
         content: Text(
           'Your wallet account has changed to ${_truncateAddress(state.newAddress)}. '
           'Would you like to continue with this account?',
@@ -223,7 +223,7 @@ class CryptoTopupModal extends StatelessWidget {
     showArDriveDialog(
       context,
       content: ArDriveStandardModal(
-        title: 'Price Changed',
+        title: 'Price changed',
         content: Text(
           'The price has $direction by $percentChange% since your last quote. '
           'Would you like to continue with the new price?',
@@ -293,7 +293,7 @@ class _SessionExpiredView extends StatelessWidget {
       children: [
         // Title - left aligned per modal design standard
         Text(
-          'Session Expired',
+          'Session expired',
           style: typography.heading5(
             fontWeight: ArFontWeight.bold,
             color: colors.themeFgDefault,
@@ -379,68 +379,68 @@ class _ConcurrentSessionView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Title
-                    Text(
-                      'Active Session Detected',
-                      style: typography.heading5(
-                        fontWeight: ArFontWeight.bold,
-                        color: colors.themeFgDefault,
-                      ),
+                children: [
+                  // Title
+                  Text(
+                    'Active session detected',
+                    style: typography.heading5(
+                      fontWeight: ArFontWeight.bold,
+                      color: colors.themeFgDefault,
                     ),
-                    const SizedBox(height: 24),
-                    // Icon and message
-                    Icon(
-                      Icons.tab_outlined,
-                      size: 64,
-                      color: colors.themeWarningFg,
+                  ),
+                  const SizedBox(height: 24),
+                  // Icon and message
+                  Icon(
+                    Icons.tab_outlined,
+                    size: 64,
+                    color: colors.themeWarningFg,
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Another payment session is active',
+                    style: typography.paragraphLarge(
+                      color: colors.themeFgDefault,
                     ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Another payment session is active',
-                      style: typography.paragraphLarge(
-                        color: colors.themeFgDefault,
-                      ),
-                      textAlign: TextAlign.center,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'A crypto payment is in progress in another tab. '
+                    'You can take over this session or cancel.',
+                    style: typography.paragraphNormal(
+                      color: colors.themeFgMuted,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'A crypto payment is in progress in another tab. '
-                      'You can take over this session or cancel.',
-                      style: typography.paragraphNormal(
-                        color: colors.themeFgMuted,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    // Action buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            height: 48,
-                            child: ArDriveButton(
-                              text: 'Cancel',
-                              style: ArDriveButtonStyle.secondary,
-                              onPressed: onClose,
-                            ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  // Action buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ArDriveButton(
+                            text: 'Cancel',
+                            style: ArDriveButtonStyle.secondary,
+                            onPressed: onClose,
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SizedBox(
-                            height: 48,
-                            child: ArDriveButton(
-                              text: 'Take Over',
-                              onPressed: onTakeOver,
-                            ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ArDriveButton(
+                            text: 'Take over',
+                            onPressed: onTakeOver,
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
+            ),
           ],
         ),
         // Close button in top right

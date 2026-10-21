@@ -22,6 +22,7 @@ class ProfileCubit extends Cubit<ProfileState> {
   final Database _db;
   final TabVisibilitySingleton _tabVisibilitySingleton;
   final ArDriveAuth _arDriveAuth;
+  StreamSubscription<User?>? _authSubscription;
 
   ProfileCubit({
     required TurboUploadService turboUploadService,
@@ -35,6 +36,12 @@ class ProfileCubit extends Cubit<ProfileState> {
         _tabVisibilitySingleton = tabVisibilitySingleton,
         _arDriveAuth = arDriveAuth,
         super(ProfileCheckingAvailability()) {
+    // ArDriveAuth publishes the user again whenever it changes, notably when
+    // the background balance refresh after login lands. Without following it,
+    // a balance that fell back to zero at login would stay zero here until
+    // something called [refreshBalance].
+    _authSubscription =
+        _arDriveAuth.onAuthStateChanged().listen(_followAuthUser);
     promptToAuthenticate();
   }
 
@@ -52,6 +59,7 @@ class ProfileCubit extends Cubit<ProfileState> {
     final arconnect = ArConnectService();
     // Profile unavailable - route to new profile screen
     if (profile == null) {
+      await _forgetVisitorDrives();
       emit(ProfilePromptAdd());
       return;
     }
@@ -75,13 +83,31 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     // Unexpected ArConnect state - clean up and route to profile screen
-    await _db.transaction(() async {
-      for (final table in _db.allTables) {
-        await _db.delete(table).go();
-      }
-    });
+    await _deleteAllTables();
     emit(ProfilePromptAdd());
   }
+
+  /// With no profile, whatever the database holds was written by a visitor in
+  /// an earlier session: drives opened from the sign-in screen or a share
+  /// link, with their folder and file names decrypted. Nobody signed in to
+  /// keep them, and the next person to use this browser must not inherit
+  /// them, so a start without a profile begins empty. A drive a visitor opens
+  /// now and carries into sign-in is written after this, and kept.
+  ///
+  /// Never throws: the sign-in screen must open either way.
+  Future<void> _forgetVisitorDrives() async {
+    try {
+      await _deleteAllTables();
+    } catch (e, stackTrace) {
+      logger.e('Failed to clear drives left by a visitor', e, stackTrace);
+    }
+  }
+
+  Future<void> _deleteAllTables() => _db.transaction(() async {
+        for (final table in _db.allTables) {
+          await _db.delete(table).go();
+        }
+      });
 
   /// Returns true if detected wallet or permissions change
   Future<bool> checkIfWalletMismatch() async {
@@ -139,12 +165,44 @@ class ProfileCubit extends Cubit<ProfileState> {
   ) async {
     emit(ProfileLoggingIn());
 
+    // Before anyone hears the user is in: the first sync after login reads a
+    // private drive's key from its row, and a drive opened as a visitor has
+    // none there yet.
+    await _persistVisitorDriveKeys(user);
+
     emit(
       ProfileLoggedIn(
-        user: user,
+        // The balance refresh that follows login can finish before the
+        // profile is unlocked, so prefer ArDriveAuth's copy of the user.
+        user: _authUserFor(user.walletAddress) ?? user,
         useTurbo: _turboUploadService.useTurboUpload,
       ),
     );
+  }
+
+  /// A private drive opened before signing in holds its key in memory only.
+  /// Now that there is a profile key, the row gets an encrypted copy, so the
+  /// drive survives a reload and the sync finds the key where it looks for a
+  /// signed-in user. See [DriveDao.persistInMemoryDriveKeys]. Never throws:
+  /// a login must not fail over a drive somebody looked at beforehand.
+  Future<void> _persistVisitorDriveKeys(User user) async {
+    try {
+      final written =
+          await _db.driveDao.persistInMemoryDriveKeys(user.cipherKey);
+
+      if (written.isNotEmpty) {
+        logger.i(
+          'Stored the keys of ${written.length} drive(s) opened before '
+          'signing in',
+        );
+      }
+    } catch (e, stackTrace) {
+      logger.e(
+        'Failed to store the keys of drives opened before signing in',
+        e,
+        stackTrace,
+      );
+    }
   }
 
   Future<void> refreshBalance() async {
@@ -152,7 +210,34 @@ class ProfileCubit extends Cubit<ProfileState> {
 
     await _arDriveAuth.refreshBalance();
 
-    emit(profile.copyWith(user: _arDriveAuth.currentUser));
+    // Normally already applied through [_followAuthUser]; this keeps the
+    // promise that the new balance is in the state once this completes. The
+    // user may have logged out during the request, which this also checks.
+    _followAuthUser(_authUserFor(profile.user.walletAddress));
+  }
+
+  /// Takes on [user] if it is the user already logged in here. Logging in and
+  /// out are driven by [unlockDefaultProfile] and [logoutProfile], not by this.
+  void _followAuthUser(User? user) {
+    final current = state;
+    if (isClosed ||
+        user == null ||
+        current is! ProfileLoggedIn ||
+        current.user.walletAddress != user.walletAddress) {
+      return;
+    }
+
+    emit(current.copyWith(user: user));
+  }
+
+  /// ArDriveAuth's current user, if it is the one with [walletAddress].
+  User? _authUserFor(String walletAddress) {
+    try {
+      final user = _arDriveAuth.currentUser;
+      return user.walletAddress == walletAddress ? user : null;
+    } on AuthenticationUserIsNotLoggedInException {
+      return null;
+    }
   }
 
   Future<void> logoutProfile() async {
@@ -166,6 +251,12 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
 
     emit(ProfileLoggingOut());
+  }
+
+  @override
+  Future<void> close() async {
+    await _authSubscription?.cancel();
+    return super.close();
   }
 
   Future<void> deleteTables() async {

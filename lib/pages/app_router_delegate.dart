@@ -21,6 +21,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
 import 'package:ardrive/pages/raw_transaction_view/raw_transaction_view_page.dart';
+import 'package:ardrive/search/search_scope.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/shared/blocs/private_drive_migration/private_drive_migration_bloc.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -118,6 +119,40 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// the drive later must not reopen a panel nobody asked for again.
   String? _pendingInfoDriveId;
 
+  /// The drive and folder the address bar last asked for, until the explorer
+  /// takes it.
+  ///
+  /// The explorer read the route once, when it was built. A link pasted into
+  /// a tab that already had it open, or a step back or forward through its
+  /// history, changed the address bar and nothing else: the next folder the
+  /// explorer drew put the old address back, and a link to another drive left
+  /// the sidebar on the old one. See [followRouteLink].
+  RouteLink? _routeLink;
+
+  /// The drive a visitor just opened from the sign-in screen, whose sync has
+  /// to start the moment there is a `SyncCubit` to start it on.
+  ///
+  /// That cubit lives inside the explorer's provider tree, which does not
+  /// exist on the sign-in screen, so the dialog that wrote the drive cannot
+  /// start the sync itself. The explorer's cubit factory does, once, and the
+  /// detail cubit then shows "Opening..." instead of the unsynced card.
+  String? _syncOnOpenDriveId;
+
+  /// The private drive a visitor has already been asked a key for, so the
+  /// prompt opens once per drive rather than on every state the explorer
+  /// emits while the drive is open. A new route asks again.
+  String? _keyPromptedForDriveId;
+
+  /// The drive [sharedDriveKey] came with. A key is only ever offered to the
+  /// drive its link named: selecting another drive drops it, so it can't be
+  /// tried on, stored for, or shown in the address bar of a drive it doesn't
+  /// belong to.
+  String? _sharedDriveKeyDriveId;
+
+  /// The drive to sync as the explorer builds, for tests.
+  @visibleForTesting
+  String? get syncOnOpenDriveId => _syncOnOpenDriveId;
+
   /// The standing request, for tests. The explorer clears it as it honours it.
   @visibleForTesting
   String? get pendingInfoDriveId => _pendingInfoDriveId;
@@ -159,6 +194,12 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @visibleForTesting
   void onDriveSelected(String? selectedDriveId) {
     final selectedDriveChanged = driveId != selectedDriveId;
+
+    if (selectedDriveChanged && selectedDriveId != _sharedDriveKeyDriveId) {
+      sharedDriveKey = null;
+      sharedRawDriveKey = null;
+      _sharedDriveKeyDriveId = null;
+    }
 
     final isTheLinkedDrive = _pendingFolderDriveId != null &&
         _pendingFolderDriveId == selectedDriveId;
@@ -415,6 +456,11 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 shellKey = 'explorer';
                 driveId = driveId ?? rootPath;
 
+                // Handed over once: the explorer follows it, and later builds
+                // pass nothing.
+                final routeLink = _routeLink;
+                _routeLink = null;
+
                 shell = BlocListener<DrivesCubit, DrivesState>(
                   listener: (context, state) {
                     if (state is DrivesLoadSuccess) {
@@ -432,6 +478,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                               context,
                               driveDetailCubitState,
                             );
+
+                            final shownDrive = switch (driveDetailCubitState) {
+                              DriveDetailLoadSuccess(:final currentDrive) =>
+                                currentDrive,
+                              DriveDetailLoadUnsynced(:final drive) => drive,
+                              _ => null,
+                            };
+
+                            if (shownDrive != null) {
+                              unawaited(
+                                _ensureVisitorHasDriveKey(context, shownDrive),
+                              );
+                            }
 
                             if (driveDetailCubitState
                                 is DriveDetailLoadSuccess) {
@@ -477,27 +536,68 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                                 return;
                               }
 
+                              final driveDao = context.read<DriveDao>();
+                              final linkedDriveId = driveId!;
+
                               attachDrive(
                                 context: context,
                                 driveId: driveId,
                                 driveName: driveName,
                                 driveKey: sharedDriveKey,
-                              ).then((_) {
+                              ).then((_) async {
                                 sharedDriveKey = null;
                                 sharedRawDriveKey = null;
-                                driveId = null;
-                                driveName = null;
-                                notifyListeners();
+
+                                // An attached drive stays the one in view. For
+                                // a visitor with no profile it is the only
+                                // thing keeping the explorer on screen: let go
+                                // of it and the explorer, the sync it just
+                                // started and the drives cubit that would have
+                                // selected the drive are all torn down, leaving
+                                // the visitor on a blank page.
+                                //
+                                // When the drive was not attached (the dialog
+                                // was cancelled, or the drive could not be
+                                // found or opened), the link has nothing left
+                                // to show, so the user lands where a sign in
+                                // lands: the drives list, or the sign in page
+                                // for a visitor.
+                                final attached = await driveDao
+                                        .driveById(driveId: linkedDriveId)
+                                        .getSingleOrNull() !=
+                                    null;
+
+                                landAfterAttachPrompt(
+                                  attached: attached,
+                                  loggedIn: canShowDrivesList(
+                                    profileCubit.state,
+                                  ),
+                                );
                               });
                             }
                           },
                         ),
                       ],
-                      child: AppShell(
-                        page: DriveDetailPage(
-                          context: navigatorKey.currentContext!,
-                          anonymouslyShowDriveDetail:
-                              anonymouslyShowDriveDetail,
+                      child: _RouteLinkFollower(
+                        link: routeLink,
+                        onFollow: (context, link, {required explorerIsNew}) {
+                          _startSyncOnOpen(
+                            context.read<SyncCubit>(),
+                            link.driveId,
+                          );
+                          followRouteLink(
+                            link,
+                            driveDetail: context.read<DriveDetailCubit>(),
+                            drives: context.read<DrivesCubit>(),
+                            explorerIsNew: explorerIsNew,
+                          );
+                        },
+                        child: AppShell(
+                          page: DriveDetailPage(
+                            context: navigatorKey.currentContext!,
+                            anonymouslyShowDriveDetail:
+                                anonymouslyShowDriveDetail,
+                          ),
                         ),
                       ),
                     ),
@@ -614,7 +714,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         );
                       }
                     },
-                    child: navigator,
+                    child: SearchScope(child: navigator),
                   ),
                 );
               } else {
@@ -627,7 +727,45 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     );
   }
 
+  /// Starts the sync of a drive a visitor just opened, once, now that there
+  /// is a `SyncCubit` to start it on.
+  ///
+  /// `startSyncForDrive` marks the drive as syncing before its first await,
+  /// so an explorer cubit built right after finds a sync touching its drive
+  /// and waits on the loading panel rather than showing "Drive not synced".
+  /// Called from the explorer's cubit factory, which covers an explorer built
+  /// fresh for the drive, and from the route-link follower, which covers an
+  /// explorer that was already open on another drive.
+  ///
+  /// `startSyncForDrive` refuses while another sync runs - a visitor opening
+  /// a second drive while the first still syncs - so a refusal waits for that
+  /// sync to end and tries once more.
+  void _startSyncOnOpen(SyncCubit syncCubit, String driveId) {
+    if (_syncOnOpenDriveId != driveId) {
+      return;
+    }
+
+    _syncOnOpenDriveId = null;
+    unawaited(() async {
+      if (await syncCubit.startSyncForDrive(driveId: driveId)) {
+        return;
+      }
+
+      await syncCubit.waitCurrentSync();
+
+      if (syncCubit.isClosed ||
+          await syncCubit.startSyncForDrive(driveId: driveId)) {
+        return;
+      }
+
+      logger.w('Opened drive $driveId was not synced; the explorer will '
+          'offer to sync it.');
+    }());
+  }
+
   DriveDetailCubit _driveDetailCubit(BuildContext context, String driveId) {
+    _startSyncOnOpen(context.read<SyncCubit>(), driveId);
+
     return DriveDetailCubit(
       driveRepository: DriveRepository(
         driveDao: context.read<DriveDao>(),
@@ -856,6 +994,44 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     notifyListeners();
   }
 
+  /// Where the user goes once the attach prompt a drive link opened is closed.
+  ///
+  /// An attached drive stays in view. Otherwise the link has nothing left to
+  /// show: a logged-in user lands on the drives list, the same place a sign in
+  /// lands when there is no link to honour, and a visitor goes to the sign in
+  /// page, because the explorer only renders for a visitor while a drive is
+  /// being viewed. Without this the explorer had no drive to show and the
+  /// visitor's builder fell through to an empty page.
+  @visibleForTesting
+  void landAfterAttachPrompt({
+    required bool attached,
+    required bool loggedIn,
+  }) {
+    if (attached) {
+      notifyListeners();
+      return;
+    }
+
+    driveId = null;
+    driveName = null;
+    driveFolderId = null;
+    _pendingFolderDriveId = null;
+    _pendingFolderId = null;
+    _routeLink = null;
+    _pendingInfoDriveId = null;
+    sharedDriveKey = null;
+    sharedRawDriveKey = null;
+
+    if (loggedIn) {
+      showDrivesList();
+    } else {
+      signingIn = true;
+      gettingStarted = false;
+      showingDrivesList = false;
+      notifyListeners();
+    }
+  }
+
   @override
   Future<void> setNewRoutePath(AppRoutePath configuration) async {
     signingIn = configuration.signingIn;
@@ -867,8 +1043,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingFolderDriveId =
         configuration.driveFolderId == null ? null : configuration.driveId;
     _pendingFolderId = configuration.driveFolderId;
+    _routeLink = configuration.driveId == null || configuration.drivesList
+        ? null
+        : RouteLink(
+            driveId: configuration.driveId!,
+            folderId: configuration.driveFolderId,
+          );
     sharedDriveKey = configuration.sharedDriveKey;
     sharedRawDriveKey = configuration.sharedRawDriveKey;
+    _sharedDriveKeyDriveId =
+        configuration.sharedDriveKey == null ? null : configuration.driveId;
+    _keyPromptedForDriveId = null;
     sharedFileId = configuration.sharedFileId;
     sharedFileKey = configuration.sharedFileKey;
     sharedRawFileKey = configuration.sharedRawFileKey;
@@ -877,6 +1062,188 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     rawTransactionId = configuration.rawTransactionId;
     rawTransactionName = configuration.rawTransactionName;
     rawTransactionContentType = configuration.rawTransactionContentType;
+  }
+
+  /// Brings the explorer to the drive and folder the address bar named.
+  ///
+  /// An explorer built for this link has already opened it, and only the
+  /// sidebar's drive has to follow. One that was already open opens it here.
+  /// Either way the drive is selected through [DrivesCubit], as a click on it
+  /// in the sidebar would be, so the sidebar shows it and the next refresh of
+  /// the drive list does not take the explorer back to the drive it showed
+  /// before.
+  @visibleForTesting
+  void followRouteLink(
+    RouteLink link, {
+    required DriveDetailCubit driveDetail,
+    required DrivesCubit drives,
+    required bool explorerIsNew,
+  }) {
+    if (!explorerIsNew) {
+      driveDetail.followLink(driveId: link.driveId, folderId: link.folderId);
+    }
+
+    final drivesState = drives.state;
+
+    if (drivesState is! DrivesLoadSuccess || drivesState.hasNoDrives) {
+      // A visitor with no drives yet. Selecting a drive among none only shows
+      // the no-drives screen, so the explorer is sent there itself, which
+      // offers to attach the drive.
+      if (!explorerIsNew && driveDetail.currentDriveId != link.driveId) {
+        driveDetail.changeDrive(link.driveId);
+      }
+      return;
+    }
+
+    if (drivesState.selectedDriveId != link.driveId) {
+      drives.selectDrive(link.driveId);
+      return;
+    }
+
+    // The drive was selected already, so no selection is coming to spend the
+    // folder held for it. Left standing, the next refresh of the drive list
+    // would put that folder back in the address bar wherever the reader had
+    // gone since.
+    _pendingFolderDriveId = null;
+    _pendingFolderId = null;
+  }
+
+  /// Shows a drive somebody opened from the sign-in screen, without a profile.
+  ///
+  /// The drive row is already written by the time this is called, so the
+  /// explorer finds it and no attach prompt opens. A private drive's key is
+  /// already in memory. It is never put in the address bar: a key somebody
+  /// typed would otherwise sit in the browser's history. A reload asks for it
+  /// once instead.
+  void openDriveAsVisitor({
+    required String driveId,
+    String? folderId,
+    DriveKey? driveKey,
+  }) {
+    signingIn = false;
+    gettingStarted = false;
+    showingDrivesList = false;
+
+    this.driveId = driveId;
+    driveName = null;
+    driveFolderId = folderId;
+    _pendingFolderDriveId = folderId == null ? null : driveId;
+    _pendingFolderId = folderId;
+    _routeLink = RouteLink(driveId: driveId, folderId: folderId);
+
+    sharedDriveKey = driveKey;
+    sharedRawDriveKey = null;
+    _sharedDriveKeyDriveId = driveKey == null ? null : driveId;
+
+    _syncOnOpenDriveId = driveId;
+    _keyPromptedForDriveId = null;
+
+    notifyListeners();
+  }
+
+  /// Follows a link that is not a drive - a shared file, a raw transaction -
+  /// from the sign-in screen. Both pages render for a visitor already.
+  Future<void> openRouteAsVisitor(AppRoutePath route) async {
+    await setNewRoutePath(route);
+    notifyListeners();
+  }
+
+  /// Takes a visitor to the sign-in page and keeps the drive they were
+  /// viewing, so a login lands back on it. Logging out instead would run
+  /// [clearState] and drop the drive.
+  void signInKeepingDrive() {
+    signingIn = true;
+    gettingStarted = false;
+    showingDrivesList = false;
+    notifyListeners();
+  }
+
+  /// A visitor's private drive needs its key in memory for anything to
+  /// decrypt. The key is there when the drive was just opened or attached; it
+  /// is not after a reload. Then a share link may still carry it, and if it
+  /// does not, or the key does not open this drive, the reader is asked for
+  /// it once. Cancelling that lands on the sign-in screen, because the
+  /// explorer has nothing it can show.
+  ///
+  /// A link's key is checked against the drive before it goes into memory:
+  /// whatever is in memory when the visitor signs in is stored on the row
+  /// ([DriveDao.persistInMemoryDriveKeys]), and a wrong key stored there
+  /// would break the drive for that account until it is attached again.
+  Future<void> _ensureVisitorHasDriveKey(
+    BuildContext context,
+    Drive drive,
+  ) async {
+    if (!drive.isPrivate ||
+        _keyPromptedForDriveId == drive.id ||
+        context.read<ProfileCubit>().state is ProfileLoggedIn) {
+      return;
+    }
+
+    final driveDao = context.read<DriveDao>();
+
+    if (await driveDao.getDriveKeyFromMemory(drive.id) != null) {
+      return;
+    }
+
+    final linkKey = _sharedDriveKeyDriveId == drive.id ? sharedDriveKey : null;
+
+    if (linkKey != null) {
+      if (!context.mounted) return;
+
+      if (await _keyOpensDrive(
+          context.read<ArweaveService>(), drive, linkKey)) {
+        await driveDao.putDriveKeyInMemory(
+          driveID: drive.id,
+          driveKey: linkKey,
+        );
+        return;
+      }
+    }
+
+    if (!context.mounted || _keyPromptedForDriveId == drive.id) {
+      return;
+    }
+
+    _keyPromptedForDriveId = drive.id;
+
+    try {
+      await attachDrive(context: context, driveId: drive.id);
+    } catch (e) {
+      // Another dialog held the screen. The prompt never opened, so the next
+      // state the explorer emits asks again.
+      logger.w('Could not ask for the key of drive ${drive.id}: $e');
+      _keyPromptedForDriveId = null;
+      return;
+    }
+
+    // Attaching put the key in memory and started the drive's sync, or the
+    // prompt was cancelled and the explorer has nothing it can show: the same
+    // landing the attach prompt a link opened uses.
+    landAfterAttachPrompt(
+      attached: await driveDao.getDriveKeyFromMemory(drive.id) != null,
+      loggedIn: false,
+    );
+  }
+
+  /// Whether [key] decrypts [drive]'s latest metadata, read from its owner.
+  /// A network failure counts as no: the reader is asked for the key instead.
+  Future<bool> _keyOpensDrive(
+    ArweaveService arweave,
+    Drive drive,
+    DriveKey key,
+  ) async {
+    try {
+      final entity = await arweave.getLatestDriveEntityWithId(
+        drive.id,
+        driveKey: key.key,
+        driveOwner: drive.ownerAddress,
+      );
+
+      return entity != null;
+    } catch (e) {
+      logger.w('Could not check the link key for drive ${drive.id}: $e');
+      return false;
+    }
   }
 
   void clearState() {
@@ -888,6 +1255,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     driveFolderId = null;
     _pendingFolderDriveId = null;
     _pendingFolderId = null;
+    _routeLink = null;
+    _syncOnOpenDriveId = null;
+    _keyPromptedForDriveId = null;
+    _sharedDriveKeyDriveId = null;
     _pendingInfoDriveId = null;
     _dropPendingUpload();
     // A search somebody ran before logging out is not an instruction to the
@@ -913,4 +1284,70 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
 extension RouterExtensions on Router {
   AppRouterDelegate get delegate => routerDelegate as AppRouterDelegate;
+}
+
+/// A drive, and a folder in it, named by the address bar.
+@immutable
+class RouteLink {
+  const RouteLink({required this.driveId, this.folderId});
+
+  final String driveId;
+
+  /// `null` for a drive link, which opens the drive at its root.
+  final String? folderId;
+}
+
+/// Passes the explorer each [RouteLink] the router hands it, once, after the
+/// frame that brought it.
+///
+/// After the frame because following a link emits from the explorer's cubits,
+/// and their listeners rebuild widgets that are being built right now.
+class _RouteLinkFollower extends StatefulWidget {
+  const _RouteLinkFollower({
+    required this.link,
+    required this.onFollow,
+    required this.child,
+  });
+
+  final RouteLink? link;
+  final void Function(
+    BuildContext context,
+    RouteLink link, {
+    required bool explorerIsNew,
+  }) onFollow;
+  final Widget child;
+
+  @override
+  State<_RouteLinkFollower> createState() => _RouteLinkFollowerState();
+}
+
+class _RouteLinkFollowerState extends State<_RouteLinkFollower> {
+  @override
+  void initState() {
+    super.initState();
+    _follow(widget.link, explorerIsNew: true);
+  }
+
+  @override
+  void didUpdateWidget(_RouteLinkFollower oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(widget.link, oldWidget.link)) {
+      _follow(widget.link, explorerIsNew: false);
+    }
+  }
+
+  void _follow(RouteLink? link, {required bool explorerIsNew}) {
+    if (link == null) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        widget.onFollow(context, link, explorerIsNew: explorerIsNew);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

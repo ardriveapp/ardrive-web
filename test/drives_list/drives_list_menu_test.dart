@@ -158,8 +158,8 @@ void main() {
     testWidgets('is live when nothing is running', (tester) async {
       await openMenu(tester, isOwner: true);
 
-      expect(itemNamed(tester, 'Sync This Drive').isDisabled, isFalse);
-      expect(entryNamed(tester, 'Sync This Drive').onClick, isNotNull);
+      expect(itemNamed(tester, 'Sync this drive').isDisabled, isFalse);
+      expect(entryNamed(tester, 'Sync this drive').onClick, isNotNull);
     });
 
     testWidgets('says it is unavailable rather than doing nothing',
@@ -171,17 +171,17 @@ void main() {
       // alone, so a null callback on its own leaves it looking live.
       await openMenu(tester, isOwner: true, isSyncing: true);
 
-      expect(itemNamed(tester, 'Sync This Drive').isDisabled, isTrue);
-      expect(entryNamed(tester, 'Sync This Drive').onClick, isNull);
+      expect(itemNamed(tester, 'Sync this drive').isDisabled, isTrue);
+      expect(entryNamed(tester, 'Sync this drive').onClick, isNull);
     });
 
     testWidgets('and the other actions are untouched', (tester) async {
       // A running sync has nothing to do with renaming or sharing a drive.
       await openMenu(tester, isOwner: true, isSyncing: true);
 
-      expect(itemNamed(tester, 'Rename Drive').isDisabled, isFalse);
-      expect(itemNamed(tester, 'Share Drive').isDisabled, isFalse);
-      expect(entryNamed(tester, 'Share Drive').onClick, isNotNull);
+      expect(itemNamed(tester, 'Rename drive').isDisabled, isFalse);
+      expect(itemNamed(tester, 'Share drive').isDisabled, isFalse);
+      expect(entryNamed(tester, 'Share drive').onClick, isNotNull);
     });
   });
 
@@ -190,25 +190,25 @@ void main() {
         (tester) async {
       await openMenu(tester, isOwner: true);
 
-      expect(find.text('Sync This Drive'), findsOneWidget);
-      expect(find.text('Rename Drive'), findsOneWidget);
-      expect(find.text('Share Drive'), findsOneWidget);
+      expect(find.text('Sync this drive'), findsOneWidget);
+      expect(find.text('Rename drive'), findsOneWidget);
+      expect(find.text('Share drive'), findsOneWidget);
       expect(find.text('Hide'), findsOneWidget);
       expect(find.text('Unhide'), findsNothing);
       // There is nothing to detach from: it is your drive.
-      expect(find.text('Detach Drive'), findsNothing);
+      expect(find.text('Detach drive'), findsNothing);
     });
 
     testWidgets('a drive shared with you: detach, and nothing owners-only',
         (tester) async {
       await openMenu(tester, isOwner: false);
 
-      expect(find.text('Sync This Drive'), findsOneWidget);
-      expect(find.text('Share Drive'), findsOneWidget);
-      expect(find.text('Detach Drive'), findsOneWidget);
+      expect(find.text('Sync this drive'), findsOneWidget);
+      expect(find.text('Share drive'), findsOneWidget);
+      expect(find.text('Detach drive'), findsOneWidget);
       // Renaming and hiding are the owner's, and an item that cannot work is
       // worse than one that is not there.
-      expect(find.text('Rename Drive'), findsNothing);
+      expect(find.text('Rename drive'), findsNothing);
       expect(find.text('Hide'), findsNothing);
       expect(find.text('Unhide'), findsNothing);
     });
@@ -240,6 +240,38 @@ void main() {
 
       expect(target.width, greaterThanOrEqualTo(48));
       expect(target.height, greaterThanOrEqualTo(48));
+    });
+
+    /// The tooltip and the button's own label both reached the screen reader,
+    /// which read it as "Show menu Show menu".
+    testWidgets('a screen reader hears its name once', (tester) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        host(
+          Align(
+            alignment: Alignment.topLeft,
+            child: DriveActionsMenu(drive: drive(), isOwner: true),
+          ),
+        ),
+      );
+
+      final menu = find.bySemanticsLabel('Show menu');
+      expect(menu, findsOneWidget);
+      final node = tester.getSemantics(menu);
+      expect(
+        node,
+        containsSemantics(
+          label: 'Show menu',
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      // The web engine reads a node's label and its tooltip out together, so
+      // the tooltip's copy of the name is what made it "Show menu Show menu".
+      expect(node.getSemanticsData().tooltip, isEmpty);
+
+      semantics.dispose();
     });
 
     testWidgets('and costs a phone no row height at all', (tester) async {
@@ -321,7 +353,7 @@ void main() {
       );
 
       final heading = tester.getRect(find.text('Last synced'));
-      final value = tester.getRect(find.text('Never synced'));
+      final value = tester.getRect(find.text('Not synced on this device'));
 
       expect(value.left, closeTo(heading.left, 1),
           reason: 'the heading and the column under it are laid out in '

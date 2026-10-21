@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/utils/data_item_utils.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -88,6 +89,7 @@ class TurboUploadService {
           logger.e('Error posting bytes', response.data);
           throw _handleException(response);
         }
+        PermanenceCache.shared.spendChanged();
         return;
       }
 
@@ -103,6 +105,9 @@ class TurboUploadService {
         logger.e('Error posting bytes', response.data);
         throw _handleException(response);
       }
+
+      // Accepted, so paid for: the permanence panel's figures have moved.
+      PermanenceCache.shared.spendChanged();
     } catch (e, stacktrace) {
       logger.e('Catching error in postDataItem', e, stacktrace);
       throw _handleException(e);

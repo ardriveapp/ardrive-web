@@ -1,0 +1,28 @@
+query DriveStateEntityHistory(
+  $driveIds: [String!]!
+  $after: String
+  $minBlockHeight: Int
+  $ownerAddress: String!
+) {
+  transactions(
+    owners: [$ownerAddress]
+    first: 100
+    sort: HEIGHT_DESC
+    tags: [
+      { name: "Drive-Id", values: $driveIds }
+      { name: "Entity-Type", values: ["drive-state"] }
+    ]
+    after: $after
+    block: { min: $minBlockHeight }
+  ) {
+    pageInfo {
+      hasNextPage
+    }
+    edges {
+      cursor
+      node {
+        ...TransactionCommon
+      }
+    }
+  }
+}

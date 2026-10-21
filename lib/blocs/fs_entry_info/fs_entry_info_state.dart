@@ -24,8 +24,11 @@ class FsEntryInfoSuccess<T> extends FsEntryInfoState {
     required this.metadataTxId,
   });
 
+  // The metadata transaction is compared too: a new revision can leave the
+  // name and dates as they were, and a state equal to the last one is not
+  // emitted, so the panel kept the old transaction.
   @override
-  List<Object?> get props => [name, lastUpdated, dateCreated];
+  List<Object?> get props => [name, lastUpdated, dateCreated, metadataTxId];
 }
 
 class FsEntryFileInfoSuccess extends FsEntryInfoSuccess<void> {
@@ -42,7 +45,8 @@ class FsEntryFileInfoSuccess extends FsEntryInfoSuccess<void> {
         );
 
   @override
-  List<Object?> get props => [name, lastUpdated, dateCreated, licenseState];
+  List<Object?> get props =>
+      [name, lastUpdated, dateCreated, metadataTxId, licenseState];
 }
 
 class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
@@ -67,6 +71,7 @@ class FsEntryDriveInfoSuccess extends FsEntryInfoSuccess<Drive> {
         name,
         lastUpdated,
         dateCreated,
+        metadataTxId,
         rootFolderRevision,
         rootFolderTree,
       ];

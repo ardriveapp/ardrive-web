@@ -12,11 +12,11 @@ import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/drive_explorer/thumbnail/thumbnail_bloc.dart';
-import 'package:ardrive/l11n/l11n.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
@@ -53,15 +53,18 @@ class DriveExplorerItemTile extends TableRowWidget {
               child: Row(
                 children: [
                   Flexible(
-                    child: Text(
-                      name,
-                      style: typography.paragraphNormal(
-                        color: isHidden ? Colors.grey : null,
-                        fontWeight: ArFontWeight.semiBold,
+                    child: ArDriveTooltip(
+                      message: name,
+                      child: Text(
+                        name,
+                        style: typography.paragraphNormal(
+                          color: isHidden ? Colors.grey : null,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        softWrap: false,
                       ),
-                      overflow: TextOverflow.fade,
-                      maxLines: 1,
-                      softWrap: false,
                     ),
                   ),
                   if (hasArnsNames(dataTableItem) &&
@@ -78,14 +81,14 @@ class DriveExplorerItemTile extends TableRowWidget {
                 style: _driveExplorerItemTileTextStyle(
                     isHidden, typography, colorTokens)),
             ArDriveTooltip(
-              message: formatDateToUtcString(lastUpdated),
-              child: Text(yMMdDateFormatter.format(lastUpdated),
+              message: formatDateTime(lastUpdated),
+              child: Text(formatDate(lastUpdated),
                   style: _driveExplorerItemTileTextStyle(
                       isHidden, typography, colorTokens)),
             ),
             ArDriveTooltip(
-              message: formatDateToUtcString(dateCreated),
-              child: Text(yMMdDateFormatter.format(dateCreated),
+              message: formatDateTime(dateCreated),
+              child: Text(formatDate(dateCreated),
                   style: _driveExplorerItemTileTextStyle(
                       isHidden, typography, colorTokens)),
             ),
@@ -205,7 +208,9 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
               Positioned(
                 right: 3,
                 bottom: 3,
-                child: _buildFileStatus(context),
+                child: FileStatusDot(
+                  status: item.fileStatusFromTransactions!,
+                ),
               ),
           ],
         ),
@@ -239,25 +244,38 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
             Positioned(
               right: 3,
               bottom: 3,
-              child: _buildFileStatus(context),
+              child: FileStatusDot(
+                status: item.fileStatusFromTransactions!,
+              ),
             ),
         ],
       ),
       backgroundColor: ArDriveTheme.of(context).themeData.backgroundColor,
     );
   }
+}
 
-  /// The dot on a file's icon: amber waiting, green on chain, red not.
-  ///
-  /// It says what it means now. An 8px circle in three colours is the only
-  /// report a file's own journey onto Arweave gets, and it was unlabelled:
-  /// confirming an upload is otherwise silent by design, since it asks about
-  /// one transaction and changes nothing about the drive.
-  Widget _buildFileStatus(BuildContext context) {
+/// The dot on a file's icon: amber waiting, green on chain, red not.
+///
+/// It says what it means now. An 8px circle in three colours is the only
+/// report a file's own journey onto Arweave gets, and it was unlabelled:
+/// confirming an upload is otherwise silent by design, since it asks about
+/// one transaction and changes nothing about the drive.
+///
+/// The table and the grid both draw it, so both say what it means: the grid
+/// had a dot of its own with no tooltip.
+class FileStatusDot extends StatelessWidget {
+  const FileStatusDot({super.key, required this.status});
+
+  /// A [TransactionStatus].
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
     late Color indicatorColor;
     late String meaning;
 
-    switch (item.fileStatusFromTransactions) {
+    switch (status) {
       case TransactionStatus.pending:
         indicatorColor =
             ArDriveTheme.of(context).themeData.colors.themeWarningFg;
@@ -357,6 +375,33 @@ class DriveExplorerItemTileTrailing extends StatefulWidget {
   final ArDriveDataTableItem item;
   final Drive drive;
   final Alignment alignment;
+
+  /// The menu button measures 34 (icon and padding); 40 leaves a little air.
+  static const double _menuWidth = 40;
+
+  /// The pin indicator is 32 wide and sits directly against the menu button.
+  /// With the menu button the pair measures 66, in a slot of 76.
+  static const double _pinWidth = 36;
+
+  /// A ghost folder's **Fix** button and the menu button, measured in every
+  /// language the app ships (the widest is Spanish at 139.4; Hindi is 137.0,
+  /// English 102). `drive_explorer_item_tile_layout_test.dart` repeats the
+  /// measurement and fails if a new label outgrows this. The test machine
+  /// draws Hindi, Japanese and Chinese in a fallback face, so re-measure
+  /// those on a real build when a label changes.
+  static const double _ghostFolderWidth = 144;
+
+  /// The width the trailing slot needs for [item]: the menu button, plus the
+  /// **Fix** button or the pin indicator when the row has one.
+  static double widthFor(ArDriveDataTableItem item) {
+    if (item is FolderDataTableItem && item.isGhostFolder && item.isOwner) {
+      return _ghostFolderWidth;
+    }
+    if (item is FileDataTableItem && item.pinnedDataOwnerAddress != null) {
+      return _menuWidth + _pinWidth;
+    }
+    return _menuWidth;
+  }
 
   @override
   State<DriveExplorerItemTileTrailing> createState() =>
@@ -1038,11 +1083,19 @@ class EntityActionsMenu extends StatelessWidget {
           ArDriveDropdownItem(
             onClick: isSyncing
                 ? null
-                : () {
-                    context.read<SyncCubit>().startSyncForDrive(
-                          driveId: drive!.id,
-                          deepSync: true,
-                        );
+                : () async {
+                    final syncCubit = context.read<SyncCubit>();
+                    final driveId = drive!.id;
+                    if (!await confirmFullResync(
+                      context,
+                      FullResyncScope.drive(drive!.name),
+                    )) {
+                      return;
+                    }
+                    syncCubit.startSyncForDrive(
+                      driveId: driveId,
+                      deepSync: true,
+                    );
                   },
             content: ArDriveDropdownItemTile(
               name: appLocalizationsOf(context).deepSyncThisDrive,
@@ -1156,19 +1209,23 @@ class EntityActionsMenu extends StatelessWidget {
           ),
         ),
       ],
-      ArDriveDropdownItem(
-        onClick: () {
-          final bloc = context.read<DriveDetailCubit>();
+      // The gateway serves a private file's encrypted bytes, so only a file
+      // of a drive known to be public opens in a new window - as the row menu
+      // already decides. No drive means no proof, so no preview.
+      if (drive?.isPublic ?? false)
+        ArDriveDropdownItem(
+          onClick: () {
+            final bloc = context.read<DriveDetailCubit>();
 
-          bloc.launchPreview((item as FileDataTableItem).dataTxId);
-        },
-        content: _buildItem(
-          appLocalizationsOf(context).preview,
-          ArDriveIcons.newWindow(
-            size: defaultIconSize,
+            bloc.launchPreview((item as FileDataTableItem).dataTxId);
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).preview,
+            ArDriveIcons.newWindow(
+              size: defaultIconSize,
+            ),
           ),
         ),
-      ),
       if (isOwner && !isFileRevision && item is FileDataTableItem) ...[
         ArDriveDropdownItem(
           onClick: () async {

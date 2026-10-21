@@ -116,11 +116,13 @@ void main() {
       name: name,
       parentFolderId: 'parent-folder-id',
       size: size,
-      lastModifiedDate: lastModifiedDate ?? DateTime.utc(2023, 11, 9),
+      // Midday UTC, so the day is the same in every time zone the tests
+      // might run in.
+      lastModifiedDate: lastModifiedDate ?? DateTime.utc(2023, 11, 9, 12),
       dataContentType: dataContentType,
       metadataTxId: metadataTxId ?? 'metadata-$dataTxId',
       dataTxId: dataTxId,
-      dateCreated: dateCreated ?? DateTime.utc(2024, 3, 3),
+      dateCreated: dateCreated ?? DateTime.utc(2024, 3, 3, 12),
       action: RevisionAction.create,
       isHidden: false,
     );
@@ -596,20 +598,32 @@ void main() {
       await pumpPage(tester, success());
 
       // Each value is scoped to the row its label is in, so two rows cannot
-      // satisfy each other's assertion - a swap between created and modified
+      // satisfy each other's assertion - a swap between uploaded and modified
       // would otherwise still pass. The expected strings are literal rather
-      // than run through `formatDateToUtcString`, which would let a formatter
+      // than run through `formatDate`, which would let a formatter
       // change rewrite the production output and the expectation together.
       expect(detailRowValue('File type', 'application/pdf'), findsOneWidget);
       expect(
         // Friendly, with the exact instant in the tooltip.
-        detailRowValue('Date created', 'Mar 3, 2024'),
+        detailRowValue('Uploaded', 'Mar 3, 2024'),
         findsOneWidget,
       );
       expect(
-        detailRowValue('Last updated', 'Nov 9, 2023'),
+        // The file's own modified time, from the uploader's computer. As
+        // "Last updated" beside "Date created" it read as though the file
+        // changed before it was uploaded.
+        detailRowValue('Modified', 'Nov 9, 2023'),
         findsOneWidget,
       );
+      expect(
+        find.byWidgetPredicate((w) =>
+            w is ArDriveTooltip &&
+            w.message.startsWith(
+                "Last modified on the uploader's computer: Nov 9, 2023")),
+        findsOneWidget,
+      );
+      expect(find.text('Date created'), findsNothing);
+      expect(find.text('Last updated'), findsNothing);
     });
 
     testWidgets('asks for the version history only when it is opened',
@@ -714,8 +728,8 @@ void main() {
         ),
       );
 
-      expect(find.text('Date created'), findsNothing);
-      expect(find.text('Last updated'), findsNothing);
+      expect(find.text('Uploaded'), findsNothing);
+      expect(find.text('Modified'), findsNothing);
       expect(find.textContaining('1970'), findsNothing);
 
       // The type still shows: the link really did carry it.
@@ -828,7 +842,7 @@ void main() {
       await pumpPage(tester, success(), surface: const Size(1440, 1000));
 
       final rows = find.byWidgetPredicate(
-          (w) => w.runtimeType.toString() == '_SharedFileDetailRow');
+          (w) => w.runtimeType.toString() == 'SharedFileDetailRow');
       expect(rows, findsWidgets);
       for (var i = 0; i < rows.evaluate().length; i++) {
         expect(tester.getSize(rows.at(i)).height, _rowHeight,

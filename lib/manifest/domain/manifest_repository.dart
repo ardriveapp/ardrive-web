@@ -11,6 +11,7 @@ import 'package:ardrive/entities/file_entity.dart';
 import 'package:ardrive/entities/manifest_data.dart';
 import 'package:ardrive/manifest/domain/exceptions.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -144,6 +145,8 @@ class ManifestRepositoryImpl implements ManifestRepository {
       onProgress?.call(CreateManifestUploadProgress.uploadingManifest);
 
       controller.onDone((tasks) async {
+        PermanenceCache.shared.spendChanged();
+
         final task = tasks.first;
         final manifestMetadata = task.content!.first as ARFSFileUploadMetadata;
 

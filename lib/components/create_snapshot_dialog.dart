@@ -9,6 +9,8 @@ import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/components/components.dart';
 import 'package:ardrive/components/payment_method_selector_widget.dart';
+import 'package:ardrive/drive_state/presentation/drive_state_creation_modal.dart';
+import 'package:ardrive/drive_state/presentation/drive_state_publish_offer.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/config/config_service.dart';
@@ -26,10 +28,88 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pst/pst.dart';
 
+/// Whether "Create snapshot" makes a drive state artifact for [drive] rather
+/// than the older kind of snapshot.
+///
+/// Users see one word for both. Wherever publishing an artifact is offered for
+/// this drive ([driveStatePublishOffer]: the flag, ownership, write access and
+/// a drive with something in it), a snapshot is an artifact. Anywhere else it
+/// is the older snapshot, as before.
+///
+/// Every condition is read from [drive] itself, never from the drive or folder
+/// on screen. "Create snapshot" is offered from the list of drives, where no
+/// drive is open, and from inside a drive, where the folder in view can be an
+/// empty subfolder of a full one. Reading `DriveDetailCubit` answered for the
+/// wrong thing in both: the list always got the older snapshot, and so did an
+/// empty subfolder.
+Future<bool> createsDriveStateSnapshot(BuildContext context, Drive drive) {
+  final ConfigService configService;
+  final ProfileState profile;
+  final DriveDao driveDao;
+  try {
+    configService = context.read<ConfigService>();
+    profile = context.read<ProfileCubit>().state;
+    driveDao = context.read<DriveDao>();
+  } on ProviderNotFoundException {
+    return Future.value(false);
+  }
+
+  return drivePublishesStateSnapshot(
+    drive: drive,
+    publishingEnabled: configService.config.enableDriveStatePublishing,
+    walletAddress:
+        profile is ProfileLoggedIn ? profile.user.walletAddress : null,
+    driveDao: driveDao,
+  );
+}
+
+/// [createsDriveStateSnapshot] without a [BuildContext].
+///
+/// [walletAddress] is the logged-in wallet, or null when nobody is logged in.
+Future<bool> drivePublishesStateSnapshot({
+  required Drive drive,
+  required bool publishingEnabled,
+  required String? walletAddress,
+  required DriveDao driveDao,
+}) async {
+  final isDriveOwner =
+      walletAddress != null && drive.ownerAddress == walletAddress;
+
+  // Nothing the database says can make an offer of these, so it isn't asked.
+  if (!publishingEnabled || !isDriveOwner) {
+    return false;
+  }
+
+  final hasEntries = await driveDao.driveHasEntries(
+    driveId: drive.id,
+    rootFolderId: drive.rootFolderId,
+  );
+
+  return driveStatePublishOffer(
+        publishingEnabled: publishingEnabled,
+        isDriveOwner: isDriveOwner,
+        // `DriveDetailCubit` grants write access to a logged-in wallet that
+        // owns the drive, and to nobody else.
+        hasWritePermissions: isDriveOwner,
+        driveIsEmpty: !hasEntries,
+      ) ==
+      DriveStatePublishOffer.offered;
+}
+
+/// Opens whichever snapshot [drive] gets - see [createsDriveStateSnapshot].
 Future<void> promptToCreateSnapshot(
   BuildContext context,
   Drive drive,
 ) async {
+  final createsDriveState = await createsDriveStateSnapshot(context, drive);
+  if (!context.mounted) {
+    return;
+  }
+
+  if (createsDriveState) {
+    return promptToCreateDriveState(context, drive: drive);
+  }
+
   final PromptToSnapshotBloc promptToSnapshotBloc =
       context.read<PromptToSnapshotBloc>();
   promptToSnapshotBloc.add(DriveSnapshotting(driveId: drive.id));
@@ -171,7 +251,7 @@ Widget _explanationDialog(BuildContext context, Drive drive) {
         },
       ),
       ModalAction(
-        title: appLocalizationsOf(context).proceedEmphasized,
+        title: appLocalizationsOf(context).createSnapshot,
         action: () {
           createSnapshotCubit.confirmDriveAndHeighRange(drive.id);
         },
@@ -482,7 +562,7 @@ Widget _confirmDialog(
             logger.i('Confirming snapshot creation'),
             await createSnapshotCubit.confirmSnapshotCreation(),
           },
-          title: appLocalizationsOf(context).uploadEmphasized,
+          title: appLocalizationsOf(context).uploadSnapshot,
           isEnable: state.isButtonToUploadEnabled,
         ),
       }

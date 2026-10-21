@@ -619,7 +619,7 @@ class TurboPaymentFormViewState extends State<TurboPaymentFormView> {
 
   Widget promoCodeLabel() {
     return Text(
-      'Promo Code', // TODO: localize
+      'Promo code', // TODO: localize
       style: ArDriveTypographyNew.of(context).paragraphNormal(
         fontWeight: ArFontWeight.bold,
         color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,

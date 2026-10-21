@@ -103,7 +103,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
                                 height: 24), // Space for close button
                             // Title
                             Text(
-                              'Connect Wallet',
+                              'Connect wallet',
                               style: typography.heading5(
                                 fontWeight: ArFontWeight.bold,
                                 color: colors.themeFgDefault,
@@ -317,7 +317,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
             width: double.infinity,
             height: 48,
             child: ArDriveButton(
-              text: 'Switch Network',
+              text: 'Switch network',
               onPressed: () {
                 final chainId = widget.token.chainId;
                 if (chainId != null) {
@@ -378,7 +378,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Select Wallet',
+            'Select wallet',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colors.themeFgDefault,
@@ -457,7 +457,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Select Wallet',
+            'Select wallet',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colors.themeFgDefault,
@@ -505,7 +505,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Select Wallet',
+            'Select wallet',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
               color: colors.themeFgDefault,

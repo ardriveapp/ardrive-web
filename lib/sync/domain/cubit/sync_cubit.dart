@@ -152,6 +152,24 @@ class SyncCubit extends Cubit<SyncState> {
   SyncProgress _syncProgress = SyncProgress.initial();
   SyncCancellationToken? _currentSyncToken;
 
+  /// What the last sync to **examine** each drive reported for it: the
+  /// transaction ids it could not read, empty when it read everything.
+  ///
+  /// Keyed by drive, and updated per drive rather than replaced per sync,
+  /// because a sync only reports about the drives it opened. The activity
+  /// probe sets aside drives it believes unchanged, and a scoped sync visits
+  /// one drive; in both cases the report is silent about the rest, and that
+  /// silence is not evidence. A drive with no entry here has not been examined
+  /// in this session and nothing is known about it.
+  ///
+  /// Carrying an entry forward across syncs that did not examine its drive is
+  /// the honest reading, not a convenience: nothing synced that drive, so
+  /// neither its rows nor its `lastBlockHeight` moved, and the last report
+  /// about it is still true of it. What must *not* be carried forward is a
+  /// report from a sync that examined the drive and then stopped before
+  /// reporting - see [_recordExaminedDrives].
+  final Map<String, List<String>> _skipsByExaminedDrive = {};
+
   /// Publishes the current progress, if there is still anything to publish to.
   ///
   /// [close] cancels the running sync and closes this controller, but the sync
@@ -175,25 +193,107 @@ class SyncCubit extends Cubit<SyncState> {
     emit(state);
   }
 
-  Map<String, List<String>> _lastSyncSkippedEntityTxIdsByDrive = const {};
-
-  /// Transaction ids of entities the most recent sync could not read, keyed by
-  /// drive id. Retained on the cubit — not just on the terminal state — so it
-  /// survives a plain [SyncIdle] completion, which is the common case when
-  /// items are skipped but no drive outright fails.
+  /// Transaction ids of entities sync could not read, keyed by drive id, for
+  /// the drives that have any. Retained on the cubit — not just on the
+  /// terminal state — so it survives a plain [SyncIdle] completion, which is
+  /// the common case when items are skipped but no drive outright fails.
   ///
   /// This is currently the only record that anything was dropped. A later pass
   /// renders it as "failed files"; persisting and retrying these across syncs
   /// is described in `docs/SYNC_SKIPPED_ENTITY_PERSISTENCE.md`.
-  Map<String, List<String>> get lastSyncSkippedEntityTxIdsByDrive =>
-      _lastSyncSkippedEntityTxIdsByDrive;
+  Map<String, List<String>> get lastSyncSkippedEntityTxIdsByDrive => {
+        for (final entry in _skipsByExaminedDrive.entries)
+          if (entry.value.isNotEmpty) entry.key: entry.value,
+      };
 
   int get lastSyncSkippedEntityCount =>
-      _lastSyncSkippedEntityTxIdsByDrive.values
-          .fold(0, (sum, txIds) => sum + txIds.length);
+      _skipsByExaminedDrive.values.fold(0, (sum, txIds) => sum + txIds.length);
 
-  void _captureSkippedEntities(SyncProgress progress) {
-    _lastSyncSkippedEntityTxIdsByDrive = progress.skippedEntityTxIdsByDrive;
+  DateTime? _lastSyncCompletedAt;
+
+  /// When a sync last ran to completion, or `null` if none has in this
+  /// session.
+  ///
+  /// The distinction matters to anything reading
+  /// [lastSyncSkippedEntityTxIdsByDrive] as evidence: the map starts empty, so
+  /// "no sync has run" and "a sync ran and skipped nothing" are otherwise the
+  /// same value. A sync that did not run to the end of its progress stream -
+  /// cancelled, or failed - leaves this at whatever the previous completed
+  /// sync set.
+  DateTime? get lastSyncCompletedAt => _lastSyncCompletedAt;
+
+  /// The drives some completed sync examined and reported on, which is what a
+  /// reader may treat its silence about skips as evidence for.
+  ///
+  /// Never a claim about drives no sync opened. A sync reports skips only for
+  /// what it read, so the probe-skipped drives of a routine sweep, and every
+  /// drive but one of a scoped sync, are absent here rather than clean.
+  Set<String>? get lastSyncCoveredDriveIds =>
+      _skipsByExaminedDrive.keys.toSet();
+
+  /// Folds a sync's report into the per-drive ledger.
+  ///
+  /// [reachedTheEnd] is the whole guard, and it is not defensive. Both entry
+  /// points call this after their `try`/`catch`, which is the right place for
+  /// the state emission that follows it and the wrong place for this: a sync
+  /// whose progress stream ended in an error arrives here too, having produced
+  /// no final report, and stamping [lastSyncCompletedAt] then would say a sync
+  /// finished and found nothing to skip when in truth it stopped early and
+  /// never looked. Both also call it from their cancellation branch, which
+  /// returns before reaching that point.
+  ///
+  /// What reads that stamp is `driveStateSyncSkipStatus`, the precondition on
+  /// publishing a drive state artifact. An artifact records the gap it was
+  /// built over permanently and immutably on Arweave, so this being wrong is
+  /// not a stale reading - it is a permanent one.
+  ///
+  /// Three rules, and the middle one is the fix this method exists for:
+  ///
+  ///  * a sync that stopped early **erases** what it knew about the drives it
+  ///    had opened. It may have advanced their `lastBlockHeight` past entities
+  ///    it never read - the watermark is written per drive, inside the drive's
+  ///    own work - and then died without saying so. An older report about
+  ///    those drives is no longer true of them;
+  ///  * a sync that reached its end records an answer **only for the drives it
+  ///    examined**. Drives the probe set aside as unchanged are not in that
+  ///    set, are not in `failedDriveIds` either, and so used to satisfy every
+  ///    check and read as clean off the back of a sync that never opened them.
+  ///    They now keep whatever was last established about them, which is
+  ///    nothing at all unless some sync did open them;
+  ///  * a drive that was examined and **failed** loses its entry. Its sync
+  ///    threw part-way, from anywhere in the drive's work including after its
+  ///    watermark was written, so it is in the same position as the first rule
+  ///    and an older report about it is equally stale.
+  ///
+  /// A report naming skips for a drive it did not list as examined is a
+  /// contradiction. It is folded in anyway: the direction that refuses to
+  /// publish is the one to take when the inputs disagree.
+  void _recordExaminedDrives(
+    SyncProgress progress, {
+    required bool reachedTheEnd,
+  }) {
+    final examined = {
+      ...progress.examinedDriveIds,
+      ...progress.skippedEntityTxIdsByDrive.keys,
+    };
+
+    if (!reachedTheEnd) {
+      _skipsByExaminedDrive.removeWhere((id, _) => examined.contains(id));
+      return;
+    }
+
+    _lastSyncCompletedAt = DateTime.now();
+
+    final failed = progress.failedDriveIds.toSet();
+    for (final driveId in examined) {
+      if (failed.contains(driveId)) {
+        _skipsByExaminedDrive.remove(driveId);
+        continue;
+      }
+      _skipsByExaminedDrive[driveId] = List.unmodifiable(
+        progress.skippedEntityTxIdsByDrive[driveId] ?? const <String>[],
+      );
+    }
   }
 
   /// What the sync that just finished found, read straight off the progress it
@@ -364,7 +464,8 @@ class SyncCubit extends Cubit<SyncState> {
     }
   }
 
-  SyncComplete _syncComplete(SyncTrigger trigger) => SyncComplete(
+  SyncComplete _syncComplete(SyncTrigger trigger, {required bool deep}) =>
+      SyncComplete(
         entitiesSynced: _syncProgress.entitiesSynced,
         skippedEntityCount: _syncProgress.skippedEntityCount,
         isSingleDriveSync: _syncProgress.isSingleDriveSync,
@@ -372,7 +473,20 @@ class SyncCubit extends Cubit<SyncState> {
         trigger: trigger,
         completedAt: DateTime.now(),
         sequence: ++_completedSyncCount,
+        firstReadDriveCount: deep ? 0 : _firstReadDriveCount(),
       );
+
+  /// See [SyncComplete.firstReadDriveCount]. A sync that read some drives from
+  /// the start and some from where they left off reports what changed, as any
+  /// other sync does.
+  ///
+  /// Never a deep resync, though it reads every drive from the start too: what
+  /// it reads is mostly here already, and the count is of what it wrote, so
+  /// "Synced 21 drives (8 items)" undersold it by thousands.
+  int _firstReadDriveCount() {
+    final read = _syncProgress.syncedDriveIds.length;
+    return read > 0 && _syncProgress.firstTimeSyncDriveCount == read ? read : 0;
+  }
 
   SyncCubit({
     required ProfileCubit profileCubit,
@@ -862,6 +976,18 @@ class SyncCubit extends Cubit<SyncState> {
       return;
     } else {
       logger.d('Profile not logged in yet, skipping metadata sync');
+
+      // A visitor's explorer starts the sync of the drive they just opened
+      // as it builds, and this runs right after from the same start-up path.
+      // Emitting idle over that sync told the explorer no sync touched its
+      // drive, and "Drive not synced" flashed over files seconds away. A sync
+      // that is running ends in its own terminal state, so nothing waiting
+      // on `waitCurrentSync()` is left hanging by leaving it alone.
+      if (state is SyncInProgress) {
+        logger.d('A sync is running; leaving its state as it is');
+        return;
+      }
+
       // Still emit SyncIdle so waitCurrentSync() doesn't hang
       _emitIfOpen(SyncIdle());
     }
@@ -933,6 +1059,11 @@ class SyncCubit extends Cubit<SyncState> {
     // Create a new cancellation token for this sync
     _currentSyncToken?.dispose(); // Clean up any previous token
     _currentSyncToken = SyncCancellationToken();
+
+    /// Set only where the progress stream ran to its natural end. Everything
+    /// after the `catch` below runs for a failed sync as well as a successful
+    /// one, so this is what tells the two apart. See [_recordExaminedDrives].
+    var reachedTheEnd = false;
 
     try {
       final profile = _profileCubit.state;
@@ -1031,6 +1162,9 @@ class SyncCubit extends Cubit<SyncState> {
         _publishProgress();
       }
 
+      // The stream closed without an error, so the sync's final report - the
+      // progress carrying `skippedEntityTxIdsByDrive` - has been seen.
+      reachedTheEnd = true;
       ranToCompletion = profile is ProfileLoggedIn;
 
       // Only refresh balance if drives were actually synced (skip after no-op)
@@ -1052,6 +1186,13 @@ class SyncCubit extends Cubit<SyncState> {
           cancelledAt: DateTime.now(),
           trigger: trigger,
         ));
+        // This branch returns before the record below, so it makes its own.
+        // A cancelled sync had opened drives and may have advanced their
+        // watermarks past entities it never read - it is a sync that stopped
+        // early, and the drives it touched must lose their verdict like any
+        // other. Cancellation is a *user's* choice, but the state it leaves
+        // behind is not.
+        _recordExaminedDrives(_syncProgress, reachedTheEnd: false);
         unawaited(_recordSyncRun(SyncRunOutcome.cancelled, trigger));
         _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
         return false; // Exit early for cancellation - nothing may be reported
@@ -1090,7 +1231,11 @@ class SyncCubit extends Cubit<SyncState> {
 
     unawaited(_updateContext());
 
-    _captureSkippedEntities(_syncProgress);
+    // Which drives this sweep examined comes from the sweep itself, not from
+    // what it was asked to do: `driveIdsToRetry` is the request, and even a
+    // request for every drive is answered by the activity probe with a
+    // subset.
+    _recordExaminedDrives(_syncProgress, reachedTheEnd: reachedTheEnd);
 
     unawaited(_recordDrivesSynced());
 
@@ -1109,7 +1254,7 @@ class SyncCubit extends Cubit<SyncState> {
       unawaited(_recordSyncRun(SyncRunOutcome.completedWithErrors, trigger));
     } else if (ranToCompletion) {
       _forgetUnreadChangesFor(_syncProgress.syncedDriveIds);
-      _emitIfOpen(_syncComplete(trigger));
+      _emitIfOpen(_syncComplete(trigger, deep: deepSync));
       unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
     } else if (threw) {
       // The failure stands. `onError` has already emitted `SyncFailure`, and
@@ -1192,6 +1337,9 @@ class SyncCubit extends Cubit<SyncState> {
     _currentSyncToken?.dispose();
     _currentSyncToken = SyncCancellationToken();
 
+    /// See [_recordExaminedDrives] - the same reason as in [startSync].
+    var reachedTheEnd = false;
+
     try {
       final profile = _profileCubit.state;
       Wallet? wallet;
@@ -1265,6 +1413,9 @@ class SyncCubit extends Cubit<SyncState> {
         _publishProgress();
       }
 
+      // The stream closed without an error, so the sync's final report has
+      // been seen.
+      reachedTheEnd = true;
       ranToCompletion = profile is ProfileLoggedIn;
 
       // Only refresh balance if drives were actually synced
@@ -1285,6 +1436,8 @@ class SyncCubit extends Cubit<SyncState> {
           cancelledAt: DateTime.now(),
           trigger: trigger,
         ));
+        // See the same branch in [startSync] - this one returns early too.
+        _recordExaminedDrives(_syncProgress, reachedTheEnd: false);
         _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
         // False, exactly as [startSync] answers the same question. The two
         // used to disagree, and a caller that believed this one emitted a
@@ -1321,7 +1474,9 @@ class SyncCubit extends Cubit<SyncState> {
 
     _promptToSnapshotBloc.add(const SyncRunning(isRunning: false));
 
-    _captureSkippedEntities(_syncProgress);
+    // Not `{driveId}`: a drive that is not in the database is never opened,
+    // and the repository's report says so.
+    _recordExaminedDrives(_syncProgress, reachedTheEnd: reachedTheEnd);
 
     unawaited(_recordDrivesSynced());
 
@@ -1340,7 +1495,7 @@ class SyncCubit extends Cubit<SyncState> {
       unawaited(_recordSyncRun(SyncRunOutcome.completedWithErrors, trigger));
     } else if (ranToCompletion) {
       _forgetUnreadChangesFor(_syncProgress.syncedDriveIds);
-      _emitIfOpen(_syncComplete(trigger));
+      _emitIfOpen(_syncComplete(trigger, deep: deepSync));
       unawaited(_recordSyncRun(SyncRunOutcome.completed, trigger));
     } else if (threw) {
       // The failure stands - see the same branch in [startSync].

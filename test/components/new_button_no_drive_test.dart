@@ -4,6 +4,7 @@ import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
+import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -54,6 +55,7 @@ void main() {
   late MockSyncBloc syncCubit;
   late MockArDriveAuth auth;
   late AppRouterDelegate router;
+  late MockConfigService configService;
 
   /// [syncingDriveId] is a sync reading that one drive.
   void syncing({String? syncingDriveId}) {
@@ -75,6 +77,10 @@ void main() {
     syncCubit = MockSyncBloc();
     auth = MockArDriveAuth();
     router = AppRouterDelegate();
+    configService = MockConfigService();
+    when(() => configService.config).thenReturn(
+      AppConfig(allowedDataItemSizeForTurbo: 0, stripePublishableKey: ''),
+    );
 
     when(() => profileCubit.state).thenReturn(
       ProfileLoggedIn(user: fakeUserJson, useTurbo: true),
@@ -145,6 +151,9 @@ void main() {
                 BlocProvider<DriveDetailCubit>.value(value: driveDetailCubit),
                 BlocProvider<DrivesCubit>.value(value: drivesCubit),
                 BlocProvider<SyncCubit>.value(value: syncCubit),
+                // Read by the drive state publishing entry, which stays hidden
+                // here: its flag ships off, as it does in production.
+                RepositoryProvider<ConfigService>.value(value: configService),
               ],
               child: Scaffold(
                 body: Center(
@@ -187,15 +196,15 @@ void main() {
     testWidgets('offers uploading', (tester) async {
       await pumpMenu(tester);
 
-      expect(tile(tester, 'Upload File(s)').isDisabled, isFalse);
-      expect(tile(tester, 'Upload Folder').isDisabled, isFalse);
+      expect(tile(tester, 'Upload file(s)').isDisabled, isFalse);
+      expect(tile(tester, 'Upload folder').isDisabled, isFalse);
     });
 
     testWidgets('offers a new drive', (tester) async {
       await pumpMenu(tester);
 
       expect(
-        find.text('New Drive'),
+        find.text('New drive'),
         findsOneWidget,
         reason: 'it was gated on the drive list having loaded, which creating '
             'a drive does not depend on',
@@ -215,14 +224,14 @@ void main() {
 
       await pumpMenu(tester);
 
-      expect(tile(tester, 'New Drive').isDisabled, isFalse);
+      expect(tile(tester, 'New drive').isDisabled, isFalse);
     });
 
     /// One action behind a submenu row is a menu that looks empty.
     testWidgets('puts attaching a drive at the top level', (tester) async {
       await pumpMenu(tester);
 
-      expect(find.text('Attach Drive'), findsOneWidget);
+      expect(find.text('Attach drive'), findsOneWidget);
       expect(find.text('Advanced'), findsNothing);
     });
 
@@ -230,9 +239,9 @@ void main() {
         (tester) async {
       await pumpMenu(tester);
 
-      final upload = top(tester, find.text('Upload Folder'));
+      final upload = top(tester, find.text('Upload folder'));
       final rule = top(tester, find.byType(Divider).first);
-      final newDrive = top(tester, find.text('New Drive'));
+      final newDrive = top(tester, find.text('New drive'));
 
       expect(upload, lessThan(rule));
       expect(rule, lessThan(newDrive));
@@ -246,10 +255,10 @@ void main() {
     testWidgets('offers the same actions', (tester) async {
       await pumpMenu(tester, bottomNavigation: true);
 
-      expect(find.text('Upload File(s)'), findsOneWidget);
-      expect(find.text('Upload Folder'), findsOneWidget);
-      expect(find.text('New Drive'), findsOneWidget);
-      expect(find.text('Attach Drive'), findsOneWidget);
+      expect(find.text('Upload file(s)'), findsOneWidget);
+      expect(find.text('Upload folder'), findsOneWidget);
+      expect(find.text('New drive'), findsOneWidget);
+      expect(find.text('Attach drive'), findsOneWidget);
       expect(find.text('Advanced'), findsNothing);
     });
 
@@ -259,7 +268,7 @@ void main() {
       await pumpMenu(tester, bottomNavigation: true);
 
       expect(
-        top(tester, find.text('Upload File(s)')),
+        top(tester, find.text('Upload file(s)')),
         lessThan(top(tester, find.byType(Divider).first)),
       );
     });
@@ -277,7 +286,7 @@ void main() {
         ),
       );
 
-      for (final action in ['New Folder', 'New Note', 'New File Pin']) {
+      for (final action in ['New folder', 'New note', 'New file pin']) {
         expect(tile(tester, action).isDisabled, isFalse, reason: action);
       }
     });
@@ -287,9 +296,9 @@ void main() {
     testWidgets('which the drives list does not offer at all', (tester) async {
       await pumpMenu(tester);
 
-      expect(find.text('New Folder'), findsNothing);
-      expect(find.text('New Note'), findsNothing);
-      expect(find.text('New File Pin'), findsNothing);
+      expect(find.text('New folder'), findsNothing);
+      expect(find.text('New note'), findsNothing);
+      expect(find.text('New file pin'), findsNothing);
     });
 
     /// Uploading there leads to its sync first, so it is offered.
@@ -301,7 +310,7 @@ void main() {
         ),
       );
 
-      expect(tile(tester, 'Upload File(s)').isDisabled, isFalse);
+      expect(tile(tester, 'Upload file(s)').isDisabled, isFalse);
     });
 
     /// Syncing somebody else's drive would only arrive at the same answer.
@@ -313,8 +322,8 @@ void main() {
         ),
       );
 
-      expect(tile(tester, 'Upload File(s)').isDisabled, isTrue);
-      expect(tile(tester, 'Upload Folder').isDisabled, isTrue);
+      expect(tile(tester, 'Upload file(s)').isDisabled, isTrue);
+      expect(tile(tester, 'Upload folder').isDisabled, isTrue);
     });
 
     testWidgets('pressing New Folder starts its sync', (tester) async {
@@ -325,7 +334,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('New Folder'));
+      await tester.tap(find.text('New folder'));
       await tester.pumpAndSettle();
 
       verify(() => driveDetailCubit.syncCurrentDrive()).called(1);
@@ -343,7 +352,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('New Folder'));
+      await tester.tap(find.text('New folder'));
       await tester.pump();
 
       expect(
@@ -365,11 +374,11 @@ void main() {
       );
 
       for (final action in [
-        'Upload File(s)',
-        'Upload Folder',
-        'New Folder',
-        'New Note',
-        'New File Pin',
+        'Upload file(s)',
+        'Upload folder',
+        'New folder',
+        'New note',
+        'New file pin',
       ]) {
         expect(tile(tester, action).isDisabled, isTrue, reason: action);
       }
@@ -388,8 +397,8 @@ void main() {
         ),
       );
 
-      expect(tile(tester, 'New Folder').isDisabled, isTrue);
-      expect(tile(tester, 'New File Pin').isDisabled, isFalse);
+      expect(tile(tester, 'New folder').isDisabled, isTrue);
+      expect(tile(tester, 'New file pin').isDisabled, isFalse);
     });
   });
 
@@ -405,11 +414,11 @@ void main() {
         openDriveId: 'photos',
       );
 
-      for (final action in ['New Folder', 'New Note', 'New File Pin']) {
+      for (final action in ['New folder', 'New note', 'New file pin']) {
         expect(tile(tester, action).isDisabled, isTrue, reason: action);
       }
       expect(
-        tile(tester, 'Upload File(s)').isDisabled,
+        tile(tester, 'Upload file(s)').isDisabled,
         isFalse,
         reason: 'an upload waits the second or two a drive takes to open',
       );
@@ -424,7 +433,7 @@ void main() {
         openDriveId: 'photos',
       );
 
-      await tester.tap(find.text('New Note'));
+      await tester.tap(find.text('New note'));
       await tester.pump();
 
       expect(
@@ -438,13 +447,13 @@ void main() {
   testWidgets('Upload is greyed until the drive list is known', (tester) async {
     await pumpMenu(tester, drivesState: DrivesLoadInProgress());
 
-    expect(tile(tester, 'Upload File(s)').isDisabled, isTrue);
-    expect(tile(tester, 'Upload Folder').isDisabled, isTrue);
+    expect(tile(tester, 'Upload file(s)').isDisabled, isTrue);
+    expect(tile(tester, 'Upload folder').isDisabled, isTrue);
   });
 
   /// It sat at the top of the plus menu and inside Advanced, so a public
   /// drive listed it twice. Advanced is where the sidebar menu keeps it.
-  testWidgets('the plus menu lists Import from Manifest only under Advanced',
+  testWidgets('the plus menu lists Import from manifest only under Advanced',
       (tester) async {
     final website = _drive(
       ownerAddress: fakeUserJson.walletAddress,
@@ -469,6 +478,6 @@ void main() {
     );
 
     expect(find.text('Advanced'), findsOneWidget);
-    expect(find.text('Import from Manifest'), findsNothing);
+    expect(find.text('Import from manifest'), findsNothing);
   });
 }

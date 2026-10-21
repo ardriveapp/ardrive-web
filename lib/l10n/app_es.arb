@@ -6,11 +6,11 @@
   "@addButtonTurbo": {
     "description": "text for add button"
   },
-  "addnewManifestEmphasized": "AÑADIR NUEVO MANIFIESTO",
+  "addnewManifestEmphasized": "Nuevo despliegue",
   "@addnewManifestEmphasized": {
     "description": "There is a non-manifest entity with the same name"
   },
-  "addProfileEmphasized": "AÑADIR PERFIL",
+  "addProfileEmphasized": "Añadir perfil",
   "@addProfileEmphasized": {
     "description": "Add a wallet. Emphasized with upper case"
   },
@@ -38,7 +38,7 @@
   "@aggreeToTerms_main": {
     "description": "Checkbox for agreeing to the terms of service and privacy policy"
   },
-  "aManifestIsASpecialKindOfFile": "Un manifiesto es un tipo especial de archivo que relaciona transacciones Arweave con rutas perzonalizadas.",
+  "aManifestIsASpecialKindOfFile": "Un despliegue publica una carpeta en una sola dirección de Arweave, con cada archivo en una ruta legible. Se guarda como un manifiesto de Arweave.",
   "@aManifestIsASpecialKindOfFile": {
     "description": "Simple explanation of what a manifest is"
   },
@@ -98,15 +98,15 @@
   "@attachDrive": {
     "description": "Attach a shared drive"
   },
-  "attachDriveEmphasized": "VINCULAR UNIDAD",
+  "attachDriveEmphasized": "Vincular unidad",
   "@attachDriveEmphasized": {
     "description": "Attach a shared drive. Emphasized with upper case"
   },
-  "attachEmphasized": "VINCULAR",
+  "attachEmphasized": "Vincular",
   "@attachEmphasized": {
     "description": "The action of attaching a drive. Emphasized with upper case"
   },
-  "attachingDriveEmphasized": "VINCULANDO UNIDAD...",
+  "attachingDriveEmphasized": "Vinculando unidad...",
   "@attachingDriveEmphasized": {
     "description": "Drive attach form. Emphasized with upper case"
   },
@@ -118,7 +118,7 @@
   "@backButtonOnboarding": {
     "description": "Text of the back button onboarding"
   },
-  "backEmphasized": "ANTERIOR",
+  "backEmphasized": "Anterior",
   "@backEmphasized": {
     "description": "Go back. Emphasized with upper case"
   },
@@ -183,7 +183,7 @@
   "@cancel": {
     "description": "Cancel button"
   },
-  "cancelEmphasized": "CANCELAR",
+  "cancelEmphasized": "Cancelar",
   "@cancelEmphasized": {
     "description": "Cancel button. Emphasized with upper case"
   },
@@ -199,7 +199,7 @@
   "@close": {
     "description": "close"
   },
-  "closeEmphasized": "CERRAR",
+  "closeEmphasized": "Cerrar",
   "@closeEmphasized": {
     "description": "Close modal. Emphasized with upper case"
   },
@@ -215,7 +215,7 @@
   "@confirmed": {
     "description": "Status tooltip for transactions that are confirmed by the network"
   },
-  "confirmEmphasized": "CONFIRMAR",
+  "confirmEmphasized": "Confirmar",
   "@confirmEmphasized": {
     "description": "Confirm the prompted question"
   },
@@ -227,11 +227,11 @@
   "@conflictingFiles": {
     "description": "Files conflict with already existing items"
   },
-  "conflictingManifestFound": "El manifiesto ya existe",
+  "conflictingManifestFound": "El despliegue ya existe",
   "@conflictingManifestFound": {
     "description": "There is an on-chain entity with the same name"
   },
-  "conflictingManifestFoundChooseNewName": "Ya hay un manifiesto con ese nombre aquí. ¿Quieres continuar y cargar este manifiesto como una nueva revisión?",
+  "conflictingManifestFoundChooseNewName": "Ya hay un despliegue con ese nombre aquí. ¿Quieres continuar y cargar este despliegue como una nueva versión?",
   "@conflictingManifestFoundChooseNewName": {
     "description": "A manifest with the same name already exists. Ask the user for confirmation about uploading it as a new revision"
   },
@@ -247,7 +247,7 @@
   "@congestionWarning": {
     "description": "Congestion warning"
   },
-  "continueEmphasized": "CONTINUAR",
+  "continueEmphasized": "Continuar",
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
@@ -329,27 +329,27 @@
   "@createAndConfirmPassword": {
     "description": "Asks the user to create a password"
   },
-  "createDriveEmphasized": "CREAR UNIDAD",
+  "createDriveEmphasized": "Crear unidad",
   "@createDriveEmphasized": {
     "description": "Action of creating a new drive. Emphasized with upper case"
   },
-  "createEmphasized": "CREAR",
+  "createEmphasized": "Crear",
   "@createEmphasized": {
     "description": "Create a drive. Emphasized with upper case"
   },
-  "createFolderEmphasized": "CREAR CARPETA",
+  "createFolderEmphasized": "Crear carpeta",
   "@createFolderEmphasized": {
     "description": "The action of creating a folder. Emphasized with upper case"
   },
-  "createHereEmphasized": "CREAR AQUÍ",
+  "createHereEmphasized": "Crear aquí",
   "@createHereEmphasized": {
     "description": "Create the manifest in the current selected folder"
   },
-  "createManifest": "Nuevo manifiesto",
+  "createManifest": "Nuevo despliegue",
   "@createManifest": {
     "description": "To create a manifest"
   },
-  "createManifestEmphasized": "CREAR MANIFIESTO",
+  "createManifestEmphasized": "Crear despliegue",
   "@createManifestEmphasized": {
     "description": "To create a manifest"
   },
@@ -387,11 +387,11 @@
   "@syncAllDrivesOnLogin": {
     "description": "Toggle to enable/disable syncing all drives when logging in"
   },
-  "creatingDriveEmphasized": "CREANDO UNIDAD...",
+  "creatingDriveEmphasized": "Creando unidad...",
   "@creatingDriveEmphasized": {
     "description": "The drive is being created. Emphasized with upper case"
   },
-  "creatingFolderEmphasized": "CREANDO CARPETA...",
+  "creatingFolderEmphasized": "Creando carpeta...",
   "@creatingFolderEmphasized": {
     "description": "Folder is being created. Emphasized with upper case"
   },
@@ -409,7 +409,7 @@
   "@currency": {},
   "customAmount": "Cantidad personalizada",
   "@customAmount": {},
-  "darkModeEmphasized": "MODO OSCURO",
+  "darkModeEmphasized": "Modo oscuro",
   "@darkModeEmphasized": {
     "description": "Refers to the dark theme of the app. Emphasized with upper case"
   },
@@ -429,10 +429,6 @@
   "@deepResync": {
     "description": "Deep Sync Button Text"
   },
-  "deepResyncTooltip": "Vaciar caché y actualizar todas las unidades",
-  "@deepResyncTooltip": {
-    "description": "Deep Sync Tooltip Text"
-  },
   "detachDrive": "¿Desvincular unidad?",
   "@detachDrive": {
     "description": "Detach Drive Title"
@@ -447,7 +443,7 @@
       }
     }
   },
-  "detachEmphasized": "DESVINCULAR",
+  "detachEmphasized": "Desvincular",
   "@detachEmphasized": {
     "description": "Example: To DETACH a drive. Emphasized in upper case"
   },
@@ -484,7 +480,7 @@
   "@diveInButtonOnboarding": {
     "description": "Text of the last button of the onboarding"
   },
-  "doneEmphasized": "HECHO",
+  "doneEmphasized": "Hecho",
   "@doneEmphasized": {
     "description": "Done, no more to do here. Emphasized with upper case"
   },
@@ -589,6 +585,24 @@
   "driveNotSyncedDescription": "Esta unidad necesita ser sincronizada antes de poder ver su contenido. Sincroniza ahora para ver tus archivos y carpetas.",
   "@driveNotSyncedDescription": {
     "description": "Description shown when a drive has not been synced yet"
+  },
+  "manifestsToUpdate": "{count, plural, =1{1 despliegue por actualizar} other{{count} despliegues por actualizar}}",
+  "@manifestsToUpdate": {
+    "description": "Upload options summary: how many manifests the upload will update",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "updateManifests": "Actualizar despliegues",
+  "@updateManifests": {
+    "description": "Upload options link that opens the choice of manifests to update with the new files"
+  },
+  "uploadAsManifest": "Cargar como despliegue",
+  "@uploadAsManifest": {
+    "description": "Upload options summary: the file will be converted to an Arweave manifest"
   },
   "syncThisDriveDescription": "Obtener los archivos y carpetas más recientes de esta unidad.",
   "@syncThisDriveDescription": {
@@ -786,7 +800,7 @@
   "@failed": {
     "description": "Status tooltip for failed transactions"
   },
-  "failedToCreateManifestEmphasized": "LA CREACIÓN DEL MANIFIESTO HA FALLADO",
+  "failedToCreateManifestEmphasized": "La creación del despliegue ha fallado",
   "@failedToCreateManifestEmphasized": {
     "description": "The manifest could not be created"
   },
@@ -889,6 +903,10 @@
   "@fileSize": {
     "description": "The size of a file"
   },
+  "filesPendingManifestExplanation": "Algunos archivos de esta carpeta siguen pendientes. No recomendamos crear un despliegue con archivos pendientes. ¿Quieres continuar?",
+  "@filesPendingManifestExplanation": {
+    "description": "Warns the user about creating manifests with pending files"
+  },
   "filesTooLarge": "{numberOfFiles, plural, zero{} one{El archivo es demasiado grande} other{{numberOfFiles} archivos son demasiado grande}}",
   "@filesTooLarge": {
     "description": "A single or many files are too large to upload",
@@ -986,7 +1004,7 @@
   "@fix": {
     "description": "Fix an orphan item"
   },
-  "fixEmphasized": "REPARAR",
+  "fixEmphasized": "Reparar",
   "@fixEmphasized": {
     "description": "Fix an orphan item. Emphasized with upper case"
   },
@@ -1074,7 +1092,7 @@
   "@forgetWalletTitle": {
     "description": "Modal title to forget wallet"
   },
-  "freeTurboTransaction": "Coste: 0 AR\nEsta pequeña transacción es gratuita gracias a Turbo.",
+  "freeTurboTransaction": "Coste: 0 créditos\nEsta pequeña transacción es gratuita gracias a Turbo.",
   "@freeTurboTransaction": {
     "description": "Message explaining that your upload will be free thanks to Turbo"
   },
@@ -1098,7 +1116,7 @@
   "@goToLast": {
     "description": "Action of going to the latest page"
   },
-  "greenCheckMark": "Cuando el punto verde aparece al lado de tu archivo, es cuando ha sido cargado a la PermaWeb.",
+  "greenCheckMark": "Cuando el punto verde aparece al lado de tu archivo, es cuando ha sido cargado a la permaweb.",
   "@greenCheckMark": {
     "description": "Describes the indicator of the status of uploaded files"
   },
@@ -1126,7 +1144,7 @@
   "@insufficientARToCreateDrive": {
     "description": "Not enough balance"
   },
-  "insufficientBalanceForManifest": "El balance de {walletBalance} AR es insuficiente para esta transacción de manifiesto que cuesta: {totalCost} AR...",
+  "insufficientBalanceForManifest": "El balance de {walletBalance} AR es insuficiente para esta transacción de despliegue que cuesta: {totalCost} AR...",
   "@insufficientBalanceForManifest": {
     "description": "The amount of AR the wallet has is not enough to upload the manifest transaction",
     "placeholders": {
@@ -1162,7 +1180,7 @@
   "@insufficientFundsForCreateAFolder": {
     "description": "Show that needs funds to create a Folder"
   },
-  "insufficientFundsForCreateAManifest": "No tienes el balance suficiente para crear un manifiesto. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
+  "insufficientFundsForCreateAManifest": "No tienes el balance suficiente para crear un despliegue. Por favor, ve a la página de recargas para agregar AR a tu cuenta.",
   "@insufficientFundsForCreateAManifest": {
     "description": "Show that needs funds to create a Manifest"
   },
@@ -1186,7 +1204,7 @@
   "@invalidWalletFileDescription": {
     "description": "Invalid wallet file description"
   },
-  "itemActivityEmphasized": "ACTIVIDAD",
+  "itemActivityEmphasized": "Actividad",
   "@itemActivityEmphasized": {
     "description": "The journal of the entity (created, renamed, moved, revision uploaded). Emphasized with upper case"
   },
@@ -1194,7 +1212,7 @@
   "@itemContains": {
     "description": "Used like so: 'Contains 15 folders, 10 files'"
   },
-  "itemDetailsEmphasized": "DETALLES",
+  "itemDetailsEmphasized": "Detalles",
   "@itemDetailsEmphasized": {
     "description": "Item details such as dates, transaction IDs and entity IDs. Emphasized with upper case"
   },
@@ -1212,7 +1230,7 @@
       }
     }
   },
-  "itemPreviewEmphasized": "VISTA PREVIA",
+  "itemPreviewEmphasized": "Vista previa",
   "@itemPreviewEmphasized": {
     "description": "Item preview"
   },
@@ -1241,11 +1259,11 @@
   },
   "leaveAnEmailToReceiveAReceipt": "Para recibir un recibo, indica una dirección de correo electrónico.",
   "@leaveAnEmailToReceiveAReceipt": {},
-  "letsGetStartedEmphasized": "COMENCEMOS",
+  "letsGetStartedEmphasized": "Comencemos",
   "@letsGetStartedEmphasized": {
     "description": "Let's start setting up the account. Emphasized with upper case"
   },
-  "lightModeEmphasized": "MODO CLARO",
+  "lightModeEmphasized": "Modo claro",
   "@lightModeEmphasized": {
     "description": "Refers to the light theme of the app. Emphasized with upper case"
   },
@@ -1277,15 +1295,23 @@
   "@logOut": {
     "description": "The action of logging out"
   },
-  "logOutEmphasized": "CERRAR SESIÓN",
+  "logOutEmphasized": "Cerrar sesión",
   "@logOutEmphasized": {
     "description": "The action of logging out. Emphasized with upper case"
   },
-  "manifestName": "Nombre del manifiesto",
+  "manifestName": "Nombre del despliegue",
   "@manifestName": {
     "description": "The name of the manifest"
   },
-  "manifestTransactionUnexpectedlyFailed": "La transacción del manifiesto ha fallado inesperadamente mientras se cargaba a la red de Arweave...",
+  "manifestFallbackTxID": "Página de respaldo",
+  "@manifestFallbackTxID": {
+    "description": "In the details panel, the transaction a manifest serves when a path in it is not found"
+  },
+  "manifestFileType": "Despliegue",
+  "@manifestFileType": {
+    "description": "The kind of file shown under a manifest's name in its preview, in place of its content type"
+  },
+  "manifestTransactionUnexpectedlyFailed": "La transacción del despliegue ha fallado inesperadamente mientras se cargaba a la red de Arweave...",
   "@manifestTransactionUnexpectedlyFailed": {
     "description": "The manifest transaction did not succeed being uploaded"
   },
@@ -1305,15 +1331,15 @@
   "@move": {
     "description": "Action of moving certain file or folder"
   },
-  "moveFileEmphasized": "MOVER ARCHIVO",
+  "moveFileEmphasized": "Mover archivo",
   "@moveFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
   },
-  "moveFolderEmphasized": "MOVER CARPETA",
+  "moveFolderEmphasized": "Mover carpeta",
   "@moveFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
   },
-  "moveHereEmphasized": "MOVER AQUÍ",
+  "moveHereEmphasized": "Mover aquí",
   "@moveHereEmphasized": {
     "description": "Move the entity to the current folder. Emphasized with upper case"
   },
@@ -1321,11 +1347,11 @@
   "@moveItems": {
     "description": "Move Items dialog title"
   },
-  "movingFileEmphasized": "MOVIENDO ARCHIVO...",
+  "movingFileEmphasized": "Moviendo archivo...",
   "@movingFileEmphasized": {
     "description": "The action of moving a file. Emphasized with upper case"
   },
-  "movingFolderEmphasized": "MOVIENDO CARPETA...",
+  "movingFolderEmphasized": "Moviendo carpeta...",
   "@movingFolderEmphasized": {
     "description": "The action of moving a folder. Emphasized with upper case"
   },
@@ -1359,7 +1385,7 @@
   "@networkUnreachable": {
     "description": "Indicates that there were some issues while connecting to the internet"
   },
-  "neverDeletedEmphasized": "NUNCA SE BORRARÁ",
+  "neverDeletedEmphasized": "Nunca se borrará",
   "@neverDeletedEmphasized": {
     "description": "Uploaded items cannot be deleted. Emphasized with upper case"
   },
@@ -1379,7 +1405,7 @@
   "@newString": {
     "description": "New entity (folder, file, drive, manifest, attached drive)"
   },
-  "newStringEmphasized": "NUEVO",
+  "newStringEmphasized": "Nuevo",
   "@newStringEmphasized": {
     "description": "New entity (folder, file, drive, manifest, attached drive). Emphasized with upper case"
   },
@@ -1395,7 +1421,7 @@
   "@next": {
     "description": "Action of going to the next page"
   },
-  "nextEmphasized": "SIGUIENTE",
+  "nextEmphasized": "Siguiente",
   "@nextEmphasized": {
     "description": "Next step"
   },
@@ -1427,7 +1453,7 @@
   "@ok": {
     "description": "OK button"
   },
-  "okEmphasized": "BIEN",
+  "okEmphasized": "Bien",
   "@okEmphasized": {
     "description": "OK button. Emphasized in upper case"
   },
@@ -1491,7 +1517,7 @@
   "@paymentDetails": {},
   "paymentSuccessful": "Pago realizado con éxito",
   "@paymentSuccessful": {},
-  "payPerFileEmphasized": "PAGA SOLO POR LO QUE SUBAS",
+  "payPerFileEmphasized": "Paga solo por lo que subas",
   "@payPerFileEmphasized": {
     "description": "Payment philosophy. Emphasized with upper case"
   },
@@ -1499,7 +1525,7 @@
   "@pending": {
     "description": "Status tooltip for transactions which are waiting to be minted"
   },
-  "personalDrivesEmphasized": "UNIDADES PERSONALES",
+  "personalDrivesEmphasized": "Unidades personales",
   "@personalDrivesEmphasized": {
     "description": "Sub-header for the personal drives list. Emphasized with upper case"
   },
@@ -1531,7 +1557,7 @@
   "@pleaseTryAgain": {
     "description": "Please try again."
   },
-  "preparingManifestEmphasized": "PREPARANDO MANIFIESTO...",
+  "preparingManifestEmphasized": "Preparando despliegue...",
   "@preparingManifestEmphasized": {
     "description": "The manifest is being prepared for the upload"
   },
@@ -1589,11 +1615,11 @@
   "@proceed": {
     "description": "Proceed"
   },
-  "proceedCongestionEmphasized": "PROCEDER",
+  "proceedCongestionEmphasized": "Proceder",
   "@proceedCongestionEmphasized": {
     "description": "Proceed being aware of the network congestion. Emphasized with upper case"
   },
-  "proceedEmphasized": "PROCEDER",
+  "proceedEmphasized": "Proceder",
   "@proceedEmphasized": {
     "description": "Proceed but capitalized"
   },
@@ -1667,11 +1693,11 @@
   "@rawTransactionUnknownType": {
     "description": "Shown on the transaction viewer when the contents cannot be identified, leaving download as the only action"
   },
-  "recreateFolderEmphasized": "RECREAR CARPETA",
+  "recreateFolderEmphasized": "Recrear carpeta",
   "@recreateFolderEmphasized": {
     "description": "Recreate a folder that failed to be minted"
   },
-  "recreatingFolderEmphasized": "RECREANDO CARPETA...",
+  "recreatingFolderEmphasized": "Recreando carpeta...",
   "@recreatingFolderEmphasized": {
     "description": "Folder is being recreated. Emphasized with upper case"
   },
@@ -1689,41 +1715,37 @@
   "@renameDrive": {
     "description": "The action of renaming a drive"
   },
-  "renameDriveEmphasized": "RENOMBRAR UNIDAD",
+  "renameDriveEmphasized": "Renombrar unidad",
   "@renameDriveEmphasized": {
     "description": "The action of renaming a drive. Emphasized with upper case"
   },
-  "renameEmphasized": "RENOMBRAR",
+  "renameEmphasized": "Renombrar",
   "@renameEmphasized": {
     "description": "The action of renaming; imperative form. Emphasized with upper case"
   },
-  "renameFileEmphasized": "RENOMBRAR ARCHIVO",
+  "renameFileEmphasized": "Renombrar archivo",
   "@renameFileEmphasized": {
     "description": "The action of renaming a file. Emphasized with upper case"
   },
-  "renameFolderEmphasized": "RENOMBRAR CARPETA",
+  "renameFolderEmphasized": "Renombrar carpeta",
   "@renameFolderEmphasized": {
     "description": "The action of renaming a folder. Emphasized with upper case"
   },
-  "renamingDriveEmphasized": "RENOMBRANDO UNIDAD...",
+  "renamingDriveEmphasized": "Renombrando unidad...",
   "@renamingDriveEmphasized": {
     "description": "The drive is being renamed. Emphasized with upper case"
   },
-  "renamingFileEmphasized": "RENOMBRANDO ARCHIVO...",
+  "renamingFileEmphasized": "Renombrando archivo...",
   "@renamingFileEmphasized": {
     "description": "File is being renamed. Emphasized with upper case"
   },
-  "renamingFolderEmphasized": "RENOMBRANDO CARPETA...",
+  "renamingFolderEmphasized": "Renombrando carpeta...",
   "@renamingFolderEmphasized": {
     "description": "Folder is being renamed. Emphasized with upper case"
   },
-  "replaceEmphasized": "REEMPLAZAR",
+  "replaceEmphasized": "Reemplazar",
   "@replaceEmphasized": {
     "description": "Example: to REPLACE an entity"
-  },
-  "resync": "Resincronizar",
-  "@resync": {
-    "description": "Sync button Text"
   },
   "resyncTooltip": "Actualizar todas las unidades",
   "@resyncTooltip": {
@@ -1739,7 +1761,11 @@
   "@rowsPerPage": {
     "description": "How many rows per page to use"
   },
-  "secondsFromForeverEmphasized": "A SEGUNDOS DE LA ETERNIDAD",
+  "tableNextPage": "Página siguiente",
+  "tablePageNumber": "Página {page}",
+  "tablePageRange": "{first}-{last} de {total}",
+  "tablePreviousPage": "Página anterior",
+  "secondsFromForeverEmphasized": "A segundos de la eternidad",
   "@secondsFromForeverEmphasized": {
     "description": "Shows how close you are from permanence. Emphasized with upper case"
   },
@@ -1747,7 +1773,7 @@
   "@securityWalletOverlay": {
     "description": "The text on the security overlay text on login"
   },
-  "selectWalletEmphasized": "SELECCIONAR MONEDERO",
+  "selectWalletEmphasized": "Seleccionar monedero",
   "@selectWalletEmphasized": {
     "description": "Users can log in with a crypto wallet, so this prompts them to choose one for their login. Emphasized with upper case"
   },
@@ -1757,7 +1783,7 @@
   "@sharedDrives": {
     "description": "Sub-header for the shared drives list"
   },
-  "sharedDrivesEmphasized": "UNIDADES COMPARTIDAS",
+  "sharedDrivesEmphasized": "Unidades compartidas",
   "@sharedDrivesEmphasized": {
     "description": "Sub-header for the shared drives list. Emphasized with upper case"
   },
@@ -2027,7 +2053,7 @@
   "@skip": {
     "description": "Skip"
   },
-  "skipEmphasized": "OMITIR",
+  "skipEmphasized": "Omitir",
   "@skipEmphasized": {
     "description": "Example: to SKIP a conflict"
   },
@@ -2081,17 +2107,13 @@
   "@specifiedFileDoesNotExist": {
     "description": "The shared file the user is trying to access does not exist"
   },
-  "subscribeEmphasized": "SUSCRIBIRSE",
+  "subscribeEmphasized": "Suscribirse",
   "@subscribeEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },
   "sync": "Sincronizar",
   "@sync": {
     "description": "Sync button tooltip"
-  },
-  "syncNow": "Sincronizar Ahora",
-  "@syncNow": {
-    "description": "Button text to sync an unsynced drive"
   },
   "syncingOnlyOneDrive": "Sincronizando la unidad...",
   "@syncingOnlyOneDrive": {
@@ -2140,7 +2162,7 @@
       }
     }
   },
-  "targetFolderEmphasized": "CARPETA DE DESTINO",
+  "targetFolderEmphasized": "Carpeta de destino",
   "@targetFolderEmphasized": {
     "description": "The nonexistent parent folder of orphan files. Emphasized with upper case"
   },
@@ -2174,7 +2196,7 @@
   },
   "total": "Total",
   "@total": {},
-  "totalPrivacyControlEmphasized": "CONTROL TOTAL DE TU PRIVACIDAD",
+  "totalPrivacyControlEmphasized": "Control total de tu privacidad",
   "@totalPrivacyControlEmphasized": {
     "description": "Title for talking about privacy. Emphasized with upper case"
   },
@@ -2184,11 +2206,11 @@
   "@tryAgainDownloadingFile": {
     "description": "The data is still being replicated between nodes of the network and it's yet not available"
   },
-  "tryAgainEmphasized": "INTENTAR NUEVAMENTE",
+  "tryAgainEmphasized": "Intentar nuevamente",
   "@tryAgainEmphasized": {
     "description": "Try it again. Emphasized with upper case"
   },
-  "tryLaterCongestionEmphasized": "INTENTAR MÁS TARDE",
+  "tryLaterCongestionEmphasized": "Intentar más tarde",
   "@tryLaterCongestionEmphasized": {
     "description": "Try to upload later. Emphasized with upper case"
   },
@@ -2252,7 +2274,7 @@
   "@unlock": {
     "description": "Unlock a file or drive."
   },
-  "unlockEmphasized": "DESBLOQUEAR",
+  "unlockEmphasized": "Desbloquear",
   "@unlockEmphasized": {
     "description": "Unlock the wallet with its password. Emphasized with upper case"
   },
@@ -2268,7 +2290,7 @@
   "@uploadedBy": {
     "description": "Refers to the one that uploaded the data of a pinned file"
   },
-  "uploadEmphasized": "CARGAR",
+  "uploadEmphasized": "Cargar",
   "@uploadEmphasized": {
     "description": "The action of uploading certain item"
   },
@@ -2284,7 +2306,7 @@
   "@uploadFolder": {
     "description": "Upload a folder and every subfolder alongside files inside them"
   },
-  "uploadingManifestEmphasized": "CARGANDO MANIFIESTO...",
+  "uploadingManifestEmphasized": "Cargando despliegue...",
   "@uploadingManifestEmphasized": {
     "description": "The manifest is being uploaded"
   },
@@ -2302,6 +2324,33 @@
   "uploadingSnapshot": "Cargando instantánea",
   "@uploadingSnapshot": {
     "description": "Uploading Snapshot"
+  },
+  "uploadAsNewVersion": "{numberOfFiles, plural, zero{} one{Cargar como nueva versión} other{Cargar como nuevas versiones}}",
+  "@uploadAsNewVersion": {
+    "description": "Button on the duplicate file dialog that uploads the files as new versions of the ones already there",
+    "placeholders": {
+      "numberOfFiles": {
+        "type": "int",
+        "example": "1",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "uploadAnyway": "Cargar de todos modos",
+  "@uploadAnyway": {
+    "description": "Button on the large file warning that starts the upload"
+  },
+  "uploadSnapshot": "Cargar instantánea",
+  "@uploadSnapshot": {
+    "description": "Button on the snapshot cost step that uploads the snapshot"
+  },
+  "createPin": "Crear pin",
+  "@createPin": {
+    "description": "Button that creates a file pin"
+  },
+  "newUserEmptyDriveTitle": "Tu unidad está lista",
+  "@newUserEmptyDriveTitle": {
+    "description": "Heading on a new user's first, empty drive"
   },
   "uploadNFiles": "{numberOfFiles, plural, zero{} one{Cargar 1 archivo} other{Cargar {numberOfFiles} archivos}}",
   "@uploadNFiles": {
@@ -2322,7 +2371,7 @@
   "@usdPriceNotAvailable": {
     "description": "Fallback message for when the USD price is not available"
   },
-  "useArconnectEmphasized": "USAR ARCONNECT",
+  "useArconnectEmphasized": "Usar ArConnect",
   "@useArconnectEmphasized": {
     "description": "Optional button that appears when the user has ArConnect installed on their browser. Emphasized with upper case"
   },
@@ -2386,7 +2435,7 @@
   "@waitForDownload": {
     "description": "User must to wait this download"
   },
-  "walletChangedDuringManifestCreation": "El monedero que estabas usando cambió mientras se creaba el manifiesto...",
+  "walletChangedDuringManifestCreation": "El monedero que estabas usando cambió mientras se creaba el despliegue...",
   "@walletChangedDuringManifestCreation": {
     "description": "The wallet has been changed while the creation of the manifest was in process"
   },
@@ -2398,7 +2447,7 @@
   "@walletSwitch": {
     "description": "The wallet has changed. The user must log in again"
   },
-  "warningEmphasized": "ADVERTENCIA",
+  "warningEmphasized": "Advertencia",
   "@warningEmphasized": {
     "description": "Congestion warning. Emphasized with upper case"
   },
@@ -2428,11 +2477,11 @@
   "@welcomeBack": {
     "description": "welcome back"
   },
-  "welcomeBackEmphasized": "BIENVENIDO/A DE NUEVO",
+  "welcomeBackEmphasized": "Bienvenido/a de nuevo",
   "@welcomeBackEmphasized": {
     "description": "Welcoming for an existing user. Emphasized with upper case"
   },
-  "welcomeBackUserEmphasized": "BIENVENIDO/A DE NUEVO, {username}",
+  "welcomeBackUserEmphasized": "Bienvenido/a de nuevo, {username}",
   "@welcomeBackUserEmphasized": {
     "description": "Welcoming to the user. Emphasized with upper case",
     "placeholders": {
@@ -2450,15 +2499,15 @@
   "@welcomeTo_description": {
     "description": "Brief description of ArDrive as welcoming"
   },
-  "welcomeTo_main": "BIENVENIDO/A A",
+  "welcomeTo_main": "Bienvenido/a a",
   "@welcomeTo_main": {
     "description": "Highly emphasized text giving welcome"
   },
-  "welcomeToThePermawebEmphasized": "BIENVENIDO/A A LA PERMAWEB",
+  "welcomeToThePermawebEmphasized": "Bienvenido/a a la permaweb",
   "@welcomeToThePermawebEmphasized": {
     "description": "Welcoming message at the onboarding screen. Emphasized with upper case"
   },
-  "weReSorryEmphasized": "¡LO SENTIMOS!",
+  "weReSorryEmphasized": "¡Lo sentimos!",
   "@weReSorryEmphasized": {
     "description": "Screen not supported page. Emphasized with upper case"
   },
@@ -2489,5 +2538,13 @@
   "zippingYourFiles": "Comprimiendo tu archivo(s)...",
   "@zippingYourFiles": {
     "description": "Download failure message when a file is too big"
+  },
+  "moreSyncOptions": "Más opciones de sincronización",
+  "@moreSyncOptions": {
+    "description": "Screen reader label for the chevron half of the drives list sync button, which opens every sync action"
+  },
+  "driveListClearSelectionTooltip": "Borrar selección",
+  "@driveListClearSelectionTooltip": {
+    "description": "Tooltip and screen reader label for the x that ends a selection on the drives list"
   }
 }

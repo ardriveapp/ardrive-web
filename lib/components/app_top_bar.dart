@@ -1,14 +1,12 @@
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'dart:async';
 
-import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
-import 'package:ardrive/blocs/drives/drives_cubit.dart';
+import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
-import 'package:ardrive/search/search_modal.dart';
-import 'package:ardrive/search/search_text_field.dart';
+import 'package:ardrive/search/search_box.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/presentation/sync_elapsed_time.dart';
@@ -28,8 +26,6 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = TextEditingController();
-
     return SizedBox(
       height: _topBarRowHeight,
       width: double.maxFinite,
@@ -42,17 +38,7 @@ class AppTopBar extends StatelessWidget {
             Expanded(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),
-                child: SearchTextField(
-                  controller: controller,
-                  onFieldSubmitted: (query) {
-                    showSearchModalDesktop(
-                      context: context,
-                      driveDetailCubit: context.read<DriveDetailCubit>(),
-                      controller: controller,
-                      drivesCubit: context.read<DrivesCubit>(),
-                    );
-                  },
-                ),
+                child: const SearchBox(),
               ),
             ),
             const SizedBox(width: 24),
@@ -477,6 +463,7 @@ class SyncButton extends StatelessWidget {
     }
 
     return _ExpiresWhenStale(
+      identity: announcement?.identity,
       // Only a result expires on the clock. A sync that is running, or an
       // error waiting to be read, leaves this null and nothing is scheduled.
       after: status == null ? announcement?.showFor : null,
@@ -902,6 +889,13 @@ class _SyncButtonMenu extends StatelessWidget {
 
   final Widget child;
 
+  bool _canShowDrivesList(BuildContext context) {
+    final profile = context.read<ProfileCubit?>();
+
+    return profile == null ||
+        AppRouterDelegate.canShowDrivesList(profile.state);
+  }
+
   @override
   Widget build(BuildContext context) {
     final status = this.status;
@@ -931,13 +925,19 @@ class _SyncButtonMenu extends StatelessWidget {
             icon: ArDriveIcons.x(color: iconColor),
           ),
         ),
-      ArDriveDropdownItem(
-        onClick: () => context.read<AppRouterDelegate>().showDrivesList(),
-        content: ArDriveDropdownItemTile(
-          name: appLocalizationsOf(context).allDrivesScope,
-          icon: ArDriveIcons.arrowRightOutline(color: iconColor),
+      // Only where the list can actually be shown. For a visitor the router
+      // refuses it, so the item changed the address bar and nothing else - the
+      // same dead control the sidebar row and the breadcrumb already avoid.
+      // Read as nullable: the app always provides the cubit, and a tree that
+      // does not (a widget test of this menu alone) keeps the item.
+      if (_canShowDrivesList(context))
+        ArDriveDropdownItem(
+          onClick: () => context.read<AppRouterDelegate>().showDrivesList(),
+          content: ArDriveDropdownItemTile(
+            name: appLocalizationsOf(context).yourDrives,
+            icon: ArDriveIcons.arrowRightOutline(color: iconColor),
+          ),
         ),
-      ),
     ];
 
     // The dropdown would otherwise size itself as `items.length * 48` and cut
@@ -1159,7 +1159,14 @@ class _SyncProgressRingState extends State<_SyncProgressRing>
 /// is collapse the slot, because whether the slot is drawn at all is decided
 /// above it.
 class _ExpiresWhenStale extends StatefulWidget {
-  const _ExpiresWhenStale({required this.after, required this.child});
+  const _ExpiresWhenStale({
+    required this.identity,
+    required this.after,
+    required this.child,
+  });
+
+  /// Which announcement [after] belongs to - see [SyncAnnouncement.identity].
+  final Object? identity;
 
   /// How long what is being drawn is still entitled to. Null when nothing is
   /// on a clock, which is every state except a fresh result.
@@ -1174,6 +1181,20 @@ class _ExpiresWhenStale extends StatefulWidget {
 class _ExpiresWhenStaleState extends State<_ExpiresWhenStale> {
   Timer? _timer;
 
+  /// Whether [_ExpiresWhenStale.after] has run out.
+  ///
+  /// The timer used to call an empty `setState` and trust "the parent then
+  /// asks the same question again". It never did: a child's `setState`
+  /// rebuilds the child, whose build returned the same [widget.child], and
+  /// [SyncButton] only re-decides when a sync or drive state rebuilds it. So
+  /// after the result pill had gone, the idle glyph stayed in the top bar until
+  /// something unrelated happened to rebuild it.
+  ///
+  /// So this answers for the parent instead. [after] is only set when nothing
+  /// is running and nothing is waiting to be read - a fresh result - so once it
+  /// has run out the parent's answer is the empty slot, always.
+  bool _expired = false;
+
   @override
   void initState() {
     super.initState();
@@ -1184,9 +1205,15 @@ class _ExpiresWhenStaleState extends State<_ExpiresWhenStale> {
   void didUpdateWidget(covariant _ExpiresWhenStale oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // A new result while one is still showing gets its own full window, and a
-    // sync starting again cancels the old timer rather than firing under it.
-    if (oldWidget.after != widget.after) {
+    // A new result gets its own full window, whether or not the last one is
+    // still showing, and a sync starting again cancels the old timer rather
+    // than firing under it. Told apart by identity as well as by time left:
+    // two fresh results both have the whole of syncSummaryDuration left when
+    // each is drawn on the clock tick it finished in, and the second one used
+    // to find this already expired and stay hidden.
+    if (oldWidget.identity != widget.identity ||
+        oldWidget.after != widget.after) {
+      _expired = false;
       _schedule();
     }
   }
@@ -1201,11 +1228,10 @@ class _ExpiresWhenStaleState extends State<_ExpiresWhenStale> {
       return;
     }
 
-    // One rebuild, at the moment the result stops being fresh. The parent then
-    // asks the same question again and gets the other answer.
+    // One rebuild, at the moment the result stops being fresh. See [_expired].
     _timer = Timer(after, () {
       if (mounted) {
-        setState(() {});
+        setState(() => _expired = true);
       }
     });
   }
@@ -1217,5 +1243,12 @@ class _ExpiresWhenStaleState extends State<_ExpiresWhenStale> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) => _expired
+      // The same held slot [SyncButton] draws when it has nothing to say, so
+      // nothing beside it moves.
+      ? const SizedBox(
+          width: _syncButtonOuterSize,
+          height: _syncButtonOuterSize,
+        )
+      : widget.child;
 }

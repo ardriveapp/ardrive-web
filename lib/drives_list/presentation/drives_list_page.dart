@@ -1,7 +1,5 @@
-import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
-import 'package:ardrive/search/search_modal.dart';
-import 'package:ardrive/search/search_text_field.dart';
+import 'package:ardrive/search/search_box.dart';
 import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_empty.dart';
 import 'package:ardrive/drives_list/presentation/drives_sync_menu.dart';
@@ -29,6 +27,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:flutter/services.dart';
@@ -42,7 +41,20 @@ const double _blockGap = 12;
 /// `ArDriveDataTable` leaves above its header and below its last row.
 const double _panelPadding = 8;
 
-/// Wide enough for "Sync All Drives" and no wider, at a text scale of 1.
+/// How far above and below its text the heading's tint reaches. Across, the
+/// tint is as wide as the table panel - the width a ticked row's highlight
+/// already has - and the page's padding sits inside it, so the title and the
+/// sync button stay exactly where they were.
+const double _headingInset = 8;
+
+/// The heading's height in both of its forms, so swapping one for the other
+/// moves nothing below it.
+const double _headingMinHeight = 56;
+
+/// How long the heading takes to become the selection and back.
+const Duration _selectionFade = Duration(milliseconds: 150);
+
+/// Wide enough for "Sync all drives" and no wider, at a text scale of 1.
 ///
 /// The label measures 120px in Wavehaus at the button's size, plus its 20px of
 /// padding.
@@ -206,23 +218,19 @@ class _DrivesListChrome extends StatelessWidget {
         Widget bodyWith({
           String? chosenDriveId,
           void Function(String driveId)? onChoose,
-          bool allowCompactColumns = false,
         }) =>
             DrivesListBody(
               chosenDriveId: chosenDriveId,
               onChoose: onChoose,
-              allowCompactColumns: allowCompactColumns,
               state: state,
               // Selecting is how a drive is opened from anywhere on this route,
               // the sidebar included.
               onOpenDrive: (drive) =>
                   context.read<DrivesCubit>().selectDrive(drive.id),
               onTryAgain: cubit.retryLoadingDrives,
-              onSyncAllDrives: cubit.syncAllDrives,
               onSort: cubit.sortBy,
               onToggleSelected: cubit.toggleSelected,
               onToggleSelectAll: cubit.toggleSelectAll,
-              onSyncSelected: cubit.syncSelectedDrives,
               onClearSelection: cubit.clearSelection,
               onRetryFailed: cubit.retryFailedDrives,
               onSyncChanged: cubit.syncDrivesWithUnreadChanges,
@@ -313,44 +321,18 @@ class _DrivesListChrome extends StatelessWidget {
 /// selecting a drive replaces the whole subtree, so that cubit is torn down
 /// mid-navigation - hence [AppRouterDelegate.requestFolder], which asks for the
 /// folder before the selection that carries it.
-class _DrivesListSearchField extends StatefulWidget {
+class _DrivesListSearchField extends StatelessWidget {
   const _DrivesListSearchField();
 
   @override
-  State<_DrivesListSearchField> createState() => _DrivesListSearchFieldState();
-}
-
-class _DrivesListSearchFieldState extends State<_DrivesListSearchField> {
-  final TextEditingController _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return SearchTextField(
-      controller: _controller,
-      onFieldSubmitted: (query) {
-        if (query.isEmpty) {
-          return;
-        }
+    // Read now, not when a result is picked: going to a drive replaces this
+    // page, and a context read after that point would be a dead one.
+    final router = context.read<AppRouterDelegate>();
 
-        showSearchModalDesktop(
-          context: context,
-          driveDetailCubit: context.read<DriveDetailCubit>(),
-          drivesCubit: context.read<DrivesCubit>(),
-          controller: _controller,
-          onNavigateToFolder: (driveId, folderId, {itemId}) =>
-              context.read<AppRouterDelegate>().requestFolder(
-                    driveId,
-                    folderId,
-                    itemId: itemId,
-                  ),
-        );
-      },
+    return SearchBox(
+      onNavigateToFolder: (driveId, folderId, {itemId}) =>
+          router.requestFolder(driveId, folderId, itemId: itemId),
     );
   }
 }
@@ -367,11 +349,9 @@ class DrivesListBody extends StatelessWidget {
     required this.state,
     required this.onOpenDrive,
     required this.onTryAgain,
-    required this.onSyncAllDrives,
     this.onSort,
     this.onToggleSelected,
     this.onToggleSelectAll,
-    this.onSyncSelected,
     this.onClearSelection,
     this.onRetryFailed,
     this.onSyncChanged,
@@ -379,7 +359,6 @@ class DrivesListBody extends StatelessWidget {
     this.syncMenu,
     this.chosenDriveId,
     this.onChoose,
-    this.allowCompactColumns = false,
   });
 
   /// The drive whose details are open beside the list, if any.
@@ -389,15 +368,9 @@ class DrivesListBody extends StatelessWidget {
   /// room for them, which is also how a row knows to show focus instead.
   final void Function(String driveId)? onChoose;
 
-  /// Whether the list may drop to three columns - see
-  /// [driveListCompactColumnsFrom]. True only while a drive's details push
-  /// the list narrower, since those are what the two dropped columns show.
-  final bool allowCompactColumns;
-
   final DrivesListState state;
   final void Function(DriveListItem drive) onOpenDrive;
   final VoidCallback onTryAgain;
-  final VoidCallback onSyncAllDrives;
 
   /// Called with the column whose heading was pressed. Optional so the tests
   /// that only draw the four states need not supply one.
@@ -407,7 +380,6 @@ class DrivesListBody extends StatelessWidget {
   /// given so its tests need no providers.
   final void Function(String driveId)? onToggleSelected;
   final VoidCallback? onToggleSelectAll;
-  final VoidCallback? onSyncSelected;
   final VoidCallback? onClearSelection;
   final VoidCallback? onRetryFailed;
   final VoidCallback? onSyncChanged;
@@ -447,22 +419,23 @@ class DrivesListBody extends StatelessWidget {
     }
 
     if (state is DrivesListLoaded) {
-      return _DrivesListLoadedView(
-        state: state,
-        onOpenDrive: onOpenDrive,
-        onSyncAllDrives: onSyncAllDrives,
-        buildMenu: buildMenu,
-        syncMenu: syncMenu,
-        onSort: onSort,
-        onToggleSelected: onToggleSelected,
-        onToggleSelectAll: onToggleSelectAll,
-        onSyncSelected: onSyncSelected,
-        onClearSelection: onClearSelection,
-        onRetryFailed: onRetryFailed,
-        onSyncChanged: onSyncChanged,
-        chosenDriveId: chosenDriveId,
-        onChoose: onChoose,
-        allowCompactColumns: allowCompactColumns,
+      return _SelectionShortcuts(
+        selecting: state.selected.isNotEmpty,
+        onClear: onClearSelection,
+        child: _DrivesListLoadedView(
+          state: state,
+          onOpenDrive: onOpenDrive,
+          buildMenu: buildMenu,
+          syncMenu: syncMenu,
+          onSort: onSort,
+          onToggleSelected: onToggleSelected,
+          onToggleSelectAll: onToggleSelectAll,
+          onClearSelection: onClearSelection,
+          onRetryFailed: onRetryFailed,
+          onSyncChanged: onSyncChanged,
+          chosenDriveId: chosenDriveId,
+          onChoose: onChoose,
+        ),
       );
     }
 
@@ -628,7 +601,7 @@ class _DrivesListEmpty extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Getting Started',
+            'Getting started',
             // heading4, like every other state of this page. At heading2 an
             // empty state was larger than the page's own title.
             style: typography.heading4(
@@ -658,32 +631,26 @@ class _DrivesListLoadedView extends StatelessWidget {
   const _DrivesListLoadedView({
     required this.state,
     required this.onOpenDrive,
-    required this.onSyncAllDrives,
     required this.buildMenu,
     required this.syncMenu,
     this.onSort,
     this.onToggleSelected,
     this.onToggleSelectAll,
-    this.onSyncSelected,
     this.onClearSelection,
     this.onRetryFailed,
     this.onSyncChanged,
     this.chosenDriveId,
     this.onChoose,
-    this.allowCompactColumns = false,
   });
 
   final String? chosenDriveId;
   final void Function(String driveId)? onChoose;
-  final bool allowCompactColumns;
 
   final DrivesListLoaded state;
   final void Function(DriveListItem drive) onOpenDrive;
-  final VoidCallback onSyncAllDrives;
   final void Function(DriveListSort column)? onSort;
   final void Function(String driveId)? onToggleSelected;
   final VoidCallback? onToggleSelectAll;
-  final VoidCallback? onSyncSelected;
   final VoidCallback? onClearSelection;
   final VoidCallback? onRetryFailed;
   final VoidCallback? onSyncChanged;
@@ -718,15 +685,18 @@ class _DrivesListLoadedView extends StatelessWidget {
               constraints.maxWidth,
               textScale: textScale,
             );
-            // Three columns rather than cards while a drive's details push
-            // the list narrower: a card is taller than a row, so turning the
-            // rows into cards would move every one of them under the pointer.
+            // Three columns wherever five do not fit and three do, not only
+            // beside a drive's details. Cards have no checkboxes, headings or
+            // sorting, and the sidebar takes enough width that windows from
+            // 950 to about 1120px wide got cards and lost Sync selected,
+            // while narrower windows without the sidebar kept the table. The
+            // two columns dropped, files and created, are in a drive's
+            // details.
             final showsColumns = showsAllColumns ||
-                (allowCompactColumns &&
-                    driveListShowsCompactColumns(
-                      constraints.maxWidth,
-                      textScale: textScale,
-                    ));
+                driveListShowsCompactColumns(
+                  constraints.maxWidth,
+                  textScale: textScale,
+                );
 
             // The whole page scrolls, not just the list inside it. A phone in
             // landscape - 568x264, which is also a portrait phone at a large
@@ -737,17 +707,17 @@ class _DrivesListLoadedView extends StatelessWidget {
               child: CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(child: _heading(context)),
-                  // Withdrawn while a selection exists. Two red buttons a
-                  // hundred pixels apart, offering different scopes, is the
-                  // reader having to work out which one they meant - and they
-                  // have just said which, by ticking rows.
-                  if (state.nothingHasEverBeenSynced && state.selected.isEmpty)
+                  // Kept while drives are ticked. It used to be withdrawn then,
+                  // because it carried a red button of its own and two offers
+                  // of different scopes is the reader having to work out which
+                  // they meant. It is words now, and taking it away on the
+                  // first tick moved the whole list up under the pointer.
+                  if (state.nothingHasEverBeenSynced)
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.only(top: _blockGap),
                         child: _SyncEverythingPrompt(
                           isSyncing: state.isSyncing,
-                          onSyncAllDrives: onSyncAllDrives,
                         ),
                       ),
                     ),
@@ -826,24 +796,6 @@ class _DrivesListLoadedView extends StatelessWidget {
                           const SliverToBoxAdapter(
                             child: SizedBox(height: _panelPadding),
                           ),
-                          // Above the headings, never instead of them.
-                          //
-                          // Replacing them is what a mail client does, and it
-                          // works there because those rows describe
-                          // themselves. These read "Never synced", a dash, a
-                          // dash and a date: four terse columns with no labels
-                          // stop being a table. So the strip takes a line of
-                          // its own while a selection exists, and the headings
-                          // stay where they are.
-                          if (state.selected.isNotEmpty &&
-                              onSyncSelected != null)
-                            SliverToBoxAdapter(
-                              child: _SelectionBar(
-                                count: state.selected.length,
-                                onSyncSelected: onSyncSelected!,
-                                onClear: onClearSelection,
-                              ),
-                            ),
                           SliverToBoxAdapter(
                             child: DriveListHeader(
                               sort: state.sort,
@@ -919,121 +871,156 @@ class _DrivesListLoadedView extends StatelessWidget {
   Widget _heading(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final selecting = state.selected.isNotEmpty && onClearSelection != null;
+    // The table's own colour for a ticked row, so the heading and the rows
+    // read as one selection.
+    final tint =
+        ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor;
 
+    // The heading and the drive-wide actions on one line. The actions were
+    // behind the top bar's indicator, which is now present only when there is
+    // something to report - so they needed a home that always is, and they act
+    // on the drives this page lists.
+    //
+    // While drives are ticked the same line becomes the selection: what is
+    // ticked, the way out, and - in the sync button at its end - what to do
+    // with them. It used to be a band of its own between the cards and the
+    // table, which pushed the list down on the first tick and put the count
+    // and its action at opposite ends of the screen from the page's other
+    // sync button. In place, at the same height, nothing below it moves.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        _pagePadding,
-        _pagePadding,
-        _pagePadding,
-        0,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // No sentence under it. The one it had - "Nothing here has been
-          // fetched from the network" - stopped being true the moment opening
-          // a drive became the act that fetches it, and a heading that needs a
-          // paragraph to explain a list of drives was the wrong heading. What
-          // is worth saying about an unfetched account is said once, by the
-          // card below, and withdrawn as soon as it stops applying.
-          // The heading and the drive-wide actions on one line. The actions
-          // were behind the top bar's indicator, which is now present only when
-          // there is something to report - so they needed a home that always
-          // is, and they act on the drives this page lists.
-          Row(
+      padding: const EdgeInsets.only(top: _pagePadding - _headingInset),
+      child: AnimatedContainer(
+        duration: _selectionFade,
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(
+          horizontal: _pagePadding,
+          vertical: _headingInset,
+        ),
+        constraints: const BoxConstraints(minHeight: _headingMinHeight),
+        decoration: BoxDecoration(
+          color: selecting ? tint : tint.withOpacity(0),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) => Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Text(
-                  appLocalizationsOf(context).yourDrives,
-                  style: typography.heading3(
-                    color: colorTokens.textHigh,
-                    fontWeight: ArFontWeight.bold,
+                child: AnimatedSwitcher(
+                  duration: _selectionFade,
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [...previous, if (current != null) current],
                   ),
+                  child: selecting
+                      ? _SelectionHeading(
+                          key: const ValueKey('selecting'),
+                          count: state.selected.length,
+                          onClear: onClearSelection!,
+                        )
+                      : Text(
+                          appLocalizationsOf(context).yourDrives,
+                          key: const ValueKey('title'),
+                          style: typography.heading3(
+                            color: colorTokens.textHigh,
+                            fontWeight: ArFontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
               if (syncMenu != null) ...[
                 const SizedBox(width: 16),
-                syncMenu!,
+                // Its own width, capped at half the row, so on a narrow screen
+                // its label is cut short rather than pushed off the edge: a row
+                // hands a child unlimited width, and at 320px and twice the text
+                // size "Sync all drives" ran 197px off the screen. A cap rather
+                // than a Flexible, which would split the free space with the
+                // title and leave the button short of the right edge.
+                ConstrainedBox(
+                  constraints:
+                      BoxConstraints(maxWidth: constraints.maxWidth / 2),
+                  child: syncMenu!,
+                ),
               ],
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// The narrowest the sync prompt's text column may be drawn.
+/// The heading while drives are ticked: the way out, then how many.
 ///
-/// Measured, not chosen: it is the width the card's own title - "Nothing has
-/// been synced yet" - occupies as a single line in Wavehaus at
-/// `paragraphNormal`/semiBold. `drives_list_sync_prompt_test.dart` loads the
-/// real face and takes that measurement rather than trusting a number written
-/// here: 173.1px, the desktop face being the wider of the two the page can be
-/// drawn in. Below it the title wraps and the two columns stop being a heading
-/// beside a button.
-///
-/// A measurement at a text scale of 1, and multiplied by the reader's scale
-/// wherever it is used: the thing it measures is text. The small margin over
-/// the measurement is rounding, not headroom, and
-/// `drives_list_sync_prompt_test.dart` fails if it ever grows to the point
-/// where this has stopped being a measurement.
-const double driveListSyncPromptTextMinimum = 210;
-
-/// The narrowest the card may be and still put its button beside its text.
-///
-/// Derived from the two things that have to fit and the space between them,
-/// on the width the card is actually given - which is why the padding it draws
-/// inside itself comes off first. Nothing here is picked by eye.
-///
-/// Both of the things that have to fit are text, so both grow with the
-/// reader's text scale and both are handed in already scaled. A breakpoint
-/// measured in pixels alone keeps two columns at 2.0 and clips whichever of
-/// them loses.
-bool driveListSyncPromptShowsColumns(
-  double cardWidth, {
-  required double textMinimum,
-  required double buttonWidth,
-}) =>
-    cardWidth - _pagePadding * 2 >= textMinimum + _pagePadding + buttonWidth;
-
-/// The one offer this page makes, and only on the one login where it helps.
-///
-/// With sync-on-login off, a first login lists every drive and can say nothing
-/// about any of them. That is the thing the old automatic sync did - so it is
-/// offered here, once, rather than assumed.
-///
-/// Two columns where there is room for two: the words on the left, the one
-/// action on the right. Stacked below one another only where two columns
-/// genuinely do not fit - and stacked is a fallback here, not the shape the
-/// card wants, because a paragraph with a full-width button under it reads as
-/// an alert rather than an offer.
-///
-/// While a sync is actually running it stops being an offer and becomes a
-/// report. The words change with it: a card still saying "their contents have
-/// not been fetched yet. Sync them all now" beside a strip counting what that
-/// very sync has found, above the button it names drawn as unavailable, is
-/// three surfaces on one screen with two of them wrong.
-class _SyncEverythingPrompt extends StatelessWidget {
-  const _SyncEverythingPrompt({
-    required this.isSyncing,
-    required this.onSyncAllDrives,
+/// The x first, where the eye lands, as mail and file lists put it. Esc does
+/// the same - see [_SelectionShortcuts].
+class _SelectionHeading extends StatelessWidget {
+  const _SelectionHeading({
+    super.key,
+    required this.count,
+    required this.onClear,
   });
 
-  final bool isSyncing;
-  final VoidCallback onSyncAllDrives;
+  final int count;
+  final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    // A sync is running, so the card does not offer to start one. It used to
-    // say "their contents have not been fetched yet. Sync them all now" beside
-    // a strip reporting "Found 340 items so far..." and under a button it had
-    // just named and disabled - three surfaces on one screen, two of them
-    // wrong. The offer is only an offer while it can be taken.
+    return Row(
+      children: [
+        ArDriveIconButton(
+          icon: ArDriveIcons.x(size: 20, color: colorTokens.textHigh),
+          tooltip: appLocalizationsOf(context).driveListClearSelectionTooltip,
+          onPressed: onClear,
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            appLocalizationsOf(context).driveListSelectedCount(count),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: typography.paragraphLarge(
+              color: colorTokens.textHigh,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// What a first login is owed: the list is every drive, and nothing about any
+/// of them is known yet.
+///
+/// With sync-on-login off, a first login lists every drive and can say nothing
+/// about any of them. That is the thing the old automatic sync did - so it is
+/// said here, once, rather than assumed.
+///
+/// Words only. It carried a red "Sync all drives" of its own, a hundred pixels
+/// below the page's sync button saying much the same - and while drives were
+/// ticked, a third red button in the selection bar. The page's sync button now
+/// turns red and reads "Sync all drives" for as long as this card is shown, so
+/// the card says why and the button, right above it, is how.
+///
+/// While a sync is actually running it stops being an offer and becomes a
+/// report. The words change with it: a card still saying "Sync your drives"
+/// beside a strip counting what that very sync has found is two surfaces on
+/// one screen with one of them wrong.
+class _SyncEverythingPrompt extends StatelessWidget {
+  const _SyncEverythingPrompt({required this.isSyncing});
+
+  final bool isSyncing;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     final title = isSyncing
         ? appLocalizationsOf(context).nothingSyncedYetSyncingTitle
         : appLocalizationsOf(context).nothingSyncedYetTitle;
@@ -1041,190 +1028,73 @@ class _SyncEverythingPrompt extends StatelessWidget {
         ? appLocalizationsOf(context).nothingSyncedYetSyncingDescription
         : appLocalizationsOf(context).nothingSyncedYetDescription;
 
-    final words = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          title,
-          style: typography.paragraphNormal(
-            color: colorTokens.textHigh,
-            fontWeight: ArFontWeight.semiBold,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          description,
-          style: typography.paragraphSmall(
-            color: colorTokens.textLow,
-          ),
-        ),
-      ],
-    );
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: _pagePadding),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Both measurements scaled by what the reader asked for, then the
-          // button capped at the room the card actually has: a scaled width
-          // wider than the card is a fixed-width box overflowing its parent,
-          // which is the same clipped label one layer out.
-          final scale = driveListTextScale(
-            context,
-            typography.paragraphNormal().fontSize ?? 16,
-          );
-          final available = constraints.maxWidth - _pagePadding * 2;
-          final buttonWidth = math.min(
-            driveListSyncAllButtonWidth(context),
-            available,
-          );
-
-          // Measured on the width this card is actually given, in the place
-          // that has it. The card is the only thing that has to fit, so it is
-          // the only width the decision is allowed to be made on.
-          final showsColumns = driveListSyncPromptShowsColumns(
-            constraints.maxWidth,
-            textMinimum: driveListSyncPromptTextMinimum * scale,
-            buttonWidth: buttonWidth,
-          );
-
-          final button = ArDriveButtonNew(
-            text: appLocalizationsOf(context).syncAllDrives,
-            typography: typography,
-            variant: ButtonVariant.primary,
-            // A width, because without one the button is a SizedBox around a
-            // Stack that expands: it took the whole content column, and a slab
-            // of primary colour on the one screen whose message is "nothing is
-            // wrong yet" reads as an alarm. It is also half of what fixes the
-            // breakpoint above.
-            maxWidth: buttonWidth,
-            // Nothing to start while one is already running. The rows say
-            // "Syncing..." for as long as it is. `isDisabled` as well as a
-            // null callback: ArDriveButtonNew picks its colours off the flag
-            // alone, so without it the button looks live and does nothing -
-            // the same present-and-inert failure the menu items are forbidden.
-            isDisabled: isSyncing,
-            onPressed: isSyncing ? null : onSyncAllDrives,
-          );
-
-          return Container(
-            decoration: BoxDecoration(
-              color: colorTokens.containerL2,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.all(_pagePadding),
-            child: showsColumns
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(child: words),
-                      const SizedBox(width: _pagePadding),
-                      button,
-                    ],
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      words,
-                      const SizedBox(height: _blockGap),
-                      button,
-                    ],
-                  ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// What the reader can do with the drives they have ticked.
-///
-/// A line of its own above the column headings, not instead of them: this
-/// table's cells are "Never synced", a dash, a dash and a date, and four terse
-/// columns with no labels stop being a table. It is drawn as a tinted band
-/// rather than another card, so it reads as part of the table it belongs to
-/// rather than a second panel stacked on the first.
-class _SelectionBar extends StatelessWidget {
-  const _SelectionBar({
-    required this.count,
-    required this.onSyncSelected,
-    required this.onClear,
-  });
-
-  final int count;
-  final VoidCallback onSyncSelected;
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return Container(
-      // A step up from the panel it sits on, which is how a band says it is a
-      // state rather than a row - no border, no shadow, nothing that competes
-      // with the rows below it.
-      color: colorTokens.containerL2,
-      padding: const EdgeInsets.symmetric(
-        horizontal: driveListRowHorizontalPadding,
-        vertical: 8,
-      ),
-      // The count and what to do about it, together. Right-aligning the
-      // actions put eight hundred pixels between "3 drives selected" and the
-      // button that acts on those three, which reads as two unrelated things
-      // sharing a line rather than one sentence.
-      child: Row(
-        children: [
-          Flexible(
-            child: Text(
-              appLocalizationsOf(context).driveListSelectedCount(count),
-              overflow: TextOverflow.ellipsis,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: colorTokens.containerL2,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(_pagePadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
               style: typography.paragraphNormal(
                 color: colorTokens.textHigh,
                 fontWeight: ArFontWeight.semiBold,
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          ArDriveButtonNew(
-            text: appLocalizationsOf(context).driveListSyncSelected,
-            typography: typography,
-            variant: ButtonVariant.primary,
-            maxHeight: 32,
-            // Sized to its label rather than to whatever room is left, which
-            // is what stretched it across the panel.
-            maxWidth: 148,
-            onPressed: onSyncSelected,
-          ),
-          if (onClear != null) ...[
-            const SizedBox(width: 4),
-            // Text, not a second button, and after the action rather than
-            // before it: two bordered controls side by side read as equal
-            // choices and these are not - one acts, the other undoes.
-            ArDriveClickArea(
-              child: InkWell(
-                onTap: onClear,
-                borderRadius: BorderRadius.circular(4),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  child: Text(
-                    appLocalizationsOf(context).driveListClearSelection,
-                    style: typography.paragraphNormal(
-                      color: colorTokens.textLow,
-                      fontWeight: ArFontWeight.semiBold,
-                    ),
-                  ),
-                ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: typography.paragraphSmall(
+                color: colorTokens.textLow,
               ),
             ),
           ],
-          const Spacer(),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Esc ends a selection, as in every list with checkboxes.
+///
+/// Bound only while there is a selection, so otherwise Esc reaches whatever is
+/// around the list - the drive details panel closes on it. A shortcut is only
+/// heard from where focus is, and ticking a checkbox gives nothing focus, so
+/// the list holds focus until something else - the search box, a dialog -
+/// takes it.
+class _SelectionShortcuts extends StatelessWidget {
+  const _SelectionShortcuts({
+    required this.selecting,
+    required this.onClear,
+    required this.child,
+  });
+
+  final bool selecting;
+  final VoidCallback? onClear;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final onClear = this.onClear;
+
+    // The shortcut above the focus, not inside it: a key travels up from
+    // where focus is, so a handler below the focused node never hears it.
+    return CallbackShortcuts(
+      bindings: {
+        if (selecting && onClear != null)
+          const SingleActivator(LogicalKeyboardKey.escape): onClear,
+      },
+      child: Focus(
+        autofocus: true,
+        skipTraversal: true,
+        child: child,
       ),
     );
   }
@@ -1449,7 +1319,6 @@ class _DriveDetailsHost extends StatefulWidget {
   final Widget Function({
     String? chosenDriveId,
     void Function(String driveId)? onChoose,
-    bool allowCompactColumns,
   }) buildBody;
 
   @override
@@ -1544,7 +1413,6 @@ class _DriveDetailsHostState extends State<_DriveDetailsHost> {
                     child: widget.buildBody(
                       chosenDriveId: drive?.id,
                       onChoose: _choose,
-                      allowCompactColumns: pushes,
                     ),
                   ),
                   // The explorer's animation, the explorer's width.

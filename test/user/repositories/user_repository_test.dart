@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave.dart';
@@ -6,6 +8,7 @@ import 'package:ardrive/user/user.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:cryptography/cryptography.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -99,6 +102,50 @@ void main() {
         expect(result.profileType, userToMatch.profileType);
         verify(() => mockProfileDao.loadDefaultProfile(rightPassword))
             .called(1);
+      });
+
+      test(
+          'returns the user with a zero balance when the balance fetch '
+          'throws', () async {
+        when(() => mockArweaveService.getWalletBalance(any()))
+            .thenThrow(Exception('gateway unavailable'));
+
+        final result = await userRepository.getUser(rightPassword);
+
+        expect(result, isNotNull);
+        expect(result!.walletBalance, BigInt.zero);
+        expect(result.walletAddress, await wallet.getAddress());
+      });
+
+      test(
+          'returns the user with a zero balance when the balance fetch '
+          'fails asynchronously', () async {
+        when(() => mockArweaveService.getWalletBalance(any()))
+            .thenAnswer((_) async => throw Exception('gateway timed out'));
+
+        final result = await userRepository.getUser(rightPassword);
+
+        expect(result, isNotNull);
+        expect(result!.walletBalance, BigInt.zero);
+      });
+
+      test(
+          'stops waiting for a balance fetch that never answers after five '
+          'seconds and returns the user with a zero balance', () {
+        fakeAsync((async) {
+          when(() => mockArweaveService.getWalletBalance(any()))
+              .thenAnswer((_) => Completer<BigInt>().future);
+
+          User? result;
+          userRepository.getUser(rightPassword).then((user) => result = user);
+
+          async.elapse(const Duration(seconds: 4));
+          expect(result, isNull, reason: 'still inside the timeout');
+
+          async.elapse(const Duration(seconds: 2));
+          expect(result, isNotNull);
+          expect(result!.walletBalance, BigInt.zero);
+        });
       });
 
       test('should return null if there is no profile', () async {

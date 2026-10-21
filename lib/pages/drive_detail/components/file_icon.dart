@@ -1,4 +1,4 @@
-import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:flutter/material.dart';
@@ -30,38 +30,9 @@ class ArDriveFileIcon extends StatelessWidget {
             Positioned(
               right: 0,
               bottom: 0,
-              child: _buildFileStatus(context, fileStatus!),
+              child: FileStatusDot(status: fileStatus!),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFileStatus(BuildContext context, String status) {
-    late Color indicatorColor;
-
-    switch (status) {
-      case TransactionStatus.pending:
-        indicatorColor =
-            ArDriveTheme.of(context).themeData.colors.themeWarningFg;
-        break;
-      case TransactionStatus.confirmed:
-        indicatorColor =
-            ArDriveTheme.of(context).themeData.colors.themeSuccessFb;
-        break;
-      case TransactionStatus.failed:
-        indicatorColor = ArDriveTheme.of(context).themeData.colors.themeErrorFg;
-        break;
-      default:
-        indicatorColor = Colors.transparent;
-    }
-
-    return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(
-        color: indicatorColor,
-        borderRadius: BorderRadius.circular(4),
       ),
     );
   }

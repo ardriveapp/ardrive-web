@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
+import 'package:ardrive/utils/snapshots/misdecoded_text.dart';
+import 'package:ardrive/utils/preview_byte_cache.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
@@ -33,23 +36,28 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   late Vault<DriveKey> _driveKeyVault;
 
-  late Vault<Uint8List> _previewVault;
+  /// Completes once [_driveKeyVault] exists. Every use of the vault waits for
+  /// it: the constructor cannot await, and a drive key stored in the moment
+  /// after start-up used to reach for a vault that was not there yet.
+  late final Future<void> _vaultsReady;
+
+  /// Recently previewed bytes, held to a total size. See [PreviewByteCache].
+  final PreviewByteCache _previewCache = PreviewByteCache();
 
   final ArDriveCrypto _crypto = ArDriveCrypto();
 
   DriveDao(
     super.db,
   ) {
-    initVaults();
+    _vaultsReady = _initVaults();
   }
 
-  initVaults() async {
+  Future<void> _initVaults() async {
     // Creates a store
     final store = await newMemoryVaultStore();
 
     // Creates a vault from the previously created store
     _driveKeyVault = await store.vault<DriveKey>(name: 'driveKeyVault');
-    _previewVault = await store.vault<Uint8List>(name: 'previewVault');
   }
 
   Future<void> deleteSharedPrivateDrives(String? owner) async {
@@ -85,6 +93,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
 
   Future<DriveKey?> getDriveKeyFromMemory(DriveID driveID) async {
     try {
+      await _vaultsReady;
       return await _driveKeyVault.get(driveID);
     } catch (e) {
       throw _handleError('Error getting drive key from memory', e);
@@ -96,28 +105,104 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     required DriveKey driveKey,
   }) async {
     try {
+      await _vaultsReady;
       return await _driveKeyVault.put(driveID, driveKey);
     } catch (e) {
       throw _handleError('Error putting drive key in memory', e);
     }
   }
 
-  Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async {
+  /// Encrypts onto their rows the drive keys that only memory holds.
+  ///
+  /// A private drive opened without a profile stores its key in the memory
+  /// vault alone, because there is no profile key to encrypt it with. Once the
+  /// user signs in there is, and the sync reads a signed-in user's keys from
+  /// the row and nowhere else ([getDriveKey] deliberately never falls back to
+  /// the vault: a private row with no key is how the sync knows it has nothing
+  /// to open an artifact with). So this runs before the profile is announced
+  /// as logged in, and the drive the visitor just opened keeps working.
+  ///
+  /// Returns the ids of the drives whose rows were written.
+  Future<List<DriveID>> persistInMemoryDriveKeys(SecretKey profileKey) async {
+    final written = <DriveID>[];
+
     try {
-      return await _previewVault.get(dataTxId);
+      await _vaultsReady;
+
+      final drives = (await allDrives().get()).where(
+        (drive) => drive.isPrivate && drive.encryptedKey == null,
+      );
+
+      for (final drive in drives) {
+        final driveKey = await _driveKeyVault.get(drive.id);
+
+        if (driveKey == null) {
+          continue;
+        }
+
+        final encryptionRes = await aesGcm.encrypt(
+          await driveKey.key.extractBytes(),
+          secretKey: profileKey,
+        );
+
+        await (update(this.drives)..where((d) => d.id.equals(drive.id))).write(
+          DrivesCompanion(
+            encryptedKey: Value(encryptionRes.concatenation(nonce: false)),
+            driveKeyGenerated: Value(driveKey.generated),
+            keyEncryptionIv: Value(encryptionRes.nonce as Uint8List),
+          ),
+        );
+
+        written.add(drive.id);
+      }
     } catch (e) {
-      throw _handleError('Error getting preview data from memory', e);
+      throw _handleError('Error persisting in-memory drive keys', e);
     }
+
+    return written;
   }
 
+  Future<Uint8List?> getPreviewDataFromMemory(TxID dataTxId) async =>
+      _previewCache.get(dataTxId);
+
+  /// Which signed-in session the memory belongs to. [clearSessionMemory]
+  /// moves it on.
+  int _previewSession = 0;
+
+  /// The session a preview fetch starts in, to hand back to
+  /// [putPreviewDataInMemory] when its bytes arrive.
+  int get previewSession => _previewSession;
+
+  /// Keeps [bytes] for [dataTxId], unless the session they were fetched in
+  /// has since ended: a download that finishes after logout must not put the
+  /// previous session's bytes back into memory that logout just cleared.
   Future<void> putPreviewDataInMemory({
     required TxID dataTxId,
     required Uint8List bytes,
+    required int session,
   }) async {
+    if (session != _previewSession) {
+      return;
+    }
+
+    _previewCache.put(dataTxId, bytes);
+  }
+
+  /// Forgets everything this DAO holds in memory for the signed-in session:
+  /// drive keys, and the bytes of recently previewed files.
+  ///
+  /// Logout deletes every table, and used to leave both of these behind until
+  /// the tab closed - including the keys to shared private drives opened from
+  /// a `driveKey` link, which are kept here rather than in the database.
+  Future<void> clearSessionMemory() async {
+    _previewSession++;
+    _previewCache.clear();
+
     try {
-      await _previewVault.put(dataTxId, bytes);
+      await _vaultsReady;
+      await _driveKeyVault.clear();
     } catch (e) {
-      throw _handleError('Error putting preview data in memory', e);
+      throw _handleError('Error clearing drive keys from memory', e);
     }
   }
 
@@ -364,14 +449,21 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       );
 
   /// Adds or updates the user's drives with the provided drive entities.
+  ///
+  /// Each entity is a drive's newest revision, so its time is when the drive
+  /// last changed, not when it was made. [creationTimes], keyed by drive id,
+  /// says when it was made. A drive missing from it keeps the creation date
+  /// it already has, and a new one takes its newest revision's time.
   Future<void> updateUserDrives(
     Map<DriveEntity, DriveKey?> driveEntities,
-    SecretKey? profileKey,
-  ) =>
+    SecretKey? profileKey, {
+    Map<String, DateTime> creationTimes = const {},
+  }) =>
       db.batch(
         (b) async {
           for (final entry in driveEntities.entries) {
             final entity = entry.key;
+            final createdAt = creationTimes[entity.id];
 
             var driveCompanion = DrivesCompanion.insert(
               id: entity.id!,
@@ -379,7 +471,7 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
               ownerAddress: entity.ownerAddress,
               rootFolderId: entity.rootFolderId!,
               privacy: entity.privacy!,
-              dateCreated: Value(entity.createdAt),
+              dateCreated: Value(createdAt ?? entity.createdAt),
               lastUpdated: Value(entity.createdAt),
               isHidden: Value(entity.isHidden ?? false),
               signatureType: Value.absentIfNull(entity.signatureType?.value),
@@ -390,11 +482,19 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
                   driveCompanion, profileKey!, entry.value!);
             }
 
+            // `copyWith(dateCreated: null)` kept the value rather than
+            // dropping it, so every pass wrote the newest revision's time over
+            // the creation date. Absent leaves the stored one alone; a known
+            // creation time replaces it, which also repairs a drive that pass
+            // got wrong.
+            final onConflict = createdAt == null
+                ? driveCompanion.copyWith(dateCreated: const Value.absent())
+                : driveCompanion;
+
             b.insert(
               drives,
               driveCompanion,
-              onConflict: DoUpdate(
-                  (dynamic _) => driveCompanion.copyWith(dateCreated: null)),
+              onConflict: DoUpdate((dynamic _) => onConflict),
             );
 
             b.insert(
@@ -447,9 +547,14 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     // exactly the drive-without-a-root-folder state this placeholder exists to
     // rule out. `updateUserDrives` gets this for free from `db.batch`.
     await db.transaction(() async {
+      // Absent, not null: `copyWith(dateCreated: null)` keeps the value, and
+      // [entity] is the drive's newest revision, so a re-attach wrote the
+      // rename's date over the creation date.
       await into(drives).insert(
         companion,
-        onConflict: DoUpdate((_) => companion.copyWith(dateCreated: null)),
+        onConflict: DoUpdate(
+          (_) => companion.copyWith(dateCreated: const Value.absent()),
+        ),
       );
 
       await into(folderEntries).insert(
@@ -603,129 +708,125 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     int limit = 50,
     int offset = 0,
   }) async {
-    final List<SearchResult> results = [];
+    // Run queries in parallel for better performance. The results are put
+    // together in a fixed order afterwards: appended as each query finished,
+    // their order changed from one search to the next.
+    final drivesSearch =
+        type == SearchQueryType.all || type == SearchQueryType.drives
+            ? searchDrives(query: query, limit: limit, offset: offset).get()
+            : Future.value(<Drive>[]);
+    final foldersSearch =
+        type == SearchQueryType.all || type == SearchQueryType.folders
+            ? searchFolders(query: query, limit: limit, offset: offset).get()
+            : Future.value(<FolderSearchResult>[]);
+    final filesSearch =
+        type == SearchQueryType.all || type == SearchQueryType.files
+            ? searchFiles(query: query, limit: limit, offset: offset).get()
+            : Future.value(<FileSearchResult>[]);
 
-    // Run queries in parallel for better performance
-    await Future.wait(
-      [
-        // Search drives
-        if (type == SearchQueryType.all || type == SearchQueryType.drives)
-          searchDrives(
-            query: query,
-            limit: limit,
-            offset: offset,
-          ).get().then((drives) {
-            results.addAll(
-              drives.map((drive) => SearchResult<Drive>(
-                    result: drive,
-                    drive: drive,
-                  )),
-            );
-          }),
+    final drives = await drivesSearch;
+    final folders = await foldersSearch;
+    final files = await filesSearch;
 
-        // Search folders
-        if (type == SearchQueryType.all || type == SearchQueryType.folders)
-          searchFolders(
-            query: query,
-            limit: limit,
-            offset: offset,
-          ).get().then((folders) {
-            results.addAll(
-              folders.map((folder) => SearchResult<FolderEntry>(
-                    result: FolderEntry(
-                      id: folder.id,
-                      driveId: folder.driveId,
-                      name: folder.name,
-                      parentFolderId: folder.parentFolderId,
-                      path: '',
-                      dateCreated: DateTime.now(),
-                      lastUpdated: DateTime.now(),
-                      isGhost: false,
-                      isHidden: false,
-                    ),
-                    parentFolder: folder.parentFolderId != null &&
-                            folder.parentFolderId != folder.driveId
-                        ? FolderEntry(
-                            id: folder.parentFolderId!,
-                            name: folder.parentFolderName!,
-                            driveId: folder.driveId,
-                            path: '', // Path is not used as noted in the code
-                            dateCreated: DateTime.now(),
-                            lastUpdated: DateTime.now(),
-                            isGhost: false,
-                            isHidden: false,
-                          )
-                        : null,
-                    drive: Drive(
-                      id: folder.driveId,
-                      name: folder.driveName,
-                      privacy: folder.drivePrivacy,
-                      rootFolderId: '', // Not needed for search results
-                      ownerAddress: '', // Not needed for search results
-                      lastUpdated: DateTime.now(),
-                      dateCreated: DateTime.now(),
-                      isHidden: false,
-                    ),
-                  )),
-            );
-          }),
+    return [
+      ...drives.map((drive) => SearchResult<Drive>(
+            result: drive,
+            drive: drive,
+          )),
+      ...folders.map((folder) => SearchResult<FolderEntry>(
+            result: FolderEntry(
+              id: folder.id,
+              driveId: folder.driveId,
+              name: folder.name,
+              parentFolderId: folder.parentFolderId,
+              path: '',
+              dateCreated: DateTime.now(),
+              lastUpdated: DateTime.now(),
+              isGhost: false,
+              isHidden: folder.isHidden,
+            ),
+            parentFolder: _searchResultParent(
+              driveId: folder.driveId,
+              parentFolderId: folder.parentFolderId,
+              parentFolderName: folder.parentFolderName,
+              driveRootFolderId: folder.driveRootFolderId,
+            ),
+            drive: Drive(
+              id: folder.driveId,
+              name: folder.driveName,
+              privacy: folder.drivePrivacy,
+              rootFolderId: folder.driveRootFolderId,
+              ownerAddress: '', // Not needed for search results
+              lastUpdated: DateTime.now(),
+              dateCreated: DateTime.now(),
+              isHidden: folder.driveIsHidden,
+            ),
+          )),
+      ...files.map((file) => SearchResult<FileEntry>(
+            result: FileEntry(
+              id: file.id,
+              driveId: file.driveId,
+              name: file.name,
+              parentFolderId: file.parentFolderId,
+              path: '',
+              dateCreated: DateTime.now(),
+              lastUpdated: DateTime.now(),
+              isHidden: file.isHidden,
+              size: file.size,
+              lastModifiedDate: file.lastModifiedDate,
+              dataTxId: file.dataTxId,
+              dataContentType: file.dataContentType,
+            ),
+            parentFolder: _searchResultParent(
+              driveId: file.driveId,
+              parentFolderId: file.parentFolderId,
+              parentFolderName: file.parentFolderName,
+              driveRootFolderId: file.driveRootFolderId,
+            ),
+            drive: Drive(
+              id: file.driveId,
+              name: file.driveName,
+              privacy: file.drivePrivacy,
+              rootFolderId: file.driveRootFolderId,
+              ownerAddress: '', // Not needed for search results
+              isHidden: file.driveIsHidden,
+              lastUpdated: DateTime.now(),
+              dateCreated: DateTime.now(),
+            ),
+          )),
+    ];
+  }
 
-        // Search files
-        if (type == SearchQueryType.all || type == SearchQueryType.files)
-          searchFiles(
-            query: query,
-            limit: limit,
-            offset: offset,
-          ).get().then(
-            (files) {
-              results.addAll(
-                files.map(
-                  (file) => SearchResult<FileEntry>(
-                    result: FileEntry(
-                      id: file.id,
-                      driveId: file.driveId,
-                      name: file.name,
-                      parentFolderId: file.parentFolderId,
-                      path: '',
-                      dateCreated: DateTime.now(),
-                      lastUpdated: DateTime.now(),
-                      isHidden: false,
-                      size: file.size,
-                      lastModifiedDate: file.lastModifiedDate,
-                      dataTxId: file.dataTxId,
-                      dataContentType: file.dataContentType,
-                    ),
-                    parentFolder: file.parentFolderId != file.driveId
-                        ? FolderEntry(
-                            id: file.parentFolderId,
-                            name: file.parentFolderName!,
-                            driveId: file.driveId,
-                            path: '', // Path is not used as noted in the code
-                            dateCreated: DateTime.now(),
-                            lastUpdated: DateTime.now(),
-                            isGhost: false,
-                            isHidden: false,
-                          )
-                        : null,
-                    drive: Drive(
-                      id: file.driveId,
-                      name: file.driveName,
-                      privacy: file.drivePrivacy,
-                      rootFolderId: '', // Not needed for search results
-                      ownerAddress: '', // Not needed for search results
-                      isHidden: false,
-                      lastUpdated: DateTime.now(),
-                      dateCreated: DateTime.now(),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-      ],
+  /// The folder a search result sits in, or null when that is the drive's
+  /// root, which a result names by its drive instead.
+  ///
+  /// The root used to be told apart by comparing the folder id with the drive
+  /// id, which never match, so an item at the top of a drive was listed as in
+  /// a folder named after the drive (the root folder's own name). Null too
+  /// when the parent folder is not on this device: the join finds no name, and
+  /// it was read with `!`, which threw and failed the whole search.
+  FolderEntry? _searchResultParent({
+    required String driveId,
+    required String? parentFolderId,
+    required String? parentFolderName,
+    required String driveRootFolderId,
+  }) {
+    if (parentFolderId == null ||
+        parentFolderId == driveRootFolderId ||
+        parentFolderName == null) {
+      return null;
+    }
+
+    return FolderEntry(
+      id: parentFolderId,
+      name: parentFolderName,
+      driveId: driveId,
+      path: '', // Path is not used as noted in the code
+      dateCreated: DateTime.now(),
+      lastUpdated: DateTime.now(),
+      isGhost: false,
+      isHidden: false,
     );
-
-    return results;
   }
 
   /// Create a new folder entry.
@@ -760,31 +861,49 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       (update(folderEntries)..whereSamePrimaryKey(folder)).write(folder);
 
   /// Constructs a tree of folders and files that are children of the specified folder.
+  /// The folder tree under [rootFolderId], with every file in it.
+  ///
+  /// Two queries for the whole drive, grouped by parent here, rather than two
+  /// per folder: on the web the database runs in a worker and every query is
+  /// a round trip (docs/WEB_DATABASE.md). Both read in the order the
+  /// per-folder queries did, a scan of the table, so each folder's children
+  /// come out in the same order as before.
   Future<FolderNode> getFolderTree(String driveId, String rootFolderId) async {
     final rootFolder = await folderById(folderId: rootFolderId).getSingle();
 
-    Future<FolderNode> getFolderChildren(FolderEntry parentFolder) async {
-      final subfolders = await foldersInFolder(
-              driveId: driveId, parentFolderId: parentFolder.id)
-          .get();
+    final subfoldersByParent = <String, List<FolderEntry>>{};
+    for (final folder in await (select(folderEntries)
+          ..where((f) => f.driveId.equals(driveId)))
+        .get()) {
+      final parent = folder.parentFolderId;
+      if (parent == null) continue;
+      (subfoldersByParent[parent] ??= []).add(folder);
+    }
+    final filesByParent = <String, List<FileEntry>>{};
+    for (final file in await (select(fileEntries)
+          ..where((f) => f.driveId.equals(driveId)))
+        .get()) {
+      (filesByParent[file.parentFolderId] ??= []).add(file);
+    }
 
+    // A folder already on the path is not entered again: a cycle in the
+    // rows, which no sync or import writes, would otherwise recurse for ever.
+    FolderNode build(FolderEntry folder, Set<String> path) {
+      final onPath = {...path, folder.id};
       return FolderNode(
-        folder: parentFolder,
-        // Get the children of this folder's subfolders.
-        subfolders:
-            await Future.wait(subfolders.map((f) => getFolderChildren(f))),
+        folder: folder,
+        subfolders: [
+          for (final child in subfoldersByParent[folder.id] ?? <FolderEntry>[])
+            if (!onPath.contains(child.id)) build(child, onPath),
+        ],
         files: {
-          await for (var f in filesInFolder(
-                  driveId: driveId, parentFolderId: parentFolder.id)
-              .get()
-              .asStream()
-              .expand((f) => f))
-            f.id: f
+          for (final file in filesByParent[folder.id] ?? <FileEntry>[])
+            file.id: file,
         },
       );
     }
 
-    return getFolderChildren(rootFolder);
+    return build(rootFolder, const {});
   }
 
   UpdateStatement<FileEntries, FileEntry> updateFileById(
@@ -806,6 +925,11 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
       dataTxId: entity.dataTxId!,
       size: entity.size!,
       lastModifiedDate: entity.lastModifiedDate ?? DateTime.now(),
+      // The time of the revision written with it, as a sync records it. Left
+      // to the column's default, it was set on insert and never again, so a
+      // new version uploaded here kept the first version's date until the
+      // next sync.
+      lastUpdated: Value(entity.createdAt),
       dataContentType: Value(entity.dataContentType),
       pinnedDataOwnerAddress: Value(entity.pinnedDataOwnerAddress),
       isHidden: Value(entity.isHidden ?? false),
@@ -892,6 +1016,33 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     return (select(folderEntries).table.count()).getSingle();
   }
 
+  /// Whether this drive has anything in it on this device: a file, or a
+  /// folder other than its root.
+  ///
+  /// Asked of the drive, not of a folder, so the answer is the same from the
+  /// list of drives as from inside an empty subfolder of a full drive.
+  Future<bool> driveHasEntries({
+    required String driveId,
+    required String rootFolderId,
+  }) async {
+    final file = await (selectOnly(fileEntries)
+          ..addColumns([fileEntries.id])
+          ..where(fileEntries.driveId.equals(driveId))
+          ..limit(1))
+        .getSingleOrNull();
+    if (file != null) {
+      return true;
+    }
+
+    final folder = await (selectOnly(folderEntries)
+          ..addColumns([folderEntries.id])
+          ..where(folderEntries.driveId.equals(driveId) &
+              folderEntries.id.equals(rootFolderId).not())
+          ..limit(1))
+        .getSingleOrNull();
+    return folder != null;
+  }
+
   Future<bool> userHasHiddenItems() {
     return hasHiddenItems().getSingle();
   }
@@ -926,6 +1077,247 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
         ),
     };
   }
+
+  /// What [driveIds] hold permanently, by the year it was uploaded, oldest
+  /// first.
+  ///
+  /// Stricter than [driveContentSummaries], which counts every file row,
+  /// because this is a figure somebody may hold us to:
+  ///
+  /// - **Every version.** Read from the revisions, not the files: a file's
+  ///   earlier versions are stored, and were paid for, as much as its
+  ///   newest.
+  /// - **Each piece of data once.** A file copied to a second folder, or
+  ///   renamed, is another revision over the same data transaction, stored
+  ///   once and paid for once.
+  /// - **Only data that landed.** An upload still pending, or one that
+  ///   failed, is not preserved. Data with no transaction row at all was
+  ///   synced from the network, so it is there.
+  /// - **Not pinned files.** A pin points at somebody else's data, which
+  ///   they paid to store.
+  ///
+  /// A piece of data is dated by the first revision that carried it: when
+  /// it was uploaded, not when its file was first made.
+  Future<Map<int, PermanentData>> permanentDataByYear(
+    Iterable<String> driveIds,
+  ) async {
+    final ids = driveIds.toList();
+
+    if (ids.isEmpty) {
+      return {};
+    }
+
+    final rows = await customSelect(
+      '''
+      SELECT CAST(strftime('%Y', created, 'unixepoch') AS INTEGER) AS year,
+             SUM(size) AS bytes,
+             COUNT(*) AS items
+      FROM (
+        SELECT r.dataTxId, MIN(r.dateCreated) AS created, MAX(r.size) AS size
+        FROM file_revisions r
+        WHERE ${_permanentRevisions(ids)}
+        GROUP BY r.dataTxId
+      )
+      GROUP BY year
+      ORDER BY year
+      ''',
+      variables: [for (final id in ids) Variable.withString(id)],
+      readsFrom: {fileRevisions, networkTransactions},
+    ).get();
+
+    return {
+      for (final row in rows)
+        if (row.read<int?>('year') != null)
+          row.read<int>('year'): PermanentData(
+            bytes: row.read<int?>('bytes') ?? 0,
+            items: row.read<int>('items'),
+          ),
+    };
+  }
+
+  /// How many files in [driveIds] have at least one version stored for
+  /// good, counted as [permanentDataByYear] counts their data. A copy is a
+  /// file of its own here, though its data is counted once there.
+  Future<int> permanentFileCount(Iterable<String> driveIds) async {
+    final ids = driveIds.toList();
+
+    if (ids.isEmpty) {
+      return 0;
+    }
+
+    final row = await customSelect(
+      '''
+      SELECT COUNT(DISTINCT r.fileId) AS files
+      FROM file_revisions r
+      WHERE ${_permanentRevisions(ids)}
+      ''',
+      variables: [for (final id in ids) Variable.withString(id)],
+      readsFrom: {fileRevisions, networkTransactions},
+    ).getSingle();
+
+    return row.read<int>('files');
+  }
+
+  /// Changes whenever [permanentDataByYear] or [permanentFileCount] could:
+  /// when a revision is written, or an upload starts, lands or fails. For
+  /// deciding whether figures already counted still hold, at a fraction of a
+  /// millisecond against a scan of every revision.
+  ///
+  /// Revisions are only ever added, so the newest row's id moves with every
+  /// one written. An upload that lands leaves the pending count; one that
+  /// fails moves to the failed count.
+  Future<String> permanentDataVersion() async {
+    final row = await customSelect(
+      '''
+      SELECT (SELECT MAX(rowid) FROM file_revisions) AS revisions,
+             (SELECT COUNT(*) FROM network_transactions
+               WHERE status = '${TransactionStatus.pending}') AS pending,
+             (SELECT COUNT(*) FROM network_transactions
+               WHERE status = '${TransactionStatus.failed}') AS failed
+      ''',
+      readsFrom: {fileRevisions, networkTransactions},
+    ).getSingle();
+
+    return '${row.read<int?>('revisions')}:${row.read<int>('pending')}'
+        ':${row.read<int>('failed')}';
+  }
+
+  /// The revisions of [ids] whose data is stored for good: not a pin, and
+  /// not an upload still pending or one that failed. Binds one variable per
+  /// drive id.
+  String _permanentRevisions(List<String> ids) => '''
+        r.driveId IN (${List.filled(ids.length, '?').join(', ')})
+        AND r.pinnedDataOwnerAddress IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM network_transactions t
+          WHERE t.id = r.dataTxId
+            AND t.status IN ('${TransactionStatus.pending}',
+                             '${TransactionStatus.failed}')
+        )''';
+
+  /// Which of [txIds] [driveIds] are made of, as sync recorded them: the
+  /// metadata and data of every file revision, the metadata of every folder
+  /// and drive revision, and the bundles any of them travelled in.
+  ///
+  /// What makes a wallet's transaction ArDrive storage, for the AR it paid
+  /// directly - the same drives the permanence panel sizes, known the way
+  /// sync knows them rather than guessed from an App-Name tag.
+  ///
+  /// Asked about the transactions in hand, never for the whole set: a drive
+  /// of 100,000 files is made of 400,000 of them, which took a second and a
+  /// half to read out natively and more on the web, where every row crosses
+  /// to the page from the database worker. Asked in batches of
+  /// [_txLookupBatch], to stay well inside SQLite's limit on variables.
+  Future<Set<String>> arDriveTransactionsAmong(
+    Iterable<String> driveIds,
+    Iterable<String> txIds,
+  ) async {
+    final drives = driveIds.toList();
+    final candidates = txIds.toSet().toList();
+
+    if (drives.isEmpty || candidates.isEmpty) {
+      return {};
+    }
+
+    final drivePlaceholders = List.filled(drives.length, '?').join(', ');
+    final found = <String>{};
+
+    for (var i = 0; i < candidates.length; i += _txLookupBatch) {
+      final batch = candidates.sublist(
+          i, math.min(i + _txLookupBatch, candidates.length));
+      final txPlaceholders = List.filled(batch.length, '?').join(', ');
+      // The transaction first: dataTxId has an index, and for the rest
+      // SQLite checks each row against the batch in one pass.
+      String among(String column, String table) => '''
+        SELECT $column AS tx FROM $table
+        WHERE $column IN ($txPlaceholders) AND driveId IN ($drivePlaceholders)''';
+
+      final rows = await customSelect(
+        [
+          among('dataTxId', 'file_revisions'),
+          among('metadataTxId', 'file_revisions'),
+          among('bundledIn', 'file_revisions'),
+          among('metadataTxId', 'folder_revisions'),
+          among('metadataTxId', 'drive_revisions'),
+          among('bundledIn', 'drive_revisions'),
+        ].join('\nUNION '),
+        variables: [
+          for (var branch = 0; branch < 6; branch++) ...[
+            for (final tx in batch) Variable.withString(tx),
+            for (final drive in drives) Variable.withString(drive),
+          ],
+        ],
+        readsFrom: {fileRevisions, folderRevisions, driveRevisions},
+      ).get();
+
+      found.addAll(rows.map((row) => row.read<String>('tx')));
+    }
+
+    return found;
+  }
+
+  static const _txLookupBatch = 300;
+
+  /// Undoes names damaged by reading drive snapshots as Latin-1, in every
+  /// table that keeps one: drives, folders and files, and their revisions.
+  /// Returns how many it repaired.
+  ///
+  /// Snapshots were read a byte at a time until the fix beside this, so a
+  /// drive synced from one stored every name with an em dash, an accent or
+  /// any other character past ASCII in damaged form - "A â B" for "A — B".
+  /// Changes only what [repairMisdecodedUtf8] recognises as that damage, so a
+  /// name that was never damaged is left as it is; and the views watching
+  /// these tables update as the names change.
+  Future<int> repairMisdecodedNames() => transaction(() async {
+        // Read everything first and write it in one batch: on the web every
+        // statement is a round trip to the database worker
+        // (docs/WEB_DATABASE.md), and this runs before a sync shows any
+        // progress, so a drive of thousands of non-ASCII names must not cost
+        // thousands of awaited updates. The views watching these tables hear
+        // about it once per table rather than once per row.
+        final repairs = <({TableInfo table, int rowId, String name})>[];
+
+        for (final table in <TableInfo>[
+          db.drives,
+          db.driveRevisions,
+          db.folderEntries,
+          db.folderRevisions,
+          db.fileEntries,
+          db.fileRevisions,
+        ]) {
+          // Only names with something past printable ASCII can be damaged.
+          final rows = await customSelect(
+            'SELECT rowid AS r, name FROM ${table.actualTableName} '
+            "WHERE name GLOB '*[^ -~]*'",
+            readsFrom: {table},
+          ).get();
+
+          for (final row in rows) {
+            final stored = row.read<String>('name');
+            final fixed = repairMisdecodedUtf8(stored);
+
+            if (fixed != stored) {
+              repairs
+                  .add((table: table, rowId: row.read<int>('r'), name: fixed));
+            }
+          }
+        }
+
+        if (repairs.isNotEmpty) {
+          await batch((b) {
+            for (final repair in repairs) {
+              b.customStatement(
+                'UPDATE ${repair.table.actualTableName} '
+                'SET name = ? WHERE rowid = ?',
+                [repair.name, repair.rowId],
+                [TableUpdate.onTable(repair.table, kind: UpdateKind.update)],
+              );
+            }
+          });
+        }
+
+        return repairs.length;
+      });
 
   /// Whether any transaction is still waiting to be resolved as confirmed or
   /// failed.
@@ -993,4 +1385,18 @@ class DriveNotFoundException implements Exception {
   String toString() {
     return 'Drive with id $driveId not found';
   }
+}
+
+/// Data stored permanently in one year: see [DriveDao.permanentDataByYear].
+class PermanentData extends Equatable {
+  const PermanentData({required this.bytes, required this.items});
+
+  final int bytes;
+
+  /// Pieces of data, each counted once however many files or versions
+  /// point at it.
+  final int items;
+
+  @override
+  List<Object> get props => [bytes, items];
 }

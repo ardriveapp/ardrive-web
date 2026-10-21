@@ -68,11 +68,27 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// What was last drawn, so a tick that changes nothing can be recognised.
   FolderWithContents? _lastFolderContents;
 
-  /// The drive whose root revision this screen is waiting on, if any.
+  /// The drive row last drawn, for the same reason. A rename or a hide
+  /// changes only this, and the folder contents arrive identical.
+  Drive? _lastDrive;
+
+  /// The drive this screen is waiting to open, if any: for its root revision,
+  /// or for the first of its contents while a sync is still reading it.
   ///
   /// Only a sync writing that drive can end the wait, so a sync that ends
   /// without doing it has to be noticed - see [_recoverIfStillWaiting].
   String? _awaitingRootRevisionFor;
+
+  /// Whether each drive's root folder came from the network rather than from
+  /// this device: the difference between a drive a sync is reading for the
+  /// first time and one just made here, which both have a block height of 0.
+  ///
+  /// Decided the first time this screen shows the drive with an empty folder,
+  /// and kept: a sync rewrites a new drive's root as confirmed when it reads
+  /// it back, and the drive on screen must not turn into a loading panel
+  /// because of it. A root not there at all is from the network by
+  /// definition: it has not arrived yet.
+  final _rootFromNetwork = <String, bool>{};
   bool _isExplicitSync = false;
 
   /// Bumped by every [openFolder]. Cancelling `_folderSubscription` does not
@@ -83,6 +99,32 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   int _folderLoadGeneration = 0;
   final _defaultAvailableRowsPerPage = [25, 50, 75, 100];
 
+  /// The page sizes the file table offers.
+  static const rowsPerPageOptions = [25, 50, 100];
+  static const _rowsPerPageKey = 'drive_detail_rows_per_page';
+
+  int _rowsPerPage = rowsPerPageOptions.first;
+
+  /// The first row on screen in each folder visited this session, and how far
+  /// down its page the list was scrolled.
+  ///
+  /// The table is rebuilt whenever its folder is left and whenever something
+  /// refreshes it in place - a rename, a hide, an upload, a sync finishing -
+  /// and a new table starts on page 1 at the top. Kept here, so the reader is
+  /// put back where they were rather than sent to the start each time. A row
+  /// rather than a page, so a change of page size keeps the same rows in view.
+  final _firstRowByFolder = <String, int>{};
+  final _scrollOffsetByFolder = <String, double>{};
+
+  /// The order picked from a column header in each folder, for the same
+  /// reason: a sort lives in the table, and an upload or a rename rebuilt the
+  /// table and dropped it.
+  final _sortByFolder = <String, ({int column, TableSort order})>{};
+
+  /// Set when a folder is opened to show one item in it, such as a search
+  /// result: the next state asks the table to open on that item's page.
+  bool _revealSelectedItem = false;
+
   List<ArDriveDataTableItem> _selectedItems = [];
   List<ArDriveDataTableItem> get selectedItems => _selectedItems;
 
@@ -91,6 +133,22 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   bool _forceDisableMultiselect = false;
 
   bool _refreshSelectedItem = false;
+
+  /// The folder a link named, while it is not on this device yet. Kept until
+  /// it opens, the reader opens another folder, or another drive is opened -
+  /// so a second [changeDrive] for the same drive cannot drop it.
+  ({String driveId, String folderId})? _linkedFolder;
+
+  /// Waits for [_linkedFolder] to be written by the sync reading its drive.
+  StreamSubscription? _linkedFolderWatch;
+
+  /// Drops [_linkedFolder] as soon as the reader opens any other folder, even
+  /// one they have left again by the time the linked folder lands.
+  StreamSubscription? _readerMovedWatch;
+
+  /// Counts [followLink] calls, so a lookup for an older link that finishes
+  /// after a newer one cannot open its folder over the newer one's.
+  int _followedLinks = 0;
 
   DriveDetailCubit({
     required String driveId,
@@ -132,14 +190,24 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
 
     if (initialFolderId != null) {
-      // TODO: Handle deep-linking folders of unattached drives.
       Future.microtask(() async {
-        final folder = await _driveDao
+        final found = await _driveDao
             .folderById(folderId: initialFolderId)
             .getSingleOrNull();
+        // Folder IDs are only unique within a drive: a link that pairs this
+        // drive with another drive's folder names nothing here.
+        final folder = found?.driveId == driveId ? found : null;
 
         // Abort if user switched drives during the async operation
         if (_driveId != driveId) return;
+
+        // A link to a folder this device does not have yet. If its drive is
+        // not here either, the drive gets attached and synced first, and then
+        // opened through [changeDrive] - which has to open this folder, not
+        // the root.
+        if (folder == null) {
+          _linkedFolder = (driveId: driveId, folderId: initialFolderId);
+        }
 
         // Open the root folder if the deep-linked folder could not be found.
         // The item is only meaningful inside the folder that was asked for: if
@@ -149,6 +217,28 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           selectedItemId: folder == null ? null : initialSelectedItemId,
         );
         // The empty string here is required to open the root folder
+
+        if (folder != null) {
+          return;
+        }
+
+        // The drive is here and the folder is not: a sync of the drive has
+        // not reached it yet. [changeDrive] is not coming for a drive that is
+        // already open, so wait for the folder here.
+        final drive =
+            await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+
+        if (isClosed || _driveId != driveId || drive == null) {
+          return;
+        }
+
+        if (_linkedFolder?.folderId == initialFolderId) {
+          _openLinkedFolderWhenItLands(
+            driveId: driveId,
+            folderId: initialFolderId,
+            rootFolderId: drive.rootFolderId,
+          );
+        }
       }).whenComplete(() {
         _initialLoadComplete = true;
       });
@@ -207,6 +297,60 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     }
 
     // (registered by _listenForSyncCompletion, above)
+  }
+
+  /// Whether an empty folder in [drive] may only be empty *so far*.
+  ///
+  /// Sync saves a drive's history oldest first, one batch at a time, so a
+  /// folder lands before anything in it. While a sync is reading a drive for
+  /// the first time on this device, an empty folder says nothing about what
+  /// the drive holds - and showing the empty-drive card then is what made a
+  /// full drive flash "Your brand new drive!" before its files appeared.
+  ///
+  /// Only for a drive whose root came from the network ([_rootFromNetwork]),
+  /// never one just made on this device. Never for one walked before (its
+  /// block height has advanced), whose emptiness was read, not assumed. And
+  /// only while a sync is walking it: not while the drive list loads, which
+  /// reads no folder.
+  bool contentsMayStillArrive(Drive drive) {
+    if (_rootFromNetwork[drive.id] != true ||
+        (drive.lastBlockHeight ?? 0) > 0) {
+      return false;
+    }
+
+    return _syncCubit.state is SyncInProgress &&
+        SyncCubit.syncTouchesDrive(
+          state: _syncCubit.state,
+          syncingDriveId: _syncCubit.syncingDriveId,
+          completedDriveIds: _syncCubit.completedDriveIds,
+          runDriveIds: _syncCubit.syncingDriveIds,
+          driveId: drive.id,
+        );
+  }
+
+  /// Whether [drive]'s root folder was read from the network, or is not here
+  /// yet. Sync records what it reads as confirmed; a drive made on this device
+  /// writes its own root as pending, until its upload is confirmed. A root
+  /// with no transaction row at all was not written here, since a local
+  /// write adds both in one transaction.
+  Future<bool> _rootIsFromNetwork(Drive drive) async {
+    final root = await _driveDao
+        .latestFolderRevisionByFolderId(
+          driveId: drive.id,
+          folderId: drive.rootFolderId,
+        )
+        .getSingleOrNull();
+
+    if (root == null) {
+      return true;
+    }
+
+    final transaction = await (_driveDao.select(_driveDao.networkTransactions)
+          ..where((t) => t.id.equals(root.metadataTxId)))
+        .getSingleOrNull();
+
+    return transaction == null ||
+        transaction.status == TransactionStatus.confirmed;
   }
 
   /// Ends a wait for a root revision that is never going to arrive.
@@ -274,6 +418,18 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       if (SyncCubit.syncHasFinished(syncState)) {
         _recoverIfStillWaiting();
         _refreshAfterDroppedRedraws();
+      }
+
+      // The sync moving on can end a first read without writing a row, and
+      // so without a tick to redraw the folder: an empty folder left saying
+      // it is still being read after the reading has stopped.
+      final current = state;
+      if (current is DriveDetailLoadSuccess) {
+        final stillArriving = contentsMayStillArrive(current.currentDrive);
+
+        if (stillArriving != current.contentsStillArriving) {
+          emit(current.copyWith(contentsStillArriving: stillArriving));
+        }
       }
 
       // A drive list that has since been read means the failure screen is out
@@ -487,7 +643,173 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _driveId = driveId;
 
-    openFolder(folderId: drive.rootFolderId);
+    // One shot: the folder a link named is opened the first time its drive
+    // is, and after that the drive opens at its root like any other. It is
+    // only let go once it has been dealt with: attaching a drive can bring
+    // this call more than once, and the second must not find it gone.
+    final linkedFolder =
+        _linkedFolder?.driveId == driveId ? _linkedFolder : null;
+
+    if (linkedFolder == null) {
+      _forgetLinkedFolder();
+    }
+
+    final folder = linkedFolder == null
+        ? null
+        : await _driveDao
+            .folderById(folderId: linkedFolder.folderId)
+            .getSingleOrNull();
+
+    if (isClosed || _driveId != driveId) {
+      return;
+    }
+
+    if (folder != null && folder.driveId == driveId) {
+      _forgetLinkedFolder();
+      openFolder(folderId: folder.id);
+      return;
+    }
+
+    final rootFolderId = drive.rootFolderId;
+    openFolder(folderId: rootFolderId);
+
+    // The drive opens as soon as its row is written, while the sync that
+    // attached it is still reading its folders - so a linked folder is
+    // usually not there yet.
+    if (linkedFolder != null && _linkedFolder == linkedFolder) {
+      _openLinkedFolderWhenItLands(
+        driveId: driveId,
+        folderId: linkedFolder.folderId,
+        rootFolderId: rootFolderId,
+      );
+    }
+  }
+
+  /// Opens the linked folder when the sync writes it, unless the reader has
+  /// opened another folder in the meantime.
+  void _openLinkedFolderWhenItLands({
+    required String driveId,
+    required String folderId,
+    required String rootFolderId,
+  }) {
+    _forgetLinkedFolder();
+    _linkedFolder = (driveId: driveId, folderId: folderId);
+
+    // Any folder but the root, even briefly: a reader who looked around and
+    // came back to the root chose to be there.
+    _readerMovedWatch = stream.listen((state) {
+      if (state is DriveDetailLoadSuccess &&
+          state.folderInView.folder.id != rootFolderId) {
+        _forgetLinkedFolder();
+      }
+    });
+
+    _linkedFolderWatch = _driveDao
+        .folderById(folderId: folderId)
+        .watchSingleOrNull()
+        .where((folder) => folder?.driveId == driveId)
+        .take(1)
+        .listen((folder) {
+      _forgetLinkedFolder();
+
+      if (isClosed || _driveId != driveId) {
+        return;
+      }
+
+      openFolder(folderId: folder!.id);
+    });
+  }
+
+  /// A drive or folder link followed in a tab where this explorer is already
+  /// open: pasted into the address bar, or reached with back and forward.
+  ///
+  /// The link was only ever read when the explorer was built, so a tab that
+  /// already had it ignored every later one and the address bar snapped back
+  /// to the folder on screen.
+  ///
+  /// For the drive on screen this opens the folder, or the root for a drive
+  /// link, waiting for a folder its sync has not written yet. For any other
+  /// drive it only holds the folder: selecting that drive is the caller's,
+  /// and [changeDrive] opens the folder when it does.
+  Future<void> followLink({required String driveId, String? folderId}) async {
+    _forgetLinkedFolder();
+    final link = ++_followedLinks;
+
+    final current = state;
+    final showingThisDrive = driveId == _driveId &&
+        current is DriveDetailLoadSuccess &&
+        current.currentDrive.id == driveId;
+
+    if (!showingThisDrive) {
+      if (folderId == null) {
+        return;
+      }
+
+      final linkedFolder = (driveId: driveId, folderId: folderId);
+      _linkedFolder = linkedFolder;
+
+      // Another drive: its changeDrive is still to come and opens the folder.
+      if (driveId != _driveId) {
+        return;
+      }
+
+      // This drive, but not showing a folder: still opening, or waiting for
+      // its root. No changeDrive will come, so wait for the folder here.
+      final drive =
+          await _driveDao.driveById(driveId: driveId).getSingleOrNull();
+
+      // A changeDrive already under way may have taken the folder over.
+      if (isClosed ||
+          link != _followedLinks ||
+          _driveId != driveId ||
+          drive == null ||
+          _linkedFolder != linkedFolder) {
+        return;
+      }
+
+      _openLinkedFolderWhenItLands(
+        driveId: driveId,
+        folderId: folderId,
+        rootFolderId: drive.rootFolderId,
+      );
+      return;
+    }
+
+    final rootFolderId = current.currentDrive.rootFolderId;
+    final targetId = folderId ?? rootFolderId;
+
+    if (targetId == current.folderInView.folder.id) {
+      return;
+    }
+
+    final folder =
+        await _driveDao.folderById(folderId: targetId).getSingleOrNull();
+
+    if (isClosed || link != _followedLinks || _driveId != driveId) {
+      return;
+    }
+
+    if (folder != null && folder.driveId == driveId) {
+      openFolder(folderId: targetId);
+      return;
+    }
+
+    // Not on this device yet: the root, as for a visitor's link, and then the
+    // folder when the sync writes it.
+    openFolder(folderId: rootFolderId);
+    _openLinkedFolderWhenItLands(
+      driveId: driveId,
+      folderId: targetId,
+      rootFolderId: rootFolderId,
+    );
+  }
+
+  void _forgetLinkedFolder() {
+    _linkedFolder = null;
+    _linkedFolderWatch?.cancel();
+    _linkedFolderWatch = null;
+    _readerMovedWatch?.cancel();
+    _readerMovedWatch = null;
   }
 
   Future<void> openFolder({
@@ -501,12 +823,32 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // previous folder is stale from here on even when the drive is unchanged.
     final loadGeneration = ++_folderLoadGeneration;
 
+    // Whether [selectedItemId] has been found and shown. Once it has, later
+    // ticks of this folder leave the selection to the reader.
+    var revealedSelectedItem = false;
+
+    // A different folder takes the details panel's item with it: what was
+    // picked out of the last folder is not in this one, and the panel kept
+    // describing it while the reader moved on. The drive info panel is about
+    // the drive, which has not changed, and a search result names the item it
+    // wants shown. Re-opening the folder in view - a sort, a refresh - is not
+    // moving on, so the reader's pick survives that.
+    final inView = state;
+    if (selectedItemId == null &&
+        _selectedItem is! DriveDataItem &&
+        inView is DriveDetailLoadSuccess &&
+        (folderId ?? inView.currentDrive.rootFolderId) !=
+            inView.folderInView.folder.id) {
+      _selectedItem = null;
+    }
+
     // A new folder redraws immediately whatever the last one did: the throttle
     // exists to stop a folder flickering as it fills, not to delay one being
     // opened.
     _lastFolderRedraw = null;
     _droppedFolderRedraw = false;
     _lastFolderContents = null;
+    _lastDrive = null;
 
     if (isClosed) {
       return;
@@ -597,11 +939,25 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           // Those redraws are pure waste: they parse the same rows, rebuild
           // the same breadcrumb and emit the same list.
           //
-          // FolderWithContents is Equatable, so this is exact rather than a
-          // heuristic: skip only when nothing a reader could see has changed.
-          // Unlike the interval below it, this never delays anything - a tick
-          // that carries a real change is never the one dropped here.
+          // FolderWithContents is Equatable and Drive is a Drift data class,
+          // so this is exact rather than a heuristic: skip only when neither
+          // has changed at all. Unlike the interval below it, this never
+          // delays anything - a tick that carries a real change is never the
+          // one dropped here.
+          //
+          // The drive is compared as well as the contents. Rename Drive writes
+          // only the drive row, so comparing contents alone dropped the one
+          // tick carrying the new name, and the breadcrumb kept the old one.
+          //
+          // The cost is a redraw for drive-row writes nobody sees: the
+          // watermark at the end of each drive's sync, and, for a private
+          // drive, the key re-encrypted with a fresh nonce when
+          // `updateUserDrives` runs at the start of a sync. A few per sync,
+          // not one per batch. Comparing only the fields this page shows
+          // would save them, at the price of a list to keep in step with the
+          // page.
           if (_lastFolderContents == folderContents &&
+              _lastDrive == drive &&
               this.state is DriveDetailLoadSuccess) {
             return;
           }
@@ -620,13 +976,17 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           // drive mid-sync is immediate. After that, at most one redraw per
           // [_folderRedrawInterval] for as long as a sync is writing this
           // drive; once nothing is, every tick lands as before.
-          if (SyncCubit.syncTouchesDrive(
-            state: _syncCubit.state,
-            syncingDriveId: _syncCubit.syncingDriveId,
-            completedDriveIds: _syncCubit.completedDriveIds,
-            runDriveIds: _syncCubit.syncingDriveIds,
-            driveId: driveId,
-          )) {
+          //
+          // Only once the folder is on screen. While the loading panel is
+          // still up, the tick being dropped could be the one that ends it.
+          if (this.state is DriveDetailLoadSuccess &&
+              SyncCubit.syncTouchesDrive(
+                state: _syncCubit.state,
+                syncingDriveId: _syncCubit.syncingDriveId,
+                completedDriveIds: _syncCubit.completedDriveIds,
+                runDriveIds: _syncCubit.syncingDriveIds,
+                driveId: driveId,
+              )) {
             final last = _lastFolderRedraw;
             final now = DateTime.now();
 
@@ -667,6 +1027,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           // matched what had been recorded and was skipped as a no-op. The
           // file did not appear until something else changed the folder.
           _lastFolderContents = folderContents;
+          _lastDrive = drive;
 
           final state = this.state is DriveDetailLoadSuccess
               ? this.state as DriveDetailLoadSuccess
@@ -719,6 +1080,18 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           final driveIsEmpty =
               folderContents.files.isEmpty && folderContents.subfolders.isEmpty;
 
+          if (driveIsEmpty &&
+              (drive.lastBlockHeight ?? 0) == 0 &&
+              !_rootFromNetwork.containsKey(driveId)) {
+            _rootFromNetwork[driveId] = await _rootIsFromNetwork(drive);
+
+            if (isClosed ||
+                driveId != _driveId ||
+                loadGeneration != _folderLoadGeneration) {
+              return;
+            }
+          }
+
           // A drive that renders with nothing in it is ambiguous: it may be
           // genuinely empty, or its contents may simply never have synced.
           // Telling someone their drive is empty when we have not actually
@@ -748,6 +1121,8 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             }
 
             if (rootFolderRevision == null) {
+              _rootFromNetwork[driveId] = true;
+
               // Unless a sync is writing this drive right now, in which case
               // the root revision has simply not landed *yet*.
               //
@@ -788,14 +1163,35 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               emit(DriveDetailLoadUnsynced(drive: drive));
               return;
             }
+
+            // The root revision is in, but on a first walk it lands before
+            // anything inside it, so the drive stays on the loading panel
+            // until its first contents do. Ended by the tick that writes them,
+            // or, for a drive that really is empty, by the sync finishing.
+            if (this.state is! DriveDetailLoadSuccess &&
+                contentsMayStillArrive(drive)) {
+              _awaitingRootRevisionFor = driveId;
+
+              if (this.state is! DriveDetailLoadInProgress) {
+                emit(DriveDetailLoadInProgress());
+              }
+
+              return;
+            }
           }
+
+          _awaitingRootRevisionFor = null;
 
           final currentFolderContents = parseEntitiesToDatatableItem(
             folder: folderContents,
             isOwner: isDriveOwner(_auth, drive.ownerAddress),
           );
 
-          if (selectedItemId != null) {
+          // Only for the first draw of the folder: later ticks are the folder
+          // changing under the reader, who may have moved on from the item.
+          var revealSelectedItem = false;
+
+          if (selectedItemId != null && !revealedSelectedItem) {
             // `firstWhere` without `orElse` throws when it finds nothing, and
             // there are ordinary reasons for it to find nothing here: the file
             // was moved or deleted between the search and the tap, or hidden
@@ -804,6 +1200,14 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
             _selectedItem = currentFolderContents
                 .where((element) => element.id == selectedItemId)
                 .firstOrNull;
+
+            // Not found can mean not synced yet, so a later tick may still
+            // find it.
+            if (_selectedItem != null) {
+              revealedSelectedItem = true;
+              revealSelectedItem = true;
+              _revealSelectedItem = true;
+            }
           }
 
           final List<BreadCrumbRowInfo> pathSegments =
@@ -829,16 +1233,22 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 folderInView: folderContents,
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,
-                rowsPerPage: availableRowsPerPage.first,
+                rowsPerPage: _rowsPerPage,
                 availableRowsPerPage: availableRowsPerPage,
                 currentFolderContents: currentFolderContents,
                 pathSegments: pathSegments,
                 driveIsEmpty: driveIsEmpty,
+                contentsStillArriving: contentsMayStillArrive(drive),
                 showSelectedItemDetails: _selectedItem != null,
+                revealSelectedItem: _revealSelectedItem,
+                // The table is kept when the folder is unchanged, so one
+                // already on screen has to be rebuilt to go to the item.
+                forceRebuildKey: revealSelectedItem ? UniqueKey() : null,
               ),
             );
           } else {
             final columnsVisibility = await getTableColumnVisibility();
+            _rowsPerPage = await _storedRowsPerPage();
 
             if (isClosed ||
                 driveId != _driveId ||
@@ -856,13 +1266,15 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 folderInView: folderContents,
                 contentOrderBy: contentOrderBy,
                 contentOrderingMode: contentOrderingMode,
-                rowsPerPage: availableRowsPerPage.first,
+                rowsPerPage: _rowsPerPage,
                 availableRowsPerPage: availableRowsPerPage,
                 driveIsEmpty: driveIsEmpty,
+                contentsStillArriving: contentsMayStillArrive(drive),
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,
                 showSelectedItemDetails: _selectedItem != null,
+                revealSelectedItem: _revealSelectedItem,
               ),
             );
           }
@@ -942,21 +1354,88 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _selectedItem = item;
 
-    int? selectedPage;
-
     if (openSelectedPage) {
-      selectedPage =
-          state.currentFolderContents.indexOf(item) ~/ state.rowsPerPage;
+      _revealSelectedItem = true;
     }
 
     emit(
       state.copyWith(
         selectedItem: item,
         showSelectedItemDetails: true,
-        selectedPage: selectedPage,
-        forceRebuildKey: selectedPage != null ? UniqueKey() : null,
+        revealSelectedItem: openSelectedPage ? true : null,
+        forceRebuildKey: openSelectedPage ? UniqueKey() : null,
       ),
     );
+  }
+
+  /// The page the file table last showed in [folderId], if it has been
+  /// visited this session.
+  int? pageForFolder(String folderId) {
+    final firstRow = _firstRowByFolder[folderId];
+    return firstRow == null ? null : firstRow ~/ _rowsPerPage;
+  }
+
+  /// How far down that page the list was scrolled.
+  double? scrollOffsetForFolder(String folderId) =>
+      _scrollOffsetByFolder[folderId];
+
+  /// The file table moved to [page] in [folderId].
+  void rememberPage(String folderId, int page) {
+    final firstRow = page * _rowsPerPage;
+
+    if (_firstRowByFolder[folderId] != firstRow) {
+      _firstRowByFolder[folderId] = firstRow;
+      // A new page is shown from its top.
+      _scrollOffsetByFolder.remove(folderId);
+    }
+
+    // The table reports the page it opened on when asked to show an item, so
+    // this is also where that request is known to be done.
+    if (_revealSelectedItem) {
+      _revealSelectedItem = false;
+      final state = this.state;
+      if (state is DriveDetailLoadSuccess && !isClosed) {
+        emit(state.copyWith(revealSelectedItem: false));
+      }
+    }
+  }
+
+  /// The column sort picked in [folderId], if one has been this session.
+  ({int column, TableSort order})? sortForFolder(String folderId) =>
+      _sortByFolder[folderId];
+
+  /// A column sort picked from the file table's header in [folderId].
+  void rememberSort(String folderId, int column, TableSort order) {
+    _sortByFolder[folderId] = (column: column, order: order);
+  }
+
+  void rememberScrollOffset(String folderId, double offset) {
+    _scrollOffsetByFolder[folderId] = offset;
+  }
+
+  /// A page size chosen in the file table, kept on this device.
+  Future<void> setRowsPerPage(int rowsPerPage) async {
+    if (rowsPerPage == _rowsPerPage) {
+      return;
+    }
+
+    _rowsPerPage = rowsPerPage;
+
+    final state = this.state;
+    if (state is DriveDetailLoadSuccess && !isClosed) {
+      emit(state.copyWith(rowsPerPage: rowsPerPage));
+    }
+
+    await (await _store()).putString(_rowsPerPageKey, '$rowsPerPage');
+  }
+
+  Future<int> _storedRowsPerPage() async {
+    final stored =
+        int.tryParse((await _store()).getString(_rowsPerPageKey) ?? '');
+
+    return rowsPerPageOptions.contains(stored)
+        ? stored!
+        : rowsPerPageOptions.first;
   }
 
   ArDriveDataTableItem? _selectedItem;
@@ -1172,6 +1651,18 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   }
 
   Future<void> updateTableColumnVisibility(TableColumn column) async {
+    // Into the state as well as the store: the table is built from the state,
+    // and a choice kept only in the store was undone by the next folder.
+    final state = this.state;
+    if (state is DriveDetailLoadSuccess && !isClosed) {
+      emit(state.copyWith(
+        columnVisibility: {
+          ...state.columnVisibility,
+          column.index: column.isVisible,
+        },
+      ));
+    }
+
     (await _store()).putBool(
       'drive_detail_column_${column.index}',
       column.isVisible,
@@ -1406,12 +1897,36 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       return;
     }
 
+    // The same gate the folder read applies when it finds no root revision:
+    // a drive a sync is writing right now has simply not got its root folder
+    // *yet*. A drive opened a moment ago from the sign-in screen arrives here
+    // on its first tick, before the sync it started has written anything, and
+    // "Drive not synced" with a Sync button flashed over the files that were
+    // seconds away. Waiting on the loading panel is ended by the write
+    // itself, or by [_recoverIfStillWaiting] if the sync ends without one.
+    if (SyncCubit.syncTouchesDrive(
+      state: _syncCubit.state,
+      syncingDriveId: _syncCubit.syncingDriveId,
+      completedDriveIds: _syncCubit.completedDriveIds,
+      runDriveIds: _syncCubit.syncingDriveIds,
+      driveId: driveId,
+    )) {
+      _awaitingRootRevisionFor = driveId;
+
+      if (state is! DriveDetailLoadInProgress) {
+        emit(DriveDetailLoadInProgress());
+      }
+
+      return;
+    }
+
     emit(DriveDetailLoadUnsynced(drive: drive));
   }
 
   @override
   Future<void> close() {
     _folderSubscription?.cancel();
+    _forgetLinkedFolder();
     _syncSubscription?.cancel();
     _allImagesOfCurrentFolder = null;
     return super.close();

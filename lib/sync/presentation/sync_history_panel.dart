@@ -2,12 +2,12 @@ import 'package:ardrive/sync/domain/sync_run.dart';
 import 'package:ardrive/sync/domain/sync_trigger.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:intl/intl.dart';
 
 /// The key the panel hangs off, so a test can find it whatever it is showing.
 const Key syncHistoryPanelKey = Key('syncHistoryPanel');
@@ -222,7 +222,7 @@ String formatSyncRunStartedAt(
     return appLocalizationsOf(context).syncHistoryHoursAgo(elapsed.inHours);
   }
 
-  return DateFormat.yMMMd().add_jm().format(run.startedAt);
+  return formatDateTime(run.startedAt);
 }
 
 /// Who asked for this sync.
@@ -314,10 +314,7 @@ Future<void> showSyncHistoryModal(BuildContext context) {
                 appLocalizationsOf(context)
                     .syncHistoryDescription(syncHistoryLimit),
                 style: ArDriveTypographyNew.of(context).paragraphSmall(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colorTokens
-                      .textMid,
+                  color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
                 ),
               ),
               const SizedBox(height: 12),

@@ -328,7 +328,7 @@ void main() {
 
   group('level 1: which drive, and for how long', () {
     testWidgets('a single-drive sync names the drive', (tester) async {
-      // The banner said "Syncing Drive" and never named it, on either
+      // The banner said "Syncing drive" and never named it, on either
       // breakpoint. The cubit knows which drive from the first frame; the
       // drives list is the only thing that knows what it is called.
       await tester.pumpWidget(host());
@@ -342,7 +342,7 @@ void main() {
       await openMenu(tester);
 
       expect(find.text("Syncing 'Family Photos'..."), findsOneWidget);
-      expect(find.text('Syncing Drive'), findsNothing);
+      expect(find.text('Syncing drive'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -376,7 +376,7 @@ void main() {
       );
       await openMenu(tester);
 
-      expect(find.text('Syncing Drive'), findsOneWidget);
+      expect(find.text('Syncing drive'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -389,7 +389,7 @@ void main() {
       await startSyncing(tester);
       await openMenu(tester);
 
-      expect(find.text('Syncing All Drives'), findsOneWidget);
+      expect(find.text('Syncing all drives'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -562,7 +562,7 @@ void main() {
     await openMenu(tester);
 
     expect(tester.takeException(), isNull);
-    expect(find.text('All drives'), findsOneWidget);
+    expect(find.text('Your drives'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
   });
@@ -593,7 +593,7 @@ void main() {
       );
       await openMenu(tester);
 
-      expect(find.text('Syncing All Drives'), findsOneWidget);
+      expect(find.text('Syncing all drives'), findsOneWidget);
       expect(find.text('Completing sync...'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
@@ -617,7 +617,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(syncStatusHeaderKey),
-          matching: find.text('Sync Incomplete - Errors Detected'),
+          matching: find.text('Sync incomplete: errors detected'),
         ),
         findsOneWidget,
       );
@@ -641,7 +641,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(syncStatusHeaderKey),
-          matching: find.text('Drives Could Not Be Loaded'),
+          matching: find.text('Drives could not be loaded'),
         ),
         findsOneWidget,
       );
@@ -664,7 +664,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(syncStatusHeaderKey),
-          matching: find.text('Wallet Changed'),
+          matching: find.text('Wallet changed'),
         ),
         findsOneWidget,
       );
@@ -687,7 +687,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byKey(syncStatusHeaderKey),
-          matching: find.text('Sync Cancelled'),
+          matching: find.text('Sync cancelled'),
         ),
         findsOneWidget,
       );
@@ -720,16 +720,22 @@ void main() {
 
       expect(find.text('12 items changed'), findsOneWidget);
 
-      // It has nothing to add to the header afterwards - a finished sync is
-      // not a running one - so the menu's own door to the record is what
-      // carries it from here.
-      await tester.pump(const Duration(seconds: 30));
+      // A finished sync is not a running one, so it has nothing to add to the
+      // header. While the result shows, the menu is the way to the drives
+      // list, where the record now lives.
       await openMenu(tester);
 
       expect(find.byKey(syncStatusHeaderKey), findsNothing);
-      // The record moved to the drives list; what is left here is the way
-      // to the page that carries it.
-      expect(find.text('All drives'), findsOneWidget);
+      expect(find.text('Your drives'), findsOneWidget);
+
+      // And once its few seconds are up it is history: nothing is running and
+      // nothing is waiting to be read, so the indicator goes, menu and all.
+      // This used to find the menu still here, because the glyph outlived
+      // the result until something else rebuilt the top bar.
+      await tester.pump(const Duration(seconds: 30));
+
+      expect(find.byType(ArDriveDropdown), findsNothing);
+      expect(find.text('Your drives'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
     });

@@ -4,6 +4,7 @@ import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
+import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -118,9 +119,10 @@ const double _iconSize = 20;
 /// The narrowest a row may be and still be drawn as three columns - name,
 /// last synced and size - at a text scale of 1.
 ///
-/// Only ever used while a drive's details are open beside the list, because
-/// the two columns it drops, files and created, are what that panel shows for
-/// the drive it is about. Derived the same way as [driveListColumnsFrom]: the
+/// Used wherever the five columns do not fit, so a list in a mid-width window
+/// keeps its checkboxes, headings and sorting rather than turning into
+/// cards. The two columns it drops, files and created, are what a drive's
+/// details show. Derived the same way as [driveListColumnsFrom]: the
 /// last synced column keeps its [driveListSyncColumnMinimum], now as four of
 /// twelve shares rather than four of seventeen.
 const double driveListCompactColumnsFrom = 540;
@@ -138,11 +140,12 @@ bool driveListShowsCompactColumns(
 /// Whether a drive's details, [panelWidth] wide, push a list that has
 /// [width] to itself, or cover its right side instead.
 ///
-/// They push, as the explorer's do, while the list can keep its rows as rows:
-/// it has columns now, and still has at least the three beside the panel.
-/// Otherwise they cover. Pushing a list of cards, or pushing a list of rows
-/// into cards, changes how tall every row is, and every row would move under
-/// the pointer between the two clicks of a double-click.
+/// They push, as the explorer's do, while the list keeps at least the three
+/// columns beside the panel. Otherwise they cover. Pushing a list of cards,
+/// or pushing a list of rows into cards, changes how tall every row is, and
+/// every row would move under the pointer between the two clicks of a
+/// double-click. A list that has three columns beside the panel had at least
+/// three without it, so only the narrower width is measured.
 ///
 /// The list caps its own width at [driveListMaxContentWidth], so that is the
 /// width it measures, as it does itself.
@@ -151,16 +154,10 @@ bool driveDetailsPushList({
   required double panelWidth,
   double textScale = 1,
 }) {
-  bool keepsRows(double available, {required bool compact}) {
-    final listWidth = math.min(available, driveListMaxContentWidth);
+  final listWidth = math.min(width - panelWidth, driveListMaxContentWidth);
 
-    return driveListShowsColumns(listWidth, textScale: textScale) ||
-        (compact &&
-            driveListShowsCompactColumns(listWidth, textScale: textScale));
-  }
-
-  return keepsRows(width, compact: false) &&
-      keepsRows(width - panelWidth, compact: true);
+  return driveListShowsColumns(listWidth, textScale: textScale) ||
+      driveListShowsCompactColumns(listWidth, textScale: textScale);
 }
 
 /// The share of a wide row each column gets.
@@ -188,7 +185,7 @@ class DriveListHeader extends StatelessWidget {
     this.showsAllColumns = true,
   });
 
-  /// False for the three columns drawn beside a drive's details - see
+  /// False for the three columns drawn wherever five do not fit - see
   /// [driveListCompactColumnsFrom].
   final bool showsAllColumns;
 
@@ -335,7 +332,7 @@ class DriveListRow extends StatelessWidget {
     this.onChoose,
   });
 
-  /// False for the three columns drawn beside a drive's details - see
+  /// False for the three columns drawn wherever five do not fit - see
   /// [driveListCompactColumnsFrom].
   final bool showsAllColumns;
 
@@ -497,13 +494,15 @@ class DriveListRow extends StatelessWidget {
         Expanded(flex: _syncFlex, child: _syncState(context)),
         const SizedBox(width: _columnGap),
         if (showsAllColumns) ...[
-          Expanded(flex: _filesFlex, child: _files(context)),
+          Expanded(
+              flex: _filesFlex, child: _files(context, underHeading: true)),
           const SizedBox(width: _columnGap),
         ],
         Expanded(flex: _sizeFlex, child: _size(context)),
         if (showsAllColumns) ...[
           const SizedBox(width: _columnGap),
-          Expanded(flex: _createdFlex, child: _created(context)),
+          Expanded(
+              flex: _createdFlex, child: _created(context, underHeading: true)),
         ],
       ],
     );
@@ -532,7 +531,8 @@ class DriveListRow extends StatelessWidget {
           children: [
             // A withheld figure is a mark that means nothing without the
             // column heading above it, and there is no heading here. The row
-            // already says "Never synced", which is the same fact in words.
+            // already says the drive is not synced on this device, which is
+            // the same fact in words.
             if (drive.fileCount != null) _files(context),
             if (drive.totalSize != null) _size(context),
             _created(context),
@@ -636,14 +636,19 @@ class DriveListRow extends StatelessWidget {
     );
   }
 
-  Widget _files(BuildContext context) {
+  // [underHeading] is true in the table, where the column heading already says
+  // what the figure is: "Files" over "15 files" said it twice. The stacked
+  // layout has no headings, so there the words stay.
+  Widget _files(BuildContext context, {bool underHeading = false}) {
     final fileCount = drive.fileCount;
 
     return _figure(
       context,
       fileCount == null
           ? driveListWithheldFigure
-          : appLocalizationsOf(context).driveFileCount(fileCount),
+          : underHeading
+              ? NumberFormat.decimalPattern().format(fileCount)
+              : appLocalizationsOf(context).driveFileCount(fileCount),
       withheld: fileCount == null,
     );
   }
@@ -661,13 +666,16 @@ class DriveListRow extends StatelessWidget {
     );
   }
 
-  Widget _created(BuildContext context) {
+  // See [_files] for [underHeading].
+  Widget _created(BuildContext context, {bool underHeading = false}) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final date = formatDate(drive.dateCreated);
 
     return Text(
-      appLocalizationsOf(context)
-          .driveCreatedOnDate(DateFormat.yMMMd().format(drive.dateCreated)),
+      underHeading
+          ? date
+          : appLocalizationsOf(context).driveCreatedOnDate(date),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: typography
@@ -739,7 +747,7 @@ class _SharedMarker extends StatelessWidget {
 ///
 /// Pulled out of the widget so the thresholds can be checked directly. Every
 /// branch is a different fact, and none of them is allowed to stand in for
-/// another: "Never synced" is not "empty", and a bare "Synced" is not a time.
+/// another: "not synced" is not "empty", and a bare "Synced" is not a time.
 String formatDriveSyncState(
   BuildContext context,
   DriveListItem drive, {
@@ -785,7 +793,7 @@ String formatDriveSyncState(
   }
 
   return appLocalizationsOf(context)
-      .driveSyncedOnDate(DateFormat.yMMMd().format(lastSyncedAt));
+      .driveSyncedOnDate(formatDate(lastSyncedAt));
 }
 
 /// A row's tap, read the way a file manager reads it.

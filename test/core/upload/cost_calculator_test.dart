@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/turbo.dart';
@@ -168,6 +170,22 @@ void main() {
       final result = await convertArToUSD.convertForUSD(10.0);
 
       verify(() => arweaveService.getArUsdConversionRateOrNull()).called(1);
+      expect(result, null);
+    });
+
+    test('convertForUSD gives up on a rate that never arrives', () async {
+      // The rate is fetched with retries and no deadline, so a request that
+      // hangs rather than fails hangs the whole price. `null` is already the
+      // answer for "no rate available" - a hang must reach it too, or the AR
+      // figure that does not need USD at all is lost with it.
+      when(() => arweaveService.getArUsdConversionRateOrNull())
+          .thenAnswer((_) => Completer<double?>().future);
+
+      final result = await ConvertArToUSD(
+        arweave: arweaveService,
+        usdRateTimeout: const Duration(milliseconds: 50),
+      ).convertForUSD(10.0);
+
       expect(result, null);
     });
   });

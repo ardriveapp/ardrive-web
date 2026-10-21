@@ -255,7 +255,7 @@ class AppShellState extends State<AppShell> {
                               color: colorTokens.textOnPrimary),
                         ),
                         TextSpan(
-                          text: 'Update Now!',
+                          text: 'Update now!',
                           recognizer: TapGestureRecognizer()
                             ..onTap = () {
                               showMigratePrivateDrivesModal(context);
@@ -274,7 +274,7 @@ class AppShellState extends State<AppShell> {
                 : GestureDetector(
                     onTap: () => showMigratePrivateDrivesModal(context),
                     child: Text(
-                      'Please update your Private Drives',
+                      'Please update your private drives',
                       style: typography
                           .paragraphNormal(
                             color: colorTokens.textOnPrimary,
@@ -311,9 +311,8 @@ const double mobileAppBarIconSize = _mobileAppBarIconSize;
 /// from the modal instead. What is gained is the band it occupied, on the one
 /// layout where vertical space is the scarce thing.
 ///
-/// A controller per press rather than one held for the life of the bar: the
-/// modal owns the text while it is open and there is nothing to remember once
-/// it closes.
+/// The text is the session's ([SearchSession]), as it is for the search box on
+/// a wider screen, so the sheet opens on the last search.
 class _MobileSearchButton extends StatelessWidget {
   const _MobileSearchButton({this.onNavigateToFolder});
 
@@ -337,10 +336,32 @@ class _MobileSearchButton extends StatelessWidget {
           context: context,
           driveDetailCubit: context.read<DriveDetailCubit>(),
           drivesCubit: context.read<DrivesCubit>(),
-          controller: TextEditingController(),
           onNavigateToFolder: onNavigateToFolder,
         );
       },
+    );
+  }
+}
+
+/// Opens the navigation drawer from the mobile bar.
+///
+/// Named "Show menu" for a screen reader and a hover, as the other menu
+/// buttons are. It had no label, so a reader had nothing to announce for it.
+class MobileDrawerButton extends StatelessWidget {
+  const MobileDrawerButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ArDriveIconButton(
+      icon: ArDriveIcons.menu(
+        // The size every other control in this bar is: the hide toggle, the
+        // sync indicator and the way home all take ArDriveIcon's default, and
+        // this was the only one at 20.
+        size: mobileAppBarIconSize,
+        color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+      ),
+      tooltip: appLocalizationsOf(context).showMenu,
+      onPressed: () => Scaffold.of(context).openDrawer(),
     );
   }
 }
@@ -400,20 +421,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                 padding: const EdgeInsets.only(left: 7.0),
                 child: leading ??
                     (showDrawerButton
-                        ? ArDriveIconButton(
-                            icon: ArDriveIcons.menu(
-                              // The size every other control in this bar is:
-                              // the hide toggle, the sync indicator and the
-                              // way home all take ArDriveIcon's default, and
-                              // this was the only one at 20.
-                              size: _mobileAppBarIconSize,
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgDefault,
-                            ),
-                            onPressed: () => Scaffold.of(context).openDrawer(),
-                          )
+                        ? const MobileDrawerButton()
                         : Container()),
               ),
               if (!showDrawerButton)

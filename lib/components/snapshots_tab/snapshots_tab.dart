@@ -7,6 +7,8 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/utils/user_utils.dart';
 
 /// Tab that displays all snapshots for a drive.
 class SnapshotsTab extends StatelessWidget {
@@ -137,21 +139,29 @@ class SnapshotsTab extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            if (shouldRecommendSnapshot)
+            // Snapshots are signed by the drive owner's wallet, so nobody
+            // else is offered one - a visitor least of all.
+            if (!_canCreateSnapshot(context))
+              const SizedBox.shrink()
+            else if (shouldRecommendSnapshot)
               ArDriveButton(
                 text: appLocalizationsOf(context).createSnapshot,
                 onPressed: () => _launchCreateSnapshotDialog(context),
               )
             else
               // Subtle link for small drives
-              GestureDetector(
-                onTap: () => _launchCreateSnapshotDialog(context),
-                child: Text(
-                  appLocalizationsOf(context).createSnapshotAnyway,
-                  style: typography.paragraphSmall(
-                    color: colorTokens.textLow,
-                  ).copyWith(
-                    decoration: TextDecoration.underline,
+              ArDriveClickArea(
+                child: GestureDetector(
+                  onTap: () => _launchCreateSnapshotDialog(context),
+                  child: Text(
+                    appLocalizationsOf(context).createSnapshotAnyway,
+                    style: typography
+                        .paragraphSmall(
+                          color: colorTokens.textLow,
+                        )
+                        .copyWith(
+                          decoration: TextDecoration.underline,
+                        ),
                   ),
                 ),
               ),
@@ -175,8 +185,7 @@ class SnapshotsTab extends StatelessWidget {
           return _buildRecommendationBanner(context);
         }
 
-        final snapshotIndex =
-            shouldRecommendSnapshot ? index - 1 : index;
+        final snapshotIndex = shouldRecommendSnapshot ? index - 1 : index;
         final snapshot = snapshots[snapshotIndex];
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
@@ -188,7 +197,18 @@ class SnapshotsTab extends StatelessWidget {
     );
   }
 
+  /// Whether the reader can create a snapshot of this drive: its owner, with
+  /// a wallet to sign it. False for everyone else, including a visitor.
+  bool _canCreateSnapshot(BuildContext context) =>
+      isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress);
+
   Widget _buildRecommendationBanner(BuildContext context) {
+    // The banner is a call to create one, so it has nothing to say to a
+    // reader who cannot.
+    if (!_canCreateSnapshot(context)) {
+      return const SizedBox.shrink();
+    }
+
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 

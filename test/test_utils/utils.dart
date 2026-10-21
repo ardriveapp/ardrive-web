@@ -238,6 +238,45 @@ Future<void> addTestFilesToDb(
   });
 }
 
+/// Writes a folder revision for each of [folderIds], the way sync does when a
+/// folder's real metadata lands.
+///
+/// [addTestFilesToDb] writes a revision for every file it inserts but none for
+/// its folders, so to anything that tells a chain-derived row from one this
+/// client invented - the drive state export, `DriveDetailCubit`'s
+/// never-synced check - its folders read as local stand-ins. Call this to say
+/// the folders synced.
+/// Folder revisions as a sync writes them: the metadata transaction is
+/// `confirmed`, because a sync only ever reads metadata that is on chain.
+///
+/// `insertFolderRevision` is the path a *local* change takes and marks it
+/// `pending`, so the status is set afterwards rather than left as that path's.
+Future<void> addFolderRevisionsToDb(
+  Database db, {
+  required String driveId,
+  required Iterable<String> folderIds,
+  DateTime? dateCreated,
+}) async {
+  for (final folderId in folderIds) {
+    await db.driveDao.insertFolderRevision(
+      FolderRevisionsCompanion.insert(
+        folderId: folderId,
+        driveId: driveId,
+        name: folderId,
+        metadataTxId: '${folderId}Meta',
+        action: RevisionAction.create,
+        dateCreated: Value(dateCreated ?? DateTime(2017, 9, 7, 17, 30)),
+      ),
+    );
+    await db.into(db.networkTransactions).insertOnConflictUpdate(
+          NetworkTransactionsCompanion.insert(
+            id: '${folderId}Meta',
+            status: const Value(TransactionStatus.confirmed),
+          ),
+        );
+  }
+}
+
 Future<Transaction> getTestTransaction(String path) async =>
     Transaction.fromJson(json.decode(await File(path).readAsString()));
 

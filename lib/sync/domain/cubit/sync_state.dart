@@ -206,6 +206,7 @@ class SyncComplete extends SyncIdle {
     this.isSingleDriveSync = false,
     this.driveName,
     this.trigger = SyncTrigger.userInitiated,
+    this.firstReadDriveCount = 0,
   });
 
   /// Items this sync wrote, straight off [SyncProgress].
@@ -221,8 +222,19 @@ class SyncComplete extends SyncIdle {
   /// sent a user whose twelve files all landed in one drive looking through
   /// three - and "1 new item across 3 drives" is not a thing that can happen.
   /// The two numbers do not belong in one sentence, and the number of drives
-  /// a sync looked at is not a result worth reporting on its own.
+  /// a sync looked at is not a result worth reporting on its own. The one
+  /// exception is [firstReadDriveCount].
   final int entitiesSynced;
+
+  /// How many drives this sync read from the start, when that is every drive
+  /// it read; otherwise 0.
+  ///
+  /// A first sync on a device reads each drive for the first time, and "29
+  /// items changed" told the reader something had changed when nothing had:
+  /// the drives were read. In this case the drives and the items do belong in
+  /// one sentence, because every item came from one of these drives. Always 0
+  /// for a deep resync, whose count is of what it wrote, not what it read.
+  final int firstReadDriveCount;
 
   /// Entities dropped because their metadata could not be read - files the
   /// user will not see, so the summary says so rather than claiming a clean
@@ -264,6 +276,7 @@ class SyncComplete extends SyncIdle {
         // treats an empty name as no name.
         driveName ?? '',
         trigger,
+        firstReadDriveCount,
         sequence,
       ];
 }

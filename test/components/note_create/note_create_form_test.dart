@@ -56,7 +56,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should find the modal title
-      expect(find.text('Create New Note'), findsOneWidget);
+      expect(find.text('Create new note'), findsOneWidget);
 
       // Should find the .md extension label
       expect(find.text('.md'), findsOneWidget);
@@ -65,8 +65,8 @@ void main() {
       expect(find.byIcon(Icons.menu_book_outlined), findsOneWidget);
 
       // Should find action buttons
-      expect(find.text('CANCEL'), findsOneWidget);
-      expect(find.text('NEXT'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Next'), findsOneWidget);
     });
 
     testWidgets('Create Note button is disabled when name is empty',

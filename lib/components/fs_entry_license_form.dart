@@ -71,7 +71,7 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
         if (state is FsEntryLicenseLoadInProgress) {
           showProgressDialog(
             context,
-            title: 'Licensing Items',
+            title: 'Licensing items',
             // TODO: Localize
             // title: appLocalizationsOf(context).licensingItemsEmphasized,
           );
@@ -294,60 +294,70 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
             final modalTitle = licenseCategory == LicenseCategory.udl
                 ? 'Configure Universal Data License'
                 : licenseCategory == LicenseCategory.cc
-                    ? 'Configure Creative Commons License'
+                    ? 'Configure Creative Commons license'
                     : 'Unsupported license type';
-            return ArDriveScrollBar(
-              child: SingleChildScrollView(
-                child: ArDriveStandardModal(
-                  title: modalTitle,
-                  width: kLargeDialogWidth,
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      LicenseFileList(
-                          fileList: context
-                              .read<FsEntryLicenseBloc>()
-                              .filesToLicense!),
-                      const SizedBox(height: 16),
-                      const Divider(height: 24),
-                      licenseCategory == LicenseCategory.udl
-                          ? UdlParamsForm(
-                              onChangeLicenseFee: () {
-                                setState(() {});
-                              },
-                              formGroup: context
-                                  .watch<FsEntryLicenseBloc>()
-                                  .udlParamsForm,
-                            )
-                          : licenseCategory == LicenseCategory.cc
-                              ? CcTypeForm(
+            final licenseBloc = context.watch<FsEntryLicenseBloc>();
+            final FormGroup activeForm = licenseCategory == LicenseCategory.cc
+                ? licenseBloc.ccTypeForm
+                : licenseBloc.udlParamsForm;
+            // Rebuilt as the form on screen changes, so Next follows it.
+            return ReactiveForm(
+              formGroup: activeForm,
+              child: ReactiveFormConsumer(
+                builder: (context, _, __) => ArDriveScrollBar(
+                  child: SingleChildScrollView(
+                    child: ArDriveStandardModal(
+                      title: modalTitle,
+                      width: kLargeDialogWidth,
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          LicenseFileList(
+                              fileList: context
+                                  .read<FsEntryLicenseBloc>()
+                                  .filesToLicense!),
+                          const SizedBox(height: 16),
+                          const Divider(height: 24),
+                          licenseCategory == LicenseCategory.udl
+                              ? UdlParamsForm(
+                                  onChangeLicenseFee: () {
+                                    setState(() {});
+                                  },
                                   formGroup: context
                                       .watch<FsEntryLicenseBloc>()
-                                      .ccTypeForm,
+                                      .udlParamsForm,
                                 )
-                              : const Text('Unsupported license type'),
-                    ],
+                              : licenseCategory == LicenseCategory.cc
+                                  ? CcTypeForm(
+                                      formGroup: context
+                                          .watch<FsEntryLicenseBloc>()
+                                          .ccTypeForm,
+                                    )
+                                  : const Text('Unsupported license type'),
+                        ],
+                      ),
+                      actions: [
+                        ModalAction(
+                          action: () => context
+                              .read<FsEntryLicenseBloc>()
+                              .add(const FsEntryLicenseConfigurationBack()),
+                          title: appLocalizationsOf(context).backEmphasized,
+                        ),
+                        ModalAction(
+                          // The form on screen, not always the UDL one: with no
+                          // Creative Commons type preselected, gating on the UDL
+                          // form let a CC license go on with none chosen.
+                          isEnable: activeForm.valid,
+                          action: () => context
+                              .read<FsEntryLicenseBloc>()
+                              .add(const FsEntryLicenseConfigurationSubmit()),
+                          title: appLocalizationsOf(context).nextEmphasized,
+                        ),
+                      ],
+                    ),
                   ),
-                  actions: [
-                    ModalAction(
-                      action: () => context
-                          .read<FsEntryLicenseBloc>()
-                          .add(const FsEntryLicenseConfigurationBack()),
-                      title: appLocalizationsOf(context).backEmphasized,
-                    ),
-                    ModalAction(
-                      isEnable: context
-                          .watch<FsEntryLicenseBloc>()
-                          .udlParamsForm
-                          .valid,
-                      action: () => context
-                          .read<FsEntryLicenseBloc>()
-                          .add(const FsEntryLicenseConfigurationSubmit()),
-                      title: appLocalizationsOf(context).nextEmphasized,
-                    ),
-                  ],
                 ),
               ),
             );

@@ -1,4 +1,5 @@
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/authentication/login/views/modals/open_drive_modal.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/bulk_import/bulk_import_bloc.dart';
 import 'package:ardrive/components/components.dart';
@@ -346,6 +347,7 @@ class NewButton extends StatelessWidget {
                     promptToCreateManifest(
                       context,
                       drive: drive!,
+                      folderId: driveDetailState.folderInView.folder.id,
                       // TODO: for big drives, this might will be slow
                       hasPendingFiles:
                           driveDetailState.currentFolderContents.any(
@@ -619,9 +621,11 @@ class NewButton extends StatelessWidget {
       ];
     } else {
       return [
+        // A visitor opens drives; "attach" is the signed-in word, and the
+        // dialog this opens is titled "Open a drive".
         ArDriveNewButtonItem(
-          onClick: () => attachDrive(context: context),
-          name: appLocalizations.attachDrive,
+          onClick: () => showOpenDriveDialog(context),
+          name: appLocalizations.openAnotherDrive,
           icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),
       ];
@@ -689,9 +693,11 @@ class NewButton extends StatelessWidget {
       ];
     } else {
       return [
+        // A visitor opens drives; "attach" is the signed-in word, and the
+        // dialog this opens is titled "Open a drive".
         ArDriveNewButtonItem(
-          onClick: () => attachDrive(context: context),
-          name: appLocalizations.attachDrive,
+          onClick: () => showOpenDriveDialog(context),
+          name: appLocalizations.openAnotherDrive,
           icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),
       ];
@@ -730,7 +736,7 @@ class NewButton extends StatelessWidget {
         );
       },
       isDisabled: isDisabled,
-      name: 'Import from Manifest',
+      name: 'Import from manifest',
       icon: ArDriveIcons.manifest(size: defaultIconSize),
     );
   }

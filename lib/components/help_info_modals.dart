@@ -13,7 +13,7 @@ Future<void> showLicensingInfoModal({
     context,
     content: ArDriveStandardModalNew(
       hasCloseButton: true,
-      title: 'Licensing Your Data',
+      title: 'Licensing your data',
       content: SizedBox(
         width: 450,
         child: Column(
@@ -28,7 +28,7 @@ Future<void> showLicensingInfoModal({
             ),
             const SizedBox(height: 20),
             Text(
-              'Available Options',
+              'Available options',
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.bold,
                 color: colorTokens.textHigh,
@@ -116,7 +116,7 @@ Future<void> showKeyfileInfoModal({
             ),
             const SizedBox(height: 16),
             Text(
-              'Seed Phrases',
+              'Seed phrases',
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.bold,
                 color: colorTokens.textHigh,
@@ -240,7 +240,7 @@ Future<void> showTurboInfoModal({
               const SizedBox(height: 12),
               _buildTable(
                 context,
-                headers: ['Browser', 'Max File Size'],
+                headers: ['Browser', 'Max file size'],
                 rows: [
                   ['Chrome/Edge/Brave', '10 GiB'],
                   ['Safari', '500 MiB'],
@@ -263,7 +263,8 @@ Future<void> showTurboInfoModal({
 }
 
 // Helper widget for bullet points
-Widget _buildBulletPoint(BuildContext context, String title, String description) {
+Widget _buildBulletPoint(
+    BuildContext context, String title, String description) {
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 

@@ -220,8 +220,10 @@ void main() {
       historyIs([run(ago: const Duration(days: 2))]);
       await pumpPanel(tester);
       // The time of day as well as the date: "which sync was that" is usually
-      // a question about a particular morning.
-      expect(find.textContaining('Aug 29, 2026 12:00 PM · '), findsOneWidget);
+      // a question about a particular morning. With its zone, as every time
+      // in the app is shown.
+      expect(find.textContaining('Aug 29, 2026 12:00:00\u00A0PM\u00A0GMT'),
+          findsOneWidget);
     });
   });
 

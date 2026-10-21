@@ -74,15 +74,24 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
     });
   }
 
+  /// Whether the profile name has been asked for. Once is enough: the wallet
+  /// does not change while the modal is up.
+  bool _profileNameRequested = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // This runs again whenever an inherited dependency changes, so it asks
+    // once. And it takes the bloc now, before
+    // the wait: the address can come from the database, the dialog closes as
+    // soon as the login succeeds, and by the time the address arrives this
+    // widget can be gone, taking `context` with it.
+    if (_profileNameRequested) return;
+    _profileNameRequested = true;
+    final profileNameBloc = context.read<ProfileNameBloc>();
     _getWalletAddress().then((walletAddress) {
       logger.d('Loading profile name for anonymous user $walletAddress');
-
-      context
-          .read<ProfileNameBloc>()
-          .add(LoadProfileNameBeforeLogin(walletAddress ?? ''));
+      profileNameBloc.add(LoadProfileNameBeforeLogin(walletAddress ?? ''));
     });
   }
 
@@ -153,7 +162,8 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 return ProfileCardHeader(
                   walletAddress: state.walletAddress,
                   onPressed: () {
-                    openWalletExplorer(state.walletAddress);
+                    openWalletExplorer(state.walletAddress,
+                        isArweave: widget.sourceWalletAddress == null);
                   },
                   isExpanded: true,
                   hasLogoutButton: true,
@@ -170,7 +180,8 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                 walletAddress: state.walletAddress ?? '',
                 onPressed: () {
                   if (state.walletAddress != null) {
-                    openWalletExplorer(state.walletAddress!);
+                    openWalletExplorer(state.walletAddress!,
+                        isArweave: widget.sourceWalletAddress == null);
                   }
                 },
                 isExpanded: true,
