@@ -621,9 +621,11 @@ class NewButton extends StatelessWidget {
       ];
     } else {
       return [
+        // A visitor opens drives; "attach" is the signed-in word, and the
+        // dialog this opens is titled "Open a drive".
         ArDriveNewButtonItem(
           onClick: () => showOpenDriveDialog(context),
-          name: appLocalizations.attachDrive,
+          name: appLocalizations.openAnotherDrive,
           icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),
       ];
@@ -691,9 +693,11 @@ class NewButton extends StatelessWidget {
       ];
     } else {
       return [
+        // A visitor opens drives; "attach" is the signed-in word, and the
+        // dialog this opens is titled "Open a drive".
         ArDriveNewButtonItem(
           onClick: () => showOpenDriveDialog(context),
-          name: appLocalizations.attachDrive,
+          name: appLocalizations.openAnotherDrive,
           icon: ArDriveIcons.iconAttachDrive(size: defaultIconSize),
         ),
       ];
