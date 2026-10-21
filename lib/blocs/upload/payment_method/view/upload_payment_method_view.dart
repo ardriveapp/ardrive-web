@@ -28,12 +28,13 @@ class UploadPaymentMethodView extends StatefulWidget {
   final bool useOptionCards;
 
   @override
-  State<UploadPaymentMethodView> createState() => _UploadPaymentMethodViewState();
+  State<UploadPaymentMethodView> createState() =>
+      _UploadPaymentMethodViewState();
 }
 
 class _UploadPaymentMethodViewState extends State<UploadPaymentMethodView> {
   bool _showCongestionWarning = false;
-  
+
   // Debug flag - set to true to test congestion warning
   static const bool _debugForceCongestionWarning = false;
 
@@ -53,9 +54,10 @@ class _UploadPaymentMethodViewState extends State<UploadPaymentMethodView> {
       }
       return;
     }
-    
+
     try {
-      final mempoolSize = await context.read<ArweaveService>().getMempoolSizeFromArweave();
+      final mempoolSize =
+          await context.read<ArweaveService>().getMempoolSizeFromArweave();
       if (mounted) {
         setState(() {
           _showCongestionWarning = mempoolSize > mempoolWarningSizeLimit;

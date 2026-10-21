@@ -131,7 +131,8 @@ void main() {
   });
 
   group('Fix 1: DriveActivityProbe partitioning', () {
-    test('never-synced drives excluded from probe, probe gets non-zero minBlock',
+    test(
+        'never-synced drives excluded from probe, probe gets non-zero minBlock',
         () async {
       final neverSynced = _makeDrive(
         id: 'drive-never',
@@ -169,9 +170,7 @@ void main() {
       // mocked the full pipeline, but the probe logic runs synchronously
       // before _syncDrive is launched.
       try {
-        await syncRepository
-            .syncAllDrives(wallet: mockWallet)
-            .toList();
+        await syncRepository.syncAllDrives(wallet: mockWallet).toList();
       } catch (_) {}
 
       // Allow async tasks spawned by syncAllDrives to settle
@@ -197,22 +196,17 @@ void main() {
 
     test('all never-synced drives skip probe entirely', () async {
       final drives = [
-        _makeDrive(
-            id: 'a', ownerAddress: ownerAddress, lastBlockHeight: null),
+        _makeDrive(id: 'a', ownerAddress: ownerAddress, lastBlockHeight: null),
         _makeDrive(id: 'b', ownerAddress: ownerAddress, lastBlockHeight: 0),
-        _makeDrive(
-            id: 'c', ownerAddress: ownerAddress, lastBlockHeight: null),
+        _makeDrive(id: 'c', ownerAddress: ownerAddress, lastBlockHeight: null),
       ];
 
-      when(() => mockDriveDao.allDrives())
-          .thenReturn(FakeSelectable(drives));
+      when(() => mockDriveDao.allDrives()).thenReturn(FakeSelectable(drives));
       when(() => mockArweave.getCurrentBlockHeight())
           .thenAnswer((_) async => 100000);
 
       try {
-        await syncRepository
-            .syncAllDrives(wallet: mockWallet)
-            .toList();
+        await syncRepository.syncAllDrives(wallet: mockWallet).toList();
       } catch (_) {}
 
       await Future.delayed(const Duration(milliseconds: 100));
@@ -228,16 +222,12 @@ void main() {
     test('incomplete probe falls back to all previously-synced drives',
         () async {
       final drives = [
-        _makeDrive(
-            id: 'a', ownerAddress: ownerAddress, lastBlockHeight: 50000),
-        _makeDrive(
-            id: 'b', ownerAddress: ownerAddress, lastBlockHeight: 60000),
-        _makeDrive(
-            id: 'c', ownerAddress: ownerAddress, lastBlockHeight: 70000),
+        _makeDrive(id: 'a', ownerAddress: ownerAddress, lastBlockHeight: 50000),
+        _makeDrive(id: 'b', ownerAddress: ownerAddress, lastBlockHeight: 60000),
+        _makeDrive(id: 'c', ownerAddress: ownerAddress, lastBlockHeight: 70000),
       ];
 
-      when(() => mockDriveDao.allDrives())
-          .thenReturn(FakeSelectable(drives));
+      when(() => mockDriveDao.allDrives()).thenReturn(FakeSelectable(drives));
       when(() => mockArweave.getCurrentBlockHeight())
           .thenAnswer((_) async => 100000);
 
@@ -252,9 +242,7 @@ void main() {
           ));
 
       try {
-        await syncRepository
-            .syncAllDrives(wallet: mockWallet)
-            .toList();
+        await syncRepository.syncAllDrives(wallet: mockWallet).toList();
       } catch (_) {}
 
       await Future.delayed(const Duration(milliseconds: 100));
@@ -269,14 +257,11 @@ void main() {
 
     test('probe failure falls back to syncing all drives', () async {
       final drives = [
-        _makeDrive(
-            id: 'a', ownerAddress: ownerAddress, lastBlockHeight: 50000),
-        _makeDrive(
-            id: 'b', ownerAddress: ownerAddress, lastBlockHeight: null),
+        _makeDrive(id: 'a', ownerAddress: ownerAddress, lastBlockHeight: 50000),
+        _makeDrive(id: 'b', ownerAddress: ownerAddress, lastBlockHeight: null),
       ];
 
-      when(() => mockDriveDao.allDrives())
-          .thenReturn(FakeSelectable(drives));
+      when(() => mockDriveDao.allDrives()).thenReturn(FakeSelectable(drives));
       when(() => mockArweave.getCurrentBlockHeight())
           .thenAnswer((_) async => 100000);
 
@@ -287,9 +272,7 @@ void main() {
           )).thenThrow(Exception('network error'));
 
       try {
-        await syncRepository
-            .syncAllDrives(wallet: mockWallet)
-            .toList();
+        await syncRepository.syncAllDrives(wallet: mockWallet).toList();
       } catch (_) {}
 
       await Future.delayed(const Duration(milliseconds: 100));
@@ -304,12 +287,10 @@ void main() {
 
     test('deep sync bypasses probe entirely', () async {
       final drives = [
-        _makeDrive(
-            id: 'a', ownerAddress: ownerAddress, lastBlockHeight: 50000),
+        _makeDrive(id: 'a', ownerAddress: ownerAddress, lastBlockHeight: 50000),
       ];
 
-      when(() => mockDriveDao.allDrives())
-          .thenReturn(FakeSelectable(drives));
+      when(() => mockDriveDao.allDrives()).thenReturn(FakeSelectable(drives));
       when(() => mockArweave.getCurrentBlockHeight())
           .thenAnswer((_) async => 100000);
 
@@ -364,8 +345,7 @@ void main() {
         return {};
       });
       when(() => mockDriveDao.updateUserDrives(any(), any(),
-          creationTimes: any(named: 'creationTimes')))
-          .thenAnswer((_) async {});
+          creationTimes: any(named: 'creationTimes'))).thenAnswer((_) async {});
 
       final first = syncRepository.updateUserDrives(
         wallet: mockWallet,
@@ -394,8 +374,7 @@ void main() {
       when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
           .thenAnswer((_) async => {});
       when(() => mockDriveDao.updateUserDrives(any(), any(),
-          creationTimes: any(named: 'creationTimes')))
-          .thenAnswer((_) async {});
+          creationTimes: any(named: 'creationTimes'))).thenAnswer((_) async {});
 
       await syncRepository.updateUserDrives(
         wallet: mockWallet,
@@ -423,8 +402,7 @@ void main() {
         return {};
       });
       when(() => mockDriveDao.updateUserDrives(any(), any(),
-          creationTimes: any(named: 'creationTimes')))
-          .thenAnswer((_) async {});
+          creationTimes: any(named: 'creationTimes'))).thenAnswer((_) async {});
 
       await expectLater(
         syncRepository.updateUserDrives(
@@ -450,8 +428,7 @@ void main() {
             any(),
           )).thenAnswer((_) async => {});
       when(() => mockDriveDao.updateUserDrives(any(), any(),
-          creationTimes: any(named: 'creationTimes')))
-          .thenAnswer((_) async {});
+          creationTimes: any(named: 'creationTimes'))).thenAnswer((_) async {});
 
       // First call
       await syncRepository.updateUserDrives(
@@ -497,8 +474,7 @@ void main() {
             strategy: any(named: 'strategy'),
           )).thenAnswer((_) => const Stream.empty());
 
-      when(() => mockArweaveForGql.graphQLRetry)
-          .thenReturn(MockGraphQLRetry());
+      when(() => mockArweaveForGql.graphQLRetry).thenReturn(MockGraphQLRetry());
 
       // First getNextStream() processes [0,0] — should be skipped silently
       final stream1 = gqlHistory.getNextStream();

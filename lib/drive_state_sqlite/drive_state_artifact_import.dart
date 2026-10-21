@@ -120,9 +120,8 @@ Future<ArtifactImportResult> importDriveState(
         syncedToBlock: syncedToBlock,
       );
 
-      final meta = await db
-          .customSelect('SELECT * FROM artifact.meta')
-          .getSingle();
+      final meta =
+          await db.customSelect('SELECT * FROM artifact.meta').getSingle();
 
       return await db.transaction(() async {
         final rows = <String, int>{};
@@ -188,8 +187,10 @@ Future<ArtifactImportRefused?> validateAttachedArtifact(
   // One row per problem found, so a corrupt file returns several and
   // getSingle() would throw StateError — losing the refusal this function
   // promises and reporting `Bad state:` from an outer handler instead.
-  final integrity = await db.customSelect('PRAGMA $alias.integrity_check').get();
-  final verdict = integrity.isEmpty ? 'no result' : integrity.first.data.values.first;
+  final integrity =
+      await db.customSelect('PRAGMA $alias.integrity_check').get();
+  final verdict =
+      integrity.isEmpty ? 'no result' : integrity.first.data.values.first;
   if (integrity.length != 1 || verdict != 'ok') {
     return ArtifactImportRefused(
       ArtifactImportRefusal.notADatabase,
@@ -199,12 +200,11 @@ Future<ArtifactImportRefused?> validateAttachedArtifact(
     );
   }
 
-  final applicationId = (await db
-          .customSelect('PRAGMA $alias.application_id')
-          .getSingle())
-      .data
-      .values
-      .first;
+  final applicationId =
+      (await db.customSelect('PRAGMA $alias.application_id').getSingle())
+          .data
+          .values
+          .first;
   if (applicationId != artifactApplicationId) {
     return ArtifactImportRefused(
       ArtifactImportRefusal.unexpectedSchema,
@@ -216,10 +216,12 @@ Future<ArtifactImportRefused?> validateAttachedArtifact(
   // attacker-chosen SQL, so the shape is settled before any row is read.
   // The `_` is escaped: in LIKE it matches any character, which would also
   // skip an object named, say, `sqlitex`.
-  final objects = await db.customSelect(
-    'SELECT type, name, sql FROM $alias.sqlite_master '
-    r"WHERE name NOT LIKE 'sqlite\_%' ESCAPE '\'",
-  ).get();
+  final objects = await db
+      .customSelect(
+        'SELECT type, name, sql FROM $alias.sqlite_master '
+        r"WHERE name NOT LIKE 'sqlite\_%' ESCAPE '\'",
+      )
+      .get();
   final seen = <String, String>{};
   for (final row in objects) {
     final type = row.read<String>('type');
@@ -298,12 +300,14 @@ Future<void> _validate(
     );
   }
 
-  final actual = (await db.customSelect(
-    'SELECT ('
-    '(SELECT count(*) FROM artifact.folder_entries) + '
-    '(SELECT count(*) FROM artifact.file_entries) + '
-    '(SELECT count(*) FROM artifact.drives)) AS c',
-  ).getSingle())
+  final actual = (await db
+          .customSelect(
+            'SELECT ('
+            '(SELECT count(*) FROM artifact.folder_entries) + '
+            '(SELECT count(*) FROM artifact.file_entries) + '
+            '(SELECT count(*) FROM artifact.drives)) AS c',
+          )
+          .getSingle())
       .read<int>('c');
   if (actual != meta.read<int>('entityCount')) {
     throw ArtifactImportRefused(

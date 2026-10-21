@@ -39,13 +39,12 @@ class _FakeRetry extends GraphQLRetry {
     askedFor.add(ids);
 
     final data = InfoOfTransactionsToBePinned$Query()
-      ..transactions =
-          (InfoOfTransactionsToBePinned$Query$TransactionConnection()
-            ..edges = _answer(ids)
-                .map((tx) =>
-                    InfoOfTransactionsToBePinned$Query$TransactionConnection$TransactionEdge()
-                      ..node = tx)
-                .toList());
+      ..transactions = (InfoOfTransactionsToBePinned$Query$TransactionConnection()
+        ..edges = _answer(ids)
+            .map((tx) =>
+                InfoOfTransactionsToBePinned$Query$TransactionConnection$TransactionEdge()
+                  ..node = tx)
+            .toList());
 
     return GraphQLResponse<T>(data: data as T);
   }
@@ -205,8 +204,7 @@ void main() {
     expect(batches.single['a'], isNull);
   });
 
-  test('every id is yielded, batch by batch, when every batch fails',
-      () async {
+  test('every id is yielded, batch by batch, when every batch fails', () async {
     final retry = _FakeRetry((_) => throw GraphQLException('refused'));
     final service = serviceWith(
       retry,

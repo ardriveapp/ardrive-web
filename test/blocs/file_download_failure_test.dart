@@ -49,7 +49,8 @@ void main() {
       );
     });
 
-    test('a resume that cannot be spliced is named as a restart, not as a '
+    test(
+        'a resume that cannot be spliced is named as a restart, not as a '
         'generic network problem', () {
       // Retrying *is* the fix, so this is not the integrity dialog's dead end.
       // But the bytes already delivered are gone, so it is not the network
@@ -62,7 +63,8 @@ void main() {
       );
     });
 
-    test('a body larger than the file claimed is reported as a size problem, '
+    test(
+        'a body larger than the file claimed is reported as a size problem, '
         'not as an unknown one', () {
       expect(
         classifyDownloadError(
@@ -71,7 +73,8 @@ void main() {
       );
     });
 
-    test('a file that failed its authentication check is named as one, and '
+    test(
+        'a file that failed its authentication check is named as one, and '
         'never offered a retry', () {
       // The retryable dialog is what the fallback reason renders, and it is
       // exactly wrong here: the bytes are what they are, so "Try again" is an
@@ -100,8 +103,8 @@ void main() {
     test('a file within the ceiling is not a failure', () {
       expect(
         singleFileLimitFailure(
-          DownloadSizeLimit(publicDownloadSafariSizeLimit,
-              DownloadSizeLimitSource.safari),
+          DownloadSizeLimit(
+              publicDownloadSafariSizeLimit, DownloadSizeLimitSource.safari),
           publicDownloadSafariSizeLimit,
         ),
         isNull,
@@ -115,8 +118,8 @@ void main() {
     test('Safari is explained as a browser limitation', () {
       expect(
         singleFileLimitFailure(
-          DownloadSizeLimit(publicDownloadSafariSizeLimit,
-              DownloadSizeLimitSource.safari),
+          DownloadSizeLimit(
+              publicDownloadSafariSizeLimit, DownloadSizeLimitSource.safari),
           publicDownloadSafariSizeLimit + 1,
         ),
         FileDownloadFailureReason.browserDoesNotSupportLargeDownloads,
@@ -126,8 +129,8 @@ void main() {
     test('a phone is not explained as a browser limitation', () {
       expect(
         singleFileLimitFailure(
-          DownloadSizeLimit(privateDownloadMobileSizeLimit,
-              DownloadSizeLimitSource.mobile),
+          DownloadSizeLimit(
+              privateDownloadMobileSizeLimit, DownloadSizeLimitSource.mobile),
           privateDownloadMobileSizeLimit + 1,
         ),
         FileDownloadFailureReason.fileAboveLimit,
@@ -187,7 +190,8 @@ void main() {
       expect(find.text('Try again'), findsOneWidget);
     });
 
-    testWidgets('never offers a retry for a file that failed its integrity '
+    testWidgets(
+        'never offers a retry for a file that failed its integrity '
         'check, and says nothing was saved', (tester) async {
       await pumpFailure(tester, FileDownloadFailureReason.integrityCheckFailed);
 
@@ -202,7 +206,8 @@ void main() {
       expect(_alertIcon, findsOneWidget);
     });
 
-    testWidgets('a download that cannot be resumed offers a restart, and does '
+    testWidgets(
+        'a download that cannot be resumed offers a restart, and does '
         'not call it trying again', (tester) async {
       await pumpFailure(tester, FileDownloadFailureReason.downloadMustRestart);
 

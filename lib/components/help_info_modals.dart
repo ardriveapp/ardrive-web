@@ -263,7 +263,8 @@ Future<void> showTurboInfoModal({
 }
 
 // Helper widget for bullet points
-Widget _buildBulletPoint(BuildContext context, String title, String description) {
+Widget _buildBulletPoint(
+    BuildContext context, String title, String description) {
   final typography = ArDriveTypographyNew.of(context);
   final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 

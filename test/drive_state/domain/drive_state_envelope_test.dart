@@ -441,8 +441,8 @@ void main() {
 
       final result =
           await codec.seal(plaintext: awkward, protection: privateDrive);
-      final opened =
-          await codec.open(envelope: result.envelope!, protection: privateDrive);
+      final opened = await codec.open(
+          envelope: result.envelope!, protection: privateDrive);
 
       expect(opened.isOpened, isTrue, reason: opened.toString());
       expect(opened.plaintext, equals(awkward));
@@ -451,8 +451,8 @@ void main() {
     test('opens an empty payload it sealed itself', () async {
       final result =
           await codec.seal(plaintext: Uint8List(0), protection: privateDrive);
-      final opened =
-          await codec.open(envelope: result.envelope!, protection: privateDrive);
+      final opened = await codec.open(
+          envelope: result.envelope!, protection: privateDrive);
 
       expect(opened.isOpened, isTrue, reason: opened.toString());
       expect(opened.plaintext, isEmpty);

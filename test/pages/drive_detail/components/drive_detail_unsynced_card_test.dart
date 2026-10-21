@@ -318,7 +318,8 @@ void main() {
             surface: layout.value,
           );
 
-          final button = find.widgetWithText(ArDriveButtonNew, 'Sync this drive');
+          final button =
+              find.widgetWithText(ArDriveButtonNew, 'Sync this drive');
           expect(button, findsOneWidget);
 
           // Scrolled to, not assumed on screen: the card is allowed to be

@@ -38,10 +38,12 @@ class ArIOGatewaySelectorModal extends StatelessWidget {
 
 class _ArIOGatewaySelectorModalContent extends StatefulWidget {
   @override
-  State<_ArIOGatewaySelectorModalContent> createState() => _ArIOGatewaySelectorModalContentState();
+  State<_ArIOGatewaySelectorModalContent> createState() =>
+      _ArIOGatewaySelectorModalContentState();
 }
 
-class _ArIOGatewaySelectorModalContentState extends State<_ArIOGatewaySelectorModalContent> {
+class _ArIOGatewaySelectorModalContentState
+    extends State<_ArIOGatewaySelectorModalContent> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -61,7 +63,7 @@ class _ArIOGatewaySelectorModalContentState extends State<_ArIOGatewaySelectorMo
           final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
           final typography = ArDriveTypographyNew.of(context);
           final garBloc = context.read<GarBloc>();
-          
+
           return ArDriveStandardModalNew(
             width: 500,
             title: 'Select AR.IO Gateway',
@@ -89,7 +91,8 @@ class _ArIOGatewaySelectorModalContentState extends State<_ArIOGatewaySelectorMo
                   const SizedBox(height: 16),
                   Expanded(
                     child: ListView.separated(
-                      separatorBuilder: (context, index) => const SizedBox(height: 4),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 4),
                       shrinkWrap: true,
                       itemCount: state.searchResults != null
                           ? state.searchResults!.length
@@ -153,7 +156,8 @@ class _ArIOGatewaySelectorModalContentState extends State<_ArIOGatewaySelectorMo
           return ArDriveStandardModalNew(
             hasCloseButton: true,
             title: 'Error',
-            description: 'An error occurred while loading the gateways. Please try again.',
+            description:
+                'An error occurred while loading the gateways. Please try again.',
             actions: [
               ModalAction(
                 action: () {

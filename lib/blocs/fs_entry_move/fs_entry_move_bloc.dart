@@ -305,8 +305,7 @@ class FsEntryMoveBloc extends Bloc<FsEntryMoveEvent, FsEntryMoveState> {
 
       for (final prepared in preparedFolderMoves) {
         await _driveDao.writeToFolder(prepared.key);
-        await _driveDao
-            .insertFolderRevision(prepared.value.toRevisionCompanion(
+        await _driveDao.insertFolderRevision(prepared.value.toRevisionCompanion(
           performedAction: RevisionAction.move,
         ));
 

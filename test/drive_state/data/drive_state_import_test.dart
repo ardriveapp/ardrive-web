@@ -153,7 +153,7 @@ void main() {
             signedCoverage ?? {'blockStart': blockStart, 'blockEnd': blockEnd};
         payload = editArtifact(payload, [
           'UPDATE meta SET blockStart = ${coverage['blockStart']}, '
-          'blockEnd = ${coverage['blockEnd']}',
+              'blockEnd = ${coverage['blockEnd']}',
         ]);
       }
     }
@@ -2467,8 +2467,7 @@ void main() {
       expect(await fileRows(db), isEmpty);
     });
 
-    test('a table this reader does not know is refused, not ignored',
-        () async {
+    test('a table this reader does not know is refused, not ignored', () async {
       // The JSON payload ignored a section it did not know, so a producer
       // could add an optional one without stranding older clients. The SQLite
       // container reverses that on purpose: the schema gate matches
@@ -2683,7 +2682,8 @@ void main() {
       expect(result.outcome, DriveStateOutcome.integrityFailed);
     });
 
-    test('a signed payload whose version is not this build\'s is refused, '
+    test(
+        'a signed payload whose version is not this build\'s is refused, '
         'in both directions', () async {
       // The tag is the one this build reads and passes; the version inside
       // the signature is what refuses the artifact. That is the copy that

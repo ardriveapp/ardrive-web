@@ -1,4 +1,3 @@
-
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_export.dart';
 import 'package:ardrive/drive_state/domain/drive_state_envelope.dart';
@@ -207,7 +206,6 @@ extension DriveStateEnvelopeFailureOutcome on DriveStateEnvelopeFailure {
           DriveStateOutcome.privacyMismatch,
         DriveStateEnvelopeFailure.ciphertextForPublicDrive =>
           DriveStateOutcome.privacyMismatch,
-
         DriveStateEnvelopeFailure.decryptionFailed =>
           DriveStateOutcome.decryptFailed,
 

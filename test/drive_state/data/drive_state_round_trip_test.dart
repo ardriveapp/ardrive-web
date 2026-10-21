@@ -1555,11 +1555,9 @@ void main() {
 /// The producer's own sync watermark, which is what an artifact may claim and
 /// nothing more.
 Future<int> _watermark(Database db, String driveId) async {
-  final row = await db
-      .customSelect(
-        'SELECT lastBlockHeight FROM drives WHERE id = ?',
-        variables: [Variable<String>(driveId)],
-      )
-      .getSingle();
+  final row = await db.customSelect(
+    'SELECT lastBlockHeight FROM drives WHERE id = ?',
+    variables: [Variable<String>(driveId)],
+  ).getSingle();
   return row.readNullable<int>('lastBlockHeight') ?? 0;
 }
