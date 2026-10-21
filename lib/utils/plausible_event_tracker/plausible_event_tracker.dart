@@ -246,7 +246,7 @@ abstract class PlausibleEventTracker {
     );
   }
 
-  /// The "Open it without logging in" link on the welcome page.
+  /// The "Open a drive without logging in" link on the welcome page.
   static Future<void> trackClickOpenDriveAsVisitor() {
     return _trackCustomEvent(
       page: PlausiblePageView.welcomePage,

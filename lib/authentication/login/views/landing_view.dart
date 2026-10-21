@@ -85,31 +85,26 @@ class _LandingViewState extends State<LandingView> {
               const SizedBox(height: 40),
               const LinedTextDivider(),
               const SizedBox(height: 24),
-              Text(
-                appLocalizationsOf(context).openDriveLandingQuestion,
-                textAlign: TextAlign.center,
-                style: typography.paragraphNormal(
-                  color: colorTokens.textLow,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
-              ),
-              const SizedBox(height: 4),
               Center(
                 child: ArDriveClickArea(
                   // An InkWell rather than a bare gesture, so the link takes
-                  // keyboard focus and reads as a button to a screen reader.
-                  child: InkWell(
-                    key: const Key('openDriveLandingLink'),
-                    onTap: () {
-                      PlausibleEventTracker.trackClickOpenDriveAsVisitor();
-                      showOpenDriveDialog(context);
-                    },
-                    child: Text(
-                      appLocalizationsOf(context).openDriveLandingAction,
-                      textAlign: TextAlign.center,
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textLink,
-                        fontWeight: ArFontWeight.semiBold,
+                  // keyboard focus; the semantics say it is a button, which
+                  // an InkWell around plain text does not on its own.
+                  child: Semantics(
+                    button: true,
+                    child: InkWell(
+                      key: const Key('openDriveLandingLink'),
+                      onTap: () {
+                        PlausibleEventTracker.trackClickOpenDriveAsVisitor();
+                        showOpenDriveDialog(context);
+                      },
+                      child: Text(
+                        appLocalizationsOf(context).openDriveLandingAction,
+                        textAlign: TextAlign.center,
+                        style: typography.paragraphNormal(
+                          color: colorTokens.textLink,
+                          fontWeight: ArFontWeight.semiBold,
+                        ),
                       ),
                     ),
                   ),

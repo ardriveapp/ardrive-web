@@ -114,7 +114,13 @@ class OpenDriveCubit extends Cubit<OpenDriveState> {
     _driveKey = null;
 
     if (raw.trim().isEmpty || current.keyAccepted) {
-      emit(current.copyWith(name: null, keyRejected: false));
+      // A key cleared mid-check also ends the check it was having: the
+      // answer is for a key that is gone, and the progress bar with it.
+      emit(current.copyWith(
+        name: null,
+        keyRejected: false,
+        validating: false,
+      ));
     }
 
     if (raw.trim().isEmpty) {

@@ -2599,13 +2599,9 @@
   "@openDriveKeyRejected": {
     "description": "Open a drive dialog: the drive key did not decrypt the drive"
   },
-  "openDriveLandingAction": "Open it without logging in",
+  "openDriveLandingAction": "Open a drive without logging in",
   "@openDriveLandingAction": {
     "description": "Text link on the welcome page that opens the Open a drive dialog"
-  },
-  "openDriveLandingQuestion": "Have a drive link or drive ID?",
-  "@openDriveLandingQuestion": {
-    "description": "Line above the Open it without signing in link on the welcome page"
   },
   "openDriveNetworkError": "Couldn't reach the network. Check your connection and try again.",
   "@openDriveNetworkError": {
