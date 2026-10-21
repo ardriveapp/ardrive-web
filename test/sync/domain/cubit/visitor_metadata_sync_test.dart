@@ -72,7 +72,7 @@ void main() {
     when(() => config.autoSync).thenReturn(false);
     when(() => config.autoSyncIntervalInSeconds).thenReturn(3600);
     when(() => userPreferencesRepository.load()).thenAnswer(
-      (_) async => UserPreferences(
+      (_) async => const UserPreferences(
         currentTheme: ArDriveThemes.dark,
         lastSelectedDriveId: null,
         syncAllDrivesOnLogin: false,

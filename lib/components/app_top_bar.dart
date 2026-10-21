@@ -1,7 +1,6 @@
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'dart:async';
 
-import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
@@ -890,7 +889,6 @@ class _SyncButtonMenu extends StatelessWidget {
 
   final Widget child;
 
-  @override
   bool _canShowDrivesList(BuildContext context) {
     final profile = context.read<ProfileCubit?>();
 
@@ -898,6 +896,7 @@ class _SyncButtonMenu extends StatelessWidget {
         AppRouterDelegate.canShowDrivesList(profile.state);
   }
 
+  @override
   Widget build(BuildContext context) {
     final status = this.status;
     final iconColor = ArDriveTheme.of(context).themeData.colors.themeFgDefault;
