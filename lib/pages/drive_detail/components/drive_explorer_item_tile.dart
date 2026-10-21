@@ -1209,9 +1209,10 @@ class EntityActionsMenu extends StatelessWidget {
           ),
         ),
       ],
-      // The gateway serves a private file's encrypted bytes, so only a public
-      // drive's files open in a new window - as the row menu already decides.
-      if (drive == null || drive!.isPublic)
+      // The gateway serves a private file's encrypted bytes, so only a file
+      // of a drive known to be public opens in a new window - as the row menu
+      // already decides. No drive means no proof, so no preview.
+      if (drive?.isPublic ?? false)
         ArDriveDropdownItem(
           onClick: () {
             final bloc = context.read<DriveDetailCubit>();

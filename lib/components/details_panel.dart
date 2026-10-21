@@ -978,6 +978,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           leading = _FileRevisionOptions(
             fileRevision: FileRevisionBase.fromFileRevisionWithLicense(
                 fileRevisionWithLicenseAndTransactions),
+            drive: widget.currentDrive,
           );
         }
 
@@ -1000,6 +1001,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
           leading = _FileRevisionOptions(
             fileRevision: FileRevisionBase.fromFileRevisionWithLicense(
                 fileRevisionWithLicenseAndTransactions),
+            drive: widget.currentDrive,
           );
         }
 
@@ -1379,9 +1381,15 @@ class _DownloadOrPreview extends StatelessWidget {
 class _FileRevisionOptions extends StatelessWidget {
   const _FileRevisionOptions({
     required this.fileRevision,
+    required this.drive,
   });
 
   final FileRevisionBase fileRevision;
+
+  /// The drive the revision belongs to, so the menu can tell a public
+  /// revision, which may open in a new window, from a private one, whose
+  /// bytes the gateway serves encrypted.
+  final Drive? drive;
 
   @override
   Widget build(BuildContext context) {
@@ -1389,6 +1397,7 @@ class _FileRevisionOptions extends StatelessWidget {
 
     return EntityActionsMenu(
       item: item,
+      drive: drive,
       isFileRevision: true,
       withInfo: false,
       // bottom right to top left
