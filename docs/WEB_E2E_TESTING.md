@@ -349,6 +349,7 @@ should see. Keep it short: it's the floor, not every case.
 | 12 | Switch to dark mode and back | The drive list and upload dialog are readable in both |
 | 13 | Log out and log back in | Login works; the drives are listed |
 | 14 | Open a drive, then paste a folder link from another drive into the same tab (`location.hash = '#/drives/…/folders/…'` in a step), then go Back | The linked folder opens and the sidebar moves to its drive; Back returns to the first drive |
+| 15 | Before journey 1, on the fresh profile: *Open a drive without logging in* on the sign-in screen with *New Test Drive*'s ID, then New → Attach drive with a keyed share link to *Private Drive Test* (make the link signed in: Share drive, *Include the key in the link*, Copy link; save it to a file, never print it), then *Log in* from the explorer with the keyfile and password | The public drive shows "Syncing drive" at once and its files when the sync ends, no attach dialog; the private drive's names decrypt; the login lands back on Private Drive Test under the wallet's own drives |
 
 ### When a bug reaches users
 
@@ -356,7 +357,10 @@ Add a journey for it to the release checklist, in the same change as the fix
 if you can. Journey 7 is there because wallet-paid uploads whose chunks
 failed were never retried (October 2026). Journey 14 is there because a link
 pasted into a tab that already had ArDrive open did nothing (October 2026).
-The checklist grows from real failures, not guesses.
+Journey 15 is there because opening a drive without logging in is a front
+door with its own sync start, and its first build flashed "Drive not synced"
+over the files (October 2026). The checklist grows from real failures, not
+guesses.
 
 ## Known quirks
 
