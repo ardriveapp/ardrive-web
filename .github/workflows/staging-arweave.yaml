@@ -16,16 +16,18 @@ jobs:
     concurrency:
       group: staging-arweave
       cancel-in-progress: false
+    # Every action is pinned by commit: this job holds DEPLOY_KEY, and any
+    # step before the upload can change what it uploads.
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
 
       # Set Flutter version from fvm
-      - uses: kuhnroyal/flutter-fvm-config-action@v1
+      - uses: kuhnroyal/flutter-fvm-config-action@6ffa30473b346f7d7c63cf9e03e6a886f940a72b # v1.2.0
 
       # Install Flutter
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -41,7 +43,7 @@ jobs:
           flutter config --enable-web
           flutter build web --dart-define=environment=staging --release --pwa-strategy=none --no-web-resources-cdn --dart2js-optimization=O1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
 

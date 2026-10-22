@@ -58,7 +58,10 @@ exists to test library mode before a release.
 4. **Verify by hand before merging:** run the staging deploy once (or locally
    with `npx @ar.io/deploy upload --compress gzip` and the test wallet), then:
    - every `.js` and `.wasm` path returns `Content-Encoding: gzip` through
-     turbo-gateway.com, ar-io.dev and ardrive.net, on the sandboxed route;
+     turbo-gateway.com and ardrive.net, on the sandboxed route;
+   - every path loads through ar-io.dev once it has fetched the upload. It
+     may serve gzipped items decompressed, which is valid, so it is checked
+     for loading, not for the header;
    - the app boots at `https://turbo-gateway.com/<manifest>/` in a fresh
      headless Chromium, and total transfer is under 10 MB (today: 37.6 MB);
    - record cost, transfer size and time in the PR.
@@ -162,10 +165,10 @@ serving host and its gateway.
 - Run the app in library mode in headless Chromium and log every request's
   host. Allowed: the page's host and the detected gateway host. Expected
   offenders to remove: `plausible.io`, `upload.ardrive.io` (a Turbo call at
-  start), `fonts.gstatic.com` (Flutter font fallback). For fonts, try
-  `fontFallbackBaseUrl` in the page's Flutter configuration pointed at a
-  bundled `fonts/` path; if that is not available in Flutter 3.19, document
-  it as the one exception in the design and move on.
+  start), `fonts.gstatic.com` (Flutter font fallback). Fonts are bundled, with
+  no exception: point `fontFallbackBaseUrl` in the page's Flutter
+  configuration at a bundled `fonts/` path. If Flutter 3.19 has no way to do
+  that, stop and bring it to Phil rather than allowing the host.
 
 ### 1.5 Test page tool (`tool/library_page/`)
 
@@ -206,9 +209,11 @@ staging, which is free at that size. For the folder case use a folder inside
   snapshot if asked (existing `DriveStateCreationService`), process images
   (`packages/ardrive_utils/lib/src/generate_thumbnail.dart` already uses
   `package:image`; crop and re-encode to the design's sizes), resolve the
-  viewer release (`libraryViewerManifestSource` config: read the name through
-  the gateway, take `x-arns-resolved-id`, GET `/raw/<id>`), write
-  `library.json`, `index.html`, the manifest, warm up. Every upload goes
+  viewer release (`libraryViewerManifestSource` config: a manifest ID as is,
+  or a name read through the gateway for its `x-arns-resolved-id`; then GET
+  `/raw/<id>`), upload the images, then write `library.json`, `index.html`
+  (its `og:image` names the social image's transaction) and the manifest,
+  warm up. Every upload goes
   through the existing Turbo upload path (`ArDriveUploader` data items, the
   user's payment choice). Resumable: keep uploaded transaction IDs per step
   for the dialog's Try again.
@@ -250,7 +255,7 @@ listing names a wallet owns or controls, setting and removing undername and
 base-name records with `@ar.io/sdk` 4.x). When that exists: step 4's picker,
 unpublish (remove an undername; point a main name at a shared "no longer
 published" page deployed with each release), republish moving the name,
-TTL 300 s, and `og:image` on the name's URL.
+and TTL 300 s. `og:image` keeps pointing at the social image's transaction.
 
 ## Updating the docs as you go
 

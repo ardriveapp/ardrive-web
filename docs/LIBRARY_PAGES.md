@@ -129,9 +129,14 @@ HTML-escaped):
 - `<title>`, `<meta name="description">`, `<meta name="theme-color">`.
 - `<link rel="icon" sizes="32x32">`, `<link rel="apple-touch-icon">`.
 - `og:title`, `og:description`, `og:type=website`, `og:image`,
-  `twitter:card=summary_large_image`. `og:image` must be absolute: the page's
-  own URL at publish time plus `social.jpg` (before names: the raw manifest URL
-  on the gateway the owner's app uses; after names: the name's URL).
+  `twitter:card=summary_large_image`. `og:image` must be an absolute URL known
+  before `index.html` is uploaded, so it cannot use the page manifest's ID:
+  the manifest lists `index.html`, so it is built after it. The publish uploads
+  the social image first and points `og:image` at that transaction,
+  `https://<gateway>/<social-image-tx-id>` on the gateway the owner's app
+  uses (a reused image keeps its existing transaction). It stays that URL when
+  a name is added later, because `index.html` cannot change. With no social
+  image, `og:image` and `twitter:card` are left out.
 
 ### How a page opens
 
@@ -155,12 +160,19 @@ serving it and the gateway it detected, nothing else.
 - Production deploys, and staging builds uploaded by hand
   (`staging-arweave.yaml`), use `--compress gzip`, leave out source maps,
   and keep `index.html`'s relative paths.
-- The app knows its own release manifest through a config value,
-  `libraryViewerManifestSource`: the ArNS name the deploy updates (`ardrive`
-  for production, a staging undername for staging). At publish it resolves
-  that name to the manifest ID (`x-arns-resolved-id`) and reads the manifest.
-  Until names work again in the app (see [Names](#names)), this resolution is a
-  plain HTTP read of the name through the gateway, which needs no wallet.
+- The app knows which release a new page pins through a config value,
+  `libraryViewerManifestSource`. A 43-character value is a manifest ID, used
+  as is. Anything else is an ArNS name, which the publisher resolves to the
+  manifest ID (`x-arns-resolved-id`) with a plain HTTP read through the
+  gateway. That needs no wallet, so it works before names do in the app (see
+  [Names](#names)).
+- Production sets `ardrive`, the name the production deploy moves. Staging has
+  no name and pushes to `dev` never upload to Arweave, so the staging and
+  development configs also use `ardrive`: a page published from staging pins
+  the current production release. To try a viewer built from a branch, run
+  *Staging build to Arweave* (`staging-arweave.yaml`) and put the manifest ID
+  from its job summary in the stored config (`flutter.config` in local
+  storage). The phase 1 test-page tool takes a manifest ID directly.
 - CI warms the bundle after each deploy by reading every file once through
   turbo-gateway.com and ardrive.net.
 
@@ -378,7 +390,7 @@ must not appear as files in the drive.
 
 | Phase | Ships | Done when |
 |---|---|---|
-| 0 · Compressed bundle (#2343) | `--compress gzip` in staging and production deploys; a staging channel | A staging deploy loads through turbo-gateway.com and ardrive.net (and ar-io.dev once it has fetched the upload) with every JS/wasm file carrying `Content-Encoding: gzip`, and first-visit transfer is measured |
+| 0 · Compressed bundle (#2343) | `--compress gzip` in staging and production deploys; a staging channel | A staging upload loads through turbo-gateway.com and ardrive.net with every JS/wasm file carrying `Content-Encoding: gzip`; every path loads through ar-io.dev once it has fetched the upload (it may serve gzipped items decompressed, which is valid); first-visit transfer is measured |
 | 1 · Library mode | The viewer, public libraries, a script that builds a test page by hand | A hand-built page at a raw manifest URL opens a public drive and a public folder, with no request outside the serving host and gateway |
 | 2 · Publish (public) | Dialog steps 1, 2, 3, 5; management section; republish; tag discovery | A public drive and folder publish from the app; republishing with an existing snapshot and the same images costs nothing; excluded counts match the page |
 | 3 · Private | Unlock screen, encrypted snapshots, private rules | A private folder opens in a clean profile with the key, and no drive, folder or file name appears in the manifest, `library.json`, `index.html` or any tag |
@@ -397,5 +409,6 @@ page runs the release it pins.
 - **Old pages run old code for ever.** Library mode must stay narrow (one host,
   one gateway) so pages age well.
 - **Fallback fonts:** Flutter fetches missing-glyph fonts from
-  fonts.gstatic.com. Phase 1 decides: bundle them, or accept it as the one
-  documented exception.
+  fonts.gstatic.com. Library pages bundle them: the no-third-party rule has no
+  exceptions. If Flutter 3.19 cannot load them from the page, that blocks
+  phase 1 and goes to Phil.

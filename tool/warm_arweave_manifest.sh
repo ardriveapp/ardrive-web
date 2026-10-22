@@ -43,20 +43,22 @@ paths="$(printf '%s' "$manifest" |
   jq -r '"/", (.paths | keys[] | "/" + (split("/") | map(@uri) | join("/")))')"
 
 warm() {
-  local gateway="$1" path="$2" out err body code encoding size verdict=ok note=
+  local gateway="$1" path="$2" out rc err body code encoding size verdict=ok note=
   err="$(mktemp)"
   body="$(mktemp)"
   # Asks for gzip as a browser does. Gateways drop the odd connection under
-  # parallel load, and fetch an item they have not indexed yet on first
-  # request, so retry with a pause.
-  out="$(curl -sS -L -o "$body" -H 'Accept-Encoding: gzip, deflate, br' \
+  # parallel load, and answer 404 for an item they have not fetched yet, so
+  # retry with a pause: --fail makes a 404 an error that --retry-all-errors
+  # retries.
+  out="$(curl -sS -L --fail -o "$body" -H 'Accept-Encoding: gzip, deflate, br' \
     --retry 5 --retry-all-errors --retry-delay 3 --max-time 180 \
     -w '%{http_code} %header{content-encoding} %{size_download}' \
-    "https://$gateway/$id$path" 2>"$err" || true)"
+    "https://$gateway/$id$path" 2>"$err")" && rc=0 || rc=$?
   read -r code encoding size <<<"$out"
   # An absent header leaves `encoding` holding the size.
   if [[ -z "${size:-}" ]]; then size="${encoding:-0}"; encoding=-; fi
-  if [[ "${code:-000}" != 200 ]]; then
+  # A 200 whose body broke off partway still fails: curl's status says so.
+  if [[ "$rc" -ne 0 || "${code:-000}" != 200 ]]; then
     verdict=FAIL
     [[ -s "$err" ]] && note="$(tail -1 "$err")"
   elif [[ "$encoding" == - && "$(head -c 2 "$body" | od -An -tx1 | tr -d ' ')" == 1f8b ]]; then
