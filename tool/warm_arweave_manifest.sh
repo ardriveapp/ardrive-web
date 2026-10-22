@@ -11,9 +11,11 @@
 #
 #   tool/warm_arweave_manifest.sh <manifest-id>
 #
-# GATEWAYS (default "turbo-gateway.com ar-io.dev ardrive.net": Turbo's, the
-# ar.io team's and ArDrive's) and JOBS (default 4) override the gateways and
-# the number of parallel requests. Requests go through the sandboxed route
+# GATEWAYS (default "turbo-gateway.com ardrive.net", Turbo's and ArDrive's)
+# and JOBS (default 4) override the gateways and the number of parallel
+# requests. ar-io.dev is left out on purpose: it charges for data past a free
+# allowance (HTTP 402, x402), and reading 466 files from each CI run would
+# spend it. Requests go through the sandboxed route
 # (`https://<gateway>/<id>/<path>`, which redirects to the manifest's own
 # subdomain), the route a library page is served on.
 #
@@ -28,7 +30,7 @@ if [[ ! "$id" =~ ^[A-Za-z0-9_-]{43}$ ]]; then
   exit 2
 fi
 
-GATEWAYS="${GATEWAYS:-turbo-gateway.com ar-io.dev ardrive.net}"
+GATEWAYS="${GATEWAYS:-turbo-gateway.com ardrive.net}"
 JOBS="${JOBS:-4}"
 
 # Turbo serves a new upload before it is mined, so read the manifest there.

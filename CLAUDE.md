@@ -330,7 +330,7 @@ Users see "deployment" for an Arweave manifest the app creates or updates (New d
   the ArNS name; staging uploads with the `@ar.io/deploy` CLI and has no name, so its
   manifest ID is only in the `deploy-arweave` job summary. That staging manifest is the
   channel for trying library mode on Arweave before a release (`docs/LIBRARY_PAGES.md`).
-  Each deploy then reads every path through three gateways with
+  Each deploy then reads every path through turbo-gateway.com and ardrive.net with
   `tool/warm_arweave_manifest.sh <manifest-id>`, which also fails on a gateway sending gzip
   bytes without the header. A new upload can 404 on a gateway other than
   turbo-gateway.com for a while after it lands: that's propagation, not a broken deploy.

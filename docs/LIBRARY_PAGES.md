@@ -64,7 +64,7 @@ costs nothing. Publish writes permanent objects to Arweave.
 | Release manifest | 469 paths, 49 KB |
 | Staging build uploaded gzipped (phase 0) | 466 files without source maps, 77.3 MB → 18.8 MiB; 19 s; 0.2666 Turbo credits (about $1.58) for a first upload; later uploads pay mostly for `main.dart.js` (4.2 MB) |
 | First visit to the gzipped bundle | 8.96 MB on the wire, Flutter view at 2.9 s (turbo-gateway.com and ardrive.net alike); the uncompressed production upload of the same day: 38.16 MB |
-| ar-io.dev and gzip | Serves some gzipped items decompressed even when the browser accepts gzip (correct, larger). 50 minutes after an upload it still answered 404 for 48 of its 467 paths (`canvaskit.wasm` among them, so the app did not boot there yet), while turbo-gateway.com and ardrive.net served all of them at once |
+| ar-io.dev and gzip | Serves some gzipped items decompressed even when the browser accepts gzip (correct, larger). Served every path of a new Turbo upload only 1 h 27 min after it (404s until then, `AssetManifest.json` among them, so the app stopped at its splash), while turbo-gateway.com and ardrive.net served all of them at once. Charges for data past a free allowance: HTTP 402 with an x402 offer (USDC on Base Sepolia) after one evening of testing from one connection. Not a gateway to send library-page visitors to |
 | ArDrive at a raw manifest URL | Boots: `https://turbo-gateway.com/<manifest-id>/` redirects to the sandbox subdomain and the app loads (no `<base>` tag in `web/index.html`, all paths relative) |
 | Snapshot of 41,767 files | 6.0 MiB gzipped, imported in 0.6 s |
 | Requests the normal app makes on start | Also fonts.gstatic.com, upload.ardrive.io, plausible.io: library mode must stop these |
@@ -161,7 +161,7 @@ serving it and the gateway it detected, nothing else.
   Until names work again in the app (see [Names](#names)), this resolution is a
   plain HTTP read of the name through the gateway, which needs no wallet.
 - CI warms the bundle after each deploy by reading every file once through
-  turbo-gateway.com, ar-io.dev and ardrive.net.
+  turbo-gateway.com and ardrive.net.
 
 ## Names
 
@@ -377,7 +377,7 @@ must not appear as files in the drive.
 
 | Phase | Ships | Done when |
 |---|---|---|
-| 0 · Compressed bundle (#2343) | `--compress gzip` in staging and production deploys; a staging channel | A staging deploy loads through turbo-gateway.com, ar-io.dev and ardrive.net with every JS/wasm file carrying `Content-Encoding: gzip`, and first-visit transfer is measured |
+| 0 · Compressed bundle (#2343) | `--compress gzip` in staging and production deploys; a staging channel | A staging deploy loads through turbo-gateway.com and ardrive.net (and ar-io.dev once it has fetched the upload) with every JS/wasm file carrying `Content-Encoding: gzip`, and first-visit transfer is measured |
 | 1 · Library mode | The viewer, public libraries, a script that builds a test page by hand | A hand-built page at a raw manifest URL opens a public drive and a public folder, with no request outside the serving host and gateway |
 | 2 · Publish (public) | Dialog steps 1, 2, 3, 5; management section; republish; tag discovery | A public drive and folder publish from the app; republishing with an existing snapshot and the same images costs nothing; excluded counts match the page |
 | 3 · Private | Unlock screen, encrypted snapshots, private rules | A private folder opens in a clean profile with the key, and no drive, folder or file name appears in the manifest, `library.json`, `index.html` or any tag |

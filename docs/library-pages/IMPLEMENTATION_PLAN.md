@@ -48,9 +48,10 @@ exists to test library mode before a release.
    Source maps: add `compress-exclude` only if needed; better, delete
    `build/web/*.map` before the deploy step (they are not needed on Arweave).
 3. **Warm-up.** After each deploy, a step reads every path of the new manifest
-   once through turbo-gateway.com, ar-io.dev and ardrive.net
+   once through turbo-gateway.com and ardrive.net
    (`tool/warm_arweave_manifest.sh`). `ar.io` itself is the ar.io website, not
-   a gateway.
+   a gateway; ar-io.dev charges for data past a free allowance (x402), so it
+   is checked by hand, not warmed.
 4. **Verify by hand before merging:** run the staging deploy once (or locally
    with `npx @ar.io/deploy upload --compress gzip` and the test wallet), then:
    - every `.js` and `.wasm` path returns `Content-Encoding: gzip` through
@@ -59,7 +60,8 @@ exists to test library mode before a release.
      headless Chromium, and total transfer is under 10 MB (today: 37.6 MB);
    - record cost, transfer size and time in the PR.
 
-Done when: a compressed staging bundle boots through all three gateways.
+Done when: a compressed staging bundle boots through turbo-gateway.com and
+ardrive.net, and through ar-io.dev once it has fetched the upload.
 Production's change merges with it, and Phil merges.
 
 ## Phase 1: library mode (public)
