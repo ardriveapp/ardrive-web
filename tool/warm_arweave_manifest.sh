@@ -13,9 +13,9 @@
 #
 # GATEWAYS (default "turbo-gateway.com ardrive.net", Turbo's and ArDrive's)
 # and JOBS (default 4) override the gateways and the number of parallel
-# requests. ar-io.dev is left out on purpose: it charges for data past a free
-# allowance (HTTP 402, x402), and reading 466 files from each CI run would
-# spend it. Requests go through the sandboxed route
+# requests. ar-io.dev is left out on purpose: it is the gateway of Turbo's
+# development sandbox, sees production uploads only once they are on chain
+# (over an hour), and charges for data past a free allowance (HTTP 402). Requests go through the sandboxed route
 # (`https://<gateway>/<id>/<path>`, which redirects to the manifest's own
 # subdomain), the route a library page is served on.
 #
