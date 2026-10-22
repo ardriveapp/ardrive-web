@@ -37,22 +37,24 @@ phase before the previous one is merged.
 Goal: every release's web build is on Arweave gzipped, and a staging channel
 exists to test library mode before a release.
 
-1. **Staging deploy to Arweave.** Add an Arweave deploy step to
-   `.github/workflows/staging.yaml`, mirroring production's, with
-   `ar-io/ar-io-deploy@v1.1.0` (or later, pinned), `compress: gzip`, and no
-   ArNS update for now (`deploy` without `arns-name` uploads only). Record the
-   manifest ID in the job summary.
+1. **Staging deploy to Arweave.** Add an Arweave upload job to
+   `.github/workflows/staging.yaml` with `--compress gzip` and no ArNS update
+   for now. The action has no upload-only mode (it always runs `deploy` with
+   `arns-name`), so the job runs the CLI's `upload` command at an exact
+   version. Record the manifest ID in the job summary.
 2. **Production deploy.** In `.github/workflows/production.yaml`, pin
-   `ar-io/ar-io-deploy@v1.1.0`+, add `compress: gzip`. Keep its ArNS inputs.
+   `ar-io/ar-io-deploy` (v2.1.1, by commit), add `compress: gzip`. Keep its
+   ArNS inputs.
    Source maps: add `compress-exclude` only if needed; better, delete
    `build/web/*.map` before the deploy step (they are not needed on Arweave).
 3. **Warm-up.** After each deploy, a step reads every path of the new manifest
-   once through `https://turbo-gateway.com/<manifest>/<path>` and
-   `https://ar.io/<manifest>/<path>`.
+   once through turbo-gateway.com, ar-io.dev and ardrive.net
+   (`tool/warm_arweave_manifest.sh`). `ar.io` itself is the ar.io website, not
+   a gateway.
 4. **Verify by hand before merging:** run the staging deploy once (or locally
    with `npx @ar.io/deploy upload --compress gzip` and the test wallet), then:
    - every `.js` and `.wasm` path returns `Content-Encoding: gzip` through
-     turbo-gateway.com, ar.io and ardrive.net, on the sandboxed route;
+     turbo-gateway.com, ar-io.dev and ardrive.net, on the sandboxed route;
    - the app boots at `https://turbo-gateway.com/<manifest>/` in a fresh
      headless Chromium, and total transfer is under 10 MB (today: 37.6 MB);
    - record cost, transfer size and time in the PR.

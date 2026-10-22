@@ -324,6 +324,16 @@ Users see "deployment" for an Arweave manifest the app creates or updates (New d
   breaks the shared history and makes the next release PR conflict.
 - `dev`'s `pubspec.yaml` version is not bumped after releases, so staging reports an
   older version than production.
+- Both deploys also put the build on Arweave **gzipped** (`--compress gzip`: each file is
+  stored compressed with a `Content-Encoding: gzip` tag, about 20 MB instead of 77) and
+  without source maps. Production uses `ar-io/ar-io-deploy` (pinned by commit) and moves
+  the ArNS name; staging uploads with the `@ar.io/deploy` CLI and has no name, so its
+  manifest ID is only in the `deploy-arweave` job summary. That staging manifest is the
+  channel for trying library mode on Arweave before a release (`docs/LIBRARY_PAGES.md`).
+  Each deploy then reads every path through three gateways with
+  `tool/warm_arweave_manifest.sh <manifest-id>`, which also fails on a gateway sending gzip
+  bytes without the header. A new upload can 404 on a gateway other than
+  turbo-gateway.com for a while after it lands: that's propagation, not a broken deploy.
 
 ## Working alongside other agents
 
