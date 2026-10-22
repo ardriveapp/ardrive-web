@@ -79,8 +79,6 @@ jobs:
     concurrency:
       group: staging-deploy
       cancel-in-progress: false
-    outputs:
-      publish: ${{ steps.fresh.outputs.publish }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -123,88 +121,6 @@ jobs:
           folder: build/web
           clean: true
           single-commit: true
-
-  deploy-arweave:
-    # The staging channel for library pages (docs/LIBRARY_PAGES.md): the same
-    # build, uploaded to Arweave gzipped the way production is, so library
-    # mode can be tried on Arweave before a release. Upload only: there is no
-    # ArNS name for staging yet, so the manifest ID goes in the job summary.
-    # It runs after the GitHub Pages deploy so a failure here never holds
-    # staging back, and only when that job published.
-    needs: deploy-web
-    if: needs.deploy-web.outputs.publish == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    concurrency:
-      group: staging-arweave
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          persist-credentials: false
-
-      - name: Download the built web app
-        uses: actions/download-artifact@v4
-        with:
-          name: web-build
-          path: build/web
-
-      - name: Leave source maps out
-        run: find build/web -name '*.map' -delete
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      # Files already uploaded by an earlier run are not paid for again: the
-      # cache holds their transaction IDs, and --incremental recovers any the
-      # cache lost from this wallet's past uploads. Most pushes change only
-      # main.dart.js. One cache entry per run, restored by prefix.
-      - name: Restore the upload cache
-        uses: actions/cache/restore@v4
-        with:
-          path: .ario-deploy
-          key: ario-deploy-staging-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: ario-deploy-staging-
-
-      - name: Upload to Arweave
-        id: upload
-        env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-          NO_COLOR: '1'
-        run: |
-          # Without a `shell:`, steps run without pipefail, and `tee` would
-          # hide a failed upload.
-          set -o pipefail
-          # The CLI takes an Arweave JWK base64-encoded, as the action does.
-          if [[ "$DEPLOY_KEY" =~ ^\{.*\}$ ]]; then
-            DEPLOY_KEY=$(printf '%s' "$DEPLOY_KEY" | base64 -w0)
-          fi
-          export DEPLOY_KEY
-          npx --yes @ar.io/deploy@2.1.1 upload --deploy-folder build/web \
-            --compress gzip --incremental | tee upload.log
-          id=$(sed -n 's/^Tx ID: \([A-Za-z0-9_-]\{43\}\)$/\1/p' upload.log | head -1)
-          if [ -z "$id" ]; then
-            echo "::error::The upload printed no Tx ID."
-            exit 1
-          fi
-          echo "tx-id=$id" >> "$GITHUB_OUTPUT"
-          echo "Staging on Arweave ($GITHUB_SHA): [$id](https://turbo-gateway.com/$id/)" >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Save the upload cache
-        if: always() && hashFiles('.ario-deploy/**') != ''
-        uses: actions/cache/save@v4
-        with:
-          path: .ario-deploy
-          key: ario-deploy-staging-${{ github.run_id }}-${{ github.run_attempt }}
-
-      # A miss here does not undo the upload, so it is reported, not fatal.
-      - name: Warm the gateways
-        continue-on-error: true
-        env:
-          MANIFEST_ID: ${{ steps.upload.outputs.tx-id }}
-        run: bash tool/warm_arweave_manifest.sh "$MANIFEST_ID"
 
   build-ios:
     # skipped for now

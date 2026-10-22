@@ -152,7 +152,8 @@ serving it and the gateway it detected, nothing else.
 
 ### The viewer bundle
 
-- Production and staging deploys use `--compress gzip`, leave out source maps,
+- Production deploys, and staging builds uploaded by hand
+  (`staging-arweave.yaml`), use `--compress gzip`, leave out source maps,
   and keep `index.html`'s relative paths.
 - The app knows its own release manifest through a config value,
   `libraryViewerManifestSource`: the ArNS name the deploy updates (`ardrive`

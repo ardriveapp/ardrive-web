@@ -37,10 +37,13 @@ phase before the previous one is merged.
 Goal: every release's web build is on Arweave gzipped, and a staging channel
 exists to test library mode before a release.
 
-1. **Staging deploy to Arweave.** Add an Arweave upload job to
-   `.github/workflows/staging.yaml` with `--compress gzip` and no ArNS update
-   for now. The action has no upload-only mode (it always runs `deploy` with
-   `arns-name`), so the job runs the CLI's `upload` command at an exact
+1. **Staging build to Arweave, on request.** A manual workflow
+   (`.github/workflows/staging-arweave.yaml`, `workflow_dispatch` only) builds
+   the chosen branch with the staging config and uploads it with
+   `--compress gzip` and no ArNS update. Pushes to `dev` keep deploying
+   staging.ardrive.io and nothing else (Phil, 2026-10-22: no Arweave spend per
+   push). The action has no upload-only mode (it always runs `deploy` with
+   `arns-name`), so the workflow runs the CLI's `upload` command at an exact
    version. Record the manifest ID in the job summary.
 2. **Production deploy.** In `.github/workflows/production.yaml`, pin
    `ar-io/ar-io-deploy` (v2.1.1, by commit), add `compress: gzip`. Keep its
