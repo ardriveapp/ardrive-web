@@ -377,7 +377,7 @@ must not appear as files in the drive.
 
 | Phase | Ships | Done when |
 |---|---|---|
-| 0 · Compressed bundle | `--compress gzip` in staging and production deploys; a staging channel | A staging deploy loads through turbo-gateway.com, ar-io.dev and ardrive.net with every JS/wasm file carrying `Content-Encoding: gzip`, and first-visit transfer is measured |
+| 0 · Compressed bundle (#2343) | `--compress gzip` in staging and production deploys; a staging channel | A staging deploy loads through turbo-gateway.com, ar-io.dev and ardrive.net with every JS/wasm file carrying `Content-Encoding: gzip`, and first-visit transfer is measured |
 | 1 · Library mode | The viewer, public libraries, a script that builds a test page by hand | A hand-built page at a raw manifest URL opens a public drive and a public folder, with no request outside the serving host and gateway |
 | 2 · Publish (public) | Dialog steps 1, 2, 3, 5; management section; republish; tag discovery | A public drive and folder publish from the app; republishing with an existing snapshot and the same images costs nothing; excluded counts match the page |
 | 3 · Private | Unlock screen, encrypted snapshots, private rules | A private folder opens in a clean profile with the key, and no drive, folder or file name appears in the manifest, `library.json`, `index.html` or any tag |
