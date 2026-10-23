@@ -77,21 +77,21 @@ Future<void> copyLibraryLink(
   );
 }
 
-/// "Open in ArDrive": the library in the app, which a visitor opens without
-/// signing in: its drive, or for a folder library that folder. The app is not
-/// scoped: from the folder a visitor can go up to the rest of the drive, which
-/// is public (and named in `library.json`) all the same.
-String openInArDriveUrl(LibraryConfig config) => switch (config.scope) {
+/// "Open in ArDrive": the library's drive in the app, which a visitor opens
+/// without signing in. A folder library has none: the app is not scoped, so
+/// from the folder a visitor could go up to the rest of a drive its owner
+/// published only part of.
+String? openInArDriveUrl(LibraryConfig config) => switch (config.scope) {
       LibraryDriveScope() =>
         '${LibraryLoaderPage.ardriveUrl}/#/drives/${config.driveId}',
-      LibraryFolderScope(:final folderId) =>
-        '${LibraryLoaderPage.ardriveUrl}/#/drives/${config.driveId}/folders/$folderId',
+      LibraryFolderScope() => null,
     };
 
 /// The library's sidebar, in place of the drives list, the New button and the
 /// account (docs/LIBRARY_PAGES.md, "The library frame"): the icon, the title,
-/// the description and when it was published, then "Open in ArDrive" and
-/// "Made with ArDrive", and the collapse control. A drawer on a phone.
+/// the description and when it was published, then "Open in ArDrive" (drive
+/// libraries only) and "Made with ArDrive", and the collapse control. A drawer
+/// on a phone.
 class LibrarySideBar extends StatefulWidget {
   const LibrarySideBar({super.key});
 
@@ -175,6 +175,7 @@ class _LibrarySideBarState extends State<LibrarySideBar> {
     }
 
     final publishedAt = config?.publishedAt;
+    final openInArDrive = config == null ? null : openInArDriveUrl(config);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -204,10 +205,10 @@ class _LibrarySideBarState extends State<LibrarySideBar> {
           ],
         ],
         const Spacer(),
-        if (config != null)
+        if (openInArDrive != null)
           ArDriveClickArea(
             child: GestureDetector(
-              onTap: () => openUrl(url: openInArDriveUrl(config)),
+              onTap: () => openUrl(url: openInArDrive),
               child: Text(
                 strings.libraryOpenInArDrive,
                 style: typography

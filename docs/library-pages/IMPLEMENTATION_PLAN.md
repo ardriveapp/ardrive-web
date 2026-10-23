@@ -158,7 +158,8 @@ serving host and its gateway.
     listed in the design;
   - no New button, FAB, profile card, login, sync indicator, "Show hidden".
 - "Open in ArDrive" opens `https://app.ardrive.io/#/drives/<id>` (the 2.90
-  visitor flow) in a new tab.
+  visitor flow) in a new tab. Drive libraries only: a folder library has no
+  such link.
 
 ### 1.4 Requests
 

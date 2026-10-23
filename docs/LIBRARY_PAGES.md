@@ -42,7 +42,9 @@ costs nothing. Publish writes permanent objects to Arweave.
 6. **Publish lives beside Share** in a drive's menu, a folder's menu and the
    details panel. Not in the New menu.
 7. **No analytics, no third-party requests** on a library page.
-8. **Every page shows "Made with ArDrive · Open in ArDrive".**
+8. **Every page shows "Made with ArDrive"; a drive's page also shows "Open in
+   ArDrive".** A folder's page does not: the app would let a visitor walk up
+   from the folder to the rest of the drive.
 9. **No per-file URLs** in v1. Files load by transaction ID from the serving
    gateway.
 10. **Republish only on request,** choosing an existing snapshot or making a
@@ -239,8 +241,8 @@ One frame, a heading, one sentence, one action:
 
 - **Sidebar** (replaces drives list, New button and profile): the icon (48 px),
   the title, the description, "Published <date>", then at the bottom "Open in
-  ArDrive" (link) and "Made with ArDrive" (muted), then the existing collapse
-  control.
+  ArDrive" (link, drive libraries only) and "Made with ArDrive" (muted), then
+  the existing collapse control.
 - **Top bar:** the existing search field ("Search this library…"), the theme
   toggle. No login, profile card, sync indicator or New button.
 - **Cover band:** on the library's root only, above the breadcrumbs: the cover

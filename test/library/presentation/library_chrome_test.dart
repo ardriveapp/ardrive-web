@@ -44,11 +44,10 @@ void main() {
       );
     });
 
-    test('opens a folder library at its folder, not the drive', () {
+    test('is not offered for a folder library, which would reach its drive',
+        () {
       expect(
-        openInArDriveUrl(_config(const LibraryFolderScope(_folder))),
-        'https://app.ardrive.io/#/drives/$_drive/folders/$_folder',
-      );
+          openInArDriveUrl(_config(const LibraryFolderScope(_folder))), isNull);
     });
   });
 }
