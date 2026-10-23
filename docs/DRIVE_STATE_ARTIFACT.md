@@ -527,16 +527,14 @@ artifacts only.
 **The rule.** A reader accepts both encodings and tells them apart by the
 first bytes of the payload: `1f 8b` is a gzip stream, `SQLite format 3`
 followed by a NUL is an uncompressed file, and anything else is refused. The
-producer chooses per artifact, and that artifact keeps its choice for ever. It
-is not a `meta` flag, because `meta` is inside the compressed bytes it would
-describe.
+encoding is not a `meta` flag, because `meta` is inside the compressed bytes it
+would describe.
 
-- **Compressed** below the random-access threshold. A small artifact is fetched
-  whole, and gzip recovers most of its bytes. The median drive is two files, so
-  this is nearly every artifact.
-- **Identity** above it, for a public artifact a library page will serve. 17.70
-  MiB against 5.98 at 41,767 files, paid once, to make page-level reads possible
-  for ever.
+- **Compressed** is what producers write, every time. A small artifact is
+  fetched whole, and gzip recovers most of its bytes. The median drive is two
+  files, so this is nearly every artifact.
+- **Identity** is read but never written. It would have made page-level reads
+  possible, at 17.70 MiB against 5.98 at 41,767 files.
 
 **Never set a `Content-Encoding` tag.** Transport compression has the same
 effect as envelope compression and is worse, because the gateway passes the tag

@@ -234,11 +234,15 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
           Align(
             alignment: Alignment.center,
             child: GestureDetector(
-              onTap: () {
-                context
-                    .read<ThumbnailRepository>()
-                    .uploadThumbnail(fileId: item.id);
-              },
+              // Making a thumbnail uploads one, which a library visitor,
+              // signed out, cannot do.
+              onTap: LibraryMode.isOn
+                  ? null
+                  : () {
+                      context
+                          .read<ThumbnailRepository>()
+                          .uploadThumbnail(fileId: item.id);
+                    },
               child: getIconForContentType(
                 item.contentType,
               ).copyWith(

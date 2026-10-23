@@ -13,10 +13,13 @@ void main() {
     expect(mayFetch('https://turbo-gateway.com/raw/abc'), isTrue);
     expect(mayFetch('https://xyz.turbo-gateway.com/abc'), isTrue);
     expect(mayFetch('icon-32.png'), isTrue);
+    expect(mayFetch('/raw/abc'), isTrue);
+    expect(mayFetch('//turbo-gateway.com/raw/abc'), isTrue);
   });
 
   test('and from nowhere else', () {
     expect(mayFetch('https://tracker.example/pixel.png'), isFalse);
+    expect(mayFetch('//tracker.example/pixel.png'), isFalse);
     expect(mayFetch('https://arweave.net/abc'), isFalse);
     expect(mayFetch('https://turbo-gateway.com.evil.example/x.png'), isFalse);
     expect(mayFetch('https://evilturbo-gateway.com/x.png'), isFalse);
