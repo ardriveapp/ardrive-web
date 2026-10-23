@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/entities/license_assertion.dart';
 import 'package:ardrive/entities/license_composed.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/library/domain/library_scope.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
@@ -40,10 +42,16 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               .getFolderTree(driveId, selectedItem.id)
               .asStream()
               .listen(
-            (f) async {
+            (tree) async {
               if (isClosed) {
                 return;
               }
+
+              // A library page counts what the library shows, not the hidden
+              // items in the drive behind it.
+              final f =
+                  LibraryMode.isOn ? LibraryContents.open?.prune(tree) : tree;
+              if (f == null) return;
 
               final metadataTxId = await _driveDao
                   .latestFolderRevisionByFolderId(

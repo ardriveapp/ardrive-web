@@ -7,6 +7,7 @@ import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_outcome.dart';
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/library/data/library_source.dart';
+import 'package:ardrive/library/domain/library_scope.dart';
 import 'package:ardrive/library/presentation/library_loader/library_loader_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -97,7 +98,10 @@ void main() {
     fixture = _Fixture.load();
   });
 
-  tearDown(() => db.close());
+  tearDown(() {
+    LibraryContents.open = null;
+    return db.close();
+  });
 
   LibraryLoaderCubit loader(
     Map<String, Object> files, {
@@ -229,6 +233,31 @@ void main() {
     );
 
     blocTest<LibraryLoaderCubit, LibraryLoaderState>(
+      'an unexpected error ends on the retryable screen, not on loading',
+      build: () {
+        final importer = _MockImporter();
+        when(() => importer.import(
+              candidate: any(named: 'candidate'),
+              body: any(named: 'body'),
+              protection: any(named: 'protection'),
+              expectedOwnerAddress: any(named: 'expectedOwnerAddress'),
+            )).thenThrow(StateError('sqlite3.wasm did not load'));
+        return loader({
+          'library.json': json.encode(fixture.libraryJson()),
+          'snapshot': fixture.body,
+        }, importer: importer);
+      },
+      act: (cubit) => cubit.load(),
+      verify: (cubit) => expect(
+        cubit.state,
+        isA<LibraryFailed>()
+            .having(
+                (s) => s.failure, 'failure', LibraryFailure.snapshotUnavailable)
+            .having((s) => s.config, 'config', isNotNull),
+      ),
+    );
+
+    blocTest<LibraryLoaderCubit, LibraryLoaderState>(
       'a folder library whose folder the snapshot lacks cannot be opened',
       build: () => loader({
         'library.json': json.encode(fixture.libraryJson(scope: {
@@ -294,6 +323,8 @@ void main() {
       await seen.cancel();
 
       expect(cubit.state, isA<LibraryReady>());
+      // What downloads and the info panel prune with.
+      expect(LibraryContents.open?.config.driveId, fixture.driveId);
       expect(states.whereType<LibraryLoadingSnapshot>().last.received,
           fixture.body.length);
       expect(states.whereType<LibraryImporting>(), hasLength(1));

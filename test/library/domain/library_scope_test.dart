@@ -41,6 +41,7 @@ void main() {
     String? parent, {
     String drive = _drive,
     bool hidden = false,
+    bool ghost = false,
   }) =>
       db.into(db.folderEntries).insert(FolderEntriesCompanion.insert(
             id: id,
@@ -48,6 +49,7 @@ void main() {
             name: id,
             parentFolderId: Value(parent),
             isHidden: Value(hidden),
+            isGhost: Value(ghost),
             path: '',
           ));
 
@@ -94,6 +96,12 @@ void main() {
     test('holds no hidden folder, nor anything inside one', () async {
       expect(await inScope(scope, _hidden), isFalse);
       expect(await inScope(scope, _inHidden), isFalse);
+    });
+
+    test('holds no ghost folder, which the explorer does not list', () async {
+      const ghost = '77777777-0000-4000-8000-000000000009';
+      await folder(ghost, _root, ghost: true);
+      expect(await inScope(scope, ghost), isFalse);
     });
 
     test('stops on a loop of parents', () async {

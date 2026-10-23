@@ -25,8 +25,9 @@ Future<bool> isInLibraryScope({
     if (folder == null || folder.driveId != config.driveId) return false;
     // The folder the owner published is shown whatever its flag says.
     if (folder.id == scopeRoot) return true;
-    // Below it, a library never shows a hidden folder, or anything inside one.
-    if (folder.isHidden) return false;
+    // Below it, a library never shows a hidden folder, or anything inside one,
+    // nor a ghost folder, which the explorer does not list.
+    if (folder.isHidden || folder.isGhost) return false;
     if (folder.id == config.rootFolderId) return false;
     current = folder.parentFolderId;
   }
@@ -49,6 +50,13 @@ const _maxDepth = 256;
 class LibraryContents {
   LibraryContents._(this._config, this._folders, this._files);
 
+  /// The open library's contents, set when it is ready; null before, and on
+  /// every page that is not a library page. For code that reads a folder's
+  /// whole tree from the database (downloads, the info panel), which would
+  /// otherwise see the drive behind the library: it prunes with [prune], and
+  /// in library mode refuses outright while this is null.
+  static LibraryContents? open;
+
   static Future<LibraryContents> load(
     DriveDao driveDao,
     LibraryConfig config,
@@ -68,6 +76,9 @@ class LibraryContents {
   }
 
   final LibraryConfig _config;
+
+  LibraryConfig get config => _config;
+
   final Map<String, FolderEntry> _folders;
   final Map<String, FileWithLatestRevisionTransactions> _files;
   final _shown = <String, bool>{};
@@ -113,6 +124,24 @@ class LibraryContents {
   /// Every file the library lists.
   Iterable<FileWithLatestRevisionTransactions> get files =>
       _files.values.where(_isListed);
+
+  /// [node] with only what the library lists: its subfolders and files that
+  /// the library shows, all the way down. Null if it does not show [node]
+  /// itself.
+  FolderNode? prune(FolderNode node) {
+    if (!showsFolder(node.folder.id)) return null;
+    return FolderNode(
+      folder: node.folder,
+      subfolders: [
+        for (final subfolder in node.subfolders)
+          if (prune(subfolder) case final shown?) shown,
+      ],
+      files: {
+        for (final entry in node.files.entries)
+          if (showsFile(entry.key)) entry.key: entry.value,
+      },
+    );
+  }
 
   bool _isListed(FileWithLatestRevisionTransactions file) {
     if (file.isHidden || !showsFolder(file.parentFolderId)) return false;

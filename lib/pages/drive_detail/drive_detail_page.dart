@@ -664,8 +664,14 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
                                         final currentFolder =
                                             driveDetail.folderInView.folder;
-                                        zipName =
-                                            currentFolder.parentFolderId == null
+                                        final library =
+                                            libraryConfigOf(context);
+                                        zipName = library != null &&
+                                                currentFolder.id ==
+                                                    library.scopeRootFolderId
+                                            ? library.title
+                                            : currentFolder.parentFolderId ==
+                                                    null
                                                 ? driveDetail.currentDrive.name
                                                 : currentFolder.name;
                                       }
@@ -709,7 +715,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                               promptToDownloadMultipleFiles(
                                                   context,
                                                   selectedItems: [driveItem],
-                                                  zipName: driveItem.name);
+                                                  zipName:
+                                                      libraryConfigOf(context)
+                                                              ?.title ??
+                                                          driveItem.name);
                                             },
                                             content: ArDriveDropdownItemTile(
                                               name: appLocalizationsOf(context)
@@ -903,29 +912,35 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                 ),
                                               ),
                                             ),
-                                          ArDriveDropdownItem(
-                                            onClick: () {
-                                              final bloc = context
-                                                  .read<DriveDetailCubit>();
+                                          // A library is not its drive: the
+                                          // drive's details name it, list its
+                                          // past names and ask GraphQL for
+                                          // its snapshots.
+                                          if (!LibraryMode.isOn)
+                                            ArDriveDropdownItem(
+                                              onClick: () {
+                                                final bloc = context
+                                                    .read<DriveDetailCubit>();
 
-                                              bloc.selectDataItem(
-                                                DriveDataTableItemMapper
-                                                    .fromDrive(
-                                                  driveDetailState.currentDrive,
-                                                  (_) => null,
-                                                  0,
-                                                  isDriveOwner,
+                                                bloc.selectDataItem(
+                                                  DriveDataTableItemMapper
+                                                      .fromDrive(
+                                                    driveDetailState
+                                                        .currentDrive,
+                                                    (_) => null,
+                                                    0,
+                                                    isDriveOwner,
+                                                  ),
+                                                );
+                                              },
+                                              content: _buildItem(
+                                                appLocalizationsOf(context)
+                                                    .moreInfo,
+                                                ArDriveIcons.info(
+                                                  size: defaultIconSize,
                                                 ),
-                                              );
-                                            },
-                                            content: _buildItem(
-                                              appLocalizationsOf(context)
-                                                  .moreInfo,
-                                              ArDriveIcons.info(
-                                                size: defaultIconSize,
                                               ),
                                             ),
-                                          ),
                                           if (!driveDetailState
                                                   .hasWritePermissions &&
                                               !isDriveOwner &&
@@ -1505,7 +1520,8 @@ class MobileFolderNavigation extends StatelessWidget {
 
                             promptToDownloadMultipleFiles(context,
                                 selectedItems: [driveItem],
-                                zipName: driveItem.name);
+                                zipName: libraryConfigOf(context)?.title ??
+                                    driveItem.name);
                           },
                           content: ArDriveDropdownItemTile(
                             name: appLocalizationsOf(context).download,
@@ -1652,26 +1668,28 @@ class MobileFolderNavigation extends StatelessWidget {
                             ),
                           ),
                         ),
-                      ArDriveDropdownItem(
-                        onClick: () {
-                          final bloc = context.read<DriveDetailCubit>();
+                      // A library is not its drive (see the wide menu).
+                      if (!LibraryMode.isOn)
+                        ArDriveDropdownItem(
+                          onClick: () {
+                            final bloc = context.read<DriveDetailCubit>();
 
-                          bloc.selectDataItem(
-                            DriveDataTableItemMapper.fromDrive(
-                              state.currentDrive,
-                              (_) => null,
-                              0,
-                              isOwner,
+                            bloc.selectDataItem(
+                              DriveDataTableItemMapper.fromDrive(
+                                state.currentDrive,
+                                (_) => null,
+                                0,
+                                isOwner,
+                              ),
+                            );
+                          },
+                          content: _buildItem(
+                            appLocalizationsOf(context).moreInfo,
+                            ArDriveIcons.info(
+                              size: defaultIconSize,
                             ),
-                          );
-                        },
-                        content: _buildItem(
-                          appLocalizationsOf(context).moreInfo,
-                          ArDriveIcons.info(
-                            size: defaultIconSize,
                           ),
                         ),
-                      ),
                       if (!state.hasWritePermissions &&
                           !isOwner &&
                           context.read<ProfileCubit>().state is ProfileLoggedIn)

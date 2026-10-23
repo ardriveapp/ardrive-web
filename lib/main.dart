@@ -96,7 +96,7 @@ void main() async {
 
     // Before any service starts: a library page starts them differently
     // (docs/LIBRARY_PAGES.md, "How a page opens").
-    LibraryMode.detect(readLibraryMetaContent);
+    LibraryMode.detect(readLibraryMetaContent, readTitle: readPageTitle);
     if (LibraryMode.isOn) {
       PlausibleEventTracker.disabled = true;
     }
@@ -263,7 +263,8 @@ class AppState extends State<App> {
             );
 
     return MaterialApp.router(
-      title: _appName,
+      // A library page keeps the title its publisher wrote.
+      title: LibraryMode.pageTitle ?? _appName,
       theme: ardriveTheme,
       debugShowCheckedModeBanner: false,
       routeInformationParser: _routeInformationParser,

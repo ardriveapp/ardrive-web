@@ -22,9 +22,11 @@ class ConfigFetcher {
   @visibleForTesting
   AssetBundle assetBundle = rootBundle;
 
+  /// A library page also tries its own host (see
+  /// [ArIOGatewayDetector.detectArIOGateway]).
   @visibleForTesting
-  Future<SelectedGateway?> Function() detectGateway =
-      ArIOGatewayDetector.detectArIOGateway;
+  late Future<SelectedGateway?> Function() detectGateway =
+      () => ArIOGatewayDetector.detectArIOGateway(alsoTryHost: libraryMode);
 
   Future<AppConfig> fetchConfig(Flavor flavor) async {
     // 1. Load default config from assets.

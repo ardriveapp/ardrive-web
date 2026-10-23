@@ -49,8 +49,12 @@ Future<void> copyLibraryLink(
   String? fileId,
 }) async {
   final config = libraryConfigOf(context);
-  // The scope's root is the library's own link, not a folder in it.
-  final atRoot = fileId == null && folderId == config?.scopeRootFolderId;
+  // The scope's root is the library's own link, not a folder in it. So is
+  // the drive's root, which drive-level menus name: in a folder library it
+  // is outside the library, and its id is not the library's to hand out.
+  final atRoot = fileId == null &&
+      (folderId == config?.scopeRootFolderId ||
+          folderId == config?.rootFolderId);
   await Clipboard.setData(ClipboardData(
     text: libraryLink(
       page: Uri.base,
@@ -74,8 +78,9 @@ Future<void> copyLibraryLink(
 }
 
 /// "Open in ArDrive": the library in the app, which a visitor opens without
-/// signing in: its drive, or for a folder library that folder, never the
-/// drive around it.
+/// signing in: its drive, or for a folder library that folder. The app is not
+/// scoped: from the folder a visitor can go up to the rest of the drive, which
+/// is public (and named in `library.json`) all the same.
 String openInArDriveUrl(LibraryConfig config) => switch (config.scope) {
       LibraryDriveScope() =>
         '${LibraryLoaderPage.ardriveUrl}/#/drives/${config.driveId}',

@@ -1,4 +1,6 @@
 import 'package:ardrive/core/arfs/repository/arfs_repository.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/library/domain/library_scope.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 
@@ -71,8 +73,40 @@ Future<List<MultiDownloadItem>> convertSelectionToMultiDownloadFileList(
     {String path = ''}) async {
   final multiDownloadFileList = <MultiDownloadItem>[];
 
+  // A library page downloads only what the library shows: the drive behind
+  // it holds hidden items and, for a folder library, everything around the
+  // folder. Nothing at all before the library is open.
+  final library = LibraryMode.isOn ? LibraryContents.open : null;
+  if (LibraryMode.isOn && library == null) return multiDownloadFileList;
+
   for (final item in selectedItems) {
-    if (item is DriveDataItem) {
+    if (library != null && item is! FileDataTableItem) {
+      final folderId =
+          item is DriveDataItem ? library.config.scopeRootFolderId : item.id;
+      final tree =
+          library.prune(await driveDao.getFolderTree(item.driveId, folderId));
+      if (tree == null) continue;
+      multiDownloadFileList.addAll(await convertFolderToMultidownloadFileList(
+        driveDao,
+        tree,
+        path: path,
+        // The library's root is named by its title, as everywhere on the page.
+        folderName: folderId == library.config.scopeRootFolderId
+            ? library.config.title
+            : null,
+      ));
+    } else if (library != null && item is FileDataTableItem) {
+      if (!library.showsFile(item.id)) continue;
+      multiDownloadFileList.add(MultiDownloadFile(
+        driveId: item.driveId,
+        fileId: item.id,
+        fileName: item.name,
+        txId: item.dataTxId,
+        size: item.size!,
+        contentType: item.contentType,
+        pinnedDataOwnerAddress: item.pinnedDataOwnerAddress,
+      ));
+    } else if (item is DriveDataItem) {
       final drive = await arfsRepository.getDriveById(item.driveId);
       final folderNode =
           await driveDao.getFolderTree(item.driveId, drive.rootFolderId);

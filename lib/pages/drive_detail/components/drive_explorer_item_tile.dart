@@ -1196,26 +1196,28 @@ class EntityActionsMenu extends StatelessWidget {
             ),
           ),
         ],
-        ArDriveDropdownItem(
-          onClick: () {
-            final bloc = context.read<DriveDetailCubit>();
+        // A library is not its drive: no drive details on a library page.
+        if (!LibraryMode.isOn)
+          ArDriveDropdownItem(
+            onClick: () {
+              final bloc = context.read<DriveDetailCubit>();
 
-            bloc.selectDataItem(
-              DriveDataTableItemMapper.fromDrive(
-                drive!,
-                (_) => null,
-                0,
-                isOwner,
+              bloc.selectDataItem(
+                DriveDataTableItemMapper.fromDrive(
+                  drive!,
+                  (_) => null,
+                  0,
+                  isOwner,
+                ),
+              );
+            },
+            content: _buildItem(
+              appLocalizationsOf(context).moreInfo,
+              ArDriveIcons.info(
+                size: defaultIconSize,
               ),
-            );
-          },
-          content: _buildItem(
-            appLocalizationsOf(context).moreInfo,
-            ArDriveIcons.info(
-              size: defaultIconSize,
             ),
-          ),
-        )
+          )
       ];
     }
     return [

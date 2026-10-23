@@ -12,6 +12,15 @@ void main() {
       expect(LibraryMode.settingsPath, 'library.json');
     });
 
+    test("keeps the page's own title, for a library page only", () {
+      LibraryMode.detect(() => 'library.json',
+          readTitle: () => " Phil's <Archive> ");
+      expect(LibraryMode.pageTitle, "Phil's <Archive>");
+
+      LibraryMode.detect(() => null, readTitle: () => 'ArDrive');
+      expect(LibraryMode.pageTitle, isNull);
+    });
+
     test('is off when the page has no tag', () {
       LibraryMode.detect(() => null);
 

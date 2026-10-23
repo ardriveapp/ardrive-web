@@ -3,9 +3,20 @@ import 'package:ardrive/library/domain/library_scope.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:equatable/equatable.dart';
 
-/// What the cover band says about a library: "N files · size".
+/// What the cover band says about a library: "N files • size".
 class LibraryStats extends Equatable {
   const LibraryStats({required this.fileCount, required this.totalSize});
+
+  /// The files [contents] lists, and their total size.
+  factory LibraryStats.of(LibraryContents contents) {
+    var count = 0;
+    var size = 0;
+    for (final file in contents.files) {
+      count++;
+      size += file.size;
+    }
+    return LibraryStats(fileCount: count, totalSize: size);
+  }
 
   final int fileCount;
   final int totalSize;
@@ -14,18 +25,9 @@ class LibraryStats extends Equatable {
   List<Object?> get props => [fileCount, totalSize];
 }
 
-/// Counts the files a library lists (see [LibraryContents]). Read once,
-/// after the import.
+/// Counts the files a library lists (see [LibraryContents]).
 Future<LibraryStats> computeLibraryStats(
   DriveDao driveDao,
   LibraryConfig config,
-) async {
-  final contents = await LibraryContents.load(driveDao, config);
-  var count = 0;
-  var size = 0;
-  for (final file in contents.files) {
-    count++;
-    size += file.size;
-  }
-  return LibraryStats(fileCount: count, totalSize: size);
-}
+) async =>
+    LibraryStats.of(await LibraryContents.load(driveDao, config));

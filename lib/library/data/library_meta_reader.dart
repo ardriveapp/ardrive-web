@@ -1,5 +1,6 @@
 /// Reads the `content` of the page's `<meta name="ardrive-library">` tag, the
-/// switch that puts the app in library mode. See `LibraryMode`.
+/// switch that puts the app in library mode, and the page's title. See
+/// `LibraryMode`.
 ///
 /// Off the web there is no page, so it returns null.
 library;

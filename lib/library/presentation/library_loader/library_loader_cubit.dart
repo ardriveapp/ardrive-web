@@ -3,6 +3,7 @@ import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/library/data/library_source.dart';
 import 'package:ardrive/library/domain/library_config.dart';
+import 'package:ardrive/library/domain/library_scope.dart';
 import 'package:ardrive/library/domain/library_stats.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -82,7 +83,21 @@ class LibraryLoaderCubit extends Cubit<LibraryLoaderState> {
     await _openSnapshot(config);
   }
 
+  /// Anything that goes wrong on the way that is not one of the named
+  /// failures (the database not opening, `sqlite3.wasm` not loading, the
+  /// importer throwing) ends on the retryable screen rather than on "Opening
+  /// library..." for ever: [load] runs unawaited, so an exception would
+  /// otherwise leave the last state up.
   Future<void> _openSnapshot(LibraryConfig config) async {
+    try {
+      await _openSnapshotOrThrow(config);
+    } catch (e, stackTrace) {
+      logger.e('Library not opened', e, stackTrace);
+      emit(LibraryFailed(LibraryFailure.snapshotUnavailable, config: config));
+    }
+  }
+
+  Future<void> _openSnapshotOrThrow(LibraryConfig config) async {
     await _driveDao.writeLibraryDrive(
       driveId: config.driveId,
       rootFolderId: config.rootFolderId,
@@ -149,13 +164,10 @@ class LibraryLoaderCubit extends Cubit<LibraryLoaderState> {
     }
 
     logger.i('Library imported: ${result.detail}');
-    LibraryStats? stats;
-    try {
-      stats = await computeLibraryStats(_driveDao, config);
-    } catch (e) {
-      // The cover's "N files · size" is decoration; the library is open.
-      logger.w('Library stats not counted: $e');
-    }
-    emit(LibraryReady(config, stats: stats));
+    // What the library shows, read once: downloads and the info panel prune
+    // the drive's folder trees with it (see [LibraryContents.open]).
+    final contents = await LibraryContents.load(_driveDao, config);
+    LibraryContents.open = contents;
+    emit(LibraryReady(config, stats: LibraryStats.of(contents)));
   }
 }

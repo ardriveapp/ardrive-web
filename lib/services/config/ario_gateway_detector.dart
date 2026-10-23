@@ -13,14 +13,21 @@ class ArIOGatewayDetector {
 
   /// Detects if the current host is an AR.IO gateway and returns the appropriate
   /// gateway configuration for data requests.
-  /// 
+  ///
   /// Returns null if:
   /// - Not running on web platform
   /// - Host is not an AR.IO gateway
   /// - Detection fails
-  /// 
+  ///
   /// Returns [SelectedGateway] if the host is a valid AR.IO gateway.
-  static Future<SelectedGateway?> detectArIOGateway() async {
+  ///
+  /// [alsoTryHost] tries the host itself after the domain above it. A library
+  /// page is served from a gateway's sandbox subdomain, whose parent is the
+  /// gateway, but a gateway that serves a manifest without redirecting serves
+  /// it from its own host, whose parent (`com`, say) is no gateway at all.
+  static Future<SelectedGateway?> detectArIOGateway({
+    bool alsoTryHost = false,
+  }) async {
     // Only run on web platform
     if (!kIsWeb) {
       logger.d('AR.IO gateway detection: Not running on web platform');
@@ -33,30 +40,29 @@ class ArIOGatewayDetector {
         logger.d('AR.IO gateway detection: No hostname available');
         return null;
       }
-      
+
       logger.d('AR.IO gateway detection: Checking host $hostGateway');
-      
+
       // Extract domain from hostname
       final parts = hostGateway.split('.');
       final domain = parts.length > 1 ? parts.sublist(1).join('.') : parts[0];
-      
-      logger.d('AR.IO gateway detection: Testing domain $domain');
-      
-      // Test if the domain is an AR.IO gateway
-      final isArIOGateway = await _testArIOGateway(domain);
-      
-      if (isArIOGateway) {
-        final gatewayUrl = 'https://$domain';
-        logger.i('AR.IO gateway detected: $gatewayUrl');
-        
-        return SelectedGateway(
-          label: 'AR.IO Gateway ($domain)',
-          url: gatewayUrl,
-        );
-      } else {
-        logger.d('AR.IO gateway detection: $domain is not an AR.IO gateway');
-        return null;
+
+      for (final candidate in {domain, if (alsoTryHost) hostGateway}) {
+        logger.d('AR.IO gateway detection: Testing domain $candidate');
+
+        // Test if the domain is an AR.IO gateway
+        if (await _testArIOGateway(candidate)) {
+          final gatewayUrl = 'https://$candidate';
+          logger.i('AR.IO gateway detected: $gatewayUrl');
+
+          return SelectedGateway(
+            label: 'AR.IO Gateway ($candidate)',
+            url: gatewayUrl,
+          );
+        }
+        logger.d('AR.IO gateway detection: $candidate is not an AR.IO gateway');
       }
+      return null;
     } catch (error, stackTrace) {
       logger.e('AR.IO gateway detection failed', error, stackTrace);
       return null;
@@ -68,19 +74,21 @@ class ArIOGatewayDetector {
     try {
       final uri = Uri.parse('https://$domain/ar-io/info');
       logger.d('AR.IO gateway detection: Testing $uri');
-      
+
       final response = await http.get(uri).timeout(_requestTimeout);
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
-        
+
         // Check if response contains wallet field (AR.IO gateway indicator)
         final hasWallet = data.containsKey('wallet') && data['wallet'] != null;
-        
-        logger.d('AR.IO gateway detection: Response has wallet field: $hasWallet');
+
+        logger.d(
+            'AR.IO gateway detection: Response has wallet field: $hasWallet');
         return hasWallet;
       } else {
-        logger.d('AR.IO gateway detection: HTTP ${response.statusCode} from $uri');
+        logger.d(
+            'AR.IO gateway detection: HTTP ${response.statusCode} from $uri');
         return false;
       }
     } catch (error) {

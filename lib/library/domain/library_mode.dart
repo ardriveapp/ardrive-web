@@ -22,10 +22,23 @@ class LibraryMode {
   /// [isOn].
   static String? get settingsPath => _settingsPath;
 
+  static String? _pageTitle;
+
+  /// The page's own `<title>`, which the publisher wrote, as the page loaded.
+  /// Only set when [isOn]. The app names its window with it rather than
+  /// "ArDrive": Flutter sets `document.title` from `MaterialApp.title`.
+  static String? get pageTitle => _pageTitle;
+
   /// Reads the page's switch once. [readMetaContent] returns the `content` of
-  /// the page's `ardrive-library` meta tag, or null when there is none.
-  static void detect(String? Function() readMetaContent) {
+  /// the page's `ardrive-library` meta tag, or null when there is none;
+  /// [readTitle] the document's title.
+  static void detect(
+    String? Function() readMetaContent, {
+    String? Function()? readTitle,
+  }) {
     _settingsPath = parseLibraryMetaContent(readMetaContent());
+    final title = isOn ? readTitle?.call()?.trim() : null;
+    _pageTitle = title == null || title.isEmpty ? null : title;
   }
 
   @visibleForTesting
