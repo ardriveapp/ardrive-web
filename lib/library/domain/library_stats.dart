@@ -14,28 +14,16 @@ class LibraryStats extends Equatable {
   List<Object?> get props => [fileCount, totalSize];
 }
 
-/// Counts the files a library shows: in its scope, not hidden, and not inside
-/// a hidden folder below the published one, as the explorer shows them.
-///
-/// Read once, after the import, from two queries over the drive rather than
-/// one per folder (see [LibraryFolders]).
+/// Counts the files a library lists (see [LibraryContents]). Read once,
+/// after the import.
 Future<LibraryStats> computeLibraryStats(
   DriveDao driveDao,
   LibraryConfig config,
 ) async {
-  final db = driveDao.attachedDatabase;
-  final folders = await LibraryFolders.load(driveDao, config);
-  final files = await (db.select(db.fileEntries)
-        ..where((f) => f.driveId.equals(config.driveId)))
-      .get();
-
+  final contents = await LibraryContents.load(driveDao, config);
   var count = 0;
   var size = 0;
-  for (final file in files) {
-    if (!folders.showsFile(
-      isHidden: file.isHidden,
-      parentFolderId: file.parentFolderId,
-    )) continue;
+  for (final file in contents.files) {
     count++;
     size += file.size;
   }

@@ -2,6 +2,7 @@ import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/file_download_dialog.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/search/domain/bloc/search_bloc.dart';
@@ -12,6 +13,7 @@ import 'package:ardrive/search/search_result_navigator.dart';
 import 'package:ardrive/search/search_result_view.dart';
 import 'package:ardrive/search/search_scope.dart';
 import 'package:ardrive/search/search_text_field.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -197,7 +199,9 @@ class _FileSearchModalState extends State<FileSearchModal> {
     ArDriveColorTokens colorTokens,
   ) {
     return Text(
-      'Search for a file, folder, or drive',
+      LibraryMode.isOn
+          ? appLocalizationsOf(context).librarySearchTitle
+          : 'Search for a file, folder, or drive',
       style: typography.heading4(
           color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
     );
@@ -236,7 +240,9 @@ class _FileSearchModalState extends State<FileSearchModal> {
           } else if (state.status == SearchStatus.idle) {
             return Center(
               child: Text(
-                'Nothing here yet! Start by searching for a file name, folder, or drive above.',
+                LibraryMode.isOn
+                    ? appLocalizationsOf(context).librarySearchStart
+                    : 'Nothing here yet! Start by searching for a file name, folder, or drive above.',
                 style: typography.paragraphXLarge(
                   color: colorTokens.textHigh,
                   fontWeight: ArFontWeight.semiBold,
@@ -249,7 +255,10 @@ class _FileSearchModalState extends State<FileSearchModal> {
           }
           return Center(
             child: Text(
-              'We couldn\'t find any files, folders, or drives matching your search. Please check your spelling or try searching with a different keyword.',
+              LibraryMode.isOn
+                  ? appLocalizationsOf(context)
+                      .librarySearchNoMatches(state.query)
+                  : 'We couldn\'t find any files, folders, or drives matching your search. Please check your spelling or try searching with a different keyword.',
               style: typography.paragraphXLarge(
                 fontWeight: ArFontWeight.semiBold,
                 color: colorTokens.textHigh,

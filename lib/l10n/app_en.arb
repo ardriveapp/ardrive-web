@@ -4607,6 +4607,19 @@
   "@librarySearchHint": {
     "description": "Hint in a library page's search field."
   },
+  "librarySearchTitle": "Search this library",
+  "@librarySearchTitle": {
+    "description": "Heading of a library page's full search results."
+  },
+  "librarySearchStart": "Start by searching for a file or folder name above.",
+  "@librarySearchStart": {
+    "description": "A library page's full search results before anything is typed."
+  },
+  "librarySearchNoMatches": "Nothing in this library matches \u201c{query}\u201d.",
+  "@librarySearchNoMatches": {
+    "description": "Shown in a library page's search dropdown when nothing matches. A library has no drives to search.",
+    "placeholders": { "query": { "type": "String", "example": "report" } }
+  },
   "libraryCoverSummary": "{files, plural, =1{1 file} other{{files} files}} · {size} · published {date}",
   "@libraryCoverSummary": {
     "description": "Under the title on a library page's cover: how many files it has, their total size and when it was published. Size and date are already formatted.",

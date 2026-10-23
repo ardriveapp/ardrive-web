@@ -11,7 +11,7 @@ import 'package:ardrive/search/search_result.dart';
 /// The snapshot holds the whole drive, hidden items and, for a folder
 /// library, every folder its owner did not publish. The app's search would
 /// list all of them, and the drive itself by name. This lists the files and
-/// folders [LibraryFolders] shows, never the drive, and never the published
+/// folders [LibraryContents] shows, never the drive, and never the published
 /// folder itself, whose result would name the folder above it.
 ///
 /// There is one drive, already here in full, so search covers everything and
@@ -27,8 +27,8 @@ class LibrarySearchRepository implements SearchRepository {
   /// The open library, or null while it is still loading.
   final LibraryConfig? Function() _config;
 
-  LibraryConfig? _foldersConfig;
-  Future<LibraryFolders>? _folders;
+  LibraryConfig? _contentsConfig;
+  Future<LibraryContents>? _contents;
 
   /// Results kept of each kind, as many as the app's search keeps.
   static const resultsPerKind = 50;
@@ -46,21 +46,15 @@ class LibrarySearchRepository implements SearchRepository {
   Future<List<SearchResult>> search(String query) async {
     final config = _config();
     if (config == null || query.isEmpty) return const [];
-    final folders = await _foldersOf(config);
+    final contents = await _contentsOf(config);
 
     bool shows(SearchResult result) {
       final item = result.result;
       if (item is FolderEntry) {
         return item.id != config.scopeRootFolderId &&
-            !item.isHidden &&
-            folders.shows(item.id);
+            contents.showsFolder(item.id);
       }
-      if (item is FileEntry) {
-        return folders.showsFile(
-          isHidden: item.isHidden,
-          parentFolderId: item.parentFolderId,
-        );
-      }
+      if (item is FileEntry) return contents.showsFile(item.id);
       return false;
     }
 
@@ -94,12 +88,12 @@ class LibrarySearchRepository implements SearchRepository {
     return kept;
   }
 
-  Future<LibraryFolders> _foldersOf(LibraryConfig config) {
-    if (!identical(config, _foldersConfig)) {
-      _foldersConfig = config;
-      _folders = LibraryFolders.load(_driveDao, config);
+  Future<LibraryContents> _contentsOf(LibraryConfig config) {
+    if (!identical(config, _contentsConfig)) {
+      _contentsConfig = config;
+      _contents = LibraryContents.load(_driveDao, config);
     }
-    return _folders!;
+    return _contents!;
   }
 
   @override

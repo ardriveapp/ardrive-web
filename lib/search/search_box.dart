@@ -484,7 +484,9 @@ class _SearchDropdown extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Text(
           noMatches
-              ? localizations.searchNoMatches(state.query)
+              ? LibraryMode.isOn
+                  ? localizations.librarySearchNoMatches(state.query)
+                  : localizations.searchNoMatches(state.query)
               : localizations.searchSearching,
           style: typography.paragraphNormal(
             color: colorTokens.textMid,

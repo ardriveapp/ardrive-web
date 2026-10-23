@@ -36,19 +36,20 @@ Future<bool> isInLibraryScope({
 /// Deeper than any real drive; past it the walk stops and answers no.
 const _maxDepth = 256;
 
-/// Which folders of a library's drive it shows, decided in memory from one
-/// read of the drive's folders: for counting a library and searching it,
-/// which ask about many folders at once, where [isInLibraryScope] asks the
-/// database about one. A library's database does not change once it is
-/// open, so this can be read once and kept.
+/// What a library shows, decided in memory from one read of its drive's
+/// folders and one of its files: for counting a library and searching it,
+/// which ask about many items at once, where [isInLibraryScope] asks the
+/// database about one folder. A library's database does not change once it
+/// is open, so this can be read once and kept.
 ///
-/// Answers as [isInLibraryScope] does, and also leaves out ghost folders
-/// (folders known only from the files inside them), which the explorer does
-/// not list either.
-class LibraryFolders {
-  LibraryFolders._(this._config, this._byId);
+/// Folders as [isInLibraryScope] decides them, less ghost folders (known only
+/// from the files inside them). Files that are not hidden, in a folder it
+/// shows, and whose latest revision is neither failed nor pending. That is
+/// what the explorer lists, which reads files through the same query.
+class LibraryContents {
+  LibraryContents._(this._config, this._folders, this._files);
 
-  static Future<LibraryFolders> load(
+  static Future<LibraryContents> load(
     DriveDao driveDao,
     LibraryConfig config,
   ) async {
@@ -56,16 +57,24 @@ class LibraryFolders {
     final folders = await (db.select(db.folderEntries)
           ..where((f) => f.driveId.equals(config.driveId)))
         .get();
-    return LibraryFolders._(config, {for (final f in folders) f.id: f});
+    final files = await driveDao
+        .filesInDriveWithRevisionTransactions(driveId: config.driveId)
+        .get();
+    return LibraryContents._(
+      config,
+      {for (final f in folders) f.id: f},
+      {for (final f in files) f.id: f},
+    );
   }
 
   final LibraryConfig _config;
-  final Map<String, FolderEntry> _byId;
+  final Map<String, FolderEntry> _folders;
+  final Map<String, FileWithLatestRevisionTransactions> _files;
   final _shown = <String, bool>{};
 
   /// Whether the library shows the folder [folderId] (and so can list what is
   /// in it).
-  bool shows(String folderId) {
+  bool showsFolder(String folderId) {
     final known = _shown[folderId];
     if (known != null) return known;
     // Walk up, remembering the path, so each folder is decided once.
@@ -78,7 +87,7 @@ class LibraryFolders {
         answer = cached;
         break;
       }
-      final folder = _byId[current];
+      final folder = _folders[current];
       if (folder == null) break;
       path.add(current);
       if (folder.id == _config.scopeRootFolderId) {
@@ -95,7 +104,20 @@ class LibraryFolders {
     return answer;
   }
 
-  /// Whether the library lists a file that is in [parentFolderId].
-  bool showsFile({required bool isHidden, required String parentFolderId}) =>
-      !isHidden && shows(parentFolderId);
+  /// Whether the library lists the file [fileId].
+  bool showsFile(String fileId) {
+    final file = _files[fileId];
+    return file != null && _isListed(file);
+  }
+
+  /// Every file the library lists.
+  Iterable<FileWithLatestRevisionTransactions> get files =>
+      _files.values.where(_isListed);
+
+  bool _isListed(FileWithLatestRevisionTransactions file) {
+    if (file.isHidden || !showsFolder(file.parentFolderId)) return false;
+    final status = fileStatusFromTransactions(file.metadataTx, file.dataTx);
+    return status != TransactionStatus.failed &&
+        status != TransactionStatus.pending;
+  }
 }

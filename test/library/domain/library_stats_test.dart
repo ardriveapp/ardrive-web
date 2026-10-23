@@ -5,6 +5,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../test_utils/utils.dart';
+import '../library_test_files.dart';
 
 const _drive = 'c863be1f-a725-4554-9a9e-18268ed8a035';
 const _root = '41520b33-28c1-4892-886b-b845a5709085';
@@ -45,19 +46,21 @@ void main() {
             path: '',
           ));
 
-  Future<void> file(String id, String parent, int size,
-          {bool hidden = false}) =>
-      db.into(db.fileEntries).insert(FileEntriesCompanion.insert(
-            id: id,
-            driveId: _drive,
-            parentFolderId: parent,
-            name: id,
-            dataTxId: '${id}Data',
-            size: size,
-            lastModifiedDate: DateTime.utc(2026),
-            isHidden: Value(hidden),
-            path: '',
-          ));
+  Future<void> file(
+    String id,
+    String parent,
+    int size, {
+    bool hidden = false,
+    String status = TransactionStatus.confirmed,
+  }) =>
+      insertLibraryFile(db,
+          driveId: _drive,
+          id: id,
+          name: id,
+          parentFolderId: parent,
+          size: size,
+          hidden: hidden,
+          status: status);
 
   setUp(() async {
     db = getTestDb();
@@ -103,6 +106,16 @@ void main() {
     const ghost = '66666666-0000-4000-8000-000000000006';
     await folder(ghost, _root, ghost: true);
     await file('g1', ghost, 5000);
+    expect(
+      await computeLibraryStats(
+          db.driveDao, _config(const LibraryDriveScope())),
+      const LibraryStats(fileCount: 2, totalSize: 110),
+    );
+  });
+
+  test('leaves out failed and pending uploads, as the explorer does', () async {
+    await file('failed', _root, 5000, status: TransactionStatus.failed);
+    await file('pending', _a, 7000, status: TransactionStatus.pending);
     expect(
       await computeLibraryStats(
           db.driveDao, _config(const LibraryDriveScope())),

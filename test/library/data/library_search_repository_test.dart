@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../test_utils/utils.dart';
+import '../library_test_files.dart';
 
 const _drive = 'c863be1f-a725-4554-9a9e-18268ed8a035';
 const _root = '41520b33-28c1-4892-886b-b845a5709085';
@@ -42,18 +43,19 @@ void main() {
             path: '',
           ));
 
-  Future<void> file(String name, String parent, {bool hidden = false}) =>
-      db.into(db.fileEntries).insert(FileEntriesCompanion.insert(
-            id: '$name-id',
-            driveId: _drive,
-            parentFolderId: parent,
-            name: name,
-            dataTxId: '${name}Data',
-            size: 1,
-            lastModifiedDate: DateTime.utc(2026),
-            isHidden: Value(hidden),
-            path: '',
-          ));
+  Future<void> file(
+    String name,
+    String parent, {
+    bool hidden = false,
+    String status = TransactionStatus.confirmed,
+  }) =>
+      insertLibraryFile(db,
+          driveId: _drive,
+          id: '$name-id',
+          name: name,
+          parentFolderId: parent,
+          hidden: hidden,
+          status: status);
 
   LibrarySearchRepository repository(LibraryConfig? config) =>
       LibrarySearchRepository(db.driveDao, config: () => config);
@@ -104,6 +106,15 @@ void main() {
         'report-a.txt',
         'report-b.txt',
       ]),
+    );
+  });
+
+  test('never finds failed or pending uploads', () async {
+    await file('report-failed.txt', _a, status: TransactionStatus.failed);
+    await file('report-pending.txt', _a, status: TransactionStatus.pending);
+    expect(
+      await names(_config(const LibraryFolderScope(_a)), 'report'),
+      ['report-a.txt'],
     );
   });
 
