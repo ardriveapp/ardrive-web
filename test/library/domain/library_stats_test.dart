@@ -29,17 +29,24 @@ LibraryConfig _config(LibraryScope scope) => LibraryConfig(
 void main() {
   late Database db;
 
-  Future<void> folder(String id, String? parent, {bool hidden = false}) =>
+  Future<void> folder(
+    String id,
+    String? parent, {
+    bool hidden = false,
+    bool ghost = false,
+  }) =>
       db.into(db.folderEntries).insert(FolderEntriesCompanion.insert(
             id: id,
             driveId: _drive,
             name: id,
             parentFolderId: Value(parent),
             isHidden: Value(hidden),
+            isGhost: Value(ghost),
             path: '',
           ));
 
-  Future<void> file(String id, String parent, int size, {bool hidden = false}) =>
+  Future<void> file(String id, String parent, int size,
+          {bool hidden = false}) =>
       db.into(db.fileEntries).insert(FileEntriesCompanion.insert(
             id: id,
             driveId: _drive,
@@ -70,14 +77,16 @@ void main() {
 
   test('a drive library counts what it shows', () async {
     expect(
-      await computeLibraryStats(db.driveDao, _config(const LibraryDriveScope())),
+      await computeLibraryStats(
+          db.driveDao, _config(const LibraryDriveScope())),
       const LibraryStats(fileCount: 2, totalSize: 110),
     );
   });
 
   test('a folder library counts its folder only', () async {
     expect(
-      await computeLibraryStats(db.driveDao, _config(const LibraryFolderScope(_a))),
+      await computeLibraryStats(
+          db.driveDao, _config(const LibraryFolderScope(_a))),
       const LibraryStats(fileCount: 1, totalSize: 100),
     );
   });
@@ -87,6 +96,17 @@ void main() {
       await computeLibraryStats(
           db.driveDao, _config(const LibraryFolderScope(_hidden))),
       const LibraryStats(fileCount: 1, totalSize: 1000),
+    );
+  });
+
+  test('leaves out what is inside a ghost folder', () async {
+    const ghost = '66666666-0000-4000-8000-000000000006';
+    await folder(ghost, _root, ghost: true);
+    await file('g1', ghost, 5000);
+    expect(
+      await computeLibraryStats(
+          db.driveDao, _config(const LibraryDriveScope())),
+      const LibraryStats(fileCount: 2, totalSize: 110),
     );
   });
 }

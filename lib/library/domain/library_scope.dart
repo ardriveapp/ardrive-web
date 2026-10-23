@@ -35,3 +35,67 @@ Future<bool> isInLibraryScope({
 
 /// Deeper than any real drive; past it the walk stops and answers no.
 const _maxDepth = 256;
+
+/// Which folders of a library's drive it shows, decided in memory from one
+/// read of the drive's folders: for counting a library and searching it,
+/// which ask about many folders at once, where [isInLibraryScope] asks the
+/// database about one. A library's database does not change once it is
+/// open, so this can be read once and kept.
+///
+/// Answers as [isInLibraryScope] does, and also leaves out ghost folders
+/// (folders known only from the files inside them), which the explorer does
+/// not list either.
+class LibraryFolders {
+  LibraryFolders._(this._config, this._byId);
+
+  static Future<LibraryFolders> load(
+    DriveDao driveDao,
+    LibraryConfig config,
+  ) async {
+    final db = driveDao.attachedDatabase;
+    final folders = await (db.select(db.folderEntries)
+          ..where((f) => f.driveId.equals(config.driveId)))
+        .get();
+    return LibraryFolders._(config, {for (final f in folders) f.id: f});
+  }
+
+  final LibraryConfig _config;
+  final Map<String, FolderEntry> _byId;
+  final _shown = <String, bool>{};
+
+  /// Whether the library shows the folder [folderId] (and so can list what is
+  /// in it).
+  bool shows(String folderId) {
+    final known = _shown[folderId];
+    if (known != null) return known;
+    // Walk up, remembering the path, so each folder is decided once.
+    final path = <String>[];
+    String? current = folderId;
+    var answer = false;
+    while (current != null && path.length < _maxDepth) {
+      final cached = _shown[current];
+      if (cached != null) {
+        answer = cached;
+        break;
+      }
+      final folder = _byId[current];
+      if (folder == null) break;
+      path.add(current);
+      if (folder.id == _config.scopeRootFolderId) {
+        answer = true;
+        break;
+      }
+      if (folder.isHidden || folder.isGhost) break;
+      if (folder.id == _config.rootFolderId) break;
+      current = folder.parentFolderId;
+    }
+    for (final id in path) {
+      _shown[id] = answer;
+    }
+    return answer;
+  }
+
+  /// Whether the library lists a file that is in [parentFolderId].
+  bool showsFile({required bool isHidden, required String parentFolderId}) =>
+      !isHidden && shows(parentFolderId);
+}
