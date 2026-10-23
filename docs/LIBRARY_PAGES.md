@@ -1,331 +1,414 @@
 # Library pages
 
-> **Status: PLAN.** Not built, and blocked on the drive state artifact landing
-> first. A library page maps an ArNS name to an ArDrive drive or folder so the
-> name opens a browsable page, public or private. Evidence is cited to file and
-> line; gateway behaviour was measured against live gateways in October 2026.
+> **Status: DESIGN v2, agreed 2026-10-21. Not built.** Build order, code seams
+> and tests are in `docs/library-pages/IMPLEMENTATION_PLAN.md`. Supersedes v1
+> of this file (a plain HTML viewer with range reads), which is in git history.
 
-## What this is for
-
-An owner points `phils-archive.ar.io` at a drive, or at one folder of it, and
-anyone who opens that name gets a browsable page. A public drive opens with no
-key. A private drive opens once the visitor supplies the drive key.
-
-The shipped app can assign an ArNS name to one file and to a manifest, so a name
-can already point at one object. It cannot point at a library, because nothing
-generates the page that lists one and nothing serves the catalog that page would
-read.
+A library page is a permanent web page that shows one ArDrive drive, or one
+folder of it, to anyone who opens its link. It is ArDrive itself in a
+read-only "library mode": the same file table, previews, search and downloads,
+under the owner's title, icon, social card and cover. A public library opens
+as it is; a private one opens with the drive key.
 
 ## Vocabulary
 
-One term, one meaning, in this document and in the UI:
+| Term | Means | Shown to users as |
+|---|---|---|
+| Library page | What a visitor opens | Library page |
+| Publish, republish, unpublish | The owner's actions | Publish library page, Republish, Unpublish |
+| Snapshot | A drive state artifact (`DRIVE_STATE_ARTIFACT.md`), the catalog the page loads | Snapshot |
+| Viewer bundle | One release of the ArDrive web build, uploaded to Arweave | never shown |
+| Page manifest | The Arweave path manifest that is the page | never shown; its link is the page's link |
+| Name | An ArNS name or undername pointing at a page manifest | Name |
 
-| Term | Means |
+Publish is not Share. Share hands out a link to what exists, writes nothing and
+costs nothing. Publish writes permanent objects to Arweave.
+
+## Decisions (all agreed)
+
+1. **The viewer is ArDrive in library mode, from the same build.** No second
+   UI. Every release is a viewer.
+2. **Every publish assembles a fresh, static page manifest** that pins one
+   release's bundle by transaction ID. The bundle is never re-uploaded per
+   page. A page runs the release it pinned until it is republished.
+3. **Release bundles are uploaded gzipped** with `Content-Encoding: gzip`
+   (`@ar.io/deploy --compress gzip`, action `ar-io/ar-io-deploy` v2.1.2).
+   This also shrinks the permaweb ArDrive at `ardrive.ar.io`.
+4. **Snapshots stay always compressed.** The viewer loads the whole snapshot,
+   so there is no range-read threshold. Remove "Producers always compress until
+   Library pages ship" from `DRIVE_STATE_ARTIFACT.md` §2.7.
+5. **Customization:** title, description, icon, social card, cover banner
+   (not a full-page background).
+6. **Publish lives beside Share** in a drive's menu, a folder's menu and the
+   details panel. Not in the New menu.
+7. **No analytics, no third-party requests** on a library page.
+8. **Every page shows "Made with ArDrive · Open in ArDrive".**
+9. **No per-file URLs** in v1. Files load by transaction ID from the serving
+   gateway.
+10. **Republish only on request,** choosing an existing snapshot or making a
+    new one.
+11. **Names:** the owner picks the main name or an undername. Unpublishing an
+    undername removes its record; unpublishing a main name points it at a
+    shared "no longer published" page. See [Names](#names): this whole part
+    waits on ArNS-on-Solana support in the app.
+
+## Measured facts this design rests on (2026-10-21)
+
+| Fact | Value |
 |---|---|
-| Library page | What a visitor opens at the name |
-| Publish, republish | The action that writes it |
-| Drive state artifact, or artifact | The published catalog the page reads (`DRIVE_STATE_ARTIFACT.md`) |
-| Manifest | The Arweave path manifest that serves the page and its files |
-| Name | The ArNS record pointing at that manifest |
+| `ardrive.ar.io` `main.dart.js`, as served today | 28.2 MB, no compression, even with `Accept-Encoding: gzip` |
+| Same file from `app.ardrive.io` (Firebase, brotli) | 2.9 MB |
+| `main.dart.js` gzipped | 27.5 → 4.0 MB |
+| `canvaskit.wasm` gzipped | 6.4 → 2.6 MB; Chromium build 5.1 → 1.9 MB |
+| `Content-Encoding` tag passthrough | turbo-gateway.com, ar-io.dev, ardrive.net, vilenarios.com send the header (raw and sandboxed routes); frostor.xyz decompresses itself. A gateway that has not indexed a new item yet may send gzip bytes bare (ar-io-node #964/#966, fixed on ar.io and Turbo gateways) |
+| Release manifest | 469 paths, 49 KB |
+| Staging build uploaded gzipped (phase 0) | 466 files without source maps, 77.3 MB → 18.8 MiB; 19 s; 0.2666 Turbo credits (about $1.58) for a first upload; later uploads pay mostly for `main.dart.js` (4.2 MB) |
+| First visit to the gzipped bundle | 8.96 MB on the wire, Flutter view at 2.9 s (turbo-gateway.com and ardrive.net alike); the uncompressed production upload of the same day: 38.16 MB |
+| ar-io.dev and gzip | Serves some gzipped items decompressed even when the browser accepts gzip (correct, larger). Served every path of a new Turbo upload only 1 h 27 min after it (404s until then, `AssetManifest.json` among them, so the app stopped at its splash), while turbo-gateway.com and ardrive.net served all of them at once. Charges for data past a free allowance: HTTP 402 with an x402 offer (USDC on Base Sepolia) after one evening of testing from one connection. It is the gateway of Turbo's **development sandbox** (`upload.services.ar-io.dev` is the Turbo SDK's `developmentUploadServiceURL`): uploads through that service show on ar-io.dev at once but are not permanent and no production gateway serves them; production uploads reach ar-io.dev only from the chain. Not a gateway for releases or library pages |
+| ArDrive at a raw manifest URL | Boots: `https://turbo-gateway.com/<manifest-id>/` redirects to the sandbox subdomain and the app loads (no `<base>` tag in `web/index.html`, all paths relative) |
+| Snapshot of 41,767 files | 6.0 MiB gzipped, imported in 0.6 s |
+| Requests the normal app makes on start | Also fonts.gstatic.com, upload.ardrive.io, plausible.io: library mode must stop these |
 
-**Publish is not Share**, and the UI says so. Share hands someone a link to what
-already exists, writes nothing to Arweave and costs nothing. Publish writes
-permanent objects to Arweave, costs an upload, and cannot be undone.
+## Architecture
 
-## It is built on the drive state artifact
+### What a page is
 
-A library page invents no data format. The drive state artifact already carries
-what the explorer renders: the drive, both entry tables, all three revision
-tables and licenses (`DECISIONS.md` D2), gzipped, and encrypted under the
-drive key when the drive is private. Its read path is already the one a static
-page needs: resolve a name, check the artifact's owner, fetch bytes, decrypt,
-read (`DRIVE_STATE_ARTIFACT.md` §4.1). The owner check is one lookup by
-transaction id, the same attribution every ArFS entity gets (D16).
+A page manifest (`arweave/paths` 0.2.0) whose paths are:
 
-Three consequences:
+| Path | Points at | Uploaded by |
+|---|---|---|
+| `index.html` (index and fallback) | The release's `index.html` with the page's head written in | the publish |
+| `library.json` | The page's settings and its snapshot's tags | the publish |
+| `snapshot` | A drive state artifact | earlier, or the publish |
+| `icon-32.png`, `icon-180.png`, `icon-512.png`, `social.jpg`, `cover.jpg` | The page's images, when set | the publish, or an existing transaction |
+| every other path of the release manifest | The release's own files, by transaction ID | CI, once per release |
 
-- **No listing file.** An earlier revision of this plan proposed publishing a
-  separate JSON catalog beside the manifest. That duplicated the artifact and is
-  dropped.
-- **Version history works in the page**, because D2 reversed to carry every
-  revision rather than the newest per entity.
-- **Licenses, assigned ArNS names, pinned owners and thumbnails all travel**, so
-  the page renders what the explorer renders without asking a gateway anything
-  else.
+A page manifest is about 52 KB, under Turbo's free 105 KiB. Its link is
+`https://<gateway>/<manifest-id>/` (the trailing slash matters), and a name can
+point at it later.
 
-This feature also closes D6, which parked ArNS discovery as "not wired in v1".
-A library page is the case §4.1 describes: a recipient handed a name and a key
-opens a large drive without walking its history.
+### `library.json`
 
-## The shape
-
-Publishing writes two objects and one record:
-
-1. **The artifact**, the drive's catalog, as specified in its own document.
-2. **The manifest**, whose index is the viewer, which maps one path to the
-   artifact, one path to the shared viewer code, and one path per published file
-   to its data item.
-3. **The record**, pointing the chosen name at the manifest.
-
-The viewer itself is deployed once per app release and referenced **by
-transaction id** from each page's manifest, never by a name. A manifest path may
-point at any transaction, so every library page shares one copy of the viewer at
-no extra cost, same-origin and immutable. A permanent page must not have a
-mutable record in its critical path.
-
-Every link the page emits is relative, so the page carries no gateway hostname
-and keeps working on any gateway that resolves the name, and under `ar://`.
-
-## Private library pages
-
-The manifest and the viewer are public. The artifact inside them is encrypted,
-which is how a private drive's page works:
-
-- The visitor supplies the **drive key**, pasted or carried in the link exactly
-  as a shared private drive does today with `driveKey`.
-- That key decrypts the artifact, and every file key derives from it through
-  `deriveFileKey()` (`lib/core/crypto/crypto.dart:119`), so the page decrypts
-  file bytes with WebCrypto, choosing AES-GCM or AES-CTR at the uploader's
-  boundary (`packages/ardrive_uploader/lib/src/constants.dart:3`, 100 MiB).
-- **No new cryptography.** The page runs the derivation the app already ships
-  and the artifact's own envelope. Nothing in the upload path moves.
-
-**A private page's manifest paths must be opaque.** Manifest path keys are
-plaintext inside a public JSON object, so publishing `Photos/medical/scan.jpg`
-as a key publishes that structure even though the bytes stay encrypted. Private
-pages key their paths by file id, and the readable tree lives only inside the
-encrypted artifact.
-
-What the review step has to say, in the step itself rather than in a notice:
-
-- Publishing is permanent and cannot be withdrawn.
-- A shared drive key opens the whole drive for ever, including files uploaded
-  after the publish. That is already true of sharing a private drive today.
-- Clearing the record stops the name resolving. It does not unpublish anything.
-
-Wrapping the drive key under a passphrase, so a link alone is not the key, is a
-later refinement rather than the mechanism.
-
-## How the page reads the artifact
-
-The viewer opens the artifact with SQLite compiled to wasm, which this
-repository already ships and loads on every page (`web/sql-wasm.wasm`, 1.2 MB
-raw, about 458 KB gzipped, loaded at `web/index.html:332`). DuckDB is the right
-tool for parquet analytics over a global index and the wrong tool for opening
-one drive's catalog.
-
-Gateway behaviour, measured in October 2026 against two AR.IO gateways in three
-browsers, cross-origin:
-
-| Property | Measured behaviour |
-|---|---|
-| Range requests | Work on `/{txId}`, a bundled data item, a manifest path and an ArNS path, single and multi-range |
-| CORS | `Access-Control-Allow-Origin: *`, `range` allowed, headers exposed |
-| A gzip-stored object plus a range | Returns a slice of the compressed bytes, which no browser can decode |
-| Negotiated compression | Does not happen. No gateway compresses on request |
-| A cold object | The gateway fetches the whole object before answering a range: 9 to 22 seconds measured |
-| A warm object | About 70 ms per read |
-
-Five rules follow, and they are requirements rather than preferences:
-
-1. **Publish the artifact with no `Content-Encoding` tag.** ArDrive sets none
-   anywhere today, so this costs nothing to honour.
-2. **Compress inside the envelope only below the range-read threshold.** A small
-   artifact is fetched whole and compression is free value. A large public one
-   is published identity so the page can read the pages it needs. Readers tell
-   the two apart by the payload's first bytes, so the choice needs no flag, and
-   it is permanent per artifact.
-3. **Warm the cache at publish.** One full GET against the serving gateway after
-   upload, so the first visitor never pays the cold-miss cliff.
-4. **Read in few large blocks.** The gateway's per-resource token bucket is keyed
-   `host:method:path` and shared by every reader of the same page, charged per
-   KiB with a one-token minimum, so hundreds of 4 KB reads are the wrong shape.
-5. **Ignore `Content-Digest` on a partial response.** A gateway returns the
-   whole-object digest on a 206 and signs it, so verifying it always fails. The
-   page relies on the artifact's owner check, and on GCM for a private drive,
-   which is the trust model the artifact specifies anyway (D16). With no
-   signature over the whole payload, a range read is no less trusted than a
-   full one.
-
-The page also pins `x-arns-resolved-id` from the first response and reads the
-rest against that id, because a name is mutable and `If-Range` is not
-implemented.
-
-## The publish flow
-
-Three entry points open the same flow with a different preselected scope: a
-drive's details panel and row overflow menu, a folder's, and one entry in the
-New menu. Publish belongs beside Share, which already appears in all three
-places (`lib/components/details_panel.dart:1341`,
-`lib/pages/drive_detail/drive_detail_page.dart:777`,
-`lib/drives_list/presentation/drive_actions_menu.dart`).
-
-The New menu gains one item and loses the temptation to add three:
-
-```text
-Upload Files · Upload Folder · New Folder · New Note · New File Pin
-────
-Publish…
-────
-New Drive · Attach Drive
-Advanced ▸  Import from Manifest · Create Manifest · New Snapshot
+```json
+{
+  "version": 1,
+  "driveId": "c863be1f-a725-4554-9a9e-18268ed8a035",
+  "rootFolderId": "41520b33-28c1-4892-886b-b845a5709085",
+  "scope": { "type": "drive" },
+  "privacy": "public",
+  "owner": "iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA",
+  "snapshot": {
+    "path": "snapshot",
+    "txId": "<artifact tx id>",
+    "tags": { "Drive-Id": "…", "Block-Start": "0", "Block-End": "1879136",
+              "Entity-Count": "6", "State-Version": "…" }
+  },
+  "title": "Phil's Archive",
+  "description": "Photos, notes and the odd recording.",
+  "images": { "icon": "icon-512.png", "social": "social.jpg", "cover": "cover.jpg" },
+  "publishedAt": "2026-10-21T18:02:11Z",
+  "viewer": { "release": "2.91.0", "manifest": "<release manifest tx id>" }
+}
 ```
 
-**"Publish Drive State" must not reach a user.** An artifact is how Publish
-works, as a manifest is. Four engineering artifacts offered as four menu items
-is how a user ends up choosing between Create Manifest, New Snapshot and Publish
-Drive State. The drive state branch adds exactly that string today
-(`lib/components/new_button/new_button.dart`), and it folds into Publish.
+- `scope` is `{"type":"drive"}` or `{"type":"folder","folderId":"…"}`.
+- `snapshot.tags` copies every tag the importer reads from the artifact
+  (`DriveStateArtifactCandidate`), including `Cipher` and `Cipher-IV` for a
+  private drive. The viewer builds the candidate from these instead of
+  GraphQL.
+- Nothing in `library.json` is secret. For a private drive it must not contain
+  any drive, folder or file name (the title is typed by the owner).
 
-The flow is one dialog with four steps, and the first carries most of the value:
+### The page's `index.html`
 
-1. **Confirm what gets published.** Scope, file count, total size, and what is
-   left out with counts: hidden items, pending uploads, ghost folders, and names
-   that collide after path normalization.
-2. **Choose the name.** The name itself and its undernames in one picker, with
-   the resulting URL built by `getAddressesFromArns()`
-   (`lib/arns/utils/arns_address_utils.dart`).
-3. **Settings.** Title, a line of description, cover, accent, layout (list, grid
-   or gallery), default sort, and which columns show.
-4. **Review and publish.** Cost and payment method, the permanence line, then
-   progress across the uploads and the record write.
+The release's `index.html`, with these written into `<head>` (every value
+HTML-escaped):
 
-Preconditions are the artifact's own, reused rather than restated: an explicit
-user action (D3), never from a sync that reported skipped entities, never above
-the payload bound (D5), paid through whichever upload path the user already has
-(D4), and hidden from a wallet that does not own the drive.
+- `<meta name="ardrive-library" content="library.json">`: the switch that puts
+  the app in library mode.
+- `<title>`, `<meta name="description">`, `<meta name="theme-color">`.
+- `<link rel="icon" sizes="32x32">`, `<link rel="apple-touch-icon">`.
+- `og:title`, `og:description`, `og:type=website`, `og:image`,
+  `twitter:card=summary_large_image`. `og:image` must be an absolute URL known
+  before `index.html` is uploaded, so it cannot use the page manifest's ID:
+  the manifest lists `index.html`, so it is built after it. The publish uploads
+  the social image first and points `og:image` at that transaction,
+  `https://<gateway>/<social-image-tx-id>` on the gateway the owner's app
+  uses (a reused image keeps its existing transaction). It stays that URL when
+  a name is added later, because `index.html` cannot change. With no social
+  image, `og:image` and `twitter:card` are left out.
 
-The states after the first publish matter more than the flow:
+### How a page opens
 
-| Condition | What the UI shows | Action |
-|---|---|---|
-| Published and current | The URL, the published date, the file count | Copy, open, republish |
-| Published and behind | How many files changed since the published date | Republish |
-| Drive still syncing | That the local view is incomplete | Unavailable, with the reason |
-| Pending uploads in scope | Which files are not yet confirmed | Unavailable, with the reason |
-| No ArNS name on the wallet | What a name is and where to get one | Link out, never a dead end |
-| Signed in with Ethereum or Solana | That a record write needs an Arweave wallet | Explain, rather than fail at signing |
-| Not on web | Nothing | Hide the action |
+1. The gateway serves the manifest's `index.html`.
+2. ArDrive starts, finds the meta tag, and enters library mode before any
+   service starts: no stored config, no login, no analytics, no Turbo, no
+   GraphQL, no ArNS, no HTML auto-reload, an in-memory database.
+3. It reads `./library.json`.
+4. File data comes from the gateway serving the page (the existing
+   `/ar-io/info` detection on the page's host).
+5. A private library shows the unlock screen.
+6. It fetches `./snapshot`, seeds the drive row from `library.json`, and
+   imports with the existing `DriveStateImporter`.
+7. The explorer opens at the scope's root. No sync ever runs.
 
-Those states derive from `DriveListItem`
-(`lib/drives_list/domain/drive_list_item.dart`), which already carries
-`hasBeenWalked`, `lastSyncedAt`, `isSyncing`, `lastSyncFailed` and
-`hasUnreadChanges`. Publishing adds one fact, the published artifact and its
-date, and derives the rest.
+**Rule, enforced by a test:** a library page makes requests only to the host
+serving it and the gateway it detected, nothing else.
 
-## What the page shows
+### The viewer bundle
 
-A read-only library, not an editor: breadcrumbs and a folder tree, list, grid
-and gallery views, client-side search and sort over the catalog it already
-holds, and per row the name, size, type, modified date, a license badge where
-`licenseTxId` is set, attribution where `pinnedDataOwnerAddress` is set, the
-ArNS names a file carries from `assignedNames`, and version history, since every
-revision travels in the artifact.
+- Production deploys, and staging builds uploaded by hand
+  (`staging-arweave.yaml`), use `--compress gzip`, leave out source maps,
+  and keep `index.html`'s relative paths.
+- The app knows which release a new page pins through a config value,
+  `libraryViewerManifestSource`. A 43-character value is a manifest ID, used
+  as is. Anything else is an ArNS name, which the publisher resolves to the
+  manifest ID (`x-arns-resolved-id`) with a plain HTTP read through the
+  gateway. That needs no wallet, so it works before names do in the app (see
+  [Names](#names)).
+- Production sets `ardrive`, the name the production deploy moves. Staging has
+  no name and pushes to `dev` never upload to Arweave, so the staging and
+  development configs also use `ardrive`: a page published from staging pins
+  the current production release. To try a viewer built from a branch, run
+  *Staging build to Arweave* (`staging-arweave.yaml`) and put the manifest ID
+  from its job summary in the stored config (`flutter.config` in local
+  storage). The phase 1 test-page tool takes a manifest ID directly.
+- CI warms the bundle after each deploy by reading every file once through
+  turbo-gateway.com and ardrive.net.
 
-Image rows use the thumbnail variants ArDrive already uploads
-(`lib/models/tables/file_entries.drift:19`, `Variant` in
-`lib/entities/file_entity.dart:213`). The footer names the artifact transaction
-and the published date. The page makes no request to anything but the gateway
-serving it and carries no analytics. Theme follows the ArDrive brand palette in
-light and dark, as CSS variables in the viewer rather than imported from the app.
+## Names
 
-## ArDrive specifics that have to be handled
+**ArNS moved to Solana** (`@ar.io/sdk` 4.x). Names are Metaplex Core assets
+owned by Solana keys; every record change needs a Solana signer. Names held by
+Arweave wallets before the move sit in an escrow until claimed into a Solana
+wallet (`ANTEscrow`, Arweave-attested claim). The app's own name features are
+stubbed (`packages/ario_sdk/web/src/index.js`: "not yet implemented for
+Solana"), so "Assign name" does not work in 2.90 either.
 
-Ordered by damage. The first two were verified with a throwaway test against
-`ManifestDataBuilder`; the rest are read off the code at the cited lines.
+So library pages ship in two halves:
 
-| # | Finding | Evidence | What has to change |
+- **Without names (phases 1 to 3):** a page is its manifest link. The owner
+  copies it, or points a name at the manifest ID by hand with any ArNS tool.
+- **With names (phase 4):** the name step, unpublish, and the main-name
+  placeholder arrive with ArNS-on-Solana support in the app (a Solana wallet
+  connection, listing names the wallet owns or controls, setting and removing
+  records). That is its own project, and library pages consume it.
+
+## UX: the visitor
+
+All of it is the existing explorer (`DriveDetailPage`, the data table, the
+details panel, previews, downloads, breadcrumbs, search), framed by library
+chrome instead of account chrome.
+
+### Loading screen
+
+Centred on the page background: the library's icon (or ArDrive's), the title,
+a thin progress bar, and one line that changes with the step: "Opening
+library…", "Loading files…" (snapshot download, with MB of total when the size
+is known), "Almost there…" (import). The title and icon come from
+`library.json`, so this screen appears after one small request.
+
+### Unlock screen (private libraries)
+
+Same frame as the loading screen. Below the description: "This library is
+private. Paste the drive key you were given to open it." A `Drive key` field
+(`ArDriveTextFieldNew`, obscured, show/hide toggle), an **Open library**
+primary button (disabled until the field is non-empty), and in small text "The
+key stays in this browser." A key in the link (`#/?driveKey=…`) skips this
+screen. A rejected key shows "This key doesn't open this library." under the
+field, and the field keeps its text for correction. A typed key is never
+written to the address bar.
+
+### Error screens
+
+One frame, a heading, one sentence, one action:
+
+| Case | Heading | Sentence | Action |
 |---|---|---|---|
-| 1 | Hidden folders are published. Only a file's own hidden flag is honoured, and hiding a folder does not cascade. Verified: a hidden folder's `notes.txt` published as `secret/notes.txt`. | `manifest_data.dart:127`, `drive_queries.drift:35`, `folder_node.dart:67`, `hide_bloc.dart:72`, contrary claim at `create_manifest_form.dart:987` | Prune hidden folders and drives recursively from both the manifest and the published set, report the count, fix the form's claim |
-| 2 | Path normalization drops files. Verified: `my file.txt` and `my_file.txt` produce one path carrying the second file's id. | `manifest_data.dart:103` | Give each colliding file its raw path, which gateways resolve because they decode a request before matching it. Never percent-encode a key: that would break every one of them. Fixed in #2265 |
-| 3 | The index points at an arbitrary file when the folder has no `index.html` | `manifest_data.dart:129` to `:140` | A library page always sets the index to the viewer |
-| 4 | The name picker drops the name itself and labels the apex "No undername" | `assign_name_bloc.dart:92` and `:118`, `assign_name_modal.dart:649` | Offer the apex in both flows, labelled as the name |
-| 5 | Undername URLs use an underscore: `library_phils-archive.ar.io` | `get_literal_arns_record_name.dart`, host at `constants.dart:71` | Show the resolved URL rather than a dot-separated guess |
-| 6 | Republishing is not instant: the record TTL is 900 seconds | `arns_record.dart:8` | Say so in the done state, and do not claim success at the name before the record reads back |
-| 7 | Publishing from a partially read drive would publish a partial library | D3, and the warning already in `drive_state_creation_modal.dart` | Reuse the artifact's precondition rather than writing a second one |
-| 8 | Pending uploads produce dead rows | `hasPendingFilesOnTargetFolder()` | Keep the gate, and name the files in the confirm step |
-| 9 | Ghost folders have no metadata and are a normal state | `lib/sync/domain/ghost_folder.dart`, `folder_entries.drift:11` | Exclude them, and list them among the exclusions |
-| 10 | Pinned files point at another wallet's transaction | `file_entries.drift:21` | Publish them, show the attribution |
-| 11 | The manifest is an ArFS file inside the drive, so each page adds a file the user browses | `existingManifestFileId`, `manifest_repository.dart:118` | Mark library page manifests so the explorer presents them as the page |
-| 12 | The assign action is web-only | `details_panel.dart:1603` | Hide publishing off web, keep the published state readable |
-| 13 | Two separate gates block private drives | `new_button.dart:339`, `create_manifest_cubit.dart:62` | Change both in the private phase, routing private publishing through its own flow |
-| 14 | A record write needs an Arweave signer, and `ProfileType` has two values | `arns_repository.dart:126`, `profile_types.dart` | Explain unavailability for Ethereum and Solana sign-ins rather than failing at signing |
-| 15 | Drive scope is folder scope | `create_manifest_cubit.dart:82` | One code path, two entry points, recording the scope so republish does not widen it |
+| `library.json` missing or unreadable | This library can't be opened | Its settings are missing or damaged. | Open ArDrive |
+| Snapshot can't be fetched | This library can't load right now | The gateway didn't return its files. Try again in a minute. | Try again |
+| Snapshot rejected by the importer | This library can't be opened | Its data didn't pass ArDrive's checks. | Open ArDrive |
+| Viewer older than `library.json`'s version | This library needs a newer ArDrive | Ask its owner to republish it. | Open ArDrive |
 
-Four findings from the earlier revision are resolved by building on the
-artifact rather than a listing file: empty folders survive because folder rows
-travel, licenses render because the `licenses` table travels, assigned names
-render because `assignedNames` travels on the file rows (D10), and version
-history renders because every revision travels (D2).
+### The library frame (desktop)
 
-## What breaks, and for whom
+- **Sidebar** (replaces drives list, New button and profile): the icon (48 px),
+  the title, the description, "Published <date>", then at the bottom "Open in
+  ArDrive" (link) and "Made with ArDrive" (muted), then the existing collapse
+  control.
+- **Top bar:** the existing search field ("Search this library…"), the theme
+  toggle. No login, profile card, sync indicator or New button.
+- **Cover band:** on the library's root only, above the breadcrumbs: the cover
+  image, cropped to fill, 200 px tall on desktop, with a bottom scrim and the
+  title plus "N files · size · published <date>" over it. Without a cover, the
+  band is the title line on the normal background. On subfolders the band is
+  gone and the breadcrumbs lead.
+- **Breadcrumbs** start at the scope's root; the root crumb is the title.
+- **Data table, details panel, previews:** unchanged.
+- **Row and toolbar actions offered:** Download, Download folder (zip), Preview
+  in the panel, More info, and **Copy link**, which copies the library's own
+  link to that folder or file (`<page link>#/folders/<id>?file=<id>`).
+  Everything else is hidden: Share (replaced by Copy link), Rename, Move, Hide,
+  License add/update, Pin, Create snapshot, Sync, Full resync, Export, Attach.
+- **Never shown:** hidden items or anything inside a hidden folder, ghost
+  folders, failed or pending uploads, anything outside a folder library's
+  folder, the "Show hidden" toggle.
 
-A published page is a permanent public artifact supported for as long as Arweave
-exists. Old pages keep running old viewers, so a viewer bug ships for ever and
-is fixed only for pages republished afterwards. That argues for a small viewer
-and for pinning its transaction per publish.
+### The library frame (phone)
 
-A private page moves a security boundary from a wallet to a key the owner hands
-out. Neither the artifact nor the ciphertext can be withdrawn. The UI has to be
-honest at the moment of commitment rather than in a help page.
+ArDrive's mobile layout. The app bar shows the icon and title; the drawer holds
+the sidebar's content. The cover band is 120 px tall and crops to its centre.
+No FAB.
 
-A stale page misleads visitors in a way a share link does not, because a share
-link reads live state. The published date and the republish prompt are part of
-the feature rather than polish.
+### Copy
 
-## Scope
+Library chrome strings are new keys in `app_en.arb`. Dates use the app's
+existing date formatting.
 
-1. **Land the artifact.** D12 accepted as the container, D5 re-derived, the
-   entity specified in `ar-io-docs`. Nothing here ships first.
-2. **Public library pages.** Viewer, manifest, naming, publish and republish,
-   and findings 1 to 3 and 5 to 15. Done when a public drive and a public folder
-   each resolve at an owned name and the excluded counts match what is published.
-3. **Private library pages.** Opaque paths, drive key unlock, in-page decryption
-   for both ciphers, and findings 12 to 14. Done when a private folder opens in a
-   clean browser profile and no file name appears in the manifest or in any tag.
-4. **Passphrase unlock, and the full app as a second tier.** The app already
-   deploys itself to Arweave under a name through `ar-io/ar-io-deploy@v1`
-   (`.github/workflows/production.yaml:59`), so once it can hydrate a drive from
-   an artifact, a deployed copy becomes the heavyweight option beside the viewer.
+## UX: the owner
 
-## Decisions needed before building
+### Entry points
 
-- Whether the default offered name is the apex or an undername.
-- What unpublish means, given that clearing the record stops resolution while the
-  data stays readable by transaction id for ever.
-- The size threshold at which a public artifact is published identity rather than
-  compressed: measured with the real page, starting from 16 MiB (D13).
-- Whether the viewer source lives in `assets/` here or in its own repository.
-- Whether republish happens automatically after an upload into a published
-  folder, as AutoDeploy does for manifests, or stays explicit.
+"Publish library page" with a globe icon, beside Share in: the drive's overflow
+menu (desktop and mobile), a folder row's menu, the details panel toolbar for a
+drive or folder. Shown only when: web, signed in, the wallet owns the drive.
+Once a scope is published, the item reads "Library page…" and opens the
+management section instead.
 
-## Tests the implementation has to carry
+### The publish dialog
 
-- A hidden folder holding visible files publishes none of them, and the excluded
-  count reports them.
-- Two files whose names normalize to one path both appear, deterministically
-  ordered, and the collision is reported before publishing.
-- A private publish leaks no file name, folder name or path fragment into the
-  manifest JSON or any transaction tag.
-- The viewer opens an encrypted artifact with the drive key and decrypts a file
-  below and a file above the 100 MiB GCM boundary.
-- Publishing is unavailable while a drive syncs and available once it settles,
-  asserted on cubit states rather than on a call count.
-- Republish writes a new revision of the same ArFS file and points the record at
-  the new manifest.
-- The apex record is offered for a name that has undernames.
-- The viewer renders from the artifact with no GraphQL request at all.
+One `ArDriveStandardModal`-style dialog, 560 px wide, a step indicator ("Step 2
+of 5"), Back and Next in the footer, Cancel always available. Closing midway
+asks "Discard this library page?" only once something has been uploaded.
 
-Each test earns its place by failing when the rule it covers is broken on
-purpose.
+**Step 1 · What gets published.** Scope as two radio rows when opened from a
+drive with a folder selected, otherwise fixed and named. Then: files, folders,
+total size; and "Left out:" with counts for hidden items, items in hidden
+folders, pending uploads, ghost folders, each with a one-line reason. Blocking
+states replace Next with the reason: "This drive is still syncing", "N uploads
+in this folder aren't confirmed yet" (with the file names, collapsible), "This
+drive hasn't been fully read on this device. Sync it first."
 
-## References
+**Step 2 · Snapshot.** "Which snapshot should the page show?" Radio rows, newest
+first, for every drive state snapshot of this drive made by its owner: date,
+file count, size, and "N changes since" (revisions after its `Block-End` in the
+local database). Last row: "Create a new snapshot · Includes every change up to
+now · <cost>". Below: "Snapshots in the older format can't be used." Over 100
+MiB: the row is disabled with "Too large for a library page". With no
+qualifying snapshot, "Create a new snapshot" is preselected and the only
+option.
 
-- `docs/DRIVE_STATE_ARTIFACT.md` and `docs/drive-state/DECISIONS.md`, the format
-  this feature reads.
-- `lib/entities/manifest_data.dart` and `lib/manifest/domain/manifest_repository.dart`,
-  the manifest and its uploader.
-- `lib/arns/`, the record picker, repository and address helpers.
-- `lib/core/crypto/crypto.dart` and `docs/private_drive_kdf_reference.dart`, key
-  derivation for the private phase.
-- `docs/SHARE_LINKS.md`, the other way an ArDrive entity reaches someone else.
+**Step 3 · Look.** Fields with live preview on the right (a social-card preview
+and a browser-tab preview with the icon):
+
+| Field | Control | Rules |
+|---|---|---|
+| Title | text, 60 chars | Required. Prefilled with the drive or folder name for a public drive, empty for a private one |
+| Description | text, 160 chars, counter | Optional |
+| Icon | image picker | Square, at least 512 × 512, PNG/JPEG/WebP/SVG, under 2 MB. Makes 32, 180, 512 px PNGs |
+| Social card | image picker | 1200 × 630. Cropped to 1.91:1, re-encoded JPEG, aiming under 100 KiB |
+| Cover | image picker | 1600 × 400. Cropped to 4:1, re-encoded JPEG, aiming under 100 KiB. Hint: "Keep text and faces in the middle; phones crop the sides" |
+
+The image picker is a thumbnail plus "Change" opening a menu: **Upload an
+image**, **Choose from this drive** (public drives only; lists image files),
+**Use a transaction ID** (validated: the gateway returns an `image/*` content
+type and the size rules above), **Remove**. For a private drive, "Choose from
+this drive" is disabled with "Files in a private drive are encrypted. Upload
+the image instead." A too-small or wrong-type image explains what is wrong and
+what size to use.
+
+**Step 4 · Name.** Until phase 4: a short panel: "Your library page will have
+its own link. You can point an ArNS name at it later." No input. In phase 4:
+the name picker (see [Names](#names)).
+
+**Step 5 · Review and publish.** A summary (scope, snapshot, title, link or
+name), the cost lines (new snapshot if any; images; page files: "Free") with
+the existing payment cards, then, in the step itself, not a tooltip:
+
+- "Publishing is permanent. It can't be undone or deleted."
+- Private only: "Anyone with the drive key can read the whole drive, including
+  files added later, folders outside this one, and hidden items."
+- Private only: "The title, description and images are public."
+
+The button is **Publish library page**.
+
+**Progress.** The same dialog lists the steps with spinners and ticks:
+snapshot (if new), images, page settings, page, page manifest, warm-up. A
+failed step shows its error and **Try again**, which resumes from that step
+(already uploaded items are reused, not re-paid).
+
+**Done.** "Your library page is published." The link with **Copy** and
+**Open**. Private: two copy buttons, "Copy link" and "Copy link with key",
+the second with "Anyone with this link can read the whole drive." A note: "A
+new page can take a minute to load the first time."
+
+### Management section
+
+In the details panel of a published drive or folder, a "Library page" section:
+status chip (Live), the link with Copy and Open, "Published <date> from the
+<date> snapshot", "N changes since then", **Republish**, and in phase 4
+**Unpublish**. States:
+
+| Condition | Shows | Action |
+|---|---|---|
+| Live and current | Link, dates | Copy, Open, Republish |
+| Live and behind | "N changes since then" | Republish |
+| Drive syncing | "Syncing; republish when it's done" | Republish disabled |
+| Pending uploads in scope | "N uploads aren't confirmed yet" | Republish disabled |
+| Not on web | Link and dates only | none |
+
+Published pages are found from the owner's own uploads by tags (below), so the
+section shows on any device. No database change.
+
+**Republish** opens the dialog prefilled from the page's current
+`library.json`, with scope fixed, starting at the snapshot step. It writes a
+new page manifest; in phase 4 it also moves the name.
+
+### Tags
+
+Every library upload carries `App-Name: ArDrive-Web`, `App-Version`, and
+`Type`: `library-page` (manifest), `library-config` (`library.json`),
+`library-index` (`index.html`), `library-asset` (images). The manifest also
+carries `Drive-Id`, `Library-Scope` (`drive` or the folder ID) and
+`Library-Version: 1`. Discovery: owner = wallet, `Type = library-page`,
+`Drive-Id`.
+
+Images, `library.json`, `index.html` and the manifest are plain public data
+items, never ArFS entities: they must be public for a private drive, and they
+must not appear as files in the drive.
+
+## Private libraries
+
+- The key travels like a private drive link's, `#/?driveKey=…`, in the fragment
+  only. Typed keys are never written to the URL.
+- The snapshot and files decrypt in the browser with the existing derivation.
+- Nothing about the drive's contents is outside the encrypted snapshot: no
+  manifest file paths, no names in `library.json` or tags.
+- The review step states the three facts above.
+
+## Phases
+
+| Phase | Ships | Done when |
+|---|---|---|
+| 0 · Compressed bundle (#2343) | `--compress gzip` in staging and production deploys; a staging channel | A staging upload loads through turbo-gateway.com and ardrive.net with every JS/wasm file carrying `Content-Encoding: gzip`; every path loads through ar-io.dev once it has fetched the upload (it may serve gzipped items decompressed, which is valid); first-visit transfer is measured |
+| 1 · Library mode | The viewer, public libraries, a script that builds a test page by hand | A hand-built page at a raw manifest URL opens a public drive and a public folder, with no request outside the serving host and gateway |
+| 2 · Publish (public) | Dialog steps 1, 2, 3, 5; management section; republish; tag discovery | A public drive and folder publish from the app; republishing with an existing snapshot and the same images costs nothing; excluded counts match the page |
+| 3 · Private | Unlock screen, encrypted snapshots, private rules | A private folder opens in a clean profile with the key, and no drive, folder or file name appears in the manifest, `library.json`, `index.html` or any tag |
+| 4 · Names | Step 4, unpublish, placeholder page | Needs ArNS-on-Solana in the app first |
+
+Phase 1 must reach a production release before any real page works, because a
+page runs the release it pins.
+
+## Risks
+
+- **A gateway serving gzip bytes bare** breaks a page on that gateway. Load
+  each deploy through every gateway that matters before switching production.
+- **Phones and large snapshots:** a snapshot near the 100 MiB bound lives in
+  memory. Measure in phase 1; above a size to be found, step 2 warns "This
+  library may be slow on phones."
+- **Old pages run old code for ever.** Library mode must stay narrow (one host,
+  one gateway) so pages age well.
+- **Fallback fonts:** Flutter fetches missing-glyph fonts from
+  fonts.gstatic.com. Library pages bundle them: the no-third-party rule has no
+  exceptions. If Flutter 3.19 cannot load them from the page, that blocks
+  phase 1 and goes to Phil.

@@ -54,15 +54,41 @@ jobs:
           firebaseServiceAccount: '${{ secrets.FIREBASE_CI_SERVICE_ACCOUNT }}'
           channelId: live
 
-      # Deploy to Arweave
+      # Source maps are for Firebase, which has deployed above. On Arweave they
+      # would only add 11 MB to pay for.
+      - name: Leave source maps out of the Arweave deploy
+        run: find build/web -name '*.map' -delete
+
+      # Deploy to Arweave, gzipped: each file is stored compressed with a
+      # `Content-Encoding: gzip` tag, which gateways send with the bytes, so a
+      # first visit downloads about 20 MB instead of 77 MB. Library pages load
+      # this bundle by its manifest ID (docs/LIBRARY_PAGES.md). Pinned to the
+      # v2.1.2 commit, the first to install the newest Node 22 rather than
+      # the runner's cached one (CVE-2026-111497, the brotli decoder); the
+      # action installs @ar.io/deploy@^2 itself.
       - name: Deploy to Arweave
-        uses: ar-io/ar-io-deploy@v1
+        id: arweave
+        uses: ar-io/ar-io-deploy@a7290af1906eeea3acc4f4a96d2a53cd7eb625bd # v2.1.2
         with:
           deploy-key: ${{ secrets.DEPLOY_KEY }}
           arns-key: ${{ secrets.ARNS_KEY }}
           arns-name: ${{ secrets.ARNS_NAME }}
           undername: ${{ secrets.DEPLOY_ANT_UNDERNAME }}
           deploy-folder: ./build/web
+          compress: gzip
+
+      - name: Record the Arweave manifest
+        env:
+          MANIFEST_ID: ${{ steps.arweave.outputs.tx-id }}
+        run: |
+          echo "Production on Arweave ($GITHUB_SHA): [$MANIFEST_ID](https://turbo-gateway.com/$MANIFEST_ID/)" >> "$GITHUB_STEP_SUMMARY"
+
+      # A miss here does not undo the deploy, so it is reported, not fatal.
+      - name: Warm the gateways
+        continue-on-error: true
+        env:
+          MANIFEST_ID: ${{ steps.arweave.outputs.tx-id }}
+        run: bash tool/warm_arweave_manifest.sh "$MANIFEST_ID"
 
 
   build-ios:
