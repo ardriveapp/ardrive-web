@@ -32,6 +32,7 @@ import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/library/presentation/library_chrome.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -747,60 +748,65 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                 ),
                                               ),
                                             ),
-                                          ArDriveDropdownItem(
-                                            onClick: isSyncing
-                                                ? null
-                                                : () {
-                                                    context
-                                                        .read<SyncCubit>()
-                                                        .startSyncForDrive(
-                                                          driveId:
-                                                              driveDetailState
-                                                                  .currentDrive
-                                                                  .id,
-                                                          deepSync: false,
-                                                        );
-                                                  },
-                                            content: ArDriveDropdownItemTile(
-                                              name: appLocalizationsOf(context)
-                                                  .syncThisDrive,
-                                              isDisabled: isSyncing,
-                                              icon: ArDriveIcons.refresh(
-                                                size: defaultIconSize,
+                                          if (!LibraryMode.isOn)
+                                            ArDriveDropdownItem(
+                                              onClick: isSyncing
+                                                  ? null
+                                                  : () {
+                                                      context
+                                                          .read<SyncCubit>()
+                                                          .startSyncForDrive(
+                                                            driveId:
+                                                                driveDetailState
+                                                                    .currentDrive
+                                                                    .id,
+                                                            deepSync: false,
+                                                          );
+                                                    },
+                                              content: ArDriveDropdownItemTile(
+                                                name:
+                                                    appLocalizationsOf(context)
+                                                        .syncThisDrive,
+                                                isDisabled: isSyncing,
+                                                icon: ArDriveIcons.refresh(
+                                                  size: defaultIconSize,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          ArDriveDropdownItem(
-                                            onClick: isSyncing
-                                                ? null
-                                                : () async {
-                                                    final syncCubit = context
-                                                        .read<SyncCubit>();
-                                                    final drive =
-                                                        driveDetailState
-                                                            .currentDrive;
-                                                    if (!await confirmFullResync(
-                                                      context,
-                                                      FullResyncScope.drive(
-                                                        drive.name,
-                                                      ),
-                                                    )) {
-                                                      return;
-                                                    }
-                                                    syncCubit.startSyncForDrive(
-                                                      driveId: drive.id,
-                                                      deepSync: true,
-                                                    );
-                                                  },
-                                            content: ArDriveDropdownItemTile(
-                                              name: appLocalizationsOf(context)
-                                                  .deepSyncThisDrive,
-                                              isDisabled: isSyncing,
-                                              icon: ArDriveIcons.cloudSync(
-                                                size: defaultIconSize,
+                                          if (!LibraryMode.isOn)
+                                            ArDriveDropdownItem(
+                                              onClick: isSyncing
+                                                  ? null
+                                                  : () async {
+                                                      final syncCubit = context
+                                                          .read<SyncCubit>();
+                                                      final drive =
+                                                          driveDetailState
+                                                              .currentDrive;
+                                                      if (!await confirmFullResync(
+                                                        context,
+                                                        FullResyncScope.drive(
+                                                          drive.name,
+                                                        ),
+                                                      )) {
+                                                        return;
+                                                      }
+                                                      syncCubit
+                                                          .startSyncForDrive(
+                                                        driveId: drive.id,
+                                                        deepSync: true,
+                                                      );
+                                                    },
+                                              content: ArDriveDropdownItemTile(
+                                                name:
+                                                    appLocalizationsOf(context)
+                                                        .deepSyncThisDrive,
+                                                isDisabled: isSyncing,
+                                                icon: ArDriveIcons.cloudSync(
+                                                  size: defaultIconSize,
+                                                ),
                                               ),
                                             ),
-                                          ),
                                           if (isDriveOwner)
                                             ArDriveDropdownItem(
                                               onClick: () {
@@ -835,38 +841,57 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                       ),
                                               ),
                                             ),
-                                          ArDriveDropdownItem(
-                                            onClick: () {
-                                              promptToShareDrive(
-                                                context: context,
-                                                drive: driveDetailState
-                                                    .currentDrive,
-                                              );
-                                            },
-                                            content: ArDriveDropdownItemTile(
-                                              name: appLocalizationsOf(context)
-                                                  .shareDrive,
-                                              icon: ArDriveIcons.share(
-                                                size: defaultIconSize,
+                                          if (LibraryMode.isOn)
+                                            ArDriveDropdownItem(
+                                              onClick: () => copyLibraryLink(
+                                                context,
+                                                folderId: driveDetailState
+                                                    .currentDrive.rootFolderId,
+                                              ),
+                                              content: ArDriveDropdownItemTile(
+                                                name:
+                                                    appLocalizationsOf(context)
+                                                        .copyLink,
+                                                icon: ArDriveIcons.copy(
+                                                    size: defaultIconSize),
                                               ),
                                             ),
-                                          ),
-                                          ArDriveDropdownItem(
-                                            onClick: () {
-                                              promptToExportCSVData(
-                                                context: context,
-                                                driveId: driveDetailState
-                                                    .currentDrive.id,
-                                              );
-                                            },
-                                            content: ArDriveDropdownItemTile(
-                                              name: appLocalizationsOf(context)
-                                                  .exportDriveContents,
-                                              icon: ArDriveIcons.download(
-                                                size: defaultIconSize,
+                                          if (!LibraryMode.isOn)
+                                            ArDriveDropdownItem(
+                                              onClick: () {
+                                                promptToShareDrive(
+                                                  context: context,
+                                                  drive: driveDetailState
+                                                      .currentDrive,
+                                                );
+                                              },
+                                              content: ArDriveDropdownItemTile(
+                                                name:
+                                                    appLocalizationsOf(context)
+                                                        .shareDrive,
+                                                icon: ArDriveIcons.share(
+                                                  size: defaultIconSize,
+                                                ),
                                               ),
                                             ),
-                                          ),
+                                          if (!LibraryMode.isOn)
+                                            ArDriveDropdownItem(
+                                              onClick: () {
+                                                promptToExportCSVData(
+                                                  context: context,
+                                                  driveId: driveDetailState
+                                                      .currentDrive.id,
+                                                );
+                                              },
+                                              content: ArDriveDropdownItemTile(
+                                                name:
+                                                    appLocalizationsOf(context)
+                                                        .exportDriveContents,
+                                                icon: ArDriveIcons.download(
+                                                  size: defaultIconSize,
+                                                ),
+                                              ),
+                                            ),
                                           ArDriveDropdownItem(
                                             onClick: () {
                                               final bloc = context
@@ -1495,62 +1520,76 @@ class MobileFolderNavigation extends StatelessWidget {
                           ),
                         ),
                       ],
-                      ArDriveDropdownItem(
-                        onClick: isSyncing
-                            ? null
-                            : () {
-                                context.read<SyncCubit>().startSyncForDrive(
-                                      driveId: state.currentDrive.id,
-                                      deepSync: false,
-                                    );
-                              },
-                        content: ArDriveDropdownItemTile(
-                          name: appLocalizationsOf(context).syncThisDrive,
-                          isDisabled: isSyncing,
-                          icon: ArDriveIcons.refresh(
-                            size: defaultIconSize,
+                      if (!LibraryMode.isOn)
+                        ArDriveDropdownItem(
+                          onClick: isSyncing
+                              ? null
+                              : () {
+                                  context.read<SyncCubit>().startSyncForDrive(
+                                        driveId: state.currentDrive.id,
+                                        deepSync: false,
+                                      );
+                                },
+                          content: ArDriveDropdownItemTile(
+                            name: appLocalizationsOf(context).syncThisDrive,
+                            isDisabled: isSyncing,
+                            icon: ArDriveIcons.refresh(
+                              size: defaultIconSize,
+                            ),
                           ),
                         ),
-                      ),
-                      ArDriveDropdownItem(
-                        onClick: isSyncing
-                            ? null
-                            : () async {
-                                final syncCubit = context.read<SyncCubit>();
-                                final drive = state.currentDrive;
-                                if (!await confirmFullResync(
-                                  context,
-                                  FullResyncScope.drive(drive.name),
-                                )) {
-                                  return;
-                                }
-                                syncCubit.startSyncForDrive(
-                                  driveId: drive.id,
-                                  deepSync: true,
-                                );
-                              },
-                        content: ArDriveDropdownItemTile(
-                          name: appLocalizationsOf(context).deepSyncThisDrive,
-                          isDisabled: isSyncing,
-                          icon: ArDriveIcons.cloudSync(
-                            size: defaultIconSize,
+                      if (!LibraryMode.isOn)
+                        ArDriveDropdownItem(
+                          onClick: isSyncing
+                              ? null
+                              : () async {
+                                  final syncCubit = context.read<SyncCubit>();
+                                  final drive = state.currentDrive;
+                                  if (!await confirmFullResync(
+                                    context,
+                                    FullResyncScope.drive(drive.name),
+                                  )) {
+                                    return;
+                                  }
+                                  syncCubit.startSyncForDrive(
+                                    driveId: drive.id,
+                                    deepSync: true,
+                                  );
+                                },
+                          content: ArDriveDropdownItemTile(
+                            name: appLocalizationsOf(context).deepSyncThisDrive,
+                            isDisabled: isSyncing,
+                            icon: ArDriveIcons.cloudSync(
+                              size: defaultIconSize,
+                            ),
                           ),
                         ),
-                      ),
-                      ArDriveDropdownItem(
-                        onClick: () {
-                          promptToShareDrive(
-                            context: context,
-                            drive: state.currentDrive,
-                          );
-                        },
-                        content: _buildItem(
-                          appLocalizationsOf(context).shareDrive,
-                          ArDriveIcons.share(
-                            size: defaultIconSize,
+                      if (LibraryMode.isOn)
+                        ArDriveDropdownItem(
+                          onClick: () => copyLibraryLink(
+                            context,
+                            folderId: state.currentDrive.rootFolderId,
+                          ),
+                          content: ArDriveDropdownItemTile(
+                            name: appLocalizationsOf(context).copyLink,
+                            icon: ArDriveIcons.copy(size: defaultIconSize),
                           ),
                         ),
-                      ),
+                      if (!LibraryMode.isOn)
+                        ArDriveDropdownItem(
+                          onClick: () {
+                            promptToShareDrive(
+                              context: context,
+                              drive: state.currentDrive,
+                            );
+                          },
+                          content: _buildItem(
+                            appLocalizationsOf(context).shareDrive,
+                            ArDriveIcons.share(
+                              size: defaultIconSize,
+                            ),
+                          ),
+                        ),
                       if (isOwner)
                         ArDriveDropdownItem(
                           onClick: () {
@@ -1577,20 +1616,21 @@ class MobileFolderNavigation extends StatelessWidget {
                                   ),
                           ),
                         ),
-                      ArDriveDropdownItem(
-                        onClick: () {
-                          promptToExportCSVData(
-                            context: context,
-                            driveId: state.currentDrive.id,
-                          );
-                        },
-                        content: _buildItem(
-                          appLocalizationsOf(context).exportDriveContents,
-                          ArDriveIcons.download(
-                            size: defaultIconSize,
+                      if (!LibraryMode.isOn)
+                        ArDriveDropdownItem(
+                          onClick: () {
+                            promptToExportCSVData(
+                              context: context,
+                              driveId: state.currentDrive.id,
+                            );
+                          },
+                          content: _buildItem(
+                            appLocalizationsOf(context).exportDriveContents,
+                            ArDriveIcons.download(
+                              size: defaultIconSize,
+                            ),
                           ),
                         ),
-                      ),
                       ArDriveDropdownItem(
                         onClick: () {
                           final bloc = context.read<DriveDetailCubit>();

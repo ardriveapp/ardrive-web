@@ -8,6 +8,7 @@ import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
@@ -36,6 +37,38 @@ String libraryLink({
       ? '/'
       : '/folders/$folderId${fileId == null ? '' : '?file=$fileId'}';
   return page.removeFragment().replace(fragment: route).toString();
+}
+
+/// "Copy link" on a library page: copies [libraryLink] for a folder, or for
+/// a file in its folder, and says so.
+Future<void> copyLibraryLink(
+  BuildContext context, {
+  required String folderId,
+  String? fileId,
+}) async {
+  final config = libraryConfigOf(context);
+  // The scope's root is the library's own link, not a folder in it.
+  final atRoot = fileId == null && folderId == config?.scopeRootFolderId;
+  await Clipboard.setData(ClipboardData(
+    text: libraryLink(
+      page: Uri.base,
+      folderId: atRoot ? null : folderId,
+      fileId: fileId,
+    ),
+  ));
+  if (!context.mounted) return;
+  final typography = ArDriveTypographyNew.of(context);
+  final colors = ArDriveTheme.of(context).themeData.colorTokens;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        appLocalizationsOf(context).copied,
+        style: typography.paragraphNormal(color: colors.textHigh),
+      ),
+      backgroundColor: colors.containerL3,
+      duration: const Duration(seconds: 2),
+    ),
+  );
 }
 
 /// "Open in ArDrive": the library's drive in the app, which a visitor opens

@@ -11,6 +11,8 @@ import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/library/presentation/library_chrome.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -558,9 +560,19 @@ class _DriveExplorerItemTileTrailingState
           ),
           if (isOwner) hideFileDropdownItem(context, item),
         ],
+        // On a library page, the library's own link to the folder.
+        if (LibraryMode.isOn)
+          ArDriveDropdownItem(
+            onClick: () => copyLibraryLink(context, folderId: item.id),
+            content: _buildItem(
+              appLocalizationsOf(context).copyLink,
+              ArDriveIcons.copy(size: defaultIconSize),
+              height: height,
+            ),
+          ),
         // Not offered for a ghost folder: its metadata was never found, so a
         // link naming it points the recipient at nothing.
-        if (!item.isGhostFolder)
+        if (!item.isGhostFolder && !LibraryMode.isOn)
           ArDriveDropdownItem(
             onClick: () {
               promptToShareDrive(
@@ -610,22 +622,36 @@ class _DriveExplorerItemTileTrailingState
           height: height,
         ),
       ),
-      ArDriveDropdownItem(
-        onClick: () {
-          promptToShareFile(
-            context: context,
-            driveId: item.driveId,
+      if (LibraryMode.isOn)
+        ArDriveDropdownItem(
+          onClick: () => copyLibraryLink(
+            context,
+            folderId: (item as FileDataTableItem).parentFolderId,
             fileId: item.id,
-          );
-        },
-        content: _buildItem(
-          appLocalizationsOf(context).shareFile,
-          ArDriveIcons.share(
-            size: defaultIconSize,
           ),
-          height: height,
+          content: _buildItem(
+            appLocalizationsOf(context).copyLink,
+            ArDriveIcons.copy(size: defaultIconSize),
+            height: height,
+          ),
+        )
+      else
+        ArDriveDropdownItem(
+          onClick: () {
+            promptToShareFile(
+              context: context,
+              driveId: item.driveId,
+              fileId: item.id,
+            );
+          },
+          content: _buildItem(
+            appLocalizationsOf(context).shareFile,
+            ArDriveIcons.share(
+              size: defaultIconSize,
+            ),
+            height: height,
+          ),
         ),
-      ),
       if (widget.drive.isPublic)
         ArDriveDropdownItem(
           onClick: () {
@@ -999,7 +1025,15 @@ class EntityActionsMenu extends StatelessWidget {
         ],
         // Guarded rather than assumed: this menu is also built in places that
         // do not know the drive, and a folder link needs it for the key.
-        if (drive != null && !item.isGhostFolder)
+        if (LibraryMode.isOn)
+          ArDriveDropdownItem(
+            onClick: () => copyLibraryLink(context, folderId: item.id),
+            content: _buildItem(
+              appLocalizationsOf(context).copyLink,
+              ArDriveIcons.copy(size: defaultIconSize),
+            ),
+          ),
+        if (drive != null && !item.isGhostFolder && !LibraryMode.isOn)
           ArDriveDropdownItem(
             onClick: () {
               promptToShareDrive(
@@ -1061,7 +1095,8 @@ class EntityActionsMenu extends StatelessWidget {
           ),
         // `SyncCubit` refuses a second sync outright, so these two say so
         // rather than closing the menu and dropping the request.
-        if (drive != null)
+        // A library page is its snapshot and never syncs.
+        if (drive != null && !LibraryMode.isOn)
           ArDriveDropdownItem(
             onClick: isSyncing
                 ? null
@@ -1079,7 +1114,7 @@ class EntityActionsMenu extends StatelessWidget {
               ),
             ),
           ),
-        if (drive != null)
+        if (drive != null && !LibraryMode.isOn)
           ArDriveDropdownItem(
             onClick: isSyncing
                 ? null
@@ -1122,34 +1157,45 @@ class EntityActionsMenu extends StatelessWidget {
                   : ArDriveIcons.eyeClosed(size: defaultIconSize),
             ),
           ),
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToShareDrive(
-              context: context,
-              drive: drive!,
-            );
-          },
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).shareDrive,
-            icon: ArDriveIcons.share(
-              size: defaultIconSize,
+        if (LibraryMode.isOn)
+          ArDriveDropdownItem(
+            onClick: () =>
+                copyLibraryLink(context, folderId: drive!.rootFolderId),
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).copyLink,
+              icon: ArDriveIcons.copy(size: defaultIconSize),
+            ),
+          )
+        else ...[
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToShareDrive(
+                context: context,
+                drive: drive!,
+              );
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).shareDrive,
+              icon: ArDriveIcons.share(
+                size: defaultIconSize,
+              ),
             ),
           ),
-        ),
-        ArDriveDropdownItem(
-          onClick: () {
-            promptToExportCSVData(
-              context: context,
-              driveId: drive!.id,
-            );
-          },
-          content: ArDriveDropdownItemTile(
-            name: appLocalizationsOf(context).exportDriveContents,
-            icon: ArDriveIcons.download(
-              size: defaultIconSize,
+          ArDriveDropdownItem(
+            onClick: () {
+              promptToExportCSVData(
+                context: context,
+                driveId: drive!.id,
+              );
+            },
+            content: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).exportDriveContents,
+              icon: ArDriveIcons.download(
+                size: defaultIconSize,
+              ),
             ),
           ),
-        ),
+        ],
         ArDriveDropdownItem(
           onClick: () {
             final bloc = context.read<DriveDetailCubit>();
@@ -1192,7 +1238,19 @@ class EntityActionsMenu extends StatelessWidget {
           ),
         ),
       ),
-      if (!isFileRevision) ...[
+      if (!isFileRevision && LibraryMode.isOn)
+        ArDriveDropdownItem(
+          onClick: () => copyLibraryLink(
+            context,
+            folderId: (item as FileDataTableItem).parentFolderId,
+            fileId: item.id,
+          ),
+          content: _buildItem(
+            appLocalizationsOf(context).copyLink,
+            ArDriveIcons.copy(size: defaultIconSize),
+          ),
+        ),
+      if (!isFileRevision && !LibraryMode.isOn) ...[
         ArDriveDropdownItem(
           onClick: () {
             promptToShareFile(

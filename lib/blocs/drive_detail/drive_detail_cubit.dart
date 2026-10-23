@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
@@ -1328,7 +1329,22 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       ...files,
     ];
 
-    return items;
+    return LibraryMode.isOn ? items.where(isShownInLibrary).toList() : items;
+  }
+
+  /// What a library page shows (docs/LIBRARY_PAGES.md, "Never shown"): not
+  /// hidden items, whatever a visitor's own preferences say, not ghost
+  /// folders, whose metadata the snapshot never had, and not uploads that
+  /// failed or were still pending when the snapshot was made. Filtered here,
+  /// where the folder becomes items, so the table, its counts, image
+  /// navigation and selection all see the same list.
+  @visibleForTesting
+  static bool isShownInLibrary(ArDriveDataTableItem item) {
+    if (item.isHidden) return false;
+    if (item is FolderDataTableItem && item.isGhostFolder) return false;
+    final status = item.fileStatusFromTransactions;
+    return status != TransactionStatus.failed &&
+        status != TransactionStatus.pending;
   }
 
   List<int> calculateRowsPerPage(int totalEntries) {

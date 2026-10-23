@@ -15,6 +15,8 @@ const _c = 'cccccccc-0000-4000-8000-000000000003';
 const _x = 'eeeeeeee-0000-4000-8000-000000000005';
 const _y = 'ffffffff-0000-4000-8000-000000000006';
 const _elsewhere = 'dddddddd-0000-4000-8000-000000000004';
+const _hidden = '99999999-0000-4000-8000-000000000007';
+const _inHidden = '88888888-0000-4000-8000-000000000008';
 
 LibraryConfig config(LibraryScope scope) => LibraryConfig(
       version: 1,
@@ -34,12 +36,18 @@ LibraryConfig config(LibraryScope scope) => LibraryConfig(
 void main() {
   late Database db;
 
-  Future<void> folder(String id, String? parent, {String drive = _drive}) =>
+  Future<void> folder(
+    String id,
+    String? parent, {
+    String drive = _drive,
+    bool hidden = false,
+  }) =>
       db.into(db.folderEntries).insert(FolderEntriesCompanion.insert(
             id: id,
             driveId: drive,
             name: id,
             parentFolderId: Value(parent),
+            isHidden: Value(hidden),
             path: '',
           ));
 
@@ -57,6 +65,8 @@ void main() {
     await folder(_x, _y);
     await folder(_y, _x);
     await folder(_elsewhere, null, drive: _otherDrive);
+    await folder(_hidden, _root, hidden: true);
+    await folder(_inHidden, _hidden);
   });
 
   tearDown(() => db.close());
@@ -81,8 +91,22 @@ void main() {
       expect(await inScope(scope, 'not-a-folder'), isFalse);
     });
 
+    test('holds no hidden folder, nor anything inside one', () async {
+      expect(await inScope(scope, _hidden), isFalse);
+      expect(await inScope(scope, _inHidden), isFalse);
+    });
+
     test('stops on a loop of parents', () async {
       expect(await inScope(scope, _x), isFalse);
+    });
+  });
+
+  group('a library of a hidden folder', () {
+    const scope = LibraryFolderScope(_hidden);
+
+    test('shows the folder its owner published, and inside it', () async {
+      expect(await inScope(scope, _hidden), isTrue);
+      expect(await inScope(scope, _inHidden), isTrue);
     });
   });
 
