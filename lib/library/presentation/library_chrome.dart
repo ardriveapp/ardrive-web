@@ -3,16 +3,17 @@ import 'package:ardrive/library/domain/library_config.dart';
 import 'package:ardrive/library/domain/library_stats.dart';
 import 'package:ardrive/library/presentation/library_loader/library_loader_cubit.dart';
 import 'package:ardrive/library/presentation/library_loader_page.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 /// The open library's settings, or null before it is open and on every page
 /// that is not a library page.
@@ -62,7 +63,11 @@ Future<void> copyLibraryLink(
       fileId: fileId,
     ),
   ));
-  if (!context.mounted) return;
+  if (context.mounted) _sayCopied(context);
+}
+
+/// The app's own "Copied!" snackbar, as a failed sync shows its message.
+void _sayCopied(BuildContext context) {
   final typography = ArDriveTypographyNew.of(context);
   final colors = ArDriveTheme.of(context).themeData.colorTokens;
   ScaffoldMessenger.of(context).showSnackBar(
@@ -77,200 +82,119 @@ Future<void> copyLibraryLink(
   );
 }
 
-/// "Open in ArDrive": the library's drive in the app, which a visitor opens
-/// without signing in. A folder library has none: the app is not scoped, so
-/// from the folder a visitor could go up to the rest of a drive its owner
-/// published only part of.
-String? openInArDriveUrl(LibraryConfig config) => switch (config.scope) {
-      LibraryDriveScope() =>
-        '${LibraryLoaderPage.ardriveUrl}/#/drives/${config.driveId}',
-      LibraryFolderScope() => null,
-    };
+/// The library's top bar controls, in place of the hide toggle, the sync
+/// indicator and the account (docs/LIBRARY_PAGES.md, "The library frame"):
+/// the theme toggle and "Made with ArDrive". Search is the top bar's own.
+class LibraryTopBarActions extends StatelessWidget {
+  const LibraryTopBarActions({super.key, this.compact = false});
 
-/// The library's sidebar, in place of the drives list, the New button and the
-/// account (docs/LIBRARY_PAGES.md, "The library frame"): the icon, the title,
-/// the description and when it was published, then "Open in ArDrive" (drive
-/// libraries only) and "Made with ArDrive", and the collapse control. A drawer
-/// on a phone.
-class LibrarySideBar extends StatefulWidget {
-  const LibrarySideBar({super.key});
+  /// On a phone "Made with ArDrive" is ArDrive's mark alone.
+  final bool compact;
 
   @override
-  State<LibrarySideBar> createState() => _LibrarySideBarState();
+  Widget build(BuildContext context) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const IconThemeSwitcher(),
+          SizedBox(width: compact ? 4 : 12),
+          MadeWithArDrive(compact: compact),
+        ],
+      );
 }
 
-class _LibrarySideBarState extends State<LibrarySideBar> {
-  bool _isExpanded = true;
+/// The one place a library page names ArDrive: a quiet button in the top
+/// bar's corner, as shared-link pages put their maker's, opening ardrive.io.
+class MadeWithArDrive extends StatelessWidget {
+  const MadeWithArDrive({super.key, this.compact = false});
+
+  final bool compact;
+
+  static const url = 'https://ardrive.io';
 
   @override
   Widget build(BuildContext context) {
-    final theme = ArDriveTheme.of(context).themeData;
-    final config = libraryConfigOf(context);
-    return Material(
-      color: theme.backgroundColor,
-      child: ScreenTypeLayout.builder(
-        mobile: (context) => Drawer(
-          backgroundColor: theme.backgroundColor,
-          elevation: 3,
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: _content(context, config, expanded: true),
-            ),
+    final strings = appLocalizationsOf(context);
+    final mark = Image.asset(
+      Resources.images.brand.logo1,
+      width: compact ? 24 : 18,
+      height: compact ? 24 : 18,
+    );
+    if (compact) {
+      return Semantics(
+        link: true,
+        label: strings.libraryMadeWithArDrive,
+        excludeSemantics: true,
+        child: GestureDetector(
+          onTap: () => openUrl(url: url),
+          child: HoverWidget(
+            tooltip: strings.libraryMadeWithArDrive,
+            child: mark,
           ),
         ),
-        desktop: (context) => Container(
-          decoration: BoxDecoration(
-            border: Border(
-              right: BorderSide(color: theme.colors.shadow, width: 1),
-            ),
-          ),
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            child: SizedBox(
-              width: _isExpanded ? 240 : 64,
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: _isExpanded ? 24 : 8,
-                  vertical: 24,
-                ),
-                child: _content(context, config, expanded: _isExpanded),
+      );
+    }
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    return ArDriveButtonNew(
+      text: strings.libraryMadeWithArDrive,
+      typography: typography,
+      variant: ButtonVariant.outline,
+      maxHeight: 36,
+      onPressed: () => openUrl(url: url),
+      content: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            mark,
+            const SizedBox(width: 8),
+            Text(
+              strings.libraryMadeWithArDrive,
+              style: typography.paragraphSmall(
+                color: colors.textMid,
+                fontWeight: ArFontWeight.semiBold,
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
-
-  Widget _content(
-    BuildContext context,
-    LibraryConfig? config, {
-    required bool expanded,
-  }) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final strings = appLocalizationsOf(context);
-    final isDesktop =
-        getDeviceType(MediaQuery.of(context).size) != DeviceScreenType.mobile;
-
-    final collapse = isDesktop
-        ? ArDriveIconButton(
-            tooltip: expanded ? strings.collapseSideBar : strings.expandSideBar,
-            icon: expanded
-                ? ArDriveIcons.arrowLeftFilled()
-                : ArDriveIcons.arrowRightFilled(),
-            onPressed: () => setState(() => _isExpanded = !_isExpanded),
-          )
-        : null;
-
-    if (!expanded) {
-      return Column(
-        children: [
-          LibraryIcon(config: config, size: 40),
-          const Spacer(),
-          if (collapse != null) collapse,
-        ],
-      );
-    }
-
-    final publishedAt = config?.publishedAt;
-    final openInArDrive = config == null ? null : openInArDriveUrl(config);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LibraryIcon(config: config, size: 48),
-        const SizedBox(height: 16),
-        if (config != null) ...[
-          Text(
-            config.title,
-            style: typography.heading5(
-              color: colors.textHigh,
-              fontWeight: ArFontWeight.bold,
-            ),
-          ),
-          if (config.description.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              config.description,
-              style: typography.paragraphNormal(color: colors.textMid),
-            ),
-          ],
-          if (publishedAt != null) ...[
-            const SizedBox(height: 12),
-            Text(
-              strings.libraryPublished(formatDate(publishedAt)),
-              style: typography.paragraphSmall(color: colors.textLow),
-            ),
-          ],
-        ],
-        const Spacer(),
-        if (openInArDrive != null)
-          ArDriveClickArea(
-            child: GestureDetector(
-              onTap: () => openUrl(url: openInArDrive),
-              child: Text(
-                strings.libraryOpenInArDrive,
-                style: typography
-                    .paragraphNormal(
-                      color: colors.textHigh,
-                      fontWeight: ArFontWeight.semiBold,
-                    )
-                    .copyWith(decoration: TextDecoration.underline),
-              ),
-            ),
-          ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: ArDriveClickArea(
-                child: GestureDetector(
-                  onTap: () => openUrl(url: LibraryLoaderPage.ardriveUrl),
-                  child: Text(
-                    strings.libraryMadeWithArDrive,
-                    style: typography.paragraphSmall(color: colors.textLow),
-                  ),
-                ),
-              ),
-            ),
-            if (collapse != null) collapse,
-          ],
-        ),
-      ],
-    );
-  }
 }
 
-/// The library's top bar controls, in place of the hide toggle, the sync
-/// indicator and the account: the theme toggle. Search is the top bar's own.
-class LibraryTopBarActions extends StatelessWidget {
-  const LibraryTopBarActions({super.key});
-
-  @override
-  Widget build(BuildContext context) => const IconThemeSwitcher();
-}
-
-/// The band above a library's root (docs/LIBRARY_PAGES.md, "Cover band"): the
-/// cover image cropped to fill, with a scrim and the title and "N files ·
-/// size · published <date>" over it, or, without a cover, the title line on
-/// the page's own background.
-class LibraryCoverBand extends StatelessWidget {
-  const LibraryCoverBand({
+/// The head of a library's root (docs/LIBRARY_PAGES.md, "The library
+/// frame"), in place of the breadcrumb row there: the cover as a banner, then
+/// the title, who it is by, what is in it and its description, with the
+/// root's actions beside the title. Text never sits on the cover, which may
+/// be any picture.
+///
+/// [collapsed] once the list beneath has scrolled: the cover and the lines
+/// under the title fold away and the title and actions stay, so the list
+/// has the window.
+class LibraryHeader extends StatelessWidget {
+  const LibraryHeader({
     super.key,
-    required this.height,
-    required this.titleInset,
+    required this.coverHeight,
+    required this.collapsed,
+    required this.compact,
+    required this.onDownload,
+    required this.downloadsSelection,
+    required this.onCopyLink,
   });
 
-  final double height;
+  final double coverHeight;
+  final bool collapsed;
 
-  /// Without a cover, how far the title lines sit in from the band's left
-  /// edge, so they start where the breadcrumbs beneath start: inside their
-  /// card on a desktop, at the list's own edge on a phone. Over a cover they
-  /// sit in by the card's padding, the cover being a card of its own.
-  final double titleInset;
+  /// A phone's: the actions are icons.
+  final bool compact;
+  final VoidCallback onDownload;
 
-  static const _coverInset = 16.0;
+  /// Whether [onDownload] takes the rows selected in the list rather than the
+  /// whole library, which its label then says.
+  final bool downloadsSelection;
+  final VoidCallback onCopyLink;
+
+  static const _fold = Duration(milliseconds: 200);
 
   @override
   Widget build(BuildContext context) {
@@ -278,68 +202,85 @@ class LibraryCoverBand extends StatelessWidget {
     if (config == null) return const SizedBox.shrink();
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final summary = _summary(context, config, _statsOf(context));
     final cover = config.images.cover;
 
-    if (cover == null) {
-      // Full width, so the lines start at the left in a centring column too,
-      // as the phone layout is.
-      return Container(
-        width: double.infinity,
-        padding: EdgeInsets.fromLTRB(titleInset, 8, titleInset, 8),
-        child: _TitleLines(
-          title: config.title,
-          summary: summary,
-          titleColor: colors.textHigh,
-          summaryColor: colors.textLow,
-          typography: typography,
-        ),
-      );
-    }
+    final details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 4),
+        _Byline(config: config, stats: _statsOf(context)),
+        if (config.description.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            config.description,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: typography.paragraphNormal(color: colors.textMid),
+          ),
+        ],
+      ],
+    );
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: SizedBox(
-        height: height,
-        width: double.infinity,
-        child: Stack(
-          fit: StackFit.expand,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedSize(
+          duration: _fold,
+          alignment: Alignment.topCenter,
+          child: cover == null || collapsed
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: SizedBox(
+                      height: coverHeight,
+                      width: double.infinity,
+                      child: Image.network(
+                        Uri.base.resolve(cover).toString(),
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        frameBuilder: (context, image, frame, sync) =>
+                            frame != null || sync
+                                ? image
+                                : const LibraryImagePlaceholder(),
+                        errorBuilder: (_, __, ___) =>
+                            const LibraryImagePlaceholder(),
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+        // The actions beside the title only, so the lines under it have the
+        // width.
+        Row(
           children: [
-            Image.network(
-              Uri.base.resolve(cover).toString(),
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-              frameBuilder: (context, image, frame, wasSynchronouslyLoaded) =>
-                  frame != null || wasSynchronouslyLoaded
-                      ? image
-                      : const LibraryImagePlaceholder(),
-              errorBuilder: (_, __, ___) => const LibraryImagePlaceholder(),
-            ),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Color(0xB3000000)],
-                  stops: [0.35, 1],
+            Expanded(
+              child: Text(
+                config.title,
+                maxLines: collapsed ? 1 : 2,
+                overflow: TextOverflow.ellipsis,
+                style: (collapsed ? typography.heading5 : typography.heading4)(
+                  color: colors.textHigh,
+                  fontWeight: ArFontWeight.bold,
                 ),
               ),
             ),
-            Positioned(
-              left: _coverInset,
-              right: _coverInset,
-              bottom: 16,
-              child: _TitleLines(
-                title: config.title,
-                summary: summary,
-                titleColor: Colors.white,
-                summaryColor: const Color(0xD9FFFFFF),
-                typography: typography,
-              ),
+            const SizedBox(width: 16),
+            _Actions(
+              compact: compact,
+              onDownload: onDownload,
+              downloadsSelection: downloadsSelection,
+              onCopyLink: onCopyLink,
             ),
           ],
         ),
-      ),
+        AnimatedSize(
+          duration: _fold,
+          alignment: Alignment.topCenter,
+          child: collapsed ? const SizedBox(width: double.infinity) : details,
+        ),
+      ],
     );
   }
 
@@ -351,60 +292,157 @@ class LibraryCoverBand extends StatelessWidget {
       return null;
     }
   }
+}
 
-  static String? _summary(
-    BuildContext context,
-    LibraryConfig config,
-    LibraryStats? stats,
-  ) {
-    final publishedAt = config.publishedAt;
-    if (stats == null || publishedAt == null) return null;
-    return appLocalizationsOf(context).libraryCoverSummary(
-      stats.fileCount,
-      filesize(stats.totalSize),
-      formatDate(publishedAt),
+class _Actions extends StatelessWidget {
+  const _Actions({
+    required this.compact,
+    required this.onDownload,
+    required this.downloadsSelection,
+    required this.onCopyLink,
+  });
+
+  final bool compact;
+  final VoidCallback onDownload;
+  final bool downloadsSelection;
+  final VoidCallback onCopyLink;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final download =
+        downloadsSelection ? strings.libraryDownloadSelected : strings.download;
+    if (compact) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ArDriveIconButton(
+            tooltip: download,
+            icon: ArDriveIcons.download(),
+            onPressed: onDownload,
+          ),
+          const SizedBox(width: 4),
+          ArDriveIconButton(
+            tooltip: strings.copyLink,
+            icon: ArDriveIcons.copy(),
+            onPressed: onCopyLink,
+          ),
+        ],
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _LabelledButton(
+          icon: ArDriveIcons.download(size: 20),
+          label: download,
+          onPressed: onDownload,
+        ),
+        const SizedBox(width: 8),
+        _LabelledButton(
+          icon: ArDriveIcons.copy(size: 20),
+          label: strings.copyLink,
+          onPressed: onCopyLink,
+        ),
+      ],
     );
   }
 }
 
-class _TitleLines extends StatelessWidget {
-  const _TitleLines({
-    required this.title,
-    required this.summary,
-    required this.titleColor,
-    required this.summaryColor,
-    required this.typography,
+class _LabelledButton extends StatelessWidget {
+  const _LabelledButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
   });
 
-  final String title;
-  final String? summary;
-  final Color titleColor;
-  final Color summaryColor;
-  final ArdriveTypographyNew typography;
+  final Widget icon;
+  final String label;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: typography.heading4(
-            color: titleColor,
-            fontWeight: ArFontWeight.bold,
-          ),
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    return ArDriveButtonNew(
+      text: label,
+      typography: typography,
+      variant: ButtonVariant.outline,
+      maxHeight: 40,
+      onPressed: onPressed,
+      content: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            icon,
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: typography.paragraphNormal(
+                color: colors.textHigh,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
+          ],
         ),
-        if (summary != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            summary!,
-            style: typography.paragraphNormal(color: summaryColor),
+      ),
+    );
+  }
+}
+
+/// "By <owner> • N files • size • published <date>". The owner is the name
+/// they chose, or their address shortened; either way the whole address is
+/// a hover away and a click copies it, since a typed name proves nothing.
+class _Byline extends StatelessWidget {
+  const _Byline({required this.config, required this.stats});
+
+  final LibraryConfig config;
+  final LibraryStats? stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final style = typography.paragraphNormal(color: colors.textMid);
+    final owner = config.ownerName ??
+        truncateString(config.owner, offsetStart: 6, offsetEnd: 4);
+    final publishedAt = config.publishedAt;
+    final stats = this.stats;
+
+    // One line that wraps between words. Each bullet is held to the word
+    // before it by a no-break space, so a wrapped line never starts with one.
+    return Text.rich(
+      TextSpan(
+        style: style,
+        children: [
+          WidgetSpan(
+            alignment: PlaceholderAlignment.baseline,
+            baseline: TextBaseline.alphabetic,
+            child: Tooltip(
+              message: config.owner,
+              child: ArDriveClickArea(
+                child: GestureDetector(
+                  onTap: () async {
+                    await Clipboard.setData(ClipboardData(text: config.owner));
+                    if (context.mounted) _sayCopied(context);
+                  },
+                  child: Text(strings.libraryBy(owner), style: style),
+                ),
+              ),
+            ),
           ),
+          if (stats != null && publishedAt != null)
+            TextSpan(
+              text: '\u00a0• ${strings.libraryCoverSummary(
+                    stats.fileCount,
+                    filesize(stats.totalSize),
+                    formatDate(publishedAt),
+                  ).replaceAll(' • ', '\u00a0• ')}',
+            ),
         ],
-      ],
+      ),
     );
   }
 }

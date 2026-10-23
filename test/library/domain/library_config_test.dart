@@ -119,6 +119,24 @@ void main() {
       expect(config.viewer, isNull);
     });
 
+    test("reads the owner's chosen name, trimmed, and none when it is blank",
+        () {
+      expect(
+        LibraryConfig.fromJson(_publicJson()..['ownerName'] = '  Phil  ')
+            .ownerName,
+        'Phil',
+      );
+      expect(
+        LibraryConfig.fromJson(_publicJson()..['ownerName'] = '   ').ownerName,
+        isNull,
+      );
+      expect(LibraryConfig.fromJson(_publicJson()).ownerName, isNull);
+      expect(
+        () => LibraryConfig.fromJson(_publicJson()..['ownerName'] = 7),
+        throwsA(isA<LibraryConfigException>()),
+      );
+    });
+
     test('an image left null is not set', () {
       final config = LibraryConfig.fromJson(
         _publicJson()..['images'] = {'icon': 'icon-512.png', 'cover': null},

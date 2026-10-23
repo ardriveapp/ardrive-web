@@ -57,8 +57,8 @@ class LibraryReady extends LibraryLoaderState {
 
   final LibraryConfig config;
 
-  /// For the cover band. Null if it could not be counted, which the band
-  /// survives by leaving the line out.
+  /// For the header's byline. Null if it could not be counted, which the
+  /// byline survives by leaving the counts out.
   final LibraryStats? stats;
 
   @override

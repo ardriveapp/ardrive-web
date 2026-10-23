@@ -425,7 +425,8 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 7.0),
                 child: leading ??
-                    (showDrawerButton
+                    // A library page has no drawer.
+                    (showDrawerButton && !LibraryMode.isOn
                         ? const MobileDrawerButton()
                         : Container()),
               ),
@@ -461,8 +462,8 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
               ],
               if (LibraryMode.isOn)
                 const Padding(
-                  padding: EdgeInsets.only(right: 12.0),
-                  child: LibraryTopBarActions(),
+                  padding: EdgeInsets.only(right: 8.0),
+                  child: LibraryTopBarActions(compact: true),
                 )
               else ...[
                 const GlobalHideToggleButton(),
@@ -485,35 +486,17 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-/// A library page's app bar on a phone: the library's icon and title, where
-/// the ArDrive logo would be.
+/// A library page's app bar on a phone: the library's icon where the ArDrive
+/// logo would be. Its title is in the header beneath, over the files.
 class _MobileLibraryTitle extends StatelessWidget {
   const _MobileLibraryTitle();
 
   @override
-  Widget build(BuildContext context) {
-    final config = libraryConfigOf(context);
-    final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 8),
-      child: Row(
-        children: [
-          LibraryIcon(config: config, size: 28),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              config?.title ?? '',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: typography.paragraphLarge(
-                color: colors.textHigh,
-                fontWeight: ArFontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(left: 12),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: LibraryIcon(config: libraryConfigOf(context), size: 32),
+        ),
+      );
 }

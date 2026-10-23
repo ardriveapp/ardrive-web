@@ -26,6 +26,7 @@ class LibraryConfig extends Equatable {
     required this.scope,
     required this.privacy,
     required this.owner,
+    this.ownerName,
     required this.snapshot,
     required this.title,
     required this.description,
@@ -49,6 +50,10 @@ class LibraryConfig extends Equatable {
   /// The address the drive and its snapshot belong to. The importer refuses a
   /// snapshot uploaded by anyone else.
   final String owner;
+
+  /// The name the owner chose to be shown by, if any. Typed, like the title,
+  /// so it is a claim and not a proof: the page shows [owner] beside it.
+  final String? ownerName;
   final LibrarySnapshot snapshot;
   final String title;
   final String description;
@@ -126,6 +131,7 @@ class LibraryConfig extends Equatable {
       scope: LibraryScope._fromJson(_map(json, 'scope')),
       privacy: privacy,
       owner: _address(json, 'owner'),
+      ownerName: _nonEmpty(_optionalString(json, 'ownerName')),
       snapshot: snapshot,
       title: title,
       description: _optionalString(json, 'description') ?? '',
@@ -143,6 +149,7 @@ class LibraryConfig extends Equatable {
         scope,
         privacy,
         owner,
+        ownerName,
         snapshot,
         title,
         description,
@@ -377,4 +384,9 @@ DateTime? _optionalDate(Map<String, dynamic> json, String key) {
     throw LibraryConfigException.invalid('$key is not an ISO 8601 date');
   }
   return date.toUtc();
+}
+
+String? _nonEmpty(String? text) {
+  final trimmed = text?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
 }

@@ -12,7 +12,6 @@ import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/library/domain/library_mode.dart';
-import 'package:ardrive/library/presentation/library_chrome.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
@@ -92,7 +91,9 @@ class _AppSideBarState extends State<AppSideBar> {
 
   @override
   Widget build(BuildContext context) {
-    if (LibraryMode.isOn) return const LibrarySideBar();
+    // A library page has no sidebar: its icon is in the top bar and the
+    // rest is in the header over its files (docs/LIBRARY_PAGES.md).
+    if (LibraryMode.isOn) return const SizedBox.shrink();
 
     return Material(
       color: ArDriveTheme.of(context).themeData.backgroundColor,

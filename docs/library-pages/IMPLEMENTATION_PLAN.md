@@ -143,11 +143,13 @@ serving host and its gateway.
   `syncMetadataOnly` and the periodic timer with library mode (return without
   emitting `SyncInProgress`). `openDriveAsVisitor`'s sync-on-open must not run.
   Assert in a test that `SyncRepository` is never called in library mode.
-- `LibraryShell`: the design's sidebar (icon, title, description, published
-  date, Open in ArDrive, Made with ArDrive), top bar (search, theme), cover
-  band on the root, and the mobile variants. Reuse `ArDriveTheme`,
-  `ArDriveTypographyNew`, existing sidebar and top bar widgets with the
-  account parts removed; do not fork the explorer.
+- Library chrome (design, "The library frame"): no sidebar; the top bar with
+  the library's icon, search, the theme toggle and "Made with ArDrive"; the
+  folding header on the root (cover banner, title, byline, description,
+  Download and Copy link) in place of the breadcrumb row there; and the
+  mobile variants, with no drawer. Reuse `ArDriveTheme`,
+  `ArDriveTypographyNew` and the existing top bar with the account parts
+  removed; do not fork the explorer.
 - Explorer behaviour in library mode:
   - hide hidden items and their descendants, ghost folders, and failed or
     pending uploads (filter at the query or mapper level, not by hiding rows
@@ -157,9 +159,6 @@ serving host and its gateway.
     Copy link (new: library link to the folder or file); hide everything else
     listed in the design;
   - no New button, FAB, profile card, login, sync indicator, "Show hidden".
-- "Open in ArDrive" opens `https://app.ardrive.io/#/drives/<id>` (the 2.90
-  visitor flow) in a new tab. Drive libraries only: a folder library has no
-  such link.
 
 ### 1.4 Requests
 

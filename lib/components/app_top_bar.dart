@@ -1,5 +1,6 @@
 import 'package:ardrive/library/domain/library_mode.dart';
 import 'package:ardrive/library/presentation/library_chrome.dart';
+import 'package:ardrive/library/presentation/library_loader_page.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'dart:async';
 
@@ -37,6 +38,11 @@ class AppTopBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            // A library page has no sidebar, so its icon leads the bar.
+            if (LibraryMode.isOn) ...[
+              LibraryIcon(config: libraryConfigOf(context), size: 40),
+              const SizedBox(width: 16),
+            ],
             Expanded(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),

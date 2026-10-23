@@ -42,9 +42,9 @@ costs nothing. Publish writes permanent objects to Arweave.
 6. **Publish lives beside Share** in a drive's menu, a folder's menu and the
    details panel. Not in the New menu.
 7. **No analytics, no third-party requests** on a library page.
-8. **Every page shows "Made with ArDrive"; a drive's page also shows "Open in
-   ArDrive".** A folder's page does not: the app would let a visitor walk up
-   from the folder to the rest of the drive.
+8. **Every page shows "Made with ArDrive"**, once, as a quiet button in the
+   top bar. No page offers "Open in ArDrive": a visitor has no use for it,
+   and for a folder the app would let them walk up to the rest of the drive.
 9. **No per-file URLs** in v1. Files load by transaction ID from the serving
    gateway.
 10. **Republish only on request,** choosing an existing snapshot or making a
@@ -104,6 +104,7 @@ point at it later.
   "scope": { "type": "drive" },
   "privacy": "public",
   "owner": "iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA",
+  "ownerName": "Phil",
   "snapshot": {
     "path": "snapshot",
     "txId": "<artifact tx id>",
@@ -139,11 +140,20 @@ HTML-escaped):
   `twitter:card=summary_large_image`. `og:image` must be an absolute URL known
   before `index.html` is uploaded, so it cannot use the page manifest's ID:
   the manifest lists `index.html`, so it is built after it. The publish uploads
-  the social image first and points `og:image` at that transaction,
-  `https://<gateway>/<social-image-tx-id>` on the gateway the owner's app
-  uses (a reused image keeps its existing transaction). It stays that URL when
-  a name is added later, because `index.html` cannot change. With no social
-  image, `og:image` and `twitter:card` are left out.
+  the social image first and points `og:image` at that transaction on
+  ArDrive's own gateway, `https://ardrive.net/<social-image-tx-id>`, whatever
+  gateway the owner's app uses: link previews then depend on one gateway
+  ArDrive runs (a reused image keeps its existing transaction). A path inside
+  the page (`https://ardrive.net/<manifest-id>/social.jpg`) cannot work: the
+  manifest's ID exists only after `index.html` is uploaded. Once names arrive
+  (phase 4), a page published under a name can point `og:image` at an
+  undername of its own, `https://social_<name>.ardrive.net`, whose record
+  points at the card. The undername can be set after the card is uploaded,
+  and moved later, so the card can change without republishing. It uses one
+  of the name's undername slots. It stays that URL when
+  a name is added later, because `index.html` cannot change. Every page has a
+  social image: the owner's own, or the card the publish generates (see
+  step 3), so `og:image` and `twitter:card` are always there.
 
 ### How a page opens
 
@@ -240,34 +250,52 @@ One frame, a heading, one sentence, one action:
 
 ### The library frame (desktop)
 
-- **Sidebar** (replaces drives list, New button and profile): the icon (48 px),
-  the title, the description, "Published <date>", then at the bottom "Open in
-  ArDrive" (link, drive libraries only) and "Made with ArDrive" (muted), then
-  the existing collapse control.
-- **Top bar:** the existing search field ("Search this library…"), the theme
-  toggle. No login, profile card, sync indicator or New button.
-- **Cover band:** on the library's root only, above the breadcrumbs: the cover
-  image, cropped to fill, 200 px tall on desktop, with a bottom scrim and the
-  title plus "N files • size • published <date>" over it (bullets, as the
-  file rows use: Wavehaus draws "·" on the baseline). Without a cover, the
-  band is the title line on the normal background. On subfolders the band is
-  gone and the breadcrumbs lead.
-- **Breadcrumbs** start at the scope's root; the root crumb is the title.
+Agreed 2026-10-23 after a review of the first build: as familiar as a shared
+folder on Google Drive or Dropbox, nothing said twice.
+
+- **No sidebar.** Everything it held is in the top bar or the header.
+- **Top bar:** the library's icon (40 px), the existing search field ("Search
+  this library..."), then on the right the theme toggle and one quiet
+  outlined button, **Made with ArDrive**, opening ardrive.io. The only place
+  the page names ArDrive. No login, profile card, sync indicator, New button,
+  footer, or "Open in ArDrive" (a visitor has no reason to want the drive in
+  the app).
+- **Header,** on the library's root only, in place of the breadcrumb row
+  there: the cover as a banner (200 px, cropped to fill, rounded, nothing
+  printed on it), then the title, then "By <owner> • N files • size •
+  published <date>" (bullets, as the file rows use: Wavehaus draws "·" on
+  the baseline), then the description. **Download** and **Copy link** sit
+  beside the title. Download takes the whole library, or the rows selected in
+  the list, when its label says "Download selected". The owner is the name
+  they chose (`ownerName`), else their address shortened; the whole address
+  is the tooltip, and a click copies it.
+- **The header folds** as the list beneath it scrolls: the cover and the
+  lines under the title fold away, the title and actions stay, and the list
+  has the window. Scrolling back to the list's top unfolds it; the wheel over
+  the header does both. The column headings have a hairline under them, so
+  rows pass beneath an edge.
+- **Subfolders:** no header; the breadcrumb row leads, with its menu. The
+  root crumb is the title.
 - **Data table, details panel, previews:** unchanged.
 - **Row and toolbar actions offered:** Download, Download folder (zip), Preview
   in the panel, More info, and **Copy link**, which copies the library's own
   link to that folder or file (`<page link>#/folders/<id>?file=<id>`).
   Everything else is hidden: Share (replaced by Copy link), Rename, Move, Hide,
-  License add/update, Pin, Create snapshot, Sync, Full resync, Export, Attach.
+  License add/update, Pin, Create snapshot, Sync, Full resync, Export, Attach,
+  Edit note.
 - **Never shown:** hidden items or anything inside a hidden folder, ghost
   folders, failed or pending uploads, anything outside a folder library's
   folder, the "Show hidden" toggle.
+- **No terms or footer:** the page shows the owner's own public data, served
+  by a gateway under its own content policy, and collects nothing from a
+  visitor. A "Report" link is an open question for legal.
 
 ### The library frame (phone)
 
-ArDrive's mobile layout. The app bar shows the icon and title; the drawer holds
-the sidebar's content. The cover band is 120 px tall and crops to its centre.
-No FAB.
+ArDrive's mobile layout without a drawer. The app bar shows the library's
+icon, then search, the theme toggle and ArDrive's mark (the "Made with
+ArDrive" button, its label as a tooltip). The header is the desktop's with a
+120 px cover and the actions as icons. No FAB.
 
 ### Copy
 
@@ -314,8 +342,9 @@ and a browser-tab preview with the icon):
 |---|---|---|
 | Title | text, 60 chars | Required. Prefilled with the drive or folder name for a public drive, empty for a private one |
 | Description | text, 160 chars, counter | Optional |
+| Display name | text, 40 chars | Optional. Shown as "By <name>" in the header, with the wallet address on hover. Prefilled with the wallet's ArNS primary name once names arrive (phase 4). Empty shows the address, shortened |
 | Icon | image picker | Square, at least 512 × 512, PNG/JPEG/WebP/SVG, under 2 MB. Makes 32, 180, 512 px PNGs |
-| Social card | image picker | 1200 × 630. Cropped to 1.91:1, re-encoded JPEG, aiming under 100 KiB |
+| Social card | image picker, starting with a generated card | 1200 × 630. Cropped to 1.91:1, re-encoded JPEG, aiming under 100 KiB. Until the owner picks an image, the dialog draws one from the other fields and shows it in the preview: the cover (or the icon on a plain background), the title, the description, "N files", and a small ArDrive mark. It redraws as they type. "Remove" goes back to the generated card; a page never goes without one |
 | Cover | image picker | 1600 × 400. Cropped to 4:1, re-encoded JPEG, aiming under 100 KiB. Hint: "Keep text and faces in the middle; phones crop the sides" |
 
 The image picker is a thumbnail plus "Change" opening a menu: **Upload an
@@ -325,6 +354,15 @@ type and the size rules above), **Remove**. For a private drive, "Choose from
 this drive" is disabled with "Files in a private drive are encrypted. Upload
 the image instead." A too-small or wrong-type image explains what is wrong and
 what size to use.
+
+**The generated social card** is drawn in the app when the owner publishes,
+never by a server when a link is shared: a page must not depend on anything
+but the gateway serving it, for ever. It is uploaded like any other page
+image (about 0.00025 credits for a 17 KB card, October 2026), so a link
+preview works on every platform without the owner doing anything. For a
+private library it uses only what is already public: the title, the
+description, the icon and the cover, never a file count or a name from the
+drive.
 
 **Step 4 · Name.** Until phase 4: a short panel: "Your library page will have
 its own link. You can point an ArNS name at it later." No input. In phase 4:

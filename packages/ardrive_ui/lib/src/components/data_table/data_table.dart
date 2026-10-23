@@ -89,6 +89,10 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   final Function(bool onChangeMultiSelecting)? onChangeMultiSelecting;
   final bool forceDisableMultiSelect;
   final bool lockMultiSelect;
+
+  /// A hairline under the column headings, so rows scrolling up beneath
+  /// them are seen to pass under an edge rather than being cut short.
+  final bool headerDivider;
   final T? selectedRow;
   final Function(TableColumn)? onChangeColumnVisibility;
 
@@ -145,6 +149,7 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     this.onChangeMultiSelecting,
     this.forceDisableMultiSelect = false,
     this.lockMultiSelect = false,
+    this.headerDivider = false,
     this.selectedRow,
     this.onChangeColumnVisibility,
     this.initialPage,
@@ -812,6 +817,12 @@ class _ArDriveDataTableState<T extends IndexedItem>
               const SizedBox(
                 height: 6,
               ),
+              if (widget.headerDivider)
+                Container(
+                  height: 1,
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
+                ),
               Expanded(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(

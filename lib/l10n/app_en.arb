@@ -4582,22 +4582,22 @@
   "@libraryOpenArDrive": {
     "description": "Button on a library page's error screen that opens the ArDrive app."
   },
-  "libraryPublished": "Published {date}",
-  "@libraryPublished": {
-    "description": "In a library page's sidebar: when the library was published. The date is already formatted.",
+  "libraryBy": "By {owner}",
+  "@libraryBy": {
+    "description": "Under a library page's title: who published it. The owner is a name they chose or their shortened wallet address.",
     "placeholders": {
-      "date": {
+      "owner": {
         "type": "String"
       }
     }
   },
-  "libraryOpenInArDrive": "Open in ArDrive",
-  "@libraryOpenInArDrive": {
-    "description": "Link in a library page's sidebar that opens the library's drive in the ArDrive app."
+  "libraryDownloadSelected": "Download selected",
+  "@libraryDownloadSelected": {
+    "description": "A library page's download button while files are selected in its list: it downloads those rather than the whole library."
   },
   "libraryMadeWithArDrive": "Made with ArDrive",
   "@libraryMadeWithArDrive": {
-    "description": "Muted line at the bottom of a library page's sidebar."
+    "description": "The quiet button in a library page's top bar that opens ardrive.io, and the tooltip of ArDrive's mark that takes its place on a phone."
   },
   "librarySearchHint": "Search this library...",
   "@librarySearchHint": {

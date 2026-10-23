@@ -71,6 +71,9 @@ test('library.json has a fixed shape', () => {
     'snapshot', 'title', 'description', 'publishedAt',
   ]);
   assert.deepEqual(config.scope, { type: 'folder', folderId: 'f' });
+  assert.equal('ownerName' in config, false);
+  const named = JSON.parse(buildLibraryJson({ ...JSON.parse(text), snapshotTags: {}, ownerName: 'Phil' }));
+  assert.deepEqual(Object.keys(named).slice(5, 8), ['owner', 'ownerName', 'snapshot']);
   assert.deepEqual(Object.keys(config.snapshot.tags), ['Drive-Id', 'Entity-Type']);
 });
 

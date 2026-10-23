@@ -1,5 +1,7 @@
 import 'package:ardrive/library/domain/library_config.dart';
 import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/library/domain/library_stats.dart';
+import 'package:ardrive/library/presentation/library_chrome.dart';
 import 'package:ardrive/library/presentation/library_loader/library_loader_cubit.dart';
 import 'package:ardrive/library/presentation/library_loader_page.dart';
 import 'package:ardrive/misc/resources.dart';
@@ -135,6 +137,88 @@ void main() {
       await loading(tester, 8000000, 4000000);
 
       expect(find.text('Loading files...'), findsOneWidget);
+    });
+  });
+
+  group('the header', () {
+    Future<void> header(
+      WidgetTester tester, {
+      LibraryConfig config = _config,
+      bool collapsed = false,
+      bool downloadsSelection = false,
+    }) {
+      final loader = _MockLoader();
+      whenListen(
+        loader,
+        const Stream<LibraryLoaderState>.empty(),
+        initialState: LibraryReady(
+          config,
+          stats: const LibraryStats(fileCount: 79, totalSize: 320794),
+        ),
+      );
+      return pump(
+        tester,
+        BlocProvider<LibraryLoaderCubit>.value(
+          value: loader,
+          child: SizedBox(
+            width: 1000,
+            child: LibraryHeader(
+              coverHeight: 200,
+              collapsed: collapsed,
+              compact: false,
+              downloadsSelection: downloadsSelection,
+              onDownload: () {},
+              onCopyLink: () {},
+            ),
+          ),
+        ),
+      );
+    }
+
+    LibraryConfig withOwnerName(String? name) => LibraryConfig(
+          version: _config.version,
+          driveId: _config.driveId,
+          rootFolderId: _config.rootFolderId,
+          scope: _config.scope,
+          privacy: _config.privacy,
+          owner: _config.owner,
+          ownerName: name,
+          snapshot: _config.snapshot,
+          title: 'Library',
+          description: 'A description.',
+          images: _config.images,
+          publishedAt: DateTime.utc(2026, 10, 23),
+          viewer: null,
+        );
+
+    testWidgets('names its owner by the name they chose', (tester) async {
+      await header(tester, config: withOwnerName('Phil'));
+
+      expect(find.text('By Phil'), findsOneWidget);
+      expect(find.byTooltip(_config.owner), findsOneWidget);
+    });
+
+    testWidgets('or by their address, shortened', (tester) async {
+      await header(tester, config: withOwnerName(null));
+
+      expect(find.textContaining('By iKryOe'), findsOneWidget);
+      expect(find.textContaining('79 files'), findsOneWidget);
+      expect(find.text('A description.'), findsOneWidget);
+    });
+
+    testWidgets('folds to its title and actions', (tester) async {
+      await header(tester, config: withOwnerName(null), collapsed: true);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Library'), findsOneWidget);
+      expect(find.text('A description.'), findsNothing);
+      expect(find.text('Download'), findsOneWidget);
+    });
+
+    testWidgets('downloads what is selected when something is', (tester) async {
+      await header(tester, downloadsSelection: true);
+
+      expect(find.text('Download selected'), findsOneWidget);
     });
   });
 }

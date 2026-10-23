@@ -7,7 +7,7 @@
 //   node tool/library_page/build_test_page.mjs \
 //     --release <release manifest id> --snapshot <artifact tx id> \
 //     --root <root folder id> [--folder <folder id>] \
-//     --title 'A title' [--description 'A sentence.'] \
+//     --title 'A title' [--description 'A sentence.'] [--owner-name 'Name'] \
 //     [--images <dir>] [--gateway turbo-gateway.com] [--out <dir>] [--upload]
 //
 // The drive, its owner and privacy come from the artifact's tags, read once
@@ -52,6 +52,7 @@ const { values: args } = parseArgs({
     folder: { type: 'string' },
     title: { type: 'string' },
     description: { type: 'string', default: '' },
+    'owner-name': { type: 'string' },
     images: { type: 'string' },
     gateway: { type: 'string', default: 'turbo-gateway.com' },
     out: { type: 'string', default: 'library-page-out' },
@@ -144,6 +145,7 @@ const libraryJsonOf = () => buildLibraryJson({
   folderId: args.folder,
   privacy: 'public',
   owner: snapshot.owner,
+  ownerName: args['owner-name']?.trim() || undefined,
   snapshotTxId: args.snapshot,
   snapshotTags: snapshot.tags,
   title: args.title,
