@@ -1,17 +1,22 @@
 import 'dart:typed_data';
 
+import 'package:ardrive/library/data/snapshot_download.dart';
 import 'package:http/http.dart' as http;
 
 /// Reads a library page's own files: `library.json` and the snapshot, from
 /// the page's manifest, relative to the page (docs/LIBRARY_PAGES.md, "How a
 /// page opens"). The only requests a library makes before its explorer opens.
 class LibrarySource {
+  /// In a browser with no [client], the snapshot downloads through the
+  /// browser's own progress events (see `snapshot_download.dart`).
   LibrarySource({required Uri pageUri, http.Client? client})
       : _pageUri = pageUri,
-        _client = client ?? http.Client();
+        _client = client ?? http.Client(),
+        _download = client == null ? browserSnapshotDownload : null;
 
   final Uri _pageUri;
   final http.Client _client;
+  final SnapshotDownload? _download;
 
   /// Throws [LibrarySourceException].
   Future<String> readSettings(String path) async {
@@ -29,6 +34,15 @@ class LibrarySource {
     void Function(int received, int? total)? onProgress,
   }) async {
     final uri = _resolve(path);
+    final download = _download;
+    if (download != null) {
+      try {
+        return await download(uri, onProgress ?? (_, __) {});
+      } catch (e) {
+        throw LibrarySourceException(uri, '$e');
+      }
+    }
+
     final http.StreamedResponse response;
     try {
       response = await _client.send(http.Request('GET', uri));
