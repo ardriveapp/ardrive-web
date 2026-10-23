@@ -568,6 +568,42 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 
+  /// Seeds the drive a library page (`LibraryMode`) imports into: its row
+  /// and its root folder placeholder, in one transaction as
+  /// [writeDriveEntity] writes them.
+  ///
+  /// The importer refuses to import into a drive this client has no row for,
+  /// and a library page has never synced. `lastUpdated` is the epoch so that
+  /// the drive metadata in the snapshot, whatever its date, always wins.
+  Future<void> writeLibraryDrive({
+    required DriveID driveId,
+    required FolderID rootFolderId,
+    required String ownerAddress,
+    required String privacy,
+    required String name,
+  }) =>
+      db.transaction(() async {
+        await into(drives).insert(
+          DrivesCompanion.insert(
+            id: driveId,
+            name: name,
+            ownerAddress: ownerAddress,
+            rootFolderId: rootFolderId,
+            privacy: privacy,
+            lastUpdated: Value(DateTime.fromMillisecondsSinceEpoch(0)),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+        await into(folderEntries).insert(
+          _rootFolderPlaceholder(
+            driveId: driveId,
+            rootFolderId: rootFolderId,
+            name: name,
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      });
+
   Future<DrivesCompanion> _addDriveKeyToDriveCompanion(
     DrivesCompanion drive,
     SecretKey profileKey,
