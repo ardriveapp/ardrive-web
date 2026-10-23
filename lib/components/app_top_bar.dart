@@ -1,3 +1,5 @@
+import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/library/presentation/library_chrome.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'dart:async';
 
@@ -43,12 +45,18 @@ class AppTopBar extends StatelessWidget {
             ),
             const SizedBox(width: 24),
             const Spacer(),
-            const GlobalHideToggleButton(),
-            const SizedBox(width: 8),
-            const SyncButton(),
-            const SizedBox(width: 8),
-            const SizedBox(width: 24),
-            const ProfileCard(),
+            // A library page has no hidden items to show, nothing to sync and
+            // no account (docs/LIBRARY_PAGES.md, "The library frame").
+            if (LibraryMode.isOn)
+              const LibraryTopBarActions()
+            else ...[
+              const GlobalHideToggleButton(),
+              const SizedBox(width: 8),
+              const SyncButton(),
+              const SizedBox(width: 8),
+              const SizedBox(width: 24),
+              const ProfileCard(),
+            ],
           ],
         ),
       ),

@@ -4585,5 +4585,41 @@
   "libraryOpenArDrive": "Open ArDrive",
   "@libraryOpenArDrive": {
     "description": "Button on a library page's error screen that opens the ArDrive app."
+  },
+  "libraryPublished": "Published {date}",
+  "@libraryPublished": {
+    "description": "In a library page's sidebar: when the library was published. The date is already formatted.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryOpenInArDrive": "Open in ArDrive",
+  "@libraryOpenInArDrive": {
+    "description": "Link in a library page's sidebar that opens the library's drive in the ArDrive app."
+  },
+  "libraryMadeWithArDrive": "Made with ArDrive",
+  "@libraryMadeWithArDrive": {
+    "description": "Muted line at the bottom of a library page's sidebar."
+  },
+  "librarySearchHint": "Search this library…",
+  "@librarySearchHint": {
+    "description": "Hint in a library page's search field."
+  },
+  "libraryCoverSummary": "{files, plural, =1{1 file} other{{files} files}} · {size} · published {date}",
+  "@libraryCoverSummary": {
+    "description": "Under the title on a library page's cover: how many files it has, their total size and when it was published. Size and date are already formatted.",
+    "placeholders": {
+      "files": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
   }
 }

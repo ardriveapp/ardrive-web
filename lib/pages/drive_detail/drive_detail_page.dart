@@ -31,6 +31,7 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -1115,7 +1116,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
       ),
       bottomNavigationBar: BlocBuilder<DriveDetailCubit, DriveDetailState>(
         builder: (context, state) {
-          if (state is! DriveDetailLoadSuccess) {
+          // A library page adds nothing to its drive: no New button.
+          if (state is! DriveDetailLoadSuccess || LibraryMode.isOn) {
             return Container();
           }
 
