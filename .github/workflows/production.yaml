@@ -64,6 +64,16 @@ jobs:
       # first visit downloads about 20 MB instead of 77 MB. Library pages load
       # this bundle by its manifest ID (docs/LIBRARY_PAGES.md). Pinned to the
       # v2.1.1 commit; the action installs @ar.io/deploy@^2 itself.
+      # The action installs Node with `node-version: '22'` and no
+      # check-latest, which takes the newest 22.x already on the runner, and
+      # that can predate a security release (CVE-2026-111497, the brotli
+      # decoder, fixed in 22.23.4). Installing the patched release first puts
+      # it in the tool cache, where the action's own setup-node finds it.
+      - name: Install a patched Node 22 for the Arweave deploy
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.23.4'
+
       - name: Deploy to Arweave
         id: arweave
         uses: ar-io/ar-io-deploy@f66d1b79b5231f068bed8ba8dc9689c71901ef30 # v2.1.1
