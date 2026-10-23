@@ -183,8 +183,12 @@ ID (read its tags from the gateway's GraphQL once, here only), a title and
 description. It writes `library.json` and the page `index.html` (head
 injection, escaped), builds the page manifest (release paths + page paths,
 index and fallback `index.html`), uploads the three small files with
-`@ardrive/turbo-sdk` using the test wallet, and prints the page link. Every
-upload is under 105 KiB, so it is free. This tool is also the reference
+`@ardrive/turbo-sdk` using the test wallet, and prints the page link. With
+`--images <dir>` it also uploads the page's images, already sized (the icon's
+three sizes, `social.jpg`, `cover.jpg`), first, so `og:image` can name the
+social card's own transaction. Every upload is under 105 KiB, which was free;
+since free uploads were restricted a page costs about 0.0014 credits, plus
+its images. This tool is also the reference
 implementation for phase 2's Dart publisher: keep their outputs
 byte-comparable (a golden test in phase 2 compares them).
 

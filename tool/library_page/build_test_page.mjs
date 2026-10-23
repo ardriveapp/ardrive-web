@@ -8,7 +8,7 @@
 //     --release <release manifest id> --snapshot <artifact tx id> \
 //     --root <root folder id> [--folder <folder id>] \
 //     --title 'A title' [--description 'A sentence.'] \
-//     [--gateway turbo-gateway.com] [--out <dir>] [--upload]
+//     [--images <dir>] [--gateway turbo-gateway.com] [--out <dir>] [--upload]
 //
 // The drive, its owner and privacy come from the artifact's tags, read once
 // from the gateway's GraphQL. Without --upload it writes the three files to
@@ -20,6 +20,11 @@
 // file must be under 105 KiB, Turbo's free size before free uploads were
 // restricted; the test wallet now pays for them, about 0.0014 credits a
 // page (October 2026).
+//
+// --images names a directory holding any of the page's images, already
+// sized: icon-32.png, icon-180.png and icon-512.png (all three or none),
+// social.jpg (1200 x 630) and cover.jpg (1600 x 400). Each is uploaded on its
+// own first, so the social card's link is known before index.html is written.
 //
 // Public drives only, until private pages (phase 3).
 
@@ -47,6 +52,7 @@ const { values: args } = parseArgs({
     folder: { type: 'string' },
     title: { type: 'string' },
     description: { type: 'string', default: '' },
+    images: { type: 'string' },
     gateway: { type: 'string', default: 'turbo-gateway.com' },
     out: { type: 'string', default: 'library-page-out' },
     upload: { type: 'boolean', default: false },
@@ -65,6 +71,32 @@ if (args.folder && !UUID.test(args.folder)) fail('--folder must be a folder ID')
 if (!args.title?.trim()) fail('--title is required');
 
 const gateway = `https://${args.gateway}`;
+
+const IMAGE_FILES = {
+  'icon-32.png': 'image/png',
+  'icon-180.png': 'image/png',
+  'icon-512.png': 'image/png',
+  'social.jpg': 'image/jpeg',
+  'cover.jpg': 'image/jpeg',
+};
+const images = args.images
+  ? Object.fromEntries(
+      Object.keys(IMAGE_FILES)
+        .filter((name) => fs.existsSync(path.join(args.images, name)))
+        .map((name) => [name, fs.readFileSync(path.join(args.images, name))]),
+    )
+  : {};
+const icons = ['icon-32.png', 'icon-180.png', 'icon-512.png'].filter((name) => images[name]);
+if (icons.length !== 0 && icons.length !== 3) fail('--images needs all three icon sizes or none');
+for (const [name, data] of Object.entries(images)) {
+  if (data.length >= FREE_UPLOAD_BYTES) fail(`${name} is ${data.length} bytes, over 105 KiB`);
+}
+/** library.json's `images`: the paths the page has. */
+const imagePaths = {
+  ...(icons.length ? { icon: 'icon-512.png' } : {}),
+  ...(images['social.jpg'] ? { social: 'social.jpg' } : {}),
+  ...(images['cover.jpg'] ? { cover: 'cover.jpg' } : {}),
+};
 
 async function get(url) {
   const response = await fetch(url);
@@ -106,7 +138,7 @@ const version = release.paths['version.json']
   ? JSON.parse(await get(`${gateway}/raw/${release.paths['version.json'].id}`)).version
   : undefined;
 
-const libraryJson = buildLibraryJson({
+const libraryJsonOf = () => buildLibraryJson({
   driveId,
   rootFolderId: args.root,
   folderId: args.folder,
@@ -116,13 +148,22 @@ const libraryJson = buildLibraryJson({
   snapshotTags: snapshot.tags,
   title: args.title,
   description: args.description,
-  publishedAt: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+  images: imagePaths,
+  publishedAt,
   viewer: version ? { release: version, manifest: args.release } : undefined,
 });
-const indexHtml = buildIndexHtml((await get(`${gateway}/raw/${releaseIndex}`)).toString('utf8'), {
-  title: args.title,
-  description: args.description,
-});
+const publishedAt = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+const releaseIndexHtml = (await get(`${gateway}/raw/${releaseIndex}`)).toString('utf8');
+const indexHtmlOf = (socialImageUrl) =>
+  buildIndexHtml(releaseIndexHtml, {
+    title: args.title,
+    description: args.description,
+    icons: icons.length ? { small: 'icon-32.png', touch: 'icon-180.png' } : undefined,
+    socialImageUrl,
+  });
+const libraryJson = libraryJsonOf();
+const placeholderSocial = images['social.jpg'] ? `${gateway}/SOCIAL-IMAGE` : undefined;
+let indexHtml = indexHtmlOf(placeholderSocial);
 
 for (const [name, text] of [['library.json', libraryJson], ['index.html', indexHtml]]) {
   if (Buffer.byteLength(text) >= FREE_UPLOAD_BYTES) {
@@ -141,6 +182,7 @@ if (!args.upload) {
     'index.html': placeholder('PAGE-INDEX'),
     'library.json': placeholder('PAGE-CONFIG'),
     snapshot: { id: args.snapshot },
+    ...Object.fromEntries(Object.keys(images).map((name) => [name, placeholder(name)])),
   });
   fs.writeFileSync(path.join(out, 'manifest.json'), manifest);
   console.log(`wrote library.json, index.html and manifest.json to ${out}; nothing uploaded`);
@@ -156,7 +198,7 @@ const appTags = [
 ];
 
 async function upload(text, contentType, type, extraTags = []) {
-  const data = Buffer.from(text);
+  const data = Buffer.isBuffer(text) ? text : Buffer.from(text);
   if (data.length >= FREE_UPLOAD_BYTES) throw new Error(`${type} is over 105 KiB`);
   const receipt = await turbo.upload({
     data,
@@ -173,12 +215,22 @@ async function upload(text, contentType, type, extraTags = []) {
   return receipt.id;
 }
 
+// Images first: index.html names the social card by its own transaction.
+const imageIds = {};
+for (const [name, data] of Object.entries(images)) {
+  imageIds[name] = await upload(data, IMAGE_FILES[name], PAGE_TYPES.asset);
+}
+if (imageIds['social.jpg']) {
+  indexHtml = indexHtmlOf(`${gateway}/${imageIds['social.jpg']}`);
+  fs.writeFileSync(path.join(out, 'index.html'), indexHtml);
+}
 const configId = await upload(libraryJson, 'application/json', PAGE_TYPES.config);
 const indexId = await upload(indexHtml, 'text/html', PAGE_TYPES.index);
 const manifest = buildPageManifest(release, {
   'index.html': { id: indexId },
   'library.json': { id: configId },
   snapshot: { id: args.snapshot },
+  ...Object.fromEntries(Object.entries(imageIds).map(([name, id]) => [name, { id }])),
 });
 fs.writeFileSync(path.join(out, 'manifest.json'), manifest);
 const manifestId = await upload(manifest, 'application/x.arweave-manifest+json', PAGE_TYPES.manifest, [
