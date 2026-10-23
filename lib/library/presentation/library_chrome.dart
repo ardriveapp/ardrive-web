@@ -256,9 +256,21 @@ class LibraryTopBarActions extends StatelessWidget {
 /// size · published <date>" over it, or, without a cover, the title line on
 /// the page's own background.
 class LibraryCoverBand extends StatelessWidget {
-  const LibraryCoverBand({super.key, required this.height});
+  const LibraryCoverBand({
+    super.key,
+    required this.height,
+    required this.titleInset,
+  });
 
   final double height;
+
+  /// Without a cover, how far the title lines sit in from the band's left
+  /// edge, so they start where the breadcrumbs beneath start: inside their
+  /// card on a desktop, at the list's own edge on a phone. Over a cover they
+  /// sit in by the card's padding, the cover being a card of its own.
+  final double titleInset;
+
+  static const _coverInset = 16.0;
 
   @override
   Widget build(BuildContext context) {
@@ -274,7 +286,7 @@ class LibraryCoverBand extends StatelessWidget {
       // as the phone layout is.
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: EdgeInsets.fromLTRB(titleInset, 8, titleInset, 8),
         child: _TitleLines(
           title: config.title,
           summary: summary,
@@ -297,8 +309,11 @@ class LibraryCoverBand extends StatelessWidget {
               Uri.base.resolve(cover).toString(),
               fit: BoxFit.cover,
               alignment: Alignment.center,
-              errorBuilder: (_, __, ___) =>
-                  ColoredBox(color: colors.containerL2),
+              frameBuilder: (context, image, frame, wasSynchronouslyLoaded) =>
+                  frame != null || wasSynchronouslyLoaded
+                      ? image
+                      : const LibraryImagePlaceholder(),
+              errorBuilder: (_, __, ___) => const LibraryImagePlaceholder(),
             ),
             const DecoratedBox(
               decoration: BoxDecoration(
@@ -311,8 +326,8 @@ class LibraryCoverBand extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: 20,
-              right: 20,
+              left: _coverInset,
+              right: _coverInset,
               bottom: 16,
               child: _TitleLines(
                 title: config.title,

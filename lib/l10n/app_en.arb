@@ -4530,10 +4530,6 @@
   "@noPrivateDrivesDescription": {
     "description": "Says what a private drive is, for somebody who has none."
   },
-  "libraryOpening": "Opening library...",
-  "@libraryOpening": {
-    "description": "A library page's loading screen, while it reads its settings."
-  },
   "libraryLoadingFiles": "Loading files...",
   "@libraryLoadingFiles": {
     "description": "A library page's loading screen, while it downloads the list of its files and its size is not known."

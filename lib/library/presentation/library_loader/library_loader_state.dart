@@ -8,7 +8,8 @@ sealed class LibraryLoaderState extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Reading `library.json`. "Opening library…"
+/// Reading `library.json`. The screen shows only its background: there is
+/// no icon or title yet, and the request is a small one.
 class LibraryLoadingSettings extends LibraryLoaderState {
   const LibraryLoadingSettings();
 }

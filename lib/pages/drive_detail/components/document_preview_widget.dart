@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/components/note_create/note_create_form.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -505,9 +506,11 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                   ),
                 ),
               ],
+              // A library page is read-only.
               if (_isMarkdown() &&
                   widget.fileItem != null &&
-                  !widget.isSharePage) ...[
+                  !widget.isSharePage &&
+                  !LibraryMode.isOn) ...[
                 const SizedBox(width: 8),
                 ArDriveIconButton(
                   icon: ArDriveIcons.edit(size: 20),

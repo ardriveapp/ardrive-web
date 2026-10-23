@@ -48,6 +48,15 @@ class _Frame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ArDrive's mark is fetched like any image on the web: ask for it now, so
+    // it is there when a library without its own icon needs it.
+    precacheImage(AssetImage(Resources.images.brand.logo1), context);
+
+    // Until library.json is read there is no icon or title to show, only a
+    // slot where one will be. That small request is quick; the page's
+    // background alone covers it.
+    if (state is LibraryLoadingSettings) return const SizedBox.shrink();
+
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final config = _configOf(state);
@@ -102,8 +111,10 @@ class _Progress extends StatelessWidget {
     final strings = appLocalizationsOf(context);
 
     final (String line, double? value) = switch (state) {
+      // A browser that decodes a compressed body can count past the total
+      // the gateway gave, which was of the compressed bytes.
       LibraryLoadingSnapshot(:final received, :final total)
-          when total != null && total > 0 =>
+          when total != null && total > 0 && received <= total =>
         (
           strings.libraryLoadingFilesOf(filesize(received), filesize(total)),
           received / total,
@@ -113,7 +124,7 @@ class _Progress extends StatelessWidget {
           strings.libraryAlmostThere,
           null
         ),
-      _ => (strings.libraryOpening, null),
+      _ => (strings.libraryLoadingFiles, null),
     };
 
     return Column(
@@ -205,8 +216,8 @@ class _Failure extends StatelessWidget {
   }
 }
 
-/// The library's icon from its own manifest, or ArDrive's when it has none
-/// or it does not load.
+/// The library's icon from its own manifest, or ArDrive's mark when it has
+/// none or it does not load. A plain square holds its place while it loads.
 class LibraryIcon extends StatelessWidget {
   const LibraryIcon({super.key, required this.config, required this.size});
 
@@ -216,7 +227,7 @@ class LibraryIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fallback = Image.asset(
-      Resources.images.login.ardriveLogoOnboarding,
+      Resources.images.brand.logo1,
       width: size,
       height: size,
       fit: BoxFit.contain,
@@ -230,8 +241,27 @@ class LibraryIcon extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.cover,
+        frameBuilder: (context, image, frame, wasSynchronouslyLoaded) =>
+            frame != null || wasSynchronouslyLoaded
+                ? image
+                : LibraryImagePlaceholder(width: size, height: size),
         errorBuilder: (_, __, ___) => fallback,
       ),
     );
   }
+}
+
+/// Where a library's own image will be, until it has loaded.
+class LibraryImagePlaceholder extends StatelessWidget {
+  const LibraryImagePlaceholder({super.key, this.width, this.height});
+
+  final double? width;
+  final double? height;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: width,
+        height: height,
+        color: ArDriveTheme.of(context).themeData.colorTokens.containerL2,
+      );
 }

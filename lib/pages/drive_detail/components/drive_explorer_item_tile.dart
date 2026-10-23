@@ -132,7 +132,11 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
   }
 
   Widget _buildFileIcon(BuildContext context) {
-    if (item is FileDataTableItem && FileTypeHelper.isImage(item.contentType)) {
+    // Only a file with a thumbnail has one to load: without, the request was
+    // for `<gateway>/raw/null`, which failed into the icon below anyway.
+    if (item is FileDataTableItem &&
+        FileTypeHelper.isImage(item.contentType) &&
+        (item as FileDataTableItem).thumbnail != null) {
       final file = item as FileDataTableItem;
 
       return ArDriveCard(

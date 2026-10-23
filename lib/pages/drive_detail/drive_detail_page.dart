@@ -575,7 +575,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                           // A library's cover, on its root only.
                           if (libraryConfigOf(context)?.scopeRootFolderId ==
                               driveDetailState.folderInView.folder.id) ...[
-                            const LibraryCoverBand(height: 200),
+                            const LibraryCoverBand(height: 200, titleInset: 16),
                             const SizedBox(height: 16),
                           ],
                           ArDriveCard(
@@ -1219,7 +1219,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             state.folderInView.folder.id)
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: LibraryCoverBand(height: 120),
+            child: LibraryCoverBand(height: 120, titleInset: 0),
           ),
         // The search field used to sit here, 16px of padding either side of it,
         // and did nothing until it was submitted - at which point it opened the
@@ -1486,6 +1486,10 @@ class MobileFolderNavigation extends StatelessWidget {
                                 _pathToName(
                                   path.isEmpty ? driveName : path.last.text,
                                 ),
+                                // One line: the row is 45 high, and a second
+                                // line was cut through the middle.
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style:
                                     ArDriveTypography.body.buttonNormalBold(),
                               ),
