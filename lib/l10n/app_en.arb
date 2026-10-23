@@ -4529,5 +4529,61 @@
   "noPrivateDrivesDescription": "A private drive is encrypted, and only you can read it.",
   "@noPrivateDrivesDescription": {
     "description": "Says what a private drive is, for somebody who has none."
+  },
+  "libraryOpening": "Opening library…",
+  "@libraryOpening": {
+    "description": "A library page's loading screen, while it reads its settings."
+  },
+  "libraryLoadingFiles": "Loading files…",
+  "@libraryLoadingFiles": {
+    "description": "A library page's loading screen, while it downloads the list of its files and its size is not known."
+  },
+  "libraryLoadingFilesOf": "Loading files… {received} of {total}",
+  "@libraryLoadingFilesOf": {
+    "description": "A library page's loading screen, while it downloads the list of its files. Both values are sizes, like 1.2 MB.",
+    "placeholders": {
+      "received": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryAlmostThere": "Almost there…",
+  "@libraryAlmostThere": {
+    "description": "A library page's loading screen, while it opens the list of its files."
+  },
+  "libraryCantBeOpened": "This library can't be opened",
+  "@libraryCantBeOpened": {
+    "description": "Heading of a library page's error screen when its settings or data are broken."
+  },
+  "librarySettingsDamaged": "Its settings are missing or damaged.",
+  "@librarySettingsDamaged": {
+    "description": "Says why a library page can't be opened: its library.json is missing or unreadable."
+  },
+  "libraryDataFailedChecks": "Its data didn't pass ArDrive's checks.",
+  "@libraryDataFailedChecks": {
+    "description": "Says why a library page can't be opened: its list of files was refused."
+  },
+  "libraryCantLoadNow": "This library can't load right now",
+  "@libraryCantLoadNow": {
+    "description": "Heading of a library page's error screen when its files could not be downloaded."
+  },
+  "libraryGatewayDidntReturnFiles": "The gateway didn't return its files. Try again in a minute.",
+  "@libraryGatewayDidntReturnFiles": {
+    "description": "Says why a library page can't load: the gateway didn't return its list of files."
+  },
+  "libraryNeedsNewerArDrive": "This library needs a newer ArDrive",
+  "@libraryNeedsNewerArDrive": {
+    "description": "Heading of a library page's error screen when it was published for a newer version of ArDrive."
+  },
+  "libraryAskOwnerToRepublish": "Ask its owner to republish it.",
+  "@libraryAskOwnerToRepublish": {
+    "description": "Says what a visitor can do about a library that needs a newer ArDrive."
+  },
+  "libraryOpenArDrive": "Open ArDrive",
+  "@libraryOpenArDrive": {
+    "description": "Button on a library page's error screen that opens the ArDrive app."
   }
 }

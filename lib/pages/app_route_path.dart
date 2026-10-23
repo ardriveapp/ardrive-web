@@ -69,6 +69,12 @@ class AppRoutePath {
   /// `ct` - the content type hint of a `/view/{txId}` link.
   final String? rawTransactionContentType;
 
+  /// On a library page (`LibraryMode`), the folder a link opens and the file
+  /// to pick out of it: `#/folders/<id>?file=<id>`. The drive is the page's,
+  /// so a library link never names it. Both null is the library's root.
+  final String? libraryFolderId;
+  final String? libraryFileId;
+
   const AppRoutePath({
     this.signingIn = false,
     this.getStarted = false,
@@ -86,6 +92,8 @@ class AppRoutePath {
     this.rawTransactionId,
     this.rawTransactionName,
     this.rawTransactionContentType,
+    this.libraryFolderId,
+    this.libraryFileId,
   });
 
   /// Creates a route that lets the user sign in.
@@ -160,4 +168,8 @@ class AppRoutePath {
       );
 
   factory AppRoutePath.unknown() => const AppRoutePath();
+
+  /// A place in a library page: its root, or a folder and a file in it.
+  factory AppRoutePath.library({String? folderId, String? fileId}) =>
+      AppRoutePath(libraryFolderId: folderId, libraryFileId: fileId);
 }

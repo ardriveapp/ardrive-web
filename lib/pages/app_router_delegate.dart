@@ -16,7 +16,14 @@ import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
 import 'package:ardrive/drive_explorer/dock/ardrive_dock.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_modal.dart';
+import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/library/data/library_source.dart';
+import 'package:ardrive/library/domain/library_config.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/library/domain/library_scope.dart';
+import 'package:ardrive/library/presentation/library_loader/library_loader_cubit.dart';
+import 'package:ardrive/library/presentation/library_loader_page.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
@@ -236,8 +243,24 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   String? rawTransactionName;
   String? rawTransactionContentType;
 
+  /// The library this page opened (`LibraryMode`), once it is in the
+  /// database. Until then the page shows the library's loading screens.
+  LibraryConfig? library;
+
+  /// The place in the library the address bar asked for, until the library is
+  /// there to look it up in. See [_followLibraryLink].
+  String? _libraryFolderRequest;
+  String? _libraryFileRequest;
+
+  /// Answers whether a folder is inside the library; set with [library].
+  Future<bool> Function(String folderId)? _isInLibraryScope;
+
   bool canAnonymouslyShowDriveDetail(ProfileState profileState) =>
-      profileState is ProfileUnavailable && tryingToViewDrive;
+      LibraryMode.isOn
+          // A library page has no account and needs none: the explorer opens
+          // once the library is imported, whatever the profile is doing.
+          ? library != null
+          : profileState is ProfileUnavailable && tryingToViewDrive;
 
   /// Whether the drives list is somewhere this viewer can actually go.
   ///
@@ -271,7 +294,19 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
       tryingToViewDrive || isViewingSharedFile || isViewingRawTransaction;
 
   @override
-  AppRoutePath get currentConfiguration => AppRoutePath(
+  AppRoutePath get currentConfiguration =>
+      LibraryMode.isOn ? _libraryConfiguration : _appConfiguration;
+
+  /// Where a library page is: its root, or the folder in view.
+  AppRoutePath get _libraryConfiguration {
+    final folderId = driveFolderId;
+    if (folderId == null || folderId == library?.scopeRootFolderId) {
+      return AppRoutePath.library();
+    }
+    return AppRoutePath.library(folderId: folderId);
+  }
+
+  AppRoutePath get _appConfiguration => AppRoutePath(
         signingIn: signingIn,
         getStarted: gettingStarted,
         drivesList: showingDrivesList,
@@ -298,7 +333,66 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @override
   // ignore: avoid_renaming_method_parameters
   Widget build(BuildContext navigatorContext) {
-    return ArDriveAppWithDevTools(widget: _app());
+    return ArDriveAppWithDevTools(
+      widget: LibraryMode.isOn ? _libraryLoader(child: _app()) : _app(),
+    );
+  }
+
+  /// Opens a library page's library, and hands it to the router once it is in
+  /// the database (docs/LIBRARY_PAGES.md, "How a page opens").
+  Widget _libraryLoader({required Widget child}) {
+    return BlocProvider(
+      create: (context) => LibraryLoaderCubit(
+        source: LibrarySource(pageUri: Uri.base),
+        settingsPath: LibraryMode.settingsPath!,
+        driveDao: context.read<DriveDao>(),
+        importer: DriveStateImporter(context.read<DriveDao>()),
+      )..load(),
+      child: BlocListener<LibraryLoaderCubit, LibraryLoaderState>(
+        listener: (context, state) {
+          if (state is LibraryReady) {
+            openLibrary(state.config, context.read<DriveDao>());
+          }
+        },
+        child: child,
+      ),
+    );
+  }
+
+  /// Puts the imported library in view: its drive, at the scope's root, or
+  /// the folder a link named if that folder is inside the library.
+  @visibleForTesting
+  Future<void> openLibrary(LibraryConfig config, DriveDao driveDao) async {
+    library = config;
+    _isInLibraryScope = (folderId) => isInLibraryScope(
+          driveDao: driveDao,
+          config: config,
+          folderId: folderId,
+        );
+    driveId = config.driveId;
+    driveFolderId = config.scopeRootFolderId;
+    await _followLibraryLink();
+  }
+
+  /// Opens the folder [_libraryFolderRequest] named, and picks out the file,
+  /// when that folder is inside the library; otherwise the library's root.
+  /// A link to anywhere else in the drive lands on the root, never on the
+  /// folder it named.
+  Future<void> _followLibraryLink() async {
+    final config = library!;
+    final folderId = _libraryFolderRequest;
+    final fileId = _libraryFileRequest;
+    _libraryFolderRequest = null;
+    _libraryFileRequest = null;
+
+    final inScope = folderId != null && await _isInLibraryScope!.call(folderId);
+    final target = inScope ? folderId : config.scopeRootFolderId;
+
+    driveFolderId = target;
+    _selectedItemForFolder = inScope ? fileId : null;
+    _selectedItemForFolderDriveId = config.driveId;
+    _routeLink = RouteLink(driveId: config.driveId, folderId: target);
+    notifyListeners();
   }
 
   Widget _app() {
@@ -314,6 +408,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
           },
           builder: (context, _) => BlocConsumer<ProfileCubit, ProfileState>(
             listener: (context, state) {
+              // Signing in and out, and where they land, are not things a
+              // library page does.
+              if (LibraryMode.isOn) return;
+
               // Clear state to prevent the last drive from being attached on new
               // login.
               if (state is ProfileLoggingOut) {
@@ -394,7 +492,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
               final anonymouslyShowDriveDetail =
                   canAnonymouslyShowDriveDetail(state);
-              if (isViewingSharedFile) {
+              if (LibraryMode.isOn && library == null) {
+                shellKey = 'libraryLoader';
+                shell = const LibraryLoaderPage();
+              } else if (isViewingSharedFile) {
                 shellKey = 'sharedFile';
                 shell = BlocProvider<SharedFileCubit>(
                   key: ValueKey(sharedFileId),
@@ -524,6 +625,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                               notifyListeners();
                             } else if (driveDetailCubitState
                                 is DriveDetailLoadNotFound) {
+                              // A library's drive is the one it imported; there
+                              // is nothing to attach.
+                              if (LibraryMode.isOn) return;
+
                               // Do not prompt the user to attach an unfound drive if they are logging out.
                               final profileCubit = context.read<ProfileCubit>();
 
@@ -1034,6 +1139,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
   @override
   Future<void> setNewRoutePath(AppRoutePath configuration) async {
+    if (LibraryMode.isOn) {
+      _libraryFolderRequest = configuration.libraryFolderId;
+      _libraryFileRequest = configuration.libraryFileId;
+      // Before the library is in, [openLibrary] follows it.
+      if (library != null) await _followLibraryLink();
+      return;
+    }
+
     signingIn = configuration.signingIn;
     gettingStarted = configuration.getStarted;
     showingDrivesList = configuration.drivesList;
