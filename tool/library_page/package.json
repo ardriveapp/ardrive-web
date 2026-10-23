@@ -1,0 +1,9 @@
+{
+  "name": "ardrive-library-page-tool",
+  "private": true,
+  "type": "module",
+  "description": "Builds a library page by hand. See build_test_page.mjs.",
+  "dependencies": {
+    "@ardrive/turbo-sdk": "2.1.0"
+  }
+}
