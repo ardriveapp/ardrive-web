@@ -209,8 +209,8 @@ chrome instead of account chrome.
 
 Centred on the page background: the library's icon (or ArDrive's), the title,
 a thin progress bar, and one line that changes with the step: "Opening
-library…", "Loading files…" (snapshot download, with MB of total when the size
-is known), "Almost there…" (import). The title and icon come from
+library...", "Loading files..." (snapshot download, with MB of total when the size
+is known), "Almost there..." (import). The title and icon come from
 `library.json`, so this screen appears after one small request.
 
 ### Unlock screen (private libraries)

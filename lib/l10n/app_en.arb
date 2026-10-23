@@ -4530,15 +4530,15 @@
   "@noPrivateDrivesDescription": {
     "description": "Says what a private drive is, for somebody who has none."
   },
-  "libraryOpening": "Opening library…",
+  "libraryOpening": "Opening library...",
   "@libraryOpening": {
     "description": "A library page's loading screen, while it reads its settings."
   },
-  "libraryLoadingFiles": "Loading files…",
+  "libraryLoadingFiles": "Loading files...",
   "@libraryLoadingFiles": {
     "description": "A library page's loading screen, while it downloads the list of its files and its size is not known."
   },
-  "libraryLoadingFilesOf": "Loading files… {received} of {total}",
+  "libraryLoadingFilesOf": "Loading files... {received} of {total}",
   "@libraryLoadingFilesOf": {
     "description": "A library page's loading screen, while it downloads the list of its files. Both values are sizes, like 1.2 MB.",
     "placeholders": {
@@ -4550,7 +4550,7 @@
       }
     }
   },
-  "libraryAlmostThere": "Almost there…",
+  "libraryAlmostThere": "Almost there...",
   "@libraryAlmostThere": {
     "description": "A library page's loading screen, while it opens the list of its files."
   },
@@ -4603,7 +4603,7 @@
   "@libraryMadeWithArDrive": {
     "description": "Muted line at the bottom of a library page's sidebar."
   },
-  "librarySearchHint": "Search this library…",
+  "librarySearchHint": "Search this library...",
   "@librarySearchHint": {
     "description": "Hint in a library page's search field."
   },
