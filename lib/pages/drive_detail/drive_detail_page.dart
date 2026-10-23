@@ -572,6 +572,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // A library's cover, on its root only.
+                          if (libraryConfigOf(context)?.scopeRootFolderId ==
+                              driveDetailState.folderInView.folder.id) ...[
+                            const LibraryCoverBand(height: 200),
+                            const SizedBox(height: 16),
+                          ],
                           ArDriveCard(
                             backgroundColor: ArDriveTheme.of(context)
                                 .themeData
@@ -584,10 +590,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             content: Row(
                               children: [
                                 DriveDetailBreadcrumbRow(
-                                  rootFolderId: driveDetailState
-                                      .currentDrive.rootFolderId,
+                                  // A library's crumbs start at the folder it
+                                  // was published at, named by its title.
+                                  rootFolderId: libraryConfigOf(context)
+                                          ?.scopeRootFolderId ??
+                                      driveDetailState
+                                          .currentDrive.rootFolderId,
                                   path: driveDetailState.pathSegments,
-                                  driveName: driveDetailState.currentDrive.name,
+                                  driveName: libraryConfigOf(context)?.title ??
+                                      driveDetailState.currentDrive.name,
                                   isPrivate:
                                       driveDetailState.currentDrive.isPrivate,
                                 ),
@@ -1186,6 +1197,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
     return Column(
       children: [
+        // A library's cover, on its root only, 120px on a phone.
+        if (libraryConfigOf(context)?.scopeRootFolderId ==
+            state.folderInView.folder.id)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: LibraryCoverBand(height: 120),
+          ),
         // The search field used to sit here, 16px of padding either side of it,
         // and did nothing until it was submitted - at which point it opened the
         // same sheet the bar's search icon now opens. Nothing was lost by
@@ -1197,7 +1215,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             children: [
               Flexible(
                 child: MobileFolderNavigation(
-                  driveName: state.currentDrive.name,
+                  driveName: libraryConfigOf(context)?.title ??
+                      state.currentDrive.name,
                   isPrivate: state.currentDrive.isPrivate,
                   path: state.pathSegments,
                   isShowingHiddenFiles: isShowingHiddenFiles,

@@ -888,6 +888,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         context.read<FolderRepository>(),
       ),
       syncCubit: context.read<SyncCubit>(),
+      libraryScopeRootFolderId: library?.scopeRootFolderId,
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/library/data/library_source.dart';
 import 'package:ardrive/library/domain/library_config.dart';
+import 'package:ardrive/library/domain/library_stats.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
@@ -148,6 +149,13 @@ class LibraryLoaderCubit extends Cubit<LibraryLoaderState> {
     }
 
     logger.i('Library imported: ${result.detail}');
-    emit(LibraryReady(config));
+    LibraryStats? stats;
+    try {
+      stats = await computeLibraryStats(_driveDao, config);
+    } catch (e) {
+      // The cover's "N files · size" is decoration; the library is open.
+      logger.w('Library stats not counted: $e');
+    }
+    emit(LibraryReady(config, stats: stats));
   }
 }

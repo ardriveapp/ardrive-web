@@ -1,9 +1,11 @@
 import 'package:ardrive/components/icon_theme_switcher.dart';
 import 'package:ardrive/library/domain/library_config.dart';
+import 'package:ardrive/library/domain/library_stats.dart';
 import 'package:ardrive/library/presentation/library_loader/library_loader_cubit.dart';
 import 'package:ardrive/library/presentation/library_loader_page.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -236,4 +238,144 @@ class LibraryTopBarActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const IconThemeSwitcher();
+}
+
+/// The band above a library's root (docs/LIBRARY_PAGES.md, "Cover band"): the
+/// cover image cropped to fill, with a scrim and the title and "N files ·
+/// size · published <date>" over it, or, without a cover, the title line on
+/// the page's own background.
+class LibraryCoverBand extends StatelessWidget {
+  const LibraryCoverBand({super.key, required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final config = libraryConfigOf(context);
+    if (config == null) return const SizedBox.shrink();
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final summary = _summary(context, config, _statsOf(context));
+    final cover = config.images.cover;
+
+    if (cover == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: _TitleLines(
+          title: config.title,
+          summary: summary,
+          titleColor: colors.textHigh,
+          summaryColor: colors.textLow,
+          typography: typography,
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        height: height,
+        width: double.infinity,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.network(
+              Uri.base.resolve(cover).toString(),
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              errorBuilder: (_, __, ___) =>
+                  ColoredBox(color: colors.containerL2),
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Color(0xB3000000)],
+                  stops: [0.35, 1],
+                ),
+              ),
+            ),
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 16,
+              child: _TitleLines(
+                title: config.title,
+                summary: summary,
+                titleColor: Colors.white,
+                summaryColor: const Color(0xD9FFFFFF),
+                typography: typography,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static LibraryStats? _statsOf(BuildContext context) {
+    try {
+      final state = context.read<LibraryLoaderCubit>().state;
+      return state is LibraryReady ? state.stats : null;
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  static String? _summary(
+    BuildContext context,
+    LibraryConfig config,
+    LibraryStats? stats,
+  ) {
+    final publishedAt = config.publishedAt;
+    if (stats == null || publishedAt == null) return null;
+    return appLocalizationsOf(context).libraryCoverSummary(
+      stats.fileCount,
+      filesize(stats.totalSize),
+      formatDate(publishedAt),
+    );
+  }
+}
+
+class _TitleLines extends StatelessWidget {
+  const _TitleLines({
+    required this.title,
+    required this.summary,
+    required this.titleColor,
+    required this.summaryColor,
+    required this.typography,
+  });
+
+  final String title;
+  final String? summary;
+  final Color titleColor;
+  final Color summaryColor;
+  final ArdriveTypographyNew typography;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: typography.heading4(
+            color: titleColor,
+            fontWeight: ArFontWeight.bold,
+          ),
+        ),
+        if (summary != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            summary!,
+            style: typography.paragraphNormal(color: summaryColor),
+          ),
+        ],
+      ],
+    );
+  }
 }

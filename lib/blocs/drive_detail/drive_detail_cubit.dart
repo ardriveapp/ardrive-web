@@ -151,6 +151,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// after a newer one cannot open its folder over the newer one's.
   int _followedLinks = 0;
 
+  /// On a library page, the folder the library was published at: breadcrumbs
+  /// start there rather than at the drive's root (docs/LIBRARY_PAGES.md).
+  final String? libraryScopeRootFolderId;
+
   DriveDetailCubit({
     required String driveId,
     String? initialFolderId,
@@ -170,6 +174,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     required BreadcrumbBuilder breadcrumbBuilder,
     required SyncCubit syncCubit,
     required DriveRepository driveRepository,
+    this.libraryScopeRootFolderId,
   })  : _profileCubit = profileCubit,
         _activityTracker = activityTracker,
         _driveDao = driveDao,
@@ -820,6 +825,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) async {
+    // "The root" on a library page is the folder it was published at, never
+    // the drive's own root above it.
+    folderId ??= otherDriveId == null ? libraryScopeRootFolderId : null;
+
     // Claimed before the first await, so anything already in flight for a
     // previous folder is stale from here on even when the drive is unchanged.
     final loadGeneration = ++_folderLoadGeneration;
@@ -1214,7 +1223,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           final List<BreadCrumbRowInfo> pathSegments =
               await _breadcrumbBuilder.buildForFolder(
             folderId: folderContents.folder.id,
-            rootFolderId: drive.rootFolderId,
+            rootFolderId: libraryScopeRootFolderId ?? drive.rootFolderId,
             driveId: driveId,
           );
 

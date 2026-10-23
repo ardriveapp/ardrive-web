@@ -52,12 +52,16 @@ class LibraryImporting extends LibraryLoaderState {
 
 /// The library is in the database; the explorer opens at its root.
 class LibraryReady extends LibraryLoaderState {
-  const LibraryReady(this.config);
+  const LibraryReady(this.config, {this.stats});
 
   final LibraryConfig config;
 
+  /// For the cover band. Null if it could not be counted, which the band
+  /// survives by leaving the line out.
+  final LibraryStats? stats;
+
   @override
-  List<Object?> get props => [config];
+  List<Object?> get props => [config, stats];
 }
 
 /// One of the design's four error screens. [config] is set once
