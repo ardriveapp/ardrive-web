@@ -29,6 +29,9 @@ part 'database.g.dart';
 class Database extends _$Database {
   Database([QueryExecutor? e]) : super(e ?? openConnection());
 
+  /// A library page's database: in memory, kept nowhere (`LibraryMode`).
+  Database.forLibraryPage() : this(openLibraryConnection());
+
   @override
   int get schemaVersion => 30;
   @override

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/entities/profile_types.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -59,7 +60,9 @@ class ProfileCubit extends Cubit<ProfileState> {
     final arconnect = ArConnectService();
     // Profile unavailable - route to new profile screen
     if (profile == null) {
-      await _forgetVisitorDrives();
+      // A library page has no account, and its in-memory database holds only
+      // the library it imported: forgetting "visitor drives" would delete it.
+      if (!LibraryMode.isOn) await _forgetVisitorDrives();
       emit(ProfilePromptAdd());
       return;
     }

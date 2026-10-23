@@ -18,6 +18,8 @@ import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
+import 'package:ardrive/library/data/library_meta_reader.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
@@ -44,6 +46,7 @@ import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -91,6 +94,13 @@ void main() async {
     // `lib/utils/app_url_strategy.dart` for what has to land before it is not.
     configureAppUrlStrategy();
 
+    // Before any service starts: a library page starts them differently
+    // (docs/LIBRARY_PAGES.md, "How a page opens").
+    LibraryMode.detect(readLibraryMetaContent);
+    if (LibraryMode.isOn) {
+      PlausibleEventTracker.disabled = true;
+    }
+
     await _initializeServices();
 
     await _startApp();
@@ -123,19 +133,24 @@ Future<void> _initializeServices() async {
   // Config depends on localKeyValueStore
   configService = ConfigService(
     appFlavors: AppFlavors(EnvFetcher()),
-    configFetcher: ConfigFetcher(localStore: localKeyValueStore),
+    configFetcher: ConfigFetcher(
+      localStore: localKeyValueStore,
+      libraryMode: LibraryMode.isOn,
+    ),
   );
 
   await configService.loadConfig();
 
   final config = configService.config;
 
-  // Apply any persisted Solana RPC / program ID overrides from dev tools
-  if (config.solanaRpcUrl != null ||
-      config.solanaCoreProgramId != null ||
-      config.solanaGarProgramId != null ||
-      config.solanaArnsProgramId != null ||
-      config.solanaAntProgramId != null) {
+  // Apply any persisted Solana RPC / program ID overrides from dev tools. A
+  // library page reads no stored config and has no use for Solana.
+  if (!LibraryMode.isOn &&
+      (config.solanaRpcUrl != null ||
+          config.solanaCoreProgramId != null ||
+          config.solanaGarProgramId != null ||
+          config.solanaArnsProgramId != null ||
+          config.solanaAntProgramId != null)) {
     await ArioSDKFactory().create().reinitialize(
           rpcUrl: config.solanaRpcUrl,
           coreProgramId: config.solanaCoreProgramId,
@@ -145,7 +160,7 @@ Future<void> _initializeServices() async {
         );
   }
 
-  db = Database();
+  db = LibraryMode.isOn ? Database.forLibraryPage() : Database();
 
   arweave = ArweaveService(
     Arweave(
@@ -157,7 +172,9 @@ Future<void> _initializeServices() async {
     db.driveDao,
     configService,
   );
-  _turboUpload = config.useTurboUpload
+  // A library page uploads nothing, and a live service would ask Turbo for
+  // its limits as soon as it is built.
+  _turboUpload = config.useTurboUpload && !LibraryMode.isOn
       ? TurboUploadService(
           turboUploadUri: Uri.parse(config.defaultTurboUploadUrl!),
           allowedDataItemSize: config.allowedDataItemSizeForTurbo,
@@ -177,7 +194,9 @@ Future<void> _initializeServices() async {
     Timer.periodic(duration, (timer) => triggerHTMLPageReload());
   }
 
-  if (kIsWeb) {
+  // A library page runs the release it pins, for good: a reload changes
+  // nothing, so it never reloads itself.
+  if (kIsWeb && !LibraryMode.isOn) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
 }

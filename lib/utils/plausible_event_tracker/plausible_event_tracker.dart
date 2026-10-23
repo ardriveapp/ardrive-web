@@ -18,6 +18,11 @@ export 'package:ardrive/utils/plausible_event_tracker/plausible_page_view_events
 abstract class PlausibleEventTracker {
   static const String _plausiblePageViewEventName = 'pageview';
 
+  /// When set, nothing is sent: a library page (`LibraryMode`) makes no
+  /// request beyond its own host and gateway. Every event goes through
+  /// [_track], which checks it.
+  static bool disabled = false;
+
   static final PlausibleApiData _plausibleData = PlausibleApiData(
     api: Uri.parse('https://plausible.io/api/event'),
     domain: 'app.ardrive.io',
@@ -554,6 +559,8 @@ abstract class PlausibleEventTracker {
     required PlausibleApiData data,
     required PlausibleEventData eventData,
   }) async {
+    if (disabled) return;
+
     Map<String, dynamic> body = {
       'name': eventData.name,
       'url': eventData.url.toString(),
