@@ -165,10 +165,14 @@ serving host and its gateway.
 - Run the app in library mode in headless Chromium and log every request's
   host. Allowed: the page's host and the detected gateway host. Expected
   offenders to remove: `plausible.io`, `upload.ardrive.io` (a Turbo call at
-  start), `fonts.gstatic.com` (Flutter font fallback). Fonts are bundled, with
-  no exception: point `fontFallbackBaseUrl` in the page's Flutter
-  configuration at a bundled `fonts/` path. If Flutter 3.19 has no way to do
-  that, stop and bring it to Phil rather than allowing the host.
+  start), `fonts.gstatic.com` (Flutter font fallback). Fonts are self-hosted,
+  with no exception (Phil, 2026-10-22; Flutter 3.19.6 has no
+  `fontFallbackBaseUrl`): `tool/fetch_fallback_fonts.sh` downloads the
+  engine's 144 font files, checked against a pinned SHA-256 list, into
+  `build/web/fonts/gstatic/` before the Arweave deploy only, and library mode
+  installs a `window.fetch` wrapper in `index.html` that rewrites
+  `https://fonts.gstatic.com/s/` to `./fonts/gstatic/`. See the design's
+  Risks.
 
 ### 1.5 Test page tool (`tool/library_page/`)
 

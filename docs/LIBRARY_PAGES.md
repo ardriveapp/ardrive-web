@@ -408,7 +408,16 @@ page runs the release it pins.
   library may be slow on phones."
 - **Old pages run old code for ever.** Library mode must stay narrow (one host,
   one gateway) so pages age well.
-- **Fallback fonts:** Flutter fetches missing-glyph fonts from
-  fonts.gstatic.com. Library pages bundle them: the no-third-party rule has no
-  exceptions. If Flutter 3.19 cannot load them from the page, that blocks
-  phase 1 and goes to Phil.
+- **Fallback fonts (decided 2026-10-22: self-host all of them).** Flutter
+  3.19.6 hard-codes `https://fonts.gstatic.com/s/` (`font_fallbacks.dart:452`;
+  `fontFallbackBaseUrl` arrived later), downloads Roboto from it on every start
+  unless a `Roboto` family is bundled, and downloads one of 143 Noto fonts
+  whenever text needs a glyph the bundled fonts lack. It fetches them through
+  `window.fetch`. So the Arweave bundle carries the engine's 144 font files
+  under `fonts/gstatic/` (fetched by CI from a checksum-pinned list, not kept
+  in git, not deployed to Firebase: 80.7 MB raw, about 45 MB gzipped, uploaded
+  once per Flutter version and reused after), and in library mode a short
+  script in `index.html`, run before Flutter starts, rewrites
+  `https://fonts.gstatic.com/s/` to `./fonts/gstatic/`. Visitors download only
+  the fonts their text needs, as before. Re-derive the list on every Flutter
+  upgrade.
