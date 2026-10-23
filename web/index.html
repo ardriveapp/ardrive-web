@@ -98,6 +98,44 @@
     </script>
 
     <!--
+      Library pages fetch Flutter's fallback fonts from the page, not Google.
+
+      Flutter 3.19.6 downloads Roboto on every start, and a Noto font whenever
+      text needs a glyph the bundled fonts lack, from a hard-coded
+      https://fonts.gstatic.com/s/ (no setting moves it before 3.22's
+      fontFallbackBaseUrl). A library page may reach only its own host and its
+      gateway, so on one this sends those requests to the copies the Arweave
+      deploy carries under fonts/gstatic/ (tool/fetch_fallback_fonts.sh). The
+      engine fetches through window.fetch, looked up at each call, so wrapping
+      it here, before Flutter starts, is enough.
+
+      The library-page switch is read at each fetch rather than now: the
+      publish writes its meta tag into <head>, possibly after this script. On
+      every other page each call passes straight through. Re-check that the
+      engine still fetches this way on every Flutter upgrade.
+    -->
+    <script>
+      (function () {
+        var prefix = 'https://fonts.gstatic.com/s/';
+        var fetch = window.fetch;
+        if (typeof fetch !== 'function') return;
+        window.fetch = function (resource, init) {
+          if (
+            typeof resource === 'string' &&
+            resource.indexOf(prefix) === 0 &&
+            document.querySelector('meta[name="ardrive-library"]')
+          ) {
+            resource = new URL(
+              'fonts/gstatic/' + resource.slice(prefix.length),
+              document.baseURI
+            ).toString();
+          }
+          return fetch.call(this, resource, init);
+        };
+      })();
+    </script>
+
+    <!--
       Open Graph. This is the card every shared drive, folder and file renders
       as, so it is worth more than the one line it had.
 

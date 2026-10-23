@@ -43,6 +43,14 @@ jobs:
           flutter config --enable-web
           flutter build web --dart-define=environment=staging --release --pwa-strategy=none --no-web-resources-cdn --dart2js-optimization=O1
 
+      # Flutter's fallback fonts, which a library page loads from its own
+      # host rather than fonts.gstatic.com (the fetch rewrite in
+      # web/index.html). About 81 MB, checked against tool/fallback_fonts.sha256;
+      # the files only change with Flutter, so incremental deploys upload them
+      # once per Flutter version.
+      - name: Add the fallback fonts
+        run: bash tool/fetch_fallback_fonts.sh
+
       # An exact, patched Node: '22' alone can resolve to an older 22.x the
       # runner image already has, and the CLI decodes brotli responses
       # (CVE-2026-111497, fixed in 22.23.4 and 24.22.1).
