@@ -1157,6 +1157,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     !hasSubfolders,
                               ),
                             ),
+                          // Room under the table, so a library page ends
+                          // where its card visibly does, not at the window's
+                          // edge.
+                          if (LibraryMode.isOn) const SizedBox(height: 16),
                         ],
                       ),
                     ),

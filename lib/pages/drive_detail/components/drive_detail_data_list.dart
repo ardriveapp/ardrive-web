@@ -143,6 +143,7 @@ Widget _buildDataListContent(
 
         final table = ArDriveDataTable<ArDriveDataTableItem>(
           headerDivider: LibraryMode.isOn,
+          countOnOnePage: LibraryMode.isOn,
           key: ValueKey(
               '${folder.id}-${forceRebuildKey.toString()}${columns.length}-${hideState.toString()}'),
           // Back where the reader was in this folder - after a rename or a

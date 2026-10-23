@@ -64,6 +64,8 @@ class MultipleDownloadBloc
     on<MultipleDownloadEvent>((event, emit) async {
       if (event is StartDownload) {
         await _startDownload(event, emit);
+      } else if (event is ConfirmDownload) {
+        await _downloadMultipleFiles(emit);
       } else if (event is CancelDownload) {
         // signal the download process to exit
         _canceled = true;
@@ -132,6 +134,16 @@ class MultipleDownloadBloc
     _initializeEncoder();
     _outFileName =
         event.zipName != null ? '${event.zipName}.zip' : 'Archive.zip';
+
+    if (event.confirmFirst) {
+      final files = _files.whereType<MultiDownloadFile>();
+      emit(MultipleDownloadReady(
+        fileCount: files.length,
+        totalSize: files.fold(0, (sum, file) => sum + file.size),
+        fileName: _outFileName,
+      ));
+      return;
+    }
 
     await _downloadMultipleFiles(emit);
   }

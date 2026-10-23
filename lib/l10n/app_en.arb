@@ -4595,6 +4595,31 @@
   "@libraryDownloadSelected": {
     "description": "A library page's download button while files are selected in its list: it downloads those rather than the whole library."
   },
+  "downloadConfirmTitle": "Download {count, plural, =1{1 file} other{{count} files}}?",
+  "@downloadConfirmTitle": {
+    "description": "Title of the step before a zip download starts on a library page.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "downloadConfirmSize": "{size}, saved as {fileName}.",
+  "@downloadConfirmSize": {
+    "description": "Under the title of the step before a zip download: its total size, already formatted, and the zip's file name.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      },
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadConfirmLarge": "This is a large download. Keep this page open until it finishes.",
+  "@downloadConfirmLarge": {
+    "description": "Added to the step before a zip download when it is over 100 MiB."
+  },
   "libraryMadeWithArDrive": "Made with ArDrive",
   "@libraryMadeWithArDrive": {
     "description": "The quiet button in a library page's top bar that opens ardrive.io, and the tooltip of ArDrive's mark that takes its place on a phone."

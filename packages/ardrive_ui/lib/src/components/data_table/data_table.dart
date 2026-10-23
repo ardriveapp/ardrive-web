@@ -93,6 +93,11 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   /// A hairline under the column headings, so rows scrolling up beneath
   /// them are seen to pass under an edge rather than being cut short.
   final bool headerDivider;
+
+  /// With one page there are no pages to choose, and the footer is left out,
+  /// so the last row met the table's edge with nothing under it. This keeps
+  /// the footer's range ("1-15 of 15") there instead.
+  final bool countOnOnePage;
   final T? selectedRow;
   final Function(TableColumn)? onChangeColumnVisibility;
 
@@ -150,6 +155,7 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     this.forceDisableMultiSelect = false,
     this.lockMultiSelect = false,
     this.headerDivider = false,
+    this.countOnOnePage = false,
     this.selectedRow,
     this.onChangeColumnVisibility,
     this.initialPage,
@@ -1023,7 +1029,20 @@ class _ArDriveDataTableState<T extends IndexedItem>
         {...widget.rowsPerPageOptions, _numberOfItemsPerPage}.toList()..sort();
 
     if (total <= options.first) {
-      return const SizedBox.shrink();
+      if (!widget.countOnOnePage || total == 0) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            (widget.pageRangeText ?? _defaultPageRangeText)(1, total, total),
+            key: const ValueKey('pagination-range'),
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+            ),
+          ),
+        ),
+      );
     }
 
     final firstRow = _selectedPage * _numberOfItemsPerPage + 1;
