@@ -67,7 +67,7 @@ jobs:
             DEPLOY_KEY=$(printf '%s' "$DEPLOY_KEY" | base64 -w0)
           fi
           export DEPLOY_KEY
-          npx --yes @ar.io/deploy@2.1.1 upload --deploy-folder build/web \
+          npx --yes @ar.io/deploy@2.1.2 upload --deploy-folder build/web \
             --compress gzip --incremental | tee upload.log
           id=$(sed -n 's/^Tx ID: \([A-Za-z0-9_-]\{43\}\)$/\1/p' upload.log | head -1)
           if [ -z "$id" ]; then

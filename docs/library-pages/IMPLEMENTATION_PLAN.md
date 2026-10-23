@@ -46,7 +46,7 @@ exists to test library mode before a release.
    `arns-name`), so the workflow runs the CLI's `upload` command at an exact
    version. Record the manifest ID in the job summary.
 2. **Production deploy.** In `.github/workflows/production.yaml`, pin
-   `ar-io/ar-io-deploy` (v2.1.1, by commit), add `compress: gzip`. Keep its
+   `ar-io/ar-io-deploy` (v2.1.2, by commit), add `compress: gzip`. Keep its
    ArNS inputs.
    Source maps: add `compress-exclude` only if needed; better, delete
    `build/web/*.map` before the deploy step (they are not needed on Arweave).

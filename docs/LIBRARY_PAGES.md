@@ -32,7 +32,7 @@ costs nothing. Publish writes permanent objects to Arweave.
    release's bundle by transaction ID. The bundle is never re-uploaded per
    page. A page runs the release it pinned until it is republished.
 3. **Release bundles are uploaded gzipped** with `Content-Encoding: gzip`
-   (`@ar.io/deploy --compress gzip`, action `ar-io/ar-io-deploy` v2.1.1).
+   (`@ar.io/deploy --compress gzip`, action `ar-io/ar-io-deploy` v2.1.2).
    This also shrinks the permaweb ArDrive at `ardrive.ar.io`.
 4. **Snapshots stay always compressed.** The viewer loads the whole snapshot,
    so there is no range-read threshold. Remove "Producers always compress until
