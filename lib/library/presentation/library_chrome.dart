@@ -121,6 +121,7 @@ class MadeWithArDrive extends StatelessWidget {
     );
     if (compact) {
       return Semantics(
+        container: true,
         link: true,
         label: strings.libraryMadeWithArDrive,
         excludeSemantics: true,
@@ -422,6 +423,9 @@ class _Byline extends StatelessWidget {
             baseline: TextBaseline.alphabetic,
             child: Tooltip(
               message: config.owner,
+              // A screen reader reads the name; the whole address first was
+              // 43 characters of noise.
+              excludeFromSemantics: true,
               child: ArDriveClickArea(
                 child: GestureDetector(
                   onTap: () async {

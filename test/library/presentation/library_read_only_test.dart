@@ -221,4 +221,13 @@ void main() {
       expect(find.text('Download selected'), findsOneWidget);
     });
   });
+
+  testWidgets("a phone's ArDrive mark is a link a screen reader names",
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pump(tester, const MadeWithArDrive(compact: true));
+
+    expect(find.bySemanticsLabel('Made with ArDrive'), findsOneWidget);
+    semantics.dispose();
+  });
 }
