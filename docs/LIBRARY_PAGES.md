@@ -83,7 +83,9 @@ A page manifest (`arweave/paths` 0.2.0) whose paths are:
 | `icon-32.png`, `icon-180.png`, `icon-512.png`, `social.jpg`, `cover.jpg` | The page's images, when set | the publish, or an existing transaction |
 | every other path of the release manifest | The release's own files, by transaction ID | CI, once per release |
 
-A page manifest is about 52 KB, under Turbo's free 105 KiB. Its link is
+A page manifest is about 82 KB (616 paths, 144 of them the fallback fonts),
+under 105 KiB. That was Turbo's free size; with free uploads restricted, a
+page's three files cost about 0.0014 credits (October 2026). Its link is
 `https://<gateway>/<manifest-id>/` (the trailing slash matters), and a name can
 point at it later.
 

@@ -6,7 +6,10 @@
 // every output here is deterministic: fixed key order, sorted maps, two-space
 // JSON with a final newline.
 
-/** Turbo uploads up to this many bytes for free. */
+/**
+ * 105 KiB: Turbo's free size, before free uploads were restricted. Every
+ * file a page adds stays under it.
+ */
 export const FREE_UPLOAD_BYTES = 107520;
 
 /** The `Type` tag of each upload (docs/LIBRARY_PAGES.md, "Tags"). */

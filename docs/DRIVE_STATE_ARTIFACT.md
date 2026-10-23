@@ -543,11 +543,10 @@ effect as envelope compression and is worse, because the gateway passes the tag
 through unchanged and the browser then cannot read ranges at all. ArDrive sets
 no such tag anywhere today.
 
-Producers always compress until Library pages ship. The threshold is then set
-by measuring the real page, starting from 16 MiB of SQLite (about 26,000
-files), and it can change later because no reader depends on it. It is recorded
-in `LIBRARY_PAGES.md`, because §4.5 shows the gain is smaller than it looks on
-a cold object.
+Producers always compress. Library pages, the one reader that might have
+wanted ranges, load the whole snapshot before showing anything, so there is no
+threshold (`LIBRARY_PAGES.md`, decision 4); §4.5 shows the gain would have been
+smaller than it looks on a cold object anyway.
 
 ### 2.8 The web database moves with it, for every user, on first load
 

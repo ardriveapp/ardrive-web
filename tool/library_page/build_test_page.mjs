@@ -16,8 +16,10 @@
 // page's own files by placeholder IDs. With --upload it uploads library.json
 // and index.html, then the manifest naming them, with Turbo, signed by the
 // wallet ARDRIVE_E2E_KEYFILE names in ~/.config/ardrive-e2e/env (or
-// CREDENTIALS), and prints the page link. Each file must be under Turbo's
-// free size or nothing is uploaded, so this never spends credits.
+// CREDENTIALS), and prints the page link and what each upload cost. Each
+// file must be under 105 KiB, Turbo's free size before free uploads were
+// restricted; the test wallet now pays for them, about 0.0014 credits a
+// page (October 2026).
 //
 // Public drives only, until private pages (phase 3).
 
@@ -124,7 +126,7 @@ const indexHtml = buildIndexHtml((await get(`${gateway}/raw/${releaseIndex}`)).t
 
 for (const [name, text] of [['library.json', libraryJson], ['index.html', indexHtml]]) {
   if (Buffer.byteLength(text) >= FREE_UPLOAD_BYTES) {
-    fail(`${name} is ${Buffer.byteLength(text)} bytes, over Turbo's free size`);
+    fail(`${name} is ${Buffer.byteLength(text)} bytes, over 105 KiB`);
   }
 }
 
@@ -155,7 +157,7 @@ const appTags = [
 
 async function upload(text, contentType, type, extraTags = []) {
   const data = Buffer.from(text);
-  if (data.length >= FREE_UPLOAD_BYTES) throw new Error(`${type} is over Turbo's free size`);
+  if (data.length >= FREE_UPLOAD_BYTES) throw new Error(`${type} is over 105 KiB`);
   const receipt = await turbo.upload({
     data,
     dataItemOpts: {
