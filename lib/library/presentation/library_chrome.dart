@@ -437,13 +437,17 @@ class _Byline extends StatelessWidget {
               ),
             ),
           ),
-          if (stats != null && publishedAt != null)
+          if (stats != null)
             TextSpan(
-              text: '\u00a0• ${strings.libraryCoverSummary(
-                    stats.fileCount,
-                    filesize(stats.totalSize),
-                    formatDate(publishedAt),
-                  ).replaceAll(' • ', '\u00a0• ')}',
+              text:
+                  '\u00a0• ${(publishedAt == null ? strings.libraryCountSummary(
+                      stats.fileCount,
+                      filesize(stats.totalSize),
+                    ) : strings.libraryCoverSummary(
+                      stats.fileCount,
+                      filesize(stats.totalSize),
+                      formatDate(publishedAt),
+                    )).replaceAll(' • ', '\u00a0• ')}',
             ),
         ],
       ),

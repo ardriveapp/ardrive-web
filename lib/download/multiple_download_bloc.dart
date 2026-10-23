@@ -65,6 +65,10 @@ class MultipleDownloadBloc
       if (event is StartDownload) {
         await _startDownload(event, emit);
       } else if (event is ConfirmDownload) {
+        // Once, and only from the step that asked: a second tap before the
+        // dialog moved on would start a second download over the same zip.
+        if (state is! MultipleDownloadReady || _confirmed) return;
+        _confirmed = true;
         await _downloadMultipleFiles(emit);
       } else if (event is CancelDownload) {
         // signal the download process to exit
@@ -76,6 +80,10 @@ class MultipleDownloadBloc
       }
     });
   }
+
+  /// Whether [ConfirmDownload] has started the download [StartDownload]
+  /// prepared.
+  bool _confirmed = false;
 
   Future<void> _startDownload(
       StartDownload event, Emitter<MultipleDownloadState> emit) async {
@@ -135,6 +143,7 @@ class MultipleDownloadBloc
     _outFileName =
         event.zipName != null ? '${event.zipName}.zip' : 'Archive.zip';
 
+    _confirmed = false;
     if (event.confirmFirst) {
       final files = _files.whereType<MultiDownloadFile>();
       emit(MultipleDownloadReady(

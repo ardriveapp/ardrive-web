@@ -472,7 +472,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       final bool hasSubfolders;
                       final bool hasFiles;
 
-                      if (isShowingHiddenFiles) {
+                      if (LibraryMode.isOn) {
+                        // What the library shows, as the table lists it: a
+                        // folder of only hidden items, ghost folders or
+                        // unconfirmed uploads is empty there.
+                        final contents = driveDetailState.currentFolderContents;
+                        hasSubfolders =
+                            contents.any((e) => e is FolderDataTableItem);
+                        hasFiles = contents.any((e) => e is FileDataTableItem);
+                      } else if (isShowingHiddenFiles) {
                         hasSubfolders =
                             driveDetailState.folderInView.subfolders.isNotEmpty;
                         hasFiles =
@@ -576,10 +584,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   /// moving off its top, or the wheel turned over the header itself.
   Widget _foldsLibraryHeader(String folderId, Widget child) {
     if (!LibraryMode.isOn) return child;
-    if (_libraryHeaderFolderId != folderId) {
-      _libraryHeaderFolderId = folderId;
-      _libraryHeaderFolded = false;
-    }
+    _libraryFolderShown(folderId);
     return _turnsLibraryHeader(
       NotificationListener<Notification>(
         onNotification: (notification) {
@@ -604,8 +609,19 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     );
   }
 
-  /// [child] where the wheel folds a library root's header down, when the
-  /// list has more to show, and unfolds it up from the list's top.
+  /// A folder newly shown starts with its header unfolded. Called by
+  /// whatever reads the fold first in a build, the header itself included.
+  void _libraryFolderShown(String folderId) {
+    if (_libraryHeaderFolderId == folderId) return;
+    _libraryHeaderFolderId = folderId;
+    _libraryHeaderFolded = false;
+    _libraryListAtTop = true;
+  }
+
+  /// [child] where the wheel, or a swipe on a touch screen, folds a library
+  /// root's header down when the list has more to show and unfolds it up
+  /// from the list's top. A swipe is the only way back on a phone whose list
+  /// fits once the header has folded, and so never scrolls again.
   Widget _turnsLibraryHeader(Widget child) => Listener(
         onPointerSignal: (event) {
           if (event is! PointerScrollEvent) return;
@@ -615,7 +631,17 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             _foldLibraryHeader(false);
           }
         },
-        child: child,
+        child: GestureDetector(
+          onVerticalDragEnd: (details) {
+            final velocity = details.primaryVelocity ?? 0;
+            if (velocity < 0 && _libraryListCanScroll) {
+              _foldLibraryHeader(true);
+            } else if (velocity > 0 && _libraryListAtTop) {
+              _foldLibraryHeader(false);
+            }
+          },
+          child: child,
+        ),
       );
 
   /// A library root's Download: the rows selected, or the whole library.
@@ -645,17 +671,19 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   Widget _libraryHeader(
     DriveDetailLoadSuccess state, {
     required bool compact,
-  }) =>
-      _turnsLibraryHeader(LibraryHeader(
-        coverHeight: compact ? 120 : 200,
-        collapsed: _libraryHeaderFolded,
-        compact: compact,
-        downloadsSelection: state.multiselect &&
-            context.read<DriveDetailCubit>().selectedItems.isNotEmpty,
-        onDownload: () => _downloadFromLibraryHeader(state),
-        onCopyLink: () =>
-            copyLibraryLink(context, folderId: state.folderInView.folder.id),
-      ));
+  }) {
+    _libraryFolderShown(state.folderInView.folder.id);
+    return _turnsLibraryHeader(LibraryHeader(
+      coverHeight: compact ? 120 : 200,
+      collapsed: _libraryHeaderFolded,
+      compact: compact,
+      downloadsSelection: state.multiselect &&
+          context.read<DriveDetailCubit>().selectedItems.isNotEmpty,
+      onDownload: () => _downloadFromLibraryHeader(state),
+      onCopyLink: () =>
+          copyLibraryLink(context, folderId: state.folderInView.folder.id),
+    ));
+  }
 
   Widget _desktopView({
     required DriveDetailLoadSuccess driveDetailState,

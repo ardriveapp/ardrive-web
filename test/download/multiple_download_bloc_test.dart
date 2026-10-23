@@ -276,6 +276,39 @@ void main() async {
         );
       });
 
+      group('Test confirming more than once', () {
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'downloads once however often it is confirmed',
+          build: () => multipleDownloadBloc,
+          setUp: () {
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+          },
+          act: (bloc) async {
+            bloc.add(StartDownload(
+              [testFile],
+              zipName: 'Library',
+              confirmFirst: true,
+            ));
+            await Future<void>.delayed(Duration.zero);
+            bloc
+              ..add(const ConfirmDownload())
+              ..add(const ConfirmDownload());
+          },
+          expect: () => [
+            isA<MultipleDownloadReady>(),
+            isA<MultipleDownloadInProgress>(),
+            isA<MultipleDownloadFinishedWithSuccess>(),
+          ],
+        );
+
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'and not at all before it has asked',
+          build: () => multipleDownloadBloc,
+          act: (bloc) => bloc.add(const ConfirmDownload()),
+          expect: () => const <MultipleDownloadState>[],
+        );
+      });
+
       group('Test networking', () {
         blocTest<MultipleDownloadBloc, MultipleDownloadState>(
           'should emit Failure with fileNotFound when file is not available',

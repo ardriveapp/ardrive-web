@@ -94,8 +94,10 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               if (license != null) {
                 final companion = license.toCompanion(true);
                 licenseState = _licenseService.fromCompanion(companion);
-              } else {
-                // 2. Or fetch on-demand from network and cache to DB
+              } else if (!LibraryMode.isOn) {
+                // 2. Or fetch on-demand from network and cache to DB. Not on
+                // a library page, which makes no GraphQL request: its
+                // snapshot carries the licenses it has.
                 licenseState = await _fetchAndCacheLicense(latestRevision);
               }
             }

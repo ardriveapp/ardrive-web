@@ -1,15 +1,18 @@
 import 'dart:async';
 
 import 'package:ardrive/components/note_create/note_create_form.dart';
+import 'package:ardrive/library/domain/library_hosts.dart';
 import 'package:ardrive/library/domain/library_mode.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/file_type_label.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 class DocumentPreviewWidget extends StatefulWidget {
@@ -72,11 +75,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         data: widget.content,
         selectable: true,
         imageBuilder: (uri, title, alt) {
-          return Image.network(
-            uri.toString(),
-            errorBuilder: (context, error, stackTrace) {
-              // Handle image loading errors (e.g., SVG images, network issues)
-              return Container(
+          Widget placeholder() => Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: colors.themeBgCanvas,
@@ -105,7 +104,24 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                   ],
                 ),
               );
-            },
+          // A library page fetches only from its own host and gateway, so an
+          // image a note links to elsewhere shows as its alt text.
+          if (LibraryMode.isOn &&
+              !libraryMayFetch(
+                uri,
+                page: Uri.base,
+                gateway: Uri.parse(context
+                    .read<ConfigService>()
+                    .config
+                    .arweaveGatewayForDataRequest
+                    .url),
+              )) {
+            return placeholder();
+          }
+          return Image.network(
+            uri.toString(),
+            // Handle image loading errors (e.g., SVG images, network issues)
+            errorBuilder: (context, error, stackTrace) => placeholder(),
           );
         },
         styleSheet: MarkdownStyleSheet(

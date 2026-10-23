@@ -4643,7 +4643,7 @@
   },
   "libraryCoverSummary": "{files, plural, =1{1 file} other{{files} files}} • {size} • published {date}",
   "@libraryCoverSummary": {
-    "description": "Under the title on a library page's cover: how many files it has, their total size and when it was published. Size and date are already formatted.",
+    "description": "In a library page's byline, after who it is by: how many files it has, their total size and when it was published. Size and date are already formatted.",
     "placeholders": {
       "files": {
         "type": "int"
@@ -4652,6 +4652,18 @@
         "type": "String"
       },
       "date": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryCountSummary": "{files, plural, =1{1 file} other{{files} files}} • {size}",
+  "@libraryCountSummary": {
+    "description": "A library page's byline when its settings carry no publish date: how many files it has and their total size, already formatted.",
+    "placeholders": {
+      "files": {
+        "type": "int"
+      },
+      "size": {
         "type": "String"
       }
     }

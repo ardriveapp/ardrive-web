@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/library/data/snapshot_download.dart';
@@ -21,7 +22,14 @@ class LibrarySource {
   /// Throws [LibrarySourceException].
   Future<String> readSettings(String path) async {
     final response = await _get(path);
-    return response.body;
+    // Always UTF-8, as JSON is. `body` decodes a Content-Type without a
+    // charset, which is how gateways serve it, as Latin-1, and a title like
+    // "Phil’s Archive" came out garbled.
+    try {
+      return utf8.decode(response.bodyBytes);
+    } on FormatException catch (e) {
+      throw LibrarySourceException(_resolve(path), 'not UTF-8: ${e.message}');
+    }
   }
 
   /// The snapshot's bytes, reporting each chunk as it arrives. `total` is null

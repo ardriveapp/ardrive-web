@@ -47,7 +47,13 @@ class ArIOGatewayDetector {
       final parts = hostGateway.split('.');
       final domain = parts.length > 1 ? parts.sublist(1).join('.') : parts[0];
 
-      for (final candidate in {domain, if (alsoTryHost) hostGateway}) {
+      // A domain with no dot is a top-level domain (`com` above
+      // `turbo-gateway.com`), never a gateway: probing it only sends a
+      // request nowhere.
+      for (final candidate in {
+        if (domain.contains('.')) domain,
+        if (alsoTryHost) hostGateway,
+      }) {
         logger.d('AR.IO gateway detection: Testing domain $candidate');
 
         // Test if the domain is an AR.IO gateway

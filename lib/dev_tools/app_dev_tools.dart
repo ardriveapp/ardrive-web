@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:ardrive/dev_tools/drives_health_check.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
@@ -44,6 +45,10 @@ class ArDriveDevTools {
   bool _isDevToolsOpen = false;
 
   void showDevTools({BuildContext? optionalContext}) {
+    // Not for a library page's visitors: the tools change gateways and RPCs
+    // and run checks that reach other hosts.
+    if (LibraryMode.isOn) return;
+
     _context = optionalContext;
 
     if (_isDevToolsOpen) return;

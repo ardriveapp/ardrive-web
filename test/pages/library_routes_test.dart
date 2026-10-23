@@ -124,6 +124,15 @@ void main() {
       expect(router.currentConfiguration.libraryFolderId, _b);
     });
 
+    test('keeps the link it arrived with in the address while it loads',
+        () async {
+      await router.setNewRoutePath(
+          AppRoutePath.library(folderId: _b, fileId: 'f'));
+
+      expect(router.currentConfiguration.libraryFolderId, _b);
+      expect(router.currentConfiguration.libraryFileId, 'f');
+    });
+
     test('a link outside a folder library lands on its root', () async {
       await router.setNewRoutePath(AppRoutePath.library(folderId: _c));
       await router.openLibrary(

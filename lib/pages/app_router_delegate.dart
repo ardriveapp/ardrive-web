@@ -297,8 +297,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   AppRoutePath get currentConfiguration =>
       LibraryMode.isOn ? _libraryConfiguration : _appConfiguration;
 
-  /// Where a library page is: its root, or the folder in view.
+  /// Where a library page is: its root, or the folder in view. While it is
+  /// still loading, the link it was opened at: reporting the root then put
+  /// `#/` in the address bar over a deep link, and left it in the history,
+  /// so Back went to the root rather than where the visitor came from.
   AppRoutePath get _libraryConfiguration {
+    if (library == null) {
+      return AppRoutePath.library(
+        folderId: _libraryFolderRequest,
+        fileId: _libraryFileRequest,
+      );
+    }
     final folderId = driveFolderId;
     if (folderId == null || folderId == library?.scopeRootFolderId) {
       return AppRoutePath.library();

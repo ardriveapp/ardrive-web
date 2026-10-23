@@ -215,6 +215,13 @@ void main() {
       expect(find.text('Download'), findsOneWidget);
     });
 
+    testWidgets('counts its files even without a publish date', (tester) async {
+      await header(tester);
+
+      expect(find.textContaining('79 files'), findsOneWidget);
+      expect(find.textContaining('published'), findsNothing);
+    });
+
     testWidgets('downloads what is selected when something is', (tester) async {
       await header(tester, downloadsSelection: true);
 
