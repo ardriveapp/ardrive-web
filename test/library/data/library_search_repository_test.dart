@@ -109,6 +109,14 @@ void main() {
     );
   });
 
+  test('places results in the library, never naming what is above it',
+      () async {
+    final results = await repository(_config(const LibraryFolderScope(_a)))
+        .search('report-a');
+    expect(results.single.drive.name, 'Library');
+    expect(results.single.parentFolder, isNull);
+  });
+
   test('never finds failed or pending uploads', () async {
     await file('report-failed.txt', _a, status: TransactionStatus.failed);
     await file('report-pending.txt', _a, status: TransactionStatus.pending);

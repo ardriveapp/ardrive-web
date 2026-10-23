@@ -14,6 +14,8 @@ import 'package:ardrive/search/search_result.dart';
 /// folders [LibraryContents] shows, never the drive, and never the published
 /// folder itself, whose result would name the folder above it.
 ///
+/// Results are placed in the library, not the drive (see [_located]).
+///
 /// There is one drive, already here in full, so search covers everything and
 /// nothing ever changes underneath it.
 class LibrarySearchRepository implements SearchRepository {
@@ -62,7 +64,27 @@ class LibrarySearchRepository implements SearchRepository {
       _searchKind(query, SearchQueryType.folders, shows),
       _searchKind(query, SearchQueryType.files, shows),
     ]);
-    return rankSearchResults(query, found.expand((kind) => kind));
+    return rankSearchResults(
+      query,
+      found.expand((kind) => kind).map((result) => _located(result, config)),
+    );
+  }
+
+  /// [result] placed in the library rather than the drive: a result names
+  /// where it is by its drive, then its folder. The drive's name is the
+  /// library's title, and an item at the library's root names no folder, so
+  /// a folder library never shows the names above it.
+  SearchResult _located(SearchResult result, LibraryConfig config) {
+    final parent = result.parentFolder;
+    return SearchResult(
+      result: result.result,
+      drive: result.drive.copyWith(name: config.title),
+      parentFolder: parent == null || parent.id == config.scopeRootFolderId
+          ? null
+          : parent,
+      hasArNSName: result.hasArNSName,
+      uniqueId: result.uniqueId,
+    );
   }
 
   Future<List<SearchResult>> _searchKind(
