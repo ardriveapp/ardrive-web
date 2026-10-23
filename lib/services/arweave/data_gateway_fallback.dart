@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:ardrive/components/sandboxed_transaction_view/arweave_sandbox_url.dart';
 import 'package:ardrive/download/download_exceptions.dart';
+import 'package:ardrive/library/domain/library_mode.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/arweave/gateway_http_client.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -677,8 +678,13 @@ class DataGatewayFallback {
   }
 
   /// Build the ordered list of clients: primary + GAR gateways + arweave.net.
+  ///
+  /// A library page has the primary only: it may reach nothing but its own
+  /// host and the gateway serving it, and the gateway list alone is a Solana
+  /// RPC call (docs/LIBRARY_PAGES.md, "How a page opens").
   Future<List<Arweave>> _buildClientList(Arweave primaryClient) async {
     final clients = <Arweave>[primaryClient];
+    if (LibraryMode.isOn) return clients;
     final primaryHost = primaryClient.api.gatewayUrl.host;
 
     try {
