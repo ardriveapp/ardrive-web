@@ -1152,9 +1152,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
       ),
       bottomNavigationBar: BlocBuilder<DriveDetailCubit, DriveDetailState>(
         builder: (context, state) {
-          // A library page adds nothing to its drive: no New button.
+          // A library page adds nothing to its drive: no New button. Not an
+          // empty Container: given the whole height, it fills it, which hid
+          // the file list for as long as it was there.
           if (state is! DriveDetailLoadSuccess || LibraryMode.isOn) {
-            return Container();
+            return const SizedBox.shrink();
           }
 
           return ResizableComponent(

@@ -73,10 +73,15 @@ Future<void> copyLibraryLink(
   );
 }
 
-/// "Open in ArDrive": the library's drive in the app, which a visitor opens
-/// without signing in.
-String openInArDriveUrl(String driveId) =>
-    '${LibraryLoaderPage.ardriveUrl}/#/drives/$driveId';
+/// "Open in ArDrive": the library in the app, which a visitor opens without
+/// signing in: its drive, or for a folder library that folder, never the
+/// drive around it.
+String openInArDriveUrl(LibraryConfig config) => switch (config.scope) {
+      LibraryDriveScope() =>
+        '${LibraryLoaderPage.ardriveUrl}/#/drives/${config.driveId}',
+      LibraryFolderScope(:final folderId) =>
+        '${LibraryLoaderPage.ardriveUrl}/#/drives/${config.driveId}/folders/$folderId',
+    };
 
 /// The library's sidebar, in place of the drives list, the New button and the
 /// account (docs/LIBRARY_PAGES.md, "The library frame"): the icon, the title,
@@ -197,7 +202,7 @@ class _LibrarySideBarState extends State<LibrarySideBar> {
         if (config != null)
           ArDriveClickArea(
             child: GestureDetector(
-              onTap: () => openUrl(url: openInArDriveUrl(config.driveId)),
+              onTap: () => openUrl(url: openInArDriveUrl(config)),
               child: Text(
                 strings.libraryOpenInArDrive,
                 style: typography
@@ -259,7 +264,10 @@ class LibraryCoverBand extends StatelessWidget {
     final cover = config.images.cover;
 
     if (cover == null) {
-      return Padding(
+      // Full width, so the lines start at the left in a centring column too,
+      // as the phone layout is.
+      return Container(
+        width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: _TitleLines(
           title: config.title,

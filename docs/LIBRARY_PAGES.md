@@ -240,7 +240,8 @@ One frame, a heading, one sentence, one action:
   toggle. No login, profile card, sync indicator or New button.
 - **Cover band:** on the library's root only, above the breadcrumbs: the cover
   image, cropped to fill, 200 px tall on desktop, with a bottom scrim and the
-  title plus "N files · size · published <date>" over it. Without a cover, the
+  title plus "N files • size • published <date>" over it (bullets, as the
+  file rows use: Wavehaus draws "·" on the baseline). Without a cover, the
   band is the title line on the normal background. On subfolders the band is
   gone and the breadcrumbs lead.
 - **Breadcrumbs** start at the scope's root; the root crumb is the title.

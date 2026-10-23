@@ -4620,7 +4620,7 @@
     "description": "Shown in a library page's search dropdown when nothing matches. A library has no drives to search.",
     "placeholders": { "query": { "type": "String", "example": "report" } }
   },
-  "libraryCoverSummary": "{files, plural, =1{1 file} other{{files} files}} · {size} · published {date}",
+  "libraryCoverSummary": "{files, plural, =1{1 file} other{{files} files}} • {size} • published {date}",
   "@libraryCoverSummary": {
     "description": "Under the title on a library page's cover: how many files it has, their total size and when it was published. Size and date are already formatted.",
     "placeholders": {
