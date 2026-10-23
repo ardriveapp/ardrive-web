@@ -68,6 +68,9 @@ costs nothing. Publish writes permanent objects to Arweave.
 | ArDrive at a raw manifest URL | Boots: `https://turbo-gateway.com/<manifest-id>/` redirects to the sandbox subdomain and the app loads (no `<base>` tag in `web/index.html`, all paths relative) |
 | Snapshot of 41,767 files | 6.0 MiB gzipped, imported in 0.6 s |
 | Requests the normal app makes on start | Also fonts.gstatic.com, upload.ardrive.io, plausible.io: library mode must stop these |
+| Library page, phase 1 (2026-10-23) | Hand-built pages on turbo-gateway.com for the UAT drive (52 entities) and one of its folders: requests only to the gateway, its sandbox subdomains and the page's own; first visit 8.95 MB, files on screen 4.0–4.3 s after navigation on a desktop connection, 50.4 s on Lighthouse's phone profile (1.6 Mbps, 150 ms, CPU ×4), which is the bundle's download |
+| Release with fallback fonts | 613 files, 58.3 MB gzipped, of which the 144 fonts are 38.6 MB; incremental upload after phase 0's: 40.9 MiB, 0.5684 credits; a rebuild after that: 4.0 MiB, 0.0563 credits |
+| Snapshot import, 569 entities (2,084 revisions) | 0.20 s; 0.67 s with CPU ×4 |
 
 ## Architecture
 
