@@ -307,6 +307,28 @@ void main() {
     final shortLabel = tester.getSize(find.text('Ok'));
     expect(longLabel.height, shortLabel.height);
   });
+
+  /// The first action was drawn without its enabled state, so a disabled
+  /// first action could still be pressed. Every action honours it now.
+  testWidgets('ArDriveStandardModalNew disables any action that is not enabled',
+      (tester) async {
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: ArDriveStandardModalNew(title: 'Title', actions: [
+            ModalAction(action: () {}, title: 'First', isEnable: false),
+            ModalAction(action: () {}, title: 'Second', isEnable: false),
+          ]),
+        ),
+      ),
+    );
+
+    final buttons =
+        tester.widgetList<ArDriveButtonNew>(find.byType(ArDriveButtonNew));
+    expect(buttons.map((b) => b.isDisabled), [true, true]);
+    expect(buttons.map((b) => b.size), everyElement(ArDriveButtonSize.regular),
+        reason: 'dialog actions are the regular height');
+  });
 }
 
 class _TestWidget extends StatelessWidget {

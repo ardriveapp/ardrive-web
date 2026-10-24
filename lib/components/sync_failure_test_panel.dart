@@ -28,7 +28,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
     }
 
     final themeData = ArDriveTheme.of(context).themeData;
-    
+
     return Positioned(
       bottom: 20,
       right: 20,
@@ -38,7 +38,9 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
         child: ArDriveCard(
           backgroundColor: themeData.colors.themeBgCanvas,
           contentPadding: EdgeInsets.zero,
-          content: _isExpanded ? _buildExpandedPanel(context) : _buildCollapsedPanel(context),
+          content: _isExpanded
+              ? _buildExpandedPanel(context)
+              : _buildCollapsedPanel(context),
           boxShadow: BoxShadowCard.shadow80,
         ),
       ),
@@ -53,7 +55,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
         child: IconButton(
           icon: Icon(
             Icons.bug_report,
-            color: _simulator.isEnabled 
+            color: _simulator.isEnabled
                 ? themeData.colors.themeErrorDefault
                 : themeData.colors.themeFgDefault,
             size: 24,
@@ -68,7 +70,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
   Widget _buildExpandedPanel(BuildContext context) {
     final themeData = ArDriveTheme.of(context).themeData;
     final typography = ArDriveTypographyNew.of(context);
-    
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,13 +79,13 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
         Container(
           height: 4,
           decoration: BoxDecoration(
-            color: _simulator.isEnabled 
+            color: _simulator.isEnabled
                 ? themeData.colors.themeErrorDefault
                 : themeData.colors.themeFgMuted,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
           ),
         ),
-        
+
         // Title Bar
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -100,7 +102,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
             children: [
               Icon(
                 Icons.bug_report,
-                color: _simulator.isEnabled 
+                color: _simulator.isEnabled
                     ? themeData.colors.themeErrorDefault
                     : themeData.colors.themeFgDefault,
                 size: 20,
@@ -127,7 +129,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
             ],
           ),
         ),
-        
+
         // Content
         Padding(
           padding: const EdgeInsets.all(16),
@@ -162,7 +164,8 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                       onChanged: (value) {
                         setState(() {
                           if (value) {
-                            _simulator.enable(_selectedMode, failureRate: _failureRate);
+                            _simulator.enable(_selectedMode,
+                                failureRate: _failureRate);
                           } else {
                             _simulator.disable();
                           }
@@ -171,14 +174,15 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _simulator.isEnabled 
+                        color: _simulator.isEnabled
                             ? themeData.colors.themeErrorSubtle
                             : themeData.colors.themeBgSubtle,
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
-                          color: _simulator.isEnabled 
+                          color: _simulator.isEnabled
                               ? themeData.colors.themeErrorDefault
                               : themeData.colors.themeBorderDefault,
                           width: 1,
@@ -187,7 +191,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                       child: Text(
                         _simulator.isEnabled ? 'ON' : 'OFF',
                         style: typography.paragraphSmall(
-                          color: _simulator.isEnabled 
+                          color: _simulator.isEnabled
                               ? themeData.colors.themeErrorDefault
                               : themeData.colors.themeFgMuted,
                           fontWeight: ArFontWeight.bold,
@@ -197,9 +201,9 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Failure Mode Selection
               Text(
                 'Failure Mode',
@@ -209,7 +213,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                 ),
               ),
               const SizedBox(height: 8),
-              
+
               Container(
                 decoration: BoxDecoration(
                   color: themeData.colors.themeBgSubtle,
@@ -227,15 +231,17 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                         setState(() {
                           _selectedMode = mode;
                           if (_simulator.isEnabled) {
-                            _simulator.enable(_selectedMode, failureRate: _failureRate);
+                            _simulator.enable(_selectedMode,
+                                failureRate: _failureRate);
                           }
                         });
                       },
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
-                          color: isSelected 
+                          color: isSelected
                               ? themeData.colors.themeAccentSubtle
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(6),
@@ -248,7 +254,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isSelected 
+                                  color: isSelected
                                       ? themeData.colors.themeAccentDefault
                                       : themeData.colors.themeBorderDefault,
                                   width: 2,
@@ -261,7 +267,8 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                                         height: 8,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: themeData.colors.themeAccentDefault,
+                                          color: themeData
+                                              .colors.themeAccentDefault,
                                         ),
                                       ),
                                     )
@@ -272,7 +279,9 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                               _getModeLabel(mode),
                               style: typography.paragraphSmall(
                                 color: themeData.colors.themeFgDefault,
-                                fontWeight: isSelected ? ArFontWeight.semiBold : ArFontWeight.book,
+                                fontWeight: isSelected
+                                    ? ArFontWeight.semiBold
+                                    : ArFontWeight.book,
                               ),
                             ),
                           ],
@@ -282,7 +291,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                   }).toList(),
                 ),
               ),
-              
+
               // Failure Rate Slider (only for random mode)
               if (_selectedMode == FailureMode.randomFailures) ...[
                 const SizedBox(height: 16),
@@ -310,7 +319,8 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: themeData.colors.themeBgCanvas,
                               borderRadius: BorderRadius.circular(4),
@@ -333,9 +343,11 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                       SliderTheme(
                         data: SliderThemeData(
                           activeTrackColor: themeData.colors.themeAccentDefault,
-                          inactiveTrackColor: themeData.colors.themeBorderDefault,
+                          inactiveTrackColor:
+                              themeData.colors.themeBorderDefault,
                           thumbColor: themeData.colors.themeAccentDefault,
-                          overlayColor: themeData.colors.themeAccentDefault.withOpacity(0.2),
+                          overlayColor: themeData.colors.themeAccentDefault
+                              .withOpacity(0.2),
                         ),
                         child: Slider(
                           value: _failureRate,
@@ -346,7 +358,8 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                             setState(() {
                               _failureRate = value;
                               if (_simulator.isEnabled) {
-                                _simulator.enable(_selectedMode, failureRate: _failureRate);
+                                _simulator.enable(_selectedMode,
+                                    failureRate: _failureRate);
                               }
                             });
                           },
@@ -356,9 +369,9 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                   ),
                 ),
               ],
-              
+
               const SizedBox(height: 16),
-              
+
               // Test Actions
               Text(
                 'Quick Actions',
@@ -368,7 +381,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                 ),
               ),
               const SizedBox(height: 8),
-              
+
               // Trigger Sync Button
               ArDriveButtonNew(
                 maxWidth: double.infinity,
@@ -379,11 +392,10 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                 },
                 variant: ButtonVariant.primary,
                 typography: typography,
-                maxHeight: 40,
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Cancel Sync Button
               BlocBuilder<SyncCubit, SyncState>(
                 builder: (context, state) {
@@ -400,7 +412,6 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                     variant: ButtonVariant.secondary,
                     typography: typography,
                     isDisabled: !canCancel,
-                    maxHeight: 40,
                   );
                 },
               ),

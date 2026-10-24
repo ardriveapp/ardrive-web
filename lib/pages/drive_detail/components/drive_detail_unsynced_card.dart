@@ -547,6 +547,7 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         ArDriveButtonNew(
+          size: ArDriveButtonSize.large,
           maxWidth: double.infinity,
           // Not "Sync this drive" a second time: that button has been
           // pressed, and offering it again unchanged is what made the screen
@@ -602,6 +603,7 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         ArDriveButtonNew(
+          size: ArDriveButtonSize.large,
           maxWidth: double.infinity,
           text: appLocalizationsOf(context).syncAllDrives,
           typography: typography,

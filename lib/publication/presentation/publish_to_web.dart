@@ -149,7 +149,6 @@ Widget publishButton(
       text: text,
       typography: ArDriveTypographyNew.of(context),
       variant: variant,
-      maxHeight: 40,
       maxWidth: ArDriveButtonNew.fittedWidth(context, text, minWidth: 96),
       onPressed: onPressed,
     );

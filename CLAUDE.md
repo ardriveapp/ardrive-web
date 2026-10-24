@@ -150,6 +150,12 @@ localization despite the name — it holds validation message helpers.
 
 Note: The `ario_sdk` package requires separate code generation - `scr setup` handles this automatically.
 
+New UI is built from `ardrive_ui`'s new generation (`ArDriveButtonNew`, `ArDriveStandardModalNew`,
+`ArDriveTypographyNew`, `colorTokens`, plus `ArDriveLink`, `ArDriveNotice`, `ArDriveEmptyState`,
+`ArDriveSpinner`, `ArDriveBottomSheet`, `ArDriveCopyField`, `ArDriveSpacing`/`ArDriveRadius`).
+`packages/ardrive_ui/README.md` says which piece to use where, including the three button sizes.
+Don't draw a one-off version of something the design system has; if it falls short, fix it there.
+
 ### Database (Drift ORM)
 
 - Main database: `lib/models/database/database.dart` (currently `schemaVersion => 30`)

@@ -170,6 +170,7 @@ class _OpenDriveModalState extends State<OpenDriveModal> {
                 ],
                 const SizedBox(height: 32),
                 ArDriveButtonNew(
+                  size: ArDriveButtonSize.large,
                   key: const Key('openDriveButton'),
                   text: _buttonText(strings, state),
                   typography: typography,

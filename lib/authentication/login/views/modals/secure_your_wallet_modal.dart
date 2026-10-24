@@ -253,6 +253,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                   }),
               const SizedBox(height: 40),
               ArDriveButtonNew(
+                  size: ArDriveButtonSize.large,
                   maxWidth: double.infinity,
                   text: 'Continue',
                   typography: typography,

@@ -206,6 +206,7 @@ class _Failure extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         ArDriveButtonNew(
+          size: ArDriveButtonSize.large,
           text: retry ? strings.tryAgain : strings.publicationOpenArDrive,
           typography: typography,
           variant: ButtonVariant.primary,

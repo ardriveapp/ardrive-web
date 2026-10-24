@@ -59,6 +59,7 @@ class _LandingViewState extends State<LandingView> {
                       fontWeight: ArFontWeight.semiBold)),
               const SizedBox(height: 72),
               ArDriveButtonNew(
+                  size: ArDriveButtonSize.large,
                   text: 'Log in',
                   typography: typography,
                   maxWidth: double.maxFinite,
@@ -71,6 +72,7 @@ class _LandingViewState extends State<LandingView> {
                   }),
               const SizedBox(height: 16),
               ArDriveButtonNew(
+                  size: ArDriveButtonSize.large,
                   text: 'Sign up',
                   typography: typography,
                   maxWidth: double.maxFinite,

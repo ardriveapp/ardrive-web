@@ -173,7 +173,7 @@ class SearchCoverageNotice extends StatelessWidget {
                         : localizations.searchSyncDrives(unsearched),
                     typography: typography,
                     variant: ButtonVariant.primary,
-                    maxHeight: 36,
+                    size: ArDriveButtonSize.compact,
                     // Only one sync runs at a time; this one can start when
                     // the other ends.
                     isDisabled:

@@ -265,6 +265,7 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
           // indistinguishable from a press that did not register. Now it says
           // what it is doing while it does it.
           ArDriveButtonNew(
+              size: ArDriveButtonSize.large,
               maxWidth: double.infinity,
               text: 'Continue',
               // The spinner and the label as one centred group, rather than a

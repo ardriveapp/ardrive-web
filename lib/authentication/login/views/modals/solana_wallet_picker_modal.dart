@@ -52,6 +52,7 @@ class SolanaWalletPickerModal extends StatelessWidget {
             ),
             const SizedBox(height: 32),
             ArDriveButtonNew(
+              size: ArDriveButtonSize.large,
               text: 'Phantom',
               hoverIcon: Container(
                 alignment: Alignment.center,
@@ -71,6 +72,7 @@ class SolanaWalletPickerModal extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             ArDriveButtonNew(
+              size: ArDriveButtonSize.large,
               text: 'Solflare',
               hoverIcon: Container(
                 alignment: Alignment.center,

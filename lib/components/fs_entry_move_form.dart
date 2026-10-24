@@ -301,7 +301,6 @@ class FsEntryMoveForm extends StatelessWidget {
                               Flexible(
                                 child: ArDriveButtonNew(
                                   typography: typography,
-                                  maxHeight: 36,
                                   maxWidth: 200,
                                   variant: ButtonVariant.secondary,
                                   text: appLocalizationsOf(context)
@@ -352,7 +351,6 @@ class FsEntryMoveForm extends StatelessWidget {
                               Flexible(
                                 child: ArDriveButtonNew(
                                   typography: typography,
-                                  maxHeight: 36,
                                   maxWidth: 150,
                                   variant: ButtonVariant.primary,
                                   text: appLocalizationsOf(context)

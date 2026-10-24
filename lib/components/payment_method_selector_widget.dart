@@ -425,7 +425,7 @@ class _SourceWalletCreditsNoticeState
             text: _sharing ? 'Sharing...' : 'Share credits',
             typography: typography,
             variant: ButtonVariant.primary,
-            maxHeight: 36,
+            size: ArDriveButtonSize.compact,
             isDisabled: _sharing,
             onPressed: _share,
           ),

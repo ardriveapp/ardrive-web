@@ -83,7 +83,6 @@ class ArDriveModalNew extends StatelessWidget {
                   children: [
                     Flexible(
                       child: ArDriveButtonNew(
-                        maxHeight: 40,
                         variant: ButtonVariant.primary,
                         text: action!.title,
                         onPressed: action!.action,
@@ -557,7 +556,6 @@ class ModalAction {
     required this.title,
     this.isEnable = true,
     this.customWidth,
-    this.customHeight,
     this.variant,
   });
 
@@ -565,7 +563,6 @@ class ModalAction {
   final dynamic Function() action;
   final bool isEnable;
   final double? customWidth;
-  final double? customHeight;
 
   /// Overrides the variant [ArDriveStandardModalNew] picks from the action's
   /// position, where a lone action is primary.
@@ -808,10 +805,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
           ),
         Align(
           alignment: Alignment.bottomRight,
-          child: _buildActions(
-            actions!,
-            context,
-          ),
+          child: ArDriveModalActions(actions: actions!),
         )
       ]
     ];
@@ -859,8 +853,18 @@ class ArDriveStandardModalNew extends StatelessWidget {
             ),
     );
   }
+}
 
-  Widget _buildActions(List<ModalAction> actions, BuildContext context) {
+/// A dialog's actions: right-aligned, 40 high, with the last one primary
+/// unless an action sets its own variant. Shared by [ArDriveStandardModalNew]
+/// and [ArDriveBottomSheet], so the two lay out their buttons the same way.
+class ArDriveModalActions extends StatelessWidget {
+  const ArDriveModalActions({super.key, required this.actions});
+
+  final List<ModalAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     return Wrap(
       alignment: WrapAlignment.end,
@@ -868,7 +872,6 @@ class ArDriveStandardModalNew extends StatelessWidget {
       children: [
         if (actions.isNotEmpty)
           ArDriveButtonNew(
-            maxHeight: actions[0].customHeight ?? 40,
             maxWidth: actions[0].customWidth ??
                 ArDriveButtonNew.fittedWidth(context, actions[0].title,
                     minWidth: 100),
@@ -877,6 +880,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
                 (actions.length > 1
                     ? ButtonVariant.secondary
                     : ButtonVariant.primary),
+            isDisabled: !actions[0].isEnable,
             text: actions.first.title,
             onPressed: actions.first.action,
           ),
@@ -884,7 +888,6 @@ class ArDriveStandardModalNew extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 16),
             child: ArDriveButtonNew(
-              maxHeight: actions[1].customHeight ?? 40,
               maxWidth: actions[1].customWidth ??
                   ArDriveButtonNew.fittedWidth(context, actions[1].title,
                       minWidth: 110),
@@ -906,7 +909,6 @@ class ArDriveStandardModalNew extends StatelessWidget {
             child: ArDriveButtonNew(
               typography: typography,
               variant: actions[2].variant ?? ButtonVariant.primary,
-              maxHeight: actions[2].customHeight ?? 40,
               maxWidth: actions[2].customWidth ??
                   ArDriveButtonNew.fittedWidth(context, actions[2].title,
                       minWidth: 110),

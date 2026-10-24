@@ -708,13 +708,11 @@ class ConfiguringLicenseScreen extends StatelessWidget {
         variant: ButtonVariant.secondary,
         typography: typography,
         maxWidth: customWidth,
-        maxHeight: 40,
       ),
       ArDriveButtonNew(
         typography: typography,
         isDisabled: !form.valid,
         maxWidth: customWidth,
-        maxHeight: 40,
         onPressed: () {
           context.read<UploadCubit>().configuringLicenseNext();
         },
@@ -1297,7 +1295,6 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                         text: appLocalizationsOf(context).cancel,
                         typography: typography,
                         maxWidth: 100,
-                        maxHeight: 40,
                         variant: ButtonVariant.secondary,
                       ),
                       ...getModalActions(context, state, licenseCategory),
@@ -1619,8 +1616,6 @@ class _UploadConflictWithFailedFilesWidget extends StatelessWidget {
               .prepareUploadPlanAndCostEstimates(
                   uploadAction: UploadActions.skipSuccessfulUploads),
           title: 'Replace failed uploads',
-          customWidth: 160,
-          customHeight: 60,
         ),
       ],
     );
@@ -1852,7 +1847,6 @@ class _UploadReadyWidget extends StatelessWidget {
                 text: appLocalizationsOf(context).cancel,
                 typography: typography,
                 maxWidth: 100,
-                maxHeight: 40,
                 variant: ButtonVariant.secondary,
               ),
               ...getModalActions(context, state, licenseCategory),
@@ -2120,7 +2114,6 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
           text: appLocalizationsOf(context).back,
           typography: typography,
           maxWidth: 100,
-          maxHeight: 40,
           variant: ButtonVariant.secondary,
         ),
         ArDriveButtonNew(
@@ -2134,7 +2127,6 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
             uploadButtonLabel(context, state.readyState.numberOfFiles),
             minWidth: 100,
           ),
-          maxHeight: 40,
           variant: ButtonVariant.primary,
         ),
       ],
@@ -2278,7 +2270,6 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
           text: appLocalizationsOf(context).back,
           typography: typography,
           maxWidth: 100,
-          maxHeight: 40,
           variant: ButtonVariant.secondary,
         ),
         ArDriveButtonNew(
@@ -2292,7 +2283,6 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
             uploadButtonLabel(context, state.readyState.numberOfFiles),
             minWidth: 100,
           ),
-          maxHeight: 40,
           variant: ButtonVariant.primary,
         ),
       ],
@@ -3114,7 +3104,6 @@ List<ArDriveButtonNew> getModalActions(
         typography: typography,
         variant: ButtonVariant.primary,
         maxWidth: 140,
-        maxHeight: 40,
       ),
     ];
   } else if (state.arnsCheckboxChecked) {
@@ -3127,7 +3116,6 @@ List<ArDriveButtonNew> getModalActions(
         text: appLocalizationsOf(context).assignName,
         typography: typography,
         maxWidth: 140,
-        maxHeight: 40,
         variant: ButtonVariant.primary,
       ),
     ];
@@ -3141,7 +3129,6 @@ List<ArDriveButtonNew> getModalActions(
         text: appLocalizationsOf(context).review,
         typography: typography,
         maxWidth: 140,
-        maxHeight: 40,
         variant: ButtonVariant.primary,
       ),
     ];
@@ -3160,7 +3147,6 @@ List<ArDriveButtonNew> getModalActions(
         uploadButtonLabel(context, state.numberOfFiles),
         minWidth: 100,
       ),
-      maxHeight: 40,
       variant: ButtonVariant.primary,
     ),
   ];

@@ -1321,15 +1321,19 @@ class ProfileCardHeader extends StatelessWidget {
         final tooltipMessage = primaryName.length > 20 ? primaryName : null;
         return ArDriveTooltip(
           message: tooltipMessage ?? '',
-          child: ArDriveButtonNew(
-            text: primaryName,
-            typography: typography,
-            variant: ButtonVariant.outline,
-            content: _buildLoadedContent(
-                context, state, primaryName, truncatedWalletAddress, maxWidth),
-            maxWidth: maxWidth,
-            maxHeight: state is ProfileNameLoaded ? 60 : 46,
-            onPressed: onPressed,
+          // The account chip, not one of the button sizes: a loaded profile
+          // shows its name over its address, which needs the extra height.
+          child: SizedBox(
+            height: state is ProfileNameLoaded ? 60 : 46,
+            child: ArDriveButtonNew(
+              text: primaryName,
+              typography: typography,
+              variant: ButtonVariant.outline,
+              content: _buildLoadedContent(context, state, primaryName,
+                  truncatedWalletAddress, maxWidth),
+              maxWidth: maxWidth,
+              onPressed: onPressed,
+            ),
           ),
         );
       },
