@@ -91,6 +91,6 @@ test('the manifest is the release with the page over it', () => {
   );
   assert.deepEqual(manifest.index, { path: 'index.html' });
   assert.deepEqual(manifest.fallback, { id: 'page-index' });
-  assert.deepEqual(Object.keys(manifest.paths), ['index.html', 'publication.json', 'main.dart.js', 'snapshot']);
+  assert.deepEqual(Object.keys(manifest.paths), ['index.html', 'main.dart.js', 'publication.json', 'snapshot']);
   assert.equal(manifest.paths['index.html'].id, 'page-index');
 });
