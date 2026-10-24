@@ -143,6 +143,7 @@ class PublicationRepository {
   ) async {
     final found = <String, PublishedVersion>{};
     var cursor = '';
+    var exhausted = false;
     for (var page = 0; page < 20; page++) {
       final OwnerPublications$Query$TransactionConnection transactions;
       try {
@@ -169,9 +170,16 @@ class PublicationRepository {
         if (version != null) found[version.txId] = version;
       }
       if (transactions.edges.isEmpty || !transactions.pageInfo.hasNextPage) {
+        exhausted = true;
         break;
       }
       cursor = transactions.edges.last.cursor;
+    }
+    // A list cut off at the page cap could leave a publication out, and the
+    // app would then offer to publish it again: say it could not check.
+    if (!exhausted) {
+      throw const PublicationReadException(
+          'more publications than can be listed');
     }
     for (final (:owner, :version) in _justPublished) {
       if (owner == ownerAddress) found.putIfAbsent(version.txId, () => version);

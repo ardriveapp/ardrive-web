@@ -400,9 +400,71 @@ void main() {
         reason: 'the same job, so nothing is paid for twice');
   });
 
+  group('priced again after a failure, back through the look', () {
+    void failOnce() {
+      var attempts = 0;
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async {
+        if (attempts++ == 0) {
+          throw const PublicationFailure(PublicationStep.publication, 'Nope.');
+        }
+        return PublishedVersion(
+          txId: 'MANIFEST',
+          publicationId: 'p',
+          driveId: _drive,
+          folderId: null,
+          publishedAt: DateTime.utc(2026),
+        );
+      });
+    }
+
+    List<PublicationJob> jobs() =>
+        verify(() => publisher.publish(captureAny(), any(),
+            onStep: any(named: 'onStep'))).captured.cast<PublicationJob>();
+
+    test('an unchanged look keeps the job, with all it sent', () async {
+      discovery.candidates = [freshSnapshot()];
+      failOnce();
+      final c = cubit();
+      await c.load();
+      await c.review();
+      await c.publish();
+      c
+        ..back() // to the review
+        ..back(); // to the look
+      expect(c.state.stage, PublishStage.look);
+      await c.review();
+      await c.publish();
+      expect(c.state.stage, PublishStage.done);
+      final run = jobs();
+      expect(identical(run[0], run[1]), isTrue,
+          reason: 'nothing signed or sent is redone');
+    });
+
+    test('a changed look is a new job for the same publication', () async {
+      discovery.candidates = [freshSnapshot()];
+      failOnce();
+      final c = cubit();
+      await c.load();
+      await c.review();
+      await c.publish();
+      c
+        ..back()
+        ..back()
+        ..setTitle('A new title');
+      await c.review();
+      await c.publish();
+      final run = jobs();
+      expect(identical(run[0], run[1]), isFalse);
+      expect(run[1].title, 'A new title');
+      expect(run[1].publicationId, run[0].publicationId,
+          reason: 'never a second publication of the same thing');
+    });
+  });
+
   test(
       'an update is prefilled from the published version and opens on the '
-      'review', () async {
+      'look', () async {
     discovery.candidates = [freshSnapshot()];
     when(() => repository.readContent('LATEST'))
         .thenAnswer((_) async => PublishedContent(

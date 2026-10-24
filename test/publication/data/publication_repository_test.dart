@@ -1,4 +1,8 @@
 import 'package:ardrive/publication/data/publication_repository.dart';
+import 'package:ardrive/utils/graphql_retry.dart';
+import 'package:artemis/schema/graphql_query.dart';
+import 'package:artemis/schema/graphql_response.dart';
+import 'package:json_annotation/json_annotation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 PublishedVersion _v(String tx, String id,
@@ -41,4 +45,71 @@ void main() {
     ]).single;
     expect(p.versions.map((v) => v.txId), ['first']);
   });
+
+  group('publicationsOfOwner', () {
+    Map<String, dynamic> page({required bool more, int count = 1}) => {
+          'transactions': {
+            'pageInfo': {'hasNextPage': more},
+            'edges': [
+              for (var i = 0; i < count; i++)
+                {
+                  'cursor': 'cursor-$i',
+                  'node': {
+                    'id': 'NOT_A_PUBLICATION_$i',
+                    'owner': {'address': 'OWNER'},
+                    'bundledIn': null,
+                    'block': null,
+                    'tags': <Map<String, String>>[],
+                  },
+                },
+            ],
+          },
+        };
+
+    PublicationRepository repository(List<Map<String, dynamic>> pages) =>
+        PublicationRepository(
+          graphQLRetry: _Pages(pages),
+          gatewayUrl: () => 'https://turbo-gateway.com',
+        );
+
+    test('reads every page to the end', () async {
+      final found = await repository([page(more: true), page(more: false)])
+          .publicationsOfOwner('OWNER');
+      expect(found, isEmpty);
+    });
+
+    test('an empty page ends the list, whatever hasNextPage says', () async {
+      // Some gateways report another page after the last one.
+      final found =
+          await repository([page(more: true), page(more: true, count: 0)])
+              .publicationsOfOwner('OWNER');
+      expect(found, isEmpty);
+    });
+
+    test('a list cut off at the page cap is a failure, not "none"', () async {
+      // Claiming "none" for a drive that was cut off would offer to publish
+      // it a second time.
+      await expectLater(
+        repository(List.filled(25, page(more: true)))
+            .publicationsOfOwner('OWNER'),
+        throwsA(isA<PublicationReadException>()),
+      );
+    });
+  });
+}
+
+/// Answers each GraphQL call with the next page.
+class _Pages implements GraphQLRetry {
+  _Pages(this._pages);
+
+  final List<Map<String, dynamic>> _pages;
+  int _index = 0;
+
+  @override
+  Future<GraphQLResponse<T>> execute<T, U extends JsonSerializable>(
+    GraphQLQuery<T, U> query, {
+    Function(Exception e)? onRetry,
+    int maxAttempts = GraphQLRetry.defaultMaxAttempts,
+  }) async =>
+      GraphQLResponse(data: query.parse(_pages[_index++]));
 }

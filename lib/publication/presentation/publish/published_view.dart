@@ -25,12 +25,17 @@ Future<void> showPublishedView(
         folder: folder,
         publication: publication,
         // From the caller's context: the view's own is gone once it closes.
-        onUpdate: () => showPublishDialog(
-          context,
-          drive: drive,
-          folder: folder,
-          previous: publication,
-        ),
+        onUpdate: () {
+          // The menu or row this opened from can be rebuilt away while the
+          // view is open.
+          if (!context.mounted) return;
+          showPublishDialog(
+            context,
+            drive: drive,
+            folder: folder,
+            previous: publication,
+          );
+        },
       ),
     );
 

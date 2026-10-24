@@ -94,7 +94,20 @@ class PublishCubit extends Cubit<PublishState> {
   PublicationContents? _contents;
   PublicationRelease? _release;
   PublicationSnapshotPlan? _snapshotPlan;
+
+  /// The job the review priced, ready to publish; null while it is being
+  /// priced, so a failed pricing can never publish an older look.
   PublicationJob? _job;
+
+  /// The last job priced or run, with what it sent, and the look it was
+  /// built from. Pricing again keeps it when the look is the same, and
+  /// otherwise carries its snapshot over, so nothing sent is sent again.
+  PublicationJob? _lastJob;
+  String? _lastJobKey;
+
+  /// A first publish's ID, fixed for this dialog: an attempt that got as far
+  /// as the manifest and is then priced again stays the same publication.
+  String? _publicationId;
   ui.Image? _mark;
 
   String get _scopeRootFolderId => folder?.id ?? drive.rootFolderId;
@@ -269,6 +282,19 @@ class PublishCubit extends Cubit<PublishState> {
         _contents?.summarize().fileCount,
       ].join('\u0000');
 
+  /// Everything the look puts into a job's files: two jobs with the same key
+  /// would sign the same page.
+  String _jobKey(PublishState s) => [
+        s.title.trim(),
+        s.description.trim(),
+        s.ownerName.trim(),
+        s.keywords.join('\u0001'),
+        s.licence?.toJson().toString(),
+        _imageKey(s.icon),
+        _imageKey(s.cover),
+        s.social == null ? 'generated:${_cardKey(s)}' : _imageKey(s.social),
+      ].join('\u0000');
+
   static String _imageKey(PickedImage? picked) => switch (picked?.image) {
         ExistingPublicationImage(:final files) => files.toString(),
         final NewPublicationImage image => 'new:${identityHashCode(image)}',
@@ -409,7 +435,7 @@ class PublishCubit extends Cubit<PublishState> {
       emit(state.copyWith(stage: PublishStage.look));
       return;
     }
-    // Whatever was priced before no longer matches what the owner sees.
+    // Whatever was priced before may not match what the owner sees.
     _job = null;
     emit(state.copyWith(stage: PublishStage.pricing));
     final profile = _deps.profileCubit.state;
@@ -418,7 +444,10 @@ class PublishCubit extends Cubit<PublishState> {
       _snapshotPlan ??= await _planSnapshot(profile);
       final plan = _snapshotPlan;
       if (plan == null) return;
-      final job = await _buildJob(profile);
+      final key = _jobKey(state);
+      final job = _lastJob != null && key == _lastJobKey
+          ? _lastJob!
+          : (await _buildJob(profile)).carrySnapshotFrom(_lastJob);
       final cost = await _deps.costEstimator
           .estimate(
             sizeInBytes: _deps.publisher.sizeOf(job),
@@ -427,7 +456,8 @@ class PublishCubit extends Cubit<PublishState> {
           )
           .timeout(const Duration(seconds: 45));
       if (isClosed) return;
-      _job = job;
+      _job = _lastJob = job;
+      _lastJobKey = key;
       emit(state.copyWith(
         stage: PublishStage.review,
         reusesSnapshot: plan is ReusedSnapshot,
@@ -542,7 +572,7 @@ class PublishCubit extends Cubit<PublishState> {
                 ).render(),
               }));
     return PublicationJob(
-      publicationId: previous?.id ?? const Uuid().v4(),
+      publicationId: previous?.id ?? (_publicationId ??= const Uuid().v4()),
       driveId: drive.id,
       rootFolderId: drive.rootFolderId,
       folderId: folder?.id,
@@ -602,6 +632,7 @@ class PublishCubit extends Cubit<PublishState> {
     final run = job.method == state.method
         ? job
         : (_job = job.withMethod(state.method));
+    _lastJob = run;
     emit(state.copyWith(stage: PublishStage.publishing, failure: ''));
     try {
       final version = await _deps.publisher.publish(

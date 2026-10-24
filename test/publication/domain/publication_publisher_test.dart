@@ -9,6 +9,8 @@ import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/data/publication_uploader.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
+import 'package:ardrive/turbo/services/upload_service.dart'
+    show TurboPaymentRequiredException;
 import 'package:arweave/arweave.dart';
 import 'package:arweave/utils.dart' show decodeBase64ToString;
 import 'package:flutter_test/flutter_test.dart';
@@ -39,6 +41,10 @@ class _RecordingUploader extends PublicationUploader {
   final uploads = <String>[];
   int failOnTurboPost = -1;
 
+  /// What the failing Turbo post or bundle upload throws.
+  Object turboError = Exception('connection reset');
+  Object bundleError = Exception('chunk 3 rejected');
+
   /// Fails the next bundle upload after its header is accepted.
   bool failBundleAfterHeader = false;
 
@@ -46,7 +52,7 @@ class _RecordingUploader extends PublicationUploader {
   Future<void> postToTurbo(DataItem item, Wallet wallet) async {
     if (turbo.length == failOnTurboPost) {
       failOnTurboPost = -1;
-      throw Exception('connection reset');
+      throw turboError;
     }
     turbo.add(item);
   }
@@ -66,7 +72,7 @@ class _RecordingUploader extends PublicationUploader {
     onPosted?.call();
     if (failBundleAfterHeader) {
       failBundleAfterHeader = false;
-      throw Exception('chunk 3 rejected');
+      throw bundleError;
     }
   }
 }
@@ -405,5 +411,64 @@ void main() {
         .sizeOf(job(snapshot: const ReusedSnapshot(txId: 'OLD', tags: {})));
     expect(withNew - withReused, greaterThanOrEqualTo(5000));
     expect(withReused, greaterThan(9 * 1100));
+  });
+
+  test('a job priced again keeps the snapshot an attempt already sent',
+      () async {
+    final first = job();
+    uploader.failOnTurboPost = 2;
+    await expectLater(
+        publisher.publish(first, wallet), throwsA(isA<PublicationFailure>()));
+    expect(snapshots.calls, 1);
+
+    // The owner went back to the look and priced again: a new job.
+    final again = job(snapshot: first.snapshot).carrySnapshotFrom(first);
+    expect(
+      publisher.sizeOf(again),
+      publisher.sizeOf(job(
+          snapshot:
+              const ReusedSnapshot(txId: _snapshotId, tags: _snapshotTags))),
+      reason: 'priced like a reused snapshot: the sent one is not paid again',
+    );
+    await publisher.publish(again, wallet);
+    expect(snapshots.calls, 1, reason: 'the snapshot is not bought again');
+  });
+
+  test('a job priced again finishes a half-sent snapshot, not a new one',
+      () async {
+    snapshots.uncertainFirst = true;
+    final first = job();
+    await expectLater(
+        publisher.publish(first, wallet), throwsA(isA<PublicationFailure>()));
+
+    final again = job(snapshot: first.snapshot).carrySnapshotFrom(first);
+    await publisher.publish(again, wallet);
+    expect(snapshots.calls, 1);
+    expect(snapshots.resumes, 1);
+  });
+
+  test('Turbo refusing payment is a declined payment', () async {
+    uploader
+      ..failOnTurboPost = 0
+      ..turboError = TurboPaymentRequiredException();
+    await expectLater(
+      publisher.publish(job(), wallet),
+      throwsA(isA<PublicationFailure>()
+          .having((f) => f.paymentDeclined, 'paymentDeclined', isTrue)),
+    );
+  });
+
+  test('an AR error that mentions 402 is not a declined Turbo payment',
+      () async {
+    uploader
+      ..failBundleAfterHeader = true
+      ..bundleError = Exception('HTTP 402 PaymentRequired from a node');
+    await expectLater(
+      publisher.publish(job(method: UploadMethod.ar), wallet),
+      throwsA(isA<PublicationFailure>()
+          .having((f) => f.paymentDeclined, 'paymentDeclined', isFalse)
+          .having(
+              (f) => f.message, 'message', isNot(contains('Turbo declined')))),
+    );
   });
 }

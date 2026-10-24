@@ -7,6 +7,8 @@ import 'package:ardrive/drive_state/domain/drive_state_uploader.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/data/publication_uploader.dart';
 import 'package:ardrive/publication/domain/publication_files.dart';
+import 'package:ardrive/turbo/services/upload_service.dart'
+    show isTurboPaymentError;
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
 import 'package:arweave/arweave.dart';
@@ -161,6 +163,18 @@ class PublicationJob {
     return job;
   }
 
+  /// [earlier]'s snapshot, once it has one or has paid for one, carried into
+  /// this job. A snapshot does not depend on the look, so a job priced again
+  /// after a failure keeps the snapshot that attempt sent, or the way to
+  /// finish one it paid for, rather than buying another.
+  PublicationJob carrySnapshotFrom(PublicationJob? earlier) {
+    if (earlier == null || !identical(earlier.snapshot, snapshot)) return this;
+    _snapshotTxId ??= earlier._snapshotTxId;
+    _snapshotTags ??= earlier._snapshotTags;
+    _resumeSnapshot ??= earlier._resumeSnapshot;
+    return this;
+  }
+
   /// The manifest's ID once it is signed: the publication's link.
   String? get manifestTxId =>
       _signed?.where((s) => s.name == 'manifest').firstOrNull?.item.id;
@@ -253,15 +267,18 @@ class PublicationPublisher {
     final items = _items(
       job,
       snapshotTxId: placeholderId,
-      snapshotTags: switch (job.snapshot) {
-        ReusedSnapshot(:final tags) => tags,
-        NewSnapshot() => const {},
-      },
+      snapshotTags: job._snapshotTags ??
+          switch (job.snapshot) {
+            ReusedSnapshot(:final tags) => tags,
+            NewSnapshot() => const {},
+          },
       idOf: (_) => placeholderId,
       publishedAt: publicationTimestamp(_now()),
     );
     var size = items.fold<int>(0, (sum, item) => sum + item.data.length);
-    if (job.snapshot case NewSnapshot(:final artifact)) {
+    // A snapshot an earlier attempt sent is already paid for.
+    if (job.snapshot case NewSnapshot(:final artifact)
+        when job._snapshotTxId == null && job._resumeSnapshot == null) {
       size += artifact.sizeInBytes;
     }
     // Each data item's header: its signature, owner and tags.
@@ -355,9 +372,9 @@ class PublicationPublisher {
       logger.e('[publication] posting failed', e);
       throw PublicationFailure(
         PublicationStep.publication,
-        _postFailureMessage(e),
+        _postFailureMessage(e, job.method),
         paidTxId: job._bundlePosted ? job._bundle?.id : null,
-        paymentDeclined: _isPaymentError(e),
+        paymentDeclined: _isTurboPaymentDeclined(e, job.method),
       );
     }
 
@@ -379,13 +396,14 @@ class PublicationPublisher {
     return version;
   }
 
-  bool _isPaymentError(Object e) {
-    final text = '$e';
-    return text.contains('402') || text.contains('PaymentRequired');
-  }
+  /// Turbo refusing the payment, by the typed exception, and only for a
+  /// Turbo upload: an AR error is never a declined Turbo payment, whatever
+  /// its text says.
+  bool _isTurboPaymentDeclined(Object e, UploadMethod method) =>
+      method == UploadMethod.turbo && isTurboPaymentError(e);
 
-  String _postFailureMessage(Object e) {
-    if (_isPaymentError(e)) {
+  String _postFailureMessage(Object e, UploadMethod method) {
+    if (_isTurboPaymentDeclined(e, method)) {
       return 'Turbo declined the payment. Go back to add credits or pay with '
           'AR. What was already sent is kept.';
     }
