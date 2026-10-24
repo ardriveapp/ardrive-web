@@ -778,8 +778,10 @@ class ArDriveStandardModalNew extends StatelessWidget {
     final middle = <Widget>[
       if (content != null) ...[
         content!,
-        const SizedBox(
-          height: 24,
+        // Scrolling, 16 of the 24 sits outside the scroll, above the
+        // actions, so content scrolling under them never touches them.
+        SizedBox(
+          height: scrollableContent && actions != null ? 8 : 24,
         ),
       ],
       if (content == null) ...[
@@ -799,6 +801,10 @@ class ArDriveStandardModalNew extends StatelessWidget {
         if (content == null)
           const SizedBox(
             height: 24,
+          )
+        else if (scrollableContent)
+          const SizedBox(
+            height: 16,
           ),
         Align(
           alignment: Alignment.bottomRight,
