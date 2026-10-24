@@ -6,7 +6,6 @@ import 'package:ardrive/turbo/utils/get_signature_headers_for_turbo.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -287,90 +286,6 @@ void main() async {
         expect(
           () async => await paymentService.getBalance(wallet: wallet),
           throwsA(isA<ArDriveHTTPException>()),
-        );
-      });
-    });
-
-    group('redeemGift method', () {
-      const fakeGiftCode = 'fakeGiftCode';
-      const email = 'test@test.com';
-
-      when(
-        () => httpClient.get(
-          url:
-              '$fakeUrl/v1/redeem?id=$fakeGiftCode&email=$email&destinationAddress=$walletAddress',
-          responseType: ResponseType.json,
-        ),
-      ).thenAnswer((invocation) => Future.value(
-            ArDriveHTTPResponse(
-              statusCode: HttpStatus.ok,
-              data: {
-                'message': 'Payment receipt redeemed for 1000 winc!',
-                'userBalance': '1000',
-                'userAddress': 'abcdefghijklmnopqrxtuvwxyz123456789ABCDEFGH',
-                'userCreationDate': '2023-05-17T21:46:38.404Z'
-              },
-              retryAttempts: 0,
-            ),
-          ));
-
-      test('should return a new updated balance', () async {
-        final result = await paymentService.redeemGift(
-          email: email,
-          giftCode: fakeGiftCode,
-          destinationAddress: walletAddress,
-        );
-        expect(result, 1000);
-      });
-
-      test('should throw an exception if the request fails', () async {
-        when(
-          () => httpClient.get(
-            url:
-                '$fakeUrl/v1/redeem?id=$fakeGiftCode&email=$email&destinationAddress=$walletAddress',
-            responseType: ResponseType.json,
-          ),
-        ).thenThrow(
-          ArDriveHTTPException(
-            statusCode: 404,
-            retryAttempts: 0,
-            exception: Exception('404'),
-          ),
-        );
-        expect(
-          () async => await paymentService.redeemGift(
-            email: email,
-            giftCode: fakeGiftCode,
-            destinationAddress: walletAddress,
-          ),
-          throwsException,
-        );
-      });
-
-      test(
-          'should throw GiftAlreadyRedeemed if the response contains the already redeemed message',
-          () {
-        when(
-          () => httpClient.get(
-            url:
-                '$fakeUrl/v1/redeem?id=$fakeGiftCode&email=$email&destinationAddress=$walletAddress',
-            responseType: ResponseType.json,
-          ),
-        ).thenThrow(
-          ArDriveHTTPException(
-            statusCode: 400,
-            retryAttempts: 0,
-            exception: Exception('Gift has already been redeemed!'),
-            data: 'Gift has already been redeemed!',
-          ),
-        );
-        expect(
-          () async => await paymentService.redeemGift(
-            email: email,
-            giftCode: fakeGiftCode,
-            destinationAddress: walletAddress,
-          ),
-          throwsA(isA<GiftAlreadyRedeemed>()),
         );
       });
     });

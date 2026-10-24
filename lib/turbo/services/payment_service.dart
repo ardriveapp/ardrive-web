@@ -8,7 +8,6 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_http/ardrive_http.dart';
 import 'package:ardrive_logger/ardrive_logger.dart';
 import 'package:arweave/arweave.dart';
-import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 
 /// A wallet's top-ups as `GET /v1/account/payments` returned them.
@@ -262,40 +261,6 @@ class PaymentService {
 
     return List<String>.from(jsonDecode(result.data));
   }
-
-  Future<int> redeemGift({
-    required String email,
-    required String giftCode,
-    required String destinationAddress,
-  }) async {
-    try {
-      final result = await httpClient.get(
-        url:
-            '$turboPaymentUri/v1/redeem?id=$giftCode&email=$email&destinationAddress=$destinationAddress',
-        responseType: ResponseType.json,
-      );
-
-      logger.d('Gift redeem result: ${result.data}');
-
-      if (result.statusCode != 200) {
-        throw Exception(
-            'Gift redeem failed with status code ${result.statusCode}');
-      }
-
-      final newBalance = result.data['userBalance'] as String;
-
-      return int.parse(newBalance);
-    } on ArDriveHTTPException catch (e) {
-      if (e.data == 'Gift has already been redeemed!') {
-        logger.e('Gift has already been redeemed!');
-        throw GiftAlreadyRedeemed();
-      }
-      rethrow;
-    } catch (e) {
-      logger.d(e.toString());
-      rethrow;
-    }
-  }
 }
 
 PriceForFiat _parseHttpResponseForPriceForFiat(
@@ -398,10 +363,6 @@ String _urlParamsForGetPriceForFiat({
 
 class TurboUserNotFound implements UntrackedException {
   TurboUserNotFound();
-}
-
-class GiftAlreadyRedeemed implements Exception {
-  GiftAlreadyRedeemed();
 }
 
 class PaymentServiceException implements Exception, Equatable {
