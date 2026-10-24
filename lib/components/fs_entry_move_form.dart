@@ -233,10 +233,6 @@ class FsEntryMoveForm extends StatelessWidget {
                             width: double.infinity,
                             height: 77,
                             alignment: Alignment.centerLeft,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colorTokens
-                                .containerL1,
                             child: Row(
                               children: [
                                 AnimatedContainer(

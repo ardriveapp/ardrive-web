@@ -53,62 +53,74 @@ class DriveExplorerItemTile extends TableRowWidget {
     required ArDriveColorTokens colorTokens,
   }) : super(
           [
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Row(
-                children: [
-                  Flexible(
-                    child: ArDriveTooltip(
-                      message: name,
-                      child: Text(
-                        name,
-                        style: typography.paragraphNormal(
-                          color: isHidden ? colorTokens.textLow : null,
-                          fontWeight: ArFontWeight.semiBold,
+            dimIfHidden(
+                isHidden,
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: ArDriveTooltip(
+                          message: name,
+                          child: Text(
+                            name,
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            softWrap: false,
+                          ),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        softWrap: false,
                       ),
-                    ),
+                      if (hasArnsNames(dataTableItem) &&
+                          dataTableItem is FileDataTableItem) ...[
+                        const SizedBox(width: 8),
+                        Transform(
+                            transform: Matrix4.translationValues(0, 2, 0),
+                            child: AntIcon(fileDataTableItem: dataTableItem)),
+                      ],
+                      if (dataTableItem is FolderDataTableItem)
+                        PublishedToWebMark(
+                          driveId: dataTableItem.driveId,
+                          folderId: dataTableItem.id,
+                        ),
+                    ],
                   ),
-                  if (hasArnsNames(dataTableItem) &&
-                      dataTableItem is FileDataTableItem) ...[
-                    const SizedBox(width: 8),
-                    Transform(
-                        transform: Matrix4.translationValues(0, 2, 0),
-                        child: AntIcon(fileDataTableItem: dataTableItem)),
-                  ],
-                  if (dataTableItem is FolderDataTableItem)
-                    PublishedToWebMark(
-                      driveId: dataTableItem.driveId,
-                      folderId: dataTableItem.id,
-                    ),
-                ],
+                )),
+            dimIfHidden(
+                isHidden,
+                Text(size,
+                    style: _driveExplorerItemTileTextStyle(
+                        isHidden, typography, colorTokens))),
+            dimIfHidden(
+              isHidden,
+              ArDriveTooltip(
+                message: formatDateTime(lastUpdated),
+                child: Text(formatDate(lastUpdated),
+                    style: _driveExplorerItemTileTextStyle(
+                        isHidden, typography, colorTokens)),
               ),
             ),
-            Text(size,
-                style: _driveExplorerItemTileTextStyle(
-                    isHidden, typography, colorTokens)),
-            ArDriveTooltip(
-              message: formatDateTime(lastUpdated),
-              child: Text(formatDate(lastUpdated),
-                  style: _driveExplorerItemTileTextStyle(
-                      isHidden, typography, colorTokens)),
-            ),
-            ArDriveTooltip(
-              message: formatDateTime(dateCreated),
-              child: Text(formatDate(dateCreated),
-                  style: _driveExplorerItemTileTextStyle(
-                      isHidden, typography, colorTokens)),
+            dimIfHidden(
+              isHidden,
+              ArDriveTooltip(
+                message: formatDateTime(dateCreated),
+                child: Text(formatDate(dateCreated),
+                    style: _driveExplorerItemTileTextStyle(
+                        isHidden, typography, colorTokens)),
+              ),
             ),
             // The step the drives list uses for a row's secondary text, and
             // the one every other cell in this row already uses a sibling of.
             // This was the last cell here still on the old typography API, so
             // the two tables' rows now read from the same scale.
-            Text(
-              license,
-              style: typography.paragraphSmall(color: colorTokens.textMid),
+            dimIfHidden(
+              isHidden,
+              Text(
+                license,
+                style: typography.paragraphSmall(color: colorTokens.textMid),
+              ),
             ),
           ],
         );
@@ -116,10 +128,14 @@ class DriveExplorerItemTile extends TableRowWidget {
 
 TextStyle _driveExplorerItemTileTextStyle(bool isHidden,
         ArdriveTypographyNew typography, ArDriveColorTokens colorTokens) =>
-    typography.paragraphNormal(
-      color: isHidden ? colorTokens.textLow : null,
-      fontWeight: ArFontWeight.semiBold,
-    );
+    typography.paragraphNormal(fontWeight: ArFontWeight.semiBold);
+
+/// How a hidden item is drawn: the whole row faded, its icon included, by the
+/// same amount in both themes. A grey text colour can't do that - the light
+/// theme's low text colour is a shade off its normal one - and the flat grey
+/// these rows used was the same in both themes.
+Widget dimIfHidden(bool isHidden, Widget child) =>
+    isHidden ? Opacity(opacity: 0.45, child: child) : child;
 
 class DriveExplorerItemTileLeading extends StatelessWidget {
   const DriveExplorerItemTileLeading({
@@ -135,7 +151,7 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsetsDirectional.only(end: 0),
-      child: _buildFileIcon(context),
+      child: dimIfHidden(isHidden, _buildFileIcon(context)),
     );
   }
 
@@ -179,13 +195,6 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
                           errorBuilder: (context, error, stackTrace) {
                             return getIconForContentType(
                               item.contentType,
-                            ).copyWith(
-                              color: isHidden
-                                  ? ArDriveTheme.of(context)
-                                      .themeData
-                                      .colorTokens
-                                      .textLow
-                                  : null,
                             );
                           },
                         ),
@@ -204,13 +213,6 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
                           logger.d('Error loading thumbnail: $error');
                           return getIconForContentType(
                             item.contentType,
-                          ).copyWith(
-                            color: isHidden
-                                ? ArDriveTheme.of(context)
-                                    .themeData
-                                    .colorTokens
-                                    .textLow
-                                : null,
                           );
                         },
                       ),
@@ -221,13 +223,6 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
                     alignment: Alignment.center,
                     child: getIconForContentType(
                       item.contentType,
-                    ).copyWith(
-                      color: isHidden
-                          ? ArDriveTheme.of(context)
-                              .themeData
-                              .colorTokens
-                              .textLow
-                          : null,
                     ),
                   );
                 },
@@ -268,10 +263,6 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
                     },
               child: getIconForContentType(
                 item.contentType,
-              ).copyWith(
-                color: isHidden
-                    ? ArDriveTheme.of(context).themeData.colorTokens.textLow
-                    : null,
               ),
             ),
           ),

@@ -165,6 +165,7 @@ class ArDriveColorTokens {
     required this.containerL2,
     required this.containerL3,
     required this.containerRed,
+    required this.containerRaised,
     required this.textHigh,
     required this.textMid,
     required this.textLow,
@@ -215,6 +216,7 @@ class ArDriveColorTokens {
       containerL2: primitives.solidGrey800,
       containerL3: primitives.solidGrey700,
       containerRed: primitives.solidRed700,
+      containerRaised: const Color(0xff1f1f1f),
       textHigh: primitives.solidGrey100,
       textMid: primitives.solidGrey200,
       textLow: primitives.solidGrey300,
@@ -269,6 +271,7 @@ class ArDriveColorTokens {
       containerL2: primitives.solidGrey200,
       containerL3: primitives.solidGrey200,
       containerRed: primitives.solidRed700,
+      containerRaised: const Color(0xffffffff),
       textHigh: primitives.solidGrey800,
       textMid: primitives.solidGrey700,
       textLow: primitives.solidGrey600,
@@ -319,6 +322,12 @@ class ArDriveColorTokens {
   final Color containerL2;
   final Color containerL3;
   final Color containerRed;
+
+  /// A card raised one step above the panel or page it sits on, in both
+  /// themes: white in light, a lifted grey in dark. The L0-L3 levels can't
+  /// say that - L0 is the lightest in the light theme and the darkest in the
+  /// dark one.
+  final Color containerRaised;
   final Color textHigh;
   final Color textMid;
   final Color textLow;

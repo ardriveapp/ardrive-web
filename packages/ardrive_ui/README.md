@@ -13,7 +13,7 @@ The package has two generations. Build with the new one, whose names end in
 
 | What | Use | Values |
 |---|---|---|
-| Colour | `ArDriveTheme.of(context).themeData.colorTokens` | Surfaces `containerL0`–`L3`, text `textHigh`/`Mid`/`Low`, strokes, buttons, icons, and status colours |
+| Colour | `ArDriveTheme.of(context).themeData.colorTokens` | Surfaces `containerL0`–`L3` and `containerRaised` (a card one step above its surroundings in both themes), text `textHigh`/`Mid`/`Low`, strokes, buttons, icons, and status colours |
 | Status colour | `statusInfo…`, `statusWarning…`, `statusError…`, `statusSuccess…` | Each has `Fg` (icon, emphasis), `Container` (fill) and `Stroke` (edge). Body text on a status container stays `textHigh` |
 | Spacing | `ArDriveSpacing` | `xxs` 4, `xs` 8, `sm` 12, `md` 16, `lg` 24, `xl` 32, `xxl` 48 |
 | Radius | `ArDriveRadius` | `sm` 4 for small controls, `md` 8 for cards and notices, `lg` 12 for dialogs and sheets |

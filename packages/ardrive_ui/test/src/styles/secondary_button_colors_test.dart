@@ -32,6 +32,7 @@ void main() {
       'containerL1': tokens.containerL1,
       'containerL2': tokens.containerL2,
       'containerL3': tokens.containerL3,
+      'containerRaised': tokens.containerRaised,
     };
 
     group('$name secondary button', () {

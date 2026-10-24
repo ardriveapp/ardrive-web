@@ -1512,82 +1512,80 @@ class ArDriveItemListTile extends StatelessWidget {
               width: 12,
             ),
             Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+              child: dimIfHidden(
+                  item.isHidden,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(
-                          item.name,
-                          style:
-                              ArDriveTypographyNew.of(context).paragraphNormal(
-                            fontWeight: ArFontWeight.bold,
-                            color: item.isHidden
-                                ? ArDriveTheme.of(context)
-                                    .themeData
-                                    .colorTokens
-                                    .textLow
-                                : ArDriveTheme.of(context)
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              item.name,
+                              style: ArDriveTypographyNew.of(context)
+                                  .paragraphNormal(
+                                fontWeight: ArFontWeight.bold,
+                                color: ArDriveTheme.of(context)
                                     .themeData
                                     .colorTokens
                                     .textHigh,
-                          ),
-                        ),
-                      ),
-                      if (hasArnsNames(item)) ...[
-                        const SizedBox(width: 8),
-                        Transform(
-                          transform: Matrix4.translationValues(0, 2, 0),
-                          child: AntIcon(
-                              fileDataTableItem: item as FileDataTableItem),
-                        ),
-                      ],
-                    ],
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      if (item is FileDataTableItem) ...[
-                        Text(
-                          filesize(item.size),
-                          style: ArDriveTypographyNew.of(context).caption(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colorTokens
-                                .textMid,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colorTokens
-                                  .textMid,
+                              ),
                             ),
-                            height: 3,
-                            width: 3,
                           ),
-                        )
-                      ],
-                      Flexible(
-                        child: Text(
-                          'Last updated: ${formatDate(item.lastUpdated)}',
-                          style: ArDriveTypographyNew.of(context).caption(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colorTokens
-                                .textMid,
-                          ),
-                        ),
+                          if (hasArnsNames(item)) ...[
+                            const SizedBox(width: 8),
+                            Transform(
+                              transform: Matrix4.translationValues(0, 2, 0),
+                              child: AntIcon(
+                                  fileDataTableItem: item as FileDataTableItem),
+                            ),
+                          ],
+                        ],
                       ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (item is FileDataTableItem) ...[
+                            Text(
+                              filesize(item.size),
+                              style: ArDriveTypographyNew.of(context).caption(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colorTokens
+                                    .textMid,
+                              ),
+                            ),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: ArDriveTheme.of(context)
+                                      .themeData
+                                      .colorTokens
+                                      .textMid,
+                                ),
+                                height: 3,
+                                width: 3,
+                              ),
+                            )
+                          ],
+                          Flexible(
+                            child: Text(
+                              'Last updated: ${formatDate(item.lastUpdated)}',
+                              style: ArDriveTypographyNew.of(context).caption(
+                                color: ArDriveTheme.of(context)
+                                    .themeData
+                                    .colorTokens
+                                    .textMid,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
                     ],
-                  )
-                ],
-              ),
+                  )),
             ),
             const SizedBox(
               width: 12,

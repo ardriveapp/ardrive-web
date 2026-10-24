@@ -377,17 +377,18 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 height: 24,
               ),
               Expanded(
+                // A card on the panel, in both themes.
                 child: ArDriveTabView(
                   key: Key(widget.item.id + tabs.length.toString()),
                   tabs: tabs,
                   backgroundColor: ArDriveTheme.of(context)
                       .themeData
                       .colorTokens
-                      .containerL1,
+                      .containerRaised,
                   unselectedTabColor: ArDriveTheme.of(context)
                       .themeData
                       .colorTokens
-                      .containerL1,
+                      .containerRaised,
                   unselectedLabelColor:
                       ArDriveTheme.of(context).themeData.colorTokens.textHigh,
                 ),
