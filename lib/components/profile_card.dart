@@ -73,6 +73,13 @@ class _ProfileCardState extends State<ProfileCard> {
   /// this, rather than a scan of every revision.
   _AccountStats? _countedStats;
   String? _countedStatsKey;
+  String? _countedVersion;
+
+  /// Raised each time the watch reports a change. The version alone can't
+  /// say whether the cache is current: it can come back to a value it had
+  /// before while what it counts has changed, so a count started before a
+  /// change must not be kept.
+  int _statsGeneration = 0;
 
   /// Counts again while the card is open, whenever what it counts changes.
   /// Opening the card alone was not enough: a sync can say it is done while
@@ -108,14 +115,13 @@ class _ProfileCardState extends State<ProfileCard> {
       return;
     }
 
-    _permanentDataChanges ??= context
+    if (_permanentDataChanges != null) return;
+
+    var isFirst = true;
+    _permanentDataChanges = context
         .read<DriveDao>()
         .watchPermanentDataVersion()
         .distinct()
-        // The first value is not skipped: a change can land between the count
-        // reading the version and the watch's first value, and skipping it
-        // would lose the only notice of that change. When nothing changed,
-        // the recount it starts is answered from [_countedStats].
         // A recount scans every revision, so at most one a second, and
         // always one after the last change.
         .throttleTime(
@@ -123,10 +129,20 @@ class _ProfileCardState extends State<ProfileCard> {
           leading: true,
           trailing: true,
         )
-        .listen((_) {
-      if (mounted) {
-        setState(() => _accountStatsFuture = null);
-      }
+        .listen((version) {
+      // The first value is what the card counted from when it opened, unless
+      // a change landed in between: skipping it then lost the only notice of
+      // that change.
+      final isOpeningValue = isFirst && version == _countedVersion;
+      isFirst = false;
+      if (isOpeningValue || !mounted) return;
+
+      setState(() {
+        _statsGeneration++;
+        _countedStats = null;
+        _countedStatsKey = null;
+        _accountStatsFuture = null;
+      });
     });
   }
 
@@ -737,6 +753,8 @@ class _ProfileCardState extends State<ProfileCard> {
     DriveDao driveDao,
     String walletAddress,
   ) async {
+    final generation = _statsGeneration;
+
     // Only the drives this wallet owns, and only the ones it is showing.
     //
     // A drive shared with the account is somebody else's storage, readable
@@ -759,11 +777,8 @@ class _ProfileCardState extends State<ProfileCard> {
         .toList();
 
     final driveIds = [for (final drive in drives) drive.id];
-    final key = [
-      walletAddress,
-      ...driveIds,
-      await driveDao.permanentDataVersion(),
-    ].join('|');
+    final version = await driveDao.permanentDataVersion();
+    final key = [walletAddress, ...driveIds, version].join('|');
 
     if (key == _countedStatsKey && _countedStats != null) {
       return _countedStats!;
@@ -779,8 +794,11 @@ class _ProfileCardState extends State<ProfileCard> {
       driveIds: driveIds,
       isStillLanding: fileCount == 0 && await driveDao.hasPendingData(driveIds),
     );
-    _countedStats = stats;
-    _countedStatsKey = key;
+    if (generation == _statsGeneration) {
+      _countedStats = stats;
+      _countedStatsKey = key;
+      _countedVersion = version;
+    }
 
     return stats;
   }
