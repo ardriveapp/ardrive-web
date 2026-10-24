@@ -58,7 +58,6 @@ void main() {
     WidgetTester tester,
     UploadPaymentMethodInfo i, {
     Future<bool> Function()? onShare,
-    bool useOptionCards = false,
   }) async {
     await tester.binding.setSurfaceSize(const Size(900, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -82,7 +81,6 @@ void main() {
                 onArSelect: () {},
                 onTurboSelect: () {},
                 onShareCredits: onShare,
-                useOptionCards: useOptionCards,
               ),
             ),
           ),
@@ -154,8 +152,8 @@ void main() {
       (tester) async {
     await pump(tester, info());
 
-    expect(find.textContaining('Use Turbo Credits', findRichText: true),
-        findsOneWidget);
+    expect(
+        find.textContaining('Add credits', findRichText: true), findsWidgets);
     expect(find.textContaining('Solana wallet'), findsNothing);
   });
 
@@ -207,113 +205,99 @@ void main() {
   });
 
   /// The main upload sheet uses the option cards. The notice used to live in
-  /// the radio row, which the sheet does not have, so the reader this was built
-  /// for - on the main upload sheet - saw no notice, no share button, and the
-  /// same upsell as before. Every assertion below runs in both modes.
-  for (final cards in [false, true]) {
-    final mode = cards ? 'option card' : 'radio';
+  /// a radio row the sheet does not have, so the reader this was built for saw
+  /// no notice, no share button, and the same upsell as before.
 
-    group('in $mode mode, with credits on the sign-in wallet', () {
-      testWidgets('says where they are, once', (tester) async {
-        await pump(
-          tester,
-          info(credits: credits),
-          onShare: () async => true,
-          useOptionCards: cards,
-        );
+  group('with credits on the sign-in wallet', () {
+    testWidgets('says where they are, once', (tester) async {
+      await pump(
+        tester,
+        info(credits: credits),
+        onShare: () async => true,
+      );
 
-        expect(find.textContaining('Solana wallet'), findsOneWidget);
-        expect(find.text('Share credits'), findsOneWidget);
-      });
-
-      /// Both refusal branches used to end in a tappable top-up. The second is
-      /// the exact message in the support ticket that started this.
-      testWidgets('offers no top-up of any kind', (tester) async {
-        await pump(tester, info(credits: credits), useOptionCards: cards);
-
-        for (final upsell in [
-          'Use Turbo Credits',
-          'Add credits',
-          'add Turbo credits'
-        ]) {
-          expect(
-            find.textContaining(upsell, findRichText: true),
-            findsNothing,
-            reason: '"$upsell" sells credits to somebody who already owns them',
-          );
-        }
-      });
-
-      testWidgets('with Turbo chosen and AR enough, still no "Add credits"',
-          (tester) async {
-        await pump(
-          tester,
-          info(credits: credits, arFine: true),
-          useOptionCards: cards,
-        );
-
-        expect(find.textContaining('Solana wallet'), findsOneWidget);
-        expect(find.textContaining('Add credits', findRichText: true),
-            findsNothing);
-      });
-
-      /// True, and not a sales pitch, so it stays - beside the way out.
-      testWidgets('paying with AR and short of it, says both', (tester) async {
-        await pump(
-          tester,
-          info(credits: credits, method: UploadMethod.ar),
-          useOptionCards: cards,
-        );
-
-        // The cards say it on the wallet card, so it is said once either way.
-        expect(
-          find.text(cards
-              ? 'Not enough AR, 0 available'
-              : 'Insufficient AR balance for purchase.'),
-          findsOneWidget,
-        );
-        expect(find.textContaining('Insufficient AR'),
-            cards ? findsNothing : findsOneWidget);
-        expect(find.textContaining('Solana wallet'), findsOneWidget);
-      });
-
-      /// Not stuck, so nothing to explain.
-      testWidgets('says nothing while AR can pay', (tester) async {
-        await pump(
-          tester,
-          info(credits: credits, method: UploadMethod.ar, arFine: true),
-          // Something that could sign, so a missing button means withheld.
-          onShare: () async => true,
-          useOptionCards: cards,
-        );
-
-        expect(find.textContaining('Solana wallet'), findsNothing);
-        expect(find.text('Share credits'), findsNothing);
-      });
+      expect(find.textContaining('Solana wallet'), findsOneWidget);
+      expect(find.text('Share credits'), findsOneWidget);
     });
 
-    /// Somebody who genuinely has no credits anywhere keeps every top-up route.
-    group('in $mode mode, with no credits anywhere', () {
-      testWidgets('keeps "Add credits" when Turbo is chosen', (tester) async {
-        await pump(tester, info(arFine: true), useOptionCards: cards);
+    /// Both refusal branches used to end in a tappable top-up. The second is
+    /// the exact message in the support ticket that started this.
+    testWidgets('offers no top-up of any kind', (tester) async {
+      await pump(tester, info(credits: credits));
 
-        expect(find.textContaining('Add credits', findRichText: true),
-            findsWidgets);
-      });
-
-      testWidgets('keeps "Add credits" when both are short', (tester) async {
-        await pump(tester, info(), useOptionCards: cards);
-
+      for (final upsell in [
+        'Use Turbo Credits',
+        'Add credits',
+        'add Turbo credits'
+      ]) {
         expect(
-          find.textContaining('Add credits to upload', findRichText: true),
-          findsWidgets,
-        );
-        expect(
-          find.textContaining('or use AR', findRichText: true),
+          find.textContaining(upsell, findRichText: true),
           findsNothing,
-          reason: 'the wallet cannot pay either',
+          reason: '"$upsell" sells credits to somebody who already owns them',
         );
-      });
+      }
     });
-  }
+
+    testWidgets('with Turbo chosen and AR enough, still no "Add credits"',
+        (tester) async {
+      await pump(
+        tester,
+        info(credits: credits, arFine: true),
+      );
+
+      expect(find.textContaining('Solana wallet'), findsOneWidget);
+      expect(
+          find.textContaining('Add credits', findRichText: true), findsNothing);
+    });
+
+    /// True, and not a sales pitch, so it stays - beside the way out.
+    testWidgets('paying with AR and short of it, says both', (tester) async {
+      await pump(
+        tester,
+        info(credits: credits, method: UploadMethod.ar),
+      );
+
+      // The wallet card says it, so it is said once.
+      expect(find.text('Not enough AR, 0 available'), findsOneWidget);
+      expect(find.textContaining('Insufficient AR'), findsNothing);
+      expect(find.textContaining('Solana wallet'), findsOneWidget);
+    });
+
+    /// Not stuck, so nothing to explain.
+    testWidgets('says nothing while AR can pay', (tester) async {
+      await pump(
+        tester,
+        info(credits: credits, method: UploadMethod.ar, arFine: true),
+        // Something that could sign, so a missing button means withheld.
+        onShare: () async => true,
+      );
+
+      expect(find.textContaining('Solana wallet'), findsNothing);
+      expect(find.text('Share credits'), findsNothing);
+    });
+  });
+
+  /// Somebody who genuinely has no credits anywhere keeps every top-up route.
+  group('with no credits anywhere', () {
+    testWidgets('keeps "Add credits" when Turbo is chosen', (tester) async {
+      await pump(tester, info(arFine: true));
+
+      expect(
+          find.textContaining('Add credits', findRichText: true), findsWidgets);
+    });
+
+    testWidgets('keeps "Add credits" when both are short', (tester) async {
+      await pump(tester, info());
+
+      expect(
+        find.textContaining('Add credits to upload', findRichText: true),
+        findsWidgets,
+      );
+      expect(
+        find.textContaining('or use AR', findRichText: true),
+        findsNothing,
+        reason: 'the wallet cannot pay either',
+      );
+    });
+  });
 }

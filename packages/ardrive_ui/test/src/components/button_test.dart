@@ -286,4 +286,36 @@ void main() {
     expect(button.contains(tester.getRect(find.text('Import wallet')).center),
         isTrue);
   });
+
+  /// A button with no width is as wide as its label. A left icon is drawn
+  /// over the label's row, so that width has to leave it room.
+  testWidgets('ArDriveButtonNew sized to its label keeps a left icon clear',
+      (tester) async {
+    const iconKey = Key('left-icon');
+
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: ArDriveButtonNew(
+                text: 'Upload',
+                typography: ArDriveTypographyNew.of(context),
+                icon: const SizedBox.square(dimension: 24, key: iconKey),
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final button = tester.getRect(find.byType(ArDriveButtonNew));
+    final label = tester.getRect(find.text('Upload'));
+    final icon = tester.getRect(find.byKey(iconKey));
+    expect(icon.right, lessThanOrEqualTo(label.left),
+        reason: 'the icon sits beside the label, not over it');
+    expect(button.contains(label.centerRight - const Offset(1, 0)), isTrue,
+        reason: 'the whole label is inside the button');
+  });
 }

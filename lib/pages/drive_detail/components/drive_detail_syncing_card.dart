@@ -259,6 +259,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
       ),
       const SizedBox(height: 24),
       ArDriveButtonNew(
+        maxWidth: double.infinity,
         text: appLocalizationsOf(context).tryAgain,
         typography: typography,
         variant: ButtonVariant.primary,

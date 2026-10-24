@@ -95,6 +95,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
               ),
               const SizedBox(height: 20),
               ArDriveButtonNew(
+                  maxWidth: double.infinity,
                   text: 'Continue',
                   typography: typography,
                   variant: ButtonVariant.primary,
@@ -103,6 +104,7 @@ class _ImportWalletModalState extends State<ImportWalletModal> {
               const LinedTextDivider(),
               const SizedBox(height: 40),
               ArDriveButtonNew(
+                  maxWidth: double.infinity,
                   text: 'Use keyfile',
                   typography: typography,
                   variant: ButtonVariant.outline,

@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsFlag;
+
 import 'package:ardrive/components/copyable_share_artifact.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -11,13 +13,18 @@ void main() {
         child: MaterialApp(home: Scaffold(body: child)),
       );
 
-  Widget artifact({required bool isSecret, String text = secret}) =>
+  Widget artifact({
+    required bool isSecret,
+    String text = secret,
+    bool alignsWithSecret = false,
+  }) =>
       CopyableShareArtifact(
         label: 'Access key',
         text: text,
         copyLabel: 'Copy',
         revealLabel: 'Show access key',
         isSecret: isSecret,
+        alignsWithSecret: alignsWithSecret,
       );
 
   /// The obscured state lives on the design system's own field, so read it
@@ -103,21 +110,50 @@ void main() {
       expect(isObscured(tester), isTrue);
     });
 
-    testWidgets('a secret and a plain field are the same width',
+    double fieldWidth(WidgetTester tester) =>
+        tester.getSize(find.byType(ArDriveTextFieldNew)).width;
+
+    testWidgets('a plain field beside a secret is the same width as it',
         (tester) async {
       // A dialog stacks a link over a key. The reveal control only exists on
       // the secret one, so unless its slot is held open on both, the two boxes
       // render at visibly different widths.
-      double fieldWidth(WidgetTester tester) =>
-          tester.getSize(find.byType(ArDriveTextFieldNew)).width;
-
-      await tester.pumpWidget(wrap(artifact(isSecret: false)));
+      await tester
+          .pumpWidget(wrap(artifact(isSecret: false, alignsWithSecret: true)));
       final plain = fieldWidth(tester);
 
       await tester.pumpWidget(wrap(artifact(isSecret: true)));
       final secret = fieldWidth(tester);
 
       expect(secret, plain);
+    });
+
+    testWidgets('a plain field on its own keeps no gap for a reveal control',
+        (tester) async {
+      // A link with no key anywhere has nothing to line up with, and the held
+      // slot only pushed Copy away from the field.
+      await tester.pumpWidget(wrap(artifact(isSecret: false)));
+      final alone = fieldWidth(tester);
+
+      await tester.pumpWidget(wrap(artifact(isSecret: true)));
+      final secret = fieldWidth(tester);
+
+      expect(alone, greaterThan(secret));
+    });
+
+    testWidgets('a screen reader hears the label with the field, once',
+        (tester) async {
+      // The label is drawn above the field rather than by it, so it has to be
+      // handed back to the field for assistive technology.
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(artifact(isSecret: false, text: 'abc')));
+
+      expect(find.bySemanticsLabel(RegExp('Access key')), findsOneWidget);
+      final node =
+          tester.getSemantics(find.bySemanticsLabel(RegExp('Access key')));
+      expect(node.hasFlag(SemanticsFlag.isTextField), isTrue,
+          reason: 'the label names the field itself, not a separate text');
+      handle.dispose();
     });
 
     testWidgets('the value stays intact underneath the mask', (tester) async {

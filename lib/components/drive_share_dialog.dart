@@ -93,6 +93,7 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                       // hiding, and hiding it would suggest it is dangerous to
                       // share, which is the opposite of the point.
                       isSecret: state.keyIsInLink,
+                      alignsWithSecret: state.hasSeparateKeyArtifact,
                     ),
                     if (state.hasSeparateKeyArtifact) ...{
                       const SizedBox(height: 16),

@@ -184,15 +184,15 @@ void main() {
     await tester.pumpWidget(wrap(ready()));
     await tester.pumpAndSettle();
 
-    expect(find.text('0.003 credits'), findsOneWidget);
-    expect(find.textContaining('Turbo Balance: 2.5 credits'), findsOneWidget);
+    expect(find.text('0.0030 credits'), findsOneWidget);
+    expect(find.text('2.5 credits available'), findsOneWidget);
   });
 
   testWidgets('switching to AR shows the AR price instead', (tester) async {
     await tester.pumpWidget(wrap(ready(method: UploadMethod.ar)));
     await tester.pumpAndSettle();
 
-    expect(find.text('0.004 AR'), findsOneWidget);
+    expect(find.text('0.0040 AR'), findsOneWidget);
   });
 
   testWidgets('a free artifact says so and offers no method to pay with',
@@ -202,7 +202,7 @@ void main() {
     )));
     await tester.pumpAndSettle();
 
-    expect(find.text('Free, thanks to Turbo'), findsOneWidget);
+    expect(find.textContaining('Uploads this small are free with Turbo.'), findsOneWidget);
     expect(find.byType(PaymentMethodSelector), findsNothing);
     expect(publishButton(tester).isDisabled, isFalse);
   });
@@ -419,7 +419,7 @@ void main() {
 
         // What it costs, and the selector that decides who pays, are both
         // readable — not merely present in the tree.
-        await tester.ensureVisible(find.text('0.003 credits'));
+        await tester.ensureVisible(find.text('0.0030 credits'));
         expect(find.byType(PaymentMethodSelector), findsOneWidget);
         await tester.ensureVisible(find.byType(PaymentMethodSelector));
 

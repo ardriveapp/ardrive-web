@@ -485,6 +485,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
                       children: [
                         Flexible(
                           child: ArDriveButtonNew(
+                            maxWidth: double.infinity,
                             text: 'dev env',
                             typography: typography,
                             variant: ButtonVariant.primary,
@@ -509,6 +510,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
                         const SizedBox(width: 16),
                         Flexible(
                           child: ArDriveButtonNew(
+                            maxWidth: double.infinity,
                             text: 'staging env',
                             variant: ButtonVariant.primary,
                             typography: typography,
@@ -533,6 +535,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
                         const SizedBox(width: 16),
                         Flexible(
                           child: ArDriveButtonNew(
+                            maxWidth: double.infinity,
                             text: 'prod env',
                             variant: ButtonVariant.primary,
                             typography: typography,
@@ -621,6 +624,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
       case ArDriveDevToolOptionType.button:
         return ArDriveButtonNew(
+          maxWidth: double.infinity,
           variant: ButtonVariant.primary,
           typography: ArDriveTypographyNew.of(context),
           text: option.name,
@@ -632,6 +636,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
       case ArDriveDevToolOptionType.buttonTertiary:
         return ArDriveButtonNew(
+          maxWidth: double.infinity,
           variant: ButtonVariant.outline,
           typography: ArDriveTypographyNew.of(context),
           text: option.name,
