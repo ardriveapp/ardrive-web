@@ -2,6 +2,7 @@ import 'dart:ui' show SemanticsFlag;
 
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -231,5 +232,31 @@ void main() {
           ));
       handle.dispose();
     });
+  });
+
+  testWidgets('the reveal control tells a screen reader whether the key shows',
+      (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(wrap(artifact(isSecret: true)));
+
+    SemanticsNode reveal() => tester.getSemantics(find.byType(IconButton));
+
+    expect(
+        reveal(),
+        matchesSemantics(
+          label: 'Show access key',
+          isButton: true,
+          hasToggledState: true,
+          isToggled: false,
+          hasTapAction: true,
+        ));
+
+    await tester.tap(find.byType(IconButton));
+    await tester.pump();
+
+    expect(reveal().hasFlag(SemanticsFlag.isToggled), isTrue);
+    expect(tester.widget<EditableText>(find.byType(EditableText)).obscureText,
+        isFalse);
+    handle.dispose();
   });
 }

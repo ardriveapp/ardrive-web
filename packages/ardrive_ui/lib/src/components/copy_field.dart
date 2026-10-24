@@ -97,6 +97,8 @@ class _ArDriveCopyFieldState extends State<ArDriveCopyField> {
     _message = null;
   }
 
+  void _toggleReveal() => setState(() => _isRevealed = !_isRevealed);
+
   Future<void> _copy() async {
     // Asked for at once, inside the tap: a browser refuses a write that comes
     // later. Then waited on, because it can refuse this one too.
@@ -217,20 +219,31 @@ class _ArDriveCopyFieldState extends State<ArDriveCopyField> {
               SizedBox(
                 width: _revealSlotWidth,
                 child: widget.isSecret
-                    // An IconButton for its keyboard focus and announced
-                    // name: the control has no visible label.
-                    ? IconButton(
-                        icon: isMasked
-                            ? ArDriveIcons.eyeClosed(color: colorTokens.textMid)
-                            : ArDriveIcons.eyeOpen(color: colorTokens.textMid),
-                        onPressed: () =>
-                            setState(() => _isRevealed = !_isRevealed),
-                        tooltip: widget.revealLabel,
-                        splashRadius: 18,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints.tightFor(
-                          width: _revealSlotWidth,
-                          height: _revealSlotWidth,
+                    // An IconButton for its keyboard focus and hover tooltip:
+                    // the control has no visible label. Its semantics are
+                    // declared here instead of the button's, so a screen
+                    // reader hears one control that says whether the key is
+                    // showing - the name is the same either way.
+                    ? Semantics(
+                        button: true,
+                        toggled: _isRevealed,
+                        label: widget.revealLabel,
+                        onTap: _toggleReveal,
+                        excludeSemantics: true,
+                        child: IconButton(
+                          icon: isMasked
+                              ? ArDriveIcons.eyeClosed(
+                                  color: colorTokens.textMid)
+                              : ArDriveIcons.eyeOpen(
+                                  color: colorTokens.textMid),
+                          onPressed: _toggleReveal,
+                          tooltip: widget.revealLabel,
+                          splashRadius: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints.tightFor(
+                            width: _revealSlotWidth,
+                            height: _revealSlotWidth,
+                          ),
                         ),
                       )
                     : null,
