@@ -308,7 +308,6 @@ const double _mobileAppBarIconSize = 24;
 /// Exposed so a test can hold every control in the bar to it.
 const double mobileAppBarIconSize = _mobileAppBarIconSize;
 
-// TODO: add the gift icon
 /// Search, as an icon that opens the sheet the field used to open.
 ///
 /// The field it replaces did nothing until it was submitted - it opened this
