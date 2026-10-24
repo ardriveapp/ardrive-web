@@ -113,13 +113,17 @@ class _CopyableShareArtifactState extends State<CopyableShareArtifact> {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Seen, not heard: the field below carries the label for a screen
+        // reader, which would otherwise read it twice.
         Padding(
           padding: const EdgeInsets.only(bottom: 4),
-          child: TextFieldLabelNew(
-            text: widget.label,
-            style: typography.paragraphNormal(
-              color: colorTokens.textLow,
-              fontWeight: ArFontWeight.semiBold,
+          child: ExcludeSemantics(
+            child: TextFieldLabelNew(
+              text: widget.label,
+              style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
             ),
           ),
         ),
@@ -127,23 +131,31 @@ class _CopyableShareArtifactState extends State<CopyableShareArtifact> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: ArDriveTextFieldNew(
-                // [ArDriveTextFieldNew] copies `obscureText` into its own state in
-                // `initState` and never syncs it again, so toggling the property
-                // on a mounted field does nothing. The key forces a fresh one -
-                // the same trick, for the same reason, that the file share dialog
-                // uses on its checkbox. Safe here because the field is read only
-                // and its value lives on the controller, so a remount loses
-                // nothing.
-                key: ValueKey(isMasked),
-                controller: _controller,
-                isEnabled: false,
-                obscureText: isMasked,
-                // Deliberately not the field's own `showObfuscationToggle`: it
-                // renders inside the decoration of a disabled field, which
-                // swallows the tap, so the mask could never be lifted. Asserted by
-                // `test/components/copyable_share_artifact_test.dart`.
-                showObfuscationToggle: false,
+              // The field's own label used to name it for a screen reader;
+              // drawn outside it, the label is given back to the field here,
+              // so "Link" or "Access key" is read with what it holds.
+              child: MergeSemantics(
+                child: Semantics(
+                  label: widget.label,
+                  child: ArDriveTextFieldNew(
+                    // [ArDriveTextFieldNew] copies `obscureText` into its own state in
+                    // `initState` and never syncs it again, so toggling the property
+                    // on a mounted field does nothing. The key forces a fresh one -
+                    // the same trick, for the same reason, that the file share dialog
+                    // uses on its checkbox. Safe here because the field is read only
+                    // and its value lives on the controller, so a remount loses
+                    // nothing.
+                    key: ValueKey(isMasked),
+                    controller: _controller,
+                    isEnabled: false,
+                    obscureText: isMasked,
+                    // Deliberately not the field's own `showObfuscationToggle`: it
+                    // renders inside the decoration of a disabled field, which
+                    // swallows the tap, so the mask could never be lifted. Asserted by
+                    // `test/components/copyable_share_artifact_test.dart`.
+                    showObfuscationToggle: false,
+                  ),
+                ),
               ),
             ),
             if (hasRevealSlot) ...[

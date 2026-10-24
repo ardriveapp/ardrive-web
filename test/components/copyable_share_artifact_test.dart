@@ -1,3 +1,5 @@
+import 'dart:ui' show SemanticsFlag;
+
 import 'package:ardrive/components/copyable_share_artifact.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -137,6 +139,21 @@ void main() {
       final secret = fieldWidth(tester);
 
       expect(alone, greaterThan(secret));
+    });
+
+    testWidgets('a screen reader hears the label with the field, once',
+        (tester) async {
+      // The label is drawn above the field rather than by it, so it has to be
+      // handed back to the field for assistive technology.
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(artifact(isSecret: false, text: 'abc')));
+
+      expect(find.bySemanticsLabel(RegExp('Access key')), findsOneWidget);
+      final node =
+          tester.getSemantics(find.bySemanticsLabel(RegExp('Access key')));
+      expect(node.hasFlag(SemanticsFlag.isTextField), isTrue,
+          reason: 'the label names the field itself, not a separate text');
+      handle.dispose();
     });
 
     testWidgets('the value stays intact underneath the mask', (tester) async {
