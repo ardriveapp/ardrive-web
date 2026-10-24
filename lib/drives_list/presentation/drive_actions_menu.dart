@@ -143,9 +143,9 @@ class DriveActionsMenu extends StatelessWidget {
         if (offersPublishToWeb(context, drive))
           ArDriveDropdownItem(
             onClick: () => openPublishToWeb(context, drive: drive),
-            content: ArDriveDropdownItemTile(
-              name: publishToWebLabel(context, drive, null),
-              icon: publishToWebIcon(size: _menuIconSize),
+            content: PublishToWebMenuItem(
+              drive: drive,
+              iconSize: _menuIconSize,
             ),
           ),
         // The rest of what a drive's own menu offers. Every one of these is

@@ -1,6 +1,8 @@
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/presentation/publish/publish_dialog.dart';
+import 'package:ardrive/publication/presentation/publish_to_web.dart'
+    show publishButton;
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/format_date.dart';
@@ -118,18 +120,14 @@ class _PublishedViewState extends State<PublishedView> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              ArDriveButtonNew(
-                text: strings.publishUpdate,
-                typography: typography,
-                variant: ButtonVariant.outline,
-                maxHeight: 40,
+              publishButton(
+                context,
+                strings.publishUpdate,
                 onPressed: () => reopen(look: false),
               ),
-              ArDriveButtonNew(
-                text: strings.publishEditLook,
-                typography: typography,
-                variant: ButtonVariant.outline,
-                maxHeight: 40,
+              publishButton(
+                context,
+                strings.publishEditLook,
                 onPressed: () => reopen(look: true),
               ),
             ],
@@ -168,16 +166,15 @@ class _PublishedViewState extends State<PublishedView> {
                     children: [
                       Expanded(
                         child: Text(
-                          strings.publishedOn(formatDate(version.publishedAt)),
+                          strings
+                              .publishedOn(formatDateTime(version.publishedAt)),
                           style:
                               typography.paragraphNormal(color: colors.textMid),
                         ),
                       ),
-                      ArDriveButtonNew(
-                        text: strings.publishOpen,
-                        typography: typography,
-                        variant: ButtonVariant.outline,
-                        maxHeight: 32,
+                      publishButton(
+                        context,
+                        strings.publishOpen,
                         onPressed: () => openUrl(url: _link(version.txId)),
                       ),
                     ],

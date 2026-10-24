@@ -17,6 +17,8 @@ import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/data/publication_uploader.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/presentation/publications_cubit.dart';
+import 'package:ardrive/publication/presentation/publish_to_web.dart'
+    show publishButton;
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
 import 'package:ardrive/publication/presentation/publish/publish_look_step.dart';
 import 'package:ardrive/publication/presentation/publish/published_view.dart';
@@ -181,7 +183,7 @@ class PublishDialog extends StatelessWidget {
             return _modal(
               context,
               title: title,
-              step: '1 / 3',
+              step: strings.publishStepOf(1, 3),
               content: _Included(
                   state: state,
                   scopeName: cubit.scopeName,
@@ -195,7 +197,7 @@ class PublishDialog extends StatelessWidget {
             return _modal(
               context,
               title: title,
-              step: '2 / 3',
+              step: strings.publishStepOf(2, 3),
               wide: true,
               content: const PublishLookStep(),
               actions: [
@@ -211,7 +213,7 @@ class PublishDialog extends StatelessWidget {
             return _modal(
               context,
               title: title,
-              step: '3 / 3',
+              step: strings.publishStepOf(3, 3),
               content: _Review(state: state, scopeName: cubit.scopeName),
               actions: [
                 ModalAction(title: strings.back, action: cubit.back),
@@ -243,7 +245,9 @@ class PublishDialog extends StatelessWidget {
           case PublishStage.done:
             return _modal(
               context,
-              title: strings.publishDoneTitle,
+              title: state.method == UploadMethod.ar
+                  ? strings.publishDoneArTitle
+                  : strings.publishDoneTitle,
               content: PublishedLink(
                 link: state.link!,
                 note: state.method == UploadMethod.ar
@@ -431,7 +435,7 @@ class _Included extends StatelessWidget {
             style: typography.heading5(fontWeight: ArFontWeight.bold)),
         const SizedBox(height: 4),
         Text(
-          '$scopeName · ${isFolder ? strings.publishScopeFolder : strings.publishScopeDrive}',
+          '${isFolder ? strings.publishScopeFolder : strings.publishScopeDrive} • $scopeName',
           style: typography.paragraphNormal(color: colors.textMid),
         ),
         const SizedBox(height: 16),
@@ -449,7 +453,7 @@ class _Included extends StatelessWidget {
           for (final line in leftOut)
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Text('· $line',
+              child: Text('• $line',
                   style: typography.paragraphNormal(color: colors.textMid)),
             ),
         ],
@@ -482,7 +486,7 @@ class _Review extends StatelessWidget {
         const SizedBox(height: 16),
         _Card(children: [
           SummaryRow(strings.publishReviewWhat,
-              '$scopeName · ${strings.publishFileCount(state.summary!.fileCount)}'),
+              '$scopeName • ${strings.publishFileCount(state.summary!.fileCount)}'),
           SummaryRow(strings.publishTitleLabel, state.title.trim()),
           SummaryRow(
             strings.publishReviewSnapshot,
@@ -686,11 +690,10 @@ class _PublishedLinkState extends State<PublishedLink> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            ArDriveButtonNew(
-              text: _copied ? strings.copied : strings.publishCopyLink,
-              typography: typography,
+            publishButton(
+              context,
+              _copied ? strings.copied : strings.publishCopyLink,
               variant: ButtonVariant.primary,
-              maxHeight: 40,
               onPressed: () async {
                 await Clipboard.setData(ClipboardData(text: widget.link));
                 setState(() => _copied = true);
@@ -700,11 +703,9 @@ class _PublishedLinkState extends State<PublishedLink> {
                 });
               },
             ),
-            ArDriveButtonNew(
-              text: strings.publishOpen,
-              typography: typography,
-              variant: ButtonVariant.outline,
-              maxHeight: 40,
+            publishButton(
+              context,
+              strings.publishOpen,
               onPressed: () => openUrl(url: widget.link),
             ),
           ],

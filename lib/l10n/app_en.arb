@@ -4806,7 +4806,7 @@
   "@publishCopyLink": {"description": "Button: copies the web page's link."},
   "publishedOn": "Published {date}",
   "@publishedOn": {"description": "When a web page was published; the date is formatted.", "placeholders": {"date": {"type": "String"}}},
-  "publishedOnWithFiles": "Published {date} · {count, plural, =1{1 file} other{{count} files}}",
+  "publishedOnWithFiles": "Published {date} • {count, plural, =1{1 file} other{{count} files}}",
   "@publishedOnWithFiles": {"description": "When a web page was published and how many files it has; the date is formatted.", "placeholders": {"date": {"type": "String"}, "count": {"type": "int"}}},
   "publishUpdate": "Update",
   "@publishUpdate": {"description": "Button: publishes the drive or folder again with the same look."},
@@ -4831,5 +4831,9 @@
   "publishLeftOutGhost": "{count, plural, =1{1 file in a folder whose details are missing} other{{count} files in folders whose details are missing}}",
   "@publishLeftOutGhost": {"description": "A line under 'Left out' in the publish dialog: files in folders the drive never recorded (ghost folders).", "placeholders": {"count": {"type": "int"}}},
   "publishLeftOutFailed": "{count, plural, =1{1 failed upload} other{{count} failed uploads}}",
-  "@publishLeftOutFailed": {"description": "A line under 'Left out' in the publish dialog.", "placeholders": {"count": {"type": "int"}}}
+  "@publishLeftOutFailed": {"description": "A line under 'Left out' in the publish dialog.", "placeholders": {"count": {"type": "int"}}},
+  "publishStepOf": "Step {step} of {total}",
+  "@publishStepOf": {"description": "Where the publish dialog is, above each step.", "placeholders": {"step": {"type": "int"}, "total": {"type": "int"}}},
+  "publishDoneArTitle": "Your page is on its way",
+  "@publishDoneArTitle": {"description": "Heading when a publish paid with AR is done: the page opens once the network confirms it."}
 }

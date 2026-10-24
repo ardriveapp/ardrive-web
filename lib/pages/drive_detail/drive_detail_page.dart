@@ -1058,17 +1058,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                   drive: driveDetailState
                                                       .currentDrive,
                                                 ),
-                                                content:
-                                                    ArDriveDropdownItemTile(
-                                                  name: publishToWebLabel(
-                                                    context,
-                                                    driveDetailState
-                                                        .currentDrive,
-                                                    null,
-                                                  ),
-                                                  icon: publishToWebIcon(
-                                                    size: defaultIconSize,
-                                                  ),
+                                                content: PublishToWebMenuItem(
+                                                  drive: driveDetailState
+                                                      .currentDrive,
+                                                  iconSize: defaultIconSize,
                                                 ),
                                               ),
                                             if (!PublicationMode.isOn)
@@ -1827,10 +1820,9 @@ class MobileFolderNavigation extends StatelessWidget {
                             context,
                             drive: state.currentDrive,
                           ),
-                          content: _buildItem(
-                            publishToWebLabel(
-                                context, state.currentDrive, null),
-                            publishToWebIcon(size: defaultIconSize),
+                          content: PublishToWebMenuItem(
+                            drive: state.currentDrive,
+                            iconSize: defaultIconSize,
                           ),
                         ),
                       if (isOwner)

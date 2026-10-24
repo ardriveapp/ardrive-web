@@ -10,6 +10,8 @@ import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_images.dart';
 import 'package:ardrive/publication/domain/publication_social_card.dart';
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
+import 'package:ardrive/publication/presentation/publish_to_web.dart'
+    show publishButton;
 import 'package:ardrive/services/license/license.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -352,7 +354,6 @@ class _ImageField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
-    final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final cubit = context.read<PublishCubit>();
     final picked = context.select((PublishCubit c) => _picked(c.state));
@@ -388,26 +389,20 @@ class _ImageField extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  ArDriveButtonNew(
-                    text: strings.publishUpload,
-                    typography: typography,
-                    variant: ButtonVariant.outline,
-                    maxHeight: 36,
+                  publishButton(
+                    context,
+                    strings.publishUpload,
                     onPressed: () => _upload(cubit),
                   ),
-                  ArDriveButtonNew(
-                    text: strings.publishFromDrive,
-                    typography: typography,
-                    variant: ButtonVariant.outline,
-                    maxHeight: 36,
+                  publishButton(
+                    context,
+                    strings.publishFromDrive,
                     onPressed: () => _fromDrive(context, cubit),
                   ),
                   if (picked != null)
-                    ArDriveButtonNew(
-                      text: strings.publishRemove,
-                      typography: typography,
-                      variant: ButtonVariant.outline,
-                      maxHeight: 36,
+                    publishButton(
+                      context,
+                      strings.publishRemove,
                       onPressed: () => cubit.removeImage(slot),
                     ),
                 ],
@@ -473,11 +468,20 @@ class _ChooseImage extends StatelessWidget {
   Future<List<FileEntry>> _images() {
     final db = driveDao.attachedDatabase;
     return (db.select(db.fileEntries)
-          ..where((f) =>
-              f.driveId.equals(driveId) &
-              f.isHidden.equals(false) &
-              f.dataContentType.like('image/%') &
-              f.size.isSmallerOrEqualValue(publicationImageMaxBytes))
+          ..where((f) {
+            // Older uploads may carry no content type; their name says it.
+            final name = f.name.lower();
+            final isImage = f.dataContentType.like('image/%') |
+                name.like('%.png') |
+                name.like('%.jpg') |
+                name.like('%.jpeg') |
+                name.like('%.webp') |
+                name.like('%.gif');
+            return f.driveId.equals(driveId) &
+                f.isHidden.equals(false) &
+                isImage &
+                f.size.isSmallerOrEqualValue(publicationImageMaxBytes);
+          })
           ..orderBy([(f) => OrderingTerm.desc(f.lastUpdated)])
           ..limit(200))
         .get();
@@ -489,75 +493,53 @@ class _ChooseImage extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     return Dialog(
-      backgroundColor: colors.containerL1,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440, maxHeight: 520),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 8, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(strings.publishChooseImageTitle,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ArDriveStandardModalNew(
+        title: strings.publishChooseImageTitle,
+        width: 440,
+        content: SizedBox(
+          height: 320,
+          child: FutureBuilder<List<FileEntry>>(
+            future: _images(),
+            builder: (context, snapshot) {
+              final files = snapshot.data;
+              if (files == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (files.isEmpty) {
+                return Text(strings.publishNoImagesInDrive,
+                    style: typography.paragraphNormal(color: colors.textMid));
+              }
+              return ListView.builder(
+                itemCount: files.length,
+                itemBuilder: (context, i) {
+                  final file = files[i];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: ArDriveIcons.image(color: colors.iconMid),
+                    title: Text(
+                      file.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: typography.paragraphNormal(color: colors.textHigh),
+                    ),
+                    subtitle: Text(filesize(file.size),
                         style:
-                            typography.heading5(fontWeight: ArFontWeight.bold)),
-                  ),
-                  ArDriveIconButton(
-                    icon: ArDriveIcons.x(color: colors.iconMid),
-                    tooltip: strings.close,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
-            Flexible(
-              child: FutureBuilder<List<FileEntry>>(
-                future: _images(),
-                builder: (context, snapshot) {
-                  final files = snapshot.data;
-                  if (files == null) {
-                    return const Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  if (files.isEmpty) {
-                    return Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                      child: Text(strings.publishNoImagesInDrive,
-                          style: typography.paragraphNormal(
-                              color: colors.textMid)),
-                    );
-                  }
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    padding: const EdgeInsets.only(bottom: 12),
-                    itemCount: files.length,
-                    itemBuilder: (context, i) {
-                      final file = files[i];
-                      return ListTile(
-                        leading: ArDriveIcons.image(color: colors.iconMid),
-                        title: Text(
-                          truncateString(file.name,
-                              offsetStart: 24, offsetEnd: 12),
-                          style: typography.paragraphNormal(
-                              color: colors.textHigh),
-                        ),
-                        subtitle: Text(filesize(file.size),
-                            style: typography.paragraphSmall(
-                                color: colors.textLow)),
-                        onTap: () => Navigator.of(context).pop(file),
-                      );
-                    },
+                            typography.paragraphSmall(color: colors.textLow)),
+                    onTap: () => Navigator.of(context).pop(file),
                   );
                 },
-              ),
-            ),
-          ],
+              );
+            },
+          ),
         ),
+        actions: [
+          ModalAction(
+            title: strings.cancel,
+            action: () => Navigator.of(context).pop(),
+          ),
+        ],
       ),
     );
   }

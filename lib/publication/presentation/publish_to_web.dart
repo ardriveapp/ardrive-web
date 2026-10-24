@@ -1,4 +1,5 @@
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/presentation/publications_cubit.dart';
 import 'package:ardrive/publication/presentation/publish/publish_dialog.dart';
@@ -102,3 +103,52 @@ class PublishedToWebMark extends StatelessWidget {
     );
   }
 }
+
+/// The menu item, worded from what is published right now: a publish that
+/// just finished turns it into "Published to web" without the menu being
+/// rebuilt.
+class PublishToWebMenuItem extends StatelessWidget {
+  const PublishToWebMenuItem({
+    super.key,
+    required this.drive,
+    this.folderId,
+    required this.iconSize,
+    this.height,
+  });
+
+  final Drive drive;
+
+  /// Null for the drive itself.
+  final String? folderId;
+  final double iconSize;
+  final double? height;
+
+  @override
+  Widget build(BuildContext context) =>
+      BlocBuilder<PublicationsCubit, PublicationsState>(
+        buildWhen: (a, b) =>
+            (a.publicationOf(drive.id, folderId) != null) !=
+            (b.publicationOf(drive.id, folderId) != null),
+        builder: (context, _) => ArDriveDropdownItemTile(
+          name: publishToWebLabel(context, drive, folderId),
+          icon: publishToWebIcon(size: iconSize),
+          height: height,
+        ),
+      );
+}
+
+/// A button in the publish dialogs, as wide as its label needs.
+Widget publishButton(
+  BuildContext context,
+  String text, {
+  required VoidCallback onPressed,
+  ButtonVariant variant = ButtonVariant.outline,
+}) =>
+    ArDriveButtonNew(
+      text: text,
+      typography: ArDriveTypographyNew.of(context),
+      variant: variant,
+      maxHeight: 44,
+      maxWidth: ArDriveButtonNew.fittedWidth(context, text, minWidth: 96),
+      onPressed: onPressed,
+    );

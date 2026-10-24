@@ -611,9 +611,10 @@ class _DriveExplorerItemTileTrailingState
               drive: widget.drive,
               folderId: item.id,
             ),
-            content: _buildItem(
-              publishToWebLabel(context, widget.drive, item.id),
-              publishToWebIcon(size: defaultIconSize),
+            content: PublishToWebMenuItem(
+              drive: widget.drive,
+              folderId: item.id,
+              iconSize: defaultIconSize,
               height: height,
             ),
           ),
@@ -1084,9 +1085,10 @@ class EntityActionsMenu extends StatelessWidget {
               drive: drive!,
               folderId: item.id,
             ),
-            content: _buildItem(
-              publishToWebLabel(context, drive!, item.id),
-              publishToWebIcon(size: defaultIconSize),
+            content: PublishToWebMenuItem(
+              drive: drive!,
+              folderId: item.id,
+              iconSize: defaultIconSize,
             ),
           ),
         if (withInfo) _buildInfoOption(context),
@@ -1223,9 +1225,9 @@ class EntityActionsMenu extends StatelessWidget {
           if (offersPublishToWeb(context, drive))
             ArDriveDropdownItem(
               onClick: () => openPublishToWeb(context, drive: drive!),
-              content: ArDriveDropdownItemTile(
-                name: publishToWebLabel(context, drive!, null),
-                icon: publishToWebIcon(size: defaultIconSize),
+              content: PublishToWebMenuItem(
+                drive: drive!,
+                iconSize: defaultIconSize,
               ),
             ),
           ArDriveDropdownItem(
