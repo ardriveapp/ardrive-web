@@ -1,3 +1,6 @@
+import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/publication/presentation/publication_chrome.dart';
+import 'package:ardrive/publication/presentation/publication_loader_page.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'dart:async';
 
@@ -35,6 +38,11 @@ class AppTopBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            // A publication has no sidebar, so its icon leads the bar.
+            if (PublicationMode.isOn) ...[
+              PublicationIcon(config: publicationConfigOf(context), size: 40),
+              const SizedBox(width: 16),
+            ],
             Expanded(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 400),
@@ -43,12 +51,18 @@ class AppTopBar extends StatelessWidget {
             ),
             const SizedBox(width: 24),
             const Spacer(),
-            const GlobalHideToggleButton(),
-            const SizedBox(width: 8),
-            const SyncButton(),
-            const SizedBox(width: 8),
-            const SizedBox(width: 24),
-            const ProfileCard(),
+            // A publication has no hidden items to show, nothing to sync and
+            // no account (docs/PUBLICATIONS.md, "The publication frame").
+            if (PublicationMode.isOn)
+              const PublicationTopBarActions()
+            else ...[
+              const GlobalHideToggleButton(),
+              const SizedBox(width: 8),
+              const SyncButton(),
+              const SizedBox(width: 8),
+              const SizedBox(width: 24),
+              const ProfileCard(),
+            ],
           ],
         ),
       ),

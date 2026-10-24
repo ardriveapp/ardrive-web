@@ -17,7 +17,7 @@
 # development sandbox, sees production uploads only once they are on chain
 # (over an hour), and charges for data past a free allowance (HTTP 402). Requests go through the sandboxed route
 # (`https://<gateway>/<id>/<path>`, which redirects to the manifest's own
-# subdomain), the route a library page is served on.
+# subdomain), the route a publication is served on.
 #
 # Exits 1 if any path failed on any gateway; prints one line per failure, with
 # curl's error when there was no response, and a summary per gateway.

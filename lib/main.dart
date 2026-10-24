@@ -18,6 +18,9 @@ import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
+import 'package:ardrive/publication/data/download_helper.dart';
+import 'package:ardrive/publication/data/publication_meta_reader.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
@@ -44,6 +47,7 @@ import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
 import 'package:ardrive/utils/mobile_status_bar.dart';
+import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
 import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive/utils/secure_key_value_store.dart';
 import 'package:ardrive/utils/upload_plan_utils.dart';
@@ -91,6 +95,14 @@ void main() async {
     // `lib/utils/app_url_strategy.dart` for what has to land before it is not.
     configureAppUrlStrategy();
 
+    // Before any service starts: a publication starts them differently
+    // (docs/PUBLICATIONS.md, "How a page opens").
+    PublicationMode.detect(readPublicationMetaContent,
+        readTitle: readPageTitle);
+    if (PublicationMode.isOn) {
+      PlausibleEventTracker.disabled = true;
+    }
+
     await _initializeServices();
 
     await _startApp();
@@ -123,19 +135,24 @@ Future<void> _initializeServices() async {
   // Config depends on localKeyValueStore
   configService = ConfigService(
     appFlavors: AppFlavors(EnvFetcher()),
-    configFetcher: ConfigFetcher(localStore: localKeyValueStore),
+    configFetcher: ConfigFetcher(
+      localStore: localKeyValueStore,
+      publicationMode: PublicationMode.isOn,
+    ),
   );
 
   await configService.loadConfig();
 
   final config = configService.config;
 
-  // Apply any persisted Solana RPC / program ID overrides from dev tools
-  if (config.solanaRpcUrl != null ||
-      config.solanaCoreProgramId != null ||
-      config.solanaGarProgramId != null ||
-      config.solanaArnsProgramId != null ||
-      config.solanaAntProgramId != null) {
+  // Apply any persisted Solana RPC / program ID overrides from dev tools. A
+  // publication reads no stored config and has no use for Solana.
+  if (!PublicationMode.isOn &&
+      (config.solanaRpcUrl != null ||
+          config.solanaCoreProgramId != null ||
+          config.solanaGarProgramId != null ||
+          config.solanaArnsProgramId != null ||
+          config.solanaAntProgramId != null)) {
     await ArioSDKFactory().create().reinitialize(
           rpcUrl: config.solanaRpcUrl,
           coreProgramId: config.solanaCoreProgramId,
@@ -145,7 +162,12 @@ Future<void> _initializeServices() async {
         );
   }
 
-  db = Database();
+  if (PublicationMode.isOn) {
+    useGatewayForDownloadHelper(
+        Uri.parse(config.arweaveGatewayForDataRequest.url));
+  }
+
+  db = PublicationMode.isOn ? Database.forPublication() : Database();
 
   arweave = ArweaveService(
     Arweave(
@@ -157,7 +179,9 @@ Future<void> _initializeServices() async {
     db.driveDao,
     configService,
   );
-  _turboUpload = config.useTurboUpload
+  // A publication uploads nothing, and a live service would ask Turbo for
+  // its limits as soon as it is built.
+  _turboUpload = config.useTurboUpload && !PublicationMode.isOn
       ? TurboUploadService(
           turboUploadUri: Uri.parse(config.defaultTurboUploadUrl!),
           allowedDataItemSize: config.allowedDataItemSizeForTurbo,
@@ -177,7 +201,9 @@ Future<void> _initializeServices() async {
     Timer.periodic(duration, (timer) => triggerHTMLPageReload());
   }
 
-  if (kIsWeb) {
+  // A publication runs the release it pins, for good: a reload changes
+  // nothing, so it never reloads itself.
+  if (kIsWeb && !PublicationMode.isOn) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
 }
@@ -244,7 +270,8 @@ class AppState extends State<App> {
             );
 
     return MaterialApp.router(
-      title: _appName,
+      // A publication keeps the title its publisher wrote.
+      title: PublicationMode.pageTitle ?? _appName,
       theme: ardriveTheme,
       debugShowCheckedModeBanner: false,
       routeInformationParser: _routeInformationParser,

@@ -15,6 +15,13 @@ env:
   BUILD_NUMBER: ${{ github.run_number }}
   RELEASE_NOTES: 'Production'
 
+# Read the repository and nothing else. The jobs that run (the tests, the
+# build, Firebase and Arweave) only check out the code: the Firebase action
+# uses the token only on pull requests, which this workflow never runs on,
+# and the Arweave deploy signs with its own key.
+permissions:
+  contents: read
+
 
 jobs:
   pre-build:
@@ -59,10 +66,18 @@ jobs:
       - name: Leave source maps out of the Arweave deploy
         run: find build/web -name '*.map' -delete
 
+      # Flutter's fallback fonts, which a publication loads from its own
+      # host rather than fonts.gstatic.com (the fetch rewrite in
+      # web/index.html). About 81 MB, checked against tool/fallback_fonts.sha256;
+      # the files only change with Flutter, so incremental deploys upload them
+      # once per Flutter version.
+      - name: Add the fallback fonts
+        run: bash tool/fetch_fallback_fonts.sh
+
       # Deploy to Arweave, gzipped: each file is stored compressed with a
       # `Content-Encoding: gzip` tag, which gateways send with the bytes, so a
-      # first visit downloads about 20 MB instead of 77 MB. Library pages load
-      # this bundle by its manifest ID (docs/LIBRARY_PAGES.md). Pinned to the
+      # first visit downloads about 20 MB instead of 77 MB. Publications load
+      # this bundle by its manifest ID (docs/PUBLICATIONS.md). Pinned to the
       # v2.1.2 commit, the first to install the newest Node 22 rather than
       # the runner's cached one (CVE-2026-111497, the brotli decoder); the
       # action installs @ar.io/deploy@^2 itself.
@@ -76,6 +91,9 @@ jobs:
           undername: ${{ secrets.DEPLOY_ANT_UNDERNAME }}
           deploy-folder: ./build/web
           compress: gzip
+          # Reuse files this wallet already uploaded (the fallback fonts most
+          # of all), so a release pays only for what changed.
+          incremental: 'true'
 
       - name: Record the Arweave manifest
         env:

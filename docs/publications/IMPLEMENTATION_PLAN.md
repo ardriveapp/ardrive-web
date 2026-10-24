@@ -1,6 +1,6 @@
-# Library pages: implementation plan
+# Publications: implementation plan
 
-The design is `docs/LIBRARY_PAGES.md` (v2, agreed). This file is how to build
+The design is `docs/PUBLICATIONS.md` (v2, agreed). This file is how to build
 it: phases in order, the code seams each phase touches, the tests that prove
 it, and the rules for testing against real services. Read the design first,
 then `CLAUDE.md`, `docs/DRIVE_STATE_ARTIFACT.md` §2 and §4, and
@@ -35,7 +35,7 @@ phase before the previous one is merged.
 ## Phase 0: compressed viewer bundle
 
 Goal: every release's web build is on Arweave gzipped, and a staging channel
-exists to test library mode before a release.
+exists to test publication mode before a release.
 
 1. **Staging build to Arweave, on request.** A manual workflow
    (`.github/workflows/staging-arweave.yaml`, `workflow_dispatch` only) builds
@@ -70,31 +70,31 @@ Done when: a compressed staging bundle boots through turbo-gateway.com and
 ardrive.net, and through ar-io.dev once it has fetched the upload.
 Production's change merges with it, and Phil merges.
 
-## Phase 1: library mode (public)
+## Phase 1: publication mode (public)
 
 Goal: a hand-built page at a raw manifest URL opens a public drive and a
-public folder, read-only, in library chrome, with no request outside the
+public folder, read-only, in publication chrome, with no request outside the
 serving host and its gateway.
 
-### 1.1 Detection and start-up (`lib/library/`, `lib/main.dart`)
+### 1.1 Detection and start-up (`lib/publication/`, `lib/main.dart`)
 
-- New `lib/library/` feature, laid out like `lib/drive_state/`
+- New `lib/publication/` feature, laid out like `lib/drive_state/`
   (`data/`, `domain/`, `presentation/`).
-- `LibraryMode` (domain): reads `<meta name="ardrive-library">` from the
+- `PublicationMode` (domain): reads `<meta name="ardrive-publication">` from the
   document once, before `_initializeServices()`. Web only; always off
   elsewhere. Unit-test the parser with a stubbed reader.
-- `LibraryConfig` (domain): parses `library.json` (design §`library.json`).
+- `PublicationConfig` (domain): parses `publication.json` (design §`publication.json`).
   Reject unknown `version` above what this build supports with a typed error
   (drives the "needs a newer ArDrive" screen). Unit tests for every field,
   missing fields, private without cipher tags, and HTML in title/description
   (kept as plain text).
-- In `main.dart`, when library mode is on:
+- In `main.dart`, when publication mode is on:
   - Config: do not read or write stored config (`ConfigFetcher` must not touch
     `localStorage` key `config`). Start from the flavor asset, then set
     `arweaveGatewayForDataRequest` from the AR.IO detection on the page's own
     host (`ario_gateway_detector.dart`, already splits the hostname), without
     caching the result. Force `autoSync` off.
-  - Database: `Database(openLibraryConnection())`, a new opener in
+  - Database: `Database(openPublicationConnection())`, a new opener in
     `lib/models/database/web.dart` that loads `sqlite3.wasm`, registers an
     `InMemoryFileSystem` (see `_sessionFileSystem`), sets `webSqlite`, and
     returns a `WasmDatabase` with no persistence. No Web Lock, no worker, no
@@ -103,17 +103,17 @@ serving host and its gateway.
   - Skip `refreshHTMLPageAtInterval`.
   - Skip the Solana RPC re-init.
 - Analytics: add a static `PlausibleEventTracker.disabled` flag checked in
-  `_track` (and any other send path); set it in library mode. Test that no
+  `_track` (and any other send path); set it in publication mode. Test that no
   event is sent when disabled.
 
-### 1.2 Loading the library (`lib/library/data`, `lib/library/presentation`)
+### 1.2 Loading the publication (`lib/publication/data`, `lib/publication/presentation`)
 
-- `LibraryLoader` cubit, states: `loadingSettings`, `needsKey` (phase 3),
-  `loadingSnapshot(bytes, total?)`, `importing`, `ready(LibraryConfig)`,
-  `failed(LibraryFailure)` with the four failures in the design's error table.
+- `PublicationLoader` cubit, states: `loadingSettings`, `needsKey` (phase 3),
+  `loadingSnapshot(bytes, total?)`, `importing`, `ready(PublicationConfig)`,
+  `failed(PublicationFailure)` with the four failures in the design's error table.
 - Steps:
-  1. GET `./library.json` (relative to `Uri.base`).
-  2. Seed the drive: insert a `drives` row from `library.json` (`driveId`,
+  1. GET `./publication.json` (relative to `Uri.base`).
+  2. Seed the drive: insert a `drives` row from `publication.json` (`driveId`,
      `rootFolderId`, `owner`, `privacy`, name = title for public or `''` for
      private, `lastUpdated` = epoch so the snapshot's drive metadata wins) and
      the root folder placeholder, the way `DriveDao.writeDriveEntity` does.
@@ -124,7 +124,7 @@ serving host and its gateway.
      expectedOwnerAddress: owner)`. A rejected result maps to "Its data didn't
      pass ArDrive's checks", and the outcome reason is logged.
 - The importer runs its own owner check against `candidate.ownerAddress`;
-  that is the owner `library.json` names, which is as trustworthy as the page.
+  that is the owner `publication.json` names, which is as trustworthy as the page.
   Do not add a GraphQL owner lookup.
 - Tests: a cubit test per state transition with fakes; an integration test
   that imports a real fixture artifact (see `test/drive_state_sqlite/`
@@ -133,53 +133,61 @@ serving host and its gateway.
 
 ### 1.3 Router and shell (`lib/pages/app_router_delegate.dart`, `lib/app_shell.dart`)
 
-- In library mode the router has exactly two outcomes: the `LibraryLoader`
+- In publication mode the router has exactly two outcomes: the `PublicationLoader`
   screens until `ready`, then the explorer for the drive at the scope's root.
   Sign-in, get-started, drives list, shared-file and `/view/` routes map to
-  the library root. Deep links inside the library (`#/folders/<id>`,
+  the publication root. Deep links inside the publication (`#/folders/<id>`,
   `?file=<id>`) are honoured when the folder is inside the scope, otherwise
   they land on the root.
 - Never start a sync: guard `SyncCubit.startSync`, `startSyncForDrive`,
-  `syncMetadataOnly` and the periodic timer with library mode (return without
+  `syncMetadataOnly` and the periodic timer with publication mode (return without
   emitting `SyncInProgress`). `openDriveAsVisitor`'s sync-on-open must not run.
-  Assert in a test that `SyncRepository` is never called in library mode.
-- `LibraryShell`: the design's sidebar (icon, title, description, published
-  date, Open in ArDrive, Made with ArDrive), top bar (search, theme), cover
-  band on the root, and the mobile variants. Reuse `ArDriveTheme`,
-  `ArDriveTypographyNew`, existing sidebar and top bar widgets with the
-  account parts removed; do not fork the explorer.
-- Explorer behaviour in library mode:
+  Assert in a test that `SyncRepository` is never called in publication mode.
+- Publication chrome (design, "The publication frame"): no sidebar; the top bar with
+  the publication's icon, search, the theme toggle and "Made with ArDrive"; the
+  folding header on the root (cover banner, title, byline, description,
+  Download and Copy link) in place of the breadcrumb row there; and the
+  mobile variants, with no drawer. Reuse `ArDriveTheme`,
+  `ArDriveTypographyNew` and the existing top bar with the account parts
+  removed; do not fork the explorer.
+- Explorer behaviour in publication mode:
   - hide hidden items and their descendants, ghost folders, and failed or
     pending uploads (filter at the query or mapper level, not by hiding rows
     after layout);
   - breadcrumbs and search stop at the scope root;
   - row and toolbar actions: Download, Download folder, Preview, More info,
-    Copy link (new: library link to the folder or file); hide everything else
+    Copy link (new: publication link to the folder or file); hide everything else
     listed in the design;
   - no New button, FAB, profile card, login, sync indicator, "Show hidden".
-- "Open in ArDrive" opens `https://app.ardrive.io/#/drives/<id>` (the 2.90
-  visitor flow) in a new tab.
 
 ### 1.4 Requests
 
-- Run the app in library mode in headless Chromium and log every request's
+- Run the app in publication mode in headless Chromium and log every request's
   host. Allowed: the page's host and the detected gateway host. Expected
   offenders to remove: `plausible.io`, `upload.ardrive.io` (a Turbo call at
-  start), `fonts.gstatic.com` (Flutter font fallback). Fonts are bundled, with
-  no exception: point `fontFallbackBaseUrl` in the page's Flutter
-  configuration at a bundled `fonts/` path. If Flutter 3.19 has no way to do
-  that, stop and bring it to Phil rather than allowing the host.
+  start), `fonts.gstatic.com` (Flutter font fallback). Fonts are self-hosted,
+  with no exception (Phil, 2026-10-22; Flutter 3.19.6 has no
+  `fontFallbackBaseUrl`): `tool/fetch_fallback_fonts.sh` downloads the
+  engine's 144 font files, checked against a pinned SHA-256 list, into
+  `build/web/fonts/gstatic/` before the Arweave deploy only, and publication mode
+  installs a `window.fetch` wrapper in `index.html` that rewrites
+  `https://fonts.gstatic.com/s/` to `./fonts/gstatic/`. See the design's
+  Risks.
 
-### 1.5 Test page tool (`tool/library_page/`)
+### 1.5 Test page tool (`tool/publication/`)
 
 A Node script, `build_test_page.mjs`, that builds a page by hand from:
 a release manifest ID, a drive ID and root folder ID, an artifact transaction
 ID (read its tags from the gateway's GraphQL once, here only), a title and
-description. It writes `library.json` and the page `index.html` (head
+description. It writes `publication.json` and the page `index.html` (head
 injection, escaped), builds the page manifest (release paths + page paths,
 index and fallback `index.html`), uploads the three small files with
-`@ardrive/turbo-sdk` using the test wallet, and prints the page link. Every
-upload is under 105 KiB, so it is free. This tool is also the reference
+`@ardrive/turbo-sdk` using the test wallet, and prints the page link. With
+`--images <dir>` it also uploads the page's images, already sized (the icon's
+three sizes, `social.jpg`, `cover.jpg`), first, so `og:image` can name the
+social card's own transaction. Every upload is under 105 KiB, which was free;
+since free uploads were restricted a page costs about 0.0014 credits, plus
+its images. This tool is also the reference
 implementation for phase 2's Dart publisher: keep their outputs
 byte-comparable (a golden test in phase 2 compares them).
 
@@ -201,17 +209,17 @@ staging, which is free at that size. For the folder case use a folder inside
 
 ## Phase 2: publish (public)
 
-- `LibraryRepository` (data): find published pages by tags (owner, `Type =
-  library-page`, `Drive-Id`) through the existing GraphQL client; read a
-  page's `library.json` through the gateway.
-- `LibraryPublisher` (domain): the Dart version of the phase 1 tool. Inputs:
+- `PublicationRepository` (data): find published pages by tags (owner, `Type =
+  publication`, `Drive-Id`) through the existing GraphQL client; read a
+  page's `publication.json` through the gateway.
+- `PublicationPublisher` (domain): the Dart version of the phase 1 tool. Inputs:
   scope, chosen snapshot (or "new"), look settings, images. Steps: create
   snapshot if asked (existing `DriveStateCreationService`), process images
   (`packages/ardrive_utils/lib/src/generate_thumbnail.dart` already uses
   `package:image`; crop and re-encode to the design's sizes), resolve the
-  viewer release (`libraryViewerManifestSource` config: a manifest ID as is,
+  viewer release (`publicationViewerManifestSource` config: a manifest ID as is,
   or a name read through the gateway for its `x-arns-resolved-id`; then GET
-  `/raw/<id>`), upload the images, then write `library.json`, `index.html`
+  `/raw/<id>`), upload the images, then write `publication.json`, `index.html`
   (its `og:image` names the social image's transaction) and the manifest,
   warm up. Every upload goes
   through the existing Turbo upload path (`ArDriveUploader` data items, the
@@ -223,7 +231,7 @@ staging, which is free at that size. For the folder case use a folder inside
 - UI: entry points, the five-step dialog (step 4 shows the "link now, name
   later" panel), progress, done, the management section, republish. Copy and
   layout exactly as the design specifies.
-- Tests: golden test that the Dart publisher's `library.json`, `index.html`
+- Tests: golden test that the Dart publisher's `publication.json`, `index.html`
   and manifest equal the phase 1 tool's for the same inputs; escaping test;
   preconditions on cubit states (syncing, pending uploads, not fully read);
   excluded counts against a fixture drive; republish keeps scope and writes a
@@ -241,10 +249,10 @@ staging, which is free at that size. For the folder case use a folder inside
   thumbnails decrypt.
 - Publish rules: title empty and required; "Choose from this drive" disabled
   for images; the three review-step statements; "Copy link with key".
-- Tests: no drive, folder or file name appears in `library.json`,
+- Tests: no drive, folder or file name appears in `publication.json`,
   `index.html`, the manifest or any tag (scan every byte the publisher
   uploads); decrypt a file below and above the 100 MiB GCM/CTR boundary in
-  library mode; wrong key and missing key screens.
+  publication mode; wrong key and missing key screens.
 - e2e: Private Drive Test (`7cea4056-…`) published from staging; open in a
   fresh profile with the key in the link and typed; reload behaviour.
 
@@ -261,6 +269,6 @@ and TTL 300 s. `og:image` keeps pointing at the social image's transaction.
 
 - Phase 0: `CLAUDE.md` Deployment section (compressed Arweave deploys, staging
   channel).
-- Phase 1: `DRIVE_STATE_ARTIFACT.md` §2.7, drop "until Library pages ship".
+- Phase 1: `DRIVE_STATE_ARTIFACT.md` §2.7, drop "until Publications ship".
 - Each phase: mark its row in the design's Phases table as shipped, with the
   PR number. Record measurements in the design's facts table.

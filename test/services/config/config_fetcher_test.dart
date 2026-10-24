@@ -79,7 +79,8 @@ void main() {
       // Gateway detection cache: no cached result, detection returns null (not web)
       when(() => localStore.getString(any(that: startsWith('arIOGateway'))))
           .thenReturn(null);
-      when(() => localStore.putString(any(that: startsWith('arIOGateway')), any()))
+      when(() =>
+              localStore.putString(any(that: startsWith('arIOGateway')), any()))
           .thenAnswer((_) async => true);
       when(() => assetBundle.loadString(any()))
           .thenAnswer((_) async => newConfigString);
@@ -206,6 +207,88 @@ void main() {
       await configFetcher.resetDevToolsPrefs();
 
       verify(() => localStore.remove('config')).called(1);
+    });
+  });
+
+  group('publication mode', () {
+    final assetConfig = AppConfig(
+      configVersion: 3,
+      stripePublishableKey: 'key',
+      allowedDataItemSizeForTurbo: 100,
+      arweaveGatewayUrl: 'https://arweave.net',
+      arweaveGatewayForDataRequest: const SelectedGateway(
+        label: 'Flavor default',
+        url: 'https://turbo-gateway.com',
+      ),
+      autoSync: true,
+    );
+    const servingGateway = SelectedGateway(
+      label: 'ardrive.net',
+      url: 'https://ardrive.net',
+    );
+
+    late ConfigFetcher publicationFetcher;
+
+    setUp(() {
+      publicationFetcher =
+          ConfigFetcher(localStore: localStore, publicationMode: true)
+            ..assetBundle = assetBundle;
+      when(() => assetBundle.loadString(any()))
+          .thenAnswer((_) async => json.encode(assetConfig.toJson()));
+    });
+
+    test('starts from the flavor asset and never touches stored config',
+        () async {
+      publicationFetcher.detectGateway = () async => servingGateway;
+
+      await publicationFetcher.fetchConfig(Flavor.production);
+
+      verify(() => assetBundle.loadString('assets/config/prod.json')).called(1);
+      verifyNever(() => localStore.getString(any()));
+      verifyNever(() => localStore.putString(any(), any()));
+      verifyNever(() => localStore.remove(any()));
+    });
+
+    test('reads data from the gateway serving the page and never syncs',
+        () async {
+      publicationFetcher.detectGateway = () async => servingGateway;
+
+      final config = await publicationFetcher.fetchConfig(Flavor.production);
+
+      expect(config.arweaveGatewayForDataRequest, servingGateway);
+      expect(config.autoSync, isFalse);
+      expect(config.configVersion, 3);
+    });
+
+    test('keeps the flavor gateway when the host is not a gateway', () async {
+      publicationFetcher.detectGateway = () async => null;
+
+      final config = await publicationFetcher.fetchConfig(Flavor.production);
+
+      expect(
+          config.arweaveGatewayForDataRequest.url, 'https://turbo-gateway.com');
+      expect(config.autoSync, isFalse);
+    });
+
+    test('detects on every load', () async {
+      var detections = 0;
+      publicationFetcher.detectGateway = () async {
+        detections++;
+        return servingGateway;
+      };
+
+      await publicationFetcher.fetchConfig(Flavor.production);
+      await publicationFetcher.fetchConfig(Flavor.production);
+
+      expect(detections, 2);
+    });
+
+    test('saving and resetting dev tools settings write nothing', () async {
+      await publicationFetcher.saveConfigOnDevToolsPrefs(assetConfig);
+      await publicationFetcher.resetDevToolsPrefs();
+
+      verifyNever(() => localStore.putString(any(), any()));
+      verifyNever(() => localStore.remove(any()));
     });
   });
 }

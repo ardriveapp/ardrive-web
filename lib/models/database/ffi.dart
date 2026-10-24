@@ -12,3 +12,9 @@ LazyDatabase openConnection() {
     return NativeDatabase(file);
   });
 }
+
+/// Publications are web only; off the web this is a plain in-memory
+/// database, so the same start-up code compiles and runs in tests.
+LazyDatabase openPublicationConnection() {
+  return LazyDatabase(() async => NativeDatabase.memory());
+}

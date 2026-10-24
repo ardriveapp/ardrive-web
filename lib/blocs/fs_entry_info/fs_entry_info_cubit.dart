@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/entities/license_assertion.dart';
 import 'package:ardrive/entities/license_composed.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
@@ -40,10 +42,17 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               .getFolderTree(driveId, selectedItem.id)
               .asStream()
               .listen(
-            (f) async {
+            (tree) async {
               if (isClosed) {
                 return;
               }
+
+              // A publication counts what the publication shows, not the hidden
+              // items in the drive behind it.
+              final f = PublicationMode.isOn
+                  ? PublicationContents.open?.prune(tree)
+                  : tree;
+              if (f == null) return;
 
               final metadataTxId = await _driveDao
                   .latestFolderRevisionByFolderId(
@@ -86,8 +95,10 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               if (license != null) {
                 final companion = license.toCompanion(true);
                 licenseState = _licenseService.fromCompanion(companion);
-              } else {
-                // 2. Or fetch on-demand from network and cache to DB
+              } else if (!PublicationMode.isOn) {
+                // 2. Or fetch on-demand from network and cache to DB. Not on
+                // a publication, which makes no GraphQL request: its
+                // snapshot carries the licenses it has.
                 licenseState = await _fetchAndCacheLicense(latestRevision);
               }
             }

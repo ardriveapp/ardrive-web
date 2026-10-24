@@ -327,10 +327,10 @@ Users see "deployment" for an Arweave manifest the app creates or updates (New d
 - Production also puts the build on Arweave **gzipped** (`--compress gzip`: each file is
   stored compressed with a `Content-Encoding: gzip` tag, about 20 MB instead of 77) and
   without source maps, with `ar-io/ar-io-deploy` (pinned by commit), and moves the ArNS
-  name. Pushes to `dev` never touch Arweave. To try library mode on Arweave before a
+  name. Pushes to `dev` never touch Arweave. To try publication mode on Arweave before a
   release, run *Staging build to Arweave* (`staging-arweave.yaml`) by hand on a branch: it
   uploads a staging build the same way, paid by the deploy wallet, with no ArNS name, and
-  puts the manifest ID in the job summary (`docs/LIBRARY_PAGES.md`).
+  puts the manifest ID in the job summary (`docs/PUBLICATIONS.md`).
   Each upload then reads every path through turbo-gateway.com and ardrive.net with
   `tool/warm_arweave_manifest.sh <manifest-id>`, which also fails on a gateway sending gzip
   bytes without the header. A new upload can 404 on a gateway other than

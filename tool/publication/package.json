@@ -1,0 +1,9 @@
+{
+  "name": "ardrive-publication-tool",
+  "private": true,
+  "type": "module",
+  "description": "Builds a publication by hand. See build_test_page.mjs.",
+  "dependencies": {
+    "@ardrive/turbo-sdk": "2.1.0"
+  }
+}

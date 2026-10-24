@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/search/domain/bloc/search_bloc.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
 import 'package:ardrive/search/search_coverage_notice.dart';
@@ -395,7 +396,9 @@ class _SearchBoxState extends State<SearchBox> {
             child: SearchTextField(
               controller: _session.controller,
               focusNode: _focusNode,
-              hintText: appLocalizationsOf(context).searchBoxHint,
+              hintText: PublicationMode.isOn
+                  ? appLocalizationsOf(context).publicationSearchHint
+                  : appLocalizationsOf(context).searchBoxHint,
               // Present, so Enter leaves focus in the field: a box that
               // closed itself on every Enter could not be typed on into.
               onEditingComplete: () {},
@@ -481,7 +484,9 @@ class _SearchDropdown extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Text(
           noMatches
-              ? localizations.searchNoMatches(state.query)
+              ? PublicationMode.isOn
+                  ? localizations.publicationSearchNoMatches(state.query)
+                  : localizations.searchNoMatches(state.query)
               : localizations.searchSearching,
           style: typography.paragraphNormal(
             color: colorTokens.textMid,

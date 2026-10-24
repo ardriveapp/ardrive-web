@@ -15,9 +15,9 @@ longer the permanent companion this document opened by promising: production of
 them ends once other clients read artifacts, while reading them continues for
 ever, since every snapshot on chain is permanent. See §11.
 
-**A second consumer exists.** A library page is a static page published to
+**A second consumer exists.** A publication is a static page published to
 Arweave that reads an artifact in the browser and renders a drive, with no
-GraphQL and no app. It is specified in `LIBRARY_PAGES.md`, and it is the reason
+GraphQL and no app. It is specified in `PUBLICATIONS.md`, and it is the reason
 §2.7 and §4.5 exist.
 
 **The governing principle: this is a cache, and every failure is a fallback.**
@@ -209,7 +209,7 @@ anything was published, because no reader could use what it bought:
   ArConnect through the deprecated `arweaveWallet.signature()` with
   `saltLength: 0`, made every reader implement data item verification, and
   made range reads of a public artifact unverifiable, since a signature covers
-  the whole payload (`LIBRARY_PAGES.md`).
+  the whole payload (`PUBLICATIONS.md`).
 
 A reader that wants independent proof of authorship later can fetch the
 upload's own signed data item from its bundle. Nothing in this format prevents
@@ -527,27 +527,24 @@ artifacts only.
 **The rule.** A reader accepts both encodings and tells them apart by the
 first bytes of the payload: `1f 8b` is a gzip stream, `SQLite format 3`
 followed by a NUL is an uncompressed file, and anything else is refused. The
-producer chooses per artifact, and that artifact keeps its choice for ever. It
-is not a `meta` flag, because `meta` is inside the compressed bytes it would
-describe.
+encoding is not a `meta` flag, because `meta` is inside the compressed bytes it
+would describe.
 
-- **Compressed** below the random-access threshold. A small artifact is fetched
-  whole, and gzip recovers most of its bytes. The median drive is two files, so
-  this is nearly every artifact.
-- **Identity** above it, for a public artifact a library page will serve. 17.70
-  MiB against 5.98 at 41,767 files, paid once, to make page-level reads possible
-  for ever.
+- **Compressed** is what producers write, every time. A small artifact is
+  fetched whole, and gzip recovers most of its bytes. The median drive is two
+  files, so this is nearly every artifact.
+- **Identity** is read but never written. It would have made page-level reads
+  possible, at 17.70 MiB against 5.98 at 41,767 files.
 
 **Never set a `Content-Encoding` tag.** Transport compression has the same
 effect as envelope compression and is worse, because the gateway passes the tag
 through unchanged and the browser then cannot read ranges at all. ArDrive sets
 no such tag anywhere today.
 
-Producers always compress until Library pages ship. The threshold is then set
-by measuring the real page, starting from 16 MiB of SQLite (about 26,000
-files), and it can change later because no reader depends on it. It is recorded
-in `LIBRARY_PAGES.md`, because §4.5 shows the gain is smaller than it looks on
-a cold object.
+Producers always compress. Publications, the one reader that might have
+wanted ranges, load the whole snapshot before showing anything, so there is no
+threshold (`PUBLICATIONS.md`, decision 4); §4.5 shows the gain would have been
+smaller than it looks on a cold object anyway.
 
 ### 2.8 The web database moves with it, for every user, on first load
 
@@ -1229,7 +1226,7 @@ is not real until it is documented there.
 ## 10. Open questions
 
 **Closed since the first revision:** 1 (the container, by D12), 4 (revision
-depth, by D2's reversal to full history), and 6 (ArNS, which `LIBRARY_PAGES.md`
+depth, by D2's reversal to full history), and 6 (ArNS, which `PUBLICATIONS.md`
 now needs and therefore specifies). They are kept below with their answers
 rather than deleted, because each one's reasoning is still load-bearing.
 
@@ -1250,7 +1247,7 @@ rather than deleted, because each one's reasoning is still load-bearing.
 5. **Multi-part authentication** above the GCM boundary (§2.3): a manifest of
    authenticated parts is preferred, but the manifest's own integrity needs
    specifying.
-6. ~~**ArNS naming convention.**~~ **Closed by `LIBRARY_PAGES.md`**, which
+6. ~~**ArNS naming convention.**~~ **Closed by `PUBLICATIONS.md`**, which
    makes a name the point rather than an acceleration, and specifies the human
    name over `state_<driveId>`. Undername length and readability still need
    checking against the ARIO spec, and the apex must be offerable from the

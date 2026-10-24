@@ -4529,5 +4529,143 @@
   "noPrivateDrivesDescription": "A private drive is encrypted, and only you can read it.",
   "@noPrivateDrivesDescription": {
     "description": "Says what a private drive is, for somebody who has none."
+  },
+  "publicationLoadingFiles": "Loading files...",
+  "@publicationLoadingFiles": {
+    "description": "A publication's loading screen, while it downloads the list of its files and its size is not known."
+  },
+  "publicationLoadingFilesOf": "Loading files... {received} of {total}",
+  "@publicationLoadingFilesOf": {
+    "description": "A publication's loading screen, while it downloads the list of its files. Both values are sizes, like 1.2 MB.",
+    "placeholders": {
+      "received": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "publicationAlmostThere": "Almost there...",
+  "@publicationAlmostThere": {
+    "description": "A publication's loading screen, while it opens the list of its files."
+  },
+  "publicationCantBeOpened": "This page can't be opened",
+  "@publicationCantBeOpened": {
+    "description": "Heading of a publication's error screen when its settings or data are broken."
+  },
+  "publicationSettingsDamaged": "Its settings are missing or damaged.",
+  "@publicationSettingsDamaged": {
+    "description": "Says why a publication can't be opened: its publication.json is missing or unreadable."
+  },
+  "publicationDataFailedChecks": "Its data didn't pass ArDrive's checks.",
+  "@publicationDataFailedChecks": {
+    "description": "Says why a publication can't be opened: its list of files was refused."
+  },
+  "publicationCantLoadNow": "This page can't load right now",
+  "@publicationCantLoadNow": {
+    "description": "Heading of a publication's error screen when its files could not be downloaded."
+  },
+  "publicationGatewayDidntReturnFiles": "The gateway didn't return its files. Try again in a minute.",
+  "@publicationGatewayDidntReturnFiles": {
+    "description": "Says why a publication can't load: the gateway didn't return its list of files."
+  },
+  "publicationNeedsNewerArDrive": "This page needs a newer ArDrive",
+  "@publicationNeedsNewerArDrive": {
+    "description": "Heading of a publication's error screen when it was published for a newer version of ArDrive."
+  },
+  "publicationAskOwnerToRepublish": "Ask its owner to republish it.",
+  "@publicationAskOwnerToRepublish": {
+    "description": "Says what a visitor can do about a publication that needs a newer ArDrive."
+  },
+  "publicationOpenArDrive": "Open ArDrive",
+  "@publicationOpenArDrive": {
+    "description": "Button on a publication's error screen that opens the ArDrive app."
+  },
+  "publicationBy": "By {owner}",
+  "@publicationBy": {
+    "description": "Under a publication's title: who published it. The owner is a name they chose or their shortened wallet address.",
+    "placeholders": {
+      "owner": {
+        "type": "String"
+      }
+    }
+  },
+  "publicationDownloadSelected": "Download selected",
+  "@publicationDownloadSelected": {
+    "description": "A publication's download button while files are selected in its list: it downloads those rather than the whole publication."
+  },
+  "downloadConfirmTitle": "Download {count, plural, =1{1 file} other{{count} files}}?",
+  "@downloadConfirmTitle": {
+    "description": "Title of the step before a zip download starts on a publication.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "downloadConfirmSize": "{size}, saved as {fileName}.",
+  "@downloadConfirmSize": {
+    "description": "Under the title of the step before a zip download: its total size, already formatted, and the zip's file name.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      },
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "downloadConfirmLarge": "This is a large download. Keep this page open until it finishes.",
+  "@downloadConfirmLarge": {
+    "description": "Added to the step before a zip download when it is over 100 MiB."
+  },
+  "publicationMadeWithArDrive": "Made with ArDrive",
+  "@publicationMadeWithArDrive": {
+    "description": "The quiet button in a publication's top bar that opens ardrive.io, and the tooltip of ArDrive's mark that takes its place on a phone."
+  },
+  "publicationSearchHint": "Search files...",
+  "@publicationSearchHint": {
+    "description": "Hint in a publication's search field."
+  },
+  "publicationSearchTitle": "Search files",
+  "@publicationSearchTitle": {
+    "description": "Heading of a publication's full search results."
+  },
+  "publicationSearchStart": "Start by searching for a file or folder name above.",
+  "@publicationSearchStart": {
+    "description": "A publication's full search results before anything is typed."
+  },
+  "publicationSearchNoMatches": "Nothing here matches \u201c{query}\u201d.",
+  "@publicationSearchNoMatches": {
+    "description": "Shown in a publication's search dropdown when nothing matches. A publication has no drives to search.",
+    "placeholders": { "query": { "type": "String", "example": "report" } }
+  },
+  "publicationCoverSummary": "{files, plural, =1{1 file} other{{files} files}} • {size} • published {date}",
+  "@publicationCoverSummary": {
+    "description": "In a publication's byline, after who it is by: how many files it has, their total size and when it was published. Size and date are already formatted.",
+    "placeholders": {
+      "files": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "publicationCountSummary": "{files, plural, =1{1 file} other{{files} files}} • {size}",
+  "@publicationCountSummary": {
+    "description": "A publication's byline when its settings carry no publish date: how many files it has and their total size, already formatted.",
+    "placeholders": {
+      "files": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
   }
 }

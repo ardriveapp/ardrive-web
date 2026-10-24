@@ -4,6 +4,7 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/download/multiple_download_bloc.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -49,6 +50,7 @@ promptToDownloadMultipleFiles(
           StartDownload(
             selectedItems,
             zipName: zipName,
+            confirmFirst: PublicationMode.isOn,
           ),
         ),
       child: const MultipleFilesDownload(),
@@ -68,13 +70,17 @@ class MultipleFilesDownload extends StatefulWidget {
 class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
   final _scrollController = ScrollController();
 
+  /// Above this the confirmation adds that it will take a while.
+  static const _largeDownload = 100 * 1024 * 1024;
+
   Widget _buildFileListItem(
     dynamic file,
     ArdriveTypographyNew typography,
     ArDriveColorTokens colorTokens,
   ) {
     final isFile = file is MultiDownloadFile;
-    final name = isFile ? file.fileName : (file as MultiDownloadFolder).folderPath;
+    final name =
+        isFile ? file.fileName : (file as MultiDownloadFolder).folderPath;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -160,6 +166,49 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
       },
       child: BlocBuilder<MultipleDownloadBloc, MultipleDownloadState>(
         builder: (context, state) {
+          if (state is MultipleDownloadReady) {
+            final strings = appLocalizationsOf(context);
+            return ArDriveStandardModalNew(
+              width: 408,
+              title: strings.downloadConfirmTitle(state.fileCount),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.downloadConfirmSize(
+                      filesize(state.totalSize),
+                      state.fileName,
+                    ),
+                    style: typography.paragraphNormal(
+                      color: colorTokens.textMid,
+                    ),
+                  ),
+                  if (state.totalSize > _largeDownload) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      strings.downloadConfirmLarge,
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textMid,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                ModalAction(
+                  action: () => Navigator.of(context).pop(false),
+                  title: strings.cancelEmphasized,
+                ),
+                ModalAction(
+                  action: () => context
+                      .read<MultipleDownloadBloc>()
+                      .add(const ConfirmDownload()),
+                  title: strings.download,
+                ),
+              ],
+            );
+          }
           if (state is MultipleDownloadInProgress) {
             return ArDriveStandardModalNew(
               width: 408,
