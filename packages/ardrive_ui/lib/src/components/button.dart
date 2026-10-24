@@ -449,6 +449,16 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
 
     final text = Text(widget.text,
         textAlign: TextAlign.center,
+        // A label is one line in a box of its own height, so the style's line
+        // height only added space, split in proportion to Wavehaus's tall
+        // ascent: the capitals sat 1.9 px below the middle of the button.
+        // Without it the font's own box is centred, 0.5 px off. (An even
+        // leadingDistribution would do the same, but the web engine ignores
+        // it.)
+        textHeightBehavior: const TextHeightBehavior(
+          applyHeightToFirstAscent: false,
+          applyHeightToLastDescent: false,
+        ),
         style: typography
             .paragraphLarge(
               color: foregroundColor,
