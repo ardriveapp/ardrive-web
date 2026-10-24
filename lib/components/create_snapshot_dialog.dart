@@ -513,6 +513,7 @@ Widget _confirmDialog(
                     ),
                     if (!state.isFreeThanksToTurbo) ...{
                       PaymentMethodSelector(
+                        useOptionCards: true,
                         uploadMethodInfo: UploadPaymentMethodInfo(
                           uploadMethod: state.uploadMethod,
                           totalSize: state.snapshotSize,

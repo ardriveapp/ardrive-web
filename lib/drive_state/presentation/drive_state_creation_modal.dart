@@ -23,7 +23,6 @@ import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:arweave/utils.dart' show winstonToAr;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pst/pst.dart';
@@ -299,6 +298,7 @@ Widget _confirmModal(
           if (!state.cost.isFree)
             PaymentMethodSelector(
               useNewArDriveUI: true,
+              useOptionCards: true,
               uploadMethodInfo: _paymentMethodInfo(state),
               onTurboTopupSucess: cubit.refreshTurboBalance,
               onArSelect: () => cubit.setUploadMethod(UploadMethod.ar),
@@ -400,29 +400,9 @@ Widget _summary(BuildContext context, DriveStateCreationReady state) {
           'Blocks',
           '${artifact.blockStart} to ${artifact.blockEnd}',
         ),
-        _summaryRow(context, 'Cost', _costLabel(state)),
       ],
     ),
   );
-}
-
-/// The headline price, in the terms of the method that would actually be
-/// charged.
-///
-/// The selector below repeats both costs and lets the user switch; this line
-/// exists so the summary of "what this does" ends with what it takes, rather
-/// than leaving the price to a widget further down that a short viewport may
-/// have scrolled away. It follows the selection, so the two can never read
-/// differently.
-String _costLabel(DriveStateCreationReady state) {
-  final cost = state.cost;
-  if (cost.isFree) return 'Free, thanks to Turbo';
-
-  return switch (state.effectiveMethod) {
-    UploadMethod.turbo =>
-      '${winstonToAr(cost.costEstimateTurbo.totalCost)} credits',
-    UploadMethod.ar => '${winstonToAr(cost.costEstimateAr.totalCost)} AR',
-  };
 }
 
 Widget _summaryRow(BuildContext context, String label, String value) {

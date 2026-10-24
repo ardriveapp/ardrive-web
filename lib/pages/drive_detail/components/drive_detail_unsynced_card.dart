@@ -547,6 +547,7 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         ArDriveButtonNew(
+          maxWidth: double.infinity,
           // Not "Sync this drive" a second time: that button has been
           // pressed, and offering it again unchanged is what made the screen
           // read as a loop. Checking again is worth doing - a drive created
@@ -601,6 +602,7 @@ class DriveDetailUnsyncedCard extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         ArDriveButtonNew(
+          maxWidth: double.infinity,
           text: appLocalizationsOf(context).syncAllDrives,
           typography: typography,
           // `SyncCubit.startSync` has always refused while a sync runs; this

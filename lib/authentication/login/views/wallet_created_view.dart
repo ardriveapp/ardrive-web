@@ -213,6 +213,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
           const SizedBox(height: 40),
           if (widget.mnemonic != null) ...[
             ArDriveButtonNew(
+              maxWidth: double.infinity,
               typography: typography,
               text: 'Copy seed phrase',
               variant: ButtonVariant.outline,
@@ -240,6 +241,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
             const SizedBox(height: 12),
           ],
           ArDriveButtonNew(
+            maxWidth: double.infinity,
             typography: typography,
             text: 'Download keyfile',
             variant: ButtonVariant.outline,
@@ -281,6 +283,7 @@ class _WalletCreatedViewState extends State<WalletCreatedView> {
           ),
           const SizedBox(height: 40),
           ArDriveButtonNew(
+            maxWidth: double.infinity,
             typography: typography,
             text: _isTermsChecked ? 'Go to app' : 'Check to continue',
             isDisabled: !_isTermsChecked,

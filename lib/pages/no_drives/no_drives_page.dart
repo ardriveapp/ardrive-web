@@ -282,6 +282,7 @@ ArDriveLoginModal _openDriveCard({
         ),
         const SizedBox(height: 32),
         ArDriveButtonNew(
+          maxWidth: double.infinity,
           key: const Key('noDrivesOpenDrive'),
           text: strings.openDriveButton,
           typography: typography,
@@ -324,6 +325,7 @@ ArDriveLoginModal _privateDrivesCard({
         ),
         const SizedBox(height: 32),
         ArDriveButtonNew(
+          maxWidth: double.infinity,
           text: 'Create new private drive',
           typography: typography,
           variant: ButtonVariant.primary,
@@ -370,6 +372,7 @@ ArDriveLoginModal _publicDrivesCard({
         ),
         const SizedBox(height: 32),
         ArDriveButtonNew(
+          maxWidth: double.infinity,
           text: 'Create new public drive',
           typography: typography,
           variant: ButtonVariant.primary,

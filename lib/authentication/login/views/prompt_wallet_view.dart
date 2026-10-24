@@ -107,6 +107,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                         widget.isSolanaAvailable) ...[
                       if (widget.isArConnectAvailable) ...[
                         ArDriveButtonNew(
+                          maxWidth: double.infinity,
                           text: 'Continue with Arweave',
                           hoverIcon: Container(
                               alignment: Alignment.center,
@@ -132,6 +133,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       ],
                       if (widget.isMetamaskAvailable) ...[
                         ArDriveButtonNew(
+                          maxWidth: double.infinity,
                           text: 'Continue with Ethereum',
                           hoverIcon: Container(
                             alignment: Alignment.center,
@@ -158,6 +160,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       ],
                       if (widget.isSolanaAvailable) ...[
                         ArDriveButtonNew(
+                          maxWidth: double.infinity,
                           text: 'Continue with Solana',
                           hoverIcon: Container(
                             alignment: Alignment.center,

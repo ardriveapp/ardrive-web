@@ -371,6 +371,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
               
               // Trigger Sync Button
               ArDriveButtonNew(
+                maxWidth: double.infinity,
                 text: 'Trigger Sync Now',
                 onPressed: () {
                   context.read<SyncCubit>().startSync();
@@ -388,6 +389,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                 builder: (context, state) {
                   final canCancel = state is SyncInProgress;
                   return ArDriveButtonNew(
+                    maxWidth: double.infinity,
                     text: 'Cancel Current Sync',
                     onPressed: canCancel
                         ? () {
