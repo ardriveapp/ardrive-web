@@ -393,6 +393,10 @@ guesses.
   the copy when `dev` moves.
 - **Two launchers** can't share the profile. The second fails with
   `SingletonLock: File exists`. Stop the first.
-- **Accessibility on.** Turning on Flutter's accessibility mode changes what
-  sits on top of the canvas and breaks coordinate clicks on menus. Leave it
-  off.
+- **Accessibility on.** With Flutter's accessibility tree on, a menu's items
+  sit under whatever comes after the menu in the page (#2347), so a
+  coordinate click on a drive row's menu, or on the New menu where it overlaps
+  the sidebar or the table, lands on the row or button behind it. To use an
+  item with the tree on, do what a screen reader does: find its
+  `flt-semantics` element by `aria-label` (they are inside shadow roots) and
+  call `.click()` on it. Otherwise leave the tree off.
