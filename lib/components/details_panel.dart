@@ -21,6 +21,7 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail_creation/page/thumbnail_creation_modal.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/publication/presentation/publish_to_web.dart';
 import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
@@ -1524,6 +1525,23 @@ class DetailsPanelToolbar extends StatelessWidget {
                       }
                     },
                   ),
+          // Publishing a folder or the drive; a file is shared, not published.
+          if (item is! FileDataTableItem &&
+              !(item is FolderDataTableItem && item.isGhostFolder) &&
+              offersPublishToWeb(context, drive))
+            _buildActionIcon(
+              tooltip: publishToWebLabel(
+                context,
+                drive,
+                item is FolderDataTableItem ? item.id : null,
+              ),
+              icon: publishToWebIcon(size: defaultIconSize),
+              onTap: () => openPublishToWeb(
+                context,
+                drive: drive,
+                folderId: item is FolderDataTableItem ? item.id : null,
+              ),
+            ),
           // A drive whose contents this device does not know has nothing to
           // download. Said by the details below it. See [offersDownload].
           if (offersDownload(item, context.watch<FsEntryInfoCubit>().state))

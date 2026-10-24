@@ -1,4 +1,5 @@
 import 'package:ardrive/download/multiple_file_download_modal.dart';
+import 'package:ardrive/publication/presentation/publish_to_web.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
@@ -139,6 +140,14 @@ class DriveActionsMenu extends StatelessWidget {
             icon: ArDriveIcons.share(size: _menuIconSize),
           ),
         ),
+        if (offersPublishToWeb(context, drive))
+          ArDriveDropdownItem(
+            onClick: () => openPublishToWeb(context, drive: drive),
+            content: ArDriveDropdownItemTile(
+              name: publishToWebLabel(context, drive, null),
+              icon: publishToWebIcon(size: _menuIconSize),
+            ),
+          ),
         // The rest of what a drive's own menu offers. Every one of these is
         // drive-wide, so a reader who can do it from inside the drive should be
         // able to do it from the list of drives - and having to open a drive to

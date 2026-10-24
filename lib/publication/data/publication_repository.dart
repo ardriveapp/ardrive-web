@@ -59,9 +59,16 @@ class Publication extends Equatable {
 /// What a version holds: its settings and the transaction behind each of its
 /// own paths (images, snapshot), read back to publish an update.
 class PublishedContent {
-  const PublishedContent({required this.config, required this.paths});
+  const PublishedContent({
+    required this.config,
+    required this.paths,
+    this.keywords = const [],
+  });
 
   final PublicationConfig config;
+
+  /// Its `keywords`, which the viewer does not read.
+  final List<String> keywords;
 
   /// The publication's own paths (not the release's), by transaction ID.
   final Map<String, String> paths;
@@ -122,22 +129,20 @@ class PublicationRepository {
     _changes.add(version.driveId);
   }
 
-  /// The drive's publications, by its owner, newest first. Throws
-  /// [PublicationReadException] when GraphQL cannot answer: "none" must not
-  /// be claimed on a failure.
-  Future<List<Publication>> publicationsOf({
-    required String driveId,
-    required String ownerAddress,
-  }) async {
+  /// Every publication [ownerAddress] made, by drive ID, each list newest
+  /// first. Throws [PublicationReadException] when GraphQL cannot answer:
+  /// "none" must not be claimed on a failure.
+  Future<Map<String, List<Publication>>> publicationsOfOwner(
+    String ownerAddress,
+  ) async {
     final found = <String, PublishedVersion>{};
     var cursor = '';
-    for (var page = 0; page < 10; page++) {
-      final PublicationHistory$Query$TransactionConnection transactions;
+    for (var page = 0; page < 20; page++) {
+      final OwnerPublications$Query$TransactionConnection transactions;
       try {
         final response = await _graphQLRetry.execute(
-          PublicationHistoryQuery(
-            variables: PublicationHistoryArguments(
-              driveIds: [driveId],
+          OwnerPublicationsQuery(
+            variables: OwnerPublicationsArguments(
               after: cursor,
               ownerAddress: ownerAddress,
             ),
@@ -154,7 +159,7 @@ class PublicationRepository {
         throw PublicationReadException('GraphQL failed: $e');
       }
       for (final edge in transactions.edges) {
-        final version = _toVersion(edge.node, driveId, ownerAddress);
+        final version = _toVersion(edge.node, ownerAddress);
         if (version != null) found[version.txId] = version;
       }
       if (transactions.edges.isEmpty || !transactions.pageInfo.hasNextPage) {
@@ -163,16 +168,20 @@ class PublicationRepository {
       cursor = transactions.edges.last.cursor;
     }
     for (final version in _justPublished) {
-      if (version.driveId == driveId) {
-        found.putIfAbsent(version.txId, () => version);
-      }
+      found.putIfAbsent(version.txId, () => version);
     }
-    return groupPublications(found.values);
+    final byDrive = <String, List<PublishedVersion>>{};
+    for (final version in found.values) {
+      byDrive.putIfAbsent(version.driveId, () => []).add(version);
+    }
+    return {
+      for (final MapEntry(:key, :value) in byDrive.entries)
+        key: groupPublications(value),
+    };
   }
 
   PublishedVersion? _toVersion(
     TransactionCommonMixin node,
-    String driveId,
     String ownerAddress,
   ) {
     final tags = <String, String>{};
@@ -180,9 +189,10 @@ class PublicationRepository {
       tags.putIfAbsent(tag.name, () => tag.value);
     }
     // The query asked for these; the indexer is not trusted to have obeyed.
+    final driveId = tags[EntityTag.driveId];
     if (node.owner.address != ownerAddress ||
         tags[EntityTag.entityType] != EntityTypeTag.publication ||
-        tags[EntityTag.driveId] != driveId) {
+        driveId == null) {
       return null;
     }
     final publicationId = tags[EntityTag.publicationId];
@@ -211,13 +221,19 @@ class PublicationRepository {
       throw const PublicationReadException('no publication.json');
     }
     final PublicationConfig config;
+    final String text;
     try {
-      config = PublicationConfig.parse(utf8.decode(await _read(configId)));
+      text = utf8.decode(await _read(configId));
+      config = PublicationConfig.parse(text);
     } on PublicationConfigException catch (e) {
       throw PublicationReadException('publication.json: $e');
+    } on FormatException catch (e) {
+      throw PublicationReadException('publication.json: ${e.message}');
     }
+    final keywords = (json.decode(text) as Map)['keywords'];
     return PublishedContent(
       config: config,
+      keywords: keywords is List ? [...keywords.whereType<String>()] : const [],
       paths: {
         for (final path in _ownPaths)
           if (idOf(path) case final id?) path: id,

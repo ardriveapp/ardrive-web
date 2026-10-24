@@ -72,6 +72,7 @@ class PublicationJob {
     required this.snapshot,
     required this.release,
     required this.files,
+    required this.fileCount,
     required this.labels,
     required this.method,
   });
@@ -98,6 +99,9 @@ class PublicationJob {
 
   /// What `files.html` lists.
   final List<PublicationListedFile> files;
+
+  /// How many files the publication lists, for publication.json.
+  final int fileCount;
   final PublicationLabels labels;
   final UploadMethod method;
 
@@ -178,6 +182,9 @@ class PublicationPublisher {
   final String Function() _gatewayUrl;
   final http.Client _client;
   final DateTime Function() _now;
+
+  /// The gateway a publication's link and card are on: the app's setting.
+  String get gatewayUrl => _gatewayUrl();
 
   /// The size in bytes of everything [job] would upload, its snapshot
   /// included when new: for the cost, before anything is signed.
@@ -388,6 +395,7 @@ class PublicationPublisher {
       snapshotTags: snapshotTags,
       title: job.title,
       description: job.description,
+      fileCount: job.fileCount,
       keywords: job.keywords,
       license: job.license,
       images: {

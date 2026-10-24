@@ -120,7 +120,11 @@ void main() {
         title: 'Phil’s <Archive>',
         description: 'Photos and notes.',
         keywords: const ['photos', 'notes'],
-        license: const {'name': 'Attribution', 'shortName': 'CC-BY'},
+        license: const {
+          'name': 'Attribution',
+          'shortName': 'CC-BY',
+          'definitionTxId': 'mSOFUrl5mUQvG7VBP36DD39kzJASv9FDe3NX5hB3sYk',
+        },
         icon: icon ??
             NewPublicationImage({
               'icon-32.png': Uint8List.fromList([1]),
@@ -150,6 +154,7 @@ void main() {
         files: const [
           (path: ['a.txt'], id: 'A_DATA'),
         ],
+        fileCount: 1,
         labels: const PublicationLabels(
           filesPage: 'All files',
           openPage: 'Open the page',
@@ -243,6 +248,8 @@ void main() {
     expect(config.snapshot.txId, _snapshotId);
     expect(config.snapshot.tags['Unix-Time'], '1792800000');
     expect(config.ownerName, 'Phil');
+    expect(config.fileCount, 1);
+    expect(config.license?.shortName, 'CC-BY');
     expect(config.viewer?.manifest, release.manifestId);
     expect(config.publishedAt, DateTime.utc(2026, 10, 24, 12));
 

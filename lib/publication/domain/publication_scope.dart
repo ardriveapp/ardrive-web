@@ -231,7 +231,10 @@ class PublicationSummary extends Equatable {
   bool get isEmpty => fileCount == 0;
 
   bool get leavesOut =>
-      hiddenItems + inHiddenFolders + inGhostFolders + pendingFiles +
+      hiddenItems +
+          inHiddenFolders +
+          inGhostFolders +
+          pendingFiles +
           failedFiles >
       0;
 

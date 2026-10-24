@@ -105,7 +105,7 @@ void main() {
     );
     expect(listed.last.dataTxId, 'aData');
     final inFolder = (await scope(_photos)).listedFiles();
-    expect([for (final f in inFolder) f.path.join('/')],
-        ['Deep/c.txt', 'b.txt']);
+    expect(
+        [for (final f in inFolder) f.path.join('/')], ['Deep/c.txt', 'b.txt']);
   });
 }
