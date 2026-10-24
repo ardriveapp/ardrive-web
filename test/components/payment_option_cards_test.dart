@@ -67,7 +67,6 @@ void main() {
                 onTurboTopupSucess: () {},
                 onArSelect: onArSelect ?? () {},
                 onTurboSelect: () {},
-                useOptionCards: true,
               ),
             ),
           ),

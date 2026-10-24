@@ -101,6 +101,7 @@ class FileShareDialogState extends State<FileShareDialog> {
                 // A link only holds a secret when the sharer chose to embed
                 // the key in it. A keyless link is not worth hiding.
                 isSecret: state.keyIsInLink,
+                alignsWithSecret: state.hasSeparateKeyArtifact,
               ),
               if (state.isLoadingCipherDetails)
                 _HelperText(

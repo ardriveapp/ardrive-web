@@ -36,6 +36,7 @@ class CopyableShareArtifact extends StatefulWidget {
     required this.copyLabel,
     required this.revealLabel,
     this.isSecret = false,
+    this.alignsWithSecret = false,
   });
 
   final String label;
@@ -52,17 +53,23 @@ class CopyableShareArtifact extends StatefulWidget {
   /// a reveal toggle.
   final bool isSecret;
 
+  /// Whether a secret is shown with this artifact, such as a link above its
+  /// access key. The reveal control's space is then kept here too, so the two
+  /// fields are the same width.
+  final bool alignsWithSecret;
+
   @override
   State<CopyableShareArtifact> createState() => _CopyableShareArtifactState();
 }
 
 class _CopyableShareArtifactState extends State<CopyableShareArtifact> {
-  /// The reveal control's footprint, reserved on every row.
+  /// The reveal control's footprint.
   ///
-  /// Only a secret has something to reveal, but the slot is held open either
-  /// way: without it, the field beside a reveal button is narrower than the one
-  /// without, so a dialog showing a link above a key rendered two boxes of
-  /// visibly different widths.
+  /// Held open beside a field that is not secret only when it sits with one
+  /// that is ([CopyableShareArtifact.alignsWithSecret]): without it, a dialog
+  /// showing a link above a key rendered two boxes of visibly different
+  /// widths. Held open everywhere, it left a gap before Copy link on every
+  /// link that has no key at all.
   static const _revealSlotWidth = 36.0;
 
   late final TextEditingController _controller =
@@ -97,70 +104,105 @@ class _CopyableShareArtifactState extends State<CopyableShareArtifact> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final isMasked = widget.isSecret && !_isRevealed;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    final hasRevealSlot = widget.isSecret || widget.alignsWithSecret;
+
+    // The label is drawn above the row, in the field's own label style,
+    // rather than by the field: inside it, the row centred Copy link on the
+    // label and box together, so it sat above the middle of the box.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: ArDriveTextFieldNew(
-            // [ArDriveTextFieldNew] copies `obscureText` into its own state in
-            // `initState` and never syncs it again, so toggling the property
-            // on a mounted field does nothing. The key forces a fresh one -
-            // the same trick, for the same reason, that the file share dialog
-            // uses on its checkbox. Safe here because the field is read only
-            // and its value lives on the controller, so a remount loses
-            // nothing.
-            key: ValueKey(isMasked),
-            label: widget.label,
-            controller: _controller,
-            isEnabled: false,
-            obscureText: isMasked,
-            // Deliberately not the field's own `showObfuscationToggle`: it
-            // renders inside the decoration of a disabled field, which
-            // swallows the tap, so the mask could never be lifted. Asserted by
-            // `test/components/copyable_share_artifact_test.dart`.
-            showObfuscationToggle: false,
+        // Seen, not heard: the field below carries the label for a screen
+        // reader, which would otherwise read it twice.
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: ExcludeSemantics(
+            child: TextFieldLabelNew(
+              text: widget.label,
+              style: typography.paragraphNormal(
+                color: colorTokens.textLow,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
           ),
         ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: _revealSlotWidth,
-          child: widget.isSecret
-              // Material's `IconButton` rather than the `GestureDetector` +
-              // `ArDriveClickArea` pair used elsewhere: this control has no
-              // visible label, so it needs the keyboard focus and the announced
-              // name that a raw gesture detector does not provide.
-              ? IconButton(
-                  icon: isMasked
-                      ? ArDriveIcons.eyeClosed(color: colorTokens.textMid)
-                      : ArDriveIcons.eyeOpen(color: colorTokens.textMid),
-                  onPressed: () => setState(() => _isRevealed = !_isRevealed),
-                  tooltip: widget.revealLabel,
-                  splashRadius: 18,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints.tightFor(
-                    width: _revealSlotWidth,
-                    height: _revealSlotWidth,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              // The field's own label used to name it for a screen reader;
+              // drawn outside it, the label is given back to the field here,
+              // so "Link" or "Access key" is read with what it holds.
+              child: MergeSemantics(
+                child: Semantics(
+                  label: widget.label,
+                  child: ArDriveTextFieldNew(
+                    // [ArDriveTextFieldNew] copies `obscureText` into its own state in
+                    // `initState` and never syncs it again, so toggling the property
+                    // on a mounted field does nothing. The key forces a fresh one -
+                    // the same trick, for the same reason, that the file share dialog
+                    // uses on its checkbox. Safe here because the field is read only
+                    // and its value lives on the controller, so a remount loses
+                    // nothing.
+                    key: ValueKey(isMasked),
+                    controller: _controller,
+                    isEnabled: false,
+                    obscureText: isMasked,
+                    // Deliberately not the field's own `showObfuscationToggle`: it
+                    // renders inside the decoration of a disabled field, which
+                    // swallows the tap, so the mask could never be lifted. Asserted by
+                    // `test/components/copyable_share_artifact_test.dart`.
+                    showObfuscationToggle: false,
                   ),
-                )
-              : null,
-        ),
-        const SizedBox(width: 12),
-        CopyButton(
-          positionX: 4,
-          positionY: 40,
-          showCopyText: true,
-          text: widget.text,
-          child: Text(
-            widget.copyLabel,
-            style: typography
-                .paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colorTokens.textMid,
-                )
-                .copyWith(
-                  decoration: TextDecoration.underline,
                 ),
-          ),
+              ),
+            ),
+            if (hasRevealSlot) ...[
+              const SizedBox(width: 8),
+              SizedBox(
+                width: _revealSlotWidth,
+                child: widget.isSecret
+                    // Material's `IconButton` rather than the `GestureDetector` +
+                    // `ArDriveClickArea` pair used elsewhere: this control has no
+                    // visible label, so it needs the keyboard focus and the announced
+                    // name that a raw gesture detector does not provide.
+                    ? IconButton(
+                        icon: isMasked
+                            ? ArDriveIcons.eyeClosed(color: colorTokens.textMid)
+                            : ArDriveIcons.eyeOpen(color: colorTokens.textMid),
+                        onPressed: () =>
+                            setState(() => _isRevealed = !_isRevealed),
+                        tooltip: widget.revealLabel,
+                        splashRadius: 18,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints.tightFor(
+                          width: _revealSlotWidth,
+                          height: _revealSlotWidth,
+                        ),
+                      )
+                    : null,
+              ),
+            ],
+            const SizedBox(width: 12),
+            CopyButton(
+              positionX: 4,
+              positionY: 40,
+              showCopyText: true,
+              text: widget.text,
+              child: Text(
+                widget.copyLabel,
+                style: typography
+                    .paragraphNormal(
+                      fontWeight: ArFontWeight.semiBold,
+                      color: colorTokens.textMid,
+                    )
+                    .copyWith(
+                      decoration: TextDecoration.underline,
+                    ),
+              ),
+            ),
+          ],
         ),
       ],
     );

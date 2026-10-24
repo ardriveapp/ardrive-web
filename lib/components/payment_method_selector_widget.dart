@@ -27,9 +27,6 @@ class PaymentMethodSelector extends StatefulWidget {
   final void Function() onTurboSelect;
   final bool useNewArDriveUI;
 
-  /// Shows the two ways to pay as option cards, each with its cost and
-  /// balance, in place of the older radio list.
-  final bool useOptionCards;
   final bool showCongestionWarning;
 
   const PaymentMethodSelector({
@@ -40,7 +37,6 @@ class PaymentMethodSelector extends StatefulWidget {
     required this.onArSelect,
     required this.onTurboSelect,
     this.useNewArDriveUI = false,
-    this.useOptionCards = false,
     this.showCongestionWarning = false,
   });
 
@@ -61,8 +57,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
   Widget build(context) {
     return Column(
       children: [
-        if (widget.useOptionCards) _buildOptionCards(context),
-        if (!widget.useOptionCards) _buildContent(context),
+        _buildOptionCards(context),
         if (widget.showCongestionWarning && _selectedMethod == UploadMethod.ar)
           Padding(
             padding: const EdgeInsets.only(top: 12.0),
@@ -161,166 +156,6 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     );
   }
 
-  Widget _buildContent(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return Column(
-      children: [
-        Text(
-          'Payment method:', // TODO: localize
-          style: ArDriveTypography.body.buttonLargeBold(),
-        ),
-        const SizedBox(
-          height: 8,
-        ),
-        ArDriveRadioButtonGroup(
-          size: 15,
-          onChanged: (index, value) {
-            switch (index) {
-              case 0:
-                if (value) {
-                  widget.onArSelect();
-                }
-                break;
-
-              case 1:
-                if (value) {
-                  widget.onTurboSelect();
-                }
-                break;
-            }
-          },
-          options: [
-            // FIXME: rename to RadioButtonOption
-            RadioButtonOptions(
-              value: widget.uploadMethodInfo.uploadMethod == UploadMethod.ar,
-              text: appLocalizationsOf(context).cost(convertWinstonToCostString(
-                  widget.uploadMethodInfo.costEstimateAr.totalCost)),
-              textStyle: widget.useNewArDriveUI
-                  ? typography.paragraphLarge(
-                      fontWeight: ArFontWeight.bold,
-                    )
-                  : ArDriveTypography.body.buttonLargeBold(),
-            ),
-            if (widget.uploadMethodInfo.costEstimateTurbo != null &&
-                widget.uploadMethodInfo.isTurboUploadPossible)
-              RadioButtonOptions(
-                value:
-                    widget.uploadMethodInfo.uploadMethod == UploadMethod.turbo,
-                text: widget.uploadMethodInfo.hasNoTurboBalance
-                    ? ''
-                    : appLocalizationsOf(context).costCredits(
-                        convertWinstonToCostString(widget
-                            .uploadMethodInfo.costEstimateTurbo!.totalCost)),
-                textStyle: widget.useNewArDriveUI
-                    ? typography.paragraphLarge(
-                        color: colorTokens.textHigh,
-                        fontWeight: ArFontWeight.bold)
-                    : ArDriveTypography.body.buttonLargeBold(),
-                // No top-up offer for somebody whose credits are on the wallet
-                // they signed in with: offering to sell more to a person who has
-                // just paid is the worst answer available, and it is the one this
-                // sheet gave. The notice saying where the credits are is drawn
-                // under the sheet by [_getInsufficientBalanceMessage] instead,
-                // because that is the one place every mode renders - the dropdown
-                // most uploads use has no radio row to put it in.
-                content: widget.uploadMethodInfo.sourceWalletCredits != null
-                    ? null
-                    : widget.uploadMethodInfo.hasNoTurboBalance
-                        ? GestureDetector(
-                            onTap: () {
-                              showTurboTopupModal(context, onSuccess: () {
-                                widget.onTurboTopupSucess();
-                              });
-                            },
-                            child: ArDriveClickArea(
-                              child: RichText(
-                                text: TextSpan(
-                                  children: [
-                                    // TODO: use text with multiple styles
-                                    TextSpan(
-                                      text:
-                                          'Use Turbo Credits', // TODO: localize
-                                      style: widget.useNewArDriveUI
-                                          ? typography.paragraphLarge(
-                                              color: colorTokens.textMid,
-                                              fontWeight: ArFontWeight.bold,
-                                            )
-                                          : ArDriveTypography.body
-                                              .buttonLargeBold(
-                                              color: ArDriveTheme.of(context)
-                                                  .themeData
-                                                  .colors
-                                                  .themeFgDefault,
-                                            ),
-                                    ),
-                                    TextSpan(
-                                      text:
-                                          ' for faster uploads.', // TODO: localize
-                                      style: widget.useNewArDriveUI
-                                          ? typography.paragraphLarge(
-                                              color: colorTokens.textMid,
-                                              fontWeight: ArFontWeight.bold,
-                                            )
-                                          : ArDriveTypography.body
-                                              .buttonLargeBold(
-                                              color: ArDriveTheme.of(context)
-                                                  .themeData
-                                                  .colors
-                                                  .themeFgDefault,
-                                            ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          )
-                        : null,
-              )
-          ],
-          builder: (index, radioButton) => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              radioButton,
-              Padding(
-                padding: const EdgeInsets.only(left: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      index == 0
-                          // TODO: localize
-                          ? 'Wallet Balance: ${widget.uploadMethodInfo.arBalance} AR'
-                          : 'Turbo Balance: ${widget.uploadMethodInfo.turboCredits} credits',
-                      style: widget.useNewArDriveUI
-                          ? typography.paragraphNormal(
-                              color: colorTokens.textLow,
-                              fontWeight: ArFontWeight.semiBold,
-                            )
-                          : ArDriveTypography.body.buttonNormalBold(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgMuted,
-                            ),
-                    ),
-                    if (index == 0 && widget.showCongestionWarning)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: _buildCongestionWarning(context),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _getInsufficientBalanceMessage({
     required BuildContext context,
   }) {
@@ -354,27 +189,8 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         onShare: widget.onShareCredits,
       );
 
-      // Short of AR while paying with AR is still worth saying: it is true, and
-      // it is not a sales pitch. The notice beside it is the way out. The
-      // option cards already say it on the wallet card.
-      if (arShort && !widget.useOptionCards) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Insufficient AR balance for purchase.',
-              style: ArDriveTypography.body.captionBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
-              ),
-            ),
-            const SizedBox(height: 8),
-            notice,
-          ],
-        );
-      }
-
+      // Short of AR is already said on the wallet card; the notice is the way
+      // out.
       return notice;
     }
 
@@ -386,28 +202,6 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         widget.uploadMethodInfo.sufficientArBalance) {
       // The Turbo card already says the credits are short; what is left to
       // offer is the way to add some.
-      if (widget.useOptionCards) {
-        return GestureDetector(
-          onTap: () {
-            showTurboTopupModal(context, onSuccess: () {
-              widget.onTurboTopupSucess();
-            });
-          },
-          child: ArDriveClickArea(
-            child: Text(
-              appLocalizationsOf(context).addCreditsToUpload,
-              style: ArDriveTypography.body
-                  .captionBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeErrorDefault,
-                  )
-                  .copyWith(decoration: TextDecoration.underline),
-            ),
-          ),
-        );
-      }
       return GestureDetector(
         onTap: () {
           showTurboTopupModal(context, onSuccess: () {
@@ -415,56 +209,28 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           });
         },
         child: ArDriveClickArea(
-          child: Text.rich(
-            TextSpan(
-              text: 'Insufficient Credit balance for purchase. ',
-              style: ArDriveTypography.body.captionBold(
-                color:
-                    ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
-              ),
-              children: [
-                TextSpan(
-                  text: 'Add credits',
-                  style: ArDriveTypography.body
-                      .captionBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeErrorDefault,
-                      )
-                      .copyWith(decoration: TextDecoration.underline),
-                ),
-                TextSpan(
-                  text: ' to use Turbo.',
-                  style: ArDriveTypography.body.captionBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeErrorDefault,
-                  ),
-                ),
-              ],
-            ),
+          child: Text(
+            appLocalizationsOf(context).addCreditsToUpload,
+            style: ArDriveTypography.body
+                .captionBold(
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeErrorDefault,
+                )
+                .copyWith(decoration: TextDecoration.underline),
           ),
         ),
       );
     }
 
-    // With the option cards, the wallet card already says AR is short. When
-    // the credits are short too, the message below still has to say so,
-    // because it carries the only way forward: adding credits.
+    // The wallet card already says AR is short. When the credits are short
+    // too, the message below still has to say so, because it carries the only
+    // way forward: adding credits.
     if (widget.uploadMethodInfo.uploadMethod == UploadMethod.ar &&
         !widget.uploadMethodInfo.sufficientArBalance &&
-        !(widget.useOptionCards && bothShort)) {
-      if (widget.useOptionCards) {
-        return const SizedBox();
-      }
-      return Text(
-        'Insufficient AR balance for purchase.',
-        style: ArDriveTypography.body.captionBold(
-          color: ArDriveTheme.of(context).themeData.colors.themeErrorDefault,
-        ),
-      );
+        !bothShort) {
+      return const SizedBox();
     }
 
     if (bothShort) {

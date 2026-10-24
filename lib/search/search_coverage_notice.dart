@@ -167,23 +167,18 @@ class SearchCoverageNotice extends StatelessWidget {
                   ),
                 ),
                 if (!syncing)
-                  // As wide as its label. The button fills whatever width it
-                  // is given, and once it wraps under the text that was the
-                  // whole dropdown.
-                  IntrinsicWidth(
-                    child: ArDriveButtonNew(
-                      text: failed
-                          ? localizations.tryAgain
-                          : localizations.searchSyncDrives(unsearched),
-                      typography: typography,
-                      variant: ButtonVariant.primary,
-                      maxHeight: 36,
-                      // Only one sync runs at a time; this one can start when
-                      // the other ends.
-                      isDisabled:
-                          state.syncStatus == SearchSyncStatus.otherSyncRunning,
-                      onPressed: sync,
-                    ),
+                  ArDriveButtonNew(
+                    text: failed
+                        ? localizations.tryAgain
+                        : localizations.searchSyncDrives(unsearched),
+                    typography: typography,
+                    variant: ButtonVariant.primary,
+                    maxHeight: 36,
+                    // Only one sync runs at a time; this one can start when
+                    // the other ends.
+                    isDisabled:
+                        state.syncStatus == SearchSyncStatus.otherSyncRunning,
+                    onPressed: sync,
                   ),
               ],
             ),
