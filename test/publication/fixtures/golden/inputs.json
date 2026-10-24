@@ -42,14 +42,16 @@
     },
     "title": "Phil’s <Archive> & \"more\"",
     "description": "Tabs\tand\u0007bells, a line separator, 日本語 and '\\\\' too.",
+    "fileCount": 79,
     "keywords": [
       "photos",
       "café",
       "日本"
     ],
     "license": {
-      "type": "CC-BY-4.0",
-      "name": "Attribution 4.0 International"
+      "name": "Attribution 4.0 International",
+      "shortName": "CC-BY 4.0",
+      "definitionTxId": "mSOFUrl5mUQvG7VBP36DD39kzJASv9FDe3NX5hB3sYk"
     },
     "images": {
       "icon": "icon-512.png",

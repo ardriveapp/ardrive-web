@@ -37,6 +37,7 @@ void main() {
       snapshotTags: (publication['snapshotTags'] as Map).cast<String, String>(),
       title: publication['title'],
       description: publication['description'],
+      fileCount: publication['fileCount'],
       keywords: (publication['keywords'] as List).cast<String>(),
       license: (publication['license'] as Map).cast<String, String>(),
       images: (publication['images'] as Map).cast<String, String>(),

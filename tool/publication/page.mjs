@@ -49,8 +49,9 @@ export const FILES_PAGE_CAP = 5000;
 
 /**
  * publication.json. `snapshot.tags` is every tag of the artifact, which the
- * viewer builds its import candidate from instead of GraphQL. `keywords` and
- * `license` are written only when the owner set them.
+ * viewer builds its import candidate from instead of GraphQL. `fileCount`
+ * (what the publication lists, for its owner), `keywords` and `license` are
+ * written only when set.
  */
 export function buildPublicationJson({
   driveId,
@@ -63,6 +64,7 @@ export function buildPublicationJson({
   snapshotTags,
   title,
   description,
+  fileCount,
   keywords,
   license,
   images,
@@ -81,6 +83,7 @@ export function buildPublicationJson({
     title,
     description,
   };
+  if (fileCount != null) config.fileCount = fileCount;
   if (keywords?.length) config.keywords = keywords;
   if (license) config.license = license;
   if (images && Object.keys(images).length) config.images = images;

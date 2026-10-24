@@ -52,8 +52,9 @@ Map<String, T> _sorted<T>(Map<String, T> map) => Map.fromEntries(
     map.entries.toList()..sort((a, b) => a.key.compareTo(b.key)));
 
 /// `publication.json`. [snapshotTags] are every tag of the artifact, which the
-/// viewer builds its import candidate from instead of GraphQL. [keywords] and
-/// [license] are written only when the owner set them.
+/// viewer builds its import candidate from instead of GraphQL. [fileCount]
+/// (what the publication lists, for its owner), [keywords] and [license] are
+/// written only when set.
 String buildPublicationJson({
   required String driveId,
   required String rootFolderId,
@@ -65,6 +66,7 @@ String buildPublicationJson({
   required Map<String, String> snapshotTags,
   required String title,
   required String description,
+  int? fileCount,
   List<String> keywords = const [],
   Map<String, Object>? license,
   Map<String, String> images = const {},
@@ -88,6 +90,7 @@ String buildPublicationJson({
     },
     'title': title,
     'description': description,
+    if (fileCount != null) 'fileCount': fileCount,
     if (keywords.isNotEmpty) 'keywords': keywords,
     if (license != null) 'license': license,
     if (images.isNotEmpty) 'images': images,

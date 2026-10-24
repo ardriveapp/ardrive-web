@@ -5,6 +5,7 @@ import 'package:ardrive/publication/presentation/publication_loader/publication_
 import 'package:ardrive/publication/presentation/publication_loader_page.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
@@ -450,6 +451,34 @@ class _Byline extends StatelessWidget {
                       formatDate(publishedAt),
                     )).replaceAll(' • ', '\u00a0• ')}',
             ),
+          // The licence its owner set for everything in it, named and linked
+          // to the transaction that defines it.
+          if (config.license case final license?) ...[
+            const TextSpan(text: '\u00a0• '),
+            WidgetSpan(
+              alignment: PlaceholderAlignment.baseline,
+              baseline: TextBaseline.alphabetic,
+              child: Tooltip(
+                message: license.name,
+                child: ArDriveClickArea(
+                  child: GestureDetector(
+                    onTap: () => openUrl(
+                      url:
+                          '${context.read<ConfigService>().config.arweaveGatewayForDataRequest.url}'
+                          '/${license.definitionTxId}',
+                    ),
+                    child: Text(
+                      license.shortName,
+                      style: style.copyWith(
+                        decoration: TextDecoration.underline,
+                        decorationColor: colors.textMid,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
