@@ -1,0 +1,42 @@
+{
+  "manifest": "arweave/paths",
+  "version": "0.2.0",
+  "index": {
+    "path": "index.html"
+  },
+  "fallback": {
+    "id": "page-index-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "paths": {
+    "Zeta.png": {
+      "id": "zeta-png-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "files.html": {
+      "id": "page-files-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "icon-32.png": {
+      "id": "icon-32-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "index.html": {
+      "id": "page-index-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "main.dart.js": {
+      "id": "main-dart-js-aaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "publication.json": {
+      "id": "page-config-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "sitemap.xml": {
+      "id": "page-sitemap-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "snapshot": {
+      "id": "3l3i5yV0Hj4aupT1g2Y5etEuzeASu1uPcmE0-LD3IGE"
+    },
+    "social.jpg": {
+      "id": "social-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "version.json": {
+      "id": "version-json-aaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  }
+}

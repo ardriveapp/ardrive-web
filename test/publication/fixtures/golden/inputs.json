@@ -1,0 +1,125 @@
+{
+  "releaseIndexHtml": "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"description\" content=\"ArDrive is a permanent home.\" />\n    <!-- <meta property=\"og:title\" content=\"in a comment\"> -->\n    <meta property=\"og:title\" content=\"ArDrive\">\n    <meta property=\"og:image\" content=\"https://arweave.net/raw/card\">\n    <meta name=\"twitter:card\" content=\"summary_large_image\">\n    <meta name=\"theme-color\" content=\"#000\">\n    <link rel=\"shortcut icon\" type=\"image/png\" href=\"favicon.png\" />\n    <link rel=\"apple-touch-icon\" href=\"icons/Icon-192.png\">\n    <title>ArDrive</title>\n  </head>\n  <body>\n    <script src=\"main.dart.js\"></script>\n  </body>\n</html>\n",
+  "releaseManifest": {
+    "manifest": "arweave/paths",
+    "version": "0.2.0",
+    "index": {
+      "path": "index.html"
+    },
+    "fallback": {
+      "id": "release-index-id-aaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "paths": {
+      "main.dart.js": {
+        "id": "main-dart-js-aaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "index.html": {
+        "id": "release-index-id-aaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "version.json": {
+        "id": "version-json-aaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "Zeta.png": {
+        "id": "zeta-png-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  },
+  "publication": {
+    "driveId": "c863be1f-a725-4554-9a9e-18268ed8a035",
+    "rootFolderId": "41520b33-28c1-4892-886b-b845a5709085",
+    "folderId": "7a9cf6a6-42a0-4773-98df-ce191b5a4a4b",
+    "privacy": "public",
+    "owner": "iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA",
+    "ownerName": "Phil é 🎉",
+    "snapshotTxId": "3l3i5yV0Hj4aupT1g2Y5etEuzeASu1uPcmE0-LD3IGE",
+    "snapshotTags": {
+      "Entity-Type": "drive-state",
+      "Drive-Id": "c863be1f-a725-4554-9a9e-18268ed8a035",
+      "Block-Start": "0",
+      "Block-End": "1879136",
+      "App-Name": "ArDrive-Web",
+      "Content-Type": "application/octet-stream"
+    },
+    "title": "Phil’s <Archive> & \"more\"",
+    "description": "Tabs\tand\u0007bells, a line separator, 日本語 and '\\\\' too.",
+    "fileCount": 79,
+    "keywords": [
+      "photos",
+      "café",
+      "日本"
+    ],
+    "license": {
+      "name": "Attribution 4.0 International",
+      "shortName": "CC-BY 4.0",
+      "definitionTxId": "mSOFUrl5mUQvG7VBP36DD39kzJASv9FDe3NX5hB3sYk",
+      "params": {
+        "License-Fee": "One-Time-0.1",
+        "Commercial-Use": "Allowed"
+      }
+    },
+    "images": {
+      "icon": "icon-512.png",
+      "social": "social.jpg",
+      "cover": "cover.jpg"
+    },
+    "generatedCard": true,
+    "publishedAt": "2026-10-23T18:02:11Z",
+    "viewer": {
+      "release": "2.91.0",
+      "manifest": "kQJt49W-uYw_E7YSqQqkUARNZPg4H38hFnOMP4hf9MA"
+    }
+  },
+  "publicationId": "5f0c8b5e-7f53-4c31-9a3e-2f1d4c8b6a90",
+  "socialImageUrl": "https://turbo-gateway.com/social-image-id-aaaaaaaaaaaaaaaaaaaaaaaaa",
+  "gateway": "https://turbo-gateway.com",
+  "labels": {
+    "filesPage": "All files",
+    "open": "Open the page",
+    "more": "And {count} more files."
+  },
+  "files": [
+    {
+      "path": [
+        "b.txt"
+      ],
+      "id": "file-b-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "path": [
+        "Photos",
+        "z <1>.jpg"
+      ],
+      "id": "file-z-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "path": [
+        "Photos",
+        "Deep",
+        "été.png"
+      ],
+      "id": "file-ete-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "path": [
+        "Photos",
+        "A.jpg"
+      ],
+      "id": "file-a-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "path": [
+        "a.txt"
+      ],
+      "id": "file-a2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "pagePaths": {
+    "index.html": "page-index-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "publication.json": "page-config-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "snapshot": "3l3i5yV0Hj4aupT1g2Y5etEuzeASu1uPcmE0-LD3IGE",
+    "files.html": "page-files-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "sitemap.xml": "page-sitemap-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "icon-32.png": "icon-32-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "social.jpg": "social-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
+}

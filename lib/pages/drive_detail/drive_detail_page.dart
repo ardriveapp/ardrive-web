@@ -33,6 +33,7 @@ import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/presentation/publication_chrome.dart';
+import 'package:ardrive/publication/presentation/publish_to_web.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -1049,6 +1050,20 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                   ),
                                                 ),
                                               ),
+                                            if (offersPublishToWeb(context,
+                                                driveDetailState.currentDrive))
+                                              ArDriveDropdownItem(
+                                                onClick: () => openPublishToWeb(
+                                                  context,
+                                                  drive: driveDetailState
+                                                      .currentDrive,
+                                                ),
+                                                content: PublishToWebMenuItem(
+                                                  drive: driveDetailState
+                                                      .currentDrive,
+                                                  iconSize: defaultIconSize,
+                                                ),
+                                              ),
                                             if (!PublicationMode.isOn)
                                               ArDriveDropdownItem(
                                                 onClick: () {
@@ -1797,6 +1812,17 @@ class MobileFolderNavigation extends StatelessWidget {
                             ArDriveIcons.share(
                               size: defaultIconSize,
                             ),
+                          ),
+                        ),
+                      if (offersPublishToWeb(context, state.currentDrive))
+                        ArDriveDropdownItem(
+                          onClick: () => openPublishToWeb(
+                            context,
+                            drive: state.currentDrive,
+                          ),
+                          content: PublishToWebMenuItem(
+                            drive: state.currentDrive,
+                            iconSize: defaultIconSize,
                           ),
                         ),
                       if (isOwner)

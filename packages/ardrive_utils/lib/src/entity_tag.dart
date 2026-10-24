@@ -18,6 +18,9 @@ class EntityTag {
   static const fileId = 'File-Id';
   static const snapshotId = 'Snapshot-Id';
   static const driveStateId = 'Drive-State-Id';
+  static const publicationId = 'Publication-Id';
+  static const publicationScope = 'Publication-Scope';
+  static const publicationVersion = 'Publication-Version';
 
   static const drivePrivacy = 'Drive-Privacy';
   static const driveAuthMode = 'Drive-Auth-Mode';
@@ -63,6 +66,7 @@ class EntityTypeTag {
   static const snapshot = 'snapshot';
   static const driveSignature = 'drive-signature';
   static const driveState = 'drive-state';
+  static const publication = 'publication';
 }
 
 class ContentEncodingTag {

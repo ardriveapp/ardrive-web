@@ -1,0 +1,2 @@
+# Byte-for-byte golden files: never convert their line endings.
+test/publication/fixtures/golden/** -text

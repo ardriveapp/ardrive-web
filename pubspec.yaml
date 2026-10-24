@@ -119,6 +119,8 @@ dependencies:
       ref: master
   stash: ^5.1.0
   path: ^1.8.1
+  # Publications: encodes the page's JPEGs (lib/publication/domain/publication_images.dart).
+  image: ^4.2.0
   flutter_svg: ^2.0.10+1
   sqlite3_flutter_libs: ^0.5.39
   app_settings: ^6.1.1

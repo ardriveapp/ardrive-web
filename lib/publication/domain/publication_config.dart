@@ -30,6 +30,8 @@ class PublicationConfig extends Equatable {
     required this.snapshot,
     required this.title,
     required this.description,
+    this.fileCount,
+    this.license,
     required this.images,
     required this.publishedAt,
     required this.viewer,
@@ -57,6 +59,13 @@ class PublicationConfig extends Equatable {
   final PublicationSnapshot snapshot;
   final String title;
   final String description;
+
+  /// How many files it lists, as its publisher counted them; absent from
+  /// publications written by hand.
+  final int? fileCount;
+
+  /// A licence the owner set for everything in it, shown in its byline.
+  final PublicationLicense? license;
   final PublicationImages images;
   final DateTime? publishedAt;
   final PublicationViewer? viewer;
@@ -135,6 +144,13 @@ class PublicationConfig extends Equatable {
       snapshot: snapshot,
       title: title,
       description: _optionalString(json, 'description') ?? '',
+      fileCount: switch (json['fileCount']) {
+        null => null,
+        final int count when count >= 0 => count,
+        _ => throw PublicationConfigException.invalid(
+            'fileCount must be a non-negative integer'),
+      },
+      license: PublicationLicense._fromJson(json['license']),
       images: PublicationImages._fromJson(json['images']),
       publishedAt: _optionalDate(json, 'publishedAt'),
       viewer: PublicationViewer._fromJson(json['viewer']),
@@ -153,6 +169,8 @@ class PublicationConfig extends Equatable {
         snapshot,
         title,
         description,
+        fileCount,
+        license,
         images,
         publishedAt,
         viewer,
@@ -265,6 +283,48 @@ class PublicationImages extends Equatable {
 }
 
 /// The ArDrive release the page was published to run, for the record.
+/// A licence for a whole publication: what to call it and the transaction
+/// that defines it.
+@immutable
+class PublicationLicense extends Equatable {
+  const PublicationLicense({
+    required this.name,
+    required this.shortName,
+    required this.definitionTxId,
+    this.params = const {},
+  });
+
+  final String name;
+  final String shortName;
+  final String definitionTxId;
+
+  /// A UDL's terms, by tag name (`License-Fee`, `Commercial-Use`...).
+  final Map<String, String> params;
+
+  static PublicationLicense? _fromJson(Object? json) {
+    if (json == null) return null;
+    if (json is! Map<String, dynamic>) {
+      throw PublicationConfigException.invalid('license must be an object');
+    }
+    return PublicationLicense(
+      name: _string(json, 'name', where: 'license'),
+      shortName: _string(json, 'shortName', where: 'license'),
+      definitionTxId: _address(json, 'definitionTxId', where: 'license'),
+      params: switch (json['params']) {
+        null => const {},
+        final Map<String, dynamic> params
+            when params.values.every((v) => v is String) =>
+          params.cast<String, String>(),
+        _ => throw PublicationConfigException.invalid(
+            'license.params must map names to strings'),
+      },
+    );
+  }
+
+  @override
+  List<Object?> get props => [name, shortName, definitionTxId, params];
+}
+
 @immutable
 class PublicationViewer extends Equatable {
   const PublicationViewer({required this.release, required this.manifest});

@@ -7,6 +7,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart' show decodeBase64ToString;
 
 /// Chooses what sits behind the confirm button, and is the rail that decides
 /// whether publishing is possible at all.
@@ -130,6 +131,7 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
     /// paid for, so no failure after this point may be reported as one that
     /// spent nothing. See [DriveStateUploadResult.uncertain].
     String? postedTxId;
+    Transaction? postedTx;
 
     try {
       if (useTurbo) {
@@ -146,7 +148,10 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
           wallet: wallet,
         );
 
-        return DriveStateUploadResult.published(dataItem.id);
+        return DriveStateUploadResult.published(
+          dataItem.id,
+          tags: decodedTags(dataItem.tags),
+        );
       }
 
       final tx = await _prepareTx(artifact, wallet, isArConnectProfile);
@@ -164,10 +169,16 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
       await _arweave.uploadTx(
         tx,
         maxConcurrentUploadCount: 1,
-        onTransactionPosted: () => postedTxId = tx.id,
+        onTransactionPosted: () {
+          postedTxId = tx.id;
+          postedTx = tx;
+        },
       );
 
-      return DriveStateUploadResult.published(tx.id);
+      return DriveStateUploadResult.published(
+        tx.id,
+        tags: decodedTags(tx.tags),
+      );
     } catch (e, stackTrace) {
       logger.e('[drive-state] publishing an artifact failed', e, stackTrace);
 
@@ -181,8 +192,11 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
           '[drive-state] artifact transaction $txId was posted before the '
           'upload failed; it is paid for and its data may be incomplete',
         );
+        final tx = postedTx!;
         return DriveStateUploadResult.uncertain(
           txId: txId,
+          tags: decodedTags(tx.tags),
+          resume: () => _resumeUpload(tx),
           reason: 'The transaction for this snapshot ($txId) reached the '
               'network before the upload failed, so it has been paid for, but '
               'its data may be incomplete. Look it up on a gateway before '
@@ -201,6 +215,29 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
       return const DriveStateUploadResult.failed(
         'The snapshot could not be created. If nothing was posted, nothing '
         'was spent. Check your drive before trying again.',
+      );
+    }
+  }
+
+  /// Sends [tx]'s data again after its header was accepted and a chunk
+  /// failed. The transaction is the same one, paid for once: a header the
+  /// network already has is answered 208, and chunks are idempotent.
+  Future<DriveStateUploadResult> _resumeUpload(Transaction tx) async {
+    try {
+      await _arweave.uploadTx(tx, maxConcurrentUploadCount: 1);
+      return DriveStateUploadResult.published(
+        tx.id,
+        tags: decodedTags(tx.tags),
+      );
+    } catch (e, stackTrace) {
+      logger.e('[drive-state] resuming ${tx.id} failed', e, stackTrace);
+      return DriveStateUploadResult.uncertain(
+        txId: tx.id,
+        tags: decodedTags(tx.tags),
+        resume: () => _resumeUpload(tx),
+        reason: 'The data of transaction ${tx.id} still did not finish '
+            'uploading. It is paid for; trying again sends the rest without '
+            'paying again.',
       );
     }
   }
@@ -333,4 +370,17 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
 
     return result;
   }
+}
+
+/// [tags] by name, decoded; the first of a repeated name wins, as GraphQL
+/// readers take it.
+Map<String, String> decodedTags(List<Tag> tags) {
+  final decoded = <String, String>{};
+  for (final tag in tags) {
+    decoded.putIfAbsent(
+      decodeBase64ToString(tag.name),
+      () => decodeBase64ToString(tag.value),
+    );
+  }
+  return decoded;
 }

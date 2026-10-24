@@ -179,6 +179,44 @@ Cipher-IV: <12 byte IV, base64url>  (private drives only)
 
 The published specification is the Drive State section of the ArFS entity types page on docs.ar.io (`ar-io-docs`, `content/build/advanced/arfs/entity-types.mdx`), with the read order in `reading-data.mdx`. The design and its reasoning are in `docs/DRIVE_STATE_ARTIFACT.md`, and the exact schema a reader compares is `lib/drive_state_sqlite/drive_state_artifact_schema.dart`.
 
+## Publication
+
+A Publication is a drive, or one folder of it, published by the drive's owner as a permanent web page. The entity is an Arweave path manifest: opening `https://<gateway>/<publication tx id>/` shows the drive or folder, read-only, in the ArDrive web app, which the manifest names by its release's files. Users of the ArDrive app see it as "Publish to web".
+
+```Publication Transaction
+ArFS: 0.15
+Drive-Id: <drive uuid>
+Entity-Type: publication
+Publication-Id: <uuid, kept by every version of this publication>
+Publication-Scope: <drive | folder uuid>
+Publication-Version: <the publication.json version, eg 1>
+Content-Type: application/x.arweave-manifest+json
+Unix-Time: <seconds since unix epoch>
+Keyword: <a word the owner chose>   (optional, repeated, up to 5)
+
+{ arweave/paths manifest }
+```
+
+The manifest's paths are the web app release's own files, each by transaction ID, with these over them:
+
+| Path | Points at |
+|---|---|
+| `index.html` (also the index and the fallback) | The release's `index.html` with the publication's title, description, icons and social card written into its head, and `<meta name="ardrive-publication" content="publication.json">` |
+| `publication.json` | The publication's settings: drive, scope, owner, title, description, and the Drive State it shows with that entity's tags |
+| `snapshot` | A Drive State entity of the drive, by the same owner |
+| `icon-32.png`, `icon-180.png`, `icon-512.png`, `cover.jpg`, `social.jpg` | The publication's images, when it has them |
+| `files.html`, `sitemap.xml` | Every file of the publication as a gateway link, for clients that run no script |
+
+Every file the manifest adds is a plain, public data item carrying `Publication-Id` and no `Entity-Type`: none is an ArFS entity, and none appears in the drive. A publication is never encrypted, so a client can read it without a drive key, and for a private drive it must name no drive, folder or file: its title is typed by the owner, and the drive's contents stay inside the encrypted Drive State.
+
+**Versions.** A manifest cannot change, so every update is a new Publication transaction with the same `Publication-Id`, at a link of its own, and with the same `Publication-Scope`. The latest version is the one in the highest block, with `Unix-Time` breaking a tie within a block. Earlier versions stay readable at their own links for ever.
+
+**Trust.** A client counts a Publication only when its owner is the drive's owner, as it does for Drive States, and only when the `snapshot` it names was published by that owner too. Anyone else's Publication of the same `Drive-Id` is ignored.
+
+**Discovery.** A client finds a drive's publications by querying the owner's transactions with `Entity-Type: publication` and the `Drive-Id`, and groups them by `Publication-Id`. `Publication-Scope` says which a version shows, the whole drive or one folder.
+
+The design and its reasoning are in `docs/PUBLICATIONS.md`.
+
 ## Creating a Drive
 
 To properly create a new drive, two new entities need to be created, a new Drive entity and a new Folder entity representing the root folder of that drive.

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="ardrive-publication" content="publication.json">
+    <title>Phil’s &lt;Archive&gt; &amp; &quot;more&quot;</title>
+    <meta name="description" content="Tabs	andbells, a line separator, 日本語 and &#39;\\&#39; too.">
+    <meta name="theme-color" content="#F7F7F7" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#080808" media="(prefers-color-scheme: dark)">
+    <link rel="icon" sizes="32x32" href="icon-32.png">
+    <link rel="apple-touch-icon" href="icon-180.png">
+    <meta property="og:title" content="Phil’s &lt;Archive&gt; &amp; &quot;more&quot;">
+    <meta property="og:description" content="Tabs	andbells, a line separator, 日本語 and &#39;\\&#39; too.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://turbo-gateway.com/social-image-id-aaaaaaaaaaaaaaaaaaaaaaaaa">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="sitemap" type="application/xml" href="sitemap.xml">
+    <!-- <meta property="og:title" content="in a comment"> -->
+  </head>
+  <body>
+    <noscript><a href="files.html">All files</a></noscript>
+    <script src="main.dart.js"></script>
+  </body>
+</html>
