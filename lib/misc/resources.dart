@@ -4,12 +4,9 @@ class Resources {
   static const ardrivePublicSiteLink = 'https://ardrive.io/';
   static const agreementLink = 'https://ardrive.io/tos-and-privacy/';
   static const getWalletLink = 'https://www.wander.app/';
-  static const sendGiftLink = 'https://turbo.ar.io/gift';
   static const manifestLearnMoreLink =
       'https://docs.ar.io/build/upload/manifests';
 
-  static const howAreConversionsDetermined =
-      'https://docs.ar.io/build/upload/turbo-credits';
   static const cookiePolicy = 'https://stripe.com/legal/cookies-policy';
   static const emailSupport = 'support@ardrive.io';
   static const helpCenterLink = 'https://ardrive.io/help/';
@@ -38,8 +35,6 @@ class Brand {
 
   final blackLogo1 = 'assets/images/brand/black_logo_1x.png';
   final blackLogo2 = 'assets/images/brand/black_logo_2x.png';
-  final turboWhite = 'assets/images/brand/turbo-white.svg';
-  final turboBlack = 'assets/images/brand/turbo-black.svg';
 }
 
 class Login {

@@ -124,7 +124,7 @@ lib/
 Not all features live under `blocs/`. Newer, self-contained features are top-level
 directories under `lib/` that bundle their own bloc + repository + UI — e.g. `arns/`
 (data/domain/presentation), `sync/`, `turbo/`, `download/`, `sharing/`, `search/`,
-`manifest/`, `drive_explorer/`, `gift/`, `gar/`, `user/`. Follow the layout of the
+`manifest/`, `drive_explorer/`, `gar/`, `user/`. Follow the layout of the
 nearest comparable feature rather than defaulting to `blocs/`.
 
 Note: `lib/l10n/` holds the ARB translation files; `lib/l11n/` is unrelated to
