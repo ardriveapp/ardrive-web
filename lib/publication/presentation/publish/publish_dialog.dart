@@ -530,7 +530,6 @@ class _Review extends StatelessWidget {
         if (!cost.isFree)
           PaymentMethodSelector(
             useNewArDriveUI: true,
-            useOptionCards: true,
             uploadMethodInfo: UploadPaymentMethodInfo(
               uploadMethod: state.method,
               totalSize: 0,
