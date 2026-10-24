@@ -6,4 +6,4 @@
 library;
 
 export 'publication_meta_reader_stub.dart'
-    if (dart.library.html) 'library_meta_reader_web.dart';
+    if (dart.library.html) 'publication_meta_reader_web.dart';
