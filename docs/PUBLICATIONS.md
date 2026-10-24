@@ -133,6 +133,9 @@ point at it later.
 ```
 
 - `scope` is `{"type":"drive"}` or `{"type":"folder","folderId":"…"}`.
+- `generatedSocialCard: true` marks `social.jpg` as the card ArDrive drew.
+  An update keeps an owner's own card, and keeps a generated one while
+  nothing it shows (title, description, icon, cover, file count) changes.
 - `fileCount`, `keywords` and `license` are optional. `fileCount` is what the
   publisher counted, for the owner's published view; `license` covers
   everything in the publication and is shown in its byline (a UDL adds its
@@ -346,14 +349,16 @@ since GraphQL lags.
 only by its own buttons. On a phone it is the same dialog at the screen's
 width, with the look in one column.
 
-**Blocked**, with a sentence and Close, while:
+**Blocked**, with a sentence and Close, while (and when the list of
+publications cannot be read at all, rather than risk a second publication of
+the same drive or folder):
 
 - the drive is syncing, or has not been fully read in this session (the
   snapshot dialog's own sync check and sentence);
 - any upload in the drive is unconfirmed: "Some uploads in this drive aren't
   confirmed yet. Publish once they are; it usually takes a few minutes." (a
   new snapshot would refuse them);
-- the folder is hidden: "This folder is hidden. Unhide it to publish it.";
+- the folder is hidden, or inside a hidden folder;
 - nothing visible is in it: "There's nothing to publish here yet: no files
   visitors could see.";
 - the release a publication runs cannot be read, or a new snapshot is
@@ -387,8 +392,9 @@ small, so it may look soft."; one that is not a picture says what to use.
 **From this drive** lists the drive's images (by type, or by name when the
 type was never recorded), newest first.
 
-**Step 3 · Review and publish.** What (name • N files), title, snapshot ("The
-latest snapshot. Nothing changed since." or "A new snapshot of the drive,
+**Step 3 · Review and publish.** What (name • N files), title, snapshot (the
+newest one in a block, when nothing in the drive is newer and it counts what
+this device holds: "The latest snapshot. Nothing changed since." or "A new snapshot of the drive,
 included in the cost."), link ("A new link of its own." or, for an update,
 "A new link. The current one keeps working."), one cost in the method chosen,
 the Turbo free-tier message, the payment selector (Turbo or AR), and with AR:
@@ -400,9 +406,15 @@ or deleted." The button is **Publish**.
 files, uploading, getting the page ready (Turbo). "Keep this window open until
 it's done."
 
-**Failed.** "Publishing didn't finish", why, and **Try again**, which reuses
-what was signed and posted, so nothing is paid twice. A transaction that
-reached the network first is named.
+**Failed.** "Publishing didn't finish", why, **Back** and **Try again**. Try
+again reuses what was signed and posted, so nothing is paid twice: an AR
+transaction (the snapshot or the bundle) whose header was accepted and whose
+data did not finish is sent again as the same transaction, which costs
+nothing more. Back returns to the review with all that kept, to add credits
+or pay with AR instead; switching to AR bundles only what Turbo had not
+taken. A transaction that reached the network first is named. A publish
+that fails while it is being priced goes back through pricing, so it never
+publishes a look the owner has since changed.
 
 **Done.** "Your page is published" (AR: "Your page is on its way"), the link,
 **Copy link** and **Open**, and "A new page can take a minute to load the
