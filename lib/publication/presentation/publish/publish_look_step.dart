@@ -243,9 +243,12 @@ class _KeywordsState extends State<_Keywords> {
               for (final keyword in keywords)
                 Container(
                   padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
+                  // Outlined, as input chips are: on the light dialog the
+                  // fill alone matched the background.
                   decoration: BoxDecoration(
                     color: colors.containerL2,
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colors.strokeMid),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -389,6 +392,7 @@ class _ImageField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
+    final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final cubit = context.read<PublishCubit>();
     final picked = context.select((PublishCubit c) => _picked(c.state));
@@ -420,26 +424,45 @@ class _ImageField extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  publishButton(
-                    context,
-                    strings.publishUpload,
-                    onPressed: () => _upload(cubit),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      publishButton(
+                        context,
+                        strings.publishUpload,
+                        onPressed: () => _upload(cubit),
+                      ),
+                      publishButton(
+                        context,
+                        strings.publishFromDrive,
+                        onPressed: () => _fromDrive(context, cubit),
+                      ),
+                    ],
                   ),
-                  publishButton(
-                    context,
-                    strings.publishFromDrive,
-                    onPressed: () => _fromDrive(context, cubit),
-                  ),
-                  if (picked != null)
-                    publishButton(
-                      context,
-                      strings.publishRemove,
-                      onPressed: () => cubit.removeImage(slot),
+                  // A link under the buttons rather than a third button,
+                  // which wrapped onto a line of its own beside a cover.
+                  if (picked != null) ...[
+                    const SizedBox(height: 6),
+                    ArDriveClickArea(
+                      child: GestureDetector(
+                        onTap: () => cubit.removeImage(slot),
+                        child: Text(
+                          strings.publishRemove,
+                          style: typography
+                              .paragraphNormal(
+                                fontWeight: ArFontWeight.semiBold,
+                                color: colors.textMid,
+                              )
+                              .copyWith(decoration: TextDecoration.underline),
+                        ),
+                      ),
                     ),
+                  ],
                 ],
               ),
             ),
