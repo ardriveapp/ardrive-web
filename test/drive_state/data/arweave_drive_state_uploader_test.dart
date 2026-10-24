@@ -9,6 +9,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart' show encodeStringToBase64;
 import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -81,6 +82,11 @@ void main() {
     when(() => dataItem.sign(any())).thenAnswer((_) async => Uint8List(0));
     when(() => transaction.id).thenReturn('transaction-id');
     when(() => transaction.sign(any())).thenAnswer((_) async {});
+    when(() => dataItem.tags).thenReturn([
+      Tag(encodeStringToBase64('Entity-Type'),
+          encodeStringToBase64('drive-state')),
+    ]);
+    when(() => transaction.tags).thenReturn([]);
 
     when(() => arweave.prepareEntityDataItem(
           any(),
@@ -138,6 +144,10 @@ void main() {
       );
 
       expect(result.isPublished, isTrue);
+      // A publication copies the artifact's tags from here.
+      if (result.txId == 'data-item-id') {
+        expect(result.tags, {'Entity-Type': 'drive-state'});
+      }
       expect(result.txId, 'data-item-id');
 
       verify(() => turboUploadService.postDataItem(

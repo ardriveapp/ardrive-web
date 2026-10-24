@@ -7,6 +7,7 @@ import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:arweave/arweave.dart';
+import 'package:arweave/utils.dart' show decodeBase64ToString;
 
 /// Chooses what sits behind the confirm button, and is the rail that decides
 /// whether publishing is possible at all.
@@ -146,7 +147,10 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
           wallet: wallet,
         );
 
-        return DriveStateUploadResult.published(dataItem.id);
+        return DriveStateUploadResult.published(
+          dataItem.id,
+          tags: decodedTags(dataItem.tags),
+        );
       }
 
       final tx = await _prepareTx(artifact, wallet, isArConnectProfile);
@@ -167,7 +171,10 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
         onTransactionPosted: () => postedTxId = tx.id,
       );
 
-      return DriveStateUploadResult.published(tx.id);
+      return DriveStateUploadResult.published(
+        tx.id,
+        tags: decodedTags(tx.tags),
+      );
     } catch (e, stackTrace) {
       logger.e('[drive-state] publishing an artifact failed', e, stackTrace);
 
@@ -333,4 +340,17 @@ class ArweaveDriveStateUploader implements DriveStateUploader {
 
     return result;
   }
+}
+
+/// [tags] by name, decoded; the first of a repeated name wins, as GraphQL
+/// readers take it.
+Map<String, String> decodedTags(List<Tag> tags) {
+  final decoded = <String, String>{};
+  for (final tag in tags) {
+    decoded.putIfAbsent(
+      decodeBase64ToString(tag.name),
+      () => decodeBase64ToString(tag.value),
+    );
+  }
+  return decoded;
 }

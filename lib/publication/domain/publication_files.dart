@@ -66,7 +66,7 @@ String buildPublicationJson({
   required String title,
   required String description,
   List<String> keywords = const [],
-  Map<String, String>? license,
+  Map<String, Object>? license,
   Map<String, String> images = const {},
   required String publishedAt,
   ({String release, String manifest})? viewer,
