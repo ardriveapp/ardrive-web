@@ -262,6 +262,24 @@ class ArDriveTextButton extends StatelessWidget {
 
 enum ButtonVariant { primary, secondary, outline }
 
+/// The three heights a button comes in. Pick by where the button sits, not by
+/// what fits: every button in the same place is the same height.
+enum ArDriveButtonSize {
+  /// 36: inside a card, banner, list row or notice.
+  compact(36),
+
+  /// 40: dialog actions, toolbars, and anywhere else by default.
+  regular(40),
+
+  /// 48: a full-width button that is the main action of a page, such as
+  /// sign-in or an empty page.
+  large(48);
+
+  const ArDriveButtonSize(this.height);
+
+  final double height;
+}
+
 class ArDriveButtonNew extends StatefulWidget {
   const ArDriveButtonNew({
     super.key,
@@ -271,7 +289,7 @@ class ArDriveButtonNew extends StatefulWidget {
     this.variant = ButtonVariant.secondary,
     this.backgroundColor,
     this.fontStyle,
-    this.maxHeight,
+    this.size = ArDriveButtonSize.regular,
     this.maxWidth,
     this.borderRadius = 6,
     this.icon,
@@ -288,7 +306,9 @@ class ArDriveButtonNew extends StatefulWidget {
   final ButtonVariant variant;
   final Color? backgroundColor;
   final TextStyle? fontStyle;
-  final double? maxHeight;
+
+  /// The button's height. There are three, and nothing else sets one.
+  final ArDriveButtonSize size;
 
   /// The button's width. Null makes it as wide as its label, at least
   /// [minLabelWidth]; `double.infinity` fills the width it is given.
@@ -469,7 +489,7 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
             )
             .merge(widget.fontStyle));
 
-    final buttonH = widget.maxHeight ?? buttonDefaultHeight;
+    final buttonH = widget.size.height;
 
     if (widget.content != null) {
       return ConstrainedBox(

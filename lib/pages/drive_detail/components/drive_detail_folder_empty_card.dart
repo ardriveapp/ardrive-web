@@ -748,7 +748,7 @@ class _ActionCard {
                     typography: typography,
                     onPressed: onPressed,
                     variant: variant,
-                    maxHeight: 36,
+                    size: ArDriveButtonSize.compact,
                   ),
                 ],
               ),
@@ -796,6 +796,7 @@ class _ActionCard {
           if (inARow) const Spacer(),
           const SizedBox(height: 12),
           ArDriveButtonNew(
+            size: ArDriveButtonSize.large,
             maxWidth: double.infinity,
             text: buttonText,
             typography: typography,

@@ -141,7 +141,7 @@ class MadeWithArDrive extends StatelessWidget {
       text: strings.publicationMadeWithArDrive,
       typography: typography,
       variant: ButtonVariant.outline,
-      maxHeight: 36,
+      size: ArDriveButtonSize.compact,
       onPressed: () => openUrl(url: url),
       content: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -371,7 +371,6 @@ class _LabelledButton extends StatelessWidget {
       text: label,
       typography: typography,
       variant: ButtonVariant.outline,
-      maxHeight: 40,
       onPressed: onPressed,
       content: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6),

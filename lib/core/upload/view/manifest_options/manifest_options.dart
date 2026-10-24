@@ -365,7 +365,7 @@ class _AntSelectorState extends State<AntSelector> {
                         fontStyle: typography.paragraphSmall(),
                         variant: ButtonVariant.primary,
                         maxWidth: 80,
-                        maxHeight: 30,
+                        size: ArDriveButtonSize.compact,
                         isDisabled: isNameAlreadyInUse || _selectedAnt == null,
                         onPressed: () {
                           context

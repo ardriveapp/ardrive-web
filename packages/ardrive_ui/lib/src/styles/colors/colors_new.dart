@@ -191,44 +191,69 @@ class ArDriveColorTokens {
     required this.iconLow,
     required this.iconMid,
     required this.iconHigh,
+    required this.statusInfoFg,
+    required this.statusInfoContainer,
+    required this.statusInfoStroke,
+    required this.statusWarningFg,
+    required this.statusWarningContainer,
+    required this.statusWarningStroke,
+    required this.statusErrorFg,
+    required this.statusErrorContainer,
+    required this.statusErrorStroke,
+    required this.statusSuccessFg,
+    required this.statusSuccessContainer,
+    required this.statusSuccessStroke,
   });
 
   factory ArDriveColorTokens.darkMode() {
     var primitives = Primitives.darkMode();
 
     return ArDriveColorTokens(
-        primitives: primitives,
-        containerL0: primitives.solidGrey1000,
-        containerL1: primitives.solidGrey900,
-        containerL2: primitives.solidGrey800,
-        containerL3: primitives.solidGrey700,
-        containerRed: primitives.solidRed700,
-        textHigh: primitives.solidGrey100,
-        textMid: primitives.solidGrey200,
-        textLow: primitives.solidGrey300,
-        textXLow: primitives.solidGrey500,
-        textLink: primitives.solidGrey200,
-        textOnPrimary: primitives.solidGrey50,
-        textRed: primitives.solidRed800,
-        strokeLow: primitives.transparent100_8,
-        strokeMid: primitives.transparent100_12,
-        strokeHigh: primitives.transparent100_16,
-        strokeRed: primitives.solidRed600,
-        buttonPrimaryDefault: primitives.solidRed700,
-        buttonPrimaryHover: primitives.solidRed600,
-        buttonPrimaryPress: primitives.solidRed500,
-        buttonDisabled: primitives.solidGrey600,
-        buttonSecondaryDefault: primitives.solidGrey700,
-        buttonSecondaryHover: primitives.solidGrey600,
-        buttonSecondaryPress: primitives.solidGrey500,
-        buttonOutlineDefault: Colors.transparent,
-        buttonOutlineHover: primitives.solidGrey600,
-        buttonOutlinePress: primitives.solidGrey500,
-        inputDefault: primitives.solidGrey900,
-        inputDisabled: primitives.solidGrey800,
-        iconLow: primitives.solidGrey400,
-        iconMid: primitives.solidGrey200,
-        iconHigh: primitives.solidGrey50);
+      primitives: primitives,
+      containerL0: primitives.solidGrey1000,
+      containerL1: primitives.solidGrey900,
+      containerL2: primitives.solidGrey800,
+      containerL3: primitives.solidGrey700,
+      containerRed: primitives.solidRed700,
+      textHigh: primitives.solidGrey100,
+      textMid: primitives.solidGrey200,
+      textLow: primitives.solidGrey300,
+      textXLow: primitives.solidGrey500,
+      textLink: primitives.solidGrey200,
+      textOnPrimary: primitives.solidGrey50,
+      textRed: primitives.solidRed800,
+      strokeLow: primitives.transparent100_8,
+      strokeMid: primitives.transparent100_12,
+      strokeHigh: primitives.transparent100_16,
+      strokeRed: primitives.solidRed600,
+      buttonPrimaryDefault: primitives.solidRed700,
+      buttonPrimaryHover: primitives.solidRed600,
+      buttonPrimaryPress: primitives.solidRed500,
+      buttonDisabled: primitives.solidGrey600,
+      buttonSecondaryDefault: primitives.solidGrey700,
+      buttonSecondaryHover: primitives.solidGrey600,
+      buttonSecondaryPress: primitives.solidGrey500,
+      buttonOutlineDefault: Colors.transparent,
+      buttonOutlineHover: primitives.solidGrey600,
+      buttonOutlinePress: primitives.solidGrey500,
+      inputDefault: primitives.solidGrey900,
+      inputDisabled: primitives.solidGrey800,
+      iconLow: primitives.solidGrey400,
+      iconMid: primitives.solidGrey200,
+      iconHigh: primitives.solidGrey50,
+      statusInfoFg: const Color(0xff8b98f9),
+      statusInfoContainer: const Color(0xff111833),
+      statusInfoStroke: const Color(0xff253293),
+      statusWarningFg: const Color(0xffffcf74),
+      statusWarningContainer: const Color(0xff33250b),
+      statusWarningStroke: const Color(0xff664b16),
+      statusErrorFg: const Color(0xffe95c7b),
+      statusErrorContainer: const Color(0xff2d040d),
+      statusErrorStroke: const Color(0xff59091a),
+      statusSuccessFg: const Color(0xff5dc389),
+      statusSuccessContainer: const Color(0xff052211),
+      statusSuccessStroke: const Color(0xff0a4423),
+    );
   }
 
   factory ArDriveColorTokens.lightMode() {
@@ -267,6 +292,18 @@ class ArDriveColorTokens {
       iconLow: primitives.solidGrey500,
       iconMid: primitives.solidGrey600,
       iconHigh: primitives.solidGrey700,
+      statusInfoFg: const Color(0xff3142c4),
+      statusInfoContainer: const Color(0xffeceefe),
+      statusInfoStroke: const Color(0xffb1bafb),
+      statusWarningFg: const Color(0xff664b16),
+      statusWarningContainer: const Color(0xfffff8eb),
+      statusWarningStroke: const Color(0xffffe4af),
+      statusErrorFg: const Color(0xffc0151e),
+      statusErrorContainer: const Color(0xfffdf1f4),
+      statusErrorStroke: const Color(0xfff9d0d9),
+      statusSuccessFg: const Color(0xff11763d),
+      statusSuccessContainer: const Color(0xfff4fbf7),
+      statusSuccessStroke: const Color(0xffd1eedd),
     );
   }
 
@@ -302,4 +339,21 @@ class ArDriveColorTokens {
   final Color iconLow;
   final Color iconMid;
   final Color iconHigh;
+
+  /// Status colours, for notices and other messages that carry a meaning:
+  /// info, warning, error and success. Fg colours the icon and any emphasis,
+  /// Container fills the surface behind it and Stroke draws its edge. Body
+  /// text on a status container stays [textHigh].
+  final Color statusInfoFg;
+  final Color statusInfoContainer;
+  final Color statusInfoStroke;
+  final Color statusWarningFg;
+  final Color statusWarningContainer;
+  final Color statusWarningStroke;
+  final Color statusErrorFg;
+  final Color statusErrorContainer;
+  final Color statusErrorStroke;
+  final Color statusSuccessFg;
+  final Color statusSuccessContainer;
+  final Color statusSuccessStroke;
 }

@@ -1,8 +1,8 @@
 import 'dart:ui' show SemanticsFlag;
 
-import 'package:ardrive/components/copyable_share_artifact.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -18,10 +18,12 @@ void main() {
     String text = secret,
     bool alignsWithSecret = false,
   }) =>
-      CopyableShareArtifact(
+      ArDriveCopyField(
         label: 'Access key',
         text: text,
         copyLabel: 'Copy',
+        copiedLabel: 'Copied!',
+        copyFailedLabel: "Couldn't copy",
         revealLabel: 'Show access key',
         isSecret: isSecret,
         alignsWithSecret: alignsWithSecret,
@@ -32,7 +34,7 @@ void main() {
   bool isObscured(WidgetTester tester) =>
       tester.widget<EditableText>(find.byType(EditableText)).obscureText;
 
-  group('CopyableShareArtifact', () {
+  group('ArDriveCopyField', () {
     testWidgets('a secret artifact starts masked', (tester) async {
       await tester.pumpWidget(wrap(artifact(isSecret: true)));
 
@@ -164,6 +166,70 @@ void main() {
       final field = tester.widget<EditableText>(find.byType(EditableText));
 
       expect(field.controller.text, secret);
+    });
+  });
+
+  group('ArDriveCopyField copying', () {
+    final copies = <String>[];
+    var refuse = false;
+
+    setUp(() {
+      copies.clear();
+      refuse = false;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') {
+          if (refuse) throw PlatformException(code: 'refused');
+          copies.add((call.arguments as Map)['text'] as String);
+        }
+        return null;
+      });
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
+    testWidgets('copies the value, even while it is masked', (tester) async {
+      await tester.pumpWidget(wrap(artifact(isSecret: true)));
+
+      await tester.tap(find.text('Copy'));
+      await tester.pump();
+
+      expect(copies, [secret]);
+      expect(find.text('Copied!'), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('Copied!'), findsNothing);
+    });
+
+    testWidgets('says so when the browser refuses the copy', (tester) async {
+      refuse = true;
+      await tester.pumpWidget(wrap(artifact(isSecret: false)));
+
+      await tester.tap(find.text('Copy'));
+      await tester.pump();
+
+      expect(find.text("Couldn't copy"), findsOneWidget);
+      await tester.pump(const Duration(seconds: 2));
+    });
+
+    testWidgets('Copy is a keyboard-reachable action', (tester) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(wrap(artifact(isSecret: false)));
+
+      expect(
+          tester.getSemantics(find.byType(ArDriveLink)),
+          matchesSemantics(
+            label: 'Copy',
+            isButton: true,
+            hasEnabledState: true,
+            isEnabled: true,
+            isFocusable: true,
+            hasTapAction: true,
+          ));
+      handle.dispose();
     });
   });
 }

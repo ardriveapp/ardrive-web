@@ -259,6 +259,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
       ),
       const SizedBox(height: 24),
       ArDriveButtonNew(
+        size: ArDriveButtonSize.large,
         maxWidth: double.infinity,
         text: appLocalizationsOf(context).tryAgain,
         typography: typography,
@@ -468,7 +469,7 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
           text: appLocalizationsOf(context).syncStopRunning,
           typography: typography,
           variant: ButtonVariant.secondary,
-          maxHeight: 36,
+          size: ArDriveButtonSize.compact,
           maxWidth: 180,
           onPressed: () => context.read<SyncCubit>().cancelSync(),
         ),

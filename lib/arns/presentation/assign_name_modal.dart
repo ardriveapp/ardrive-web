@@ -486,7 +486,6 @@ class _AssignNameEmptyState extends StatelessWidget {
           child: ArDriveButtonNew(
             variant: ButtonVariant.primary,
             maxWidth: 165,
-            maxHeight: 45,
             text: 'Go to ArNS',
             rightIcon: ArDriveIcons.newWindow(
               color: colorTokens.textOnPrimary,

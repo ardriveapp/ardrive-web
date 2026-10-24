@@ -107,6 +107,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                         widget.isSolanaAvailable) ...[
                       if (widget.isArConnectAvailable) ...[
                         ArDriveButtonNew(
+                          size: ArDriveButtonSize.large,
                           maxWidth: double.infinity,
                           text: 'Continue with Arweave',
                           hoverIcon: Container(
@@ -133,6 +134,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       ],
                       if (widget.isMetamaskAvailable) ...[
                         ArDriveButtonNew(
+                          size: ArDriveButtonSize.large,
                           maxWidth: double.infinity,
                           text: 'Continue with Ethereum',
                           hoverIcon: Container(
@@ -160,6 +162,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                       ],
                       if (widget.isSolanaAvailable) ...[
                         ArDriveButtonNew(
+                          size: ArDriveButtonSize.large,
                           maxWidth: double.infinity,
                           text: 'Continue with Solana',
                           hoverIcon: Container(
@@ -188,6 +191,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                     const SizedBox(height: 40),
                     existingUserFlow
                         ? ArDriveButtonNew(
+                            size: ArDriveButtonSize.large,
                             text: 'Import wallet',
                             hoverIcon: Container(
                                 alignment: Alignment.center,
@@ -208,6 +212,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                   loginBloc: context.read<LoginBloc>());
                             })
                         : ArDriveButtonNew(
+                            size: ArDriveButtonSize.large,
                             text: 'Create a wallet',
                             typography: typography,
                             variant: ButtonVariant.primary,

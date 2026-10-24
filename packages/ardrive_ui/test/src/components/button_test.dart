@@ -318,4 +318,53 @@ void main() {
     expect(button.contains(label.centerRight - const Offset(1, 0)), isTrue,
         reason: 'the whole label is inside the button');
   });
+
+  /// Three heights, chosen by where the button sits. Buttons were 30, 36, 40,
+  /// 45, 46, 56 and 60 high, so no two screens matched.
+  testWidgets('ArDriveButtonNew comes in three heights', (tester) async {
+    for (final (size, height) in [
+      (ArDriveButtonSize.compact, 36.0),
+      (ArDriveButtonSize.regular, 40.0),
+      (ArDriveButtonSize.large, 48.0),
+    ]) {
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: ArDriveButtonNew(
+                  text: 'Save',
+                  typography: ArDriveTypographyNew.of(context),
+                  size: size,
+                  onPressed: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(tester.getSize(find.byType(ArDriveButtonNew)).height, height,
+          reason: '$size');
+    }
+  });
+
+  testWidgets('ArDriveButtonNew is the regular height by default',
+      (tester) async {
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: ArDriveButtonNew(
+                text: 'Save',
+                typography: ArDriveTypographyNew.of(context),
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byType(ArDriveButtonNew)).height, 40);
+  });
 }

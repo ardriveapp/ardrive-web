@@ -52,7 +52,6 @@ class DriveScopeEmpty extends StatelessWidget {
                 typography: typography,
                 variant: ButtonVariant.primary,
                 maxWidth: 220,
-                maxHeight: 40,
                 onPressed: () => attachDrive(context: context),
               ),
             ],

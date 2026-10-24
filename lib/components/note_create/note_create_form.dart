@@ -77,7 +77,8 @@ Future<void> promptToEditNote(
       context,
       builder: (context) => ArDriveStandardModalNew(
         title: appLocalizationsOf(context).noteLargeFileWarningTitle,
-        description: appLocalizationsOf(context).noteLargeFileWarningDescription(fileSizeMB),
+        description: appLocalizationsOf(context)
+            .noteLargeFileWarningDescription(fileSizeMB),
         actions: [
           ModalAction(
             action: () => Navigator.of(context).pop(false),
@@ -116,7 +117,8 @@ Future<void> promptToEditNote(
   // If user saved the edited note, show upload flow
   // Auto-replace the existing file without showing conflict modal
   if (ioFile != null && context.mounted) {
-    logger.d('promptToEditNote: Showing upload modal for edited note: ${ioFile.name}');
+    logger.d(
+        'promptToEditNote: Showing upload modal for edited note: ${ioFile.name}');
     await promptToUpload(
       context,
       driveId: driveId,
@@ -126,7 +128,8 @@ Future<void> promptToEditNote(
       autoReplaceConflicts: true, // Auto-replace when editing markdown
     );
   } else {
-    logger.w('promptToEditNote: Not showing upload modal - ioFile: ${ioFile != null}, context.mounted: ${context.mounted}');
+    logger.w(
+        'promptToEditNote: Not showing upload modal - ioFile: ${ioFile != null}, context.mounted: ${context.mounted}');
   }
 }
 
@@ -352,14 +355,12 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
           },
           title: appLocalizationsOf(context).cancelEmphasized,
           customWidth: 100,
-          customHeight: 40,
         ),
         ModalAction(
           action: _createNote,
           title: appLocalizationsOf(context).nextEmphasized,
           isEnable: state.isValidName,
           customWidth: 100,
-          customHeight: 40,
         ),
       ],
     );
@@ -388,9 +389,11 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
                 child: ArDriveTextFieldNew(
                   key: const Key('note_name_text_field'),
                   controller: _nameController,
-                  onChanged: cubit.isEditMode ? null : (value) {
-                    context.read<NoteCreateCubit>().updateNoteName(value);
-                  },
+                  onChanged: cubit.isEditMode
+                      ? null
+                      : (value) {
+                          context.read<NoteCreateCubit>().updateNoteName(value);
+                        },
                   hintText: appLocalizationsOf(context).enterNoteName,
                   autofocus: !cubit.isEditMode,
                   isEnabled: !cubit.isEditMode,
@@ -399,11 +402,10 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
               const SizedBox(width: 8),
               Text(
                 '.md',
-                style: ArDriveTypographyNew.of(context)
-                    .paragraphNormal()
-                    .copyWith(
-                      color: colors.themeFgSubtle,
-                    ),
+                style:
+                    ArDriveTypographyNew.of(context).paragraphNormal().copyWith(
+                          color: colors.themeFgSubtle,
+                        ),
               ),
             ],
           ),
@@ -413,8 +415,8 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
               child: Text(
                 _getErrorMessage(context, state.nameError!),
                 style: ArDriveTypographyNew.of(context).paragraphSmall(
-                      color: colors.themeErrorDefault,
-                    ),
+                  color: colors.themeErrorDefault,
+                ),
               ),
             ),
           const SizedBox(height: 16),
@@ -461,9 +463,11 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
                 child: ArDriveTextFieldNew(
                   key: const Key('note_name_text_field'),
                   controller: _nameController,
-                  onChanged: cubit.isEditMode ? null : (value) {
-                    context.read<NoteCreateCubit>().updateNoteName(value);
-                  },
+                  onChanged: cubit.isEditMode
+                      ? null
+                      : (value) {
+                          context.read<NoteCreateCubit>().updateNoteName(value);
+                        },
                   hintText: appLocalizationsOf(context).enterNoteName,
                   autofocus: !cubit.isEditMode,
                   isEnabled: !cubit.isEditMode,
@@ -472,14 +476,13 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
               const SizedBox(width: 8),
               Text(
                 '.md',
-                style: ArDriveTypographyNew.of(context)
-                    .paragraphNormal()
-                    .copyWith(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgSubtle,
-                    ),
+                style:
+                    ArDriveTypographyNew.of(context).paragraphNormal().copyWith(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colors
+                              .themeFgSubtle,
+                        ),
               ),
             ],
           ),
@@ -489,11 +492,11 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
               child: Text(
                 _getErrorMessage(context, state.nameError!),
                 style: ArDriveTypographyNew.of(context).paragraphSmall(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeErrorDefault,
-                    ),
+                  color: ArDriveTheme.of(context)
+                      .themeData
+                      .colors
+                      .themeErrorDefault,
+                ),
               ),
             ),
           const SizedBox(height: 16),
@@ -518,7 +521,8 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
   }
 
   /// Resolves error key to localized error message
-  String _getErrorMessage(BuildContext context, NoteNameValidationError errorKey) {
+  String _getErrorMessage(
+      BuildContext context, NoteNameValidationError errorKey) {
     switch (errorKey) {
       case NoteNameValidationError.empty:
         return appLocalizationsOf(context).noteNameEmptyError;
@@ -528,7 +532,8 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
   }
 
   /// Resolves note creation error key to localized error message
-  String _getCreateErrorMessage(BuildContext context, NoteCreateErrorKey errorKey) {
+  String _getCreateErrorMessage(
+      BuildContext context, NoteCreateErrorKey errorKey) {
     switch (errorKey) {
       case NoteCreateErrorKey.createFileFailed:
         return appLocalizationsOf(context).noteCreateFileFailed;
