@@ -1,8 +1,10 @@
 # Publications
 
-> **Status: DESIGN v2, agreed 2026-10-21. Not built.** Build order, code seams
-> and tests are in `docs/publications/IMPLEMENTATION_PLAN.md`. Supersedes v1
-> of this file (a plain HTML viewer with range reads), which is in git history.
+> **Status: phases 1 and 2 built** (publication mode, and publishing from
+> the app; 2026-10-24). Private publications (phase 3) and names (phase 4)
+> are designed here and not built. Build order, code seams and tests are in
+> `docs/publications/IMPLEMENTATION_PLAN.md`. A publication is an ArFS entity
+> (`docs/ArweaveFS.md`, "Publication").
 
 A publication is a permanent web page that shows one ArDrive drive, or one
 folder of it, to anyone who opens its link. It is ArDrive itself in a
@@ -47,12 +49,18 @@ costs nothing. Publish writes permanent objects to Arweave.
    and for a folder the app would let them walk up to the rest of the drive.
 9. **No per-file URLs** in v1. Files load by transaction ID from the serving
    gateway.
-10. **Republish only on request,** choosing an existing snapshot or making a
-    new one.
+10. **Update only on request.** The snapshot is chosen for the owner: the
+    newest one when nothing in the drive changed after it, else a new one.
+    An update is a new manifest with the same `Publication-Id`, so a new link;
+    the earlier links keep working.
 11. **Names:** the owner picks the main name or an undername. Unpublishing an
     undername removes its record; unpublishing a main name points it at a
     shared "no longer published" page. See [Names](#names): this whole part
     waits on ArNS-on-Solana support in the app.
+12. **A publication is an ArFS entity** (`Entity-Type: publication`), as a
+    drive state is: owner only, never encrypted, never a file in the drive,
+    found by GraphQL. Called "publication" because "page" collides with
+    deploy, which can make any page, site or app; users see "Publish to web".
 
 ## Measured facts this design rests on (2026-10-21)
 
@@ -85,7 +93,8 @@ A page manifest (`arweave/paths` 0.2.0) whose paths are:
 | `index.html` (index and fallback) | The release's `index.html` with the page's head written in | the publish |
 | `publication.json` | The page's settings and its snapshot's tags | the publish |
 | `snapshot` | A drive state artifact | earlier, or the publish |
-| `icon-32.png`, `icon-180.png`, `icon-512.png`, `social.jpg`, `cover.jpg` | The page's images, when set | the publish, or an existing transaction |
+| `icon-32.png`, `icon-180.png`, `icon-512.png`, `social.jpg`, `cover.jpg` | The page's images, when set; `social.jpg` always (the owner's or the generated card) | the publish, or an earlier version's transaction |
+| `files.html`, `sitemap.xml` | Every file as a link to its data on the gateway, for crawlers and anything that runs no script; at most 5,000 | the publish |
 | every other path of the release manifest | The release's own files, by transaction ID | CI, once per release |
 
 A page manifest is about 82 KB (616 paths, 144 of them the fallback fonts),
@@ -113,6 +122,10 @@ point at it later.
   },
   "title": "Phil's Archive",
   "description": "Photos, notes and the odd recording.",
+  "fileCount": 79,
+  "keywords": ["photos", "notes"],
+  "license": { "name": "Attribution", "shortName": "CC-BY",
+               "definitionTxId": "<licence definition tx id>" },
   "images": { "icon": "icon-512.png", "social": "social.jpg", "cover": "cover.jpg" },
   "publishedAt": "2026-10-21T18:02:11Z",
   "viewer": { "release": "2.91.0", "manifest": "<release manifest tx id>" }
@@ -120,6 +133,10 @@ point at it later.
 ```
 
 - `scope` is `{"type":"drive"}` or `{"type":"folder","folderId":"…"}`.
+- `fileCount`, `keywords` and `license` are optional. `fileCount` is what the
+  publisher counted, for the owner's published view; `license` covers
+  everything in the publication and is shown in its byline (a UDL adds its
+  terms as `params`); `keywords` are also `Keyword` tags on the manifest.
 - `snapshot.tags` copies every tag the importer reads from the artifact
   (`DriveStateArtifactCandidate`), including `Cipher` and `Cipher-IV` for a
   private drive. The viewer builds the candidate from these instead of
@@ -140,20 +157,20 @@ HTML-escaped):
   `twitter:card=summary_large_image`. `og:image` must be an absolute URL known
   before `index.html` is uploaded, so it cannot use the page manifest's ID:
   the manifest lists `index.html`, so it is built after it. The publish uploads
-  the social image first and points `og:image` at that transaction on
-  ArDrive's own gateway, `https://ardrive.net/<social-image-tx-id>`, whatever
-  gateway the owner's app uses: link previews then depend on one gateway
-  ArDrive runs (a reused image keeps its existing transaction). A path inside
-  the page (`https://ardrive.net/<manifest-id>/social.jpg`) cannot work: the
-  manifest's ID exists only after `index.html` is uploaded. Once names arrive
-  (phase 4), a page published under a name can point `og:image` at an
-  undername of its own, `https://social_<name>.ardrive.net`, whose record
-  points at the card. The undername can be set after the card is uploaded,
-  and moved later, so the card can change without republishing. It uses one
-  of the name's undername slots. It stays that URL when
-  a name is added later, because `index.html` cannot change. Every page has a
-  social image: the owner's own, or the card the publish generates (see
-  step 3), so `og:image` and `twitter:card` are always there.
+  the social image first and points `og:image` at that transaction on the
+  gateway the owner's app is set to (`turbo-gateway.com` by default), the
+  same gateway as the publication's link (a reused image keeps its existing
+  transaction). A path inside the page (`https://<gateway>/<manifest-id>/social.jpg`)
+  cannot work: the manifest's ID exists only after `index.html` is uploaded.
+  Once names arrive (phase 4), a page published under a name can point
+  `og:image` at an undername of its own, `https://social_<name>.<gateway>`,
+  whose record points at the card; it can be moved later, so the card can
+  change without republishing. Every page has a social image: the owner's
+  own, or the card the publish generates (see the look), so `og:image` and
+  `twitter:card` are always there.
+- `<link rel="sitemap" href="sitemap.xml">`, and as the first thing in
+  `<body>` a `<noscript>` link to `files.html`: the page itself is a script,
+  so these are what a crawler that runs none finds.
 
 ### How a page opens
 
@@ -304,125 +321,115 @@ existing date formatting.
 
 ## UX: the owner
 
+Users see **Publish to web**, **Published to web** and **Update**; the word
+"publication" is for the code and the protocol.
+
 ### Entry points
 
-"Publish to web" with a globe icon, beside Share in: the drive's overflow
-menu (desktop and mobile), a folder row's menu, the details panel toolbar for a
-drive or folder. Shown only when: web, signed in, the wallet owns the drive.
-Once a scope is published, the item reads "Publication…" and opens the
-management section instead.
+**Publish to web**, with a globe, beside Share in: a drive's menu (the drive
+page on desktop and phone, and the drives list), a folder row's menus, and
+the details panel's toolbar for a drive or folder. Offered on the web, in the
+app (never in a publication), to the owner of a public drive, where snapshots
+can be published (`enableDriveStatePublishing`). Hidden on private drives
+until phase 3.
+
+Once published it reads **Published to web** and opens the published view. A
+globe ("Published to web" on hover) marks published drives in the drives list
+and published folders in the explorer. One GraphQL query when the wallet
+signs in finds every publication it made, so the marks are there on any
+device before anything is synced; a publish this session is counted at once,
+since GraphQL lags.
 
 ### The publish dialog
 
-One `ArDriveStandardModal`-style dialog, 560 px wide, a step indicator ("Step 2
-of 5"), Back and Next in the footer, Cancel always available. Closing midway
-asks "Discard this publication?" only once something has been uploaded.
+`ArDriveStandardModalNew`, "Step N of 3", Back and Next in the footer, closed
+only by its own buttons. On a phone it is the same dialog at the screen's
+width, with the look in one column.
 
-**Step 1 · What gets published.** Scope as two radio rows when opened from a
-drive with a folder selected, otherwise fixed and named. Then: files, folders,
-total size; and "Left out:" with counts for hidden items, items in hidden
-folders, pending uploads, ghost folders, each with a one-line reason. Blocking
-states replace Next with the reason: "This drive is still syncing", "N uploads
-in this folder aren't confirmed yet" (with the file names, collapsible), "This
-drive hasn't been fully read on this device. Sync it first."
+**Blocked**, with a sentence and Close, while:
 
-**Step 2 · Snapshot.** "Which snapshot should the page show?" Radio rows, newest
-first, for every drive state snapshot of this drive made by its owner: date,
-file count, size, and "N changes since" (revisions after its `Block-End` in the
-local database). Last row: "Create a new snapshot · Includes every change up to
-now · <cost>". Below: "Snapshots in the older format can't be used." Over 100
-MiB: the row is disabled with "Too large for a publication". With no
-qualifying snapshot, "Create a new snapshot" is preselected and the only
-option.
+- the drive is syncing, or has not been fully read in this session (the
+  snapshot dialog's own sync check and sentence);
+- any upload in the drive is unconfirmed: "Some uploads in this drive aren't
+  confirmed yet. Publish once they are; it usually takes a few minutes." (a
+  new snapshot would refuse them);
+- the folder is hidden: "This folder is hidden. Unhide it to publish it.";
+- nothing visible is in it: "There's nothing to publish here yet: no files
+  visitors could see.";
+- the release a publication runs cannot be read, or a new snapshot is
+  refused (its reason).
 
-**Step 3 · Look.** Fields with live preview on the right (a social-card preview
-and a browser-tab preview with the icon):
+**Step 1 · What's included.** "The whole drive • <name>" or "This folder and
+everything in it • <name>"; files, folders and size; **Left out**, one line
+each: hidden items, files in hidden folders, files in folders whose details
+are missing (ghost folders), failed uploads. "Anyone with the link can
+browse, preview and download these files. Nothing else in your drive is
+shown."
+
+**Step 2 · Look.** The form on the left, live previews on the right (below
+on a phone): the page header as it will look (cover, icon, title, "By … •
+N files • licence", description) and the link preview (the social card).
 
 | Field | Control | Rules |
 |---|---|---|
-| Title | text, 60 chars | Required. Prefilled with the drive or folder name for a public drive, empty for a private one |
-| Description | text, 160 chars, counter | Optional |
-| Display name | text, 40 chars | Optional. Shown as "By <name>" in the header, with the wallet address on hover. Prefilled with the wallet's ArNS primary name once names arrive (phase 4). Empty shows the address, shortened |
-| Icon | image picker | Square, at least 512 × 512, PNG/JPEG/WebP/SVG, under 2 MB. Makes 32, 180, 512 px PNGs |
-| Social card | image picker, starting with a generated card | 1200 × 630. Cropped to 1.91:1, re-encoded JPEG, aiming under 100 KiB. Until the owner picks an image, the dialog draws one from the other fields and shows it in the preview: the cover (or the icon on a plain background), the title, the description, "N files", and a small ArDrive mark. It redraws as they type. "Remove" goes back to the generated card; a page never goes without one |
-| Cover | image picker | 1600 × 400. Cropped to 4:1, re-encoded JPEG, aiming under 100 KiB. Hint: "Keep text and faces in the middle; phones crop the sides" |
+| Title | text, 60 characters | Required. Prefilled with the drive or folder name |
+| Description | text, 160 characters | Optional |
+| Display name | text, 40 characters | Optional. "Shown after "By" under the title. Empty shows your wallet address." Prefilled from the owner's last publication in this browser, or from the version an update starts from; no ENS or SNS lookups |
+| Keywords | chips, up to 5 | Optional. `Keyword` tags on the manifest and `keywords` in `publication.json`; not written into the page |
+| Licence | menu: none, the Creative Commons licences, UDL (with its terms form) | Optional. For everything in the publication; shown in its byline, linked to its definition |
+| Icon | Upload or From this drive | Square, at least 512 pixels wide. Makes 32, 180 and 512 px PNGs |
+| Cover | Upload or From this drive | At least 1600 × 400; cropped to 4:1 from the middle; JPEG aiming under 100 KiB |
+| Social card | Upload or From this drive | At least 1200 × 630. Until the owner picks one, the card is drawn from the other fields: the cover (or a background tinted from the icon's colour), the icon, title, description, an exact "N files", and ArDrive's mark; Remove goes back to it |
 
-The image picker is a thumbnail plus "Change" opening a menu: **Upload an
-image**, **Choose from this drive** (public drives only; lists image files),
-**Use a transaction ID** (validated: the gateway returns an `image/*` content
-type and the size rules above), **Remove**. For a private drive, "Choose from
-this drive" is disabled with "Files in a private drive are encrypted. Upload
-the image instead." A too-small or wrong-type image explains what is wrong and
-what size to use.
+Pictures are decoded by the browser (PNG, JPEG, WebP, GIF, up to 20 MB) and
+cropped to the middle. A picture smaller than it is shown says "This image is
+small, so it may look soft."; one that is not a picture says what to use.
+**From this drive** lists the drive's images (by type, or by name when the
+type was never recorded), newest first.
 
-**The generated social card** is drawn in the app when the owner publishes,
-never by a server when a link is shared: a page must not depend on anything
-but the gateway serving it, for ever. It is uploaded like any other page
-image (about 0.00025 credits for a 17 KB card, October 2026), so a link
-preview works on every platform without the owner doing anything. For a
-private publication it uses only what is already public: the title, the
-description, the icon and the cover, never a file count or a name from the
-drive.
+**Step 3 · Review and publish.** What (name • N files), title, snapshot ("The
+latest snapshot. Nothing changed since." or "A new snapshot of the drive,
+included in the cost."), link ("A new link of its own." or, for an update,
+"A new link. The current one keeps working."), one cost in the method chosen,
+the Turbo free-tier message, the payment selector (Turbo or AR), and with AR:
+"With AR, the page opens a few minutes after it's published, once the network
+confirms it." Then, in the step: "Publishing is permanent. It can't be undone
+or deleted." The button is **Publish**.
 
-**Step 4 · Name.** Until phase 4: a short panel: "Your publication will have
-its own link. You can point an ArNS name at it later." No input. In phase 4:
-the name picker (see [Names](#names)).
+**Progress.** Saving a snapshot of the drive (when new), signing the page's
+files, uploading, getting the page ready (Turbo). "Keep this window open until
+it's done."
 
-**Step 5 · Review and publish.** A summary (scope, snapshot, title, link or
-name), the cost lines (new snapshot if any; images; page files: "Free") with
-the existing payment cards, then, in the step itself, not a tooltip:
+**Failed.** "Publishing didn't finish", why, and **Try again**, which reuses
+what was signed and posted, so nothing is paid twice. A transaction that
+reached the network first is named.
 
-- "Publishing is permanent. It can't be undone or deleted."
-- Private only: "Anyone with the drive key can read the whole drive, including
-  files added later, folders outside this one, and hidden items."
-- Private only: "The title, description and images are public."
+**Done.** "Your page is published" (AR: "Your page is on its way"), the link,
+**Copy link** and **Open**, and "A new page can take a minute to load the
+first time." (AR: "It opens in a few minutes, once the network confirms it.")
 
-The button is **Publish**.
+### Published view
 
-**Progress.** The same dialog lists the steps with spinners and ticks:
-snapshot (if new), images, page settings, page, page manifest, warm-up. A
-failed step shows its error and **Try again**, which resumes from that step
-(already uploaded items are reused, not re-paid).
-
-**Done.** "Your publication is published." The link with **Copy** and
-**Open**. Private: two copy buttons, "Copy link" and "Copy link with key",
-the second with "Anyone with this link can read the whole drive." A note: "A
-new page can take a minute to load the first time."
-
-### Management section
-
-In the details panel of a published drive or folder, a "Publication" section:
-status chip (Live), the link with Copy and Open, "Published <date> from the
-<date> snapshot", "N changes since then", **Republish**, and in phase 4
-**Unpublish**. States:
-
-| Condition | Shows | Action |
-|---|---|---|
-| Live and current | Link, dates | Copy, Open, Republish |
-| Live and behind | "N changes since then" | Republish |
-| Drive syncing | "Syncing; republish when it's done" | Republish disabled |
-| Pending uploads in scope | "N uploads aren't confirmed yet" | Republish disabled |
-| Not on web | Link and dates only | none |
-
-Published pages are found from the owner's own uploads by tags (below), so the
-section shows on any device. No database change.
-
-**Republish** opens the dialog prefilled from the page's current
-`publication.json`, with scope fixed, starting at the snapshot step. It writes a
-new page manifest; in phase 4 it also moves the name.
+"Published to web": the title, "Published <date> • N files", the link with
+Copy link and Open, **Update** (the dialog prefilled from the latest version,
+opening on the review), **Edit look** (the same, opening on the look), "An
+update gets a new link. Earlier links keep working.", and **Earlier versions**
+(collapsed), each with its date and time and Open.
 
 ### Tags
 
-Every publication upload carries `App-Name: ArDrive-Web`, `App-Version`, and
-`Type`: `publication` (manifest), `publication-config` (`publication.json`),
-`publication-index` (`index.html`), `publication-asset` (images). The manifest also
-carries `Drive-Id`, `Publication-Scope` (`drive` or the folder ID) and
-`Publication-Version: 1`. Discovery: owner = wallet, `Type = publication`,
-`Drive-Id`.
+The manifest is the Publication entity (`docs/ArweaveFS.md`, "Publication"):
+`ArFS: 0.15`, `Entity-Type: publication`, `Drive-Id`, `Publication-Id` (kept by
+every version), `Publication-Scope` (`drive` or the folder ID),
+`Publication-Version: 1`, `Content-Type: application/x.arweave-manifest+json`,
+a `Keyword` tag per keyword, and the app's tags (`App-Name: ArDrive-App`,
+`App-Platform`, `App-Version`, `Unix-Time`). Every other file carries its
+`Content-Type`, the `Publication-Id` and the app's tags, and no `Entity-Type`.
 
-Images, `publication.json`, `index.html` and the manifest are plain public data
-items, never ArFS entities: they must be public for a private drive, and they
-must not appear as files in the drive.
+They are plain public data items, never ArFS files: they must be public for a
+private drive, and they must not appear in the drive. Found by GraphQL: the
+owner's transactions with `Entity-Type: publication`, grouped by
+`Publication-Id`; only the drive owner's count.
 
 ## Private publications
 
@@ -439,9 +446,9 @@ must not appear as files in the drive.
 |---|---|---|
 | 0 · Compressed bundle (#2343) | `--compress gzip` in staging and production deploys; a staging channel | A staging upload loads through turbo-gateway.com and ardrive.net with every JS/wasm file carrying `Content-Encoding: gzip`; every path loads through ar-io.dev once it has fetched the upload (it may serve gzipped items decompressed, which is valid); first-visit transfer is measured |
 | 1 · Publication mode | The viewer, public publications, a script that builds a test page by hand | A hand-built page at a raw manifest URL opens a public drive and a public folder, with no request outside the serving host and gateway |
-| 2 · Publish (public) | Dialog steps 1, 2, 3, 5; management section; republish; tag discovery | A public drive and folder publish from the app; republishing with an existing snapshot and the same images costs nothing; excluded counts match the page |
+| 2 · Publish (public) | The dialog, the published view, update and edit look, the globe, discovery, the publication entity | A public drive and folder publish from the app with Turbo and AR; an update with nothing changed reuses the snapshot and earlier images; what is left out matches the page (done 2026-10-24) |
 | 3 · Private | Unlock screen, encrypted snapshots, private rules | A private folder opens in a clean profile with the key, and no drive, folder or file name appears in the manifest, `publication.json`, `index.html` or any tag |
-| 4 · Names | Step 4, unpublish, placeholder page | Needs ArNS-on-Solana in the app first |
+| 4 · Names | The name step, unpublish, placeholder page | Needs ArNS-on-Solana in the app first |
 
 Phase 1 must reach a production release before any real page works, because a
 page runs the release it pins.

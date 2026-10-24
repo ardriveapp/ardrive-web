@@ -192,6 +192,7 @@ Publication-Scope: <drive | folder uuid>
 Publication-Version: <the publication.json version, eg 1>
 Content-Type: application/x.arweave-manifest+json
 Unix-Time: <seconds since unix epoch>
+Keyword: <a word the owner chose>   (optional, repeated, up to 5)
 
 { arweave/paths manifest }
 ```

@@ -209,36 +209,50 @@ staging, which is free at that size. For the folder case use a folder inside
 
 ## Phase 2: publish (public)
 
-- `PublicationRepository` (data): find published pages by tags (owner, `Type =
-  publication`, `Drive-Id`) through the existing GraphQL client; read a
-  page's `publication.json` through the gateway.
-- `PublicationPublisher` (domain): the Dart version of the phase 1 tool. Inputs:
-  scope, chosen snapshot (or "new"), look settings, images. Steps: create
-  snapshot if asked (existing `DriveStateCreationService`), process images
-  (`packages/ardrive_utils/lib/src/generate_thumbnail.dart` already uses
-  `package:image`; crop and re-encode to the design's sizes), resolve the
-  viewer release (`publicationViewerManifestSource` config: a manifest ID as is,
-  or a name read through the gateway for its `x-arns-resolved-id`; then GET
-  `/raw/<id>`), upload the images, then write `publication.json`, `index.html`
-  (its `og:image` names the social image's transaction) and the manifest,
-  warm up. Every upload goes
-  through the existing Turbo upload path (`ArDriveUploader` data items, the
-  user's payment choice). Resumable: keep uploaded transaction IDs per step
-  for the dialog's Try again.
-- Snapshot list: `GraphQLDriveStateDiscovery` for the drive, owner-filtered;
-  "changes since" from the local database (revisions with block height above
-  `Block-End`). Refuse above 100 MiB (D5).
-- UI: entry points, the five-step dialog (step 4 shows the "link now, name
-  later" panel), progress, done, the management section, republish. Copy and
-  layout exactly as the design specifies.
-- Tests: golden test that the Dart publisher's `publication.json`, `index.html`
-  and manifest equal the phase 1 tool's for the same inputs; escaping test;
-  preconditions on cubit states (syncing, pending uploads, not fully read);
-  excluded counts against a fixture drive; republish keeps scope and writes a
-  new manifest; image processing sizes and byte budgets.
-- e2e: publish New Test Drive and a UAT folder from staging with existing
-  snapshots (free), open both links in a fresh profile, republish, check the
-  management section's states.
+Built (2026-10-24). Where it lives:
+
+- **Files and tags** (`lib/publication/domain/publication_files.dart`): the
+  port of `tool/publication/page.mjs`, held to it byte for byte by golden
+  files (`tool/publication/golden.mjs` writes them, `page.test.mjs` and
+  `test/publication/domain/publication_files_test.dart` check them):
+  `publication.json`, `index.html`, `files.html`, `sitemap.xml`, the manifest,
+  and the manifest's ArFS entity tags.
+- **Images** (`publication_images.dart`, `publication_social_card.dart`): the
+  browser decodes, a canvas crops; icons as PNG, banners as JPEG; the
+  generated card's painter also draws the dialog's preview.
+- **Discovery and reading** (`lib/publication/data/publication_repository.dart`):
+  `OwnerPublications.graphql` (the owner's `Entity-Type: publication`
+  transactions), grouped by `Publication-Id`, plus what this session
+  published; reads a version back (manifest, `publication.json`) and resolves
+  the release (`AppConfig.publicationViewer`: a manifest ID, or an ArNS name
+  read from the gateway's `x-arns-resolved-id`).
+- **Upload** (`publication_uploader.dart`): every file signed first, then
+  posted to Turbo one by one or as one AR bundle.
+- **Publisher** (`lib/publication/domain/publication_publisher.dart`): new
+  snapshot when needed (the drive state uploader returns its signed tags),
+  images, pages, manifest, warm-up; a `PublicationJob` keeps what was signed
+  and posted, so Try again pays for nothing twice.
+- **Scope** (`publication_scope.dart`): `PublicationContents.loadScope` and
+  `summarize()` count what a publication lists and why the rest is left out,
+  with the visitor's own rules; `listedFiles()` feeds `files.html`.
+- **UI** (`lib/publication/presentation/`): `PublishCubit` and the dialog
+  (`publish/`), the published view, `PublicationsCubit` (sign-in discovery,
+  the globe, the menu label), `publish_to_web.dart` (entry points, the
+  globe, `PublishToWebMenuItem`).
+
+Tests: golden parity, escaping, the publisher (order, ids, resume, AR bundle,
+reuse), the cubit (every block, reuse versus new snapshot, publish, retry,
+update prefill), the summary against a fixture drive, grouping and ordering
+of versions, image sizes and budgets.
+
+End to end (staging build, test wallet, `tool/web_e2e`): a drive published
+with Turbo after a forced Turbo failure and Try again; an update (snapshot
+and images reused); an edit of the look; a folder and another folder with AR
+through the fake gateway; every blocked state; image errors, a small-image
+warning, WebP, choosing from the drive; a second, clean profile finding the
+publications at sign-in; phone layouts. The published pages were opened in a
+clean browser and checked for their head tags, `files.html`, `sitemap.xml`,
+`publication.json` and the generated card.
 
 ## Phase 3: private
 
