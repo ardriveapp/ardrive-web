@@ -20,7 +20,9 @@ import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
 import 'package:ardrive/publication/data/download_helper.dart';
 import 'package:ardrive/publication/data/publication_meta_reader.dart';
+import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/publication/presentation/publications_cubit.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
@@ -406,6 +408,12 @@ class AppState extends State<App> {
           // ..add(const AppBannerRequested(banner: AppBannerType.announcement)),
         ),
         BlocProvider(
+          create: (context) => PublicationsCubit(
+            repository: context.read<PublicationRepository>(),
+            profileCubit: context.read<ProfileCubit>(),
+          ),
+        ),
+        BlocProvider(
           create: (context) => ProfileNameBloc(
             context.read<ARNSRepository>(),
             context.read<ProfileLogoRepository>(),
@@ -594,6 +602,14 @@ class AppState extends State<App> {
         RepositoryProvider(
           create: (context) => ProfileLogoRepository(
             localKeyValueStore,
+          ),
+        ),
+        // One for the app, so what a publish adds is known everywhere at once.
+        RepositoryProvider(
+          create: (context) => PublicationRepository(
+            graphQLRetry: arweave.graphQLRetry,
+            gatewayUrl: () =>
+                configService.config.arweaveGatewayForDataRequest.url,
           ),
         ),
       ];

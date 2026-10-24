@@ -13,6 +13,7 @@ import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/presentation/publication_chrome.dart';
+import 'package:ardrive/publication/presentation/publish_to_web.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -75,7 +76,12 @@ class DriveExplorerItemTile extends TableRowWidget {
                     Transform(
                         transform: Matrix4.translationValues(0, 2, 0),
                         child: AntIcon(fileDataTableItem: dataTableItem)),
-                  ]
+                  ],
+                  if (dataTableItem is FolderDataTableItem)
+                    PublishedToWebMark(
+                      driveId: dataTableItem.driveId,
+                      folderId: dataTableItem.id,
+                    ),
                 ],
               ),
             ),
@@ -598,6 +604,20 @@ class _DriveExplorerItemTileTrailingState
               height: height,
             ),
           ),
+        if (!item.isGhostFolder && offersPublishToWeb(context, widget.drive))
+          ArDriveDropdownItem(
+            onClick: () => openPublishToWeb(
+              context,
+              drive: widget.drive,
+              folderId: item.id,
+            ),
+            content: PublishToWebMenuItem(
+              drive: widget.drive,
+              folderId: item.id,
+              iconSize: defaultIconSize,
+              height: height,
+            ),
+          ),
         ArDriveDropdownItem(
           onClick: () {
             final bloc = context.read<DriveDetailCubit>();
@@ -1058,6 +1078,19 @@ class EntityActionsMenu extends StatelessWidget {
               ),
             ),
           ),
+        if (!item.isGhostFolder && offersPublishToWeb(context, drive))
+          ArDriveDropdownItem(
+            onClick: () => openPublishToWeb(
+              context,
+              drive: drive!,
+              folderId: item.id,
+            ),
+            content: PublishToWebMenuItem(
+              drive: drive!,
+              folderId: item.id,
+              iconSize: defaultIconSize,
+            ),
+          ),
         if (withInfo) _buildInfoOption(context),
       ];
     } else if (item is DriveDataItem) {
@@ -1189,6 +1222,14 @@ class EntityActionsMenu extends StatelessWidget {
               ),
             ),
           ),
+          if (offersPublishToWeb(context, drive))
+            ArDriveDropdownItem(
+              onClick: () => openPublishToWeb(context, drive: drive!),
+              content: PublishToWebMenuItem(
+                drive: drive!,
+                iconSize: defaultIconSize,
+              ),
+            ),
           ArDriveDropdownItem(
             onClick: () {
               promptToExportCSVData(

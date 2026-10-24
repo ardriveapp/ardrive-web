@@ -53,10 +53,28 @@ class DriveStateUploadResult {
   /// show the user. `null` only when [isPublished].
   final String? reason;
 
-  const DriveStateUploadResult._(this.outcome, this.txId, this.reason);
+  /// Every tag of the published artifact, as signed: a publication copies
+  /// them into its `publication.json` (docs/PUBLICATIONS.md), and GraphQL can
+  /// take minutes to report them. Empty unless [isPublished].
+  final Map<String, String> tags;
 
-  const DriveStateUploadResult.published(String txId)
-      : this._(DriveStateUploadOutcome.published, txId, null);
+  /// For an [uncertain] result: sends the same transaction's data again,
+  /// which costs nothing more, and reports how that went. Null when the
+  /// uploader cannot resume.
+  final Future<DriveStateUploadResult> Function()? resume;
+
+  const DriveStateUploadResult._(
+    this.outcome,
+    this.txId,
+    this.reason, [
+    this.tags = const {},
+    this.resume,
+  ]);
+
+  const DriveStateUploadResult.published(
+    String txId, {
+    Map<String, String> tags = const {},
+  }) : this._(DriveStateUploadOutcome.published, txId, null, tags);
 
   const DriveStateUploadResult.failed(String reason)
       : this._(DriveStateUploadOutcome.failed, null, reason);
@@ -67,7 +85,9 @@ class DriveStateUploadResult {
   const DriveStateUploadResult.uncertain({
     required String txId,
     required String reason,
-  }) : this._(DriveStateUploadOutcome.uncertain, txId, reason);
+    Map<String, String> tags = const {},
+    Future<DriveStateUploadResult> Function()? resume,
+  }) : this._(DriveStateUploadOutcome.uncertain, txId, reason, tags, resume);
 
   bool get isPublished => outcome == DriveStateUploadOutcome.published;
 

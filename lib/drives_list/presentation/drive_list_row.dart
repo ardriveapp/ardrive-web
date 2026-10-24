@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
+import 'package:ardrive/publication/presentation/publish_to_web.dart';
 import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -590,6 +591,7 @@ class DriveListRow extends StatelessWidget {
                 ),
               ),
               if (drive.isSharedWithMe) _SharedMarker(),
+              PublishedToWebMark(driveId: drive.id),
             ],
           ),
         ),

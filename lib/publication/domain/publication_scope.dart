@@ -1,5 +1,6 @@
 import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:equatable/equatable.dart';
 
 /// Whether [folderId] is a place the publication shows: a folder of its drive,
 /// not hidden and not inside a hidden folder, and, for a folder publication, that
@@ -48,7 +49,13 @@ const _maxDepth = 256;
 /// shows, and whose latest revision is neither failed nor pending. That is
 /// what the explorer lists, which reads files through the same query.
 class PublicationContents {
-  PublicationContents._(this._config, this._folders, this._files);
+  PublicationContents._(
+    this._config,
+    this._rootFolderId,
+    this._scopeRootFolderId,
+    this._folders,
+    this._files,
+  );
 
   /// The open publication's contents, set when it is ready; null before, and on
   /// every page that is not a publication. For code that reads a folder's
@@ -60,24 +67,60 @@ class PublicationContents {
   static Future<PublicationContents> load(
     DriveDao driveDao,
     PublicationConfig config,
-  ) async {
+  ) =>
+      _load(
+        driveDao,
+        config: config,
+        driveId: config.driveId,
+        rootFolderId: config.rootFolderId,
+        scopeRootFolderId: config.scopeRootFolderId,
+      );
+
+  /// What a publication of [scopeRootFolderId] would show: the publish
+  /// dialog asks before any `publication.json` exists.
+  static Future<PublicationContents> loadScope(
+    DriveDao driveDao, {
+    required String driveId,
+    required String rootFolderId,
+    required String scopeRootFolderId,
+  }) =>
+      _load(
+        driveDao,
+        driveId: driveId,
+        rootFolderId: rootFolderId,
+        scopeRootFolderId: scopeRootFolderId,
+      );
+
+  static Future<PublicationContents> _load(
+    DriveDao driveDao, {
+    PublicationConfig? config,
+    required String driveId,
+    required String rootFolderId,
+    required String scopeRootFolderId,
+  }) async {
     final db = driveDao.attachedDatabase;
     final folders = await (db.select(db.folderEntries)
-          ..where((f) => f.driveId.equals(config.driveId)))
+          ..where((f) => f.driveId.equals(driveId)))
         .get();
     final files = await driveDao
-        .filesInDriveWithRevisionTransactions(driveId: config.driveId)
+        .filesInDriveWithRevisionTransactions(driveId: driveId)
         .get();
     return PublicationContents._(
       config,
+      rootFolderId,
+      scopeRootFolderId,
       {for (final f in folders) f.id: f},
       {for (final f in files) f.id: f},
     );
   }
 
-  final PublicationConfig _config;
+  final PublicationConfig? _config;
 
-  PublicationConfig get config => _config;
+  /// The open publication's settings. Only for contents loaded with [load].
+  PublicationConfig get config => _config!;
+
+  final String _rootFolderId;
+  final String _scopeRootFolderId;
 
   final Map<String, FolderEntry> _folders;
   final Map<String, FileWithLatestRevisionTransactions> _files;
@@ -101,12 +144,12 @@ class PublicationContents {
       final folder = _folders[current];
       if (folder == null) break;
       path.add(current);
-      if (folder.id == _config.scopeRootFolderId) {
+      if (folder.id == _scopeRootFolderId) {
         answer = true;
         break;
       }
       if (folder.isHidden || folder.isGhost) break;
-      if (folder.id == _config.rootFolderId) break;
+      if (folder.id == _rootFolderId) break;
       current = folder.parentFolderId;
     }
     for (final id in path) {
@@ -148,5 +191,161 @@ class PublicationContents {
     final status = fileStatusFromTransactions(file.metadataTx, file.dataTx);
     return status != TransactionStatus.failed &&
         status != TransactionStatus.pending;
+  }
+}
+
+/// What publishing a scope would show and leave out (docs/PUBLICATIONS.md,
+/// "Step 1 · What's included").
+class PublicationSummary extends Equatable {
+  const PublicationSummary({
+    required this.fileCount,
+    required this.folderCount,
+    required this.totalSize,
+    required this.hiddenItems,
+    required this.inHiddenFolders,
+    required this.inGhostFolders,
+    required this.pendingFiles,
+    required this.failedFiles,
+  });
+
+  /// Files and folders the publication lists, below its top folder, and the
+  /// files' total size.
+  final int fileCount;
+  final int folderCount;
+  final int totalSize;
+
+  /// Hidden files and folders directly in what it shows.
+  final int hiddenItems;
+
+  /// Files inside a hidden folder.
+  final int inHiddenFolders;
+
+  /// Files inside a folder whose own details were never found (a ghost
+  /// folder), which the explorer does not list.
+  final int inGhostFolders;
+
+  /// Files whose latest upload is not confirmed yet, or failed.
+  final int pendingFiles;
+  final int failedFiles;
+
+  bool get isEmpty => fileCount == 0;
+
+  bool get leavesOut =>
+      hiddenItems +
+          inHiddenFolders +
+          inGhostFolders +
+          pendingFiles +
+          failedFiles >
+      0;
+
+  @override
+  List<Object?> get props => [
+        fileCount,
+        folderCount,
+        totalSize,
+        hiddenItems,
+        inHiddenFolders,
+        inGhostFolders,
+        pendingFiles,
+        failedFiles,
+      ];
+}
+
+extension PublicationContentsSummary on PublicationContents {
+  /// Counts what [files] lists and why the rest is left out. Ghost folders
+  /// are not counted: the explorer never lists them, so an owner has nothing
+  /// to recognise.
+  PublicationSummary summarize() {
+    var files = 0, size = 0, hidden = 0, inHidden = 0, inGhost = 0;
+    var pending = 0, failed = 0;
+    var folders = 0;
+    for (final folder in _folders.values) {
+      if (folder.id == _scopeRootFolderId || folder.isGhost) continue;
+      if (showsFolder(folder.id)) {
+        folders++;
+      } else if (folder.isHidden &&
+          folder.parentFolderId != null &&
+          showsFolder(folder.parentFolderId!)) {
+        hidden++;
+      }
+    }
+    for (final file in _files.values) {
+      if (!_underScope(file.parentFolderId)) continue;
+      if (!showsFolder(file.parentFolderId)) {
+        if (_underGhost(file.parentFolderId)) {
+          inGhost++;
+        } else {
+          inHidden++;
+        }
+      } else if (file.isHidden) {
+        hidden++;
+      } else {
+        switch (fileStatusFromTransactions(file.metadataTx, file.dataTx)) {
+          case TransactionStatus.pending:
+            pending++;
+          case TransactionStatus.failed:
+            failed++;
+          default:
+            files++;
+            size += file.size;
+        }
+      }
+    }
+    return PublicationSummary(
+      fileCount: files,
+      folderCount: folders,
+      totalSize: size,
+      hiddenItems: hidden,
+      inHiddenFolders: inHidden,
+      inGhostFolders: inGhost,
+      pendingFiles: pending,
+      failedFiles: failed,
+    );
+  }
+
+  /// Every file the publication lists, with its path below the top folder,
+  /// for `files.html`, folders first by name as a reader browses.
+  List<({List<String> path, String dataTxId})> listedFiles() {
+    final listed = <({List<String> path, String dataTxId})>[];
+    for (final file in files) {
+      final path = <String>[file.name];
+      String? current = file.parentFolderId;
+      for (var depth = 0;
+          current != null && current != _scopeRootFolderId && depth < _maxDepth;
+          depth++) {
+        final folder = _folders[current];
+        if (folder == null) break;
+        path.insert(0, folder.name);
+        current = folder.parentFolderId;
+      }
+      listed.add((path: path, dataTxId: file.dataTxId));
+    }
+    listed.sort((a, b) => a.path.join('/').compareTo(b.path.join('/')));
+    return listed;
+  }
+
+  /// Whether [folderId] or a folder above it, below the top folder, is a
+  /// ghost folder.
+  bool _underGhost(String folderId) {
+    String? current = folderId;
+    for (var depth = 0;
+        current != null && current != _scopeRootFolderId && depth < _maxDepth;
+        depth++) {
+      final folder = _folders[current];
+      if (folder == null || folder.isGhost) return true;
+      current = folder.parentFolderId;
+    }
+    return false;
+  }
+
+  /// Whether [folderId] is the top folder or below it, hidden or not.
+  bool _underScope(String folderId) {
+    String? current = folderId;
+    for (var depth = 0; current != null && depth < _maxDepth; depth++) {
+      if (current == _scopeRootFolderId) return true;
+      if (current == _rootFolderId) return false;
+      current = _folders[current]?.parentFolderId;
+    }
+    return false;
   }
 }

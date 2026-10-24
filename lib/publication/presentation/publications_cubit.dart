@@ -1,0 +1,143 @@
+import 'dart:async';
+
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
+import 'package:ardrive/models/models.dart';
+import 'package:ardrive/publication/data/publication_repository.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/utils/logger.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+/// A drive's publications as far as this session knows them.
+class DrivePublications extends Equatable {
+  const DrivePublications({this.loading = false, this.publications = const []});
+
+  final bool loading;
+  final List<Publication> publications;
+
+  /// The publication of the whole drive ([folderId] null) or of a folder.
+  Publication? of(String? folderId) {
+    for (final p in publications) {
+      if (p.folderId == folderId) return p;
+    }
+    return null;
+  }
+
+  @override
+  List<Object?> get props => [loading, publications];
+}
+
+class PublicationsState extends Equatable {
+  const PublicationsState([this.byDrive = const {}]);
+
+  final Map<String, DrivePublications> byDrive;
+
+  Publication? publicationOf(String driveId, String? folderId) =>
+      byDrive[driveId]?.of(folderId);
+
+  @override
+  List<Object?> get props => [byDrive];
+}
+
+/// Which of the signed-in owner's drives and folders are published to the
+/// web, for the globe beside them and for "Publish to web" to open the
+/// published view instead (docs/PUBLICATIONS.md, "Entry points").
+///
+/// One GraphQL query when a wallet signs in finds every publication it
+/// made; another after this session publishes, merged with what it
+/// published, since GraphQL lags.
+class PublicationsCubit extends Cubit<PublicationsState> {
+  PublicationsCubit({
+    required PublicationRepository repository,
+    required ProfileCubit profileCubit,
+  })  : _repository = repository,
+        _profileCubit = profileCubit,
+        super(const PublicationsState()) {
+    _changes = repository.changes.listen((_) {
+      final owner = _owner;
+      if (owner != null) _load = _loadAll(owner);
+    });
+    _profile = profileCubit.stream.listen((_) => _onProfile());
+    _onProfile();
+  }
+
+  void _onProfile() {
+    if (!kIsWeb || PublicationMode.isOn) return;
+    if (_owner != null) {
+      watchOwner();
+    } else if (_loadedFor != null) {
+      _loadedFor = null;
+      _load = null;
+      emit(const PublicationsState());
+    }
+  }
+
+  final PublicationRepository _repository;
+  final ProfileCubit _profileCubit;
+  late final StreamSubscription<String> _changes;
+  late final StreamSubscription<ProfileState> _profile;
+  Future<void>? _load;
+  String? _loadedFor;
+
+  String? get _owner {
+    final profile = _profileCubit.state;
+    return profile is ProfileLoggedIn ? profile.user.walletAddress : null;
+  }
+
+  /// Whether [drive] can be published by whoever is signed in.
+  bool canPublish(Drive drive) =>
+      drive.isPublic && _owner != null && drive.ownerAddress == _owner;
+
+  /// Starts finding the owner's publications, unless known already. One
+  /// query covers every drive, so the drives list can mark them all.
+  Future<void> watchOwner() {
+    final owner = _owner;
+    if (owner == null) return Future.value();
+    if (_loadedFor != owner) {
+      _loadedFor = owner;
+      _load = null;
+      emit(const PublicationsState());
+    }
+    return _load ??= _loadAll(owner);
+  }
+
+  /// [drive]'s publications, found if they are not known yet; null when
+  /// GraphQL could not say, twice. Never "none" on a failure: that would
+  /// start a second publication of something already published.
+  Future<DrivePublications?> publicationsOf(Drive drive) async {
+    if (!canPublish(drive)) return const DrivePublications();
+    await watchOwner();
+    if (_failed) {
+      _load = null;
+      await watchOwner();
+      if (_failed) return null;
+    }
+    return state.byDrive[drive.id] ?? const DrivePublications();
+  }
+
+  bool _failed = false;
+
+  Future<void> _loadAll(String owner) async {
+    try {
+      final byDrive = await _repository.publicationsOfOwner(owner);
+      _failed = false;
+      if (isClosed || _loadedFor != owner) return;
+      emit(PublicationsState({
+        for (final MapEntry(:key, :value) in byDrive.entries)
+          key: DrivePublications(publications: value),
+      }));
+    } on PublicationReadException catch (e) {
+      logger.w('[publication] could not list publications: $e');
+      _failed = true;
+      _load = null;
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _changes.cancel();
+    _profile.cancel();
+    return super.close();
+  }
+}

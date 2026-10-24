@@ -47,6 +47,13 @@ class AppConfig {
   /// an explicit user action; this flag decides whether that action is even
   /// offered, and nothing turns it on but a person.
   final bool enableDriveStatePublishing;
+
+  /// The ArDrive release a new publication runs (docs/PUBLICATIONS.md, "The
+  /// viewer bundle"): a release manifest's transaction ID as it is, or an
+  /// ArNS name, read through the gateway for the release it points at. Every
+  /// flavour uses `ardrive`, the production release, so a publication made
+  /// anywhere opens the way it will for everyone.
+  final String publicationViewer;
   final String stripePublishableKey;
   final bool autoSync;
   final bool uploadThumbnails;
@@ -73,6 +80,7 @@ class AppConfig {
     this.enableSyncFromSnapshot = true,
     this.enableSyncFromDriveState = false,
     this.enableDriveStatePublishing = false,
+    this.publicationViewer = 'ardrive',
     required this.stripePublishableKey,
     this.autoSync = true,
     this.uploadThumbnails = true,
@@ -97,6 +105,7 @@ class AppConfig {
     bool? enableSyncFromSnapshot,
     bool? enableSyncFromDriveState,
     bool? enableDriveStatePublishing,
+    String? publicationViewer,
     String? stripePublishableKey,
     bool? autoSync,
     bool? uploadThumbnails,
@@ -128,6 +137,7 @@ class AppConfig {
           enableSyncFromDriveState ?? this.enableSyncFromDriveState,
       enableDriveStatePublishing:
           enableDriveStatePublishing ?? this.enableDriveStatePublishing,
+      publicationViewer: publicationViewer ?? this.publicationViewer,
       stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
       autoSync: autoSync ?? this.autoSync,
       uploadThumbnails: uploadThumbnails ?? this.uploadThumbnails,
