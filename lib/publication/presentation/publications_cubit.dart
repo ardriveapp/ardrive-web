@@ -102,16 +102,26 @@ class PublicationsCubit extends Cubit<PublicationsState> {
     return _load ??= _loadAll(owner);
   }
 
-  /// [drive]'s publications, found if they are not known yet. Never throws:
-  /// what could not be found counts as nothing published.
-  Future<DrivePublications> publicationsOf(Drive drive) async {
-    if (canPublish(drive)) await watchOwner();
+  /// [drive]'s publications, found if they are not known yet; null when
+  /// GraphQL could not say, twice. Never "none" on a failure: that would
+  /// start a second publication of something already published.
+  Future<DrivePublications?> publicationsOf(Drive drive) async {
+    if (!canPublish(drive)) return const DrivePublications();
+    await watchOwner();
+    if (_failed) {
+      _load = null;
+      await watchOwner();
+      if (_failed) return null;
+    }
     return state.byDrive[drive.id] ?? const DrivePublications();
   }
+
+  bool _failed = false;
 
   Future<void> _loadAll(String owner) async {
     try {
       final byDrive = await _repository.publicationsOfOwner(owner);
+      _failed = false;
       if (isClosed || _loadedFor != owner) return;
       emit(PublicationsState({
         for (final MapEntry(:key, :value) in byDrive.entries)
@@ -119,6 +129,7 @@ class PublicationsCubit extends Cubit<PublicationsState> {
       }));
     } on PublicationReadException catch (e) {
       logger.w('[publication] could not list publications: $e');
+      _failed = true;
       _load = null;
     }
   }

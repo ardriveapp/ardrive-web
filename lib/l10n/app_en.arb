@@ -4678,7 +4678,7 @@
   "@publishGettingReady": {"description": "The publish dialog while it reads the drive."},
   "publishBlockedPending": "Some uploads in this drive aren't confirmed yet. Publish once they are; it usually takes a few minutes.",
   "@publishBlockedPending": {"description": "Why a drive or folder can't be published yet."},
-  "publishBlockedHiddenFolder": "This folder is hidden. Unhide it to publish it.",
+  "publishBlockedHiddenFolder": "This folder is hidden, or inside a hidden folder. Unhide it to publish it.",
   "@publishBlockedHiddenFolder": {"description": "Why a folder can't be published."},
   "publishBlockedEmpty": "There's nothing to publish here yet: no files visitors could see.",
   "@publishBlockedEmpty": {"description": "Why a drive or folder can't be published."},
@@ -4835,5 +4835,7 @@
   "publishStepOf": "Step {step} of {total}",
   "@publishStepOf": {"description": "Where the publish dialog is, above each step.", "placeholders": {"step": {"type": "int"}, "total": {"type": "int"}}},
   "publishDoneArTitle": "Your page is on its way",
-  "@publishDoneArTitle": {"description": "Heading when a publish paid with AR is done: the page opens once the network confirms it."}
+  "@publishDoneArTitle": {"description": "Heading when a publish paid with AR is done: the page opens once the network confirms it."},
+  "publishCheckFailed": "ArDrive couldn't check whether this is already published, so it won't start a second web page for it. Try again in a minute.",
+  "@publishCheckFailed": {"description": "When the list of published web pages could not be read."}
 }

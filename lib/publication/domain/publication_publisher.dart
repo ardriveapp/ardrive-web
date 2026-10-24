@@ -73,6 +73,7 @@ class PublicationJob {
     required this.release,
     required this.files,
     required this.fileCount,
+    this.generatedCard = false,
     required this.labels,
     required this.method,
   });
@@ -102,16 +103,63 @@ class PublicationJob {
 
   /// How many files the publication lists, for publication.json.
   final int fileCount;
+
+  /// Whether [social] is the card ArDrive drew, which an update redraws
+  /// when what it shows changes; an owner's own card is kept.
+  final bool generatedCard;
   final PublicationLabels labels;
   final UploadMethod method;
 
   // Progress, kept for a retry.
   String? _snapshotTxId;
   Map<String, String>? _snapshotTags;
+
+  /// Set when the snapshot's transaction was accepted and its data did not
+  /// finish: Try again sends the rest of the same transaction.
+  Future<DriveStateUploadResult> Function()? _resumeSnapshot;
   List<_Signed>? _signed;
   final _posted = <String>{};
-  String? _bundleTxId;
+  Transaction? _bundle;
+  bool _bundlePosted = false;
+  bool _bundleDone = false;
   String? _publishedAt;
+
+  /// This job paid with [method] instead, keeping everything already done:
+  /// the snapshot, the signed files, what was posted. Signed items are the
+  /// same for either transport.
+  PublicationJob withMethod(UploadMethod method) {
+    final job = PublicationJob(
+      publicationId: publicationId,
+      driveId: driveId,
+      rootFolderId: rootFolderId,
+      folderId: folderId,
+      owner: owner,
+      ownerName: ownerName,
+      title: title,
+      description: description,
+      keywords: keywords,
+      license: license,
+      icon: icon,
+      cover: cover,
+      social: social,
+      snapshot: snapshot,
+      release: release,
+      files: files,
+      fileCount: fileCount,
+      generatedCard: generatedCard,
+      labels: labels,
+      method: method,
+    )
+      .._snapshotTxId = _snapshotTxId
+      .._snapshotTags = _snapshotTags
+      .._resumeSnapshot = _resumeSnapshot
+      .._signed = _signed
+      .._publishedAt = _publishedAt;
+    job._posted.addAll(_posted);
+    // A bundle already sent stands; what remains goes by the new transport.
+    if (_bundleDone) job._posted.addAll(_signed?.map((s) => s.name) ?? []);
+    return job;
+  }
 
   /// The manifest's ID once it is signed: the publication's link.
   String? get manifestTxId =>
@@ -145,7 +193,13 @@ class _Signed {
 enum PublicationStep { snapshot, files, publication, warmUp }
 
 class PublicationFailure implements Exception {
-  const PublicationFailure(this.step, this.message, {this.paidTxId});
+  const PublicationFailure(
+    this.step,
+    this.message, {
+    this.paidTxId,
+    this.canRetry = true,
+    this.paymentDeclined = false,
+  });
 
   final PublicationStep step;
   final String message;
@@ -153,6 +207,12 @@ class PublicationFailure implements Exception {
   /// Set when a transaction reached the network before the failure, so it is
   /// paid for whatever happened to its data.
   final String? paidTxId;
+
+  /// Whether Try again can finish the job without paying twice.
+  final bool canRetry;
+
+  /// Turbo declined the payment: the owner can add credits or pay with AR.
+  final bool paymentDeclined;
 
   @override
   String toString() => 'PublicationFailure($step): $message';
@@ -223,15 +283,32 @@ class PublicationPublisher {
           job._snapshotTags = tags;
         case NewSnapshot(:final artifact):
           onStep?.call(PublicationStep.snapshot);
-          final result =
-              await _driveStateUploader.publish(artifact, method: job.method);
+          final resume = job._resumeSnapshot;
+          final result = resume != null
+              ? await resume()
+              : await _driveStateUploader.publish(artifact, method: job.method);
+          if (result.isUncertain) {
+            // Paid for, data incomplete: the next try finishes this one
+            // transaction rather than paying for another.
+            job._resumeSnapshot = result.resume;
+            throw PublicationFailure(
+              PublicationStep.snapshot,
+              result.resume != null
+                  ? 'The snapshot reached the network but its data did not '
+                      'finish uploading. Try again to send the rest; it is '
+                      'not paid for twice.'
+                  : result.reason ?? 'The snapshot did not finish uploading.',
+              paidTxId: result.txId,
+              canRetry: result.resume != null,
+            );
+          }
           if (!result.isPublished) {
             throw PublicationFailure(
               PublicationStep.snapshot,
               result.reason ?? 'The snapshot could not be published.',
-              paidTxId: result.isUncertain ? result.txId : null,
             );
           }
+          job._resumeSnapshot = null;
           job._snapshotTxId = result.txId;
           job._snapshotTags = result.tags;
       }
@@ -258,19 +335,29 @@ class PublicationPublisher {
           await _uploader.postToTurbo(s.item, wallet);
           job._posted.add(s.name);
         }
-      } else if (job._bundleTxId == null) {
-        await _uploader.postBundle(
-          [for (final s in signed) s.item],
+      } else if (!job._bundleDone) {
+        job._bundle ??= await _uploader.prepareBundle(
+          [
+            for (final s in signed)
+              if (!job._posted.contains(s.name)) s.item,
+          ],
           wallet,
-          onPosted: (txId) => job._bundleTxId = txId,
         );
+        await _uploader.uploadBundle(
+          job._bundle!,
+          onPosted: () => job._bundlePosted = true,
+        );
+        job._bundleDone = true;
       }
+    } on PublicationFailure {
+      rethrow;
     } catch (e) {
       logger.e('[publication] posting failed', e);
       throw PublicationFailure(
         PublicationStep.publication,
         _postFailureMessage(e),
-        paidTxId: job._bundleTxId,
+        paidTxId: job._bundlePosted ? job._bundle?.id : null,
+        paymentDeclined: _isPaymentError(e),
       );
     }
 
@@ -281,7 +368,7 @@ class PublicationPublisher {
       folderId: job.folderId,
       publishedAt: DateTime.parse(job._publishedAt!),
     );
-    _repository.remember(version);
+    _repository.remember(version, owner: job.owner);
 
     // 3. Ask the gateway for the page once, so the first visitor does not
     // wait for it to fetch everything. A failure here changes nothing.
@@ -292,11 +379,15 @@ class PublicationPublisher {
     return version;
   }
 
-  String _postFailureMessage(Object e) {
+  bool _isPaymentError(Object e) {
     final text = '$e';
-    if (text.contains('402') || text.contains('PaymentRequired')) {
-      return 'Turbo declined the payment. Add credits or pay with AR, then '
-          'try again.';
+    return text.contains('402') || text.contains('PaymentRequired');
+  }
+
+  String _postFailureMessage(Object e) {
+    if (_isPaymentError(e)) {
+      return 'Turbo declined the payment. Go back to add credits or pay with '
+          'AR; what was already sent is kept.';
     }
     return 'The upload did not finish. Try again: what was already sent is '
         'not sent or paid for twice.';
@@ -396,6 +487,7 @@ class PublicationPublisher {
       title: job.title,
       description: job.description,
       fileCount: job.fileCount,
+      generatedCard: job.generatedCard,
       keywords: job.keywords,
       license: job.license,
       images: {

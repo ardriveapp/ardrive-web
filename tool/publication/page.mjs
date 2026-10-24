@@ -68,6 +68,7 @@ export function buildPublicationJson({
   keywords,
   license,
   images,
+  generatedCard,
   publishedAt,
   viewer,
 }) {
@@ -87,6 +88,7 @@ export function buildPublicationJson({
   if (keywords?.length) config.keywords = keywords;
   if (license) config.license = license;
   if (images && Object.keys(images).length) config.images = images;
+  if (generatedCard) config.generatedSocialCard = true;
   config.publishedAt = publishedAt;
   if (viewer) config.viewer = { release: viewer.release, manifest: viewer.manifest };
   return json(config);

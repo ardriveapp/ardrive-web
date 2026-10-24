@@ -14,6 +14,7 @@ import 'package:arweave/utils.dart' show decodeBase64ToString;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../test_utils/utils.dart';
@@ -35,7 +36,11 @@ class _RecordingUploader extends PublicationUploader {
 
   final turbo = <DataItem>[];
   final bundles = <List<DataItem>>[];
+  final uploads = <String>[];
   int failOnTurboPost = -1;
+
+  /// Fails the next bundle upload after its header is accepted.
+  bool failBundleAfterHeader = false;
 
   @override
   Future<void> postToTurbo(DataItem item, Wallet wallet) async {
@@ -47,19 +52,33 @@ class _RecordingUploader extends PublicationUploader {
   }
 
   @override
-  Future<String> postBundle(
-    List<DataItem> items,
-    Wallet wallet, {
-    void Function(String txId)? onPosted,
-  }) async {
+  Future<Transaction> prepareBundle(List<DataItem> items, Wallet wallet) async {
     bundles.add(items);
-    onPosted?.call('BUNDLE');
-    return 'BUNDLE';
+    final tx = _MockTransaction();
+    when(() => tx.id).thenReturn('BUNDLE${bundles.length}');
+    return tx;
+  }
+
+  @override
+  Future<void> uploadBundle(Transaction bundle,
+      {void Function()? onPosted}) async {
+    uploads.add(bundle.id);
+    onPosted?.call();
+    if (failBundleAfterHeader) {
+      failBundleAfterHeader = false;
+      throw Exception('chunk 3 rejected');
+    }
   }
 }
 
+class _MockTransaction extends Mock implements Transaction {}
+
 class _SnapshotUploader implements DriveStateUploader {
   int calls = 0;
+  int resumes = 0;
+
+  /// The first publish ends uncertain: header accepted, chunks failed.
+  bool uncertainFirst = false;
 
   @override
   Future<DriveStateUploadResult> publish(
@@ -67,13 +86,29 @@ class _SnapshotUploader implements DriveStateUploader {
     required UploadMethod method,
   }) async {
     calls++;
-    return const DriveStateUploadResult.published(_snapshotId, tags: {
-      'Entity-Type': 'drive-state',
-      'Drive-Id': _drive,
-      'Unix-Time': '1792800000',
-    });
+    if (uncertainFirst) {
+      uncertainFirst = false;
+      return DriveStateUploadResult.uncertain(
+        txId: _snapshotId,
+        reason: 'chunks failed',
+        tags: _snapshotTags,
+        resume: () async {
+          resumes++;
+          return const DriveStateUploadResult.published(_snapshotId,
+              tags: _snapshotTags);
+        },
+      );
+    }
+    return const DriveStateUploadResult.published(_snapshotId,
+        tags: _snapshotTags);
   }
 }
+
+const _snapshotTags = {
+  'Entity-Type': 'drive-state',
+  'Drive-Id': _drive,
+  'Unix-Time': '1792800000',
+};
 
 Map<String, String> _tags(DataItem item) => {
       for (final t in item.tags)
@@ -298,6 +333,50 @@ void main() {
     expect(uploader.turbo, isEmpty);
     expect(uploader.bundles, hasLength(1));
     expect(uploader.bundles.single, hasLength(9));
+  });
+
+  test('AR: a bundle whose chunks failed is finished, not paid for again',
+      () async {
+    final theJob = job(method: UploadMethod.ar);
+    uploader.failBundleAfterHeader = true;
+    await expectLater(
+      publisher.publish(theJob, wallet),
+      throwsA(isA<PublicationFailure>()
+          .having((f) => f.paidTxId, 'paidTxId', 'BUNDLE1')),
+    );
+    final version = await publisher.publish(theJob, wallet);
+    expect(uploader.bundles, hasLength(1), reason: 'signed and paid once');
+    expect(uploader.uploads, ['BUNDLE1', 'BUNDLE1'],
+        reason: 'the same transaction sent again');
+    expect(version.txId, isNotEmpty);
+  });
+
+  test(
+      'a snapshot that reached the network half-sent is resumed, not bought '
+      'again', () async {
+    snapshots.uncertainFirst = true;
+    final theJob = job();
+    await expectLater(
+      publisher.publish(theJob, wallet),
+      throwsA(isA<PublicationFailure>()
+          .having((f) => f.step, 'step', PublicationStep.snapshot)
+          .having((f) => f.paidTxId, 'paidTxId', _snapshotId)
+          .having((f) => f.canRetry, 'canRetry', true)),
+    );
+    await publisher.publish(theJob, wallet);
+    expect(snapshots.calls, 1);
+    expect(snapshots.resumes, 1);
+  });
+
+  test('switching to AR after a Turbo failure keeps what was sent', () async {
+    final theJob = job();
+    uploader.failOnTurboPost = 5;
+    await expectLater(
+        publisher.publish(theJob, wallet), throwsA(isA<PublicationFailure>()));
+    await publisher.publish(theJob.withMethod(UploadMethod.ar), wallet);
+    expect(snapshots.calls, 1, reason: 'the snapshot is kept');
+    expect(uploader.bundles.single, hasLength(4),
+        reason: 'only what Turbo had not taken');
   });
 
   test('a reused snapshot and an earlier icon are not uploaded again',

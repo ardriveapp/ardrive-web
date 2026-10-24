@@ -63,12 +63,16 @@ class PublishedContent {
     required this.config,
     required this.paths,
     this.keywords = const [],
+    this.generatedCard = false,
   });
 
   final PublicationConfig config;
 
   /// Its `keywords`, which the viewer does not read.
   final List<String> keywords;
+
+  /// Whether its social card is the one ArDrive drew.
+  final bool generatedCard;
 
   /// The publication's own paths (not the release's), by transaction ID.
   final Map<String, String> paths;
@@ -118,14 +122,16 @@ class PublicationRepository {
   final String Function() _gatewayUrl;
   final http.Client _client;
 
-  final _justPublished = <PublishedVersion>[];
+  /// What this session published, by the wallet that published it: one tab
+  /// can sign out and in as someone else.
+  final _justPublished = <({String owner, PublishedVersion version})>[];
   final _changes = StreamController<String>.broadcast();
 
   /// The drive ID of every drive whose publications changed this session.
   Stream<String> get changes => _changes.stream;
 
-  void remember(PublishedVersion version) {
-    _justPublished.add(version);
+  void remember(PublishedVersion version, {required String owner}) {
+    _justPublished.add((owner: owner, version: version));
     _changes.add(version.driveId);
   }
 
@@ -167,8 +173,8 @@ class PublicationRepository {
       }
       cursor = transactions.edges.last.cursor;
     }
-    for (final version in _justPublished) {
-      found.putIfAbsent(version.txId, () => version);
+    for (final (:owner, :version) in _justPublished) {
+      if (owner == ownerAddress) found.putIfAbsent(version.txId, () => version);
     }
     final byDrive = <String, List<PublishedVersion>>{};
     for (final version in found.values) {
@@ -230,9 +236,11 @@ class PublicationRepository {
     } on FormatException catch (e) {
       throw PublicationReadException('publication.json: ${e.message}');
     }
-    final keywords = (json.decode(text) as Map)['keywords'];
+    final raw = json.decode(text) as Map;
+    final keywords = raw['keywords'];
     return PublishedContent(
       config: config,
+      generatedCard: raw['generatedSocialCard'] == true,
       keywords: keywords is List ? [...keywords.whereType<String>()] : const [],
       paths: {
         for (final path in _ownPaths)

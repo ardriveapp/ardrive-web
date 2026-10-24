@@ -54,7 +54,8 @@ Map<String, T> _sorted<T>(Map<String, T> map) => Map.fromEntries(
 /// `publication.json`. [snapshotTags] are every tag of the artifact, which the
 /// viewer builds its import candidate from instead of GraphQL. [fileCount]
 /// (what the publication lists, for its owner), [keywords] and [license] are
-/// written only when set.
+/// written only when set. [generatedCard] marks `social.jpg` as the card
+/// ArDrive drew, which an update redraws; an owner's own card is kept.
 String buildPublicationJson({
   required String driveId,
   required String rootFolderId,
@@ -70,6 +71,7 @@ String buildPublicationJson({
   List<String> keywords = const [],
   Map<String, Object>? license,
   Map<String, String> images = const {},
+  bool generatedCard = false,
   required String publishedAt,
   ({String release, String manifest})? viewer,
 }) {
@@ -94,6 +96,7 @@ String buildPublicationJson({
     if (keywords.isNotEmpty) 'keywords': keywords,
     if (license != null) 'license': license,
     if (images.isNotEmpty) 'images': images,
+    if (generatedCard) 'generatedSocialCard': true,
     'publishedAt': publishedAt,
     if (viewer != null)
       'viewer': {'release': viewer.release, 'manifest': viewer.manifest},

@@ -39,8 +39,9 @@ void main() {
       description: publication['description'],
       fileCount: publication['fileCount'],
       keywords: (publication['keywords'] as List).cast<String>(),
-      license: (publication['license'] as Map).cast<String, String>(),
+      license: (publication['license'] as Map).cast<String, Object>(),
       images: (publication['images'] as Map).cast<String, String>(),
+      generatedCard: publication['generatedCard'] as bool,
       publishedAt: publication['publishedAt'],
       viewer: (release: viewer['release'], manifest: viewer['manifest']),
     );
@@ -54,6 +55,10 @@ void main() {
     final config = PublicationConfig.parse(publicationJson());
     expect(config.title, publication['title']);
     expect(config.ownerName, publication['ownerName']);
+    expect(config.license?.params, {
+      'License-Fee': 'One-Time-0.1',
+      'Commercial-Use': 'Allowed',
+    });
   });
 
   test('index.html matches the tool', () {

@@ -64,24 +64,24 @@ class PublicationUploader {
     await _turbo.postDataItem(dataItem: item, wallet: wallet);
   }
 
-  /// Posts [items] as one bundle transaction and returns its ID.
-  /// [onPosted] runs when the transaction is accepted, before its data is
-  /// sent: from then on it is paid for.
-  Future<String> postBundle(
-    List<DataItem> items,
-    Wallet wallet, {
-    void Function(String txId)? onPosted,
-  }) async {
-    final tx = await _arweave.prepareDataBundleTx(
-      await DataBundle.fromDataItems(items: items),
-      wallet,
-    );
-    logger.i('[publication] posting bundle ${tx.id} to Arweave');
-    await _arweave.uploadTx(
-      tx,
+  /// [items] as one signed bundle transaction, to post with [uploadBundle].
+  Future<Transaction> prepareBundle(
+          List<DataItem> items, Wallet wallet) async =>
+      _arweave.prepareDataBundleTx(
+        await DataBundle.fromDataItems(items: items),
+        wallet,
+      );
+
+  /// Posts [bundle]. Run again on the same transaction after a failure, it
+  /// sends what is missing: a header the network has is answered 208, chunks
+  /// are idempotent, and nothing is paid twice. [onPosted] runs when the
+  /// header is accepted, from when the transaction is paid for.
+  Future<void> uploadBundle(Transaction bundle, {void Function()? onPosted}) {
+    logger.i('[publication] posting bundle ${bundle.id} to Arweave');
+    return _arweave.uploadTx(
+      bundle,
       maxConcurrentUploadCount: 1,
-      onTransactionPosted: () => onPosted?.call(tx.id),
+      onTransactionPosted: onPosted,
     );
-    return tx.id;
   }
 }

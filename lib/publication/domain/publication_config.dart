@@ -291,11 +291,15 @@ class PublicationLicense extends Equatable {
     required this.name,
     required this.shortName,
     required this.definitionTxId,
+    this.params = const {},
   });
 
   final String name;
   final String shortName;
   final String definitionTxId;
+
+  /// A UDL's terms, by tag name (`License-Fee`, `Commercial-Use`...).
+  final Map<String, String> params;
 
   static PublicationLicense? _fromJson(Object? json) {
     if (json == null) return null;
@@ -306,11 +310,19 @@ class PublicationLicense extends Equatable {
       name: _string(json, 'name', where: 'license'),
       shortName: _string(json, 'shortName', where: 'license'),
       definitionTxId: _address(json, 'definitionTxId', where: 'license'),
+      params: switch (json['params']) {
+        null => const {},
+        final Map<String, dynamic> params
+            when params.values.every((v) => v is String) =>
+          params.cast<String, String>(),
+        _ => throw PublicationConfigException.invalid(
+            'license.params must map names to strings'),
+      },
     );
   }
 
   @override
-  List<Object?> get props => [name, shortName, definitionTxId];
+  List<Object?> get props => [name, shortName, definitionTxId, params];
 }
 
 @immutable

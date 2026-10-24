@@ -52,6 +52,22 @@ Future<void> promptToPublish(
   final publications = context.read<PublicationsCubit>();
   final known = await publications.publicationsOf(drive);
   if (!context.mounted) return;
+  if (known == null) {
+    final strings = appLocalizationsOf(context);
+    return showArDriveDialog(
+      context,
+      content: ArDriveStandardModalNew(
+        title: strings.publishToWeb,
+        description: strings.publishCheckFailed,
+        actions: [
+          ModalAction(
+            title: strings.close,
+            action: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
   final publication = known.of(folder?.id);
   if (publication != null) {
     return showPublishedView(
@@ -238,8 +254,10 @@ class PublishDialog extends StatelessWidget {
               content: _Failed(state: state),
               actions: [
                 ModalAction(title: strings.close, action: close),
-                ModalAction(
-                    title: strings.publishTryAgain, action: cubit.retry),
+                ModalAction(title: strings.back, action: cubit.back),
+                if (state.canRetry)
+                  ModalAction(
+                      title: strings.publishTryAgain, action: cubit.retry),
               ],
             );
           case PublishStage.done:

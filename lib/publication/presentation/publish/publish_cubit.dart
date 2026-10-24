@@ -109,6 +109,7 @@ class PublishCubit extends Cubit<PublishState> {
     emit(const PublishState(stage: PublishStage.loading));
     try {
       final block = await _checkBlocks();
+      if (isClosed) return;
       if (block != null) {
         emit(PublishState(
           stage: PublishStage.blocked,
@@ -129,6 +130,7 @@ class PublishCubit extends Cubit<PublishState> {
         isUpdate: previous != null,
       );
       if (previous != null) next = await _prefillFrom(previous!, next);
+      if (isClosed) return;
       emit(next);
 
       if (previous != null) {
@@ -140,6 +142,7 @@ class PublishCubit extends Cubit<PublishState> {
       }
     } on PublicationReadException catch (e) {
       logger.e('[publication] preparing failed', e);
+      if (isClosed) return;
       emit(PublishState(
         stage: PublishStage.blocked,
         blocked: PublishBlock.other,
@@ -157,7 +160,7 @@ class PublishCubit extends Cubit<PublishState> {
     final sync = _deps.syncSkipSource.statusFor(drive.id);
     if (!sync.isClean) return (PublishBlock.sync, sync.reason);
 
-    if (folder != null && folder!.isHidden) {
+    if (folder != null && await _isHiddenOrUnderHidden(folder!)) {
       return (PublishBlock.hiddenFolder, '');
     }
 
@@ -173,6 +176,20 @@ class PublishCubit extends Cubit<PublishState> {
     }
     if (summary.isEmpty) return (PublishBlock.empty, '');
     return null;
+  }
+
+  /// Whether [start] is hidden, or inside a hidden folder: with "Show
+  /// hidden" on, a folder inside a hidden one looks like any other.
+  Future<bool> _isHiddenOrUnderHidden(FolderEntry start) async {
+    FolderEntry? current = start;
+    for (var depth = 0; current != null && depth < 256; depth++) {
+      if (current.isHidden) return true;
+      final parent = current.parentFolderId;
+      if (parent == null) return false;
+      current =
+          await _deps.driveDao.folderById(folderId: parent).getSingleOrNull();
+    }
+    return false;
   }
 
   Future<int> _pendingMetadata() async {
@@ -191,23 +208,25 @@ class PublishCubit extends Cubit<PublishState> {
   Future<PublishState> _prefillFrom(Publication p, PublishState s) async {
     final content = await _deps.repository.readContent(p.latest.txId);
     final config = content.config;
+
+    /// The earlier version's files for [paths], kept by transaction ID; its
+    /// preview is best effort, and an image whose preview cannot be read is
+    /// still published as it was.
     Future<PickedImage?> existing(List<String> paths, String preview) async {
       final ids = {
         for (final path in paths)
           if (content.paths[path] case final id?) path: id,
       };
       if (ids.length != paths.length) return null;
+      ui.Image? image;
       try {
-        final picture = await PublicationPicture.decode(
-            await _deps.repository.readData(ids[preview]!));
-        return PickedImage(
-          preview: picture.image,
-          image: ExistingPublicationImage(ids),
-        );
+        image = (await PublicationPicture.decode(
+                await _deps.repository.readData(ids[preview]!)))
+            .image;
       } catch (e) {
-        logger.w('[publication] an earlier image could not be read: $e');
-        return null;
+        logger.w('[publication] an earlier image could not be previewed: $e');
       }
+      return PickedImage(preview: image, image: ExistingPublicationImage(ids));
     }
 
     final icon = config.images.icon != null
@@ -217,26 +236,60 @@ class PublishCubit extends Cubit<PublishState> {
     final cover = config.images.cover != null
         ? await existing(['cover.jpg'], 'cover.jpg')
         : null;
+    final socialId = content.paths['social.jpg'];
+    PickedImage? ownCard;
+    if (socialId != null && !content.generatedCard) {
+      ownCard = await existing(['social.jpg'], 'social.jpg');
+    }
+    final iconPreview = icon?.preview;
+    final tint = iconPreview == null ? null : await averageColor(iconPreview);
     final license = config.license;
-    return s.copyWith(
+    final prefilled = s.copyWith(
       title: config.title,
       description: config.description,
       ownerName: config.ownerName ?? s.ownerName,
-      keywords: _keywordsOf(content),
-      licence: () =>
-          license == null ? null : _licenceFor(license.definitionTxId),
+      keywords: content.keywords,
+      licence: () => license == null
+          ? null
+          : _licenceFor(license.definitionTxId, license.params),
       icon: () => icon,
       cover: () => cover,
-      iconTint: () => null,
+      social: () => ownCard,
+      iconTint: () => tint,
     );
+    if (socialId != null && content.generatedCard) {
+      // Kept as it is unless something the card shows changes.
+      _previousCard = ExistingPublicationImage({'social.jpg': socialId});
+      _previousCardKey = _cardKey(prefilled);
+    }
+    return prefilled;
   }
 
-  List<String> _keywordsOf(PublishedContent content) => content.keywords;
+  ExistingPublicationImage? _previousCard;
+  String? _previousCardKey;
 
-  PublicationLicence? _licenceFor(String definitionTxId) {
+  /// What the generated card shows, as one comparable value.
+  String _cardKey(PublishState s) => [
+        s.title.trim(),
+        s.description.trim(),
+        _imageKey(s.icon),
+        _imageKey(s.cover),
+        _contents?.summarize().fileCount,
+      ].join('\u0000');
+
+  static String _imageKey(PickedImage? picked) => switch (picked?.image) {
+        ExistingPublicationImage(:final files) => files.toString(),
+        final NewPublicationImage image => 'new:${identityHashCode(image)}',
+        _ => '',
+      };
+
+  PublicationLicence? _licenceFor(
+    String definitionTxId,
+    Map<String, String> params,
+  ) {
     for (final meta in licenseMetaMap.values) {
       if (meta.licenseDefinitionTxId == definitionTxId) {
-        return PublicationLicence(meta);
+        return PublicationLicence(meta, params);
       }
     }
     return null;
@@ -260,6 +313,14 @@ class PublishCubit extends Cubit<PublishState> {
         emit(state.copyWith(stage: PublishStage.included));
       case PublishStage.review:
         emit(state.copyWith(stage: PublishStage.look));
+      case PublishStage.failed:
+        // Back to the review with what was done kept, to add credits or
+        // switch to AR; without a priced job, back to the look.
+        emit(state.copyWith(
+          stage: _job != null && state.cost != null
+              ? PublishStage.review
+              : PublishStage.look,
+        ));
       default:
     }
   }
@@ -298,7 +359,9 @@ class PublishCubit extends Cubit<PublishState> {
     try {
       picture = await PublicationPicture.decode(bytes);
     } on PublicationImageException catch (e) {
-      emit(state.copyWith(imageError: () => (slot: slot, problem: e.reason)));
+      if (!isClosed) {
+        emit(state.copyWith(imageError: () => (slot: slot, problem: e.reason)));
+      }
       return;
     }
     final kind = switch (slot) {
@@ -314,6 +377,7 @@ class PublishCubit extends Cubit<PublishState> {
           };
     final preview =
         await publicationCrop(picture.image, kind.width, kind.height);
+    if (isClosed) return;
     final picked = PickedImage(
       preview: preview,
       image: NewPublicationImage(files),
@@ -353,6 +417,8 @@ class PublishCubit extends Cubit<PublishState> {
       emit(state.copyWith(stage: PublishStage.look));
       return;
     }
+    // Whatever was priced before no longer matches what the owner sees.
+    _job = null;
     emit(state.copyWith(stage: PublishStage.pricing));
     final profile = _deps.profileCubit.state;
     if (profile is! ProfileLoggedIn) return;
@@ -400,13 +466,18 @@ class PublishCubit extends Cubit<PublishState> {
         .where((c) =>
             c.cipher == null &&
             c.unixTime != null &&
+            // In a block: one still pending may be an upload whose data
+            // never arrived.
+            c.minedAtHeight != null &&
             DriveStateFormatVersion.tryParse(c.stateVersion) ==
                 DriveStateFormatVersion.current)
         .fold<DriveStateArtifactCandidate?>(
             null,
             (best, c) =>
                 best == null || c.unixTime! > best.unixTime! ? c : best);
-    if (newest != null && await _unchangedSince(newest.unixTime!)) {
+    if (newest != null &&
+        newest.entityCount == await _localEntityCount() &&
+        await _unchangedSince(newest.unixTime!)) {
       return ReusedSnapshot(txId: newest.txId, tags: newest.tags);
     }
 
@@ -427,6 +498,23 @@ class PublishCubit extends Cubit<PublishState> {
     return NewSnapshot(prepared.artifact!);
   }
 
+  /// What a new snapshot of the drive would count: the drive, and every
+  /// folder and file with a revision (the export's own rule), so a snapshot
+  /// made before something reached this device does not match.
+  Future<int> _localEntityCount() async {
+    final db = _deps.driveDao.attachedDatabase;
+    final row = await db.customSelect(
+      'SELECT (SELECT count(*) FROM folder_entries t WHERE t.driveId = ?1 '
+      'AND EXISTS (SELECT 1 FROM folder_revisions r '
+      'WHERE r.folderId = t.id AND r.driveId = t.driveId)) + '
+      '(SELECT count(*) FROM file_entries t WHERE t.driveId = ?1 '
+      'AND EXISTS (SELECT 1 FROM file_revisions r '
+      'WHERE r.fileId = t.id AND r.driveId = t.driveId)) + 1 AS c',
+      variables: [Variable.withString(drive.id)],
+    ).getSingle();
+    return row.read<int>('c');
+  }
+
   /// Whether nothing in the drive changed after [unixTime]: no revision of
   /// the drive, a folder or a file is newer.
   Future<bool> _unchangedSince(int unixTime) async {
@@ -444,18 +532,23 @@ class PublishCubit extends Cubit<PublishState> {
 
   Future<PublicationJob> _buildJob(ProfileLoggedIn profile) async {
     final summary = _contents!.summarize();
+    final keepCard = state.social == null &&
+        _previousCard != null &&
+        _cardKey(state) == _previousCardKey;
     final social = state.social?.image ??
-        NewPublicationImage({
-          'social.jpg': await PublicationSocialCard(
-            title: state.title.trim(),
-            description: state.description.trim(),
-            fileCount: _deps.fileCountLabel(summary.fileCount),
-            cover: state.cover?.preview,
-            icon: state.icon?.preview,
-            iconTint: state.iconTint,
-            mark: await mark(),
-          ).render(),
-        });
+        (keepCard
+            ? _previousCard!
+            : NewPublicationImage({
+                'social.jpg': await PublicationSocialCard(
+                  title: state.title.trim(),
+                  description: state.description.trim(),
+                  fileCount: _deps.fileCountLabel(summary.fileCount),
+                  cover: state.cover?.preview,
+                  icon: state.icon?.preview,
+                  iconTint: state.iconTint,
+                  mark: await mark(),
+                ).render(),
+              }));
     return PublicationJob(
       publicationId: previous?.id ?? const Uuid().v4(),
       driveId: drive.id,
@@ -477,6 +570,7 @@ class PublishCubit extends Cubit<PublishState> {
           (path: file.path, id: file.dataTxId),
       ],
       fileCount: summary.fileCount,
+      generatedCard: state.social == null,
       labels: _deps.labels,
       method: state.method,
     );
@@ -513,7 +607,9 @@ class PublishCubit extends Cubit<PublishState> {
     if (job == null || profile is! ProfileLoggedIn || !state.canPublish) return;
     if (await _deps.profileCubit.logoutIfWalletMismatch()) return;
     // The job keeps the method it was priced with unless the owner switched.
-    final run = job.method == state.method ? job : (_job = _withMethod(job));
+    final run = job.method == state.method
+        ? job
+        : (_job = job.withMethod(state.method));
     emit(state.copyWith(stage: PublishStage.publishing, failure: ''));
     try {
       final version = await _deps.publisher.publish(
@@ -535,6 +631,18 @@ class PublishCubit extends Cubit<PublishState> {
         stage: PublishStage.failed,
         failure: e.message,
         paidTxId: () => e.paidTxId,
+        canRetry: e.canRetry,
+      ));
+    } catch (e, stackTrace) {
+      // Never leave the owner on a progress screen with no way out.
+      logger.e('[publication] publishing failed', e, stackTrace);
+      if (isClosed) return;
+      emit(state.copyWith(
+        stage: PublishStage.failed,
+        failure: 'Publishing stopped unexpectedly. Try again: what was '
+            'already sent is not sent or paid for twice.',
+        paidTxId: () => null,
+        canRetry: true,
       ));
     }
   }
@@ -548,28 +656,6 @@ class PublishCubit extends Cubit<PublishState> {
     emit(state.copyWith(stage: PublishStage.review));
     await publish();
   }
-
-  PublicationJob _withMethod(PublicationJob job) => PublicationJob(
-        publicationId: job.publicationId,
-        driveId: job.driveId,
-        rootFolderId: job.rootFolderId,
-        folderId: job.folderId,
-        owner: job.owner,
-        ownerName: job.ownerName,
-        title: job.title,
-        description: job.description,
-        keywords: job.keywords,
-        license: job.license,
-        icon: job.icon,
-        cover: job.cover,
-        social: job.social,
-        snapshot: job.snapshot,
-        release: job.release,
-        files: job.files,
-        fileCount: job.fileCount,
-        labels: job.labels,
-        method: state.method,
-      );
 
   // The owner's display name, remembered from their last publication.
 

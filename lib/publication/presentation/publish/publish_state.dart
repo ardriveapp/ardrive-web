@@ -38,7 +38,9 @@ class PickedImage extends Equatable {
   const PickedImage(
       {required this.preview, required this.image, this.isSmall = false});
 
-  final ui.Image preview;
+  /// Null when an earlier version's image could not be read back: it is
+  /// still published as it was.
+  final ui.Image? preview;
   final PublicationImage image;
 
   /// Smaller than it is shown, so it will look soft.
@@ -89,6 +91,7 @@ class PublishState extends Equatable {
     this.step,
     this.failure = '',
     this.paidTxId,
+    this.canRetry = true,
     this.link,
     this.isUpdate = false,
     this.imageError,
@@ -120,6 +123,9 @@ class PublishState extends Equatable {
 
   /// A transaction that reached the network before a failure.
   final String? paidTxId;
+
+  /// Whether Try again can finish the job without paying twice.
+  final bool canRetry;
 
   /// The publication's link, once published.
   final String? link;
@@ -157,6 +163,7 @@ class PublishState extends Equatable {
     PublicationStep? step,
     String? failure,
     String? Function()? paidTxId,
+    bool? canRetry,
     String? link,
     bool? isUpdate,
     ({PublicationImageSlot slot, PublicationImageProblem problem})? Function()?
@@ -182,6 +189,7 @@ class PublishState extends Equatable {
         step: step ?? this.step,
         failure: failure ?? this.failure,
         paidTxId: paidTxId != null ? paidTxId() : this.paidTxId,
+        canRetry: canRetry ?? this.canRetry,
         link: link ?? this.link,
         isUpdate: isUpdate ?? this.isUpdate,
         imageError: imageError != null ? imageError() : this.imageError,
@@ -208,6 +216,7 @@ class PublishState extends Equatable {
         step,
         failure,
         paidTxId,
+        canRetry,
         link,
         isUpdate,
         imageError,

@@ -32,13 +32,18 @@
   "license": {
     "name": "Attribution 4.0 International",
     "shortName": "CC-BY 4.0",
-    "definitionTxId": "mSOFUrl5mUQvG7VBP36DD39kzJASv9FDe3NX5hB3sYk"
+    "definitionTxId": "mSOFUrl5mUQvG7VBP36DD39kzJASv9FDe3NX5hB3sYk",
+    "params": {
+      "License-Fee": "One-Time-0.1",
+      "Commercial-Use": "Allowed"
+    }
   },
   "images": {
     "icon": "icon-512.png",
     "social": "social.jpg",
     "cover": "cover.jpg"
   },
+  "generatedSocialCard": true,
   "publishedAt": "2026-10-23T18:02:11Z",
   "viewer": {
     "release": "2.91.0",

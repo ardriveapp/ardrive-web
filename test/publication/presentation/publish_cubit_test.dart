@@ -13,6 +13,7 @@ import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
+import 'package:ardrive/services/license/license.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive_utils/ardrive_utils.dart' show DrivePrivacyTag;
 import 'package:drift/drift.dart' show Value;
@@ -190,6 +191,43 @@ void main() {
         ),
       );
 
+  DriveStateArtifactCandidate freshSnapshot() => DriveStateArtifactCandidate(
+        txId: 'NEWEST',
+        ownerAddress: fakeUserJson.walletAddress,
+        minedAtHeight: 100,
+        tags: {
+          'Drive-Id': _drive,
+          'Entity-Type': 'drive-state',
+          'State-Version': '0.2',
+          'Entity-Count': '3',
+          'Unix-Time': '${DateTime.now().millisecondsSinceEpoch ~/ 1000 + 60}',
+        },
+      );
+
+  PublishedVersion latest() => PublishedVersion(
+        txId: 'LATEST',
+        publicationId: 'pub-1',
+        driveId: _drive,
+        folderId: null,
+        publishedAt: DateTime.utc(2026, 10, 20),
+      );
+
+  PublishedContent content({
+    required bool generatedCard,
+    String license = '',
+  }) =>
+      PublishedContent(
+        config: PublicationConfig.parse('''
+{"version":1,"driveId":"$_drive","rootFolderId":"$_root",
+ "scope":{"type":"drive"},"privacy":"public",
+ "owner":"iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA",
+ "snapshot":{"path":"snapshot","txId":"SNAPSHOT_TX_ID_0000000000000000000000000000","tags":{}},
+ "title":"Phil's Archive","description":"Old words."$license,
+ "images":{"social":"social.jpg"},"publishedAt":"2026-10-20T00:00:00Z"}'''),
+        paths: const {'social.jpg': 'OLD_CARD'},
+        generatedCard: generatedCard,
+      );
+
   test('a drive that is still syncing is not offered', () async {
     skip.status = const DriveStateSyncSkipStatus.unknown('Still syncing.');
     final c = cubit();
@@ -253,19 +291,7 @@ void main() {
   test('an unchanged drive reuses its newest snapshot', () async {
     // Revisions in the fixture are dated now; a snapshot made later covers
     // them.
-    final later = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 60;
-    discovery.candidates = [
-      DriveStateArtifactCandidate(
-        txId: 'NEWEST',
-        ownerAddress: fakeUserJson.walletAddress,
-        tags: {
-          'Drive-Id': _drive,
-          'Entity-Type': 'drive-state',
-          'State-Version': '0.2',
-          'Unix-Time': '$later',
-        },
-      ),
-    ];
+    discovery.candidates = [freshSnapshot()];
     final c = cubit();
     await c.load();
     await c.review();
@@ -345,19 +371,7 @@ void main() {
   });
 
   test('a failed publish says why and can be tried again', () async {
-    final later = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 60;
-    discovery.candidates = [
-      DriveStateArtifactCandidate(
-        txId: 'NEWEST',
-        ownerAddress: fakeUserJson.walletAddress,
-        tags: {
-          'Drive-Id': _drive,
-          'Entity-Type': 'drive-state',
-          'State-Version': '0.2',
-          'Unix-Time': '$later',
-        },
-      ),
-    ];
+    discovery.candidates = [freshSnapshot()];
     var attempts = 0;
     when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
         .thenAnswer((_) async {
@@ -389,19 +403,7 @@ void main() {
   test(
       'an update is prefilled from the published version and opens on the '
       'review', () async {
-    final later = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 60;
-    discovery.candidates = [
-      DriveStateArtifactCandidate(
-        txId: 'NEWEST',
-        ownerAddress: fakeUserJson.walletAddress,
-        tags: {
-          'Drive-Id': _drive,
-          'Entity-Type': 'drive-state',
-          'State-Version': '0.2',
-          'Unix-Time': '$later',
-        },
-      ),
-    ];
+    discovery.candidates = [freshSnapshot()];
     when(() => repository.readContent('LATEST'))
         .thenAnswer((_) async => PublishedContent(
               config: PublicationConfig.parse('''
@@ -430,5 +432,99 @@ void main() {
     expect(c.state.description, 'Old words.');
     expect(c.state.keywords, ['photos']);
     expect(c.state.stage, PublishStage.review);
+  });
+
+  test('a pricing failure after an edit never publishes the earlier job',
+      () async {
+    discovery.candidates = [freshSnapshot()];
+    final c = cubit();
+    await c.load();
+    await c.review();
+    expect(c.state.stage, PublishStage.review);
+    c.back();
+    c.setTitle('A new title');
+    when(() => estimator.estimate(
+          sizeInBytes: any(named: 'sizeInBytes'),
+          wallet: any(named: 'wallet'),
+          walletBalance: any(named: 'walletBalance'),
+        )).thenThrow(Exception('timeout'));
+    await c.review();
+    expect(c.state.stage, PublishStage.failed);
+    when(() => estimator.estimate(
+          sizeInBytes: any(named: 'sizeInBytes'),
+          wallet: any(named: 'wallet'),
+          walletBalance: any(named: 'walletBalance'),
+        )).thenAnswer((_) async => _cost());
+    await c.retry();
+    expect(c.state.stage, PublishStage.review, reason: 'priced again');
+    verifyNever(
+        () => publisher.publish(any(), any(), onStep: any(named: 'onStep')));
+  });
+
+  test('a folder inside a hidden folder is blocked like a hidden one',
+      () async {
+    const inside = 'abababab-0000-4000-8000-00000000000a';
+    await folder(inside, _hiddenFolder);
+    await insertPublicationFile(db,
+        driveId: _drive, id: 'z', name: 'z.txt', parentFolderId: inside);
+    final c = cubit(
+        folderEntry:
+            await db.driveDao.folderById(folderId: inside).getSingle());
+    await c.load();
+    expect(c.state.blocked, PublishBlock.hiddenFolder);
+  });
+
+  test("an update keeps the owner's own card and a UDL's terms", () async {
+    discovery.candidates = [freshSnapshot()];
+    when(() => repository.readContent('LATEST'))
+        .thenAnswer((_) async => content(
+              generatedCard: false,
+              license: ',"license":{"name":"Universal Data License",'
+                  '"shortName":"UDL","definitionTxId":'
+                  '"${udlLicenseMetaV2.licenseDefinitionTxId}",'
+                  '"params":{"License-Fee":"One-Time-0.1"}}',
+            ));
+    // The card cannot be read back; it is still kept as it was.
+    when(() => repository.readData(any())).thenThrow(Exception('offline'));
+    when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+        .thenAnswer((_) async => latest());
+    final c = cubit(previous: Publication([latest()]));
+    await c.load();
+    expect(c.state.licence?.params, {'License-Fee': 'One-Time-0.1'});
+    await c.publish();
+    final job = verify(() => publisher.publish(captureAny(), any(),
+        onStep: any(named: 'onStep'))).captured.single as PublicationJob;
+    expect(job.social, isA<ExistingPublicationImage>());
+    expect((job.social as ExistingPublicationImage).files,
+        {'social.jpg': 'OLD_CARD'});
+    expect(job.generatedCard, isFalse);
+    expect(job.license?['params'], {'License-Fee': 'One-Time-0.1'});
+  });
+
+  test('a generated card is kept while nothing it shows changes', () async {
+    discovery.candidates = [freshSnapshot()];
+    when(() => repository.readContent('LATEST'))
+        .thenAnswer((_) async => content(generatedCard: true));
+    when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+        .thenAnswer((_) async => latest());
+    final c = cubit(previous: Publication([latest()]));
+    await c.load();
+    await c.publish();
+    var job = verify(() => publisher.publish(captureAny(), any(),
+        onStep: any(named: 'onStep'))).captured.single as PublicationJob;
+    expect(job.social, isA<ExistingPublicationImage>());
+    expect(job.generatedCard, isTrue);
+
+    final edited = cubit(
+      previous: Publication([latest()]),
+    );
+    await edited.load();
+    edited.back();
+    edited.setTitle('Something else');
+    await edited.review();
+    await edited.publish();
+    job = verify(() => publisher.publish(captureAny(), any(),
+        onStep: any(named: 'onStep'))).captured.single as PublicationJob;
+    expect(job.social, isA<NewPublicationImage>(), reason: 'redrawn');
   });
 }
