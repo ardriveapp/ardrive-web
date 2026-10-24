@@ -11,8 +11,8 @@ import 'package:ardrive/components/create_snapshot_dialog.dart';
 import 'package:ardrive/components/ghost_fixer_form.dart';
 import 'package:ardrive/components/hide_dialog.dart';
 import 'package:ardrive/components/pin_indicator.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
-import 'package:ardrive/library/presentation/library_chrome.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive/sync/presentation/full_resync_confirmation.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
@@ -234,9 +234,9 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
           Align(
             alignment: Alignment.center,
             child: GestureDetector(
-              // Making a thumbnail uploads one, which a library visitor,
+              // Making a thumbnail uploads one, which a publication visitor,
               // signed out, cannot do.
-              onTap: LibraryMode.isOn
+              onTap: PublicationMode.isOn
                   ? null
                   : () {
                       context
@@ -568,10 +568,10 @@ class _DriveExplorerItemTileTrailingState
           ),
           if (isOwner) hideFileDropdownItem(context, item),
         ],
-        // On a library page, the library's own link to the folder.
-        if (LibraryMode.isOn)
+        // On a publication, the publication's own link to the folder.
+        if (PublicationMode.isOn)
           ArDriveDropdownItem(
-            onClick: () => copyLibraryLink(context, folderId: item.id),
+            onClick: () => copyPublicationLink(context, folderId: item.id),
             content: _buildItem(
               appLocalizationsOf(context).copyLink,
               ArDriveIcons.copy(size: defaultIconSize),
@@ -580,7 +580,7 @@ class _DriveExplorerItemTileTrailingState
           ),
         // Not offered for a ghost folder: its metadata was never found, so a
         // link naming it points the recipient at nothing.
-        if (!item.isGhostFolder && !LibraryMode.isOn)
+        if (!item.isGhostFolder && !PublicationMode.isOn)
           ArDriveDropdownItem(
             onClick: () {
               promptToShareDrive(
@@ -630,9 +630,9 @@ class _DriveExplorerItemTileTrailingState
           height: height,
         ),
       ),
-      if (LibraryMode.isOn)
+      if (PublicationMode.isOn)
         ArDriveDropdownItem(
-          onClick: () => copyLibraryLink(
+          onClick: () => copyPublicationLink(
             context,
             folderId: (item as FileDataTableItem).parentFolderId,
             fileId: item.id,
@@ -1033,15 +1033,15 @@ class EntityActionsMenu extends StatelessWidget {
         ],
         // Guarded rather than assumed: this menu is also built in places that
         // do not know the drive, and a folder link needs it for the key.
-        if (LibraryMode.isOn)
+        if (PublicationMode.isOn)
           ArDriveDropdownItem(
-            onClick: () => copyLibraryLink(context, folderId: item.id),
+            onClick: () => copyPublicationLink(context, folderId: item.id),
             content: _buildItem(
               appLocalizationsOf(context).copyLink,
               ArDriveIcons.copy(size: defaultIconSize),
             ),
           ),
-        if (drive != null && !item.isGhostFolder && !LibraryMode.isOn)
+        if (drive != null && !item.isGhostFolder && !PublicationMode.isOn)
           ArDriveDropdownItem(
             onClick: () {
               promptToShareDrive(
@@ -1103,8 +1103,8 @@ class EntityActionsMenu extends StatelessWidget {
           ),
         // `SyncCubit` refuses a second sync outright, so these two say so
         // rather than closing the menu and dropping the request.
-        // A library page is its snapshot and never syncs.
-        if (drive != null && !LibraryMode.isOn)
+        // A publication is its snapshot and never syncs.
+        if (drive != null && !PublicationMode.isOn)
           ArDriveDropdownItem(
             onClick: isSyncing
                 ? null
@@ -1122,7 +1122,7 @@ class EntityActionsMenu extends StatelessWidget {
               ),
             ),
           ),
-        if (drive != null && !LibraryMode.isOn)
+        if (drive != null && !PublicationMode.isOn)
           ArDriveDropdownItem(
             onClick: isSyncing
                 ? null
@@ -1165,10 +1165,10 @@ class EntityActionsMenu extends StatelessWidget {
                   : ArDriveIcons.eyeClosed(size: defaultIconSize),
             ),
           ),
-        if (LibraryMode.isOn)
+        if (PublicationMode.isOn)
           ArDriveDropdownItem(
             onClick: () =>
-                copyLibraryLink(context, folderId: drive!.rootFolderId),
+                copyPublicationLink(context, folderId: drive!.rootFolderId),
             content: ArDriveDropdownItemTile(
               name: appLocalizationsOf(context).copyLink,
               icon: ArDriveIcons.copy(size: defaultIconSize),
@@ -1204,8 +1204,8 @@ class EntityActionsMenu extends StatelessWidget {
             ),
           ),
         ],
-        // A library is not its drive: no drive details on a library page.
-        if (!LibraryMode.isOn)
+        // A publication is not its drive: no drive details on a publication.
+        if (!PublicationMode.isOn)
           ArDriveDropdownItem(
             onClick: () {
               final bloc = context.read<DriveDetailCubit>();
@@ -1248,9 +1248,9 @@ class EntityActionsMenu extends StatelessWidget {
           ),
         ),
       ),
-      if (!isFileRevision && LibraryMode.isOn)
+      if (!isFileRevision && PublicationMode.isOn)
         ArDriveDropdownItem(
-          onClick: () => copyLibraryLink(
+          onClick: () => copyPublicationLink(
             context,
             folderId: (item as FileDataTableItem).parentFolderId,
             fileId: item.id,
@@ -1260,7 +1260,7 @@ class EntityActionsMenu extends StatelessWidget {
             ArDriveIcons.copy(size: defaultIconSize),
           ),
         ),
-      if (!isFileRevision && !LibraryMode.isOn) ...[
+      if (!isFileRevision && !PublicationMode.isOn) ...[
         ArDriveDropdownItem(
           onClick: () {
             promptToShareFile(

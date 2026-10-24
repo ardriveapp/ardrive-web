@@ -2,7 +2,7 @@ import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/file_download_dialog.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/search/domain/bloc/search_bloc.dart';
@@ -199,8 +199,8 @@ class _FileSearchModalState extends State<FileSearchModal> {
     ArDriveColorTokens colorTokens,
   ) {
     return Text(
-      LibraryMode.isOn
-          ? appLocalizationsOf(context).librarySearchTitle
+      PublicationMode.isOn
+          ? appLocalizationsOf(context).publicationSearchTitle
           : 'Search for a file, folder, or drive',
       style: typography.heading4(
           color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
@@ -240,8 +240,8 @@ class _FileSearchModalState extends State<FileSearchModal> {
           } else if (state.status == SearchStatus.idle) {
             return Center(
               child: Text(
-                LibraryMode.isOn
-                    ? appLocalizationsOf(context).librarySearchStart
+                PublicationMode.isOn
+                    ? appLocalizationsOf(context).publicationSearchStart
                     : 'Nothing here yet! Start by searching for a file name, folder, or drive above.',
                 style: typography.paragraphXLarge(
                   color: colorTokens.textHigh,
@@ -255,9 +255,9 @@ class _FileSearchModalState extends State<FileSearchModal> {
           }
           return Center(
             child: Text(
-              LibraryMode.isOn
+              PublicationMode.isOn
                   ? appLocalizationsOf(context)
-                      .librarySearchNoMatches(state.query)
+                      .publicationSearchNoMatches(state.query)
                   : 'We couldn\'t find any files, folders, or drives matching your search. Please check your spelling or try searching with a different keyword.',
               style: typography.paragraphXLarge(
                 fontWeight: ArFontWeight.semiBold,

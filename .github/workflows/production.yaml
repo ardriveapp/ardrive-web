@@ -59,7 +59,7 @@ jobs:
       - name: Leave source maps out of the Arweave deploy
         run: find build/web -name '*.map' -delete
 
-      # Flutter's fallback fonts, which a library page loads from its own
+      # Flutter's fallback fonts, which a publication loads from its own
       # host rather than fonts.gstatic.com (the fetch rewrite in
       # web/index.html). About 81 MB, checked against tool/fallback_fonts.sha256;
       # the files only change with Flutter, so incremental deploys upload them
@@ -69,8 +69,8 @@ jobs:
 
       # Deploy to Arweave, gzipped: each file is stored compressed with a
       # `Content-Encoding: gzip` tag, which gateways send with the bytes, so a
-      # first visit downloads about 20 MB instead of 77 MB. Library pages load
-      # this bundle by its manifest ID (docs/LIBRARY_PAGES.md). Pinned to the
+      # first visit downloads about 20 MB instead of 77 MB. Publications load
+      # this bundle by its manifest ID (docs/PUBLICATIONS.md). Pinned to the
       # v2.1.2 commit, the first to install the newest Node 22 rather than
       # the runner's cached one (CVE-2026-111497, the brotli decoder); the
       # action installs @ar.io/deploy@^2 itself.

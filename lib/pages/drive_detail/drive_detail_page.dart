@@ -31,8 +31,8 @@ import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/dev_tools/shortcut_handler.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
-import 'package:ardrive/library/presentation/library_chrome.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
@@ -115,12 +115,12 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
   final _mobileScrollOffsets = <String, double>{};
   String? _mobileFolderId;
 
-  /// A library root's header folds away while the list beneath it is
+  /// A publication root's header folds away while the list beneath it is
   /// scrolled, so the list has the window, and unfolds at its top.
-  bool _libraryHeaderFolded = false;
-  String? _libraryHeaderFolderId;
-  bool _libraryListCanScroll = false;
-  bool _libraryListAtTop = true;
+  bool _publicationHeaderFolded = false;
+  String? _publicationHeaderFolderId;
+  bool _publicationListCanScroll = false;
+  bool _publicationListAtTop = true;
 
   void _onMobileFolderShown(String folderId) {
     if (_mobileFolderId == folderId) {
@@ -252,7 +252,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       return ScreenTypeLayout.builder(
                         mobile: (context) => Scaffold(
                           drawerScrimColor: Colors.transparent,
-                          drawer: LibraryMode.isOn ? null : const AppSideBar(),
+                          drawer:
+                              PublicationMode.isOn ? null : const AppSideBar(),
                           appBar: const MobileAppBar(),
                           body: const DriveDetailSyncingCard(),
                         ),
@@ -283,7 +284,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       return ScreenTypeLayout.builder(
                         mobile: (context) => Scaffold(
                           drawerScrimColor: Colors.transparent,
-                          drawer: LibraryMode.isOn ? null : const AppSideBar(),
+                          drawer:
+                              PublicationMode.isOn ? null : const AppSideBar(),
                           appBar: const MobileAppBar(),
                           body: const DriveDetailSyncingCard
                               .driveListUnavailable(),
@@ -317,8 +319,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                           mobile: (context) {
                             return Scaffold(
                               drawerScrimColor: Colors.transparent,
-                              drawer:
-                                  LibraryMode.isOn ? null : const AppSideBar(),
+                              drawer: PublicationMode.isOn
+                                  ? null
+                                  : const AppSideBar(),
                               appBar: const MobileAppBar(),
                               body: Padding(
                                 padding: const EdgeInsets.all(8.0),
@@ -393,8 +396,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             }
                             return Scaffold(
                               drawerScrimColor: Colors.transparent,
-                              drawer:
-                                  LibraryMode.isOn ? null : const AppSideBar(),
+                              drawer: PublicationMode.isOn
+                                  ? null
+                                  : const AppSideBar(),
                               appBar: const MobileAppBar(),
                               body: _UnsyncedDriveMobileView(
                                 drive: driveDetailState.drive,
@@ -472,8 +476,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       final bool hasSubfolders;
                       final bool hasFiles;
 
-                      if (LibraryMode.isOn) {
-                        // What the library shows, as the table lists it: a
+                      if (PublicationMode.isOn) {
+                        // What the publication shows, as the table lists it: a
                         // folder of only hidden items, ghost folders or
                         // unconfirmed uploads is empty there.
                         final contents = driveDetailState.currentFolderContents;
@@ -529,8 +533,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                           mobile: (context) => Scaffold(
                             resizeToAvoidBottomInset: false,
                             drawerScrimColor: Colors.transparent,
-                            drawer:
-                                LibraryMode.isOn ? null : const AppSideBar(),
+                            drawer: PublicationMode.isOn
+                                ? null
+                                : const AppSideBar(),
                             appBar: (driveDetailState.showSelectedItemDetails &&
                                     context
                                             .read<DriveDetailCubit>()
@@ -569,23 +574,23 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     );
   }
 
-  /// Whether [state] is at a library's root, where [LibraryHeader] takes the
+  /// Whether [state] is at a publication's root, where [PublicationHeader] takes the
   /// breadcrumb row's place.
-  bool _atLibraryRoot(DriveDetailLoadSuccess state) =>
-      libraryConfigOf(context)?.scopeRootFolderId ==
+  bool _atPublicationRoot(DriveDetailLoadSuccess state) =>
+      publicationConfigOf(context)?.scopeRootFolderId ==
       state.folderInView.folder.id;
 
-  void _foldLibraryHeader(bool folded) {
-    if (folded == _libraryHeaderFolded) return;
-    setState(() => _libraryHeaderFolded = folded);
+  void _foldPublicationHeader(bool folded) {
+    if (folded == _publicationHeaderFolded) return;
+    setState(() => _publicationHeaderFolded = folded);
   }
 
-  /// [child] with the scrolling that folds a library root's header: the list
+  /// [child] with the scrolling that folds a publication root's header: the list
   /// moving off its top, or the wheel turned over the header itself.
-  Widget _foldsLibraryHeader(String folderId, Widget child) {
-    if (!LibraryMode.isOn) return child;
-    _libraryFolderShown(folderId);
-    return _turnsLibraryHeader(
+  Widget _foldsPublicationHeader(String folderId, Widget child) {
+    if (!PublicationMode.isOn) return child;
+    _publicationFolderShown(folderId);
+    return _turnsPublicationHeader(
       NotificationListener<Notification>(
         onNotification: (notification) {
           final metrics = switch (notification) {
@@ -594,13 +599,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
             _ => null,
           };
           if (metrics == null || metrics.axis != Axis.vertical) return false;
-          _libraryListCanScroll = metrics.maxScrollExtent > 0;
-          _libraryListAtTop = metrics.pixels <= 0;
+          _publicationListCanScroll = metrics.maxScrollExtent > 0;
+          _publicationListAtTop = metrics.pixels <= 0;
           // Only a scroll that moved the list: the list growing as the
           // header folds reports new metrics, and must not unfold it again.
           if (notification is ScrollUpdateNotification &&
               (notification.scrollDelta ?? 0) != 0) {
-            _foldLibraryHeader(metrics.pixels > 0);
+            _foldPublicationHeader(metrics.pixels > 0);
           }
           return false;
         },
@@ -611,42 +616,42 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
   /// A folder newly shown starts with its header unfolded. Called by
   /// whatever reads the fold first in a build, the header itself included.
-  void _libraryFolderShown(String folderId) {
-    if (_libraryHeaderFolderId == folderId) return;
-    _libraryHeaderFolderId = folderId;
-    _libraryHeaderFolded = false;
-    _libraryListAtTop = true;
+  void _publicationFolderShown(String folderId) {
+    if (_publicationHeaderFolderId == folderId) return;
+    _publicationHeaderFolderId = folderId;
+    _publicationHeaderFolded = false;
+    _publicationListAtTop = true;
   }
 
-  /// [child] where the wheel, or a swipe on a touch screen, folds a library
+  /// [child] where the wheel, or a swipe on a touch screen, folds a publication
   /// root's header down when the list has more to show and unfolds it up
   /// from the list's top. A swipe is the only way back on a phone whose list
   /// fits once the header has folded, and so never scrolls again.
-  Widget _turnsLibraryHeader(Widget child) => Listener(
+  Widget _turnsPublicationHeader(Widget child) => Listener(
         onPointerSignal: (event) {
           if (event is! PointerScrollEvent) return;
-          if (event.scrollDelta.dy > 0 && _libraryListCanScroll) {
-            _foldLibraryHeader(true);
-          } else if (event.scrollDelta.dy < 0 && _libraryListAtTop) {
-            _foldLibraryHeader(false);
+          if (event.scrollDelta.dy > 0 && _publicationListCanScroll) {
+            _foldPublicationHeader(true);
+          } else if (event.scrollDelta.dy < 0 && _publicationListAtTop) {
+            _foldPublicationHeader(false);
           }
         },
         child: GestureDetector(
           onVerticalDragEnd: (details) {
             final velocity = details.primaryVelocity ?? 0;
-            if (velocity < 0 && _libraryListCanScroll) {
-              _foldLibraryHeader(true);
-            } else if (velocity > 0 && _libraryListAtTop) {
-              _foldLibraryHeader(false);
+            if (velocity < 0 && _publicationListCanScroll) {
+              _foldPublicationHeader(true);
+            } else if (velocity > 0 && _publicationListAtTop) {
+              _foldPublicationHeader(false);
             }
           },
           child: child,
         ),
       );
 
-  /// A library root's Download: the rows selected, or the whole library.
-  void _downloadFromLibraryHeader(DriveDetailLoadSuccess state) {
-    final library = libraryConfigOf(context)!;
+  /// A publication root's Download: the rows selected, or the whole publication.
+  void _downloadFromPublicationHeader(DriveDetailLoadSuccess state) {
+    final publication = publicationConfigOf(context)!;
     final selected = context.read<DriveDetailCubit>().selectedItems;
     if (state.multiselect && selected.isNotEmpty) {
       promptToDownloadMultipleFiles(
@@ -654,7 +659,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         selectedItems: selected,
         zipName: selected.length == 1 && selected.single is FolderDataTableItem
             ? selected.single.name
-            : library.title,
+            : publication.title,
       );
       return;
     }
@@ -664,24 +669,24 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         DriveDataTableItemMapper.fromDrive(
             state.currentDrive, (_) => null, 0, true),
       ],
-      zipName: library.title,
+      zipName: publication.title,
     );
   }
 
-  Widget _libraryHeader(
+  Widget _publicationHeader(
     DriveDetailLoadSuccess state, {
     required bool compact,
   }) {
-    _libraryFolderShown(state.folderInView.folder.id);
-    return _turnsLibraryHeader(LibraryHeader(
+    _publicationFolderShown(state.folderInView.folder.id);
+    return _turnsPublicationHeader(PublicationHeader(
       coverHeight: compact ? 120 : 200,
-      collapsed: _libraryHeaderFolded,
+      collapsed: _publicationHeaderFolded,
       compact: compact,
       downloadsSelection: state.multiselect &&
           context.read<DriveDetailCubit>().selectedItems.isNotEmpty,
-      onDownload: () => _downloadFromLibraryHeader(state),
+      onDownload: () => _downloadFromPublicationHeader(state),
       onCopyLink: () =>
-          copyLibraryLink(context, folderId: state.folderInView.folder.id),
+          copyPublicationLink(context, folderId: state.folderInView.folder.id),
     ));
   }
 
@@ -708,8 +713,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_atLibraryRoot(driveDetailState)) ...[
-                            _libraryHeader(driveDetailState, compact: false),
+                          if (_atPublicationRoot(driveDetailState)) ...[
+                            _publicationHeader(driveDetailState,
+                                compact: false),
                             const SizedBox(height: 24),
                           ] else ...[
                             ArDriveCard(
@@ -724,15 +730,15 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               content: Row(
                                 children: [
                                   DriveDetailBreadcrumbRow(
-                                    // A library's crumbs start at the folder it
+                                    // A publication's crumbs start at the folder it
                                     // was published at, named by its title.
-                                    rootFolderId: libraryConfigOf(context)
+                                    rootFolderId: publicationConfigOf(context)
                                             ?.scopeRootFolderId ??
                                         driveDetailState
                                             .currentDrive.rootFolderId,
                                     path: driveDetailState.pathSegments,
                                     driveName:
-                                        libraryConfigOf(context)?.title ??
+                                        publicationConfigOf(context)?.title ??
                                             driveDetailState.currentDrive.name,
                                     isPrivate:
                                         driveDetailState.currentDrive.isPrivate,
@@ -799,12 +805,13 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
                                           final currentFolder =
                                               driveDetail.folderInView.folder;
-                                          final library =
-                                              libraryConfigOf(context);
-                                          zipName = library != null &&
+                                          final publication =
+                                              publicationConfigOf(context);
+                                          zipName = publication != null &&
                                                   currentFolder.id ==
-                                                      library.scopeRootFolderId
-                                              ? library.title
+                                                      publication
+                                                          .scopeRootFolderId
+                                              ? publication.title
                                               : currentFolder.parentFolderId ==
                                                       null
                                                   ? driveDetail
@@ -852,7 +859,8 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                     context,
                                                     selectedItems: [driveItem],
                                                     zipName:
-                                                        libraryConfigOf(context)
+                                                        publicationConfigOf(
+                                                                    context)
                                                                 ?.title ??
                                                             driveItem.name);
                                               },
@@ -906,7 +914,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                   ),
                                                 ),
                                               ),
-                                            if (!LibraryMode.isOn)
+                                            if (!PublicationMode.isOn)
                                               ArDriveDropdownItem(
                                                 onClick: isSyncing
                                                     ? null
@@ -932,7 +940,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                   ),
                                                 ),
                                               ),
-                                            if (!LibraryMode.isOn)
+                                            if (!PublicationMode.isOn)
                                               ArDriveDropdownItem(
                                                 onClick: isSyncing
                                                     ? null
@@ -1004,9 +1012,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                         ),
                                                 ),
                                               ),
-                                            if (LibraryMode.isOn)
+                                            if (PublicationMode.isOn)
                                               ArDriveDropdownItem(
-                                                onClick: () => copyLibraryLink(
+                                                onClick: () =>
+                                                    copyPublicationLink(
                                                   context,
                                                   folderId: driveDetailState
                                                       .currentDrive
@@ -1021,7 +1030,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                       size: defaultIconSize),
                                                 ),
                                               ),
-                                            if (!LibraryMode.isOn)
+                                            if (!PublicationMode.isOn)
                                               ArDriveDropdownItem(
                                                 onClick: () {
                                                   promptToShareDrive(
@@ -1040,7 +1049,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                   ),
                                                 ),
                                               ),
-                                            if (!LibraryMode.isOn)
+                                            if (!PublicationMode.isOn)
                                               ArDriveDropdownItem(
                                                 onClick: () {
                                                   promptToExportCSVData(
@@ -1059,11 +1068,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                                   ),
                                                 ),
                                               ),
-                                            // A library is not its drive: the
+                                            // A publication is not its drive: the
                                             // drive's details name it, list its
                                             // past names and ask GraphQL for
                                             // its snapshots.
-                                            if (!LibraryMode.isOn)
+                                            if (!PublicationMode.isOn)
                                               ArDriveDropdownItem(
                                                 onClick: () {
                                                   final bloc = context
@@ -1131,7 +1140,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
-                                    child: _foldsLibraryHeader(
+                                    child: _foldsPublicationHeader(
                                       driveDetailState.folderInView.folder.id,
                                       _buildDataList(
                                         context,
@@ -1185,10 +1194,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     !hasSubfolders,
                               ),
                             ),
-                          // Room under the table, so a library page ends
+                          // Room under the table, so a publication ends
                           // where its card visibly does, not at the window's
                           // edge.
-                          if (LibraryMode.isOn) const SizedBox(height: 16),
+                          if (PublicationMode.isOn) const SizedBox(height: 16),
                         ],
                       ),
                     ),
@@ -1309,7 +1318,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
           .colors
           .themeBgSurface
           .withOpacity(0.5),
-      drawer: LibraryMode.isOn ? null : const AppSideBar(),
+      drawer: PublicationMode.isOn ? null : const AppSideBar(),
       appBar: MobileAppBar(
         showSearch: true,
         leading: (driveDetailLoadSuccessState.showSelectedItemDetails &&
@@ -1324,10 +1333,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
       ),
       bottomNavigationBar: BlocBuilder<DriveDetailCubit, DriveDetailState>(
         builder: (context, state) {
-          // A library page adds nothing to its drive: no New button. Not an
+          // A publication adds nothing to its drive: no New button. Not an
           // empty Container: given the whole height, it fills it, which hid
           // the file list for as long as it was there.
-          if (state is! DriveDetailLoadSuccess || LibraryMode.isOn) {
+          if (state is! DriveDetailLoadSuccess || PublicationMode.isOn) {
             return const SizedBox.shrink();
           }
 
@@ -1371,11 +1380,11 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
 
     return Column(
       children: [
-        // A library's root has its header in place of the folder bar.
-        if (_atLibraryRoot(state))
+        // A publication's root has its header in place of the folder bar.
+        if (_atPublicationRoot(state))
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: _libraryHeader(state, compact: true),
+            child: _publicationHeader(state, compact: true),
           )
         else
           // The search field used to sit here, 16px of padding either side of it,
@@ -1389,7 +1398,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
               children: [
                 Flexible(
                   child: MobileFolderNavigation(
-                    driveName: libraryConfigOf(context)?.title ??
+                    driveName: publicationConfigOf(context)?.title ??
                         state.currentDrive.name,
                     isPrivate: state.currentDrive.isPrivate,
                     path: state.pathSegments,
@@ -1409,7 +1418,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
         ),
         Expanded(
           child: (hasSubfolders || hasFiles)
-              ? _foldsLibraryHeader(
+              ? _foldsPublicationHeader(
                   state.folderInView.folder.id,
                   ListView.separated(
                     padding: const EdgeInsets.symmetric(
@@ -1683,7 +1692,7 @@ class MobileFolderNavigation extends StatelessWidget {
 
                             promptToDownloadMultipleFiles(context,
                                 selectedItems: [driveItem],
-                                zipName: libraryConfigOf(context)?.title ??
+                                zipName: publicationConfigOf(context)?.title ??
                                     driveItem.name);
                           },
                           content: ArDriveDropdownItemTile(
@@ -1720,7 +1729,7 @@ class MobileFolderNavigation extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (!LibraryMode.isOn)
+                      if (!PublicationMode.isOn)
                         ArDriveDropdownItem(
                           onClick: isSyncing
                               ? null
@@ -1738,7 +1747,7 @@ class MobileFolderNavigation extends StatelessWidget {
                             ),
                           ),
                         ),
-                      if (!LibraryMode.isOn)
+                      if (!PublicationMode.isOn)
                         ArDriveDropdownItem(
                           onClick: isSyncing
                               ? null
@@ -1764,9 +1773,9 @@ class MobileFolderNavigation extends StatelessWidget {
                             ),
                           ),
                         ),
-                      if (LibraryMode.isOn)
+                      if (PublicationMode.isOn)
                         ArDriveDropdownItem(
-                          onClick: () => copyLibraryLink(
+                          onClick: () => copyPublicationLink(
                             context,
                             folderId: state.currentDrive.rootFolderId,
                           ),
@@ -1775,7 +1784,7 @@ class MobileFolderNavigation extends StatelessWidget {
                             icon: ArDriveIcons.copy(size: defaultIconSize),
                           ),
                         ),
-                      if (!LibraryMode.isOn)
+                      if (!PublicationMode.isOn)
                         ArDriveDropdownItem(
                           onClick: () {
                             promptToShareDrive(
@@ -1816,7 +1825,7 @@ class MobileFolderNavigation extends StatelessWidget {
                                   ),
                           ),
                         ),
-                      if (!LibraryMode.isOn)
+                      if (!PublicationMode.isOn)
                         ArDriveDropdownItem(
                           onClick: () {
                             promptToExportCSVData(
@@ -1831,8 +1840,8 @@ class MobileFolderNavigation extends StatelessWidget {
                             ),
                           ),
                         ),
-                      // A library is not its drive (see the wide menu).
-                      if (!LibraryMode.isOn)
+                      // A publication is not its drive (see the wide menu).
+                      if (!PublicationMode.isOn)
                         ArDriveDropdownItem(
                           onClick: () {
                             final bloc = context.read<DriveDetailCubit>();

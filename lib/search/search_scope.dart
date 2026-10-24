@@ -2,9 +2,9 @@ import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
-import 'package:ardrive/library/data/library_search_repository.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
-import 'package:ardrive/library/presentation/library_loader/library_loader_cubit.dart';
+import 'package:ardrive/publication/data/publication_search_repository.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/publication/presentation/publication_loader/publication_loader_cubit.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/search/domain/bloc/search_bloc.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
@@ -90,7 +90,7 @@ class _SearchScopeState extends State<SearchScope> {
 
     _session = SearchSession(
       SearchBloc(
-        LibraryMode.isOn ? _librarySearch() : _appSearch(),
+        PublicationMode.isOn ? _publicationSearch() : _appSearch(),
         syncCubit: context.read<SyncCubit>(),
         globalHideBloc: context.read<GlobalHideBloc>(),
       ),
@@ -104,13 +104,13 @@ class _SearchScopeState extends State<SearchScope> {
         context.read<FolderRepository>(),
       );
 
-  /// A library page searches only its library, once it is open.
-  SearchRepository _librarySearch() {
-    final loader = context.read<LibraryLoaderCubit>();
-    return LibrarySearchRepository(
+  /// A publication searches only its publication, once it is open.
+  SearchRepository _publicationSearch() {
+    final loader = context.read<PublicationLoaderCubit>();
+    return PublicationSearchRepository(
       context.read<DriveDao>(),
       config: () => switch (loader.state) {
-        LibraryReady(:final config) => config,
+        PublicationReady(:final config) => config,
         _ => null,
       },
     );

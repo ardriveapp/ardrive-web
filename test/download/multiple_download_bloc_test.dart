@@ -228,7 +228,7 @@ void main() async {
         );
       });
 
-      group('Test the step before a library page downloads', () {
+      group('Test the step before a publication downloads', () {
         blocTest<MultipleDownloadBloc, MultipleDownloadState>(
           'says what the zip will hold and fetches nothing yet',
           build: () => multipleDownloadBloc,
@@ -239,14 +239,14 @@ void main() async {
           },
           act: (bloc) => bloc.add(StartDownload(
             [testFile, testFile],
-            zipName: 'Library',
+            zipName: 'Publication',
             confirmFirst: true,
           )),
           expect: () => [
             isA<MultipleDownloadReady>()
                 .having((s) => s.fileCount, 'fileCount', 2)
                 .having((s) => s.totalSize, 'totalSize', testFile.size! * 2)
-                .having((s) => s.fileName, 'fileName', 'Library.zip'),
+                .having((s) => s.fileName, 'fileName', 'Publication.zip'),
           ],
           verify: (_) =>
               verifyNever(() => mockDownloadService.download(any(), any())),
@@ -261,7 +261,7 @@ void main() async {
           act: (bloc) async {
             bloc.add(StartDownload(
               [testFile],
-              zipName: 'Library',
+              zipName: 'Publication',
               confirmFirst: true,
             ));
             await Future<void>.delayed(Duration.zero);
@@ -271,7 +271,7 @@ void main() async {
             isA<MultipleDownloadReady>(),
             isA<MultipleDownloadInProgress>(),
             isA<MultipleDownloadFinishedWithSuccess>()
-                .having((s) => s.fileName, 'fileName', 'Library.zip'),
+                .having((s) => s.fileName, 'fileName', 'Publication.zip'),
           ],
         );
       });
@@ -286,7 +286,7 @@ void main() async {
           act: (bloc) async {
             bloc.add(StartDownload(
               [testFile],
-              zipName: 'Library',
+              zipName: 'Publication',
               confirmFirst: true,
             ));
             await Future<void>.delayed(Duration.zero);

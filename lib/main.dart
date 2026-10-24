@@ -18,9 +18,9 @@ import 'package:ardrive/core/upload/cost_calculator.dart';
 import 'package:ardrive/core/upload/uploader.dart';
 import 'package:ardrive/download/ardrive_downloader.dart';
 import 'package:ardrive/drive_explorer/thumbnail/repository/thumbnail_repository.dart';
-import 'package:ardrive/library/data/download_helper.dart';
-import 'package:ardrive/library/data/library_meta_reader.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/publication/data/download_helper.dart';
+import 'package:ardrive/publication/data/publication_meta_reader.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
@@ -95,10 +95,11 @@ void main() async {
     // `lib/utils/app_url_strategy.dart` for what has to land before it is not.
     configureAppUrlStrategy();
 
-    // Before any service starts: a library page starts them differently
-    // (docs/LIBRARY_PAGES.md, "How a page opens").
-    LibraryMode.detect(readLibraryMetaContent, readTitle: readPageTitle);
-    if (LibraryMode.isOn) {
+    // Before any service starts: a publication starts them differently
+    // (docs/PUBLICATIONS.md, "How a page opens").
+    PublicationMode.detect(readPublicationMetaContent,
+        readTitle: readPageTitle);
+    if (PublicationMode.isOn) {
       PlausibleEventTracker.disabled = true;
     }
 
@@ -136,7 +137,7 @@ Future<void> _initializeServices() async {
     appFlavors: AppFlavors(EnvFetcher()),
     configFetcher: ConfigFetcher(
       localStore: localKeyValueStore,
-      libraryMode: LibraryMode.isOn,
+      publicationMode: PublicationMode.isOn,
     ),
   );
 
@@ -145,8 +146,8 @@ Future<void> _initializeServices() async {
   final config = configService.config;
 
   // Apply any persisted Solana RPC / program ID overrides from dev tools. A
-  // library page reads no stored config and has no use for Solana.
-  if (!LibraryMode.isOn &&
+  // publication reads no stored config and has no use for Solana.
+  if (!PublicationMode.isOn &&
       (config.solanaRpcUrl != null ||
           config.solanaCoreProgramId != null ||
           config.solanaGarProgramId != null ||
@@ -161,12 +162,12 @@ Future<void> _initializeServices() async {
         );
   }
 
-  if (LibraryMode.isOn) {
+  if (PublicationMode.isOn) {
     useGatewayForDownloadHelper(
         Uri.parse(config.arweaveGatewayForDataRequest.url));
   }
 
-  db = LibraryMode.isOn ? Database.forLibraryPage() : Database();
+  db = PublicationMode.isOn ? Database.forPublication() : Database();
 
   arweave = ArweaveService(
     Arweave(
@@ -178,9 +179,9 @@ Future<void> _initializeServices() async {
     db.driveDao,
     configService,
   );
-  // A library page uploads nothing, and a live service would ask Turbo for
+  // A publication uploads nothing, and a live service would ask Turbo for
   // its limits as soon as it is built.
-  _turboUpload = config.useTurboUpload && !LibraryMode.isOn
+  _turboUpload = config.useTurboUpload && !PublicationMode.isOn
       ? TurboUploadService(
           turboUploadUri: Uri.parse(config.defaultTurboUploadUrl!),
           allowedDataItemSize: config.allowedDataItemSizeForTurbo,
@@ -200,9 +201,9 @@ Future<void> _initializeServices() async {
     Timer.periodic(duration, (timer) => triggerHTMLPageReload());
   }
 
-  // A library page runs the release it pins, for good: a reload changes
+  // A publication runs the release it pins, for good: a reload changes
   // nothing, so it never reloads itself.
-  if (kIsWeb && !LibraryMode.isOn) {
+  if (kIsWeb && !PublicationMode.isOn) {
     refreshHTMLPageAtInterval(const Duration(hours: 12));
   }
 }
@@ -269,8 +270,8 @@ class AppState extends State<App> {
             );
 
     return MaterialApp.router(
-      // A library page keeps the title its publisher wrote.
-      title: LibraryMode.pageTitle ?? _appName,
+      // A publication keeps the title its publisher wrote.
+      title: PublicationMode.pageTitle ?? _appName,
       theme: ardriveTheme,
       debugShowCheckedModeBanner: false,
       routeInformationParser: _routeInformationParser,

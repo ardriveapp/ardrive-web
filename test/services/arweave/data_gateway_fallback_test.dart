@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -427,9 +427,9 @@ void main() {
       verify(() => arioSDK.getGateways()).called(1);
     });
 
-    test('a library page never leaves the gateway serving it', () async {
-      LibraryMode.debugSet('library.json');
-      addTearDown(() => LibraryMode.debugSet(null));
+    test('a publication never leaves the gateway serving it', () async {
+      PublicationMode.debugSet('publication.json');
+      addTearDown(() => PublicationMode.debugSet(null));
 
       await expectLater(
         fallback.downloadWithFallback(

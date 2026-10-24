@@ -210,7 +210,7 @@ void main() {
     });
   });
 
-  group('library mode', () {
+  group('publication mode', () {
     final assetConfig = AppConfig(
       configVersion: 3,
       stripePublishableKey: 'key',
@@ -227,20 +227,21 @@ void main() {
       url: 'https://ardrive.net',
     );
 
-    late ConfigFetcher libraryFetcher;
+    late ConfigFetcher publicationFetcher;
 
     setUp(() {
-      libraryFetcher = ConfigFetcher(localStore: localStore, libraryMode: true)
-        ..assetBundle = assetBundle;
+      publicationFetcher =
+          ConfigFetcher(localStore: localStore, publicationMode: true)
+            ..assetBundle = assetBundle;
       when(() => assetBundle.loadString(any()))
           .thenAnswer((_) async => json.encode(assetConfig.toJson()));
     });
 
     test('starts from the flavor asset and never touches stored config',
         () async {
-      libraryFetcher.detectGateway = () async => servingGateway;
+      publicationFetcher.detectGateway = () async => servingGateway;
 
-      await libraryFetcher.fetchConfig(Flavor.production);
+      await publicationFetcher.fetchConfig(Flavor.production);
 
       verify(() => assetBundle.loadString('assets/config/prod.json')).called(1);
       verifyNever(() => localStore.getString(any()));
@@ -250,9 +251,9 @@ void main() {
 
     test('reads data from the gateway serving the page and never syncs',
         () async {
-      libraryFetcher.detectGateway = () async => servingGateway;
+      publicationFetcher.detectGateway = () async => servingGateway;
 
-      final config = await libraryFetcher.fetchConfig(Flavor.production);
+      final config = await publicationFetcher.fetchConfig(Flavor.production);
 
       expect(config.arweaveGatewayForDataRequest, servingGateway);
       expect(config.autoSync, isFalse);
@@ -260,9 +261,9 @@ void main() {
     });
 
     test('keeps the flavor gateway when the host is not a gateway', () async {
-      libraryFetcher.detectGateway = () async => null;
+      publicationFetcher.detectGateway = () async => null;
 
-      final config = await libraryFetcher.fetchConfig(Flavor.production);
+      final config = await publicationFetcher.fetchConfig(Flavor.production);
 
       expect(
           config.arweaveGatewayForDataRequest.url, 'https://turbo-gateway.com');
@@ -271,20 +272,20 @@ void main() {
 
     test('detects on every load', () async {
       var detections = 0;
-      libraryFetcher.detectGateway = () async {
+      publicationFetcher.detectGateway = () async {
         detections++;
         return servingGateway;
       };
 
-      await libraryFetcher.fetchConfig(Flavor.production);
-      await libraryFetcher.fetchConfig(Flavor.production);
+      await publicationFetcher.fetchConfig(Flavor.production);
+      await publicationFetcher.fetchConfig(Flavor.production);
 
       expect(detections, 2);
     });
 
     test('saving and resetting dev tools settings write nothing', () async {
-      await libraryFetcher.saveConfigOnDevToolsPrefs(assetConfig);
-      await libraryFetcher.resetDevToolsPrefs();
+      await publicationFetcher.saveConfigOnDevToolsPrefs(assetConfig);
+      await publicationFetcher.resetDevToolsPrefs();
 
       verifyNever(() => localStore.putString(any(), any()));
       verifyNever(() => localStore.remove(any()));

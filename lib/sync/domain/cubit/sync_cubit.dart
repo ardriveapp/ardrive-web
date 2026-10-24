@@ -6,7 +6,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_bloc.dart';
 import 'package:ardrive/blocs/prompt_to_snapshot/prompt_to_snapshot_event.dart';
 import 'package:ardrive/core/activity_tracker.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/constants.dart';
 import 'package:ardrive/sync/domain/ghost_folder.dart';
@@ -411,7 +411,7 @@ class SyncCubit extends Cubit<SyncState> {
   /// is: a sync answers this question far better than a probe can, and asking
   /// during one races the answer it is about to produce.
   Future<void> checkForUnreadChanges() async {
-    if (isClosed || state is SyncInProgress || LibraryMode.isOn) {
+    if (isClosed || state is SyncInProgress || PublicationMode.isOn) {
       return;
     }
 
@@ -508,9 +508,9 @@ class SyncCubit extends Cubit<SyncState> {
         // Initialize with SyncLoadingDrives (not SyncIdle) to prevent race conditions
         // where DriveDetailCubit's waitCurrentSync() returns early before sync starts.
         super(SyncLoadingDrives()) {
-    // A library page is exactly its snapshot (docs/LIBRARY_PAGES.md): nothing
+    // A publication is exactly its snapshot (docs/PUBLICATIONS.md): nothing
     // ever syncs, and nothing is waiting for a sync to finish.
-    if (LibraryMode.isOn) {
+    if (PublicationMode.isOn) {
       emit(SyncIdle());
       return;
     }
@@ -769,7 +769,7 @@ class SyncCubit extends Cubit<SyncState> {
   /// their drive is still being read: it used to run a sync of every drive
   /// they own to answer a question about one transaction.
   void watchForPendingConfirmations() {
-    if (isClosed || LibraryMode.isOn) {
+    if (isClosed || PublicationMode.isOn) {
       return;
     }
 
@@ -857,7 +857,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   void _restartSync() {
-    if (LibraryMode.isOn) return;
+    if (PublicationMode.isOn) return;
     logger.d(
       'Attempting to create a sync subscription when the window regains focus.'
       ' Is Cubit active? ${!isClosed}',
@@ -901,7 +901,7 @@ class SyncCubit extends Cubit<SyncState> {
   }
 
   Future<void> arconnectSync() async {
-    if (LibraryMode.isOn) return;
+    if (PublicationMode.isOn) return;
     final isTabFocused = _tabVisibility.isTabFocused();
     logger.i('[ArConnect SYNC] isTabFocused: $isTabFocused');
     if (isTabFocused && await _profileCubit.logoutIfWalletMismatch()) {
@@ -929,7 +929,7 @@ class SyncCubit extends Cubit<SyncState> {
   /// Used when syncAllDrivesOnLogin is disabled to populate the sidebar.
   /// Emits SyncLoadingDrives for UI feedback but doesn't block waitCurrentSync().
   Future<void> syncMetadataOnly() async {
-    if (LibraryMode.isOn) return;
+    if (PublicationMode.isOn) return;
     logger.d('Starting metadata-only sync');
     final profile = _profileCubit.state;
     if (profile is ProfileLoggedIn) {
@@ -1031,7 +1031,7 @@ class SyncCubit extends Cubit<SyncState> {
     List<String>? onlyDriveIds,
     SyncTrigger trigger = SyncTrigger.userInitiated,
   }) async {
-    if (LibraryMode.isOn) return false;
+    if (PublicationMode.isOn) return false;
     logger.i('Starting Sync');
 
     if (state is SyncInProgress) {
@@ -1308,7 +1308,7 @@ class SyncCubit extends Cubit<SyncState> {
     bool deepSync = false,
     SyncTrigger trigger = SyncTrigger.userInitiated,
   }) async {
-    if (LibraryMode.isOn) return false;
+    if (PublicationMode.isOn) return false;
     logger.i('Starting Sync for drive: $driveId, deepSync: $deepSync');
 
     // One sync at a time, and no queue behind it. This used to await the

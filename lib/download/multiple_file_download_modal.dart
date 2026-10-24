@@ -4,7 +4,7 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/core/download_service.dart';
 import 'package:ardrive/download/multiple_download_bloc.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -50,7 +50,7 @@ promptToDownloadMultipleFiles(
           StartDownload(
             selectedItems,
             zipName: zipName,
-            confirmFirst: LibraryMode.isOn,
+            confirmFirst: PublicationMode.isOn,
           ),
         ),
       child: const MultipleFilesDownload(),

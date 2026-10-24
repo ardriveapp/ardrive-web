@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/entities/license_assertion.dart';
 import 'package:ardrive/entities/license_composed.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
-import 'package:ardrive/library/domain/library_scope.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/models/license.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
@@ -47,10 +47,11 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
                 return;
               }
 
-              // A library page counts what the library shows, not the hidden
+              // A publication counts what the publication shows, not the hidden
               // items in the drive behind it.
-              final f =
-                  LibraryMode.isOn ? LibraryContents.open?.prune(tree) : tree;
+              final f = PublicationMode.isOn
+                  ? PublicationContents.open?.prune(tree)
+                  : tree;
               if (f == null) return;
 
               final metadataTxId = await _driveDao
@@ -94,9 +95,9 @@ class FsEntryInfoCubit extends Cubit<FsEntryInfoState> {
               if (license != null) {
                 final companion = license.toCompanion(true);
                 licenseState = _licenseService.fromCompanion(companion);
-              } else if (!LibraryMode.isOn) {
+              } else if (!PublicationMode.isOn) {
                 // 2. Or fetch on-demand from network and cache to DB. Not on
-                // a library page, which makes no GraphQL request: its
+                // a publication, which makes no GraphQL request: its
                 // snapshot carries the licenses it has.
                 licenseState = await _fetchAndCacheLicense(latestRevision);
               }

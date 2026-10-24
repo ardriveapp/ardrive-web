@@ -12,7 +12,7 @@ class StartDownload extends MultipleDownloadEvent {
   final String? zipName;
 
   /// Stop at [MultipleDownloadReady], saying what the zip will hold, until
-  /// [ConfirmDownload]. A library page asks: its visitor does not know how
+  /// [ConfirmDownload]. A publication asks: its visitor does not know how
   /// large what they are about to download is.
   final bool confirmFirst;
 

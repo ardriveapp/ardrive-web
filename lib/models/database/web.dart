@@ -112,21 +112,21 @@ LazyDatabase openConnection() {
   });
 }
 
-/// A library page's database (`LibraryMode`): in memory on this page, filled
+/// A publication's database (`PublicationMode`): in memory on this page, filled
 /// from the page's snapshot on every load and gone when the tab closes.
 ///
-/// None of [openConnection]'s machinery applies. A library page shares its
+/// None of [openConnection]'s machinery applies. A publication shares its
 /// origin with no ArDrive database, so there is no Web Lock to claim, no
 /// worker or OPFS file to open, nothing in IndexedDB to read and no sql.js
 /// database to migrate; and it keeps nothing, so a visitor never finds a
 /// stale copy. [webSqlite] is still set: the drive state importer attaches
 /// the snapshot through it.
-LazyDatabase openLibraryConnection() {
+LazyDatabase openPublicationConnection() {
   return LazyDatabase(() async {
     final sqlite3 = await WasmSqlite3.loadFromUrl(Uri.parse('sqlite3.wasm'));
-    final vfs = _sessionFileSystem(sqlite3, 'ardrive-library', seed: null);
+    final vfs = _sessionFileSystem(sqlite3, 'ardrive-publication', seed: null);
     webSqlite = (sqlite3: sqlite3, vfs: vfs);
-    logger.i('[web-db] library page: the database is in memory');
+    logger.i('[web-db] publication: the database is in memory');
     return WasmDatabase(sqlite3: sqlite3, path: _vfsDatabasePath);
   });
 }

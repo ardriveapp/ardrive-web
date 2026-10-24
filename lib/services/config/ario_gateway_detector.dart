@@ -21,7 +21,7 @@ class ArIOGatewayDetector {
   ///
   /// Returns [SelectedGateway] if the host is a valid AR.IO gateway.
   ///
-  /// [alsoTryHost] tries the host itself after the domain above it. A library
+  /// [alsoTryHost] tries the host itself after the domain above it. A publication
   /// page is served from a gateway's sandbox subdomain, whose parent is the
   /// gateway, but a gateway that serves a manifest without redirecting serves
   /// it from its own host, whose parent (`com`, say) is no gateway at all.

@@ -4,7 +4,7 @@ import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/profile_types.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
@@ -68,7 +68,7 @@ void main() {
   });
 
   tearDown(() async {
-    LibraryMode.debugSet(null);
+    PublicationMode.debugSet(null);
     await cubit?.close();
     cubit = null;
     await authUsers.close();
@@ -88,8 +88,8 @@ void main() {
     expect(await db.driveDao.allDrives().get(), isEmpty);
   });
 
-  test('a library page keeps the library it imported', () async {
-    LibraryMode.debugSet('library.json');
+  test('a publication keeps the publication it imported', () async {
+    PublicationMode.debugSet('publication.json');
     await insertPrivateDrive();
 
     cubit = buildCubit();

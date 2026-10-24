@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Puts Flutter's fallback fonts in a web build, so a library page loads them
+# Puts Flutter's fallback fonts in a web build, so a publication loads them
 # from its own host instead of fonts.gstatic.com (see the fetch rewrite in
-# web/index.html and docs/LIBRARY_PAGES.md, "Fallback fonts").
+# web/index.html and docs/PUBLICATIONS.md, "Fallback fonts").
 #
 #   tool/fetch_fallback_fonts.sh [dest]        # default build/web/fonts/gstatic
 #   tool/fetch_fallback_fonts.sh --pin <engine-dir>

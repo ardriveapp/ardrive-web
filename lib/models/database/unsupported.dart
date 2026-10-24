@@ -4,6 +4,6 @@ LazyDatabase openConnection() {
   throw 'Platform not supported';
 }
 
-LazyDatabase openLibraryConnection() {
+LazyDatabase openPublicationConnection() {
   throw 'Platform not supported';
 }

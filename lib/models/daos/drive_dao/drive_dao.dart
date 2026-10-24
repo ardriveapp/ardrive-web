@@ -568,14 +568,14 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
     });
   }
 
-  /// Seeds the drive a library page (`LibraryMode`) imports into: its row
+  /// Seeds the drive a publication (`PublicationMode`) imports into: its row
   /// and its root folder placeholder, in one transaction as
   /// [writeDriveEntity] writes them.
   ///
   /// The importer refuses to import into a drive this client has no row for,
-  /// and a library page has never synced. `lastUpdated` is the epoch so that
+  /// and a publication has never synced. `lastUpdated` is the epoch so that
   /// the drive metadata in the snapshot, whatever its date, always wins.
-  Future<void> writeLibraryDrive({
+  Future<void> writePublicationDrive({
     required DriveID driveId,
     required FolderID rootFolderId,
     required String ownerAddress,

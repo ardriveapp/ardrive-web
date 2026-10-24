@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:ardrive/components/note_create/note_create_form.dart';
-import 'package:ardrive/library/domain/library_hosts.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/publication/domain/publication_hosts.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/config/config_service.dart';
@@ -104,10 +104,10 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                   ],
                 ),
               );
-          // A library page fetches only from its own host and gateway, so an
+          // A publication fetches only from its own host and gateway, so an
           // image a note links to elsewhere shows as its alt text.
-          if (LibraryMode.isOn &&
-              !libraryMayFetch(
+          if (PublicationMode.isOn &&
+              !publicationMayFetch(
                 uri,
                 page: Uri.base,
                 gateway: Uri.parse(context
@@ -522,11 +522,11 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                   ),
                 ),
               ],
-              // A library page is read-only.
+              // A publication is read-only.
               if (_isMarkdown() &&
                   widget.fileItem != null &&
                   !widget.isSharePage &&
-                  !LibraryMode.isOn) ...[
+                  !PublicationMode.isOn) ...[
                 const SizedBox(width: 8),
                 ArDriveIconButton(
                   icon: ArDriveIcons.edit(size: 20),

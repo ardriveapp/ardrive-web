@@ -18,7 +18,7 @@ export 'package:ardrive/utils/plausible_event_tracker/plausible_page_view_events
 abstract class PlausibleEventTracker {
   static const String _plausiblePageViewEventName = 'pageview';
 
-  /// When set, nothing is sent: a library page (`LibraryMode`) makes no
+  /// When set, nothing is sent: a publication (`PublicationMode`) makes no
   /// request beyond its own host and gateway. Every event goes through
   /// [_track], which checks it.
   static bool disabled = false;

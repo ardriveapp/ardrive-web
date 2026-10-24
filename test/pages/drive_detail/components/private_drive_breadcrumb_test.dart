@@ -151,7 +151,7 @@ void main() {
 
     testWidgets('keeps a long name to one line, which the bar has room for',
         (tester) async {
-      const name = 'A library title long enough to need a second line here';
+      const name = 'A publication title long enough to need a second line here';
       await pump(
         tester,
         phone,

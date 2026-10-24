@@ -20,8 +20,8 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
 import 'package:ardrive/drive_explorer/thumbnail_creation/page/thumbnail_creation_modal.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
-import 'package:ardrive/library/presentation/library_chrome.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/publication/presentation/publication_chrome.dart';
 import 'package:ardrive/main.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
@@ -628,7 +628,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
         appLocalizationsOf(context).driveInfoNeverSyncedDetail,
         style: typography.paragraphNormal(color: colorTokens.textMid),
       ),
-      if (onSync != null && !LibraryMode.isOn) ...[
+      if (onSync != null && !PublicationMode.isOn) ...[
         const SizedBox(height: 16),
         _syncThisDriveButton(onSync),
       ],
@@ -866,7 +866,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
               color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
             ),
           ),
-          if (widget.onSync != null && !LibraryMode.isOn) ...[
+          if (widget.onSync != null && !PublicationMode.isOn) ...[
             const SizedBox(height: 16),
             _syncThisDriveButton(widget.onSync!),
           ],
@@ -1476,21 +1476,21 @@ class DetailsPanelToolbar extends StatelessWidget {
               // naming it points the recipient at nothing. The two dropdown
               // menus gate this the same way.
               (item is FolderDataTableItem && !item.isGhostFolder))
-            LibraryMode.isOn
-                // On a library page, the library's own link to the item.
+            PublicationMode.isOn
+                // On a publication, the publication's own link to the item.
                 ? _buildActionIcon(
                     tooltip: appLocalizationsOf(context).copyLink,
                     icon: ArDriveIcons.copy(size: defaultIconSize),
                     onTap: () => switch (item) {
                       FileDataTableItem(:final parentFolderId, :final id) =>
-                        copyLibraryLink(
+                        copyPublicationLink(
                           context,
                           folderId: parentFolderId,
                           fileId: id,
                         ),
                       FolderDataTableItem(:final id) =>
-                        copyLibraryLink(context, folderId: id),
-                      _ => copyLibraryLink(
+                        copyPublicationLink(context, folderId: id),
+                      _ => copyPublicationLink(
                           context,
                           folderId: drive.rootFolderId,
                         ),

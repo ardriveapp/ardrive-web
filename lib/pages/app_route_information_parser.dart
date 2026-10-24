@@ -1,5 +1,5 @@
 import 'package:ardrive/core/crypto/crypto.dart';
-import 'package:ardrive/library/domain/library_mode.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/utils/app_url_strategy.dart';
 import 'package:ardrive/utils/legacy_share_link.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -61,10 +61,12 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       // which on a key-bearing link is the key. Same rule as
       // `SharedFileLinkKey.parse` (`lib/utils/shared_file_link.dart`, rule 3).
       logger.e('Failed to parse the route URI: ${e.message}');
-      return LibraryMode.isOn ? AppRoutePath.library() : AppRoutePath.unknown();
+      return PublicationMode.isOn
+          ? AppRoutePath.publication()
+          : AppRoutePath.unknown();
     }
 
-    if (LibraryMode.isOn) return parseLibraryRoute(uri);
+    if (PublicationMode.isOn) return parsePublicationRoute(uri);
 
     // Handle '/'
     if (uri.pathSegments.isEmpty) {
@@ -225,7 +227,7 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
 
   @override
   RouteInformation restoreRouteInformation(AppRoutePath configuration) {
-    if (LibraryMode.isOn) return restoreLibraryRoute(configuration);
+    if (PublicationMode.isOn) return restorePublicationRoute(configuration);
 
     if (configuration.signingIn) {
       return RouteInformation(
@@ -296,28 +298,28 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
   }
 }
 
-/// A library page's routes (`LibraryMode`): `/folders/<id>`, with an optional
-/// `file`, and everything else is the library's root. Sign-in, the drives
-/// list, other drives, shared files and `/view/` are not places a library
-/// page goes, so their links open the library instead of failing.
+/// A publication's routes (`PublicationMode`): `/folders/<id>`, with an optional
+/// `file`, and everything else is the publication's root. Sign-in, the drives
+/// list, other drives, shared files and `/view/` are not places a publication
+/// page goes, so their links open the publication instead of failing.
 @visibleForTesting
-AppRoutePath parseLibraryRoute(Uri uri) {
+AppRoutePath parsePublicationRoute(Uri uri) {
   final segments = uri.pathSegments;
   if (segments.length == 2 && segments.first == 'folders') {
     final file = uri.queryParameters['file'];
-    return AppRoutePath.library(
+    return AppRoutePath.publication(
       folderId: segments[1],
       fileId: file == null || file.isEmpty ? null : file,
     );
   }
-  return AppRoutePath.library();
+  return AppRoutePath.publication();
 }
 
 @visibleForTesting
-RouteInformation restoreLibraryRoute(AppRoutePath configuration) {
-  final folderId = configuration.libraryFolderId;
+RouteInformation restorePublicationRoute(AppRoutePath configuration) {
+  final folderId = configuration.publicationFolderId;
   if (folderId == null) return RouteInformation(uri: Uri.parse('/'));
-  final fileId = configuration.libraryFileId;
+  final fileId = configuration.publicationFileId;
   return RouteInformation(
     uri: Uri(
       path: '/folders/$folderId',
