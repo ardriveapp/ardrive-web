@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phil’s &lt;Archive&gt; &amp; &quot;more&quot;</title>
+</head>
+<body>
+  <h1>Phil’s &lt;Archive&gt; &amp; &quot;more&quot;</h1>
+  <p><a href="./">Open the page</a></p>
+  <ul>
+    <li>Photos
+      <ul>
+        <li>Deep
+          <ul>
+            <li><a href="https://turbo-gateway.com/file-ete-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">été.png</a></li>
+          </ul>
+        </li>
+        <li><a href="https://turbo-gateway.com/file-a-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">A.jpg</a></li>
+        <li><a href="https://turbo-gateway.com/file-z-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">z &lt;1&gt;.jpg</a></li>
+      </ul>
+    </li>
+    <li><a href="https://turbo-gateway.com/file-a2-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">a.txt</a></li>
+    <li><a href="https://turbo-gateway.com/file-b-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">b.txt</a></li>
+  </ul>
+</body>
+</html>

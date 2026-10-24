@@ -1,7 +1,7 @@
 // node --test tool/publication/page.test.mjs
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildIndexHtml, buildPublicationJson, buildPageManifest, escapeHtml } from './page.mjs';
+import { buildIndexHtml, buildPublicationJson, buildManifest, escapeHtml } from './page.mjs';
 
 const release = `<!DOCTYPE html>
 <html>
@@ -79,7 +79,7 @@ test('publication.json has a fixed shape', () => {
 
 test('the manifest is the release with the page over it', () => {
   const manifest = JSON.parse(
-    buildPageManifest(
+    buildManifest(
       {
         manifest: 'arweave/paths',
         version: '0.2.0',
@@ -93,4 +93,13 @@ test('the manifest is the release with the page over it', () => {
   assert.deepEqual(manifest.fallback, { id: 'page-index' });
   assert.deepEqual(Object.keys(manifest.paths), ['index.html', 'main.dart.js', 'publication.json', 'snapshot']);
   assert.equal(manifest.paths['index.html'].id, 'page-index');
+});
+
+test('the golden files the app is held to are current', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { GOLDEN_DIR, goldenFiles } = await import('./golden.mjs');
+  for (const [name, text] of Object.entries(goldenFiles())) {
+    assert.equal(fs.readFileSync(path.join(GOLDEN_DIR, `${name}.golden`), 'utf8'), text, name);
+  }
 });

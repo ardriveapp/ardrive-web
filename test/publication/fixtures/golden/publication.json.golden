@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "driveId": "c863be1f-a725-4554-9a9e-18268ed8a035",
+  "rootFolderId": "41520b33-28c1-4892-886b-b845a5709085",
+  "scope": {
+    "type": "folder",
+    "folderId": "7a9cf6a6-42a0-4773-98df-ce191b5a4a4b"
+  },
+  "privacy": "public",
+  "owner": "iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA",
+  "ownerName": "Phil é 🎉",
+  "snapshot": {
+    "path": "snapshot",
+    "txId": "3l3i5yV0Hj4aupT1g2Y5etEuzeASu1uPcmE0-LD3IGE",
+    "tags": {
+      "App-Name": "ArDrive-Web",
+      "Block-End": "1879136",
+      "Block-Start": "0",
+      "Content-Type": "application/octet-stream",
+      "Drive-Id": "c863be1f-a725-4554-9a9e-18268ed8a035",
+      "Entity-Type": "drive-state"
+    }
+  },
+  "title": "Phil’s <Archive> & \"more\"",
+  "description": "Tabs\tand\u0007bells, a line separator, 日本語 and '\\\\' too.",
+  "keywords": [
+    "photos",
+    "café",
+    "日本"
+  ],
+  "license": {
+    "type": "CC-BY-4.0",
+    "name": "Attribution 4.0 International"
+  },
+  "images": {
+    "icon": "icon-512.png",
+    "social": "social.jpg",
+    "cover": "cover.jpg"
+  },
+  "publishedAt": "2026-10-23T18:02:11Z",
+  "viewer": {
+    "release": "2.91.0",
+    "manifest": "kQJt49W-uYw_E7YSqQqkUARNZPg4H38hFnOMP4hf9MA"
+  }
+}

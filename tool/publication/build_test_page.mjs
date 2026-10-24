@@ -8,7 +8,8 @@
 //     --release <release manifest id> --snapshot <artifact tx id> \
 //     --root <root folder id> [--folder <folder id>] \
 //     --title 'A title' [--description 'A sentence.'] [--owner-name 'Name'] \
-//     [--images <dir>] [--gateway turbo-gateway.com] [--out <dir>] [--upload]
+//     [--images <dir>] [--publication-id <uuid>] [--gateway turbo-gateway.com]
+//     [--out <dir>] [--upload]
 //
 // The drive, its owner and privacy come from the artifact's tags, read once
 // from the gateway's GraphQL. Without --upload it writes the three files to
@@ -26,8 +27,14 @@
 // social.jpg (1200 x 630) and cover.jpg (1600 x 400). Each is uploaded on its
 // own first, so the social card's link is known before index.html is written.
 //
-// Public drives only, until private pages (phase 3).
+// The manifest is an ArFS Publication entity (docs/ArweaveFS.md,
+// "Publication"); every other upload carries its Publication-Id. Pass
+// --publication-id to publish a new version of an existing publication;
+// without it the publication is new.
+//
+// Public drives only, until private publications (phase 3).
 
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -35,10 +42,11 @@ import { gunzipSync } from 'node:zlib';
 import { parseArgs } from 'node:util';
 import {
   FREE_UPLOAD_BYTES,
-  PAGE_TYPES,
   buildIndexHtml,
   buildPublicationJson,
-  buildPageManifest,
+  buildManifest,
+  publicationEntityTags,
+  publicationPartTags,
 } from './page.mjs';
 
 const ID = /^[A-Za-z0-9_-]{43}$/;
@@ -54,6 +62,7 @@ const { values: args } = parseArgs({
     description: { type: 'string', default: '' },
     'owner-name': { type: 'string' },
     images: { type: 'string' },
+    'publication-id': { type: 'string' },
     gateway: { type: 'string', default: 'turbo-gateway.com' },
     out: { type: 'string', default: 'publication-out' },
     upload: { type: 'boolean', default: false },
@@ -70,6 +79,10 @@ if (!ID.test(args.snapshot ?? '')) fail('--snapshot must be an artifact transact
 if (!UUID.test(args.root ?? '')) fail('--root must be the drive\'s root folder ID');
 if (args.folder && !UUID.test(args.folder)) fail('--folder must be a folder ID');
 if (!args.title?.trim()) fail('--title is required');
+if (args['publication-id'] && !UUID.test(args['publication-id'])) {
+  fail('--publication-id must be a publication\'s UUID');
+}
+const publicationId = args['publication-id'] ?? crypto.randomUUID();
 
 const gateway = `https://${args.gateway}`;
 
@@ -180,7 +193,7 @@ fs.writeFileSync(path.join(out, 'index.html'), indexHtml);
 
 if (!args.upload) {
   const placeholder = (name) => ({ id: name.padEnd(43, '_').slice(0, 43) });
-  const manifest = buildPageManifest(release, {
+  const manifest = buildManifest(release, {
     'index.html': placeholder('PAGE-INDEX'),
     'publication.json': placeholder('PAGE-CONFIG'),
     snapshot: { id: args.snapshot },
@@ -194,52 +207,52 @@ if (!args.upload) {
 const { TurboFactory } = await import('@ardrive/turbo-sdk');
 const turbo = TurboFactory.authenticated({ privateKey: wallet() });
 
-const appTags = [
-  { name: 'App-Name', value: 'ArDrive-Web' },
+// The app's own application tags (TransactionUtils.addApplicationTags).
+const appTags = () => [
+  { name: 'App-Name', value: 'ArDrive-App' },
+  { name: 'App-Platform', value: 'Web' },
   { name: 'App-Version', value: version ?? 'publication-tool' },
+  { name: 'Unix-Time', value: String(Math.floor(Date.now() / 1000)) },
 ];
 
-async function upload(text, contentType, type, extraTags = []) {
+async function upload(name, text, contentType, tags = publicationPartTags(publicationId)) {
   const data = Buffer.isBuffer(text) ? text : Buffer.from(text);
-  if (data.length >= FREE_UPLOAD_BYTES) throw new Error(`${type} is over 105 KiB`);
+  if (data.length >= FREE_UPLOAD_BYTES) throw new Error(`${name} is over 105 KiB`);
   const receipt = await turbo.upload({
     data,
     dataItemOpts: {
-      tags: [
-        { name: 'Content-Type', value: contentType },
-        ...appTags,
-        { name: 'Type', value: type },
-        ...extraTags,
-      ],
+      tags: [{ name: 'Content-Type', value: contentType }, ...tags, ...appTags()],
     },
   });
-  console.log(`${type}: ${receipt.id} (${data.length} bytes, ${receipt.winc} winc)`);
+  console.log(`${name}: ${receipt.id} (${data.length} bytes, ${receipt.winc} winc)`);
   return receipt.id;
 }
 
 // Images first: index.html names the social card by its own transaction.
 const imageIds = {};
 for (const [name, data] of Object.entries(images)) {
-  imageIds[name] = await upload(data, IMAGE_FILES[name], PAGE_TYPES.asset);
+  imageIds[name] = await upload(name, data, IMAGE_FILES[name]);
 }
 if (imageIds['social.jpg']) {
   indexHtml = indexHtmlOf(`${gateway}/${imageIds['social.jpg']}`);
   fs.writeFileSync(path.join(out, 'index.html'), indexHtml);
 }
-const configId = await upload(publicationJson, 'application/json', PAGE_TYPES.config);
-const indexId = await upload(indexHtml, 'text/html', PAGE_TYPES.index);
-const manifest = buildPageManifest(release, {
+const configId = await upload('publication.json', publicationJson, 'application/json');
+const indexId = await upload('index.html', indexHtml, 'text/html');
+const manifest = buildManifest(release, {
   'index.html': { id: indexId },
   'publication.json': { id: configId },
   snapshot: { id: args.snapshot },
   ...Object.fromEntries(Object.entries(imageIds).map(([name, id]) => [name, { id }])),
 });
 fs.writeFileSync(path.join(out, 'manifest.json'), manifest);
-const manifestId = await upload(manifest, 'application/x.arweave-manifest+json', PAGE_TYPES.manifest, [
-  { name: 'Drive-Id', value: driveId },
-  { name: 'Publication-Scope', value: args.folder ?? 'drive' },
-  { name: 'Publication-Version', value: '1' },
-]);
+const manifestId = await upload(
+  'manifest',
+  manifest,
+  'application/x.arweave-manifest+json',
+  publicationEntityTags({ driveId, publicationId, folderId: args.folder }),
+);
+console.log(`publication ${publicationId}`);
 console.log(`page: ${gateway}/${manifestId}/`);
 
 /** The test wallet's JWK. Its path is never printed. */
