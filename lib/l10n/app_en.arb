@@ -1391,7 +1391,7 @@
   "@fileFailedToDownloadFileAboveLimit": {
     "description": "Download failure message when a file is too big"
   },
-  "fileFailedToDownloadFileAbovePublicLimit": "The file(s) you have selected is too large to download",
+  "fileFailedToDownloadFileAbovePublicLimit": "This is too large to download.",
   "@fileFailedToDownloadFileAbovePublicLimit": {
     "description": "Download failure message when a file is too big"
   },
@@ -2223,15 +2223,20 @@
   "@movingItemsEmphasized": {
     "description": "Moving Items dialog title"
   },
-  "multiDownloadCompleteWithSkippedFiles": "Download complete with {numSkippedFiles} skipped file(s)",
+  "multiDownloadCompleteWithSkippedFiles": "{numSkippedFiles, plural, =0{Download complete} =1{Download complete, 1 file skipped} other{Download complete, {numSkippedFiles} files skipped}}",
   "@multiDownloadCompleteWithSkippedFiles": {
-    "description": "Title to modal shown when user completes multi-file download and has skipped files. "
+    "description": "Title to modal shown when user completes multi-file download, with how many files were skipped, if any.",
+    "placeholders": {
+      "numSkippedFiles": {
+        "type": "int"
+      }
+    }
   },
-  "multiDownloadDownloadingFilesProgress": "Downloading file(s)... {currentFileNum} of {totalNumFiles}",
+  "multiDownloadDownloadingFilesProgress": "Downloading file {currentFileNum} of {totalNumFiles}",
   "@multiDownloadDownloadingFilesProgress": {
     "description": "Title to modal shown when user is downloading multiple file.  "
   },
-  "multiDownloadErrorTryAgain": "An error occurred while downloading your file(s). Please try again.",
+  "multiDownloadErrorTryAgain": "An error occurred while downloading. Please try again.",
   "@multiDownloadErrorTryAgain": {
     "description": "Error message to show user when an error has occurred downloading a file within a set of multi-file downloads."
   },
