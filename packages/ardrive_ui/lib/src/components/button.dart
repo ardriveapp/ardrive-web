@@ -361,7 +361,15 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
   /// pointer. Content that can't be measured fills, as before.
   double? _labelWidth(BuildContext context) {
     if (widget.customContent != null) return null;
-    final icons = widget.icon != null || widget.rightIcon != null ? 64 : 0;
+    // The left icon is drawn over the label's row at 32-56, and the label is
+    // centred in what the 24 px insets leave: 100 puts the label's left edge
+    // at 64, 8 clear of the icon. A right icon, at 16 from the edge, clears a
+    // centred label with 64.
+    final icons = widget.icon != null
+        ? 100
+        : widget.rightIcon != null
+            ? 64
+            : 0;
     final hover = widget.hoverIcon != null ? 32 : 0;
     return ArDriveButtonNew.fittedWidth(
           context,
