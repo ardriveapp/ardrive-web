@@ -42,7 +42,6 @@ class _DriveDetailFolderEmptyCardState
   }
 
   Widget buildArDriveCard(BuildContext context) {
-    ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     // Everything below is written for the drive's owner: upload buttons,
@@ -147,8 +146,6 @@ class _ReadOnlyEmptyFolder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final syncCubit = context.watch<SyncCubit>();
     final stillReading = SyncingDriveNotice.locksMultiSelect(
       syncCubit.state,
@@ -157,20 +154,11 @@ class _ReadOnlyEmptyFolder extends StatelessWidget {
       driveId: driveId,
     );
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
-        child: Text(
-          stillReading
-              ? appLocalizationsOf(context).readOnlyFolderStillLoading
-              : appLocalizationsOf(context).readOnlyFolderEmpty,
-          style: typography.heading5(
-            color: colorTokens.textLow,
-            fontWeight: ArFontWeight.semiBold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ),
+    return ArDriveEmptyState(
+      icon: ArDriveIcons.folderOutline(),
+      title: stillReading
+          ? appLocalizationsOf(context).readOnlyFolderStillLoading
+          : appLocalizationsOf(context).readOnlyFolderEmpty,
     );
   }
 }
@@ -186,121 +174,39 @@ class _EmptyFolder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final width = MediaQuery.of(context).size.width;
-    const String headerText = 'This folder is empty';
-    const String descriptionText =
-        'Upload files to it, or move files here from elsewhere in your drive.';
-
+    // A folder, not an occasion: one line of guidance and the two ways to
+    // fill it. It was a 45px heading over three 283px cards, which put the
+    // buttons below the fold on a laptop. Pins are still in the New menu.
     return PlausiblePageViewWrapper(
       pageView: PlausiblePageView.folderEmptyPage,
-      child: ScreenTypeLayout.builder(
-        mobile: (context) => SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildHeaderText(
-                context: context,
-                text: headerText,
-                style: typography.display(fontWeight: ArFontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              _buildDescriptionText(
-                context: context,
-                text: descriptionText,
-                style: typography.heading5(
-                  color: colorTokens.textLow,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _ActionCard.uploadFile(context,
-                  driveId: driveId,
-                  parentFolderId: parentFolderId,
-                  page: PlausiblePageView.folderEmptyPage,
-                  intoFolder: true),
-              const SizedBox(height: 20),
-              _ActionCard.uploadFolder(context,
-                  driveId: driveId,
-                  parentFolderId: parentFolderId,
-                  page: PlausiblePageView.folderEmptyPage),
-              const SizedBox(height: 20),
-              _ActionCard.createPin(context,
-                  page: PlausiblePageView.folderEmptyPage),
-            ],
-          ),
-        ),
-        desktop: (context) => Column(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // No confetti: an empty folder is not an occasion, and the
-            // celebration belongs to the drive that was just made.
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 66),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _buildHeaderText(
-                    context: context,
-                    text: headerText,
-                    style: typography.display(fontWeight: ArFontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildDescriptionText(
-                    context: context,
-                    text: descriptionText,
-                    style: typography.heading5(
-                      color: colorTokens.textLow,
-                      fontWeight: ArFontWeight.semiBold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _ActionCard.uploadFile(context,
-                    driveId: driveId,
-                    parentFolderId: parentFolderId,
-                    page: PlausiblePageView.folderEmptyPage,
-                    intoFolder: true),
-                _ActionCard.uploadFolder(context,
-                    driveId: driveId,
-                    parentFolderId: parentFolderId,
-                    page: PlausiblePageView.folderEmptyPage),
-                if (width > SMALL_DESKTOP)
-                  _ActionCard.createPin(context,
-                      page: PlausiblePageView.folderEmptyPage),
-              ],
-            )
-          ],
-        ),
+      child: ArDriveEmptyState(
+        icon: ArDriveIcons.folderOutline(),
+        title: 'This folder is empty',
+        message:
+            'Upload files to it, or move files here from elsewhere in your drive.',
+        actionLabel: 'Upload files',
+        onAction: () {
+          PlausibleEventTracker.trackClickUploadFileEmptyState(
+              PlausiblePageView.folderEmptyPage);
+          promptToUpload(
+            context,
+            driveId: driveId,
+            parentFolderId: parentFolderId,
+            isFolderUpload: false,
+          );
+        },
+        secondaryActionLabel: 'Upload folder',
+        onSecondaryAction: () {
+          PlausibleEventTracker.trackClickUploadFolderEmptyState(
+              PlausiblePageView.folderEmptyPage);
+          promptToUpload(
+            context,
+            driveId: driveId,
+            parentFolderId: parentFolderId,
+            isFolderUpload: true,
+          );
+        },
       ),
-    );
-  }
-
-  Widget _buildHeaderText({
-    required BuildContext context,
-    required String text,
-    required TextStyle style,
-  }) {
-    return Text(
-      text,
-      style: style,
-    );
-  }
-
-  Widget _buildDescriptionText({
-    required BuildContext context,
-    required String text,
-    required TextStyle style,
-  }) {
-    return Text(
-      text,
-      style: style,
-      textAlign: TextAlign.center,
     );
   }
 }
@@ -604,16 +510,13 @@ class _ActionCard {
     required PlausiblePageView page,
     ButtonVariant variant = ButtonVariant.secondary,
     bool compact = false,
-    bool intoFolder = false,
   }) {
     return _buildActionCard(
       variant: variant,
       compact: compact,
       context: context,
       title: 'Upload files',
-      description: intoFolder
-          ? 'Upload one or more files into this folder.'
-          : 'Upload one or more files into your new drive.',
+      description: 'Upload one or more files into your new drive.',
       buttonText: 'Upload',
       onPressed: () {
         PlausibleEventTracker.trackClickUploadFileEmptyState(page);

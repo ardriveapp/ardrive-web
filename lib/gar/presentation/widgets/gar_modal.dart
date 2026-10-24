@@ -142,7 +142,7 @@ class _ArIOGatewaySelectorModalContentState
               ),
             ),
             actions: [
-              ModalAction(
+              ModalAction.dismiss(
                 action: () {
                   Navigator.of(context).pop();
                 },
@@ -177,9 +177,8 @@ class _ArIOGatewaySelectorModalContentState
 
         return ProgressDialog(
           title: 'Loading gateways',
-          useNewArDriveUI: true,
           actions: [
-            ModalAction(
+            ModalAction.dismiss(
               action: () {
                 Navigator.of(context).pop();
               },

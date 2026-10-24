@@ -1,8 +1,4 @@
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/arns/presentation/ant_icon.dart';
-import 'package:ardrive/arns/presentation/assign_name_modal.dart';
-import 'package:ardrive/arns/presentation/verify_name_bloc/verify_name_bloc.dart';
-import 'package:ardrive/arns/utils/arns_address_utils.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/snapshots_tab/snapshots_tab.dart';
@@ -35,7 +31,6 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/is_supported_image_type_for_preview.dart';
-import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/num_to_string_parsers.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
@@ -44,7 +39,6 @@ import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/utils/user_utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -386,12 +380,16 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 child: ArDriveTabView(
                   key: Key(widget.item.id + tabs.length.toString()),
                   tabs: tabs,
-                  backgroundColor:
-                      ArDriveTheme.of(context).themeData.colors.themeBgSurface,
-                  unselectedTabColor:
-                      ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+                  backgroundColor: ArDriveTheme.of(context)
+                      .themeData
+                      .colorTokens
+                      .containerL1,
+                  unselectedTabColor: ArDriveTheme.of(context)
+                      .themeData
+                      .colorTokens
+                      .containerL1,
                   unselectedLabelColor:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                      ArDriveTheme.of(context).themeData.colorTokens.textHigh,
                 ),
               ),
             ],
@@ -442,7 +440,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
     } else {
       children = [
         const Center(
-          child: CircularProgressIndicator(),
+          child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
         )
       ];
     }
@@ -734,24 +732,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
                       ),
                     )
                   : _canLicense(context, item)
-                      ? ArDriveButton(
+                      ? ArDriveButtonNew(
                           text: 'Add',
-                          icon: ArDriveIcons.license(
-                            size: 16,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .backgroundColor,
-                          ),
-                          fontStyle: ArDriveTypography.body.buttonNormalBold(
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .backgroundColor,
-                          ),
-                          backgroundColor: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgDefault,
-                          maxHeight: 32,
+                          typography: ArDriveTypographyNew.of(context),
+                          size: ArDriveButtonSize.compact,
                           onPressed: () => promptToLicense(
                             context,
                             driveId: item.driveId,
@@ -893,7 +877,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
       );
     }
 
-    return const Center(child: CircularProgressIndicator());
+    return const Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.large));
   }
 
   Widget _driveActivityItem({
@@ -1078,31 +1062,27 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                     color: colorTokens.textHigh,
                                   ),
                                 ),
-                                // opens in new tab
+                                // Opens in a new tab; the tooltip has the
+                                // whole address.
                                 WidgetSpan(
-                                  child: ArDriveClickArea(
-                                    tooltip: file.originalOwner,
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        openUrl(
-                                            url:
-                                                'https://viewblock.io/arweave/address/${file.originalOwner}');
-                                      },
-                                      child: Text(
-                                        truncateString(
-                                          file.originalOwner!,
-                                          offsetStart: 6,
-                                          offsetEnd: 6,
-                                        ),
-                                        style: typography
-                                            .paragraphNormal(
-                                              fontWeight: ArFontWeight.bold,
-                                              color: colorTokens.textHigh,
-                                            )
-                                            .copyWith(
-                                                decoration:
-                                                    TextDecoration.underline),
+                                  alignment: PlaceholderAlignment.baseline,
+                                  baseline: TextBaseline.alphabetic,
+                                  child: ArDriveTooltip(
+                                    message: file.originalOwner!,
+                                    child: ArDriveLink(
+                                      text: truncateString(
+                                        file.originalOwner!,
+                                        offsetStart: 6,
+                                        offsetEnd: 6,
                                       ),
+                                      style: typography.paragraphNormal(
+                                        fontWeight: ArFontWeight.bold,
+                                      ),
+                                      color: colorTokens.textHigh,
+                                      external: true,
+                                      onTap: () => openUrl(
+                                          url:
+                                              'https://viewblock.io/arweave/address/${file.originalOwner}'),
                                     ),
                                   ),
                                 ),
@@ -1129,10 +1109,7 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 height: 18,
               ),
               HorizontalDottedLine(
-                color: ArDriveTheme.of(context)
-                    .themeData
-                    .colors
-                    .themeBorderDefault,
+                color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
                 width: double.maxFinite,
               ),
             ],
@@ -1351,7 +1328,7 @@ class DetailsPanelItem extends StatelessWidget {
           height: 18,
         ),
         HorizontalDottedLine(
-          color: ArDriveTheme.of(context).themeData.colors.themeBorderDefault,
+          color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
           width: double.maxFinite,
         ),
       ],
@@ -1457,11 +1434,7 @@ class DetailsPanelToolbar extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: ArDriveTheme.of(context)
-              .themeData
-              .colors
-              .themeBorderDefault
-              .withOpacity(0.5),
+          color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
           width: 1,
         ),
       ),
@@ -1703,21 +1676,13 @@ class _LicenseDetailsPopoverButtonState
           });
         },
         child: widget.updateButton
-            ? ArDriveButton(
+            ? ArDriveButtonNew(
                 text:
                     // TODO: Localize
                     // appLocalizationsOf(context).licenseUpdate
                     'Update',
-                icon: ArDriveIcons.license(
-                  size: 16,
-                  color: ArDriveTheme.of(context).themeData.backgroundColor,
-                ),
-                fontStyle: ArDriveTypography.body.buttonNormalBold(
-                  color: ArDriveTheme.of(context).themeData.backgroundColor,
-                ),
-                backgroundColor:
-                    ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                maxHeight: 32,
+                typography: ArDriveTypographyNew.of(context),
+                size: ArDriveButtonSize.compact,
                 onPressed: () {
                   setState(() {
                     _showLicenseDetailsCard = false;
@@ -1737,127 +1702,15 @@ class _LicenseDetailsPopoverButtonState
             // TODO: Localize
             // appLocalizations.of(context).licenseDetails,
             'View license details',
-        child: ArDriveButton(
+        child: ArDriveLink(
           text: widget.licenseState.meta.shortName,
-          style: ArDriveButtonStyle.tertiary,
-          onPressed: () {
+          isAction: true,
+          onTap: () {
             setState(() {
               _showLicenseDetailsCard = !_showLicenseDetailsCard;
             });
           },
         ),
-      ),
-    );
-  }
-}
-
-// ignore: unused_element
-class _ArnsNameDisplay extends StatelessWidget {
-  final FileDataTableItem fileItem;
-
-  const _ArnsNameDisplay({required this.fileItem});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => VerifyNameBloc(
-        arnsRepository: context.read<ARNSRepository>(),
-      )..add(VerifyName(fileId: fileItem.fileId)),
-      child: BlocBuilder<VerifyNameBloc, VerifyNameState>(
-        builder: (context, state) {
-          final typography = ArDriveTypographyNew.of(context);
-
-          if (state is VerifyNameLoading || state is VerifyNameInitial) {
-            return const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          if (state is VerifyNameEmpty || state is VerifyNameFailure) {
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (AppPlatform.isWeb())
-                  ArDriveButton(
-                    text: 'Assign',
-                    icon: ArDriveIcons.arnsName(
-                      size: 16,
-                      color: ArDriveTheme.of(context).themeData.backgroundColor,
-                    ),
-                    fontStyle: ArDriveTypography.body.buttonNormalBold(
-                      color: ArDriveTheme.of(context).themeData.backgroundColor,
-                    ),
-                    backgroundColor: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
-                    maxHeight: 32,
-                    onPressed: () {
-                      showAssignArNSNameModal(
-                        context,
-                        file: fileItem,
-                        driveDetailCubit: context.read<DriveDetailCubit>(),
-                      ).then((_) {
-                        // Refresh both the verify name bloc and the file info cubit
-                        context
-                            .read<VerifyNameBloc>()
-                            .add(VerifyName(fileId: fileItem.fileId));
-                        context
-                            .read<DriveDetailCubit>()
-                            .refreshDriveDataTable();
-                      });
-                    },
-                  ),
-              ],
-            );
-          }
-
-          if (state is VerifyNameSuccess) {
-            final (address, arAddress) = getAddressesFromArns(
-              domain: state.undername.domain,
-              undername: state.undername.name,
-            );
-
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: ArDriveClickArea(
-                    child: GestureDetector(
-                      onTap: () {
-                        logger.i('Opening URL: $address');
-                        openUrl(url: address);
-                      },
-                      child: ArDriveTooltip(
-                        message: arAddress,
-                        child: Text(
-                          getLiteralARNSRecordName(
-                            ARNSUndernameFactory.create(
-                              name: state.undername.name,
-                              domain: state.undername.domain,
-                              transactionId: state.undername.transactionId,
-                            ),
-                          ),
-                          style: typography.paragraphNormal().copyWith(
-                                decoration: TextDecoration.underline,
-                              ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                CopyButton(
-                  text: arAddress,
-                ),
-              ],
-            );
-          }
-
-          return const SizedBox();
-        },
       ),
     );
   }

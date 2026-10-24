@@ -223,7 +223,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 ],
               ),
               actions: [
-                ModalAction(
+                ModalAction.dismiss(
                   action: () {
                     context
                         .read<MultipleDownloadBloc>()
@@ -248,7 +248,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                 ],
               ),
               actions: [
-                ModalAction(
+                ModalAction.dismiss(
                   action: () {
                     Navigator.of(context).pop(false);
                   },
@@ -340,7 +340,7 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
               ),
             ),
             actions: [
-              ModalAction(
+              ModalAction.dismiss(
                 action: () => Navigator.pop(context),
                 title: appLocalizationsOf(context).close,
               ),

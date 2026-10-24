@@ -19,6 +19,9 @@ The package has two generations. Build with the new one, whose names end in
 | Radius | `ArDriveRadius` | `sm` 4 for small controls, `md` 8 for cards and notices, `lg` 12 for dialogs and sheets |
 | Type | `ArDriveTypographyNew.of(context)` | Wavehaus. `heading1`–`6`, `paragraphXXLarge`–`paragraphSmall`, `caption`, each with a weight of `book`, `semiBold` or `bold`. Phone sizes apply under 834 px |
 
+Secondary buttons are a translucent tint (8% white in dark, 8% black in light),
+so they read as a step up from whatever surface they sit on.
+
 Every colour comes from a token, in both themes. A literal colour, or a
 Material one such as `Colors.green`, looks right in one theme only.
 
@@ -27,7 +30,7 @@ Material one such as `Colors.green`, looks right in one theme only.
 | Need | Component | Notes |
 |---|---|---|
 | A button | `ArDriveButtonNew` | `variant`: primary for the main action, secondary, or outline. `size`: see below. Sized to its label unless given `maxWidth`; `double.infinity` fills |
-| A dialog | `ArDriveStandardModalNew` with `ModalAction`s | Opened with `showArDriveDialog` in the app. The last action is primary. Set `scrollableContent` for long content |
+| A dialog | `ArDriveStandardModalNew` with `ModalAction`s | Opened with `showArDriveDialog` in the app. The last action is primary. Cancel and Close use `ModalAction.dismiss`, which is never red, even alone. Set `scrollableContent` for long content |
 | A dialog on a phone, or a menu from the bottom | `showArDriveBottomSheet` with `ArDriveBottomSheet` | Same title, spacing and action row as a dialog |
 | A text link | `ArDriveLink`, or `ArDriveLink.span` inside text | Keyboard reachable and announced as a link. `external` adds the new-window icon; `isAction` announces an action such as Copy as a button |
 | A message with a meaning | `ArDriveNotice` | `type`: info, warning, error or success. `layout`: inline box or full-width banner. Optional title, action and close button |

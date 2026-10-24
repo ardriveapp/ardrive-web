@@ -74,7 +74,6 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
             showProgressDialog(
               context,
               title: appLocalizationsOf(context).renamingDriveEmphasized,
-              useNewArDriveUI: true,
             );
           } else if (state is DriveRenameSuccess) {
             context.read<DriveDetailCubit>().refreshDriveDataTable();
@@ -91,8 +90,7 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
                 context,
                 content: ArDriveStandardModalNew(
                   title: appLocalizationsOf(context).error,
-                  description:
-                      appLocalizationsOf(context).actionFailedTryAgain,
+                  description: appLocalizationsOf(context).actionFailedTryAgain,
                 ),
               );
             }
@@ -102,7 +100,6 @@ class _DriveRenameFormState extends State<DriveRenameForm> {
               title: 'Warning',
               description:
                   'A drive with this name already exists. Do you want to proceed?',
-              useNewArDriveUI: true,
               actions: [
                 ModalAction(
                   action: () => Navigator.of(context).pop(),

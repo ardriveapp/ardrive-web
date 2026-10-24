@@ -593,7 +593,7 @@ class _ChooseImage extends StatelessWidget {
           ),
         ),
         actions: [
-          ModalAction(
+          ModalAction.dismiss(
             title: strings.cancel,
             action: () => Navigator.of(context).pop(),
           ),

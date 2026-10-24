@@ -86,7 +86,7 @@ class _DriveCreateFormState extends State<DriveCreateForm> {
             // path a dead end: no AR, no Credits, no drive, no next step.
             // The same offer every other payment refusal makes - see
             // [showTurboPaymentRequiredDialog].
-            return ArDriveStandardModal(
+            return ArDriveStandardModalNew(
               title: appLocalizationsOf(context).createDriveEmphasized,
               description:
                   appLocalizationsOf(context).insufficientARToCreateDrive,

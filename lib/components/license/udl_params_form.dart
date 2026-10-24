@@ -26,11 +26,7 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
   Widget build(BuildContext context) {
     final inputBorder = OutlineInputBorder(
       borderSide: BorderSide(
-        color: ArDriveTheme.of(context)
-            .themeData
-            .colors
-            .themeFgDisabled
-            .withOpacity(0.3),
+        color: ArDriveTheme.of(context).themeData.colorTokens.strokeMid,
         width: 2,
       ),
       borderRadius: BorderRadius.circular(4),
@@ -58,8 +54,8 @@ class _UdlParamsFormState extends State<UdlParamsForm> {
                       formControlName: 'licenseFeeAmount',
                       cursorColor: ArDriveTheme.of(context)
                           .themeData
-                          .colors
-                          .themeFgDefault,
+                          .colorTokens
+                          .textHigh,
                       keyboardType: TextInputType.number,
                       showErrors: (control) => control.dirty && control.invalid,
                       decoration: InputDecoration(

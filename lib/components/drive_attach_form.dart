@@ -119,7 +119,6 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
       builder: (context, state) {
         if (state is DriveAttachInProgress) {
           return ProgressDialog(
-            useNewArDriveUI: true,
             title: appLocalizationsOf(context).attachingDriveEmphasized,
           );
         }
@@ -155,7 +154,7 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                       padding: const EdgeInsets.only(top: 8),
                       child: Column(
                         children: [
-                          const LinearProgressIndicator(),
+                          const ArDriveLinearProgress(),
                           const SizedBox(height: 4),
                           Text(
                             appLocalizationsOf(context).attachDriveLookingUp,

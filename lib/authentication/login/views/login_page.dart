@@ -106,7 +106,6 @@ class _LoginPageState extends State<LoginPage> {
               barrierDismissible: false,
               content: ProgressDialog(
                 title: 'Loading wallet details...',
-                useNewArDriveUI: true,
                 progressDescription: Text(
                   'This may take a moment.',
                   style: ArDriveTypographyNew.of(context).paragraphNormal(

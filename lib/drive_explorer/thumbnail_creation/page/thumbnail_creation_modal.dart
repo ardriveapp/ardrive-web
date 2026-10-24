@@ -50,7 +50,8 @@ class _ThumbnailCreationModal extends StatelessWidget {
         },
         builder: (context, state) {
           if (state is ThumbnailCreationLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+                child: ArDriveSpinner(size: ArDriveSpinnerSize.large));
           } else if (state is ThumbnailCreationError) {
             if (state.isPaymentError) {
               // The payment dialog is shown from the listener.

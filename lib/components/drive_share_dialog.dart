@@ -66,7 +66,8 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (state is DriveShareLoadInProgress)
-                    const Center(child: CircularProgressIndicator())
+                    const Center(
+                        child: ArDriveSpinner(size: ArDriveSpinnerSize.large))
                   else if (state is DriveShareLoadSuccess) ...{
                     // What is being shared, confirmed before the sharer copies
                     // anything. Not the modal's `description`, which it only

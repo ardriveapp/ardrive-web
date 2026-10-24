@@ -38,8 +38,6 @@ class ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
     return StreamBuilder<LinearProgress>(
       stream: percentage,
       initialData: initialPercentage,
@@ -55,36 +53,14 @@ class ProgressBar extends StatelessWidget {
             ? 0.0
             : ((progress.progress * 100).roundToDouble() / 100).clamp(0.0, 1.0);
 
-        return ClipRRect(
-          borderRadius: const BorderRadius.all(_barRadius),
-          // percent_indicator animated between values for free; a plain
-          // indicator jumps. [TweenAnimationBuilder] restarts from wherever the
-          // fill currently is rather than from zero, so a new value is walked
-          // to and never rewound to the start of the bar.
-          child: TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: value),
-            duration: _barAnimation,
-            builder: (context, animated, _) => LinearProgressIndicator(
-              value: isIndeterminate ? null : animated,
-              minHeight: _barHeight,
-              backgroundColor: colorTokens.strokeHigh,
-              // The same token the top bar's ring fills with. This drew in
-              // `textHigh` while the ring above it and the drives list drew in
-              // the accent, so one sync reported itself in two colours
-              // depending on which screen you were looking at.
-              valueColor: AlwaysStoppedAnimation<Color>(
-                colorTokens.buttonPrimaryDefault,
-              ),
-            ),
-          ),
+        return ArDriveLinearProgress(
+          value: isIndeterminate ? null : value,
+          duration: _barAnimation,
         );
       },
     );
   }
 }
-
-const _barHeight = 10.0;
-const _barRadius = Radius.circular(5);
 
 /// How long the fill takes to travel between two values - percent_indicator's
 /// `animationDuration`, kept so the bar still moves at the speed it did.

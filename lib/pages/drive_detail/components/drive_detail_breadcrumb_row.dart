@@ -49,16 +49,12 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
 
     final breadCrumbSplit = _pathSegments.length - breadCrumbcount;
     TextStyle segmentStyle(int index) {
-      return ArDriveTypography.body
-          .captionBold(
-            color: isLastSegment(index)
-                ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
-                : ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
-          )
-          .copyWith(
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-          );
+      return ArDriveTypographyNew.of(context).paragraphLarge(
+        color: isLastSegment(index)
+            ? ArDriveTheme.of(context).themeData.colorTokens.textHigh
+            : ArDriveTheme.of(context).themeData.colorTokens.textLow,
+        fontWeight: ArFontWeight.bold,
+      );
     }
 
     Widget buildSegment(int index) {
@@ -76,8 +72,9 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
     }
 
     Widget buildSeparator(bool isDrive) {
-      final segmentStyle = ArDriveTypography.body.captionBold(
-        color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+      final segmentStyle = ArDriveTypographyNew.of(context).paragraphNormal(
+        color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+        fontWeight: ArFontWeight.semiBold,
       );
 
       return Padding(
@@ -85,8 +82,7 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
         child: Text(
           '/',
           style: segmentStyle.copyWith(
-            color:
-                ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+            color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
           ),
         ),
       );
@@ -176,11 +172,8 @@ class DriveDetailBreadcrumbRow extends StatelessWidget {
               text: driveName,
               style: segmentStyle(_pathSegments.length).copyWith(
                 color: _pathSegments.isEmpty
-                    ? ArDriveTheme.of(context).themeData.colors.themeFgDefault
-                    : ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeAccentDisabled,
+                    ? ArDriveTheme.of(context).themeData.colorTokens.textHigh
+                    : ArDriveTheme.of(context).themeData.colorTokens.textLow,
               ),
             ),
           ),
@@ -295,7 +288,7 @@ class _HoverTextState extends State<HoverText> {
         widget.text,
         style: _isHovering
             ? widget.style.copyWith(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault)
+                color: ArDriveTheme.of(context).themeData.colorTokens.textHigh)
             : widget.style,
       ),
     );

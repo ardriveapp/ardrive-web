@@ -41,7 +41,6 @@ import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.d
 import 'package:ardrive/pages/drive_detail/components/drive_detail_syncing_card.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_file_drop_zone.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
-import 'package:ardrive/pages/drive_detail/components/file_icon.dart';
 import 'package:ardrive/pages/drive_detail/components/syncing_drive_notice.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/unpreviewable_content.dart';
@@ -330,8 +329,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                   child: Text(
                                     appLocalizationsOf(context)
                                         .driveDoingInitialSetupMessage,
-                                    style: ArDriveTypography.body
-                                        .buttonLargeBold(),
+                                    style: ArDriveTypographyNew.of(context)
+                                        .paragraphLarge(
+                                            fontWeight: ArFontWeight.semiBold),
                                   ),
                                 ),
                               ),
@@ -347,8 +347,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                     child: Text(
                                       appLocalizationsOf(context)
                                           .driveDoingInitialSetupMessage,
-                                      style: ArDriveTypography.body
-                                          .buttonLargeBold(),
+                                      style: ArDriveTypographyNew.of(context)
+                                          .paragraphLarge(
+                                              fontWeight:
+                                                  ArFontWeight.semiBold),
                                     ),
                                   ),
                                 ),
@@ -1330,9 +1332,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
     return Scaffold(
       drawerScrimColor: ArDriveTheme.of(context)
           .themeData
-          .colors
-          .themeBgSurface
-          .withOpacity(0.5),
+          .colorTokens
+          .primitives
+          .transparent900_32,
       drawer: PublicationMode.isOn ? null : const AppSideBar(),
       appBar: MobileAppBar(
         showSearch: true,
@@ -1519,10 +1521,18 @@ class ArDriveItemListTile extends StatelessWidget {
                         child: Text(
                           item.name,
                           style:
-                              ArDriveTypography.body.captionRegular().copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: item.isHidden ? Colors.grey : null,
-                                  ),
+                              ArDriveTypographyNew.of(context).paragraphNormal(
+                            fontWeight: ArFontWeight.bold,
+                            color: item.isHidden
+                                ? ArDriveTheme.of(context)
+                                    .themeData
+                                    .colorTokens
+                                    .textLow
+                                : ArDriveTheme.of(context)
+                                    .themeData
+                                    .colorTokens
+                                    .textHigh,
+                          ),
                         ),
                       ),
                       if (hasArnsNames(item)) ...[
@@ -1541,12 +1551,11 @@ class ArDriveItemListTile extends StatelessWidget {
                       if (item is FileDataTableItem) ...[
                         Text(
                           filesize(item.size),
-                          style: ArDriveTypography.body.xSmallRegular(
+                          style: ArDriveTypographyNew.of(context).caption(
                             color: ArDriveTheme.of(context)
                                 .themeData
-                                .colors
-                                .themeFgDefault
-                                .withOpacity(0.75),
+                                .colorTokens
+                                .textMid,
                           ),
                         ),
                         Padding(
@@ -1556,9 +1565,8 @@ class ArDriveItemListTile extends StatelessWidget {
                               shape: BoxShape.circle,
                               color: ArDriveTheme.of(context)
                                   .themeData
-                                  .colors
-                                  .themeFgDefault
-                                  .withOpacity(0.75),
+                                  .colorTokens
+                                  .textMid,
                             ),
                             height: 3,
                             width: 3,
@@ -1568,12 +1576,11 @@ class ArDriveItemListTile extends StatelessWidget {
                       Flexible(
                         child: Text(
                           'Last updated: ${formatDate(item.lastUpdated)}',
-                          style: ArDriveTypography.body.xSmallRegular(
+                          style: ArDriveTypographyNew.of(context).caption(
                             color: ArDriveTheme.of(context)
                                 .themeData
-                                .colors
-                                .themeFgDefault
-                                .withOpacity(0.75),
+                                .colorTokens
+                                .textMid,
                           ),
                         ),
                       ),
@@ -1673,8 +1680,9 @@ class MobileFolderNavigation extends StatelessWidget {
                                 // line was cut through the middle.
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style:
-                                    ArDriveTypography.body.buttonNormalBold(),
+                                style: ArDriveTypographyNew.of(context)
+                                    .paragraphNormal(
+                                        fontWeight: ArFontWeight.semiBold),
                               ),
                             ),
                           ],
@@ -1966,17 +1974,14 @@ class CustomBottomNavigation extends StatelessWidget {
     return Container(
       height: 87,
       decoration: BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: ArDriveTheme.of(context)
-                .themeData
-                .colors
-                .themeFgDefault
-                .withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+        // A line rather than a glow: the glow was the text colour at 20%,
+        // a white haze in dark mode.
+        border: Border(
+          top: BorderSide(
+            color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
           ),
+        ),
+        boxShadow: [
           BoxShadow(color: backgroundColor, offset: const Offset(0, 2)),
           BoxShadow(color: backgroundColor, offset: const Offset(-0, 8)),
         ],
@@ -1998,116 +2003,19 @@ class CustomBottomNavigation extends StatelessWidget {
             ),
             drive: drive,
             child: ArDriveFAB(
-              backgroundColor:
-                  ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+              backgroundColor: ArDriveTheme.of(context)
+                  .themeData
+                  .colorTokens
+                  .buttonPrimaryDefault,
               child: ArDriveIcons.plus(
-                color: Colors.white,
+                color: ArDriveTheme.of(context)
+                    .themeData
+                    .colorTokens
+                    .textOnPrimary,
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// TODO: WIP! It will be done in a further release.
-class ArDriveGridItem extends StatelessWidget {
-  const ArDriveGridItem({
-    super.key,
-    required this.item,
-    required this.drive,
-  });
-
-  final ArDriveDataTableItem item;
-  final Drive drive;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        // item.onPressed(item);
-      },
-      child: ArDriveCard(
-        contentPadding: const EdgeInsets.all(0),
-        backgroundColor:
-            ArDriveTheme.of(context).themeData.colors.themeBorderDefault,
-        content: Column(
-          children: [
-            Expanded(
-              child: Align(
-                alignment: Alignment.center,
-                child: ArDriveFileIcon(
-                  contentType: item.contentType,
-                  size: 32,
-                  fileStatus: item.fileStatusFromTransactions,
-                ),
-              ),
-            ),
-            Container(
-              height: 41,
-              padding: const EdgeInsets.only(left: 8, right: 4),
-              color:
-                  ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-              child: Row(
-                children: [
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            item.name,
-                            style: ArDriveTypography.body.buttonNormalBold(),
-                          ),
-                        ),
-                        Flexible(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Text(
-                                item is FileDataTableItem
-                                    ? filesize(item.size)
-                                    : '-',
-                                style: ArDriveTypography.body
-                                    .xSmallRegular(
-                                      color: ArDriveTheme.of(context)
-                                          .themeData
-                                          .colors
-                                          .themeFgDefault
-                                          .withOpacity(0.75),
-                                    )
-                                    .copyWith(
-                                      fontSize: 8,
-                                    ),
-                              ),
-                              const SizedBox(width: 8),
-                              // last updated
-                              Flexible(
-                                child: Text(
-                                  '${appLocalizationsOf(context).lastUpdated}: ${formatDate(item.lastUpdated)}',
-                                  style: ArDriveTypography.body
-                                      .xSmallRegular()
-                                      .copyWith(
-                                        fontSize: 8,
-                                      ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  DriveExplorerItemTileTrailing(
-                    drive: drive,
-                    item: item,
-                  ),
-                ],
-              ),
-            )
-          ],
-        ),
       ),
     );
   }

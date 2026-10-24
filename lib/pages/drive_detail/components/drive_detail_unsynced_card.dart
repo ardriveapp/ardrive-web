@@ -171,17 +171,18 @@ class _UnsyncedDriveHeader extends StatelessWidget {
                         size: 18,
                         color: ArDriveTheme.of(context)
                             .themeData
-                            .colors
-                            .themeFgDefault,
+                            .colorTokens
+                            .textHigh,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         drive.name,
-                        style: ArDriveTypography.body.buttonLargeBold(
+                        style: ArDriveTypographyNew.of(context).paragraphLarge(
                           color: ArDriveTheme.of(context)
                               .themeData
-                              .colors
-                              .themeFgDefault,
+                              .colorTokens
+                              .textHigh,
+                          fontWeight: ArFontWeight.semiBold,
                         ),
                       ),
                     ],
@@ -239,7 +240,8 @@ class _UnsyncedDriveMobileView extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 16, top: 6, bottom: 6),
                   child: Text(
                     drive.name,
-                    style: ArDriveTypography.body.buttonNormalBold(),
+                    style: ArDriveTypographyNew.of(context)
+                        .paragraphNormal(fontWeight: ArFontWeight.semiBold),
                   ),
                 ),
               ),

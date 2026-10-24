@@ -235,8 +235,8 @@ class FsEntryMoveForm extends StatelessWidget {
                             alignment: Alignment.centerLeft,
                             color: ArDriveTheme.of(context)
                                 .themeData
-                                .colors
-                                .themeBgCanvas,
+                                .colorTokens
+                                .containerL1,
                             child: Row(
                               children: [
                                 AnimatedContainer(
@@ -389,5 +389,5 @@ class FsEntryMoveForm extends StatelessWidget {
   }
 
   Color _colorDisabled(BuildContext context) =>
-      ArDriveTheme.of(context).themeData.colors.themeInputPlaceholder;
+      ArDriveTheme.of(context).themeData.colorTokens.textLow;
 }

@@ -35,8 +35,8 @@ class LicenseSummary extends StatelessWidget {
           Text(
             // TODO: Localize
             'License',
-            style: ArDriveTypography.body.smallRegular(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+            style: ArDriveTypographyNew.of(context).paragraphLarge(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
             ),
           ),
           Text.rich(
@@ -44,11 +44,10 @@ class LicenseSummary extends StatelessWidget {
               children: [
                 TextSpan(
                   text: licenseState.meta.nameWithShortName,
-                  style: ArDriveTypography.body.buttonLargeBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
+                  style: ArDriveTypographyNew.of(context).paragraphLarge(
+                    color:
+                        ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+                    fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
                 if (licenseState.meta.licenseType != LicenseType.unknown) ...[
@@ -69,14 +68,15 @@ class LicenseSummary extends StatelessWidget {
           (entry) => [
             Text(
               entry.key,
-              style: ArDriveTypography.body.smallRegular(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+              style: ArDriveTypographyNew.of(context).paragraphLarge(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
               ),
             ),
             Text(
               entry.value,
-              style: ArDriveTypography.body.buttonLargeBold(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              style: ArDriveTypographyNew.of(context).paragraphLarge(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+                fontWeight: ArFontWeight.semiBold,
               ),
             ),
             const SizedBox(height: 24),

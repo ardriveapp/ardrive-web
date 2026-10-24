@@ -70,18 +70,17 @@ class NewButton extends StatelessWidget {
   }
 
   Widget _buildPlusButton(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveFAB(
-        backgroundColor:
-            ArDriveTheme.of(context).themeData.colors.themeAccentBrand,
+        backgroundColor: colorTokens.buttonPrimaryDefault,
         child: ArDriveIcons.plus(
-          color: Colors.white,
+          color: colorTokens.textOnPrimary,
         ),
         onPressed: () {
-          final ScrollController scrollController = ScrollController();
           final List<ArDriveNewButtonComponent> items =
               _getPlusButtonItems(context);
 
-          _displayPlusModal(context, scrollController, items);
+          _displayPlusModal(context, items);
 
           PlausibleEventTracker.trackNewButton(
             location: NewButtonLocation.bottom,
@@ -132,89 +131,64 @@ class NewButton extends StatelessWidget {
 
   void _displayPlusModal(
     BuildContext context,
-    ScrollController scrollController,
     List<ArDriveNewButtonComponent> items,
   ) {
-    showModalBottomSheet(
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(8),
-          topRight: Radius.circular(8),
-        ),
-      ),
-      context: context,
+    showArDriveBottomSheet(
+      context,
       builder: (context) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(8),
-            topRight: Radius.circular(8),
-          ),
-          child: Container(
-            color:
-                ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-            padding: const EdgeInsets.only(bottom: 8),
-            child: ArDriveScrollBar(
-              controller: scrollController,
-              alwaysVisible: true,
-              child: ListView(
-                shrinkWrap: true,
-                controller: scrollController,
-                children: List.generate(
-                  items.length,
-                  (index) {
-                    final item = items[index];
-
-                    if (item is ArDriveNewButtonItem) {
-                      return item.display
-                          ? Column(
-                              children: [
-                                GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: () {
-                                    if (!item.isDisabled) {
-                                      Navigator.pop(context);
-                                      item.onClick();
-                                    }
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 8,
-                                      horizontal: 16,
-                                    ),
-                                    child: ArDriveHoverWidget(
-                                      hoverColor: ArDriveTheme.of(context)
-                                          .themeData
-                                          .dropdownTheme
-                                          .hoverColor,
-                                      defaultColor: null,
-                                      showMouseCursor: !item.isDisabled,
-                                      child: ArDriveDropdownItemTile(
-                                        iconAlignment: item.iconAlignment,
-                                        icon: item.icon.copyWith(size: 24),
-                                        name: item.name,
-                                        isDisabled: item.isDisabled,
-                                        fontStyle: ArDriveTypography.body
-                                            .buttonLargeBold(),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : const SizedBox();
-                    } else {
-                      return Divider(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeFgSubtle,
-                        height: 8,
-                      );
-                    }
-                  },
-                ),
-              ),
-            ),
+        final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+        return ArDriveBottomSheet(
+          contentPadding: EdgeInsets.zero,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final item in items)
+                if (item is ArDriveNewButtonItem)
+                  if (item.display)
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (!item.isDisabled) {
+                          Navigator.pop(context);
+                          item.onClick();
+                        }
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: ArDriveSpacing.xs,
+                        ),
+                        child: ArDriveHoverWidget(
+                          hoverColor: ArDriveTheme.of(context)
+                              .themeData
+                              .dropdownTheme
+                              .hoverColor,
+                          defaultColor: null,
+                          showMouseCursor: !item.isDisabled,
+                          child: ArDriveDropdownItemTile(
+                            iconAlignment: item.iconAlignment,
+                            icon: item.icon.copyWith(size: 24),
+                            name: item.name,
+                            isDisabled: item.isDisabled,
+                            fontStyle:
+                                ArDriveTypographyNew.of(context).paragraphLarge(
+                              fontWeight: ArFontWeight.semiBold,
+                              color: item.isDisabled
+                                  ? colorTokens.textLow
+                                  : colorTokens.textHigh,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    const SizedBox.shrink()
+                else
+                  Divider(
+                    color: colorTokens.strokeLow,
+                    height: ArDriveSpacing.md,
+                  ),
+            ],
           ),
         );
       },
@@ -240,8 +214,10 @@ class NewButton extends StatelessWidget {
               child: Column(
                 children: [
                   Divider(
-                    color:
-                        ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colorTokens
+                        .strokeLow,
                     height: 8,
                   ),
                 ],
@@ -682,11 +658,7 @@ class NewButton extends StatelessWidget {
             icon: ArDriveIcons.carretRight(size: defaultIconSize),
             isDisabled: false,
             onClick: () {
-              _displayPlusModal(
-                context,
-                ScrollController(),
-                _getAdvancedItems(context),
-              );
+              _displayPlusModal(context, _getAdvancedItems(context));
             },
           ),
         ],
@@ -787,9 +759,9 @@ class _HoverableNewButtonState extends State<_HoverableNewButton> {
 
   @override
   Widget build(BuildContext context) {
-    final baseColor =
-        ArDriveTheme.of(context).themeData.colors.themeAccentBrand;
-    final hoverColor = Color.lerp(baseColor, Colors.black, 0.15)!;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final baseColor = colorTokens.buttonPrimaryDefault;
+    final hoverColor = colorTokens.buttonPrimaryHover;
 
     return ArDriveTooltip(
       message: widget.tooltip,
@@ -806,7 +778,9 @@ class _HoverableNewButtonState extends State<_HoverableNewButton> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(_isHovering ? 0.3 : 0.2),
+                color: _isHovering
+                    ? colorTokens.primitives.transparent900_32
+                    : colorTokens.primitives.transparent900_16,
                 blurRadius: _isHovering ? 8 : 6,
                 offset: Offset(0, _isHovering ? 4 : 2),
               ),
@@ -819,7 +793,7 @@ class _HoverableNewButtonState extends State<_HoverableNewButton> {
               customBorder: const CircleBorder(),
               child: Center(
                 child: ArDriveIcons.plus(
-                  color: Colors.white,
+                  color: colorTokens.textOnPrimary,
                 ),
               ),
             ),

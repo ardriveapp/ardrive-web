@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/hide/hide_bloc.dart';
@@ -56,7 +57,7 @@ Future<void> promptToToggleHideState(
     throw UnimplementedError('Unknown item type: ${item.runtimeType}');
   }
 
-  return showAnimatedDialog(
+  return showArDriveDialog(
     context,
     barrierDismissible: false,
     content: HideDialog(driveDetailCubit: driveDetailCubit),
@@ -138,8 +139,7 @@ class HideDialog extends StatelessWidget {
   Widget _buildContent(BuildContext context, HideState state) {
     if (state is FailureHideState) {
       if (state.isPaymentError) {
-        return Text(
-            appLocalizationsOf(context).freeAllowanceUsedUpDescription);
+        return Text(appLocalizationsOf(context).freeAllowanceUsedUpDescription);
       }
       final hideAction = state.hideAction;
 
@@ -162,7 +162,7 @@ class HideDialog extends StatelessWidget {
     return const Column(
       children: [
         Center(
-          child: CircularProgressIndicator(),
+          child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
         ),
       ],
     );

@@ -341,8 +341,7 @@ class _UploadFormState extends State<UploadForm> {
               // TODO: Fix use of startUpload
               return _UploadShowingWarningWidget(state: state);
             } else if (state is AssigningUndername) {
-              return const ProgressDialog(
-                  title: 'Assigning ArNS Name...', useNewArDriveUI: true);
+              return const ProgressDialog(title: 'Assigning ArNS Name...');
             } else if (state is UploadingManifests) {
               return _UploadingManifestsWidget(state: state);
             } else if (state is UploadManifestSelectPaymentMethod) {
@@ -448,7 +447,7 @@ class _UploadingManifestsWidget extends StatelessWidget {
         ),
       ),
       actions: [
-        ModalAction(
+        ModalAction.dismiss(
           action: () {
             context.read<UploadCubit>().cancelManifestsUpload();
           },

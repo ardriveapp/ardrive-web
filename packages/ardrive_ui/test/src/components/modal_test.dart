@@ -308,6 +308,30 @@ void main() {
     expect(longLabel.height, shortLabel.height);
   });
 
+  /// A lone Cancel was drawn as a red primary button, as if cancelling were
+  /// the thing the dialog was for.
+  testWidgets('ArDriveStandardModalNew keeps a lone dismiss action secondary',
+      (tester) async {
+    var closed = false;
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: ArDriveStandardModalNew(title: 'Choose an image', actions: [
+            ModalAction.dismiss(action: () => closed = true, title: 'Cancel'),
+          ]),
+        ),
+      ),
+    );
+
+    final button =
+        tester.widget<ArDriveButtonNew>(find.byType(ArDriveButtonNew));
+    expect(button.variant, ButtonVariant.secondary);
+    expect(button.isDisabled, isFalse);
+
+    await tester.tap(find.text('Cancel'));
+    expect(closed, isTrue);
+  });
+
   /// The first action was drawn without its enabled state, so a disabled
   /// first action could still be pressed. Every action honours it now.
   testWidgets('ArDriveStandardModalNew disables any action that is not enabled',

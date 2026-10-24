@@ -23,11 +23,7 @@ class _CcTypeFormState extends State<CcTypeForm> {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final inputBorder = OutlineInputBorder(
       borderSide: BorderSide(
-        color: ArDriveTheme.of(context)
-            .themeData
-            .colors
-            .themeFgDisabled
-            .withOpacity(0.3),
+        color: ArDriveTheme.of(context).themeData.colorTokens.strokeMid,
         width: 2,
       ),
       borderRadius: BorderRadius.circular(4),

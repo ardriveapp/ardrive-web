@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:ardrive/arns/presentation/ant_icon.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive/components/drive_rename_form.dart';
 import 'package:ardrive/components/fs_entry_license_form.dart';
@@ -61,7 +63,7 @@ class DriveExplorerItemTile extends TableRowWidget {
                       child: Text(
                         name,
                         style: typography.paragraphNormal(
-                          color: isHidden ? Colors.grey : null,
+                          color: isHidden ? colorTokens.textLow : null,
                           fontWeight: ArFontWeight.semiBold,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -115,7 +117,7 @@ class DriveExplorerItemTile extends TableRowWidget {
 TextStyle _driveExplorerItemTileTextStyle(bool isHidden,
         ArdriveTypographyNew typography, ArDriveColorTokens colorTokens) =>
     typography.paragraphNormal(
-      color: isHidden ? Colors.grey : null,
+      color: isHidden ? colorTokens.textLow : null,
       fontWeight: ArFontWeight.semiBold,
     );
 
@@ -178,7 +180,12 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
                             return getIconForContentType(
                               item.contentType,
                             ).copyWith(
-                              color: isHidden ? Colors.grey : null,
+                              color: isHidden
+                                  ? ArDriveTheme.of(context)
+                                      .themeData
+                                      .colorTokens
+                                      .textLow
+                                  : null,
                             );
                           },
                         ),
@@ -198,7 +205,12 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
                           return getIconForContentType(
                             item.contentType,
                           ).copyWith(
-                            color: isHidden ? Colors.grey : null,
+                            color: isHidden
+                                ? ArDriveTheme.of(context)
+                                    .themeData
+                                    .colorTokens
+                                    .textLow
+                                : null,
                           );
                         },
                       ),
@@ -210,7 +222,12 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
                     child: getIconForContentType(
                       item.contentType,
                     ).copyWith(
-                      color: isHidden ? Colors.grey : null,
+                      color: isHidden
+                          ? ArDriveTheme.of(context)
+                              .themeData
+                              .colorTokens
+                              .textLow
+                          : null,
                     ),
                   );
                 },
@@ -252,7 +269,9 @@ class DriveExplorerItemTileLeading extends StatelessWidget {
               child: getIconForContentType(
                 item.contentType,
               ).copyWith(
-                color: isHidden ? Colors.grey : null,
+                color: isHidden
+                    ? ArDriveTheme.of(context).themeData.colorTokens.textLow
+                    : null,
               ),
             ),
           ),
@@ -294,16 +313,17 @@ class FileStatusDot extends StatelessWidget {
     switch (status) {
       case TransactionStatus.pending:
         indicatorColor =
-            ArDriveTheme.of(context).themeData.colors.themeWarningFg;
+            ArDriveTheme.of(context).themeData.colorTokens.statusWarningFg;
         meaning = appLocalizationsOf(context).fileStatusPendingTooltip;
         break;
       case TransactionStatus.confirmed:
         indicatorColor =
-            ArDriveTheme.of(context).themeData.colors.themeSuccessFb;
+            ArDriveTheme.of(context).themeData.colorTokens.statusSuccessFg;
         meaning = appLocalizationsOf(context).fileStatusConfirmedTooltip;
         break;
       case TransactionStatus.failed:
-        indicatorColor = ArDriveTheme.of(context).themeData.colors.themeErrorFg;
+        indicatorColor =
+            ArDriveTheme.of(context).themeData.colorTokens.statusErrorFg;
         meaning = appLocalizationsOf(context).fileStatusFailedTooltip;
         break;
       default:
@@ -440,14 +460,14 @@ class _DriveExplorerItemTileTrailingState
         if (item is FolderDataTableItem &&
             item.isGhostFolder &&
             item.isOwner) ...[
-          ArDriveButton(
-            maxHeight: 36,
-            style: ArDriveButtonStyle.primary,
+          ArDriveButtonNew(
+            size: ArDriveButtonSize.compact,
+            variant: ButtonVariant.primary,
+            typography: ArDriveTypographyNew.of(context),
             onPressed: () => promptToReCreateFolder(
               context,
               ghostFolder: item,
             ),
-            fontStyle: ArDriveTypography.body.smallRegular(),
             text: appLocalizationsOf(context).fix,
           ),
           const SizedBox(
@@ -810,6 +830,10 @@ Future<void> handleMarkdownFileEdit(
   BuildContext context,
   FileDataTableItem fileItem,
 ) async {
+  // Whether the loader is up, so a failure closes only what this opened. A
+  // failure before it opened, such as reading the drive, used to pop
+  // whatever was underneath.
+  var loaderOpen = false;
   try {
     // Get required services
     final driveDao = context.read<DriveDao>();
@@ -824,14 +848,16 @@ Future<void> handleMarkdownFileEdit(
 
     if (!context.mounted) return;
 
-    // Show loading indicator
-    showAnimatedDialogWithBuilder(
+    // Through showArDriveDialog, so the activity tracker knows a dialog is
+    // up while the file loads.
+    unawaited(showArDriveDialog(
       context,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
+      content: const Center(
+        child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
       ),
       barrierDismissible: false,
-    );
+    ));
+    loaderOpen = true;
 
     if (!context.mounted) return;
 
@@ -910,6 +936,7 @@ Future<void> handleMarkdownFileEdit(
     // Close loading indicator
     if (context.mounted) {
       Navigator.of(context).pop();
+      loaderOpen = false;
     }
 
     // Show edit dialog
@@ -927,9 +954,10 @@ Future<void> handleMarkdownFileEdit(
   } catch (e) {
     logger.e('Failed to load markdown file for editing', e);
 
-    // Close loading indicator
-    if (context.mounted) {
+    // Close the loader, if this got as far as opening it.
+    if (loaderOpen && context.mounted) {
       Navigator.of(context).pop();
+      loaderOpen = false;
     }
 
     // Show error dialog

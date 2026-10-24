@@ -20,7 +20,6 @@ class SnapshotListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colors;
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Column(
@@ -33,7 +32,7 @@ class SnapshotListItem extends StatelessWidget {
         Row(
           children: [
             // Status indicator dot with tooltip
-            _buildStatusDot(context, colors, colorTokens),
+            _buildStatusDot(context, colorTokens),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -65,25 +64,19 @@ class SnapshotListItem extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (snapshot.isConfirmed)
-                ArDriveClickArea(
-                  child: GestureDetector(
-                    onTap: () {
-                      openUrl(
-                        url: 'https://viewblock.io/arweave/tx/${snapshot.txId}',
-                      );
-                    },
-                    child: ArDriveTooltip(
-                      message: snapshot.txId,
-                      child: Text(
-                        truncateString(
-                          snapshot.txId,
-                          offsetStart: 4,
-                          offsetEnd: 4,
-                        ),
-                        style: typography.paragraphNormal().copyWith(
-                              decoration: TextDecoration.underline,
-                            ),
-                      ),
+                ArDriveTooltip(
+                  message: snapshot.txId,
+                  child: ArDriveLink(
+                    text: truncateString(
+                      snapshot.txId,
+                      offsetStart: 4,
+                      offsetEnd: 4,
+                    ),
+                    style: typography.paragraphNormal(),
+                    color: colorTokens.textHigh,
+                    external: true,
+                    onTap: () => openUrl(
+                      url: 'https://viewblock.io/arweave/tx/${snapshot.txId}',
                     ),
                   ),
                 )
@@ -107,7 +100,7 @@ class SnapshotListItem extends StatelessWidget {
         const SizedBox(height: 16),
 
         HorizontalDottedLine(
-          color: ArDriveTheme.of(context).themeData.colors.themeBorderDefault,
+          color: colorTokens.strokeLow,
           width: double.maxFinite,
         ),
       ],
@@ -117,20 +110,19 @@ class SnapshotListItem extends StatelessWidget {
   /// Builds a colored status dot indicator with tooltip (same pattern as file status).
   Widget _buildStatusDot(
     BuildContext context,
-    ArDriveColors colors,
     ArDriveColorTokens colorTokens,
   ) {
     Color indicatorColor;
     String? tooltipMessage;
 
     if (snapshot.isPending) {
-      indicatorColor = colors.themeWarningFg;
+      indicatorColor = colorTokens.statusWarningFg;
       tooltipMessage = appLocalizationsOf(context).snapshotPendingTooltip;
     } else if (snapshot.isConfirmed) {
-      indicatorColor = colors.themeSuccessFb;
+      indicatorColor = colorTokens.statusSuccessFg;
       tooltipMessage = appLocalizationsOf(context).snapshotConfirmedTooltip;
     } else if (snapshot.isFailed) {
-      indicatorColor = colors.themeErrorFg;
+      indicatorColor = colorTokens.statusErrorFg;
       tooltipMessage = appLocalizationsOf(context).snapshotFailedTooltip;
     } else {
       indicatorColor = Colors.transparent;

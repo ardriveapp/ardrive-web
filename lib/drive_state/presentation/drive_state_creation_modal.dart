@@ -194,7 +194,7 @@ Widget _preparingModal(BuildContext context, String driveName) {
       ],
     ),
     actions: [
-      ModalAction(
+      ModalAction.dismiss(
         title: 'Cancel',
         action: () => Navigator.of(context).pop(),
       ),
@@ -253,7 +253,7 @@ Widget _refusedModal(BuildContext context, DriveStateCreationRefused state) {
       ],
     ),
     actions: [
-      ModalAction(
+      ModalAction.dismiss(
         title: 'Close',
         action: () => Navigator.of(context).pop(),
       ),
@@ -508,7 +508,7 @@ Widget _failureModal(BuildContext context, String message) {
       ],
     ),
     actions: [
-      ModalAction(
+      ModalAction.dismiss(
         title: 'Close',
         action: () => Navigator.of(context).pop(),
       ),

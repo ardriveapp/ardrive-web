@@ -58,7 +58,7 @@ Future<void> promptToPublish(
         title: strings.publishToWeb,
         description: strings.publishCheckFailed,
         actions: [
-          ModalAction(
+          ModalAction.dismiss(
             title: strings.close,
             action: () => Navigator.of(context).pop(),
           ),
@@ -189,7 +189,9 @@ class PublishDialog extends StatelessWidget {
               context,
               title: title,
               content: _Blocked(state: state),
-              actions: [ModalAction(title: strings.close, action: close)],
+              actions: [
+                ModalAction.dismiss(title: strings.close, action: close)
+              ],
             );
           case PublishStage.included:
             return _modal(
@@ -308,7 +310,8 @@ class PublishDialog extends StatelessWidget {
         ],
       ),
       actions: [
-        ModalAction(title: appLocalizationsOf(context).cancel, action: close),
+        ModalAction.dismiss(
+            title: appLocalizationsOf(context).cancel, action: close),
       ],
     );
   }

@@ -1,3 +1,4 @@
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -113,7 +114,7 @@ Future<void> promptToCreateSnapshot(
   final PromptToSnapshotBloc promptToSnapshotBloc =
       context.read<PromptToSnapshotBloc>();
   promptToSnapshotBloc.add(DriveSnapshotting(driveId: drive.id));
-  return showAnimatedDialog(
+  return showArDriveDialog(
     context,
     barrierDismissible: false,
     content: BlocProvider(
@@ -279,7 +280,6 @@ Widget _loadingDialog(
       : null;
 
   return ProgressDialog(
-    useNewArDriveUI: true,
     title: _loadingDialogTitle(context, state),
     progressDescription: Center(
       child: Text(
@@ -291,7 +291,7 @@ Widget _loadingDialog(
     ),
     actions: [
       if (onDismiss != null)
-        ModalAction(
+        ModalAction.dismiss(
           action: onDismiss,
           title: appLocalizationsOf(context).cancelEmphasized,
         )

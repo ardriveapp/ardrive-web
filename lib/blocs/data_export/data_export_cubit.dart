@@ -89,17 +89,37 @@ class DataExportCubit extends Cubit<DataExportState> {
   Future<void> exportData() async {
     emit(const DataExportInProgress());
 
-    /// FIXME: context is not available here. Internationalization cannot be applied
-    /// name: appLocalizationsOf(context).exportFromCSV(driveId, DateTime.now().toString()),
-    final fileName = 'Export from $driveId ${DateTime.now().toString()}.csv';
-    final dataBytes = utf8.encode((await getFilesInDriveAsCSV(driveId)));
-    emit(
-      DataExportSuccess(
-        bytes: dataBytes,
-        fileName: fileName,
-        mimeType: 'text/csv',
-        lastModified: DateTime.now(),
-      ),
-    );
+    try {
+      /// FIXME: context is not available here. Internationalization cannot be applied
+      /// name: appLocalizationsOf(context).exportFromCSV(driveId, DateTime.now().toString()),
+      final fileName = 'Export from $driveId ${DateTime.now().toString()}.csv';
+      final dataBytes = utf8.encode((await getFilesInDriveAsCSV(driveId)));
+
+      // Cancelled while the rows were read: the dialog is gone, and nothing
+      // is saved.
+      if (isClosed || state is DataExportAborted) return;
+
+      emit(
+        DataExportSuccess(
+          bytes: dataBytes,
+          fileName: fileName,
+          mimeType: 'text/csv',
+          lastModified: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      if (isClosed || state is DataExportAborted) return;
+      emit(DataExportFailure());
+    }
+  }
+
+  /// Stops the export. A result that arrives afterwards is dropped.
+  void abort() {
+    if (!isClosed) emit(DataExportAborted());
+  }
+
+  /// The file was made but could not be saved, such as a refused download.
+  void reportSaveFailure() {
+    if (!isClosed) emit(DataExportFailure());
   }
 }
