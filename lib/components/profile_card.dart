@@ -112,8 +112,10 @@ class _ProfileCardState extends State<ProfileCard> {
         .read<DriveDao>()
         .watchPermanentDataVersion()
         .distinct()
-        // The first value is what the card is already counting.
-        .skip(1)
+        // The first value is not skipped: a change can land between the count
+        // reading the version and the watch's first value, and skipping it
+        // would lose the only notice of that change. When nothing changed,
+        // the recount it starts is answered from [_countedStats].
         // A recount scans every revision, so at most one a second, and
         // always one after the last change.
         .throttleTime(
