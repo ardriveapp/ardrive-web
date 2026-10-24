@@ -185,7 +185,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('0.003 credits'), findsOneWidget);
-    expect(find.textContaining('Turbo Balance: 2.5 credits'), findsOneWidget);
+    expect(find.text('2.5 credits available'), findsOneWidget);
   });
 
   testWidgets('switching to AR shows the AR price instead', (tester) async {

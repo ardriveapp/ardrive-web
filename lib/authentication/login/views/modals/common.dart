@@ -56,6 +56,7 @@ void showErrorDialog(
             children: [
               Flexible(
                 child: ArDriveButtonNew(
+                  maxWidth: double.infinity,
                   text: 'Close',
                   typography: typography,
                   variant: showShareLogsButton
@@ -94,6 +95,7 @@ class _CopyLogsButtonState extends State<CopyLogsButton> {
     final typography = ArDriveTypographyNew.of(context);
 
     return ArDriveButtonNew(
+      maxWidth: double.infinity,
       text: copied ? 'Copied' : 'Copy logs',
       typography: typography,
       variant: ButtonVariant.primary,

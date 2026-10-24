@@ -289,6 +289,13 @@ class ArDriveButtonNew extends StatefulWidget {
   final Color? backgroundColor;
   final TextStyle? fontStyle;
   final double? maxHeight;
+
+  /// The button's width. Null makes it as wide as its label, at least
+  /// [minLabelWidth]; `double.infinity` fills the width it is given.
+  ///
+  /// A button used to fill whatever width it was given unless told otherwise,
+  /// so a compact button under a line of text stretched across its card, and
+  /// callers wrapped it in `IntrinsicWidth` or measured it to stop that.
   final double? maxWidth;
   final double borderRadius;
   final bool isDisabled;
@@ -315,13 +322,14 @@ class ArDriveButtonNew extends StatefulWidget {
     BuildContext context,
     String text, {
     required double minWidth,
+    TextStyle? style,
   }) {
     final painter = TextPainter(
       text: TextSpan(
         text: text,
-        style: ArDriveTypographyNew.of(context).paragraphLarge(
-          fontWeight: ArFontWeight.semiBold,
-        ),
+        style: ArDriveTypographyNew.of(context)
+            .paragraphLarge(fontWeight: ArFontWeight.semiBold)
+            .merge(style),
       ),
       maxLines: 1,
       textDirection: TextDirection.ltr,
@@ -337,12 +345,33 @@ class ArDriveButtonNew extends StatefulWidget {
     return width > minWidth ? width.ceilToDouble() : minWidth;
   }
 
+  /// The narrowest a button sized to its label gets, so a short label such as
+  /// "OK" still makes a button rather than a chip.
+  static const double minLabelWidth = 100;
+
   @override
   State<ArDriveButtonNew> createState() => _ArDriveButtonNewState();
 }
 
 class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
   var _hovering = false;
+
+  /// The width that fits the label, for a button given none. Room is kept for
+  /// an icon, and for the hover icon so the button doesn't grow under the
+  /// pointer. Content that can't be measured fills, as before.
+  double? _labelWidth(BuildContext context) {
+    if (widget.customContent != null) return null;
+    final icons = widget.icon != null || widget.rightIcon != null ? 64 : 0;
+    final hover = widget.hoverIcon != null ? 32 : 0;
+    return ArDriveButtonNew.fittedWidth(
+          context,
+          widget.text,
+          minWidth: ArDriveButtonNew.minLabelWidth,
+          style: widget.fontStyle,
+        ) +
+        icons +
+        hover;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -380,7 +409,10 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
       )),
       alignment: Alignment.center,
       padding: MaterialStateProperty.all<EdgeInsetsGeometry>(
-          const EdgeInsets.symmetric(horizontal: 10, vertical: 10)),
+          // No vertical padding: the button centres its label, and padding
+          // only took height from it. The label's line is 24 high, so at 10
+          // above and below any button under 44 cut its descenders off.
+          const EdgeInsets.symmetric(horizontal: 10)),
       backgroundColor: MaterialStateProperty.all<Color>(
           widget.backgroundColor ?? defaultColor),
       overlayColor:
@@ -437,7 +469,7 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
 
     return SizedBox(
         height: buttonH,
-        width: widget.maxWidth,
+        width: widget.maxWidth ?? _labelWidth(context),
         child: Stack(fit: StackFit.expand, children: [
           Padding(
             padding: EdgeInsets.only(
@@ -462,10 +494,7 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
                     // edge in the stack below.
                     ? Center(child: widget.customContent!)
                     : widget.hoverIcon == null || isMobile(context)
-                        ? isMobile(context) && buttonH < 45
-                            ? Transform.translate(
-                                offset: const Offset(0, -2), child: text)
-                            : text
+                        ? text
                         // The icon joins the label on hover rather than
                         // replacing it. Sliding the label out left the button
                         // blank exactly when the pointer was on it, and blank

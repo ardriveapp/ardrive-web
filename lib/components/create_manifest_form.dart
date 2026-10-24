@@ -735,6 +735,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         ),
       ],
       child: UploadPaymentMethodView(
+        useOptionCards: true,
         onUploadMethodChanged: (method, methodInfo, canUpload) {
           readCubitContext.selectUploadMethod(
             method,

@@ -796,6 +796,7 @@ class _ActionCard {
           if (inARow) const Spacer(),
           const SizedBox(height: 12),
           ArDriveButtonNew(
+            maxWidth: double.infinity,
             text: buttonText,
             typography: typography,
             onPressed: onPressed,

@@ -802,6 +802,7 @@ class _ArNSAssignmentConfirmationModal extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           ArDriveButtonNew(
+            maxWidth: double.infinity,
             text: 'Ok',
             typography: typography,
             variant: ButtonVariant.primary,

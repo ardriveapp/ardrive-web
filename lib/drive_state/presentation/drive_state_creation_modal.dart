@@ -299,6 +299,7 @@ Widget _confirmModal(
           if (!state.cost.isFree)
             PaymentMethodSelector(
               useNewArDriveUI: true,
+              useOptionCards: true,
               uploadMethodInfo: _paymentMethodInfo(state),
               onTurboTopupSucess: cubit.refreshTurboBalance,
               onArSelect: () => cubit.setUploadMethod(UploadMethod.ar),

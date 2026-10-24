@@ -170,6 +170,7 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
             if (isArioSDKSupportedOnPlatform()) ...[
               Center(
                 child: ArDriveButtonNew(
+                  maxWidth: double.infinity,
                   typography: typography,
                   text: 'Select AR.IO Gateway',
                   variant: ButtonVariant.primary,
