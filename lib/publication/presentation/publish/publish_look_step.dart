@@ -29,20 +29,55 @@ class PublishLookStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final heading = Text(
+      appLocalizationsOf(context).publishLook,
+      style: ArDriveTypographyNew.of(context)
+          .heading5(fontWeight: ArFontWeight.bold),
+    );
     return LayoutBuilder(builder: (context, constraints) {
       final wide = constraints.maxWidth >= 680;
       if (!wide) {
-        return const Column(
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [_Form(), SizedBox(height: 24), _Previews()],
+          children: [
+            heading,
+            const SizedBox(height: 16),
+            const _Form(),
+            const SizedBox(height: 24),
+            const _Previews(),
+          ],
         );
       }
-      return const Row(
+      // The form scrolls on its own and the previews stay in view, so a
+      // picture shows on the page the moment it is picked. The height leaves
+      // the dialog's title, step and actions room on the screen.
+      final height =
+          (MediaQuery.sizeOf(context).height * 0.8 - 250).clamp(320.0, 620.0);
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(flex: 11, child: _Form()),
-          SizedBox(width: 24),
-          Expanded(flex: 9, child: _Previews()),
+          heading,
+          const SizedBox(height: 16),
+          SizedBox(
+            height: height,
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 11,
+                  child: SingleChildScrollView(
+                    padding: EdgeInsetsDirectional.only(end: 12),
+                    child: _Form(),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  flex: 9,
+                  child: SingleChildScrollView(child: _Previews()),
+                ),
+              ],
+            ),
+          ),
         ],
       );
     });
@@ -264,7 +299,7 @@ class _LicenceState extends State<_Licence> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _Label(strings.publishLicenceLabel),
+        _Label(strings.publishLicenseLabel),
         DropdownButtonFormField<LicenseMeta?>(
           value: licence?.meta,
           isExpanded: true,
@@ -278,7 +313,7 @@ class _LicenceState extends State<_Licence> {
           items: [
             DropdownMenuItem<LicenseMeta?>(
               value: null,
-              child: Text(strings.publishLicenceNone,
+              child: Text(strings.publishLicenseNone,
                   style: typography.paragraphNormal(color: colors.textHigh)),
             ),
             for (final meta in _choices)

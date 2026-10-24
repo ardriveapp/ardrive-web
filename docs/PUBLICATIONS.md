@@ -371,9 +371,10 @@ are missing (ghost folders), failed uploads. "Anyone with the link can
 browse, preview and download these files. Nothing else in your drive is
 shown."
 
-**Step 2 · Look.** The form on the left, live previews on the right (below
-on a phone): the page header as it will look (cover, icon, title, "By … •
-N files • licence", description) and the link preview (the social card).
+**Step 2 · How it looks.** The form on the left, live previews on the right
+(below on a phone): the page header as it will look (cover, icon, title, "By
+… • N files • license", description) and the link preview (the social card).
+On a wide screen the form scrolls on its own and the previews stay in view.
 
 | Field | Control | Rules |
 |---|---|---|
@@ -381,7 +382,7 @@ N files • licence", description) and the link preview (the social card).
 | Description | text, 160 characters | Optional |
 | Display name | text, 40 characters | Optional. "Shown after "By" under the title. Empty shows your wallet address." Prefilled from the owner's last publication in this browser, or from the version an update starts from; no ENS or SNS lookups |
 | Keywords | chips, up to 5 | Optional. `Keyword` tags on the manifest and `keywords` in `publication.json`; not written into the page |
-| Licence | menu: none, the Creative Commons licences, UDL (with its terms form) | Optional. For everything in the publication; shown in its byline, linked to its definition |
+| License | menu: none, the Creative Commons licences, UDL (with its terms form) | Optional. For everything in the publication; shown in its byline, linked to its definition |
 | Icon | Upload or From this drive | Square, at least 512 pixels wide. Makes 32, 180 and 512 px PNGs |
 | Cover | Upload or From this drive | At least 1600 × 400; cropped to 4:1 from the middle; JPEG aiming under 100 KiB |
 | Social card | Upload or From this drive | At least 1200 × 630. Until the owner picks one, the card is drawn from the other fields: the cover (or a background tinted from the icon's colour), the icon, title, description, an exact "N files", and ArDrive's mark; Remove goes back to it |
@@ -396,8 +397,8 @@ type was never recorded), newest first.
 newest one in a block, when nothing in the drive is newer and it counts what
 this device holds: "The latest snapshot. Nothing changed since." or "A new snapshot of the drive,
 included in the cost."), link ("A new link of its own." or, for an update,
-"A new link. The current one keeps working."), one cost in the method chosen,
-the Turbo free-tier message, the payment selector (Turbo or AR), and with AR:
+"A new link. The current one keeps working."), the Turbo free-tier message,
+the app's payment cards (each way to pay with its cost and balance), and with AR:
 "With AR, the page opens a few minutes after it's published, once the network
 confirms it." Then, in the step: "Publishing is permanent. It can't be undone
 or deleted." The button is **Publish**.
@@ -406,27 +407,29 @@ or deleted." The button is **Publish**.
 files, uploading, getting the page ready (Turbo). "Keep this window open until
 it's done."
 
-**Failed.** "Publishing didn't finish", why, **Back** and **Try again**. Try
+**Failed.** "Publishing didn't finish", why, **Close**, **Back to review**
+and **Try again**. Try
 again reuses what was signed and posted, so nothing is paid twice: an AR
 transaction (the snapshot or the bundle) whose header was accepted and whose
 data did not finish is sent again as the same transaction, which costs
-nothing more. Back returns to the review with all that kept, to add credits
+nothing more. Back to review returns to the review with all that kept, to add credits
 or pay with AR instead; switching to AR bundles only what Turbo had not
 taken. A transaction that reached the network first is named. A publish
 that fails while it is being priced goes back through pricing, so it never
 publishes a look the owner has since changed.
 
-**Done.** "Your page is published" (AR: "Your page is on its way"), the link,
-**Copy link** and **Open**, and "A new page can take a minute to load the
-first time." (AR: "It opens in a few minutes, once the network confirms it.")
+**Done.** "Your page is published" (AR: "Your page is on its way"), the link
+in the field and Copy link that sharing uses, and "A new page can take a
+minute to load the first time." (AR: "It opens in a few minutes, once the
+network confirms it."). Actions: **Open page** and **Done**.
 
 ### Published view
 
 "Published to web": the title, "Published <date> • N files", the link with
-Copy link and Open, **Update** (the dialog prefilled from the latest version,
-opening on the review), **Edit look** (the same, opening on the look), "An
-update gets a new link. Earlier links keep working.", and **Earlier versions**
-(collapsed), each with its date and time and Open.
+Copy link, "An update gets a new link. Earlier links keep working.", and
+**Earlier versions** (collapsed), each with its date and time and an Open
+link. Actions: **Update** (the dialog prefilled from the latest version,
+opening on the look, where Next keeps it), **Open page** and **Done**.
 
 ### Tags
 
@@ -458,7 +461,7 @@ owner's transactions with `Entity-Type: publication`, grouped by
 |---|---|---|
 | 0 · Compressed bundle (#2343) | `--compress gzip` in staging and production deploys; a staging channel | A staging upload loads through turbo-gateway.com and ardrive.net with every JS/wasm file carrying `Content-Encoding: gzip`; every path loads through ar-io.dev once it has fetched the upload (it may serve gzipped items decompressed, which is valid); first-visit transfer is measured |
 | 1 · Publication mode | The viewer, public publications, a script that builds a test page by hand | A hand-built page at a raw manifest URL opens a public drive and a public folder, with no request outside the serving host and gateway |
-| 2 · Publish (public) | The dialog, the published view, update and edit look, the globe, discovery, the publication entity | A public drive and folder publish from the app with Turbo and AR; an update with nothing changed reuses the snapshot and earlier images; what is left out matches the page (done 2026-10-24) |
+| 2 · Publish (public) | The dialog, the published view, update, the globe, discovery, the publication entity | A public drive and folder publish from the app with Turbo and AR; an update with nothing changed reuses the snapshot and earlier images; what is left out matches the page (done 2026-10-24) |
 | 3 · Private | Unlock screen, encrypted snapshots, private rules | A private folder opens in a clean profile with the key, and no drive, folder or file name appears in the manifest, `publication.json`, `index.html` or any tag |
 | 4 · Names | The name step, unpublish, placeholder page | Needs ArNS-on-Solana in the app first |
 

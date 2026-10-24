@@ -294,9 +294,9 @@ class PublicationPublisher {
             throw PublicationFailure(
               PublicationStep.snapshot,
               result.resume != null
-                  ? 'The snapshot reached the network but its data did not '
-                      'finish uploading. Try again to send the rest; it is '
-                      'not paid for twice.'
+                  ? 'The snapshot is paid for, but its upload stopped '
+                      'partway. Try again to finish it. You won\'t be charged '
+                      'again.'
                   : result.reason ?? 'The snapshot did not finish uploading.',
               paidTxId: result.txId,
               canRetry: result.resume != null,
@@ -387,10 +387,10 @@ class PublicationPublisher {
   String _postFailureMessage(Object e) {
     if (_isPaymentError(e)) {
       return 'Turbo declined the payment. Go back to add credits or pay with '
-          'AR; what was already sent is kept.';
+          'AR. What was already sent is kept.';
     }
-    return 'The upload did not finish. Try again: what was already sent is '
-        'not sent or paid for twice.';
+    return 'The upload stopped partway. Try again to finish it. Nothing '
+        'already sent is sent or charged again.';
   }
 
   Future<List<_Signed>> _sign(PublicationJob job, Wallet wallet) async {

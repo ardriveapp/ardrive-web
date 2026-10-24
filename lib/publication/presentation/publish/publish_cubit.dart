@@ -78,7 +78,6 @@ class PublishCubit extends Cubit<PublishState> {
     required this.folder,
     required PublishDependencies dependencies,
     this.previous,
-    this.startAtLook = false,
   })  : _deps = dependencies,
         super(const PublishState(stage: PublishStage.loading));
 
@@ -89,9 +88,6 @@ class PublishCubit extends Cubit<PublishState> {
 
   /// The publication this updates, if any.
   final Publication? previous;
-
-  /// "Edit look": an update that opens on the look rather than the review.
-  final bool startAtLook;
 
   final PublishDependencies _deps;
 
@@ -133,13 +129,9 @@ class PublishCubit extends Cubit<PublishState> {
       if (isClosed) return;
       emit(next);
 
-      if (previous != null) {
-        if (startAtLook) {
-          emit(state.copyWith(stage: PublishStage.look));
-        } else {
-          await review();
-        }
-      }
+      // An update opens on the look, filled in from the published page: Next
+      // keeps it, and anything to change is changed on the way.
+      if (previous != null) emit(state.copyWith(stage: PublishStage.look));
     } on PublicationReadException catch (e) {
       logger.e('[publication] preparing failed', e);
       if (isClosed) return;
@@ -639,8 +631,8 @@ class PublishCubit extends Cubit<PublishState> {
       if (isClosed) return;
       emit(state.copyWith(
         stage: PublishStage.failed,
-        failure: 'Publishing stopped unexpectedly. Try again: what was '
-            'already sent is not sent or paid for twice.',
+        failure: 'Publishing stopped unexpectedly. Try again to finish it. '
+            'Nothing already sent is sent or charged again.',
         paidTxId: () => null,
         canRetry: true,
       ));

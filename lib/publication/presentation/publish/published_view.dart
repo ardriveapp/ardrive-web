@@ -1,8 +1,6 @@
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/presentation/publish/publish_dialog.dart';
-import 'package:ardrive/publication/presentation/publish_to_web.dart'
-    show publishButton;
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/format_date.dart';
@@ -13,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// A published drive or folder (docs/PUBLICATIONS.md, "Management"): its
-/// link, when it was published, Update and Edit look, and earlier versions.
+/// link, when it was published, Update, and earlier versions.
 Future<void> showPublishedView(
   BuildContext context, {
   required Drive drive,
@@ -27,12 +25,11 @@ Future<void> showPublishedView(
         folder: folder,
         publication: publication,
         // From the caller's context: the view's own is gone once it closes.
-        onUpdate: (look) => showPublishDialog(
+        onUpdate: () => showPublishDialog(
           context,
           drive: drive,
           folder: folder,
           previous: publication,
-          startAtLook: look,
         ),
       ),
     );
@@ -50,8 +47,9 @@ class PublishedView extends StatefulWidget {
   final FolderEntry? folder;
   final Publication publication;
 
-  /// Opens the publish dialog as an update, on the look when true.
-  final void Function(bool look) onUpdate;
+  /// Opens the publish dialog as an update, on the look: one way in, where
+  /// Next keeps the look and anything changed is changed first.
+  final VoidCallback onUpdate;
 
   @override
   State<PublishedView> createState() => _PublishedViewState();
@@ -76,9 +74,9 @@ class _PublishedViewState extends State<PublishedView> {
     final latest = widget.publication.latest;
     final earlier = widget.publication.earlier;
 
-    void reopen({required bool look}) {
+    void update() {
       Navigator.of(context).pop();
-      widget.onUpdate(look);
+      widget.onUpdate();
     }
 
     return ArDriveStandardModalNew(
@@ -114,27 +112,10 @@ class _PublishedViewState extends State<PublishedView> {
             },
           ),
           const SizedBox(height: 16),
-          PublishedLink(link: _link(latest.txId)),
-          const SizedBox(height: 20),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              publishButton(
-                context,
-                strings.publishUpdate,
-                onPressed: () => reopen(look: false),
-              ),
-              publishButton(
-                context,
-                strings.publishEditLook,
-                onPressed: () => reopen(look: true),
-              ),
-            ],
+          PublishedLink(
+            link: _link(latest.txId),
+            note: strings.publishUpdateNote,
           ),
-          const SizedBox(height: 8),
-          Text(strings.publishUpdateNote,
-              style: typography.paragraphSmall(color: colors.textLow)),
           if (earlier.isNotEmpty) ...[
             const SizedBox(height: 16),
             InkWell(
@@ -172,10 +153,19 @@ class _PublishedViewState extends State<PublishedView> {
                               typography.paragraphNormal(color: colors.textMid),
                         ),
                       ),
-                      publishButton(
-                        context,
-                        strings.publishOpen,
-                        onPressed: () => openUrl(url: _link(version.txId)),
+                      ArDriveClickArea(
+                        child: GestureDetector(
+                          onTap: () => openUrl(url: _link(version.txId)),
+                          child: Text(
+                            strings.publishOpen,
+                            style: typography
+                                .paragraphNormal(
+                                  fontWeight: ArFontWeight.semiBold,
+                                  color: colors.textMid,
+                                )
+                                .copyWith(decoration: TextDecoration.underline),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -184,8 +174,13 @@ class _PublishedViewState extends State<PublishedView> {
         ],
       ),
       actions: [
+        ModalAction(title: strings.publishUpdate, action: update),
         ModalAction(
-          title: strings.close,
+          title: strings.publishOpenPage,
+          action: () => openUrl(url: _link(latest.txId)),
+        ),
+        ModalAction(
+          title: strings.doneEmphasized,
           action: () => Navigator.of(context).pop(),
         ),
       ],

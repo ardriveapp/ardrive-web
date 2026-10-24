@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
+import 'package:ardrive/components/copyable_share_artifact.dart';
 import 'package:ardrive/components/payment_method_selector_widget.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/drive_state/data/arweave_drive_state_uploader.dart';
@@ -17,8 +18,6 @@ import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/data/publication_uploader.dart';
 import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/presentation/publications_cubit.dart';
-import 'package:ardrive/publication/presentation/publish_to_web.dart'
-    show publishButton;
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
 import 'package:ardrive/publication/presentation/publish/publish_look_step.dart';
 import 'package:ardrive/publication/presentation/publish/published_view.dart';
@@ -29,7 +28,6 @@ import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
-import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -81,13 +79,12 @@ Future<void> promptToPublish(
 }
 
 /// The publish dialog. [previous] makes it an update of that publication,
-/// opening on the review, or on the look with [startAtLook].
+/// opening on the look.
 Future<void> showPublishDialog(
   BuildContext context, {
   required Drive drive,
   FolderEntry? folder,
   Publication? previous,
-  bool startAtLook = false,
 }) {
   final strings = appLocalizationsOf(context);
   final configService = context.read<ConfigService>();
@@ -154,7 +151,6 @@ Future<void> showPublishDialog(
         drive: drive,
         folder: folder,
         previous: previous,
-        startAtLook: startAtLook,
         dependencies: dependencies,
       )..load(),
       child: const PublishDialog(),
@@ -254,7 +250,8 @@ class PublishDialog extends StatelessWidget {
               content: _Failed(state: state),
               actions: [
                 ModalAction(title: strings.close, action: close),
-                ModalAction(title: strings.back, action: cubit.back),
+                ModalAction(
+                    title: strings.publishBackToReview, action: cubit.back),
                 if (state.canRetry)
                   ModalAction(
                       title: strings.publishTryAgain, action: cubit.retry),
@@ -272,7 +269,13 @@ class PublishDialog extends StatelessWidget {
                     ? strings.publishDoneArNote
                     : strings.publishDoneNote,
               ),
-              actions: [ModalAction(title: strings.close, action: close)],
+              actions: [
+                ModalAction(
+                  title: strings.publishOpenPage,
+                  action: () => openUrl(url: state.link!),
+                ),
+                ModalAction(title: strings.doneEmphasized, action: close),
+              ],
             );
         }
       },
@@ -518,7 +521,6 @@ class _Review extends StatelessWidget {
                 ? strings.publishReviewUpdateLink
                 : strings.publishReviewNewLink,
           ),
-          SummaryRow(strings.publishReviewCost, _costLabel(state)),
         ]),
         const SizedBox(height: 16),
         TurboFreeStatusMessage(
@@ -528,6 +530,7 @@ class _Review extends StatelessWidget {
         if (!cost.isFree)
           PaymentMethodSelector(
             useNewArDriveUI: true,
+            useOptionCards: true,
             uploadMethodInfo: UploadPaymentMethodInfo(
               uploadMethod: state.method,
               totalSize: 0,
@@ -571,14 +574,6 @@ class _Review extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _costLabel(PublishState state) {
-    final cost = state.cost!;
-    if (cost.isFree) return 'Free';
-    return state.method == UploadMethod.turbo
-        ? '${convertWinstonToLiteralString(cost.costEstimateTurbo.totalCost)} Credits'
-        : '${convertWinstonToLiteralString(cost.costEstimateAr.totalCost)} AR';
   }
 }
 
@@ -663,26 +658,13 @@ class _Failed extends StatelessWidget {
   }
 }
 
-/// A publication's link, with Copy link and Open.
-class PublishedLink extends StatefulWidget {
+/// A publication's link, in the read-only field and Copy link that sharing
+/// uses, with an optional note under it.
+class PublishedLink extends StatelessWidget {
   const PublishedLink({super.key, required this.link, this.note});
 
   final String link;
   final String? note;
-
-  @override
-  State<PublishedLink> createState() => _PublishedLinkState();
-}
-
-class _PublishedLinkState extends State<PublishedLink> {
-  bool _copied = false;
-  Timer? _timer;
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -692,46 +674,16 @@ class _PublishedLinkState extends State<PublishedLink> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: colors.containerL1,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: colors.strokeLow),
-          ),
-          child: SelectableText(widget.link,
-              style: typography.paragraphNormal(color: colors.textHigh)),
+        CopyableShareArtifact(
+          label: strings.shareFileLinkLabel,
+          text: link,
+          copyLabel: strings.copyLink,
+          // Never shown: a publication's link carries no key.
+          revealLabel: strings.copyLink,
         ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            publishButton(
-              context,
-              _copied ? strings.copied : strings.publishCopyLink,
-              variant: ButtonVariant.primary,
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: widget.link));
-                setState(() => _copied = true);
-                _timer?.cancel();
-                _timer = Timer(const Duration(seconds: 2), () {
-                  if (mounted) setState(() => _copied = false);
-                });
-              },
-            ),
-            publishButton(
-              context,
-              strings.publishOpen,
-              onPressed: () => openUrl(url: widget.link),
-            ),
-          ],
-        ),
-        if (widget.note != null) ...[
-          const SizedBox(height: 12),
-          Text(widget.note!,
-              style: typography.paragraphSmall(color: colors.textLow)),
+        if (note != null) ...[
+          const SizedBox(height: 8),
+          Text(note!, style: typography.paragraphSmall(color: colors.textLow)),
         ],
       ],
     );

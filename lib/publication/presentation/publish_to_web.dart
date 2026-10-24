@@ -137,18 +137,19 @@ class PublishToWebMenuItem extends StatelessWidget {
       );
 }
 
-/// A button in the publish dialogs, as wide as its label needs.
+/// A button in the publish dialogs: the dialogs' own secondary button, as
+/// wide as its label needs.
 Widget publishButton(
   BuildContext context,
   String text, {
   required VoidCallback onPressed,
-  ButtonVariant variant = ButtonVariant.outline,
+  ButtonVariant variant = ButtonVariant.secondary,
 }) =>
     ArDriveButtonNew(
       text: text,
       typography: ArDriveTypographyNew.of(context),
       variant: variant,
-      maxHeight: 44,
+      maxHeight: 40,
       maxWidth: ArDriveButtonNew.fittedWidth(context, text, minWidth: 96),
       onPressed: onPressed,
     );

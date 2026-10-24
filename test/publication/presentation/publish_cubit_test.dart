@@ -431,7 +431,7 @@ void main() {
     expect(c.state.title, "Phil's Archive");
     expect(c.state.description, 'Old words.');
     expect(c.state.keywords, ['photos']);
-    expect(c.state.stage, PublishStage.review);
+    expect(c.state.stage, PublishStage.look, reason: 'an update opens on it');
   });
 
   test('a pricing failure after an edit never publishes the earlier job',
@@ -491,6 +491,7 @@ void main() {
     final c = cubit(previous: Publication([latest()]));
     await c.load();
     expect(c.state.licence?.params, {'License-Fee': 'One-Time-0.1'});
+    await c.review();
     await c.publish();
     final job = verify(() => publisher.publish(captureAny(), any(),
         onStep: any(named: 'onStep'))).captured.single as PublicationJob;
@@ -509,6 +510,7 @@ void main() {
         .thenAnswer((_) async => latest());
     final c = cubit(previous: Publication([latest()]));
     await c.load();
+    await c.review();
     await c.publish();
     var job = verify(() => publisher.publish(captureAny(), any(),
         onStep: any(named: 'onStep'))).captured.single as PublicationJob;
@@ -519,7 +521,6 @@ void main() {
       previous: Publication([latest()]),
     );
     await edited.load();
-    edited.back();
     edited.setTitle('Something else');
     await edited.review();
     await edited.publish();
