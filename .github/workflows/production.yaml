@@ -15,6 +15,13 @@ env:
   BUILD_NUMBER: ${{ github.run_number }}
   RELEASE_NOTES: 'Production'
 
+# Read the repository and nothing else. The jobs that run (the tests, the
+# build, Firebase and Arweave) only check out the code: the Firebase action
+# uses the token only on pull requests, which this workflow never runs on,
+# and the Arweave deploy signs with its own key.
+permissions:
+  contents: read
+
 
 jobs:
   pre-build:
