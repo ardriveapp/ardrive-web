@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ario_sdk/ario_sdk.dart';
@@ -424,6 +425,22 @@ void main() {
       );
 
       verify(() => arioSDK.getGateways()).called(1);
+    });
+
+    test('a publication never leaves the gateway serving it', () async {
+      PublicationMode.debugSet('publication.json');
+      addTearDown(() => PublicationMode.debugSet(null));
+
+      await expectLater(
+        fallback.downloadWithFallback(
+          txId: txId,
+          primaryClient: primaryClient,
+        ),
+        throwsA(isA<Object>()),
+      );
+
+      // No gateway list (a Solana RPC call) and so no other gateway.
+      verifyNever(() => arioSDK.getGateways());
     });
 
     test(

@@ -69,6 +69,12 @@ class AppRoutePath {
   /// `ct` - the content type hint of a `/view/{txId}` link.
   final String? rawTransactionContentType;
 
+  /// On a publication (`PublicationMode`), the folder a link opens and the file
+  /// to pick out of it: `#/folders/<id>?file=<id>`. The drive is the page's,
+  /// so a publication link never names it. Both null is the publication's root.
+  final String? publicationFolderId;
+  final String? publicationFileId;
+
   const AppRoutePath({
     this.signingIn = false,
     this.getStarted = false,
@@ -86,6 +92,8 @@ class AppRoutePath {
     this.rawTransactionId,
     this.rawTransactionName,
     this.rawTransactionContentType,
+    this.publicationFolderId,
+    this.publicationFileId,
   });
 
   /// Creates a route that lets the user sign in.
@@ -160,4 +168,8 @@ class AppRoutePath {
       );
 
   factory AppRoutePath.unknown() => const AppRoutePath();
+
+  /// A place in a publication: its root, or a folder and a file in it.
+  factory AppRoutePath.publication({String? folderId, String? fileId}) =>
+      AppRoutePath(publicationFolderId: folderId, publicationFileId: fileId);
 }

@@ -1,0 +1,1 @@
+void useGatewayForDownloadHelper(Uri gateway) {}

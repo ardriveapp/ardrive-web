@@ -228,6 +228,87 @@ void main() async {
         );
       });
 
+      group('Test the step before a publication downloads', () {
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'says what the zip will hold and fetches nothing yet',
+          build: () => multipleDownloadBloc,
+          setUp: () {
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+            // The mock is shared: forget what earlier tests fetched.
+            clearInteractions(mockDownloadService);
+          },
+          act: (bloc) => bloc.add(StartDownload(
+            [testFile, testFile],
+            zipName: 'Publication',
+            confirmFirst: true,
+          )),
+          expect: () => [
+            isA<MultipleDownloadReady>()
+                .having((s) => s.fileCount, 'fileCount', 2)
+                .having((s) => s.totalSize, 'totalSize', testFile.size! * 2)
+                .having((s) => s.fileName, 'fileName', 'Publication.zip'),
+          ],
+          verify: (_) =>
+              verifyNever(() => mockDownloadService.download(any(), any())),
+        );
+
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'and downloads once confirmed',
+          build: () => multipleDownloadBloc,
+          setUp: () {
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+          },
+          act: (bloc) async {
+            bloc.add(StartDownload(
+              [testFile],
+              zipName: 'Publication',
+              confirmFirst: true,
+            ));
+            await Future<void>.delayed(Duration.zero);
+            bloc.add(const ConfirmDownload());
+          },
+          expect: () => [
+            isA<MultipleDownloadReady>(),
+            isA<MultipleDownloadInProgress>(),
+            isA<MultipleDownloadFinishedWithSuccess>()
+                .having((s) => s.fileName, 'fileName', 'Publication.zip'),
+          ],
+        );
+      });
+
+      group('Test confirming more than once', () {
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'downloads once however often it is confirmed',
+          build: () => multipleDownloadBloc,
+          setUp: () {
+            AppPlatform.setMockPlatform(platform: SystemPlatform.Android);
+          },
+          act: (bloc) async {
+            bloc.add(StartDownload(
+              [testFile],
+              zipName: 'Publication',
+              confirmFirst: true,
+            ));
+            await Future<void>.delayed(Duration.zero);
+            bloc
+              ..add(const ConfirmDownload())
+              ..add(const ConfirmDownload());
+          },
+          expect: () => [
+            isA<MultipleDownloadReady>(),
+            isA<MultipleDownloadInProgress>(),
+            isA<MultipleDownloadFinishedWithSuccess>(),
+          ],
+        );
+
+        blocTest<MultipleDownloadBloc, MultipleDownloadState>(
+          'and not at all before it has asked',
+          build: () => multipleDownloadBloc,
+          act: (bloc) => bloc.add(const ConfirmDownload()),
+          expect: () => const <MultipleDownloadState>[],
+        );
+      });
+
       group('Test networking', () {
         blocTest<MultipleDownloadBloc, MultipleDownloadState>(
           'should emit Failure with fileNotFound when file is not available',

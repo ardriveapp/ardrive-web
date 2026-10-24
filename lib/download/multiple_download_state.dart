@@ -24,6 +24,23 @@ class MultipleDownloadInProgress extends MultipleDownloadState {
 
 class MultipleDownloadWarning extends MultipleDownloadState {}
 
+/// What the zip will hold, before any of it is fetched (see
+/// [StartDownload.confirmFirst]).
+class MultipleDownloadReady extends MultipleDownloadState {
+  const MultipleDownloadReady({
+    required this.fileCount,
+    required this.totalSize,
+    required this.fileName,
+  });
+
+  final int fileCount;
+  final int totalSize;
+  final String fileName;
+
+  @override
+  List<Object> get props => [fileCount, totalSize, fileName];
+}
+
 class MultipleDownloadFailure extends MultipleDownloadState {
   final FileDownloadFailureReason reason;
 

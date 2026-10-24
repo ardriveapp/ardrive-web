@@ -10,12 +10,23 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class ConfigFetcher {
-  ConfigFetcher({required this.localStore});
+  ConfigFetcher({required this.localStore, this.publicationMode = false});
 
   final LocalKeyValueStore localStore;
 
+  /// A publication (`PublicationMode`) reads no stored config and writes none:
+  /// a visitor's own ArDrive settings on this origin are not the page's, and
+  /// the page must not leave settings behind. See [_fetchPublicationConfig].
+  final bool publicationMode;
+
   @visibleForTesting
   AssetBundle assetBundle = rootBundle;
+
+  /// A publication also tries its own host (see
+  /// [ArIOGatewayDetector.detectArIOGateway]).
+  @visibleForTesting
+  late Future<SelectedGateway?> Function() detectGateway =
+      () => ArIOGatewayDetector.detectArIOGateway(alsoTryHost: publicationMode);
 
   Future<AppConfig> fetchConfig(Flavor flavor) async {
     // 1. Load default config from assets.
@@ -24,6 +35,8 @@ class ConfigFetcher {
         await assetBundle.loadString('assets/config/$flavorName.json');
     final defaultConfig = AppConfig.fromJson(
         json.decode(defaultConfigString) as Map<String, dynamic>);
+
+    if (publicationMode) return _fetchPublicationConfig(defaultConfig);
 
     // 2. Load stored config from local storage.
     final storedConfigString = localStore.getString('config');
@@ -72,6 +85,22 @@ class ConfigFetcher {
     return storedConfig;
   }
 
+  /// The flavor's config, reading file data from the gateway serving the page
+  /// and never syncing. Detection runs on every load and is not cached: a
+  /// publication talks only to its own host and that host's gateway, and
+  /// keeps nothing.
+  Future<AppConfig> _fetchPublicationConfig(AppConfig defaultConfig) async {
+    final gateway = await detectGateway();
+    if (gateway == null) {
+      logger.w('Publication: the serving host is not an AR.IO gateway; '
+          'reading data from ${defaultConfig.arweaveGatewayForDataRequest.url}');
+    }
+    return defaultConfig.copyWith(
+      arweaveGatewayForDataRequest: gateway,
+      autoSync: false,
+    );
+  }
+
   String _parseFlavorToEnv(Flavor flavor) {
     switch (flavor) {
       case Flavor.production:
@@ -84,10 +113,12 @@ class ConfigFetcher {
   }
 
   Future<void> saveConfigOnDevToolsPrefs(AppConfig config) async {
+    if (publicationMode) return;
     await localStore.putString('config', json.encode(config.toJson()));
   }
 
   Future<void> resetDevToolsPrefs() async {
+    if (publicationMode) return;
     await localStore.remove('config');
   }
 

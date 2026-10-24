@@ -5,6 +5,7 @@ import 'package:ardrive/pages/drive_detail/drive_detail_page.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -146,6 +147,25 @@ void main() {
       await pump(tester, phone, bar(isPrivate: false));
 
       expect(lock, findsNothing);
+    });
+
+    testWidgets('keeps a long name to one line, which the bar has room for',
+        (tester) async {
+      const name = 'A publication title long enough to need a second line here';
+      await pump(
+        tester,
+        phone,
+        const MobileFolderNavigation(
+          driveName: name,
+          isShowingHiddenFiles: false,
+          isPrivate: false,
+          path: [],
+        ),
+      );
+
+      final paragraph = tester.renderObject<RenderParagraph>(find.text(name));
+      expect(paragraph.didExceedMaxLines, isTrue);
+      expect(tester.widget<Text>(find.text(name)).maxLines, 1);
     });
   });
 }

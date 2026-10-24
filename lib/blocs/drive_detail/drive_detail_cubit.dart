@@ -5,6 +5,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_detail/utils/breadcrumb_builder.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/pages/pages.dart';
@@ -150,6 +151,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
   /// after a newer one cannot open its folder over the newer one's.
   int _followedLinks = 0;
 
+  /// On a publication, the folder the publication was published at: breadcrumbs
+  /// start there rather than at the drive's root (docs/PUBLICATIONS.md).
+  final String? publicationScopeRootFolderId;
+
   DriveDetailCubit({
     required String driveId,
     String? initialFolderId,
@@ -169,6 +174,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     required BreadcrumbBuilder breadcrumbBuilder,
     required SyncCubit syncCubit,
     required DriveRepository driveRepository,
+    this.publicationScopeRootFolderId,
   })  : _profileCubit = profileCubit,
         _activityTracker = activityTracker,
         _driveDao = driveDao,
@@ -819,6 +825,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     DriveOrder contentOrderBy = DriveOrder.name,
     OrderingMode contentOrderingMode = OrderingMode.asc,
   }) async {
+    // "The root" on a publication is the folder it was published at, never
+    // the drive's own root above it.
+    folderId ??= otherDriveId == null ? publicationScopeRootFolderId : null;
+
     // Claimed before the first await, so anything already in flight for a
     // previous folder is stale from here on even when the drive is unchanged.
     final loadGeneration = ++_folderLoadGeneration;
@@ -1213,7 +1223,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
           final List<BreadCrumbRowInfo> pathSegments =
               await _breadcrumbBuilder.buildForFolder(
             folderId: folderContents.folder.id,
-            rootFolderId: drive.rootFolderId,
+            rootFolderId: publicationScopeRootFolderId ?? drive.rootFolderId,
             driveId: driveId,
           );
 
@@ -1328,7 +1338,24 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       ...files,
     ];
 
-    return items;
+    return PublicationMode.isOn
+        ? items.where(isShownInPublication).toList()
+        : items;
+  }
+
+  /// What a publication shows (docs/PUBLICATIONS.md, "Never shown"): not
+  /// hidden items, whatever a visitor's own preferences say, not ghost
+  /// folders, whose metadata the snapshot never had, and not uploads that
+  /// failed or were still pending when the snapshot was made. Filtered here,
+  /// where the folder becomes items, so the table, its counts, image
+  /// navigation and selection all see the same list.
+  @visibleForTesting
+  static bool isShownInPublication(ArDriveDataTableItem item) {
+    if (item.isHidden) return false;
+    if (item is FolderDataTableItem && item.isGhostFolder) return false;
+    final status = item.fileStatusFromTransactions;
+    return status != TransactionStatus.failed &&
+        status != TransactionStatus.pending;
   }
 
   List<int> calculateRowsPerPage(int totalEntries) {

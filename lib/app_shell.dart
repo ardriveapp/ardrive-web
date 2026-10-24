@@ -5,6 +5,9 @@ import 'package:ardrive/components/migrate_private_drives_modal.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
 import 'package:ardrive/components/sync_failure_test_panel.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/publication/presentation/publication_chrome.dart';
+import 'package:ardrive/publication/presentation/publication_loader_page.dart';
 import 'package:ardrive/misc/misc.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/search/search_modal.dart';
@@ -126,7 +129,8 @@ class AppShellState extends State<AppShell> {
                           context,
                           message: '', // Configure message when enabling banner
                         ),
-                        if (state is! PrivateDriveMigrationHidden)
+                        if (state is! PrivateDriveMigrationHidden &&
+                            !PublicationMode.isOn)
                           _updatePrivateDrivesBanner(context, true),
                         Flexible(
                           child: Row(
@@ -165,7 +169,8 @@ class AppShellState extends State<AppShell> {
                         context,
                         message: '', // Configure message when enabling banner
                       ),
-                      if (state is! PrivateDriveMigrationHidden)
+                      if (state is! PrivateDriveMigrationHidden &&
+                          !PublicationMode.isOn)
                         _updatePrivateDrivesBanner(context, false),
                       Flexible(
                         child: Row(
@@ -420,11 +425,14 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 7.0),
                 child: leading ??
-                    (showDrawerButton
+                    // A publication has no drawer.
+                    (showDrawerButton && !PublicationMode.isOn
                         ? const MobileDrawerButton()
                         : Container()),
               ),
-              if (!showDrawerButton)
+              if (PublicationMode.isOn)
+                const Expanded(child: _MobilePublicationTitle())
+              else if (!showDrawerButton)
                 Padding(
                   padding: const EdgeInsets.only(
                     left: 24.0,
@@ -439,7 +447,7 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                     height: 28,
                   ),
                 ),
-              const Spacer(),
+              if (!PublicationMode.isOn) const Spacer(),
               // Search sits with the other controls that are about the whole
               // view rather than one item in it - the hide toggle beside it is
               // the same kind of thing. As a field it took a 60px band above
@@ -452,21 +460,44 @@ class MobileAppBar extends StatelessWidget implements PreferredSizeWidget {
                 ),
                 const SizedBox(width: 8),
               ],
-              const GlobalHideToggleButton(),
-              const SizedBox(width: 8),
-              const SyncButton(),
-              const SizedBox(width: 8),
-              const SizedBox(
-                width: 24,
-              ),
-              const Padding(
-                padding: EdgeInsets.only(right: 12.0),
-                child: ProfileCard(),
-              ),
+              if (PublicationMode.isOn)
+                const Padding(
+                  padding: EdgeInsets.only(right: 8.0),
+                  child: PublicationTopBarActions(compact: true),
+                )
+              else ...[
+                const GlobalHideToggleButton(),
+                const SizedBox(width: 8),
+                const SyncButton(),
+                const SizedBox(width: 8),
+                const SizedBox(
+                  width: 24,
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(right: 12.0),
+                  child: ProfileCard(),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
   }
+}
+
+/// A publication's app bar on a phone: the publication's icon where the ArDrive
+/// logo would be. Its title is in the header beneath, over the files.
+class _MobilePublicationTitle extends StatelessWidget {
+  const _MobilePublicationTitle();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(left: 12),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child:
+              PublicationIcon(config: publicationConfigOf(context), size: 32),
+        ),
+      );
 }
