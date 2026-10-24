@@ -222,6 +222,81 @@ void main() {
     });
   });
 
+  // The menu is ArDriveDropdown. Its items were not buttons, so with the
+  // browser's accessibility tree on the web gave them no role and no name.
+  group('with a screen reader', () {
+    void expectButtons(
+      WidgetTester tester,
+      List<String> names, {
+      Set<String> disabled = const {},
+    }) {
+      for (final name in names) {
+        final item = find.bySemanticsLabel(name);
+        expect(item, findsOneWidget, reason: name);
+        expect(
+          tester.getSemantics(item),
+          containsSemantics(
+            label: name,
+            isButton: true,
+            hasEnabledState: true,
+            isEnabled: !disabled.contains(name),
+            hasTapAction: true,
+          ),
+          reason: name,
+        );
+      }
+    }
+
+    testWidgets('hears every item of a drive you own, each a button',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openMenu(tester, isOwner: true);
+
+      expectButtons(tester, [
+        'Sync this drive',
+        'Rename drive',
+        'More info',
+        'Share drive',
+        'Create snapshot',
+        'Export drive contents',
+        'Download',
+        'Hide',
+      ]);
+
+      semantics.dispose();
+    });
+
+    testWidgets('and of a drive shared with you', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openMenu(tester, isOwner: false);
+
+      expectButtons(tester, [
+        'Sync this drive',
+        'More info',
+        'Share drive',
+        'Export drive contents',
+        'Download',
+        'Detach drive',
+      ]);
+
+      semantics.dispose();
+    });
+
+    testWidgets('hears that the sync is unavailable while one runs',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openMenu(tester, isOwner: true, isSyncing: true);
+
+      expectButtons(
+        tester,
+        ['Sync this drive', 'Rename drive'],
+        disabled: {'Sync this drive'},
+      );
+
+      semantics.dispose();
+    });
+  });
+
   group('reaching it', () {
     testWidgets('the tap target is big enough for a finger', (tester) async {
       await tester.binding.setSurfaceSize(const Size(320, 640));

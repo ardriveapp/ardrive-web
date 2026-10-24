@@ -1,5 +1,6 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 
 export 'package:flutter_portal/flutter_portal.dart'
@@ -162,37 +163,45 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
                     if (widget.header != null) widget.header!,
                     Column(
                       children: List.generate(widget.items.length, (index) {
-                        return GestureDetector(
-                          onTap: () {
-                            widget.items[index].onClick?.call();
-                            setState(() {
-                              visible = !visible;
-                            });
-                          },
-                          child: ArDriveHoverWidget(
-                            hoverColor: dropdownTheme.hoverColor,
-                            defaultColor: dropdownTheme.backgroundColor,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.max,
-                              children: [
-                                // Expanded, so the item is laid out to the
-                                // menu's width. A Row hands its non-flexible
-                                // children an unbounded main axis, so an item
-                                // used to measure itself at whatever width its
-                                // longest word wanted and the menu overflowed
-                                // by the difference - which on a 320px phone
-                                // at text scale 2.0 was 58 pixels off the
-                                // right edge of every menu in the app. A
-                                // bounded width is also what lets a label
-                                // inside the item give at all.
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [widget.items[index]],
+                        // A button of its own, named by its text, and
+                        // disabled when it has nothing to do: without the
+                        // flag the web gave it no role and no name.
+                        return Semantics(
+                          container: true,
+                          button: true,
+                          enabled: widget.items[index].onClick != null,
+                          child: GestureDetector(
+                            onTap: () {
+                              widget.items[index].onClick?.call();
+                              setState(() {
+                                visible = !visible;
+                              });
+                            },
+                            child: ArDriveHoverWidget(
+                              hoverColor: dropdownTheme.hoverColor,
+                              defaultColor: dropdownTheme.backgroundColor,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.max,
+                                children: [
+                                  // Expanded, so the item is laid out to the
+                                  // menu's width. A Row hands its non-flexible
+                                  // children an unbounded main axis, so an item
+                                  // used to measure itself at whatever width its
+                                  // longest word wanted and the menu overflowed
+                                  // by the difference - which on a 320px phone
+                                  // at text scale 2.0 was 58 pixels off the
+                                  // right edge of every menu in the app. A
+                                  // bounded width is also what lets a label
+                                  // inside the item give at all.
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [widget.items[index]],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -361,7 +370,8 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
   }
 }
 
-class Barrier extends StatelessWidget {
+/// Closes what it covers on a click anywhere else, or on Escape.
+class Barrier extends StatefulWidget {
   const Barrier({
     super.key,
     required this.onClose,
@@ -374,15 +384,63 @@ class Barrier extends StatelessWidget {
   final bool visible;
 
   @override
+  State<Barrier> createState() => _BarrierState();
+}
+
+class _BarrierState extends State<Barrier> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.visible) {
+      HardwareKeyboard.instance.addHandler(_onKey);
+    }
+  }
+
+  @override
+  void didUpdateWidget(Barrier oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.visible != oldWidget.visible) {
+      if (widget.visible) {
+        HardwareKeyboard.instance.addHandler(_onKey);
+      } else {
+        HardwareKeyboard.instance.removeHandler(_onKey);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    super.dispose();
+  }
+
+  /// The way out for a keyboard, and for a screen reader, which has no
+  /// barrier to press: see below.
+  bool _onKey(KeyEvent event) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      widget.onClose();
+      return true;
+    }
+    return false;
+  }
+
+  @override
   Widget build(BuildContext context) {
     return PortalTarget(
-      visible: visible,
+      visible: widget.visible,
       closeDuration: kThemeAnimationDuration,
-      portalFollower: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onClose,
+      // Out of the accessibility tree. It covers the whole screen and comes
+      // after what it covers, so with the tree on the browser put it on top:
+      // every click on a menu item or a link in the card landed on it, and
+      // only closed what was open.
+      portalFollower: ExcludeSemantics(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onClose,
+        ),
       ),
-      child: child,
+      child: widget.child,
     );
   }
 }
