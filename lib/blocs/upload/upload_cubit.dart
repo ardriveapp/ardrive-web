@@ -247,6 +247,15 @@ class UploadCubit extends Cubit<UploadState> {
       ));
 
       await _createManifestCubit.uploadManifest(method: _manifestUploadMethod);
+
+      // Marked done here: only the name branch used to do it, so with no
+      // name each deployment kept its spinner and the count stayed at 0.
+      manifestModels[i] =
+          manifestModels[i].copyWith(isUploading: false, isCompleted: true);
+      emit(UploadingManifests(
+        manifestFiles: manifestModels,
+        completedCount: ++completedCount,
+      ));
     }
 
     emit(UploadComplete());

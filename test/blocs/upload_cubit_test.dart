@@ -130,6 +130,7 @@ void main() {
         .thenAnswer((invocation) => Future.value([]));
 
     registerFallbackValue(SecretKey([]));
+    registerFallbackValue(UploadMethod.turbo);
     registerFallbackValue(Wallet());
     registerFallbackValue(getFakeUser());
     registerFallbackValue(FolderEntry(
@@ -439,6 +440,56 @@ void main() {
       },
     );
   });
+
+  // Only the name branch marked a deployment done, so without a name each
+  // one kept its spinner and the count stayed at "0 of N".
+  blocTest<UploadCubit, UploadState>(
+    'marks each updated deployment done and counts it',
+    build: () {
+      when(() => mockCreateManifestCubit.prepareManifestTx(
+            manifestName: any(named: 'manifestName'),
+            folderId: any(named: 'folderId'),
+            existingManifestFileId: any(named: 'existingManifestFileId'),
+          )).thenAnswer((_) async {});
+      when(() => mockCreateManifestCubit.uploadManifest(
+          method: any(named: 'method'))).thenAnswer((_) async {});
+      return getUploadCubitInstanceWith([]);
+    },
+    act: (bloc) async {
+      final entries = await Future.wait([
+        for (final i in [0, 1])
+          mockDriveDao.fileById(fileId: '$tRootFolderId$i').getSingle(),
+      ]);
+      await bloc.uploadManifests([
+        for (final entry in entries)
+          UploadManifestModel(
+            entry: entry,
+            freeThanksToTurbo: true,
+            existingManifestFileId: entry.id,
+          ),
+      ]);
+    },
+    verify: (bloc) {
+      expect(bloc.state, isA<UploadComplete>());
+    },
+    expect: () => [
+      isA<UploadingManifests>(),
+      isA<UploadingManifests>(),
+      isA<UploadingManifests>()
+          .having((s) => s.completedCount, 'completedCount', 1),
+      isA<UploadingManifests>(),
+      isA<UploadingManifests>(),
+      isA<UploadingManifests>()
+          .having((s) => s.completedCount, 'completedCount', 2)
+          // The states share one list, so this reads how it ends: every
+          // deployment done, none still spinning.
+          .having((s) => s.manifestFiles.every((m) => m.isCompleted),
+              'all done', true)
+          .having((s) => s.manifestFiles.any((m) => m.isUploading),
+              'any spinning', false),
+      isA<UploadComplete>(),
+    ],
+  );
 
   group('check if there are some conflicting file', () {
     setUp(() {
