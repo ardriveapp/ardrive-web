@@ -98,4 +98,18 @@ void main() {
 
     expect(warning('This file is still pending'), findsOneWidget);
   });
+
+  // Every character of a key has to be told apart, so it is in monospace. The
+  // link reads as an address to open and stays in the body face.
+  testWidgets('draws the access key in monospace and the link in body type',
+      (tester) async {
+    await pumpState(tester, privateFile());
+
+    final fields =
+        tester.widgetList<ArDriveCopyField>(find.byType(ArDriveCopyField));
+    expect(
+      {for (final field in fields) field.label: field.isMonospace},
+      {'Link': false, 'Access key': true},
+    );
+  });
 }

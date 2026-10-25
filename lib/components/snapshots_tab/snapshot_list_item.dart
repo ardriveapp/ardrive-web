@@ -72,7 +72,8 @@ class SnapshotListItem extends StatelessWidget {
                       offsetStart: 4,
                       offsetEnd: 4,
                     ),
-                    style: typography.paragraphNormal(),
+                    // A transaction ID, so monospace.
+                    style: typography.code(),
                     color: colorTokens.textHigh,
                     external: true,
                     onTap: () => openUrl(
@@ -83,13 +84,13 @@ class SnapshotListItem extends StatelessWidget {
               else
                 ArDriveTooltip(
                   message: snapshot.txId,
-                  child: Text(
+                  child: ArDriveIdText(
                     truncateString(
                       snapshot.txId,
                       offsetStart: 4,
                       offsetEnd: 4,
                     ),
-                    style: typography.paragraphNormal(),
+                    style: typography.code(),
                   ),
                 ),
               const SizedBox(width: 8),

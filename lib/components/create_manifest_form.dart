@@ -603,11 +603,13 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                                 fontWeight: ArFontWeight.bold,
                               ),
                             ),
+                            // A transaction ID, whole, so monospace: it wraps
+                            // like text rather than taking a fixed width.
                             TextSpan(
                               text: state.fallbackTxId,
-                              style: typography.paragraphSmall(
+                              style: typography.code(
                                 color: colorTokens.textMid,
-                                fontWeight: ArFontWeight.semiBold,
+                                fontSize: 11,
                               ),
                             ),
                           ],

@@ -18,6 +18,7 @@ class CopyableShareArtifact extends StatelessWidget {
     required this.revealLabel,
     this.isSecret = false,
     this.alignsWithSecret = false,
+    this.isKey = false,
   });
 
   final String label;
@@ -37,6 +38,12 @@ class CopyableShareArtifact extends StatelessWidget {
   /// same width.
   final bool alignsWithSecret;
 
+  /// Whether this artifact is an access key on its own, which is drawn in
+  /// monospace so every character can be told apart. A link stays in the
+  /// body face, key in it or not: it reads as an address to open, not as
+  /// characters to check one by one.
+  final bool isKey;
+
   @override
   Widget build(BuildContext context) {
     final localizations = appLocalizationsOf(context);
@@ -49,6 +56,7 @@ class CopyableShareArtifact extends StatelessWidget {
       revealLabel: revealLabel,
       isSecret: isSecret,
       alignsWithSecret: alignsWithSecret,
+      isMonospace: isKey,
     );
   }
 }

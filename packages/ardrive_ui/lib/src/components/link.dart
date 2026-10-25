@@ -84,6 +84,44 @@ class _ArDriveLinkState extends State<ArDriveLink> {
       decorationColor: color,
     );
 
+    Widget text = Text.rich(
+      TextSpan(
+        text: widget.text,
+        children: [
+          if (widget.external)
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Padding(
+                padding: const EdgeInsets.only(left: ArDriveSpacing.xxs),
+                child: ArDriveIcons.newWindow(
+                  size: (style.fontSize ?? 14) * 1.1,
+                  color: color,
+                ),
+              ),
+            ),
+        ],
+      ),
+      style: style,
+    );
+
+    // A link in monospace, such as a transaction ID, is given its final width
+    // from the first frame, like [ArDriveIdText]: the face loads on demand,
+    // and what sits beside the link stays put when it arrives.
+    if (style.fontFamily == ArDriveMonospace.family) {
+      final fontSize = style.fontSize ?? 13;
+      final textScaler =
+          MediaQuery.maybeOf(context)?.textScaler ?? TextScaler.noScaling;
+      final iconWidth = widget.external
+          ? ArDriveSpacing.xxs + textScaler.scale(fontSize * 1.1)
+          : 0.0;
+      text = SizedBox(
+        width: ArDriveMonospace.widthOf(widget.text, fontSize,
+                textScaler: textScaler) +
+            iconWidth.ceilToDouble(),
+        child: text,
+      );
+    }
+
     return Semantics(
       link: !widget.isAction,
       button: widget.isAction,
@@ -113,26 +151,7 @@ class _ArDriveLinkState extends State<ArDriveLink> {
               // web.
               foregroundPainter:
                   _focused ? _FocusRingPainter(colorTokens.strokeHigh) : null,
-              child: Text.rich(
-                TextSpan(
-                  text: widget.text,
-                  children: [
-                    if (widget.external)
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: Padding(
-                          padding:
-                              const EdgeInsets.only(left: ArDriveSpacing.xxs),
-                          child: ArDriveIcons.newWindow(
-                            size: (style.fontSize ?? 14) * 1.1,
-                            color: color,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                style: style,
-              ),
+              child: text,
             ),
           ),
         ),

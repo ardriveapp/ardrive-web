@@ -134,6 +134,8 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                   controller:
                       context.read<DriveAttachCubit>().driveIdController,
                   autofocus: true,
+                  // An ID, so monospace.
+                  textStyle: ArDriveTypographyNew.of(context).code(),
                   onChanged: (s) async {
                     // Only look up when drive ID looks complete (UUID = 36 chars)
                     if (s.length >= 36) {
@@ -193,6 +195,8 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                         context.read<DriveAttachCubit>().driveKeyController,
                     autofocus: true,
                     obscureText: true,
+                    // A key, so monospace.
+                    textStyle: ArDriveTypographyNew.of(context).code(),
                     onChanged: (s) async {},
                     asyncValidator: (s) async {
                       final cubit = context.read<DriveAttachCubit>();
@@ -288,10 +292,21 @@ class _DriveInfoRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  'Owner: $truncatedOwner',
-                  style: typography.paragraphSmall(
-                    color: colorTokens.textLow,
+                // The address in monospace, the label around it in the body
+                // face.
+                Text.rich(
+                  TextSpan(
+                    style: typography.paragraphSmall(
+                      color: colorTokens.textLow,
+                    ),
+                    children: ArDriveIdText.spansIn(
+                      'Owner: $truncatedOwner',
+                      truncatedOwner,
+                      idStyle: typography.code(
+                        color: colorTokens.textLow,
+                        fontSize: 11,
+                      ),
+                    ),
                   ),
                 ),
               ],

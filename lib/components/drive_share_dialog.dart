@@ -106,6 +106,7 @@ class DriveShareDialogState extends State<DriveShareDialog> {
                         revealLabel:
                             appLocalizationsOf(context).shareFileRevealKey,
                         isSecret: true,
+                        isKey: true,
                       ),
                       _HelperText(
                         appLocalizationsOf(context).shareDriveSendKeySeparately,
