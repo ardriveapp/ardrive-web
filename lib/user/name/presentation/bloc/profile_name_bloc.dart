@@ -11,9 +11,9 @@ part 'profile_name_event.dart';
 part 'profile_name_state.dart';
 
 class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
+  // Kept for the ArNS Solana integration.
   // ignore: unused_field
-  final ProfileLogoRepository
-      _profileLogoRepository; // kept for ArNS Solana integration
+  final ProfileLogoRepository _profileLogoRepository;
   final ArDriveAuth _auth;
   final SolanaNameService _solanaNameService;
   final EthereumNameService _ethereumNameService;
