@@ -29,10 +29,22 @@ void main() {
     expect(tokens.strokeMid, ArDriveColorTokens.darkMode().strokeMid);
   });
 
-  testWidgets('leaves the dark theme as it is', (tester) async {
+  testWidgets('gives the dark tokens in the dark theme too', (tester) async {
     final dark = ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode());
     final tokens = await tokensUnder(tester, dark);
 
-    expect(tokens, same(dark.colorTokens));
+    expect(tokens.textHigh, ArDriveColorTokens.darkMode().textHigh);
+  });
+
+  // The name is no guide: a theme with light tokens and no name of its own
+  // is named "dark".
+  testWidgets('gives the dark tokens under a misnamed light theme',
+      (tester) async {
+    final tokens = await tokensUnder(
+      tester,
+      ArDriveThemeData(colorTokens: ArDriveColorTokens.lightMode()),
+    );
+
+    expect(tokens.textHigh, ArDriveColorTokens.darkMode().textHigh);
   });
 }

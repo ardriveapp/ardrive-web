@@ -15,10 +15,9 @@ class ArDriveOnDark extends StatelessWidget {
   static final ArDriveThemeData _dark =
       ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode());
 
+  // Always applied. A theme's name can't be trusted to say its tokens are
+  // dark: a theme built with light tokens and no name is named "dark".
   @override
-  Widget build(BuildContext context) {
-    if (ArDriveTheme.of(context).themeData.name == _dark.name) return child;
-
-    return ArDriveTheme(themeData: _dark, child: child);
-  }
+  Widget build(BuildContext context) =>
+      ArDriveTheme(themeData: _dark, child: child);
 }
