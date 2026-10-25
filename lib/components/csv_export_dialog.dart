@@ -94,15 +94,19 @@ class CsvExportDialog extends StatelessWidget {
                 ],
               ),
             ),
-            actions: [
-              ModalAction.dismiss(
-                action: () {
-                  context.read<DataExportCubit>().abort();
-                  Navigator.pop(context);
-                },
-                title: strings.cancel,
-              ),
-            ],
+            // No Cancel once the file is being saved: closing the dialog
+            // would not stop the save, so the file could arrive after Cancel.
+            actions: state is DataExportSuccess
+                ? null
+                : [
+                    ModalAction.dismiss(
+                      action: () {
+                        context.read<DataExportCubit>().abort();
+                        Navigator.pop(context);
+                      },
+                      title: strings.cancel,
+                    ),
+                  ],
           );
         },
       );

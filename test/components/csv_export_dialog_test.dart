@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:ardrive/blocs/data_export/data_export_cubit.dart';
 import 'package:ardrive/components/csv_export_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -73,6 +75,22 @@ void main() {
 
     verify(() => cubit.abort()).called(1);
     expect(find.byType(CsvExportDialog), findsNothing);
+  });
+
+  testWidgets('offers no Cancel while the file is being saved',
+      (tester) async {
+    await open(
+      tester,
+      DataExportSuccess(
+        bytes: Uint8List(0),
+        fileName: 'export.csv',
+        mimeType: 'text/csv',
+        lastModified: DateTime(2026),
+      ),
+    );
+
+    expect(find.byType(ArDriveSpinner), findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
   });
 
   testWidgets('a failure is shown, with a way out', (tester) async {

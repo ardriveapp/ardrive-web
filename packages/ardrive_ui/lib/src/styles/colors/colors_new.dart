@@ -236,8 +236,8 @@ class ArDriveColorTokens {
       // it sits on. It was a solid grey700: the colour of a dialog
       // (containerL3), where Cancel had no edge at all.
       buttonSecondaryDefault: primitives.transparent100_8,
-      buttonSecondaryHover: primitives.transparent100_8,
-      buttonSecondaryPress: primitives.transparent100_12,
+      buttonSecondaryHover: primitives.transparent100_12,
+      buttonSecondaryPress: primitives.transparent100_16,
       buttonOutlineDefault: Colors.transparent,
       buttonOutlineHover: primitives.solidGrey600,
       buttonOutlinePress: primitives.solidGrey500,
@@ -291,8 +291,8 @@ class ArDriveColorTokens {
       // it sits on. It was a solid grey100: the colour of a card
       // (containerL1), where the button disappeared.
       buttonSecondaryDefault: primitives.transparent900_8,
-      buttonSecondaryHover: primitives.transparent900_8,
-      buttonSecondaryPress: primitives.transparent900_12,
+      buttonSecondaryHover: primitives.transparent900_12,
+      buttonSecondaryPress: primitives.transparent900_16,
       buttonOutlineDefault: Colors.transparent,
       buttonOutlineHover: primitives.transparent900_12,
       buttonOutlinePress: primitives.transparent900_16,

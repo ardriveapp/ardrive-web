@@ -37,6 +37,11 @@ class DataExportCubit extends Cubit<DataExportState> {
         _folderRepository = folderRepository,
         super(DataExportInitial());
 
+  bool get _isStopped => isClosed || state is DataExportAborted;
+
+  /// The drive's files as CSV rows. Stops early, returning what it has, once
+  /// the export is cancelled: a lookup already running finishes, but no other
+  /// starts.
   Future<String> getFilesInDriveAsCSV(String driveId) async {
     final files = await _driveDao
         .filesInDriveWithRevisionTransactions(driveId: driveId)
@@ -60,6 +65,8 @@ class DataExportCubit extends Cubit<DataExportState> {
     final Map<String, String> folderNames = {};
 
     for (var file in files) {
+      if (_isStopped) break;
+
       final fileContent = <String>[];
 
       final parentFolder = await _folderRepository.getLatestFolderRevisionInfo(
@@ -97,7 +104,7 @@ class DataExportCubit extends Cubit<DataExportState> {
 
       // Cancelled while the rows were read: the dialog is gone, and nothing
       // is saved.
-      if (isClosed || state is DataExportAborted) return;
+      if (_isStopped) return;
 
       emit(
         DataExportSuccess(
@@ -108,7 +115,7 @@ class DataExportCubit extends Cubit<DataExportState> {
         ),
       );
     } catch (e) {
-      if (isClosed || state is DataExportAborted) return;
+      if (_isStopped) return;
       emit(DataExportFailure());
     }
   }
