@@ -39,6 +39,15 @@ void main() {
     expect(style.color, ArDriveColorTokens.lightMode().textHigh);
   });
 
+  // A text file's columns and indentation line up only in a monospace face.
+  testWidgets('plain text is in the monospace face', (tester) async {
+    await tester.pumpWidget(wrap(notes));
+
+    final style = tester.widget<Text>(find.text('one\ntwo')).style!;
+    expect(style.fontFamily, ArDriveMonospace.family);
+    expect(style.fontFamilyFallback, ArDriveMonospace.fallback);
+  });
+
   testWidgets('the controls are named in the reader\'s language',
       (tester) async {
     await tester.pumpWidget(wrap(notes));

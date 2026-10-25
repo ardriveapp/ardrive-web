@@ -62,10 +62,16 @@ class ArDriveLinearProgress extends StatefulWidget {
     this.value,
     this.semanticsLabel,
     this.duration = const Duration(milliseconds: 300),
+    this.color,
   });
 
   /// From 0 to 1, or null when how far along isn't known.
   final double? value;
+
+  /// The fill. Leave null for the primary colour; pass another to say the
+  /// progress has stopped or finished without moving the bar, such as a
+  /// download waiting to reconnect.
+  final Color? color;
 
   final String? semanticsLabel;
 
@@ -91,7 +97,7 @@ class _ArDriveLinearProgressState extends State<ArDriveLinearProgress> {
     Widget bar(double? value) => LinearProgressIndicator(
           value: value,
           minHeight: 4,
-          color: colorTokens.buttonPrimaryDefault,
+          color: widget.color ?? colorTokens.buttonPrimaryDefault,
           backgroundColor: colorTokens.strokeMid,
           semanticsLabel: widget.semanticsLabel,
         );

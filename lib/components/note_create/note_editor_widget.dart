@@ -1,5 +1,6 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive/blocs/note_create/note_create_state.dart';
+import 'package:ardrive/components/markdown_style_sheet.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -155,29 +156,32 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Toolbar
-        _buildToolbar(context),
-        const SizedBox(height: 8),
-
-        // Editor/Preview area
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: colors.themeBgSurface, // White/light background
-              border: Border.all(color: colors.themeBorderDefault),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: _buildEditorArea(context),
-          ),
+    // One field, like a text field: the toolbar sits inside its top edge, so
+    // the formatting reads as belonging to the text below it.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorTokens.inputDefault,
+        border: Border.all(color: colorTokens.strokeMid),
+        borderRadius: BorderRadius.circular(_fieldRadius),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_fieldRadius),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildToolbar(context),
+            Divider(height: 1, thickness: 1, color: colorTokens.strokeLow),
+            Expanded(child: _buildEditorArea(context)),
+          ],
         ),
-      ],
+      ),
     );
   }
+
+  /// [ArDriveTextFieldNew]'s corner radius.
+  static const _fieldRadius = 6.0;
 
   Widget _buildEditorArea(BuildContext context) {
     switch (widget.viewMode) {
@@ -189,68 +193,99 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
   }
 
   Widget _buildToolbar(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-
     final localizations = appLocalizationsOf(context);
 
     final toolbarButtons = [
-          _toolbarButton(context, 'B', EditorAction.bold,
-              tooltip: localizations.markdownEditorBold, fontWeight: FontWeight.bold),
-          _toolbarButton(context, 'I', EditorAction.italic,
-              tooltip: localizations.markdownEditorItalic, fontStyle: FontStyle.italic),
-          _toolbarButton(context, 'S', EditorAction.strikethrough,
-              tooltip: localizations.markdownEditorStrikethrough,
-              textDecoration: TextDecoration.lineThrough),
-          _toolbarDivider(),
-          _headingDropdownButton(context),
-          _toolbarDivider(),
-          _toolbarIconButton(context, Icons.format_list_bulleted, EditorAction.unorderedList,
-              tooltip: localizations.markdownEditorBulletList),
-          _toolbarIconButton(context, Icons.format_list_numbered, EditorAction.orderedList,
-              tooltip: localizations.markdownEditorNumberedList),
-          _toolbarDivider(),
-          _toolbarButton(context, '""', EditorAction.quote,
-              tooltip: localizations.markdownEditorQuote),
-          _toolbarButton(context, '</>', EditorAction.code,
-              tooltip: localizations.markdownEditorInlineCode),
-          _toolbarIconButton(context, Icons.code, EditorAction.codeBlock,
-              tooltip: localizations.markdownEditorCodeBlock),
-          _toolbarDivider(),
-          _toolbarIconButton(context, Icons.link, EditorAction.link,
-              tooltip: localizations.markdownEditorInsertLink),
-          _toolbarDivider(),
-          _viewToggleButton(context),
+      _toolbarButton(context, 'B', EditorAction.bold,
+          tooltip: localizations.markdownEditorBold,
+          fontWeight: FontWeight.bold),
+      _toolbarButton(context, 'I', EditorAction.italic,
+          tooltip: localizations.markdownEditorItalic,
+          fontStyle: FontStyle.italic),
+      _toolbarButton(context, 'S', EditorAction.strikethrough,
+          tooltip: localizations.markdownEditorStrikethrough,
+          textDecoration: TextDecoration.lineThrough),
+      _toolbarDivider(),
+      _headingDropdownButton(context),
+      _toolbarDivider(),
+      _toolbarIconButton(
+          context, Icons.format_list_bulleted, EditorAction.unorderedList,
+          tooltip: localizations.markdownEditorBulletList),
+      _toolbarIconButton(
+          context, Icons.format_list_numbered, EditorAction.orderedList,
+          tooltip: localizations.markdownEditorNumberedList),
+      _toolbarDivider(),
+      _toolbarButton(context, '""', EditorAction.quote,
+          tooltip: localizations.markdownEditorQuote),
+      _toolbarButton(context, '</>', EditorAction.code,
+          tooltip: localizations.markdownEditorInlineCode),
+      _toolbarIconButton(context, Icons.code, EditorAction.codeBlock,
+          tooltip: localizations.markdownEditorCodeBlock),
+      _toolbarDivider(),
+      _toolbarIconButton(context, Icons.link, EditorAction.link,
+          tooltip: localizations.markdownEditorInsertLink),
+      _toolbarDivider(),
+      _viewToggleButton(context),
     ];
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: colors.themeBgCanvas,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: colors.themeBorderDefault),
-      ),
+    return Padding(
+      padding: const EdgeInsets.all(ArDriveSpacing.xxs),
       child: widget.isMobile
-          ? Scrollbar(
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: toolbarButtons
-                      .map((button) => Padding(
-                            padding: const EdgeInsets.only(right: 4),
-                            child: button,
-                          ))
-                      .toList(),
-                ),
+          ? SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: toolbarButtons,
               ),
             )
           : Wrap(
-              spacing: 4,
-              runSpacing: 4,
+              spacing: 2,
+              runSpacing: 2,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: toolbarButtons,
             ),
+    );
+  }
+
+  /// A toolbar control: no box of its own, a tint on hover and press, and a
+  /// tooltip naming what it does, which is also its accessible name.
+  Widget _toolbarControl(
+    BuildContext context, {
+    required String tooltip,
+    required VoidCallback? onTap,
+    required Widget child,
+  }) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Tooltip(
+      message: tooltip,
+      // The control names itself below; the tooltip's own node would say it
+      // twice.
+      excludeFromSemantics: true,
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        excludeSemantics: true,
+        onTap: onTap,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(ArDriveRadius.sm),
+            hoverColor: colorTokens.buttonSecondaryHover,
+            highlightColor: colorTokens.buttonSecondaryPress,
+            splashColor: Colors.transparent,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: ArDriveSpacing.xs),
+                child: Center(widthFactor: 1, child: child),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -264,31 +299,24 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
     TextDecoration? textDecoration,
   }) {
     final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return Tooltip(
-      message: tooltip ?? label,
-      child: InkWell(
-        onTap: () => _applyMarkdown(action),
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: colors.themeBgSurface,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: colors.themeBorderDefault),
-          ),
-          child: Text(
-            label,
-            style: typography
-                .paragraphSmall(fontWeight: ArFontWeight.bold)
-                .copyWith(
-                  fontWeight: fontWeight,
-                  fontStyle: fontStyle,
-                  decoration: textDecoration,
-                ),
-          ),
-        ),
+    return _toolbarControl(
+      context,
+      tooltip: tooltip ?? label,
+      onTap: () => _applyMarkdown(action),
+      child: Text(
+        label,
+        style: typography
+            .paragraphNormal(
+              color: colorTokens.textHigh,
+              fontWeight: ArFontWeight.semiBold,
+            )
+            .copyWith(
+              fontWeight: fontWeight,
+              fontStyle: fontStyle,
+              decoration: textDecoration,
+            ),
       ),
     );
   }
@@ -297,125 +325,102 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
     BuildContext context,
     IconData icon,
     EditorAction action, {
-    String? tooltip,
+    required String tooltip,
   }) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return Tooltip(
-      message: tooltip ?? '',
-      child: InkWell(
-        onTap: () => _applyMarkdown(action),
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: colors.themeBgSurface,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: colors.themeBorderDefault),
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: colors.themeFgDefault,
-          ),
-        ),
-      ),
+    return _toolbarControl(
+      context,
+      tooltip: tooltip,
+      onTap: () => _applyMarkdown(action),
+      child: Icon(icon, size: 18, color: colorTokens.iconMid),
     );
   }
 
   Widget _toolbarDivider() {
     return Container(
       width: 1,
-      height: 24,
-      color: ArDriveTheme.of(context).themeData.colors.themeBorderDefault,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      height: 20,
+      color: ArDriveTheme.of(context).themeData.colorTokens.strokeMid,
+      margin: const EdgeInsets.symmetric(horizontal: ArDriveSpacing.xxs),
     );
   }
 
   Widget _headingDropdownButton(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final localizations = appLocalizationsOf(context);
+
+    PopupMenuItem<EditorAction> item(EditorAction action, String label) =>
+        PopupMenuItem(
+          value: action,
+          child: Text(
+            label,
+            style: typography.paragraphNormal(color: colorTokens.textHigh),
+          ),
+        );
 
     return PopupMenuButton<EditorAction>(
       tooltip: localizations.markdownEditorHeading,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: colors.themeBgSurface,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: colors.themeBorderDefault),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'H',
-              style: typography
-                  .paragraphSmall(fontWeight: ArFontWeight.bold),
-            ),
-            const SizedBox(width: 2),
-            Icon(Icons.arrow_drop_down, size: 16, color: colors.themeFgDefault),
-          ],
-        ),
+      color: colorTokens.containerL2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
+        side: BorderSide(color: colorTokens.strokeLow),
       ),
       onSelected: (action) => _applyMarkdown(action),
       itemBuilder: (context) => [
-        PopupMenuItem(
-          value: EditorAction.heading1,
-          child: Text(localizations.markdownEditorHeading1, style: typography.paragraphNormal()),
-        ),
-        PopupMenuItem(
-          value: EditorAction.heading2,
-          child: Text(localizations.markdownEditorHeading2, style: typography.paragraphNormal()),
-        ),
-        PopupMenuItem(
-          value: EditorAction.heading3,
-          child: Text(localizations.markdownEditorHeading3, style: typography.paragraphNormal()),
-        ),
+        item(EditorAction.heading1, localizations.markdownEditorHeading1),
+        item(EditorAction.heading2, localizations.markdownEditorHeading2),
+        item(EditorAction.heading3, localizations.markdownEditorHeading3),
       ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+        child: Padding(
+          padding: const EdgeInsets.only(left: ArDriveSpacing.xs, right: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'H',
+                style: typography.paragraphNormal(
+                  color: colorTokens.textHigh,
+                  fontWeight: ArFontWeight.bold,
+                ),
+              ),
+              Icon(Icons.arrow_drop_down, size: 18, color: colorTokens.iconMid),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
   Widget _viewToggleButton(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final localizations = appLocalizationsOf(context);
     final isEditMode = widget.viewMode == NoteViewMode.editOnly;
 
-    return Tooltip(
-      message: isEditMode ? localizations.markdownEditorPreview : localizations.markdownEditorEdit,
-      child: InkWell(
-        onTap: () {
-          // Toggle between edit and preview
-          final newMode = isEditMode
-              ? NoteViewMode.previewOnly
-              : NoteViewMode.editOnly;
-          widget.onViewModeChanged(newMode);
-        },
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: colors.themeBgSurface,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: colors.themeBorderDefault),
-          ),
-          child: Icon(
-            isEditMode ? Icons.menu_book_outlined : Icons.edit_outlined,
-            size: 16,
-            color: colors.themeFgDefault,
-          ),
-        ),
+    return _toolbarControl(
+      context,
+      tooltip: isEditMode
+          ? localizations.markdownEditorPreview
+          : localizations.markdownEditorEdit,
+      onTap: () => widget.onViewModeChanged(
+        isEditMode ? NoteViewMode.previewOnly : NoteViewMode.editOnly,
+      ),
+      child: Icon(
+        isEditMode ? Icons.menu_book_outlined : Icons.edit_outlined,
+        size: 18,
+        color: colorTokens.iconMid,
       ),
     );
   }
 
   Widget _buildEditor(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    // TextField has its own internal scrolling, no need for wrapper
-    // Background color applied to parent container
+    // TextField has its own internal scrolling, no need for wrapper.
     return TextField(
       controller: _controller,
       focusNode: _focusNode,
@@ -424,17 +429,14 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
       expands: true,
       textAlignVertical: TextAlignVertical.top,
       textInputAction: TextInputAction.newline,
-      style: typography.paragraphNormal().copyWith(
-            fontFamily: 'Courier New',
-            fontFamilyFallback: const ['monospace'],
-          ),
+      cursorColor: colorTokens.textHigh,
+      // Markdown source, so the monospace face: its markup lines up.
+      style: typography.code(color: colorTokens.textHigh),
       decoration: InputDecoration(
-        contentPadding: const EdgeInsets.all(16),
+        contentPadding: const EdgeInsets.all(ArDriveSpacing.md),
         border: InputBorder.none,
         hintText: appLocalizationsOf(context).markdownEditorPlaceholder,
-        hintStyle: typography.paragraphNormal().copyWith(
-              color: colors.themeFgSubtle,
-            ),
+        hintStyle: typography.paragraphNormal(color: colorTokens.textLow),
       ),
       keyboardType: TextInputType.multiline,
     );
@@ -442,19 +444,17 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
 
   Widget _buildPreview(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    // Background color applied to parent container
     if (_controller.text.isEmpty) {
       return SingleChildScrollView(
         controller: _previewScrollController,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(ArDriveSpacing.md),
         child: Text(
           appLocalizationsOf(context).markdownPreviewPlaceholder,
-          style: typography.paragraphNormal().copyWith(
-                color: colors.themeFgSubtle,
-                fontStyle: FontStyle.italic,
-              ),
+          style: typography
+              .paragraphNormal(color: colorTokens.textLow)
+              .copyWith(fontStyle: FontStyle.italic),
         ),
       );
     }
@@ -466,20 +466,19 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
         controller: _previewScrollController,
         data: _controller.text,
         selectable: true,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(ArDriveSpacing.md),
         extensionSet: md.ExtensionSet.gitHubWeb,
         imageBuilder: (uri, title, alt) {
-        return Image.network(
-          uri.toString(),
-          errorBuilder: (context, error, stackTrace) {
-            final localizations = appLocalizationsOf(context);
-            // Handle image loading errors (e.g., SVG images, network issues)
-            return Container(
-              padding: const EdgeInsets.all(8),
+          return Image.network(
+            uri.toString(),
+            // An image that can't load (an SVG, a network failure) shows as
+            // its alt text.
+            errorBuilder: (context, error, stackTrace) => Container(
+              padding: const EdgeInsets.all(ArDriveSpacing.xs),
               decoration: BoxDecoration(
-                color: colors.themeBgCanvas,
-                border: Border.all(color: colors.themeBorderDefault),
-                borderRadius: BorderRadius.circular(4),
+                color: colorTokens.containerL2,
+                border: Border.all(color: colorTokens.strokeLow),
+                borderRadius: BorderRadius.circular(ArDriveRadius.sm),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -487,83 +486,31 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
                   Icon(
                     Icons.broken_image_outlined,
                     size: 16,
-                    color: colors.themeFgSubtle,
+                    color: colorTokens.iconLow,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: ArDriveSpacing.xs),
                   Flexible(
                     child: Text(
-                      alt ?? title ?? localizations.markdownImageAltText,
-                      style: typography.paragraphSmall().copyWith(
-                        color: colors.themeFgSubtle,
-                        fontStyle: FontStyle.italic,
-                      ),
+                      alt ??
+                          title ??
+                          appLocalizationsOf(context).markdownImageAltText,
+                      style: typography
+                          .paragraphSmall(color: colorTokens.textLow)
+                          .copyWith(fontStyle: FontStyle.italic),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
-            );
-          },
-        );
-      },
-      styleSheet: MarkdownStyleSheet(
-        p: typography.paragraphNormal().copyWith(
-              color: colors.themeFgDefault,
             ),
-        h1: typography.heading1().copyWith(
-              color: colors.themeFgDefault,
-            ),
-        h2: typography.heading2().copyWith(
-              color: colors.themeFgDefault,
-            ),
-        h3: typography.heading3().copyWith(
-              color: colors.themeFgDefault,
-            ),
-        h4: typography.heading4().copyWith(
-              color: colors.themeFgDefault,
-            ),
-        h5: typography.heading5().copyWith(
-              color: colors.themeFgDefault,
-            ),
-        h6: typography.heading6().copyWith(
-              color: colors.themeFgDefault,
-            ),
-        listBullet: typography.paragraphNormal().copyWith(
-              color: colors.themeFgDefault,
-            ),
-        code: typography.paragraphNormal().copyWith(
-              fontFamily: 'Courier New',
-              fontFamilyFallback: const ['monospace'],
-              backgroundColor: colors.themeBgCanvas,
-              color: colors.themeFgDefault,
-            ),
-        codeblockDecoration: BoxDecoration(
-          color: colors.themeBgCanvas,
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: colors.themeBorderDefault),
-            ),
-        blockquote: typography.paragraphNormal().copyWith(
-              color: colors.themeFgSubtle,
-              fontStyle: FontStyle.italic,
-            ),
-        blockquoteDecoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(
-              color: colors.themeBorderDefault,
-              width: 4,
-            ),
-          ),
+          );
+        },
+        // The note as it will look once saved, at the reading size.
+        styleSheet: arDriveMarkdownStyleSheet(
+          typography,
+          colorTokens,
+          isFullScreen: true,
         ),
-        strong: typography.paragraphNormal(
-          fontWeight: ArFontWeight.bold,
-        ).copyWith(
-              color: colors.themeFgDefault,
-            ),
-        em: typography.paragraphNormal().copyWith(
-              fontStyle: FontStyle.italic,
-              color: colors.themeFgDefault,
-            ),
-      ),
       ),
     );
   }

@@ -82,10 +82,9 @@ class __ManifestOptionTileState extends State<_ManifestOptionTile> {
           .contains(widget.manifestSelection.manifest.id);
       final file = widget.manifestSelection.manifest;
 
-      final hiddenColor =
-          ArDriveTheme.of(context).themeData.colors.themeFgDisabled;
       final typography = ArDriveTypographyNew.of(context);
       final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+      final hiddenColor = colorTokens.textXLow;
       final showingName = !isExpanded &&
           (widget.manifestSelection.antRecord != null ||
               widget.manifestSelection.undername != null);
@@ -295,7 +294,7 @@ class _AntSelectorState extends State<AntSelector> {
                   ),
                 ),
               ),
-              if (_loadingUndernames) const CircularProgressIndicator(),
+              if (_loadingUndernames) const ArDriveSpinner(),
               if (_selectedUndername != null ||
                   (!_loadingUndernames && _arnsUndernames.isNotEmpty))
                 Padding(

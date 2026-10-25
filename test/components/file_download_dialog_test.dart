@@ -224,16 +224,20 @@ void main() {
       // The bar has not moved and must not pretend otherwise: the progress
       // already made is exactly what a resume preserves.
       expect(find.text('62%'), findsOneWidget);
-      expect(find.byType(ArDriveProgressBar), findsOneWidget);
+      expect(find.byType(ArDriveLinearProgress), findsOneWidget);
       // Cancelling a download that is trying to recover is still an option.
       expect(find.text('Cancel'), findsOneWidget);
     });
 
     testWidgets('the stall shows in the bar and not only in the word above it',
         (tester) async {
+      // The colour the bar is drawn in, whether it was passed or defaulted.
       Color fill() => tester
-          .widget<ArDriveProgressBar>(find.byType(ArDriveProgressBar))
-          .indicatorColor!;
+          .widget<LinearProgressIndicator>(find.descendant(
+            of: find.byType(ArDriveLinearProgress),
+            matching: find.byType(LinearProgressIndicator),
+          ))
+          .color!;
 
       await pumpState(tester, downloading);
       final moving = fill();
@@ -263,7 +267,7 @@ void main() {
       // The bar used to begin at the modal's content edge while everything it
       // describes began 56px further in, past the type icon.
       expect(
-        tester.getTopLeft(find.byType(ArDriveProgressBar)).dx,
+        tester.getTopLeft(find.byType(ArDriveLinearProgress)).dx,
         tester.getTopLeft(find.text('holiday.mp4')).dx,
       );
     });
@@ -271,7 +275,8 @@ void main() {
     testWidgets('the reading is not jammed against the bar', (tester) async {
       await pumpState(tester, downloading);
 
-      final barRight = tester.getTopRight(find.byType(ArDriveProgressBar)).dx;
+      final barRight =
+          tester.getTopRight(find.byType(ArDriveLinearProgress)).dx;
       final readingLeft = tester.getTopLeft(find.text('62%')).dx;
 
       expect(readingLeft - barRight, greaterThanOrEqualTo(8));

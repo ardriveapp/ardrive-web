@@ -18,5 +18,21 @@ Future<void> showArDriveDialog(
     barrierColor: barrierColor,
     barrierDismissible: barrierDismissible,
     useRootNavigator: useRootNavigator,
-  ).then((value) => activityTracker.setShowingAnyDialog(false));
+  ).whenComplete(() => activityTracker.setShowingAnyDialog(false));
+}
+
+/// [showArDriveDialog] for a dialog that answers: the dialog is built by
+/// [builder] and the value it pops with is returned.
+Future<T?> showArDriveDialogWithBuilder<T>(
+  BuildContext context, {
+  bool barrierDismissible = true,
+  required WidgetBuilder builder,
+}) {
+  final activityTracker = context.read<ActivityTracker>();
+  activityTracker.setShowingAnyDialog(true);
+  return showAnimatedDialogWithBuilder<T>(
+    context,
+    barrierDismissible: barrierDismissible,
+    builder: builder,
+  ).whenComplete(() => activityTracker.setShowingAnyDialog(false));
 }

@@ -190,7 +190,7 @@ Widget _preparingModal(BuildContext context, String driveName) {
           style: typography.paragraphNormal(color: colorTokens.textMid),
         ),
         const SizedBox(height: 16),
-        const Center(child: CircularProgressIndicator()),
+        const Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.large)),
       ],
     ),
     actions: [
@@ -297,7 +297,6 @@ Widget _confirmModal(
           // dialog applies.
           if (!state.cost.isFree)
             PaymentMethodSelector(
-              useNewArDriveUI: true,
               uploadMethodInfo: _paymentMethodInfo(state),
               onTurboTopupSucess: cubit.refreshTurboBalance,
               onArSelect: () => cubit.setUploadMethod(UploadMethod.ar),
@@ -450,7 +449,7 @@ Widget _publishingModal(BuildContext context) {
           style: typography.paragraphNormal(color: colorTokens.textMid),
         ),
         const SizedBox(height: 16),
-        const Center(child: CircularProgressIndicator()),
+        const Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.large)),
       ],
     ),
   );

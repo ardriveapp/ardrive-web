@@ -25,6 +25,19 @@ so they read as a step up from whatever surface they sit on.
 Every colour comes from a token, in both themes. A literal colour, or a
 Material one such as `Colors.green`, looks right in one theme only.
 
+### Monospace
+
+`ArDriveTypographyNew.of(context).code()` is Roboto Mono, Regular only. It
+is for code, text-file previews and the note editor, where columns and
+markup have to line up. Wavehaus stays the face for everything else. The
+brand kit names no monospace face; ardrive.io uses the system mono stack.
+
+The face is an asset, not an entry in the pubspec's fonts block: Flutter
+web downloads every listed font before the first frame, and most sessions
+never show code. `ArDriveMonospace` loads it the first time `code()` is
+asked for, about 27 KB subset to Latin, and the text shows in Wavehaus until
+it arrives. The licence is `assets/fonts/mono/OFL.txt`.
+
 ## Components
 
 | Need | Component | Notes |
@@ -36,7 +49,7 @@ Material one such as `Colors.green`, looks right in one theme only.
 | A message with a meaning | `ArDriveNotice` | `type`: info, warning, error or success. `layout`: inline box or full-width banner. Optional title, action and close button |
 | Nothing to show | `ArDriveEmptyState` | Icon, heading, a line of text, and up to two actions |
 | Loading | `ArDriveSpinner` | `small` (16) in buttons and rows, `large` (32) on its own |
-| Progress | `ArDriveLinearProgress` | A 4 px bar; leave `value` null when progress isn't known |
+| Progress | `ArDriveLinearProgress` | A 4 px bar; leave `value` null when progress isn't known. `color` marks progress that has stalled or finished without moving the bar |
 | A value to copy | `ArDriveCopyField` | Read-only field with a Copy link; `isSecret` masks it behind a reveal toggle |
 | A text field | `ArDriveTextFieldNew` | |
 | Content on a surface that is dark in both themes, such as a video | `ArDriveOnDark` | Its child takes the dark theme's tokens, so text, spinners and buttons need no literal colours |

@@ -1,6 +1,5 @@
 import 'package:ardrive/blocs/upload/models/source_wallet_credits.dart';
 import 'package:ardrive/components/copy_button.dart';
-import 'package:ardrive/components/inline_warning.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/blocs/upload/models/payment_method_info.dart';
@@ -25,7 +24,6 @@ class PaymentMethodSelector extends StatefulWidget {
   final Future<bool> Function()? onShareCredits;
   final void Function() onArSelect;
   final void Function() onTurboSelect;
-  final bool useNewArDriveUI;
 
   final bool showCongestionWarning;
 
@@ -36,7 +34,6 @@ class PaymentMethodSelector extends StatefulWidget {
     this.onShareCredits,
     required this.onArSelect,
     required this.onTurboSelect,
-    this.useNewArDriveUI = false,
     this.showCongestionWarning = false,
   });
 
@@ -70,9 +67,13 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
             widget.uploadMethodInfo.sufficientArBalance)
           Padding(
             padding: const EdgeInsets.only(top: 12.0),
-            child: InlineWarning(
-              text: appLocalizationsOf(context).uploadWithWalletKeepTabOpen,
-              useNewArDriveUI: widget.useNewArDriveUI,
+            child: SizedBox(
+              width: double.infinity,
+              child: ArDriveNotice(
+                type: ArDriveNoticeType.warning,
+                message:
+                    appLocalizationsOf(context).uploadWithWalletKeepTabOpen,
+              ),
             ),
           ),
         _getInsufficientBalanceMessage(context: context),
@@ -84,7 +85,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
   /// in the option cards the Turbo top-up uses to choose how to pay.
   Widget _buildOptionCards(BuildContext context) {
     final info = widget.uploadMethodInfo;
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
     final l10n = appLocalizationsOf(context);
     final turboPossible =
@@ -111,17 +112,17 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
           l10n.paymentMethod,
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
-            color: colors.themeFgMuted,
+            color: colorTokens.textMid,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: ArDriveSpacing.xs),
         // One bordered group, a row per way to pay: the same choice as two
         // separate cards, in about two thirds of the height.
         Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colors.themeBorderDefault),
+            borderRadius: BorderRadius.circular(ArDriveRadius.lg),
+            border: Border.all(color: colorTokens.strokeMid),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -136,7 +137,7 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
                   isSelected: _selectedMethod == UploadMethod.turbo,
                   onTap: () => select(UploadMethod.turbo),
                 ),
-                Divider(height: 1, color: colors.themeBorderDefault),
+                Divider(height: 1, color: colorTokens.strokeMid),
               ],
               _PaymentOptionCard(
                 title: l10n.paymentOptionWallet,
@@ -185,7 +186,6 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 
       final notice = _SourceWalletCreditsNotice(
         credits: credits,
-        useNewArDriveUI: widget.useNewArDriveUI,
         onShare: widget.onShareCredits,
       );
 
@@ -202,23 +202,17 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
         widget.uploadMethodInfo.sufficientArBalance) {
       // The Turbo card already says the credits are short; what is left to
       // offer is the way to add some.
-      return GestureDetector(
-        onTap: () {
-          showTurboTopupModal(context, onSuccess: () {
-            widget.onTurboTopupSucess();
-          });
-        },
-        child: ArDriveClickArea(
-          child: Text(
-            appLocalizationsOf(context).addCreditsToUpload,
-            style: ArDriveTypography.body
-                .captionBold(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeErrorDefault,
-                )
-                .copyWith(decoration: TextDecoration.underline),
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.only(top: ArDriveSpacing.sm),
+          child: ArDriveLink(
+            text: appLocalizationsOf(context).addCreditsToUpload,
+            isAction: true,
+            onTap: () => showTurboTopupModal(
+              context,
+              onSuccess: widget.onTurboTopupSucess,
+            ),
           ),
         ),
       );
@@ -234,39 +228,17 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
     }
 
     if (bothShort) {
-      return GestureDetector(
-        onTap: () {
-          showTurboTopupModal(context, onSuccess: () {
-            widget.onTurboTopupSucess();
-          });
-        },
-        child: ArDriveClickArea(
-          child: RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: '${appLocalizationsOf(context).notEnoughCreditsOrAr} ',
-                  style: ArDriveTypography.body.captionBold(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeErrorDefault,
-                  ),
-                ),
-                TextSpan(
-                  text: appLocalizationsOf(context).addCreditsToUpload,
-                  style: ArDriveTypography.body
-                      .captionBold(
-                        color: ArDriveTheme.of(context)
-                            .themeData
-                            .colors
-                            .themeErrorDefault,
-                      )
-                      .copyWith(
-                        decoration: TextDecoration.underline,
-                      ),
-                ),
-              ],
+      return Padding(
+        padding: const EdgeInsets.only(top: ArDriveSpacing.sm),
+        child: SizedBox(
+          width: double.infinity,
+          child: ArDriveNotice(
+            type: ArDriveNoticeType.error,
+            message: appLocalizationsOf(context).notEnoughCreditsOrAr,
+            actionLabel: appLocalizationsOf(context).addCreditsToUpload,
+            onAction: () => showTurboTopupModal(
+              context,
+              onSuccess: widget.onTurboTopupSucess,
             ),
           ),
         ),
@@ -276,9 +248,12 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
   }
 
   Widget _buildCongestionWarning(BuildContext context) {
-    return InlineWarning(
-      text: appLocalizationsOf(context).congestionWarningShort,
-      useNewArDriveUI: widget.useNewArDriveUI,
+    return SizedBox(
+      width: double.infinity,
+      child: ArDriveNotice(
+        type: ArDriveNoticeType.warning,
+        message: appLocalizationsOf(context).congestionWarningShort,
+      ),
     );
   }
 }
@@ -298,12 +273,10 @@ class _PaymentMethodSelectorState extends State<PaymentMethodSelector> {
 class _SourceWalletCreditsNotice extends StatefulWidget {
   const _SourceWalletCreditsNotice({
     required this.credits,
-    required this.useNewArDriveUI,
     this.onShare,
   });
 
   final SourceWalletCredits credits;
-  final bool useNewArDriveUI;
 
   /// See [PaymentMethodSelector.onShareCredits].
   final Future<bool> Function()? onShare;
@@ -363,9 +336,7 @@ class _SourceWalletCreditsNoticeState
       WalletType.arweave => 'Arweave',
     };
 
-    final muted = widget.useNewArDriveUI
-        ? typography.paragraphNormal(color: colorTokens.textMid)
-        : ArDriveTypography.body.captionRegular();
+    final muted = typography.paragraphNormal(color: colorTokens.textMid);
 
     // With no way to sign, the sheet says where the money is and stops. Also
     // where a failed attempt lands, because the instruction is still true.
@@ -378,12 +349,10 @@ class _SourceWalletCreditsNoticeState
         Text(
           '${convertWinstonToLiteralString(widget.credits.balance)} credits are on your $chain '
           'wallet ${truncateString(widget.credits.sourceAddress, offsetStart: 6, offsetEnd: 4)}.',
-          style: widget.useNewArDriveUI
-              ? typography.paragraphNormal(
-                  color: colorTokens.textHigh,
-                  fontWeight: ArFontWeight.semiBold,
-                )
-              : ArDriveTypography.body.captionBold(),
+          style: typography.paragraphNormal(
+            color: colorTokens.textHigh,
+            fontWeight: ArFontWeight.semiBold,
+          ),
         ),
         const SizedBox(height: 2),
         Text(
@@ -414,9 +383,7 @@ class _SourceWalletCreditsNoticeState
           // already on screen.
           Text(
             'That did not go through.',
-            style: widget.useNewArDriveUI
-                ? typography.paragraphNormal(color: colorTokens.textRed)
-                : ArDriveTypography.body.captionRegular(),
+            style: typography.paragraphNormal(color: colorTokens.statusErrorFg),
           ),
         ],
         if (canShare) ...[
@@ -462,17 +429,19 @@ class _PaymentOptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Semantics(
       button: true,
       inMutuallyExclusiveGroup: true,
       selected: isSelected,
-      // The chosen row is lifted to the surface colour; the other stays the
-      // dialog's own.
+      // The chosen row is tinted a shade off the dialog, in either theme and
+      // on any dialog colour; the other stays the dialog's own.
       child: Material(
-        color: isSelected ? colors.themeBgSurface : Colors.transparent,
+        color: isSelected
+            ? colorTokens.buttonSecondaryDefault
+            : Colors.transparent,
         child: InkWell(
           onTap: onTap,
           child: Padding(
@@ -486,8 +455,8 @@ class _PaymentOptionCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: isSelected
-                          ? colors.themeFgDefault
-                          : colors.themeBorderDefault,
+                          ? colorTokens.textHigh
+                          : colorTokens.strokeHigh,
                       width: 2,
                     ),
                   ),
@@ -498,7 +467,7 @@ class _PaymentOptionCard extends StatelessWidget {
                             height: 8,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: colors.themeFgDefault,
+                              color: colorTokens.textHigh,
                             ),
                           ),
                         )
@@ -513,15 +482,15 @@ class _PaymentOptionCard extends StatelessWidget {
                         title,
                         style: typography.paragraphNormal(
                           fontWeight: ArFontWeight.semiBold,
-                          color: colors.themeFgDefault,
+                          color: colorTokens.textHigh,
                         ),
                       ),
                       Text(
                         balance,
                         style: typography.paragraphSmall(
                           color: isShort && isSelected
-                              ? colors.themeErrorDefault
-                              : colors.themeFgMuted,
+                              ? colorTokens.statusErrorFg
+                              : colorTokens.textMid,
                         ),
                       ),
                     ],
@@ -532,7 +501,7 @@ class _PaymentOptionCard extends StatelessWidget {
                   cost,
                   style: typography.paragraphNormal(
                     fontWeight: ArFontWeight.bold,
-                    color: colors.themeFgDefault,
+                    color: colorTokens.textHigh,
                   ),
                 ),
               ],

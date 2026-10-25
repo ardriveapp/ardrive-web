@@ -130,6 +130,11 @@ void main() {
       find.textContaining('Add credits to upload', findRichText: true),
       findsOneWidget,
     );
+    // Said as an error with its way out as a button, not as underlined red
+    // text that a keyboard could not reach.
+    final notice = tester.widget<ArDriveNotice>(find.byType(ArDriveNotice));
+    expect(notice.type, ArDriveNoticeType.error);
+    expect(notice.actionLabel, 'Add credits to upload');
   });
 
   testWidgets('with Turbo chosen and short, only offers to add credits',
@@ -137,7 +142,19 @@ void main() {
     await pump(tester, info(creditsFine: false));
 
     expect(find.text('Not enough credits, 2.0370 available'), findsOneWidget);
-    expect(find.text('Add credits to upload.'), findsOneWidget);
+    expect(find.text('Add credits to upload'), findsOneWidget);
+    // A link that opens the top-up, announced as a button.
+    expect(
+      tester.getSemantics(find.text('Add credits to upload')),
+      matchesSemantics(
+        label: 'Add credits to upload',
+        isButton: true,
+        isFocusable: true,
+        hasTapAction: true,
+        hasEnabledState: true,
+        isEnabled: true,
+      ),
+    );
     expect(
       find.textContaining('Insufficient Credit balance', findRichText: true),
       findsNothing,

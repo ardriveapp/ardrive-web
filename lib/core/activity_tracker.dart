@@ -2,7 +2,11 @@ import 'package:flutter/foundation.dart';
 
 class ActivityTracker extends ChangeNotifier {
   bool _isToppingUp = false;
-  bool _isShowingAnyDialog = false;
+
+  /// How many dialogs are open. A count, not a flag: a dialog opened from
+  /// another one, such as a discard confirmation, closed first and cleared a
+  /// flag while the dialog under it was still open.
+  int _openDialogs = 0;
   bool _isUploading = false;
   bool _isSharingFilesFromExternalApp = false;
   bool _isVerifyingSharingFilesFromExternalApp = true;
@@ -16,7 +20,7 @@ class ActivityTracker extends ChangeNotifier {
   }
 
   bool get isMultiSelectEnabled {
-    return !_isShowingAnyDialog;
+    return _openDialogs == 0;
   }
 
   bool get isUploading => _isUploading;
@@ -38,8 +42,11 @@ class ActivityTracker extends ChangeNotifier {
     _isToppingUp = value;
   }
 
+  /// Records a dialog opening (true) or closing (false). Calls come in
+  /// pairs, one of each per dialog.
   void setShowingAnyDialog(bool value) {
-    _isShowingAnyDialog = value;
+    _openDialogs =
+        value ? _openDialogs + 1 : (_openDialogs - 1).clamp(0, _openDialogs);
     notifyListeners();
   }
 
