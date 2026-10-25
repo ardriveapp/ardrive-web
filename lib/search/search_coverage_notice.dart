@@ -74,10 +74,7 @@ class SearchCoverageNotice extends StatelessWidget {
         final icon = syncing
             ? SizedBox.square(
                 dimension: compact ? 14 : 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: colorTokens.iconHigh,
-                ),
+                child: ArDriveSpinner(color: colorTokens.iconHigh),
               )
             : failed
                 ? ArDriveIcons.triangle(

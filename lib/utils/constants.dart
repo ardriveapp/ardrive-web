@@ -60,8 +60,6 @@ const int thumbnailPreviewMaxFileSize = 1024 * 512;
 
 const profileQueryMaxRetries = 6;
 
-const String hasAcceptedCookiePolicyKey = 'hasAcceptedCookiePolicy';
-
 /// Default Arweave GraphQL gateway base URL. Used as fallback when config has no
 /// gateway and for any hardcoded arweave.net references.
 const String defaultGraphqlGateway = 'https://arweave.net';

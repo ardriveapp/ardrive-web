@@ -247,12 +247,6 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "cookieConsent": "Cookie 同意",
-  "@cookieConsent": {},
-  "cookieConsentBodyPart1": "我们的支付提供商 Stripe 使用 cookies 以便让用户可以购买积分 (Credits)。这些 cookies 是购买积分所必需的。",
-  "@cookieConsentBodyPart1": {},
-  "cookieConsentBodyPart2": "如果点击“接受”则代表你同意使用 cookies。",
-  "@cookieConsentBodyPart2": {},
   "copyAccessKey": "复制密钥",
   "@copyAccessKey": {
     "description": "Label of the button that copies the access key on the share file dialog"

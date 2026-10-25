@@ -1,4 +1,5 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -58,5 +59,31 @@ void main() {
     final manifest =
         await rootBundle.loadString('FontManifest.json').catchError((_) => '');
     expect(manifest, isNot(contains('RobotoMono')));
+  });
+
+  // An address beside other things is given this width up front, so it
+  // doesn't move when the face replaces the fallback.
+  testWidgets('widthOf is the width Roboto Mono draws', (tester) async {
+    await tester.runAsync(ArDriveMonospace.ensureLoaded);
+
+    for (final text in [
+      'abc123...xyz9',
+      'iKryOeZQMONi2965nKz528htMMN_sBcjlhc-VncoRjA'
+    ]) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: ArDriveTypographyNew.desktop.code()),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      final width = ArDriveMonospace.widthOf(text, 13);
+      expect(painter.width, lessThan(width));
+      expect(painter.width, greaterThan(width - 2));
+    }
+  });
+
+  test('widthOf grows with the reader\'s text size', () {
+    final plain = ArDriveMonospace.widthOf('abc123...xyz9', 12);
+    final larger = ArDriveMonospace.widthOf('abc123...xyz9', 12,
+        textScaler: const TextScaler.linear(1.5));
+    expect(larger, greaterThan(plain * 1.4));
   });
 }

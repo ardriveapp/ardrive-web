@@ -247,12 +247,6 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "cookieConsent": "Consentimiento de «cookies»",
-  "@cookieConsent": {},
-  "cookieConsentBodyPart1": "Nuestro proveedor de servicios de pago, Stripe, utiliza «cookies» para que los usuarios puedan comprar créditos. Estas «cookies» son necesarias para la compra créditos.",
-  "@cookieConsentBodyPart1": {},
-  "cookieConsentBodyPart2": "Al hacer clic en «Aceptar», consientes el uso de las «cookies».",
-  "@cookieConsentBodyPart2": {},
   "copyAccessKey": "Copiar la clave",
   "@copyAccessKey": {
     "description": "Label of the button that copies the access key on the share file dialog"

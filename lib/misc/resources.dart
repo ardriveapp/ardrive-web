@@ -7,7 +7,6 @@ class Resources {
   static const manifestLearnMoreLink =
       'https://docs.ar.io/build/upload/manifests';
 
-  static const cookiePolicy = 'https://stripe.com/legal/cookies-policy';
   static const emailSupport = 'support@ardrive.io';
   static const helpCenterLink = 'https://ardrive.io/help/';
   static const discordLink = 'https://discord.gg/KkTqDe4GAF';

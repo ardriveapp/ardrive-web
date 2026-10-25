@@ -224,52 +224,31 @@ class _PromptWalletViewState extends State<PromptWalletView> {
                                   .add(const CreateNewWallet());
                             }),
                     const SizedBox(height: 32),
-                    // TODO:  make this into a reusable component
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IntrinsicWidth(
-                          child: Column(
-                            children: [
-                              Text.rich(
-                                TextSpan(
-                                  children: [
-                                    TextSpan(
-                                      text: widget.existingUserFlow
-                                          ? "I'm a new user"
-                                          : 'I already have a wallet',
-                                      // Your TextStyle here
-                                      style: typography.paragraphLarge(
-                                          color: colorTokens.textLink,
-                                          fontWeight: ArFontWeight.semiBold),
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = () {
-                                          if (widget.existingUserFlow) {
-                                            PlausibleEventTracker
-                                                .trackClickImANewUserLinkButton();
-                                          } else {
-                                            PlausibleEventTracker
-                                                .trackClickAlreadyHaveAWallet();
-                                          }
-
-                                          context.read<LoginBloc>().add(
-                                              SelectLoginFlow(
-                                                  existingUser: !widget
-                                                      .existingUserFlow));
-                                        },
-                                    ),
-                                  ],
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              Container(
-                                height: 1,
-                                color: colorTokens.buttonPrimaryDefault,
-                              ),
-                            ],
-                          ),
+                    // The design system's link: reachable with the keyboard
+                    // and announced, which the tappable text with a drawn
+                    // underline it replaces was not.
+                    Center(
+                      child: ArDriveLink(
+                        text: widget.existingUserFlow
+                            ? "I'm a new user"
+                            : 'I already have a wallet',
+                        isAction: true,
+                        style: typography.paragraphLarge(
+                          fontWeight: ArFontWeight.semiBold,
                         ),
-                      ],
+                        onTap: () {
+                          if (widget.existingUserFlow) {
+                            PlausibleEventTracker
+                                .trackClickImANewUserLinkButton();
+                          } else {
+                            PlausibleEventTracker
+                                .trackClickAlreadyHaveAWallet();
+                          }
+
+                          context.read<LoginBloc>().add(SelectLoginFlow(
+                              existingUser: !widget.existingUserFlow));
+                        },
+                      ),
                     )
                   ],
                 ),

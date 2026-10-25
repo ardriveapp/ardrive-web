@@ -1,11 +1,16 @@
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/components/settings_popover.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
-// FIXME: Taken from ardrive_ui, work out moving this there when design is complete
-const double modalStandardMaxWidthSize = 350;
-
+/// The sign-in card: the standard dialog's surface, red band, radius, shadow
+/// and close button, with the roomier padding of a page's main card.
+///
+/// It used to be its own container copied from the dialog, without the
+/// dialog's shadow and with a smaller close button, so sign-in looked like a
+/// near miss of every other dialog.
 class ArDriveLoginModal extends StatelessWidget {
   const ArDriveLoginModal({
     super.key,
@@ -26,76 +31,61 @@ class ArDriveLoginModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    late double maxWidth;
-    final deviceWidth = MediaQuery.of(context).size.width;
+    final deviceWidth = MediaQuery.sizeOf(context).width;
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final isPhone = deviceWidth < TABLET;
+    final hasTopControl = hasCloseButton || hasSettingsButton;
 
-    if (deviceWidth < modalStandardMaxWidthSize) {
-      maxWidth = deviceWidth;
-    } else {
-      maxWidth = modalStandardMaxWidthSize;
-    }
+    final side = isPhone ? ArDriveSpacing.lg : ArDriveSpacing.xxl;
+    final contentPadding = EdgeInsets.fromLTRB(
+      side,
+      hasTopControl ? 0 : ArDriveSpacing.lg,
+      side,
+      isPhone ? ArDriveSpacing.xl : ArDriveSpacing.xxl,
+    );
 
-    final contentPadding = (deviceWidth < TABLET)
-        ? EdgeInsets.fromLTRB(22, hasCloseButton ? 0 : 24, 22, 32)
-        : EdgeInsets.fromLTRB(56, hasCloseButton ? 0 : 24, 56, 64);
-
-    return ConstrainedBox(
+    return ArDriveModalNew(
       constraints: BoxConstraints(
         minHeight: 100,
-        maxWidth: width ?? maxWidth,
+        maxWidth: width ?? modalStandardMaxWidthSize,
         minWidth: 250,
       ),
-      child: Container(
-        clipBehavior: Clip.hardEdge,
-        decoration: BoxDecoration(
-          color: colorTokens.containerL3,
-          borderRadius: BorderRadius.circular(9),
-        ),
+      contentPadding: EdgeInsets.zero,
+      // Full width with the content centred, as the card always laid it out:
+      // the dialog's own column starts its children at the left.
+      content: SizedBox(
+        width: double.infinity,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-                height: 6,
-                child: Container(
-                  color: colorTokens.containerRed,
-                )),
-            Row(
-              children: [
-                const Spacer(),
-                if (hasCloseButton)
-                  Padding(
-                    padding: const EdgeInsets.all(22.0),
-                    child: hasCloseButton
-                        ? ArDriveClickArea(
-                            child: GestureDetector(
-                              onTap: onClose ?? () => Navigator.pop(context),
-                              child: const Align(
-                                alignment: Alignment.centerRight,
-                                child: ArDriveIcon(
-                                  icon: ArDriveIconsData.x,
-                                  size: 20,
-                                ),
-                              ),
+            if (hasTopControl)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: const EdgeInsets.all(ArDriveSpacing.md),
+                  child: hasCloseButton
+                      ? ArDriveIconButton(
+                          icon: ArDriveIcon(
+                            icon: ArDriveIconsData.x,
+                            size: 24,
+                            color: colorTokens.iconMid,
+                          ),
+                          tooltip: appLocalizationsOf(context).close,
+                          onPressed: onClose ?? () => Navigator.pop(context),
+                        )
+                      : SettingsSubmenu(
+                          child: ArDriveClickArea(
+                            tooltip:
+                                appLocalizationsOf(context).advancedSettings,
+                            child: Icon(
+                              Icons.settings,
+                              size: 24,
+                              color: colorTokens.iconMid,
                             ),
-                          )
-                        : Container(),
-                  ),
-                if (!hasCloseButton && hasSettingsButton)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 22.0, right: 22.0),
-                    child: SettingsSubmenu(
-                      child: ArDriveClickArea(
-                        tooltip: 'Advanced settings',
-                        child: Icon(
-                          Icons.settings,
-                          color: colorTokens.iconLow,
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+                ),
+              ),
             Padding(
               padding: padding ?? contentPadding,
               child: content,

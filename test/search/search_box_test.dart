@@ -9,6 +9,7 @@ import 'package:ardrive/search/domain/bloc/search_bloc.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
 import 'package:ardrive/search/domain/search_coverage.dart';
 import 'package:ardrive/search/search_box.dart';
+import 'package:ardrive/search/search_coverage_notice.dart';
 import 'package:ardrive/search/search_modal.dart';
 import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive/search/search_scope.dart';
@@ -310,6 +311,59 @@ void main() {
     expect(navigations, isEmpty);
     // The query carries into the dialog.
     expect(session().controller.text, 'rep');
+  });
+
+  // It was drawn in the sign-in card, with its own close button and none of
+  // the standard dialog's shadow.
+  testWidgets('every result opens in the standard dialog, which closes',
+      (tester) async {
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'rep');
+    await enter(tester);
+    await tester.pumpAndSettle();
+
+    final dialog = find.ancestor(
+      of: find.byType(SearchCoverageNotice),
+      matching: find.byType(ArDriveStandardModalNew),
+    );
+    expect(dialog, findsOneWidget);
+    expect(
+      find.descendant(of: dialog, matching: find.text('Search')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.descendant(
+      of: dialog,
+      matching: find.byWidgetPredicate(
+        (w) => w is ArDriveIcon && w.icon == ArDriveIconsData.x,
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byType(FileSearchModal), findsNothing);
+  });
+
+  testWidgets('the dialog says when nothing matches, and what to try',
+      (tester) async {
+    await tester.pumpWidget(host());
+    await typeQuery(tester, 'zzz');
+    await enter(tester);
+    await tester.pumpAndSettle();
+
+    final dialog = find.byType(FileSearchModal);
+    expect(
+      find.descendant(
+        of: dialog,
+        matching: find.text('No files, folders or drives match “zzz”.'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: dialog,
+        matching: find.text('Check the spelling or try another name.'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Enter on "See all results" opens every result', (tester) async {

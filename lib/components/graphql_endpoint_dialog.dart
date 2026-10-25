@@ -126,17 +126,8 @@ class _GraphQLEndpointDialogState extends State<GraphQLEndpointDialog> {
               _isLoading
                   ? Row(
                       children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              colorTokens.buttonPrimaryDefault,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
+                        const ArDriveSpinner(),
+                        const SizedBox(width: ArDriveSpacing.xs),
                         Text(
                           'Validating endpoint...',
                           style: typography.paragraphSmall(

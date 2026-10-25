@@ -36,6 +36,9 @@ class ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
 
   bool _isAnimating = false;
 
+  /// Whether the keyboard has focus here, so the track shows a ring.
+  bool _showFocus = false;
+
   late bool _checked;
 
   @override
@@ -107,53 +110,81 @@ class ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
     }
   }
 
+  Future<void> _toggleValue() async {
+    if (_isAnimating) {
+      return;
+    }
+
+    if (state != ToggleState.disabled) {
+      if (state == ToggleState.on) {
+        state = ToggleState.off;
+      } else {
+        state = ToggleState.on;
+      }
+      _checked = !_checked;
+
+      _isAnimating = true;
+
+      await widget.onChanged?.call(_checked);
+
+      _isAnimating = false;
+    }
+
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final textWidget = Text(
       widget.text,
-      style: widget.textStyle ?? ArDriveTypography.body.bodyRegular(),
+      style: widget.textStyle ??
+          ArDriveTypographyNew.of(context).paragraphNormal(
+            color: colorTokens.textHigh,
+            fontWeight: ArFontWeight.semiBold,
+          ),
     );
+    final isEnabled = state != ToggleState.disabled;
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () async {
-          if (_isAnimating) {
-            return;
-          }
-
-          if (state != ToggleState.disabled) {
-            if (state == ToggleState.on) {
-              state = ToggleState.off;
-            } else {
-              state = ToggleState.on;
-            }
-            _checked = !_checked;
-
-            _isAnimating = true;
-
-            await widget.onChanged?.call(_checked);
-
-            _isAnimating = false;
-          }
-
-          setState(() {});
+    // One switch for a screen reader and the keyboard: its label, whether it
+    // is on, and Space or Enter to flip it. It was a row of text and shapes
+    // under a bare tap handler, so a screen reader heard only the label and
+    // the keyboard could not reach it.
+    return Semantics(
+      container: true,
+      toggled: _checked,
+      enabled: isEnabled,
+      label: widget.text,
+      onTap: isEnabled ? _toggleValue : null,
+      excludeSemantics: true,
+      child: FocusableActionDetector(
+        enabled: isEnabled,
+        onShowFocusHighlight: (show) => setState(() => _showFocus = show),
+        mouseCursor:
+            isEnabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) => _toggleValue(),
+          ),
         },
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            widget.alignRight
-                ? textWidget
-                : Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: _toggle(),
-                  ),
-            const SizedBox(
-              width: 8,
-            ),
-            widget.alignRight ? const Spacer() : const SizedBox(),
-            widget.alignRight ? _toggle() : textWidget
-          ],
+        child: GestureDetector(
+          onTap: _toggleValue,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              widget.alignRight
+                  ? textWidget
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: _toggle(),
+                    ),
+              const SizedBox(
+                width: 8,
+              ),
+              widget.alignRight ? const Spacer() : const SizedBox(),
+              widget.alignRight ? _toggle() : textWidget
+            ],
+          ),
         ),
       ),
     );
@@ -166,6 +197,13 @@ class ArDriveToggleSwitchState extends State<ArDriveToggleSwitch> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         color: colorBackground(),
+        border: _showFocus
+            ? Border.all(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+                width: 2,
+                strokeAlign: BorderSide.strokeAlignOutside,
+              )
+            : null,
       ),
       duration: animationDuration,
       child: Padding(

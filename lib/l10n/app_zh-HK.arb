@@ -247,12 +247,6 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "cookieConsent": "同意 Cookie",
-  "@cookieConsent": {},
-  "cookieConsentBodyPart1": "我們的付款供應商 Stripe 使用 cookies 來讓用戶購買積分。購買積分時需要這些 cookies。",
-  "@cookieConsentBodyPart1": {},
-  "cookieConsentBodyPart2": "點擊「接受」表示你同意使用 cookies。",
-  "@cookieConsentBodyPart2": {},
   "copyAccessKey": "複製密鑰",
   "@copyAccessKey": {
     "description": "Label of the button that copies the access key on the share file dialog"

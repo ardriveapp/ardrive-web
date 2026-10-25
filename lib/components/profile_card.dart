@@ -831,17 +831,34 @@ class _ProfileCardState extends State<ProfileCard> {
           Center(
             child: BlocBuilder<ProfileNameBloc, ProfileNameState>(
               builder: (context, nameState) {
-                final name = nameState is ProfileNameLoaded
-                    ? nameState.primaryNameDetails.primaryName
-                    : truncateString(state.user.displayAddress,
-                        offsetStart: 6, offsetEnd: 4);
-                return Text(
-                  name,
-                  style: typography.paragraphLarge(
-                    fontWeight: ArFontWeight.bold,
-                    color: colorTokens.textHigh,
+                if (nameState is ProfileNameLoaded) {
+                  return Text(
+                    nameState.primaryNameDetails.primaryName,
+                    style: typography.paragraphLarge(
+                      fontWeight: ArFontWeight.bold,
+                      color: colorTokens.textHigh,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  );
+                }
+
+                // An address, so monospace, at its final width from the
+                // first frame: the face loads on demand.
+                final address = truncateString(state.user.displayAddress,
+                    offsetStart: 6, offsetEnd: 4);
+                return SizedBox(
+                  width: ArDriveMonospace.widthOf(address, 15,
+                      textScaler: MediaQuery.textScalerOf(context)),
+                  child: Text(
+                    address,
+                    maxLines: 1,
+                    softWrap: false,
+                    textAlign: TextAlign.center,
+                    style: typography.code(
+                      fontSize: 15,
+                      color: colorTokens.textHigh,
+                    ),
                   ),
-                  overflow: TextOverflow.ellipsis,
                 );
               },
             ),
@@ -1075,8 +1092,8 @@ class _ProfileCardState extends State<ProfileCard> {
                   if (state is UserBalanceLoadingIOTokens &&
                       !state.errorFetchingIOTokens)
                     const Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: LinearProgressIndicator(),
+                      padding: EdgeInsets.only(top: ArDriveSpacing.xs),
+                      child: ArDriveLinearProgress(),
                     ),
                   if (ioTokens != null)
                     Text(
@@ -1237,7 +1254,10 @@ class _ProfileMenuRowState extends State<_ProfileMenuRow> {
         onTap: widget.onTap,
         child: Container(
           color: _isHovering
-              ? ArDriveTheme.of(context).themeData.colors.themeGbMuted
+              ? ArDriveTheme.of(context)
+                  .themeData
+                  .colorTokens
+                  .buttonSecondaryHover
               : Colors.transparent,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
@@ -1307,7 +1327,10 @@ class __LogoutButtonState extends State<_LogoutButton> {
         },
         child: Container(
           color: _isHovering
-              ? ArDriveTheme.of(context).themeData.colors.themeGbMuted
+              ? ArDriveTheme.of(context)
+                  .themeData
+                  .colorTokens
+                  .buttonSecondaryHover
               : Colors.transparent,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14),
@@ -1498,23 +1521,28 @@ class ProfileCardHeader extends StatelessWidget {
                         softWrap: true,
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
-                        style: typography.paragraphNormal(
-                          fontWeight: ArFontWeight.semiBold,
-                          color: colorTokens.textLow,
-                        ),
+                        style: typography.code(color: colorTokens.textLow),
                       )
                     // Already shortened to its start and its end, so an
                     // ellipsis here shortened it a second time: an address of
                     // wide letters overran the button and lost its end to
                     // "...". Scaled down instead, so the end always shows.
+                    // At Roboto Mono's width from the first frame, so the
+                    // button doesn't change size when the face arrives.
                     : FittedBox(
                         fit: BoxFit.scaleDown,
-                        child: Text(
-                          truncatedWalletAddress,
-                          maxLines: 1,
-                          style: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.semiBold,
-                            color: colorTokens.textHigh,
+                        child: SizedBox(
+                          width: ArDriveMonospace.widthOf(
+                              truncatedWalletAddress, 14,
+                              textScaler: MediaQuery.textScalerOf(context)),
+                          child: Text(
+                            truncatedWalletAddress,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: typography.code(
+                              fontSize: 14,
+                              color: colorTokens.textHigh,
+                            ),
                           ),
                         ),
                       ),
@@ -1584,17 +1612,42 @@ class ProfileCardHeader extends StatelessWidget {
                             ),
                           ),
                         ),
+                        // The name stays in Wavehaus; the address under it is
+                        // monospace, like every address.
                         Flexible(
-                          child: Text(
-                            isExpanded ? walletAddress : truncatedWalletAddress,
-                            overflow: TextOverflow.ellipsis,
-                            softWrap: true,
-                            maxLines: 1,
-                            style: typography.paragraphSmall(
-                              fontWeight: ArFontWeight.book,
-                              color: colorTokens.textLow,
-                            ),
-                          ),
+                          child: isExpanded
+                              ? Text(
+                                  walletAddress,
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: true,
+                                  maxLines: 1,
+                                  style: typography.code(
+                                    fontSize: 12,
+                                    color: colorTokens.textLow,
+                                  ),
+                                )
+                              // Scaled down rather than cut short, as in the
+                              // button with no name: a long name leaves less
+                              // room, and an ellipsis took the address's end.
+                              : FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: SizedBox(
+                                    width: ArDriveMonospace.widthOf(
+                                        truncatedWalletAddress, 12,
+                                        textScaler:
+                                            MediaQuery.textScalerOf(context)),
+                                    child: Text(
+                                      truncatedWalletAddress,
+                                      softWrap: false,
+                                      maxLines: 1,
+                                      style: typography.code(
+                                        fontSize: 12,
+                                        color: colorTokens.textLow,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                         ),
                       ],
                     ),

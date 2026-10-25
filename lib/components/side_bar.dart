@@ -170,9 +170,9 @@ class _AppSideBarState extends State<AppSideBar> {
                   child: GestureDetector(
                     child: Text(
                       'Open dev tools',
-                      style: ArDriveTypography.body
-                          .buttonNormalBold()
-                          .copyWith(fontWeight: FontWeight.w700),
+                      style: ArDriveTypographyNew.of(context).paragraphNormal(
+                        fontWeight: ArFontWeight.bold,
+                      ),
                     ),
                     onTap: () {
                       ArDriveDevTools().showDevTools();
@@ -219,7 +219,7 @@ class _AppSideBarState extends State<AppSideBar> {
           decoration: BoxDecoration(
             border: Border(
               right: BorderSide(
-                color: ArDriveTheme.of(context).themeData.colors.shadow,
+                color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
                 width: 1,
               ),
             ),
@@ -563,8 +563,8 @@ class _AppSideBarState extends State<AppSideBar> {
                 decoration: BoxDecoration(
                   color: ArDriveTheme.of(context)
                       .themeData
-                      .colors
-                      .themeAccentBrand,
+                      .colorTokens
+                      .buttonPrimaryDefault,
                   shape: _isExpanded ? BoxShape.rectangle : BoxShape.circle,
                   borderRadius: _isExpanded
                       ? BorderRadius.all(
@@ -576,12 +576,22 @@ class _AppSideBarState extends State<AppSideBar> {
                     ? Center(
                         child: Text(
                           appLocalizationsOf(context).newString,
-                          style: ArDriveTypography.headline.headline5Bold(
-                            color: Colors.white,
+                          style:
+                              ArDriveTypographyNew.of(context).paragraphLarge(
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colorTokens
+                                .textOnPrimary,
+                            fontWeight: ArFontWeight.bold,
                           ),
                         ),
                       )
-                    : ArDriveIcons.plus(color: Colors.white),
+                    : ArDriveIcons.plus(
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colorTokens
+                            .textOnPrimary,
+                      ),
               );
             },
           ),

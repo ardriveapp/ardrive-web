@@ -17,7 +17,7 @@ class FadeThroughTransitionSwitcher extends StatelessWidget {
     return PageTransitionSwitcher(
       transitionBuilder: (child, animation, secondaryAnimation) {
         return FadeThroughTransition(
-          fillColor: ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+          fillColor: ArDriveTheme.of(context).themeData.colorTokens.containerL3,
           animation: animation,
           secondaryAnimation: secondaryAnimation,
           child: child,

@@ -281,7 +281,7 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
     if (widget.isGettingStartedLoading) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(),
+          child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
         ),
       );
     }
@@ -652,7 +652,7 @@ Widget _buildContent(
         content = const MaxDeviceSizesConstrainedBox(
           child: LoginCard(
             content: Center(
-              child: CircularProgressIndicator(),
+              child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
             ),
           ),
         );
