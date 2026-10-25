@@ -39,6 +39,7 @@ Material one such as `Colors.green`, looks right in one theme only.
 | Progress | `ArDriveLinearProgress` | A 4 px bar; leave `value` null when progress isn't known |
 | A value to copy | `ArDriveCopyField` | Read-only field with a Copy link; `isSecret` masks it behind a reveal toggle |
 | A text field | `ArDriveTextFieldNew` | |
+| Content on a surface that is dark in both themes, such as a video | `ArDriveOnDark` | Its child takes the dark theme's tokens, so text, spinners and buttons need no literal colours |
 
 ### Button sizes
 

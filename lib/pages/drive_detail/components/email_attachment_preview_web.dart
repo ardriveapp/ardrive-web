@@ -3,18 +3,15 @@
 import 'dart:html' as html;
 import 'dart:ui' as ui;
 
+import 'package:ardrive/pages/drive_detail/components/email_attachment_preview_dialog.dart';
 import 'package:ardrive/services/eml_parser/models/email_attachment.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
 /// Web-specific implementation of audio preview
-void showAudioPreview(
-  BuildContext context,
-  EmailAttachment attachment,
-  dynamic colors,
-  dynamic typography,
-) {
+void showAudioPreview(BuildContext context, EmailAttachment attachment) {
   if (attachment.data == null) return;
 
   // Create a blob URL from the attachment
@@ -39,61 +36,32 @@ void showAudioPreview(
     // Log error and notify user
     logger.e('Failed to register audio preview view factory', e);
 
-    final theme = ArDriveTheme.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: theme.themeData.colors.themeBgSurface,
-        content: Text(
-          'Failed to preview audio attachment. Please try downloading the file.',
-          style: TextStyle(color: theme.themeData.colors.themeFgDefault),
-        ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    _showPreviewFailed(context);
 
     // Clean up blob URL
     html.Url.revokeObjectUrl(blobUrl);
     return;
   }
 
-  showDialog(
-    context: context,
-    builder: (context) => Dialog(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 600),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildPreviewHeader(context, attachment),
-            // Audio player
-            Padding(
-              padding: const EdgeInsets.all(32),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ArDriveIcons.music(size: 64, color: colors.themeFgDefault),
-                    const SizedBox(height: 16),
-                    Text(
-                      attachment.filename,
-                      style: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    // HTML5 audio player
-                    SizedBox(
-                      width: 300,
-                      height: 54,
-                      child: HtmlElementView(viewType: viewType),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+  showEmailAttachmentDialog(
+    context,
+    attachment: attachment,
+    width: 600,
+    content: Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ArDriveIcons.music(size: 64, color: colorTokens.iconLow),
+          const SizedBox(height: ArDriveSpacing.md),
+          // HTML5 audio player
+          SizedBox(
+            width: 300,
+            height: 54,
+            child: HtmlElementView(viewType: viewType),
+          ),
+        ],
       ),
     ),
   ).then((_) {
@@ -132,48 +100,20 @@ void showVideoPreview(
     // Log error and notify user
     logger.e('Failed to register video preview view factory', e);
 
-    final theme = ArDriveTheme.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: theme.themeData.colors.themeBgSurface,
-        content: Text(
-          'Failed to preview video attachment. Please try downloading the file.',
-          style: TextStyle(color: theme.themeData.colors.themeFgDefault),
-        ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    _showPreviewFailed(context);
 
     // Clean up blob URL
     html.Url.revokeObjectUrl(blobUrl);
     return;
   }
 
-  showDialog(
-    context: context,
-    builder: (context) => Dialog(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 800, maxHeight: 600),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildPreviewHeader(context, attachment),
-            // Video player
-            Flexible(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Center(
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 500,
-                    child: HtmlElementView(viewType: viewType),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+  showEmailAttachmentDialog(
+    context,
+    attachment: attachment,
+    content: SizedBox(
+      width: double.infinity,
+      height: 500,
+      child: HtmlElementView(viewType: viewType),
     ),
   ).then((_) {
     // Cleanup blob URL when dialog closes
@@ -181,32 +121,19 @@ void showVideoPreview(
   });
 }
 
-Widget _buildPreviewHeader(BuildContext context, EmailAttachment attachment) {
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-      border: Border(
-        bottom: BorderSide(
-          color: ArDriveTheme.of(context).themeData.colors.themeBorderDefault,
-        ),
+/// Said when the browser could not set up an attachment's player.
+void _showPreviewFailed(BuildContext context) {
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      backgroundColor: colorTokens.containerL3,
+      content: Text(
+        appLocalizationsOf(context).emailAttachmentPreviewFailed,
+        style: ArDriveTypographyNew.of(context)
+            .paragraphNormal(color: colorTokens.textHigh),
       ),
-    ),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(
-            attachment.filename,
-            style: ArDriveTypography.body.smallBold700(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ],
+      duration: const Duration(seconds: 3),
     ),
   );
 }

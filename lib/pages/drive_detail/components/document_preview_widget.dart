@@ -67,8 +67,11 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         widget.contentType == 'text/x-markdown';
   }
 
-  Widget _buildContentWidget(dynamic typography, dynamic colors,
-      {bool isFullScreen = false}) {
+  Widget _buildContentWidget(
+    ArdriveTypographyNew typography,
+    ArDriveColorTokens colorTokens, {
+    bool isFullScreen = false,
+  }) {
     if (_isMarkdown() && _showAsMarkdown) {
       // Render markdown with proper formatting using flutter_markdown
       return MarkdownBody(
@@ -76,11 +79,11 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         selectable: true,
         imageBuilder: (uri, title, alt) {
           Widget placeholder() => Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(ArDriveSpacing.xs),
                 decoration: BoxDecoration(
-                  color: colors.themeBgCanvas,
-                  border: Border.all(color: colors.themeBorderDefault),
-                  borderRadius: BorderRadius.circular(4),
+                  color: colorTokens.containerL2,
+                  border: Border.all(color: colorTokens.strokeLow),
+                  borderRadius: BorderRadius.circular(ArDriveRadius.sm),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -88,16 +91,17 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     Icon(
                       Icons.broken_image_outlined,
                       size: 16,
-                      color: colors.themeFgSubtle,
+                      color: colorTokens.iconLow,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: ArDriveSpacing.xs),
                     Flexible(
                       child: Text(
-                        alt ?? title ?? 'Image',
-                        style: typography.paragraphSmall().copyWith(
-                              color: colors.themeFgSubtle,
-                              fontStyle: FontStyle.italic,
-                            ),
+                        alt ??
+                            title ??
+                            appLocalizationsOf(context).markdownImageAltText,
+                        style: typography
+                            .paragraphSmall(color: colorTokens.textLow)
+                            .copyWith(fontStyle: FontStyle.italic),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -129,90 +133,81 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               ? typography
                   .paragraphNormal(
                     fontWeight: ArFontWeight.book,
-                    color: colors.themeFgDefault,
+                    color: colorTokens.textHigh,
                   )
                   .copyWith(height: 1.8)
               : typography
                   .paragraphSmall(
                     fontWeight: ArFontWeight.book,
-                    color: colors.themeFgDefault,
+                    color: colorTokens.textHigh,
                   )
                   .copyWith(height: 1.5),
           h1: isFullScreen
-              ? typography.heading1(color: colors.themeFgDefault)
-              : typography.heading3(color: colors.themeFgDefault),
+              ? typography.heading1(color: colorTokens.textHigh)
+              : typography.heading3(color: colorTokens.textHigh),
           h2: isFullScreen
-              ? typography.heading2(color: colors.themeFgDefault)
-              : typography.heading4(color: colors.themeFgDefault),
+              ? typography.heading2(color: colorTokens.textHigh)
+              : typography.heading4(color: colorTokens.textHigh),
           h3: isFullScreen
-              ? typography.heading3(color: colors.themeFgDefault)
-              : typography.heading5(color: colors.themeFgDefault),
+              ? typography.heading3(color: colorTokens.textHigh)
+              : typography.heading5(color: colorTokens.textHigh),
           h4: isFullScreen
-              ? typography.heading4(color: colors.themeFgDefault)
-              : typography.heading6(color: colors.themeFgDefault),
-          h5: typography.heading5(color: colors.themeFgDefault),
-          h6: typography.heading6(color: colors.themeFgDefault),
-          listBullet: typography.paragraphNormal(color: colors.themeFgDefault),
+              ? typography.heading4(color: colorTokens.textHigh)
+              : typography.heading6(color: colorTokens.textHigh),
+          h5: typography.heading5(color: colorTokens.textHigh),
+          h6: typography.heading6(color: colorTokens.textHigh),
+          listBullet: typography.paragraphNormal(color: colorTokens.textHigh),
+          // Set apart by its tint. It named Courier New, but the package's
+          // type turned that into a family that does not exist, and the app
+          // bundles no monospace face, so it was always Wavehaus.
           code: typography
               .paragraphSmall(
                 fontWeight: ArFontWeight.book,
+                color: colorTokens.textHigh,
               )
-              .copyWith(
-                fontFamily: 'Courier New',
-                fontFamilyFallback: const ['monospace'],
-                backgroundColor: colors.themeBgCanvas,
-                color: colors.themeFgDefault,
-              ),
+              .copyWith(backgroundColor: colorTokens.containerL2),
           codeblockDecoration: BoxDecoration(
-            color: colors.themeBgCanvas,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: colors.themeBorderDefault),
+            color: colorTokens.containerL2,
+            borderRadius: BorderRadius.circular(ArDriveRadius.sm),
+            border: Border.all(color: colorTokens.strokeLow),
           ),
-          blockquote: typography.paragraphNormal().copyWith(
-                color: colors.themeFgSubtle,
-                fontStyle: FontStyle.italic,
-              ),
+          blockquote: typography
+              .paragraphNormal(color: colorTokens.textMid)
+              .copyWith(fontStyle: FontStyle.italic),
           blockquoteDecoration: BoxDecoration(
             border: Border(
-              left: BorderSide(
-                color: colors.themeBorderDefault,
-                width: 4,
-              ),
+              left: BorderSide(color: colorTokens.strokeHigh, width: 4),
             ),
           ),
           strong: typography
               .paragraphNormal(
                 fontWeight: ArFontWeight.bold,
               )
-              .copyWith(color: colors.themeFgDefault),
+              .copyWith(color: colorTokens.textHigh),
           em: typography.paragraphNormal().copyWith(
                 fontStyle: FontStyle.italic,
-                color: colors.themeFgDefault,
+                color: colorTokens.textHigh,
               ),
         ),
       );
     } else {
-      // Render as plain text
+      // Render as plain text. The inline view had no colour of its own, so
+      // it took whatever the surrounding text style happened to be.
       return Text(
         widget.content,
         style: isFullScreen
             ? typography
                 .paragraphNormal(
                   fontWeight: ArFontWeight.book,
-                  color: colors.themeFgDefault,
+                  color: colorTokens.textHigh,
                 )
-                .copyWith(
-                  fontFamily: 'Courier New',
-                  height: 1.8,
-                )
+                .copyWith(height: 1.8)
             : typography
                 .paragraphSmall(
                   fontWeight: ArFontWeight.book,
+                  color: colorTokens.textHigh,
                 )
-                .copyWith(
-                  fontFamily: 'Courier New',
-                  height: 1.5,
-                ),
+                .copyWith(height: 1.5),
       );
     }
   }
@@ -241,20 +236,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
     );
   }
 
-  void _copyToClipboard() {
-    Clipboard.setData(ClipboardData(text: widget.content));
-    final theme = ArDriveTheme.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: theme.themeData.colors.themeBgSurface,
-        content: Text(
-          'Copied to clipboard',
-          style: TextStyle(color: theme.themeData.colors.themeFgDefault),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+  Future<void> _copyToClipboard() => copyPreviewText(context, widget.content);
 
   void _resetHideControlsTimer() {
     _hideControlsTimer?.cancel();
@@ -303,7 +285,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           reverseTransitionDuration: Duration.zero,
           pageBuilder: (context, _, __) => Scaffold(
             backgroundColor:
-                ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+                ArDriveTheme.of(context).themeData.colorTokens.containerL1,
             body: DocumentPreviewWidget(
               filename: widget.filename,
               content: widget.content,
@@ -335,18 +317,20 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ArDriveTheme.of(context);
-    final colors = theme.themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     if (widget.isFullScreen) {
-      return _buildFullScreenLayout(colors, typography);
+      return _buildFullScreenLayout(colorTokens, typography);
     } else {
-      return _buildNormalLayout(colors, typography);
+      return _buildNormalLayout(colorTokens, typography);
     }
   }
 
-  Widget _buildNormalLayout(dynamic colors, dynamic typography) {
+  Widget _buildNormalLayout(
+    ArDriveColorTokens colorTokens,
+    ArdriveTypographyNew typography,
+  ) {
     return Column(
       children: [
         // Content area
@@ -354,16 +338,16 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           child: Stack(
             children: [
               Container(
-                color: colors.themeBgSurface,
+                color: colorTokens.containerRaised,
                 child: ArDriveScrollBar(
                   controller: _scrollController,
                   alwaysVisible: true,
                   child: SingleChildScrollView(
                     controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(ArDriveSpacing.md),
                     child: Align(
                       alignment: Alignment.topLeft,
-                      child: _buildContentWidget(typography, colors,
+                      child: _buildContentWidget(typography, colorTokens,
                           isFullScreen: false),
                     ),
                   ),
@@ -372,24 +356,23 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               // Scroll to top button
               if (_showScrollToTop)
                 Positioned(
-                  bottom: 16,
-                  right: 16,
-                  child: ArDriveIconButton(
-                    icon: ArDriveIcons.chevronUp(size: 20),
-                    tooltip: 'Scroll to top',
-                    onPressed: _scrollToTop,
-                  ),
+                  bottom: ArDriveSpacing.md,
+                  right: ArDriveSpacing.md,
+                  child: _scrollToTopButton(colorTokens),
                 ),
             ],
           ),
         ),
         // Bottom action bar
-        _buildActionBar(colors, typography),
+        _buildActionBar(colorTokens, typography),
       ],
     );
   }
 
-  Widget _buildFullScreenLayout(dynamic colors, dynamic typography) {
+  Widget _buildFullScreenLayout(
+    ArDriveColorTokens colorTokens,
+    ArdriveTypographyNew typography,
+  ) {
     return MouseRegion(
       onHover: (_) {
         _showControls();
@@ -401,7 +384,7 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
           children: [
             // Content
             Container(
-              color: colors.themeBgSurface,
+              color: colorTokens.containerL1,
               padding: EdgeInsets.only(
                 bottom: _controlsVisible ? 100 : 0,
               ),
@@ -410,12 +393,12 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                 alwaysVisible: true,
                 child: SingleChildScrollView(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(ArDriveSpacing.lg),
                   child: Align(
                     alignment: Alignment.topLeft,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 1200),
-                      child: _buildContentWidget(typography, colors,
+                      child: _buildContentWidget(typography, colorTokens,
                           isFullScreen: true),
                     ),
                   ),
@@ -430,23 +413,16 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
               child: AnimatedOpacity(
                 opacity: _controlsVisible ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 200),
-                child: Container(
-                  color: colors.themeBgCanvas,
-                  child:
-                      _buildActionBar(colors, typography, isFullScreen: true),
-                ),
+                child: _buildActionBar(colorTokens, typography,
+                    isFullScreen: true),
               ),
             ),
             // Scroll to top button
             if (_showScrollToTop && _controlsVisible)
               Positioned(
                 bottom: 120,
-                right: 16,
-                child: ArDriveIconButton(
-                  icon: ArDriveIcons.chevronUp(size: 20),
-                  tooltip: 'Scroll to top',
-                  onPressed: _scrollToTop,
-                ),
+                right: ArDriveSpacing.md,
+                child: _scrollToTopButton(colorTokens),
               ),
           ],
         ),
@@ -454,14 +430,39 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
     );
   }
 
-  Widget _buildActionBar(dynamic colors, dynamic typography,
-      {bool isFullScreen = false}) {
+  Widget _scrollToTopButton(ArDriveColorTokens colorTokens) {
+    return ArDriveIconButton(
+      icon: ArDriveIcons.chevronUp(size: 20, color: colorTokens.iconMid),
+      tooltip: appLocalizationsOf(context).previewScrollToTop,
+      onPressed: _scrollToTop,
+    );
+  }
+
+  Widget _buildActionBar(
+    ArDriveColorTokens colorTokens,
+    ArdriveTypographyNew typography, {
+    bool isFullScreen = false,
+  }) {
+    final l10n = appLocalizationsOf(context);
     final fileNameWithoutExtension =
         getBasenameWithoutExtension(filePath: widget.filename);
 
+    Widget iconButton({
+      required String tooltip,
+      required Widget icon,
+      required VoidCallback onPressed,
+    }) =>
+        IconButton(
+          tooltip: tooltip,
+          onPressed: onPressed,
+          color: colorTokens.iconMid,
+          icon: icon,
+        );
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      color: colors.themeBgCanvas,
+      padding: const EdgeInsets.all(ArDriveSpacing.lg),
+      color:
+          isFullScreen ? colorTokens.containerL2 : colorTokens.containerRaised,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -476,50 +477,49 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                     fileNameWithoutExtension,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
-                    style: ArDriveTypography.body.smallBold700(
-                      color: colors.themeFgDefault,
+                    style: typography.paragraphLarge(
+                      color: colorTokens.textHigh,
+                      fontWeight: ArFontWeight.bold,
                     ),
                   ),
                 ),
+                // textLow, not the disabled grey it was: a type label is read,
+                // and that grey was under 2:1 on the light preview.
                 Text(
                   fileTypeLabel(
                     contentType: widget.contentType,
                     fileName: widget.filename,
-                    manifestLabel: appLocalizationsOf(context).manifestFileType,
+                    manifestLabel: l10n.manifestFileType,
                   ),
-                  style: ArDriveTypography.body.smallRegular(
-                    color: colors.themeFgDisabled,
-                  ),
+                  style: typography.paragraphLarge(color: colorTokens.textLow),
                 ),
               ],
             ),
           ),
           Row(
             children: [
-              ArDriveIconButton(
-                icon: ArDriveIcons.copy(size: 20),
-                tooltip: 'Copy to clipboard',
+              iconButton(
+                tooltip: l10n.previewCopyText,
+                icon: ArDriveIcons.copy(size: 20, color: colorTokens.iconMid),
                 onPressed: _copyToClipboard,
               ),
               if (_isMarkdown()) ...[
-                const SizedBox(width: 8),
-                Tooltip(
-                  message: _showAsMarkdown
-                      ? 'View as plain text'
-                      : 'View as markdown',
-                  child: IconButton(
-                    icon: Icon(
-                      _showAsMarkdown
-                          ? Icons.text_fields
-                          : Icons.article_outlined,
-                      size: 24,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _showAsMarkdown = !_showAsMarkdown;
-                      });
-                    },
+                const SizedBox(width: ArDriveSpacing.xs),
+                iconButton(
+                  tooltip: _showAsMarkdown
+                      ? l10n.previewShowAsText
+                      : l10n.previewShowAsMarkdown,
+                  icon: Icon(
+                    _showAsMarkdown
+                        ? Icons.text_fields
+                        : Icons.article_outlined,
+                    size: 24,
                   ),
+                  onPressed: () {
+                    setState(() {
+                      _showAsMarkdown = !_showAsMarkdown;
+                    });
+                  },
                 ),
               ],
               // A publication is read-only.
@@ -527,22 +527,22 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
                   widget.fileItem != null &&
                   !widget.isSharePage &&
                   !PublicationMode.isOn) ...[
-                const SizedBox(width: 8),
-                ArDriveIconButton(
-                  icon: ArDriveIcons.edit(size: 20),
-                  tooltip: 'Edit note',
+                const SizedBox(width: ArDriveSpacing.xs),
+                iconButton(
+                  tooltip: l10n.editNote,
+                  icon: ArDriveIcons.edit(size: 20, color: colorTokens.iconMid),
                   onPressed: _editNote,
                 ),
               ],
-              const SizedBox(width: 8),
-              IconButton(
+              const SizedBox(width: ArDriveSpacing.xs),
+              iconButton(
+                tooltip: isFullScreen ? l10n.collapse : l10n.expand,
                 icon: Icon(
                   isFullScreen
                       ? Icons.fullscreen_exit_outlined
                       : Icons.fullscreen_outlined,
                   size: 24,
                 ),
-                tooltip: isFullScreen ? 'Exit fullscreen' : 'Expand',
                 onPressed: _toggleFullScreen,
               ),
             ],
@@ -551,4 +551,37 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
       ),
     );
   }
+}
+
+/// Copies a preview's whole text and says whether that worked: a browser can
+/// refuse a write it doesn't count as the reader's own. It used to say
+/// "Copied to clipboard" either way.
+Future<void> copyPreviewText(BuildContext context, String text) async {
+  final l10n = appLocalizationsOf(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final typography = ArDriveTypographyNew.of(context);
+
+  // Asked for at once, inside the tap, then waited on.
+  final write = Clipboard.setData(ClipboardData(text: text));
+  bool copied;
+  try {
+    await write;
+    copied = true;
+  } catch (_) {
+    copied = false;
+  }
+
+  messenger.showSnackBar(
+    SnackBar(
+      backgroundColor: colorTokens.containerL3,
+      content: Text(
+        copied ? l10n.copied : l10n.couldNotCopy,
+        style: typography.paragraphNormal(
+          color: copied ? colorTokens.textHigh : colorTokens.statusErrorFg,
+        ),
+      ),
+      duration: const Duration(seconds: 2),
+    ),
+  );
 }

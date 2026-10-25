@@ -7,19 +7,30 @@ class UnpreviewableContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
     return Center(
       child: FittedBox(
         fit: BoxFit.contain,
-        child: Column(
-          children: [
-            const Icon(Icons.error_outline_outlined, size: 20),
-            Text(
-              appLocalizationsOf(context).couldNotLoadFile,
-              style: ArDriveTypography.body.smallBold700(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
+        child: Padding(
+          padding: const EdgeInsets.all(ArDriveSpacing.md),
+          child: Column(
+            children: [
+              ExcludeSemantics(
+                child: ArDriveIcons.triangle(
+                  size: 24,
+                  color: colorTokens.iconMid,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: ArDriveSpacing.sm),
+              Text(
+                appLocalizationsOf(context).couldNotLoadFile,
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color: colorTokens.textHigh,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
