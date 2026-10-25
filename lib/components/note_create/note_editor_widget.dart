@@ -259,6 +259,9 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
 
     return Tooltip(
       message: tooltip,
+      // The control names itself below; the tooltip's own node would say it
+      // twice.
+      excludeFromSemantics: true,
       child: Semantics(
         button: true,
         label: tooltip,

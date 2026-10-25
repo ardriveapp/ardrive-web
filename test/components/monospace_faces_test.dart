@@ -25,6 +25,18 @@ void main() {
     }
   });
 
+  // They were a full paragraphNormal style, a size above the card's text.
+  test('bold and italic keep the size of the text around them', () {
+    final sheet = arDriveMarkdownStyleSheet(
+      ArDriveTypographyNew.desktop,
+      ArDriveColorTokens.darkMode(),
+      isFullScreen: false,
+    );
+
+    expect(sheet.strong!.fontSize, isNull);
+    expect(sheet.em!.fontSize, isNull);
+  });
+
   testWidgets('the note editor writes in the monospace face', (tester) async {
     await tester.pumpWidget(
       ArDriveTheme(

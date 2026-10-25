@@ -18,7 +18,7 @@ Future<void> showArDriveDialog(
     barrierColor: barrierColor,
     barrierDismissible: barrierDismissible,
     useRootNavigator: useRootNavigator,
-  ).then((value) => activityTracker.setShowingAnyDialog(false));
+  ).whenComplete(() => activityTracker.setShowingAnyDialog(false));
 }
 
 /// [showArDriveDialog] for a dialog that answers: the dialog is built by

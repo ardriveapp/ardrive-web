@@ -61,14 +61,10 @@ MarkdownStyleSheet arDriveMarkdownStyleSheet(
         left: BorderSide(color: colorTokens.strokeHigh, width: 4),
       ),
     ),
-    strong: typography
-        .paragraphNormal(
-          fontWeight: ArFontWeight.bold,
-        )
-        .copyWith(color: colorTokens.textHigh),
-    em: typography.paragraphNormal().copyWith(
-          fontStyle: FontStyle.italic,
-          color: colorTokens.textHigh,
-        ),
+    // Only what they change: the Markdown renderer merges these onto the
+    // surrounding text, so they keep its size. A full paragraphNormal style
+    // made bold and italic words a size larger than the card's text.
+    strong: TextStyle(fontWeight: ArFontWeight.bold.weight),
+    em: const TextStyle(fontStyle: FontStyle.italic),
   );
 }
