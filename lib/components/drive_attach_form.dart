@@ -296,18 +296,23 @@ class _DriveInfoRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 // The address in monospace, the label around it in the body
-                // face.
-                Text.rich(
-                  TextSpan(
-                    style: typography.paragraphSmall(
-                      color: colorTokens.textLow,
-                    ),
-                    children: ArDriveIdText.spansIn(
-                      'Owner: $truncatedOwner',
-                      truncatedOwner,
-                      idStyle: typography.code(
+                // face. The whole address is in the tooltip, which a screen
+                // reader announces too: at a large text size on a phone the
+                // shortened one can be cut short.
+                ArDriveTooltip(
+                  message: owner,
+                  child: Text.rich(
+                    TextSpan(
+                      style: typography.paragraphSmall(
                         color: colorTokens.textLow,
-                        fontSize: 11,
+                      ),
+                      children: ArDriveIdText.spansIn(
+                        'Owner: $truncatedOwner',
+                        truncatedOwner,
+                        idStyle: typography.code(
+                          color: colorTokens.textLow,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ),
