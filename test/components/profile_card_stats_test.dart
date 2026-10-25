@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/profile_card.dart';
+import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
+import 'package:ardrive/permanence/ar_spend.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
+import 'package:ardrive/permanence/permanence_panel.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -17,6 +22,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -30,6 +36,8 @@ class _MockPaymentService extends Mock implements PaymentService {}
 
 class _MockProfileNameBloc extends MockBloc<ProfileNameEvent, ProfileNameState>
     implements ProfileNameBloc {}
+
+class _MockPermanenceCache extends Mock implements PermanenceCache {}
 
 class _MockUserPreferencesRepository extends Mock
     implements UserPreferencesRepository {}
@@ -117,7 +125,7 @@ void main() {
         ),
       );
 
-  Future<void> pumpCard(WidgetTester tester) async {
+  Future<void> pumpCard(WidgetTester tester, {PermanenceCache? cache}) async {
     await tester.binding.setSurfaceSize(const Size(1200, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -157,7 +165,9 @@ void main() {
           RepositoryProvider<UserPreferencesRepository>.value(
             value: preferences,
           ),
-          RepositoryProvider<PermanenceCache>.value(value: PermanenceCache()),
+          RepositoryProvider<PermanenceCache>.value(
+            value: cache ?? PermanenceCache(),
+          ),
         ],
         child: MultiBlocProvider(
           providers: [
@@ -165,6 +175,10 @@ void main() {
             BlocProvider<ProfileNameBloc>.value(value: names),
             ListenableProvider<AppRouterDelegate>.value(
               value: AppRouterDelegate(),
+            ),
+            // Read by the dialog the permanence link opens.
+            ChangeNotifierProvider<ActivityTracker>(
+              create: (_) => ActivityTracker(),
             ),
           ],
           child: ArDriveApp(
@@ -238,6 +252,56 @@ void main() {
 
       await takeDown(tester);
     });
+  });
+
+  // With the browser's accessibility tree on, a click is the node's own tap.
+  // The link had no button flag, so the web gave it no role and no name, and
+  // the card's click-away barrier sat over it (see overlay_semantics_test in
+  // ardrive_ui).
+  testWidgets('offers "Your permanence" as a button that opens the panel',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+
+    // Nothing the panel reads ever arrives: only that it opens is asked.
+    final cache = _MockPermanenceCache();
+    when(() => cache.planSpend(
+          owner: any(named: 'owner'),
+          signsSilently: any(named: 'signsSilently'),
+          fetch: any(named: 'fetch'),
+        )).thenAnswer((_) async => const SpendPlan());
+    when(() => cache.arSpend(
+          owner: any(named: 'owner'),
+          count: any(named: 'count'),
+        )).thenAnswer((_) => Completer<ArSpendTally>().future);
+    when(() => cache.costToday(
+          bytes: any(named: 'bytes'),
+          price: any(named: 'price'),
+          usdPerAr: any(named: 'usdPerAr'),
+        )).thenAnswer((_) => Completer<NetworkCost?>().future);
+
+    await tester.runAsync(() async {
+      await addDrive('a');
+      await addSyncedFile('one', driveId: 'a');
+      await confirmAll();
+
+      await pumpCard(tester, cache: cache);
+      await openCard(tester);
+      await waitFor(tester, find.text('Your permanence'));
+
+      final link = find.bySemanticsLabel(RegExp('^Your permanence'));
+      expect(link, findsOneWidget);
+      final node = tester.getSemantics(link);
+      expect(node, containsSemantics(isButton: true, hasTapAction: true));
+
+      node.owner!.performAction(node.id, SemanticsAction.tap);
+      await waitFor(tester, find.byType(PermanencePanel));
+
+      expect(find.byType(PermanencePanel), findsOneWidget);
+
+      await takeDown(tester);
+    });
+
+    semantics.dispose();
   });
 
   testWidgets('still says "0 files" for drives that really have none',

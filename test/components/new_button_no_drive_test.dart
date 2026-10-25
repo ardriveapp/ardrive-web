@@ -191,6 +191,48 @@ void main() {
   double top(WidgetTester tester, Finder finder) =>
       tester.getTopLeft(finder).dy;
 
+  // The sidebar menu is ArDriveSubmenu. Its items were not buttons, so with
+  // the browser's accessibility tree on the web gave them no role and no name.
+  group('with a screen reader', () {
+    testWidgets('a visitor hears "Open another drive" as a button',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      when(() => profileCubit.state).thenReturn(ProfilePromptAdd());
+      await pumpMenu(tester);
+      // The signed-out menu, which offers nothing else.
+      expect(find.text('Upload folder'), findsNothing);
+
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Open another drive')),
+        containsSemantics(
+          label: 'Open another drive',
+          isButton: true,
+          hasEnabledState: true,
+          isEnabled: true,
+          hasTapAction: true,
+        ),
+      );
+
+      semantics.dispose();
+    });
+
+    testWidgets('and a signed-in reader hears the upload items as buttons',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await pumpMenu(tester);
+
+      for (final name in ['Upload file(s)', 'Upload folder']) {
+        expect(
+          tester.getSemantics(find.bySemanticsLabel(name)),
+          containsSemantics(isButton: true, hasTapAction: true),
+          reason: name,
+        );
+      }
+
+      semantics.dispose();
+    });
+  });
+
   group('with no drive open', () {
     /// The one thing most people open this menu for.
     testWidgets('offers uploading', (tester) async {

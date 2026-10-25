@@ -582,150 +582,158 @@ class _ProfileCardState extends State<ProfileCard> {
                 // A way in, not a figure: the panel says what it costs.
                 if (permanentBytes > 0) ...[
                   const SizedBox(height: 4),
-                  ArDriveClickArea(
-                    child: GestureDetector(
-                      onTap: () async {
-                        // Everything below is asked for here, when the panel
-                        // opens, and shown as it arrives - never on the card.
-                        // What was read lately is reused, not asked again.
-                        final cache = context.read<PermanenceCache>();
-                        final paymentUrl = context
-                                .read<ConfigService>()
-                                .config
-                                .defaultTurboPaymentUrl ??
-                            'https://payment.ardrive.io';
-                        final paymentService = context.read<PaymentService>();
-                        final arweave = context.read<ArweaveService>();
-                        final wallet =
-                            context.read<ArDriveAuth>().currentUser.wallet;
+                  // A button of its own, named by its text: without the flag
+                  // the web gave the link no role and no name.
+                  Semantics(
+                    container: true,
+                    button: true,
+                    child: ArDriveClickArea(
+                      child: GestureDetector(
+                        onTap: () async {
+                          // Everything below is asked for here, when the panel
+                          // opens, and shown as it arrives - never on the card.
+                          // What was read lately is reused, not asked again.
+                          final cache = context.read<PermanenceCache>();
+                          final paymentUrl = context
+                                  .read<ConfigService>()
+                                  .config
+                                  .defaultTurboPaymentUrl ??
+                              'https://payment.ardrive.io';
+                          final paymentService = context.read<PaymentService>();
+                          final arweave = context.read<ArweaveService>();
+                          final wallet =
+                              context.read<ArDriveAuth>().currentUser.wallet;
 
-                        // A signed request. A keyfile, or the wallet an
-                        // Ethereum or Solana sign-in derives, signs without
-                        // a word, so it is read as the panel opens. A browser
-                        // extension shows its owner a prompt instead, so
-                        // there it waits until they ask.
-                        Future<SpendLookup> readSpend() => loadCreditsSpent(
-                              paymentService: paymentService,
-                              wallet: wallet,
-                            );
-                        final signsSilently = context
-                                .read<ArDriveAuth>()
-                                .currentUser
-                                .profileType !=
-                            ProfileType.arConnect;
+                          // A signed request. A keyfile, or the wallet an
+                          // Ethereum or Solana sign-in derives, signs without
+                          // a word, so it is read as the panel opens. A browser
+                          // extension shows its owner a prompt instead, so
+                          // there it waits until they ask.
+                          Future<SpendLookup> readSpend() => loadCreditsSpent(
+                                paymentService: paymentService,
+                                wallet: wallet,
+                              );
+                          final signsSilently = context
+                                  .read<ArDriveAuth>()
+                                  .currentUser
+                                  .profileType !=
+                              ProfileType.arConnect;
 
-                        // Public, so no signature: what this wallet paid in
-                        // AR to upload directly, counted a page at a time and
-                        // remembered. See [tallyArSpend].
-                        final owner = context
-                            .read<ArDriveAuth>()
-                            .currentUser
-                            .walletAddress;
-                        // Which transactions this wallet's synced drives
-                        // are made of: what makes one of its payments ArDrive
-                        // storage when its tags don't say. Asked only about
-                        // those, never for the whole set. See
-                        // [isArDriveTransaction].
-                        final driveDao = context.read<DriveDao>();
-                        Future<Set<String>> knownAmong(Set<String> txIds) =>
-                            driveDao.arDriveTransactionsAmong(
-                              stats.driveIds,
-                              txIds,
-                            );
-                        final arSpend = cache.arSpend(
-                          owner: owner,
-                          count: (onFailure) =>
-                              LocalKeyValueStore.getInstance().then(
-                            (store) async => countArSpend(
-                              onFailure: onFailure,
-                              // v4: counts made without the tips direct
-                              // uploads sent, or before the drives' own
-                              // transactions decided what is ArDrive's.
-                              storageKey: 'permanenceArSpend_v4_$owner',
-                              read: store.getString,
-                              write: (key, value) =>
-                                  store.putString(key, value),
-                              knownAmong: knownAmong,
-                              fetchPage: ({required minHeight, after}) async =>
-                                  arweave.getArDriveFeesPage(
-                                owner: owner,
-                                minHeight: minHeight,
-                                knownAmong: knownAmong,
-                                after: after,
-                              ),
-                            ),
-                          ),
-                        );
-
-                        // What the network charges today for the same size,
-                        // from the configured gateway, with AR's dollar price.
-                        final costToday = cache.costToday(
-                          bytes: permanentBytes,
-                          price: () =>
-                              arweave.getPrice(byteSize: permanentBytes),
-                          usdPerAr: () => fetchUsdPerAr(paymentUrl),
-                        );
-
-                        final signInChain = switch (walletTypeOfSourceAddress(
-                          context
+                          // Public, so no signature: what this wallet paid in
+                          // AR to upload directly, counted a page at a time and
+                          // remembered. See [tallyArSpend].
+                          final owner = context
                               .read<ArDriveAuth>()
                               .currentUser
-                              .sourceWalletAddress,
-                        )) {
-                          WalletType.ethereum => 'Ethereum',
-                          WalletType.solana => 'Solana',
-                          _ => null,
-                        };
-
-                        final spendPlan = await cache.planSpend(
-                          owner: owner,
-                          signsSilently: signsSilently,
-                          fetch: readSpend,
-                        );
-
-                        if (!context.mounted) {
-                          return;
-                        }
-
-                        setState(() {
-                          _showProfileCard = false;
-                        });
-
-                        showPermanencePanel(
-                          context,
-                          PermanenceSummary(
-                            totalBytes: permanentBytes,
-                            fileCount: stats.fileCount,
-                            driveCount: stats.driveCount,
-                            bytesByYear: {
-                              for (final year in stats.permanentByYear.entries)
-                                year.key: year.value.bytes,
-                            },
-                            costToday: costToday,
-                            spend: spendPlan.spend,
-                            loadSpend: spendPlan.loadSpend,
-                            cachedSpend: spendPlan.shown,
-                            signInChain: signInChain,
-                            arSpend: arSpend,
-                          ),
-                        );
-                      },
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Your permanence',
-                            style: typography.caption(
-                              color: colorTokens.textRed,
-                              fontWeight: ArFontWeight.semiBold,
+                              .walletAddress;
+                          // Which transactions this wallet's synced drives
+                          // are made of: what makes one of its payments ArDrive
+                          // storage when its tags don't say. Asked only about
+                          // those, never for the whole set. See
+                          // [isArDriveTransaction].
+                          final driveDao = context.read<DriveDao>();
+                          Future<Set<String>> knownAmong(Set<String> txIds) =>
+                              driveDao.arDriveTransactionsAmong(
+                                stats.driveIds,
+                                txIds,
+                              );
+                          final arSpend = cache.arSpend(
+                            owner: owner,
+                            count: (onFailure) =>
+                                LocalKeyValueStore.getInstance().then(
+                              (store) async => countArSpend(
+                                onFailure: onFailure,
+                                // v4: counts made without the tips direct
+                                // uploads sent, or before the drives' own
+                                // transactions decided what is ArDrive's.
+                                storageKey: 'permanenceArSpend_v4_$owner',
+                                read: store.getString,
+                                write: (key, value) =>
+                                    store.putString(key, value),
+                                knownAmong: knownAmong,
+                                fetchPage: (
+                                        {required minHeight, after}) async =>
+                                    arweave.getArDriveFeesPage(
+                                  owner: owner,
+                                  minHeight: minHeight,
+                                  knownAmong: knownAmong,
+                                  after: after,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 2),
-                          ArDriveIcons.carretRight(
-                            size: 14,
-                            color: colorTokens.textRed,
-                          ),
-                        ],
+                          );
+
+                          // What the network charges today for the same size,
+                          // from the configured gateway, with AR's dollar price.
+                          final costToday = cache.costToday(
+                            bytes: permanentBytes,
+                            price: () =>
+                                arweave.getPrice(byteSize: permanentBytes),
+                            usdPerAr: () => fetchUsdPerAr(paymentUrl),
+                          );
+
+                          final signInChain = switch (walletTypeOfSourceAddress(
+                            context
+                                .read<ArDriveAuth>()
+                                .currentUser
+                                .sourceWalletAddress,
+                          )) {
+                            WalletType.ethereum => 'Ethereum',
+                            WalletType.solana => 'Solana',
+                            _ => null,
+                          };
+
+                          final spendPlan = await cache.planSpend(
+                            owner: owner,
+                            signsSilently: signsSilently,
+                            fetch: readSpend,
+                          );
+
+                          if (!context.mounted) {
+                            return;
+                          }
+
+                          setState(() {
+                            _showProfileCard = false;
+                          });
+
+                          showPermanencePanel(
+                            context,
+                            PermanenceSummary(
+                              totalBytes: permanentBytes,
+                              fileCount: stats.fileCount,
+                              driveCount: stats.driveCount,
+                              bytesByYear: {
+                                for (final year
+                                    in stats.permanentByYear.entries)
+                                  year.key: year.value.bytes,
+                              },
+                              costToday: costToday,
+                              spend: spendPlan.spend,
+                              loadSpend: spendPlan.loadSpend,
+                              cachedSpend: spendPlan.shown,
+                              signInChain: signInChain,
+                              arSpend: arSpend,
+                            ),
+                          );
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Your permanence',
+                              style: typography.caption(
+                                color: colorTokens.textRed,
+                                fontWeight: ArFontWeight.semiBold,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            ArDriveIcons.carretRight(
+                              size: 14,
+                              color: colorTokens.textRed,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

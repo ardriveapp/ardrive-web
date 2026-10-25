@@ -54,6 +54,8 @@ class _ArDriveSubmenuState extends State<ArDriveSubmenu> {
       menuController: topMenuController,
       menuChildren: _buildMenu(widget.menuChildren),
       alignmentOffset: widget.alignmentOffset,
+      // What opens the menu is the caller's own button, which names itself.
+      isMenuItem: false,
       child: widget.child,
     );
   }
@@ -66,6 +68,8 @@ class _ArDriveSubmenuState extends State<ArDriveSubmenu> {
         children.add(
           ArDriveMenuWidget(
             isDisabled: element.isDisabled,
+            // A row with nothing to do, such as a divider, is not a button.
+            isMenuItem: element.onClick != null,
             onClick: () {
               element.onClick?.call();
               topMenuController.close();
@@ -104,6 +108,7 @@ class _ArDriveSubmenuState extends State<ArDriveSubmenu> {
         if (subMenuLeaf.children == null) {
           return ArDriveMenuWidget(
             isDisabled: subMenuLeaf.isDisabled,
+            isMenuItem: subMenuLeaf.onClick != null,
             onClick: () {
               subMenuLeaf.onClick?.call();
               topMenuController.close();
@@ -131,6 +136,7 @@ class ArDriveMenuWidget extends StatefulWidget {
     this.onClick,
     this.alignmentOffset = Offset.zero,
     this.isDisabled = false,
+    this.isMenuItem = true,
   });
 
   final Widget child;
@@ -141,6 +147,11 @@ class ArDriveMenuWidget extends StatefulWidget {
   final Offset alignmentOffset;
   final bool isDisabled;
 
+  /// An item in a menu, rather than what opens one: only an item is made a
+  /// button here. What opens a menu is usually a button already, and wrapping
+  /// it again gave the screen reader an empty button around it.
+  final bool isMenuItem;
+
   @override
   State<ArDriveMenuWidget> createState() => _ArDriveMenuWidgetState();
 }
@@ -148,21 +159,32 @@ class ArDriveMenuWidget extends StatefulWidget {
 class _ArDriveMenuWidgetState extends State<ArDriveMenuWidget> {
   @override
   Widget build(BuildContext context) {
+    final target = GestureDetector(
+      onTap: () {
+        if (!widget.isDisabled) {
+          widget.onClick?.call();
+        }
+      },
+      child: ArDriveClickArea(
+        showCursor: !widget.isDisabled,
+        child: widget.child,
+      ),
+    );
+
     return MenuAnchor(
       alignmentOffset: widget.alignmentOffset,
       controller: widget.menuController,
       menuChildren: widget.menuChildren,
-      child: GestureDetector(
-        onTap: () {
-          if (!widget.isDisabled) {
-            widget.onClick?.call();
-          }
-        },
-        child: ArDriveClickArea(
-          showCursor: !widget.isDisabled,
-          child: widget.child,
-        ),
-      ),
+      // A button of its own, named by its text: without the flag the web gave
+      // the item no role and no name.
+      child: widget.isMenuItem
+          ? Semantics(
+              container: true,
+              button: true,
+              enabled: !widget.isDisabled,
+              child: target,
+            )
+          : target,
     );
   }
 }
