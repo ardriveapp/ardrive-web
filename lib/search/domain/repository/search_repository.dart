@@ -1,13 +1,9 @@
-import 'package:ardrive/arns/data/arns_dao.dart';
-import 'package:ardrive/core/arfs/repository/file_repository.dart';
-import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/search/domain/search_coverage.dart';
 import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/logger.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 
 abstract class SearchRepository {
   Future<List<SearchResult>> search(String query);
@@ -31,12 +27,8 @@ abstract class SearchRepository {
 
 class ArDriveSearchRepository implements SearchRepository {
   final DriveDao _driveDao;
-  final ARNSDao _arnsDao;
-  final FileRepository _fileRepository;
-  final FolderRepository _folderRepository;
 
-  ArDriveSearchRepository(this._driveDao, this._arnsDao, this._fileRepository,
-      this._folderRepository);
+  ArDriveSearchRepository(this._driveDao);
 
   @override
   Future<List<SearchResult>> search(String query) async {
@@ -45,22 +37,8 @@ class ArDriveSearchRepository implements SearchRepository {
 
     if (query.isEmpty) return Future.value([]);
 
-    // Start both searches in parallel
-    // An ArNS name whose file is not on this device, as when its drive has
-    // not been synced, fails its lookups. That loses the one ArNS row rather
-    // than every result.
-    final arnsSearchFuture = _searchArns(query).catchError((Object error) {
-      logger.w('ArNS search failed: $error');
-      return null;
-    });
-    final driveSearchFuture =
-        _driveDao.search(query: query, type: SearchQueryType.all);
-
-    // Wait for both searches to complete
-    final results = await Future.wait([arnsSearchFuture, driveSearchFuture]);
-
-    // Combine results and handle duplicates
-    final List<SearchResult> allResults = [...?results[0], ...results[1] ?? []];
+    final List<SearchResult> allResults =
+        await _driveDao.search(query: query, type: SearchQueryType.all);
 
     final Map<String, SearchResult> uniqueResults = {};
     final List<SearchResult> duplicates = [];
@@ -104,32 +82,6 @@ class ArDriveSearchRepository implements SearchRepository {
 
   @override
   Stream<void> watchDrives() => _driveDao.allDrives().watch();
-
-  Future<List<SearchResult>?> _searchArns(String query) async {
-    final splitDomainAndName = extractNameAndDomain(query);
-
-    final arnsRecord = await _arnsDao
-        .getActiveARNSRecordByName(
-            domain: splitDomainAndName['domain'] ?? '',
-            name: splitDomainAndName['name'] ?? '@')
-        .getSingleOrNull();
-
-    if (arnsRecord == null) return null;
-
-    final file = await _fileRepository.getFileEntryById(arnsRecord.fileId);
-    final drive = await _driveDao.driveById(driveId: file.driveId).getSingle();
-    final parentFolder =
-        await _folderRepository.getFolderEntryById(file.parentFolderId);
-
-    return [
-      SearchResult(
-        drive: drive,
-        result: file,
-        parentFolder: parentFolder,
-        hasArNSName: true,
-      )
-    ];
-  }
 }
 
 /// The name a result is listed and matched by.

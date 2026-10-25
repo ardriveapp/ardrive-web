@@ -1,4 +1,3 @@
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
@@ -14,8 +13,6 @@ class MockFolderRepository extends Mock implements FolderRepository {}
 class MockManifestRepository extends Mock implements ManifestRepository {}
 
 class MockArDriveAuth extends Mock implements ArDriveAuth {}
-
-class MockARNSRepository extends Mock implements ARNSRepository {}
 
 /// Which folder the manifest's folder picker opens in.
 void main() {
@@ -105,7 +102,6 @@ void main() {
       manifestRepository: manifestRepository,
       folderRepository: folderRepository,
       auth: MockArDriveAuth(),
-      arnsRepository: MockARNSRepository(),
     );
     final loaded = await cubit.stream
         .firstWhere((state) => state is CreateManifestFolderLoadSuccess);

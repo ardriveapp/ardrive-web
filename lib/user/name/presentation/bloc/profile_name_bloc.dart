@@ -1,4 +1,3 @@
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/services/ethereum/ethereum_name_service.dart';
 import 'package:ardrive/services/solana/solana_name_service.dart';
@@ -13,15 +12,13 @@ part 'profile_name_state.dart';
 
 class ProfileNameBloc extends Bloc<ProfileNameEvent, ProfileNameState> {
   // ignore: unused_field
-  final ARNSRepository _arnsRepository; // kept for ArNS Solana integration
-  // ignore: unused_field
-  final ProfileLogoRepository _profileLogoRepository; // kept for ArNS Solana integration
+  final ProfileLogoRepository
+      _profileLogoRepository; // kept for ArNS Solana integration
   final ArDriveAuth _auth;
   final SolanaNameService _solanaNameService;
   final EthereumNameService _ethereumNameService;
 
   ProfileNameBloc(
-    this._arnsRepository,
     this._profileLogoRepository,
     this._auth, {
     SolanaNameService? solanaNameService,

@@ -2,7 +2,6 @@ import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -63,8 +62,6 @@ class MockUploadRepository extends Mock implements UploadRepository {}
 class MockArDriveUploadPreparationManager extends Mock
     implements ArDriveUploadPreparationManager {}
 
-class MockArnsRepository extends Mock implements ARNSRepository {}
-
 class MockManifestRepository extends Mock implements ManifestRepository {}
 
 class MockCreateManifestCubit extends Mock implements CreateManifestCubit {}
@@ -86,7 +83,6 @@ void main() {
   late MockTurboUploadCostCalculator mockTurboUploadCostCalculator;
   late MockArDriveUploadPreparationManager mockArDriveUploadPreparationManager;
   late MockConfigService mockConfigService;
-  late MockArnsRepository mockArnsRepository;
   late MockUploadRepository mockUploadRepository;
   late MockManifestRepository mockManifestRepository;
   late MockCreateManifestCubit mockCreateManifestCubit;
@@ -224,7 +220,6 @@ void main() {
     // size rule behaves exactly as it did when it read the config directly.
     when(() => mockArDriveUploadPreparationManager.getMaxFreeItemBytes())
         .thenReturn(1);
-    mockArnsRepository = MockArnsRepository();
     late MockUploadPlan uploadPlan;
     mockUploadRepository = MockUploadRepository();
 
@@ -306,7 +301,6 @@ void main() {
       driveDao: mockDriveDao,
       auth: mockArDriveAuth,
       configService: mockConfigService,
-      arnsRepository: mockArnsRepository,
       uploadRepository: mockUploadRepository,
       manifestRepository: mockManifestRepository,
       createManifestCubit: mockCreateManifestCubit,
@@ -401,10 +395,6 @@ void main() {
       );
       when(() => mockUploadFileSizeChecker.hasFileAboveWarningSizeLimit(
           files: any(named: 'files'))).thenAnswer((_) async => false);
-
-      // Non-empty manifest entries take the ArNS lookup branch.
-      when(() => mockArnsRepository.getAntRecordsForWallet(any()))
-          .thenAnswer((_) async => []);
 
       // A manifest at the free item size limit.
       when(() => mockManifestRepository.getManifestFilesInFolder(
@@ -504,8 +494,6 @@ void main() {
               .thenAnswer((invocation) => Future.value(false));
           when(() => mockArDriveAuth.getWalletAddress())
               .thenAnswer((invocation) => Future.value(tWalletAddress));
-          when(() => mockArnsRepository.getAntRecordsForWallet(tWalletAddress!))
-              .thenAnswer((invocation) => Future.value([]));
           return getUploadCubitInstanceWith(tAllConflictingFiles);
         },
         act: (cubit) async {

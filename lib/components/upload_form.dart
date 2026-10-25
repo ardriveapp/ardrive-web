@@ -6,9 +6,7 @@ import 'package:ardrive/components/upload_review_cost.dart';
 import 'dart:async';
 import 'dart:math';
 
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/turbo/topup/views/topup_modal.dart';
-import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
@@ -27,7 +25,6 @@ import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license/view_license_definition.dart';
 import 'package:ardrive/components/license_details_popover.dart';
 import 'package:ardrive/components/private_drive_marks.dart';
-import 'package:ardrive/components/progress_dialog.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/entities/arfs_entities.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
@@ -55,7 +52,6 @@ import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -96,12 +92,10 @@ Future<void> promptToUpload(
       folderRepository: context.read<FolderRepository>(),
     ),
     ARFSRevisionStatusUtils(context.read<FileRepository>()),
-    context.read<ARNSRepository>(),
     context.read<FileRepository>(),
   );
   final createManifestCubit = CreateManifestCubit(
     profileCubit: context.read<ProfileCubit>(),
-    arnsRepository: context.read<ARNSRepository>(),
     manifestRepository: manifestRepository,
     drive: (driveDetailCubit.state as DriveDetailLoadSuccess).currentDrive,
     auth: context.read<ArDriveAuth>(),
@@ -119,7 +113,6 @@ Future<void> promptToUpload(
     uploadFolders: isFolderUpload,
     auth: context.read<ArDriveAuth>(),
     configService: context.read<ConfigService>(),
-    arnsRepository: context.read<ARNSRepository>(),
     uploadRepository: context.read<UploadRepository>(),
     manifestRepository: manifestRepository,
     createManifestCubit: createManifestCubit,
@@ -278,26 +271,15 @@ class _UploadFormState extends State<UploadForm> {
                         .firstWhereOrNull((selectedManifest) =>
                             selectedManifest.manifest.id == e.entry.id);
 
-                    ANTRecord? antRecord;
-                    ARNSUndername? undername;
-
                     if (selectedManifest != null) {
-                      antRecord = selectedManifest.antRecord;
-                      undername = selectedManifest.undername;
                       selectedManifestIds.add(e.entry.id);
                     }
 
-                    return ManifestSelection(
-                      manifest: e.entry,
-                      antRecord: antRecord,
-                      undername: undername,
-                    );
+                    return ManifestSelection(manifest: e.entry);
                   }).toList();
 
                   return UploadManifestOptionsBloc(
                     manifestFiles: manifestSelections,
-                    arnsRepository: context.read<ARNSRepository>(),
-                    arDriveAuth: context.read<ArDriveAuth>(),
                     selectedManifestIds: selectedManifestIds,
                   );
                 },
@@ -322,7 +304,7 @@ class _UploadFormState extends State<UploadForm> {
             } else if (state is UploadConfiguringLicense) {
               return _UploadConfiguringLicenseWidget(state: state);
             } else if (state is UploadReview) {
-              return _UploadReviewWithArnsNameWidget(state: state);
+              return _UploadReviewWidget(state: state);
             } else if (state is UploadSigningInProgress) {
               return _UploadSigningInProgressWidget(state: state);
             } else if (state is UploadInProgress) {
@@ -339,34 +321,11 @@ class _UploadFormState extends State<UploadForm> {
             } else if (state is UploadShowingWarning) {
               // TODO: Fix use of startUpload
               return _UploadShowingWarningWidget(state: state);
-            } else if (state is AssigningUndername) {
-              return ProgressDialog(
-                  title: appLocalizationsOf(context).uploadAssigningArnsName);
             } else if (state is UploadingManifests) {
               return _UploadingManifestsWidget(state: state);
             } else if (state is UploadManifestSelectPaymentMethod) {
               return _SelectPaymentMethodManifestUpload(state: state);
             } else if (state is UploadReviewWithLicense) {
-              if (state.readyState.showArnsNameSelection) {
-                return AssignArNSNameModal(
-                  driveDetailCubit: widget.driveDetailCubit,
-                  justSelectName: true,
-                  onSelectionConfirmed: (name) {
-                    context.read<UploadCubit>().selectUndernameWithLicense(
-                          antRecord: ANTRecord(
-                            domain: name.selectedName.name,
-                            processId: name.selectedName.processId,
-                          ),
-                          undername: name.selectedUndername,
-                        );
-                  },
-                  canClose: false,
-                  onEmptySelection: (emptySelection) {
-                    context.read<UploadCubit>().cancelArnsNameSelection();
-                  },
-                );
-              }
-
               return _UploadReviewWithLicenseWidget(state: state);
             }
             return const Center(
@@ -423,13 +382,6 @@ class _UploadingManifestsWidget extends StatelessWidget {
                           ],
                         ],
                       ),
-                      if (state.manifestFiles[index].isAssigningUndername) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          'Assigning ArNS Name...',
-                          style: typography.paragraphNormal(),
-                        ),
-                      ],
                     ],
                   );
                 },
@@ -691,7 +643,7 @@ class ConfiguringLicenseScreen extends StatelessWidget {
       BuildContext context, UploadReady state, FormGroup form) {
     // The same width as the other upload screens' buttons. With no width
     // they stretched across the dialog.
-    final customWidth = state.arnsCheckboxChecked ? 160.0 : 100.0;
+    const customWidth = 100.0;
     final title = appLocalizationsOf(context).next;
     final typography = ArDriveTypographyNew.of(context);
 
@@ -1806,26 +1758,6 @@ class _UploadReadyWidget extends StatelessWidget {
   final DriveDetailCubit driveDetailCubit;
   @override
   Widget build(BuildContext context) {
-    if (state.showArnsNameSelection) {
-      return AssignArNSNameModal(
-        driveDetailCubit: driveDetailCubit,
-        justSelectName: true,
-        onSelectionConfirmed: (name) {
-          context.read<UploadCubit>().selectUndername(
-                ANTRecord(
-                  domain: name.selectedName.name,
-                  processId: name.selectedName.processId,
-                ),
-                name.selectedUndername,
-              );
-        },
-        canClose: false,
-        onEmptySelection: (emptySelection) {
-          context.read<UploadCubit>().cancelArnsNameSelection();
-        },
-      );
-    }
-
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ReactiveForm(
@@ -1903,27 +1835,6 @@ class _UploadReadyWidget extends StatelessWidget {
                         state.selectedManifestSelections.length),
                 ],
                 children: [
-                  if (state.loadingArNSNamesError)
-                    Text(
-                      appLocalizationsOf(context).errorLoadingArnsNames,
-                      style: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colorTokens.textRed,
-                      ),
-                    ),
-                  if (state.loadingArNSNames)
-                    Row(
-                      children: [
-                        Text(
-                          appLocalizationsOf(context).loadingArnsNames,
-                          style: typography.paragraphNormal(
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const ArDriveSpinner()
-                      ],
-                    ),
                   Row(
                     children: [
                       Text(
@@ -2095,9 +2006,7 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
       heightForManifestSelections = 175;
     }
 
-    if (readyState.params.arnsUnderName == null) {
-      heightForManifestSelections += 50;
-    }
+    heightForManifestSelections += 50;
 
     return StatsScreen(
       readyState: readyState,
@@ -2127,31 +2036,6 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
       ],
       children: [
         UploadReviewCost(paymentInfo: state.readyState.paymentInfo),
-        if (state.readyState.params.arnsUnderName != null) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'ArNS Name: ',
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: colorTokens.textLow,
-                  ),
-                ),
-                Text(
-                  getLiteralARNSRecordName(
-                    state.readyState.params.arnsUnderName!,
-                  ),
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
         LicenseReviewInfo(licenseState: state.licenseState),
         if (state.readyState.selectedManifestSelections.isNotEmpty) ...[
           Padding(
@@ -2197,27 +2081,6 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              if (e.antRecord != null ||
-                                  e.undername != null) ...[
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    ArDriveIcons.arnsName(size: 16),
-                                    const SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        getLiteralArNSName(
-                                            e.antRecord!, e.undername),
-                                        style: typography.paragraphNormal(
-                                          fontWeight: ArFontWeight.semiBold,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -2234,8 +2097,8 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
   }
 }
 
-class _UploadReviewWithArnsNameWidget extends StatelessWidget {
-  const _UploadReviewWithArnsNameWidget({required this.state});
+class _UploadReviewWidget extends StatelessWidget {
+  const _UploadReviewWidget({required this.state});
 
   final UploadReview state;
 
@@ -2251,9 +2114,7 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
       heightForManifestSelections = 200;
     }
 
-    if (state.readyState.params.arnsUnderName == null) {
-      heightForManifestSelections += 50;
-    }
+    heightForManifestSelections += 50;
 
     return StatsScreen(
       readyState: state.readyState,
@@ -2283,26 +2144,6 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
       ],
       children: [
         UploadReviewCost(paymentInfo: state.readyState.paymentInfo),
-        if (state.readyState.params.arnsUnderName != null) ...[
-          Text(
-            'ArNS Name: ',
-            style: typography.paragraphNormal(
-              fontWeight: ArFontWeight.semiBold,
-              color: colorTokens.textLow,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Text(
-              getLiteralARNSRecordName(
-                state.readyState.params.arnsUnderName!,
-              ),
-              style: typography.paragraphNormal(
-                fontWeight: ArFontWeight.semiBold,
-              ),
-            ),
-          ),
-        ],
         if (state.readyState.selectedManifestSelections.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
@@ -2347,27 +2188,6 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                              if (e.antRecord != null ||
-                                  e.undername != null) ...[
-                                const SizedBox(height: 2),
-                                Row(
-                                  children: [
-                                    ArDriveIcons.arnsName(size: 16),
-                                    const SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        getLiteralArNSName(
-                                            e.antRecord!, e.undername),
-                                        style: typography.paragraphNormal(
-                                          fontWeight: ArFontWeight.semiBold,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -3134,19 +2954,6 @@ List<ArDriveButtonNew> getModalActions(
         maxWidth: 140,
       ),
     ];
-  } else if (state.arnsCheckboxChecked) {
-    return [
-      ArDriveButtonNew(
-        isDisabled: !state.isNextButtonEnabled,
-        onPressed: () {
-          context.read<UploadCubit>().initialScreenUpload();
-        },
-        text: appLocalizationsOf(context).assignName,
-        typography: typography,
-        maxWidth: 140,
-        variant: ButtonVariant.primary,
-      ),
-    ];
   } else if (state.selectedManifestSelections.isNotEmpty) {
     return [
       ArDriveButtonNew(
@@ -3185,12 +2992,4 @@ String uploadButtonLabel(BuildContext context, int numberOfFiles) =>
     numberOfFiles > 0
         ? appLocalizationsOf(context).uploadNFiles(numberOfFiles)
         : appLocalizationsOf(context).upload;
-
-String getLiteralArNSName(ANTRecord record, ARNSUndername? undername) {
-  if (undername != null) {
-    return getLiteralARNSRecordName(undername);
-  }
-
-  return record.domain;
-}
 //

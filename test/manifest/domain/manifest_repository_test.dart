@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/core/arfs/utils/arfs_revision_status_utils.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/entities/manifest_data.dart';
@@ -10,7 +9,6 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
@@ -50,7 +48,6 @@ void main() async {
       late IOFile mockManifestFile;
       late MockManifestDataBuilder mockBuilder;
       late ARFSRevisionStatusUtils mockVersionRevisionStatusUtils;
-      late MockArnsRepository mockArnsRepository;
       late MockFileRepository mockFileRepository;
       setUp(() {
         mockDriveDao = MockDriveDao();
@@ -60,17 +57,9 @@ void main() async {
         mockFolderRepository = MockFolderRepository();
         mockBuilder = MockManifestDataBuilder();
         mockVersionRevisionStatusUtils = MockARFSVersionRevisionStatusUtils();
-        mockArnsRepository = MockArnsRepository();
         mockFileRepository = MockFileRepository();
         registerFallbackValue(FileEntity());
         registerFallbackValue(const FileRevisionsCompanion());
-        registerFallbackValue(
-          ARNSUndernameFactory.create(
-            name: 'undername',
-            domain: 'domain',
-            transactionId: 'transaction_id',
-          ),
-        );
 
         repository = ManifestRepositoryImpl(
           mockDriveDao,
@@ -78,7 +67,6 @@ void main() async {
           mockFolderRepository,
           mockBuilder,
           mockVersionRevisionStatusUtils,
-          mockArnsRepository,
           mockFileRepository,
         );
 
@@ -249,121 +237,6 @@ void main() async {
               .called(1);
           verify(() => mockFileRepository.updateFileRevision(
               any(), RevisionAction.uploadNewVersion)).called(1);
-        });
-
-        test(
-            'Successfully uploads and saves manifest using Turbo and Saving a new ARNS record if undername is provided',
-            () async {
-          // TURBO
-          when(() => mockUploadParams.uploadType).thenReturn(UploadType.turbo);
-
-          when(() => mockUploadController.onDone(any()))
-              .thenAnswer((invocation) {
-            final onDone = invocation.positionalArguments.first as Function;
-            onDone([uploadTaskTurbo]);
-          });
-
-          when(() => mockFileRepository.updateFile<FileEntity>(any()))
-              .thenAnswer((_) async => []);
-          when(() => mockFileRepository.updateFileRevision(
-              any(), RevisionAction.create)).thenAnswer((_) async => []);
-
-          when(() => mockArnsRepository.setUndernamesToFile(
-                undername: any(named: 'undername'),
-                fileId: any(named: 'fileId'),
-                uploadNewRevision: any(named: 'uploadNewRevision'),
-                driveId: any(named: 'driveId'),
-                processId: any(named: 'processId'),
-              )).thenAnswer((_) async {
-            // success
-          });
-
-          await repository.uploadManifest(
-            params: mockUploadParams,
-            processId: 'process_id',
-            undername: ARNSUndernameFactory.create(
-              name: 'undername',
-              domain: 'domain',
-              transactionId: 'transaction_id',
-            ),
-          );
-          // Verify interactions
-          verify(() => mockUploader.upload(
-                file: mockManifestFile,
-                args: any(named: 'args'),
-                wallet: any(named: 'wallet'),
-
-                /// TURBO
-                type: UploadType.turbo,
-              )).called(1);
-
-          verify(() => mockArnsRepository.setUndernamesToFile(
-                undername: any(named: 'undername'),
-                fileId: any(named: 'fileId'),
-                uploadNewRevision: any(named: 'uploadNewRevision'),
-                driveId: any(named: 'driveId'),
-                processId: any(named: 'processId'),
-              )).called(1);
-
-          verify(() => mockFileRepository.updateFile<FileEntity>(any()))
-              .called(1);
-          verify(() => mockFileRepository.updateFileRevision(
-              any(), RevisionAction.create)).called(1);
-        });
-
-        test(
-            'Successfully uploads and saves manifest using Ar and Saving a new ARNS record if undername is provided',
-            () async {
-          // TURBO
-          when(() => mockUploadParams.uploadType).thenReturn(UploadType.d2n);
-
-          when(() => mockUploadController.onDone(any()))
-              .thenAnswer((invocation) {
-            final onDone = invocation.positionalArguments.first as Function;
-            onDone([uploadTaskTurbo]);
-          });
-
-          when(() => mockFileRepository.updateFile<FileEntity>(any()))
-              .thenAnswer((_) async => []);
-          when(() => mockFileRepository.updateFileRevision(
-              any(), RevisionAction.create)).thenAnswer((_) async => []);
-
-          when(() => mockArnsRepository.setUndernamesToFile(
-                undername: any(named: 'undername'),
-                fileId: any(named: 'fileId'),
-                uploadNewRevision: any(named: 'uploadNewRevision'),
-                driveId: any(named: 'driveId'),
-                processId: any(named: 'processId'),
-              )).thenAnswer((_) async {
-            // success
-          });
-
-          await repository.uploadManifest(
-            params: mockUploadParams,
-            processId: 'process_id',
-            undername: ARNSUndernameFactory.create(
-              name: 'undername',
-              domain: 'domain',
-              transactionId: 'transaction_id',
-            ),
-          );
-          // Verify interactions
-          verify(() => mockUploader.upload(
-                file: mockManifestFile,
-                args: any(named: 'args'),
-                wallet: any(named: 'wallet'),
-
-                /// Uploads using AR
-                type: UploadType.d2n,
-              )).called(1);
-
-          verify(() => mockArnsRepository.setUndernamesToFile(
-                undername: any(named: 'undername'),
-                fileId: any(named: 'fileId'),
-                uploadNewRevision: any(named: 'uploadNewRevision'),
-                driveId: any(named: 'driveId'),
-                processId: any(named: 'processId'),
-              )).called(1);
         });
 
         test('Handles upload failure', () async {
@@ -598,5 +471,3 @@ void main() async {
     },
   );
 }
-
-class MockArnsRepository extends Mock implements ARNSRepository {}

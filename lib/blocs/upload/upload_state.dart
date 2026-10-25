@@ -101,17 +101,11 @@ class UploadReady extends UploadState {
   final bool uploadIsPublic;
   final int numberOfFiles;
   final UploadParams params;
-  final bool showArnsCheckbox;
-  final bool showArnsNameSelection;
-  final bool loadingArNSNames;
-  final bool loadingArNSNamesError;
-  final bool arnsCheckboxChecked;
   final int totalSize;
   final List<UploadManifestModel> manifestFiles;
   final List<ManifestSelection> selectedManifestSelections;
   final bool showSettings;
   final bool canShowSettings;
-  final List<ANTRecord> arnsRecords;
 
   final bool isArConnect;
   final bool showReviewButtonText;
@@ -126,16 +120,10 @@ class UploadReady extends UploadState {
     required this.params,
     required this.numberOfFiles,
     required this.isArConnect,
-    required this.showArnsCheckbox,
-    required this.showArnsNameSelection,
-    this.loadingArNSNames = false,
-    this.loadingArNSNamesError = false,
-    required this.arnsCheckboxChecked,
     required this.totalSize,
     required this.showSettings,
     required this.canShowSettings,
     required this.manifestFiles,
-    required this.arnsRecords,
     required this.showReviewButtonText,
     required this.selectedManifestSelections,
     required this.shouldShowCustomManifestCheckbox,
@@ -153,22 +141,15 @@ class UploadReady extends UploadState {
     UploadParams? params,
     bool? isArConnect,
     bool? showSettings,
-    bool? showArnsCheckbox,
-    bool? showArnsNameSelection,
-    bool? loadingArNSNames,
-    bool? loadingArNSNamesError,
-    bool? arnsCheckboxChecked,
     int? totalSize,
     List<UploadManifestModel>? manifestFiles,
     bool? canShowSettings,
-    List<ANTRecord>? arnsRecords,
     bool? showReviewButtonText,
     List<ManifestSelection>? selectedManifestSelections,
     bool? shouldShowCustomManifestCheckbox,
     bool? uploadFileAsCustomManifest,
   }) {
     return UploadReady(
-      loadingArNSNames: loadingArNSNames ?? this.loadingArNSNames,
       isArConnect: isArConnect ?? this.isArConnect,
       uploadIsPublic: uploadIsPublic ?? this.uploadIsPublic,
       isDragNDrop: isDragNDrop ?? this.isDragNDrop,
@@ -176,17 +157,10 @@ class UploadReady extends UploadState {
       params: params ?? this.params,
       isNextButtonEnabled: isNextButtonEnabled ?? this.isNextButtonEnabled,
       numberOfFiles: numberOfFiles ?? this.numberOfFiles,
-      showArnsCheckbox: showArnsCheckbox ?? this.showArnsCheckbox,
-      showArnsNameSelection:
-          showArnsNameSelection ?? this.showArnsNameSelection,
-      loadingArNSNamesError:
-          loadingArNSNamesError ?? this.loadingArNSNamesError,
-      arnsCheckboxChecked: arnsCheckboxChecked ?? this.arnsCheckboxChecked,
       totalSize: totalSize ?? this.totalSize,
       showSettings: showSettings ?? this.showSettings,
       manifestFiles: manifestFiles ?? this.manifestFiles,
       canShowSettings: canShowSettings ?? this.canShowSettings,
-      arnsRecords: arnsRecords ?? this.arnsRecords,
       showReviewButtonText: showReviewButtonText ?? this.showReviewButtonText,
       selectedManifestSelections:
           selectedManifestSelections ?? this.selectedManifestSelections,
@@ -202,15 +176,6 @@ class UploadReady extends UploadState {
 
   @override
   toString() => 'UploadReady { paymentInfo: $paymentInfo }';
-}
-
-class AssigningUndername extends UploadState {
-  final ARNSUndername undername;
-
-  AssigningUndername({required this.undername});
-
-  @override
-  List<Object?> get props => [undername];
 }
 
 /// [UploadConfiguringLicense] means that the upload is ready to be performed but the user is configuring the license.
@@ -257,7 +222,6 @@ class UploadReviewWithLicense extends UploadState {
         readyState,
         licenseCategory,
         licenseState,
-        readyState.params.arnsUnderName,
       ];
 
   @override
@@ -309,11 +273,7 @@ class UploadFailure extends UploadState {
   List<Object?> get props => [error, failedTasks];
 }
 
-class UploadComplete extends UploadState {
-  final ARNSRecord? arnsRecord;
-
-  UploadComplete({this.arnsRecord});
-}
+class UploadComplete extends UploadState {}
 
 class UploadingManifests extends UploadState {
   final List<UploadManifestModel> manifestFiles;
@@ -369,13 +329,10 @@ class UploadManifestSelectPaymentMethod extends UploadState {
 class UploadManifestModel extends Equatable {
   final FileEntry entry;
   final bool isCompleted;
-  final bool isAssigningUndername;
   final bool freeThanksToTurbo;
   final bool isUploading;
   final String existingManifestFileId;
   final IOFile? file;
-  final ARNSUndername? undername;
-  final ANTRecord? antRecord;
   final bool selectionExpanded;
 
   const UploadManifestModel({
@@ -385,9 +342,6 @@ class UploadManifestModel extends Equatable {
     this.isUploading = false,
     required this.existingManifestFileId,
     this.file,
-    this.undername,
-    this.antRecord,
-    this.isAssigningUndername = false,
     this.selectionExpanded = false,
   });
 
@@ -397,9 +351,6 @@ class UploadManifestModel extends Equatable {
     String? existingManifestFileId,
     bool? freeThanksToTurbo,
     IOFile? file,
-    ARNSUndername? undername,
-    ANTRecord? antRecord,
-    bool? isAssigningUndername,
     FileEntry? entry,
     bool? selectionExpanded,
   }) {
@@ -411,9 +362,6 @@ class UploadManifestModel extends Equatable {
           existingManifestFileId ?? this.existingManifestFileId,
       freeThanksToTurbo: freeThanksToTurbo ?? this.freeThanksToTurbo,
       file: file ?? this.file,
-      undername: undername ?? this.undername,
-      antRecord: antRecord ?? this.antRecord,
-      isAssigningUndername: isAssigningUndername ?? this.isAssigningUndername,
       selectionExpanded: selectionExpanded ?? this.selectionExpanded,
     );
   }
@@ -425,9 +373,6 @@ class UploadManifestModel extends Equatable {
         isUploading,
         existingManifestFileId,
         freeThanksToTurbo,
-        isAssigningUndername,
-        antRecord,
-        undername,
         file,
       ];
 }

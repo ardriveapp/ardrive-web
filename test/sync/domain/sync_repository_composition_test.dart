@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:ardrive/drive_state/domain/drive_state_format_version.dart';
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart' show DriveKey;
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
@@ -61,8 +60,6 @@ String get currentVersionString => DriveStateFormatVersion.current.toString();
 /// `BatchProcessor` and the real revision/entry writers. Stood in for are the
 /// gateway, the indexer that answers a discovery query, and the metadata
 /// decode - the three things a test cannot have.
-
-class _MockARNSRepository extends Mock implements ARNSRepository {}
 
 class _MockUserPreferencesRepository extends Mock
     implements UserPreferencesRepository {}
@@ -428,7 +425,6 @@ void main() {
       configService: configService,
       batchProcessor: BatchProcessor(),
       snapshotValidationService: validation,
-      arnsRepository: _MockARNSRepository(),
       userPreferencesRepository: userPreferences,
       driveStateSyncSource: DriveStateSyncSource(
         arweave: arweave,

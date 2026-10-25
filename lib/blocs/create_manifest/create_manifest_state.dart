@@ -111,28 +111,6 @@ class CreateManifestPreparingManifest extends CreateManifestState {
   List<Object> get props => [parentFolder];
 }
 
-class CreateManifestPreparingManifestWithARNS extends CreateManifestState {
-  final FolderEntry parentFolder;
-  final String manifestName;
-  final String? existingManifestFileId;
-  final bool showAssignNameModal;
-
-  CreateManifestPreparingManifestWithARNS({
-    required this.parentFolder,
-    required this.manifestName,
-    this.existingManifestFileId,
-    this.showAssignNameModal = false,
-  });
-
-  @override
-  List<Object?> get props => [
-        parentFolder,
-        manifestName,
-        existingManifestFileId,
-        showAssignNameModal,
-      ];
-}
-
 class CreateManifestUploadReview extends CreateManifestState {
   final int manifestSize;
   final String manifestName;
@@ -146,7 +124,6 @@ class CreateManifestUploadReview extends CreateManifestState {
   final FolderEntry parentFolder;
   final String? existingManifestFileId;
   final bool canUpload;
-  final String? assignedName;
   final String? fallbackTxId;
 
   CreateManifestUploadReview({
@@ -160,7 +137,6 @@ class CreateManifestUploadReview extends CreateManifestState {
     required this.parentFolder,
     this.existingManifestFileId,
     this.canUpload = false,
-    this.assignedName,
     this.fallbackTxId,
   });
 
@@ -181,7 +157,6 @@ class CreateManifestUploadReview extends CreateManifestState {
         drive,
         parentFolder,
         existingManifestFileId,
-        assignedName,
         fallbackTxId,
       ];
 
@@ -196,7 +171,6 @@ class CreateManifestUploadReview extends CreateManifestState {
     FolderEntry? parentFolder,
     String? existingManifestFileId,
     bool? canUpload,
-    String? assignedName,
     String? fallbackTxId,
   }) {
     return CreateManifestUploadReview(
@@ -212,7 +186,6 @@ class CreateManifestUploadReview extends CreateManifestState {
       existingManifestFileId:
           existingManifestFileId ?? this.existingManifestFileId,
       canUpload: canUpload ?? this.canUpload,
-      assignedName: assignedName ?? this.assignedName,
       fallbackTxId: fallbackTxId ?? this.fallbackTxId,
     );
   }
@@ -245,32 +218,15 @@ class CreateManifestFailure extends CreateManifestState {
 
 /// Manifest transaction has been successfully uploaded
 class CreateManifestSuccess extends CreateManifestState {
-  final bool nameAssignedByArNS;
   final FolderEntry parentFolder;
 
   CreateManifestSuccess({
     required this.parentFolder,
-    this.nameAssignedByArNS = false,
   });
 }
 
 enum CreateManifestUploadProgress {
   preparingManifest,
   uploadingManifest,
-  assigningArNS,
   completed,
-}
-
-class CreateManifestLoadingARNS extends CreateManifestState {
-  final FolderEntry parentFolder;
-  final String manifestName;
-
-  CreateManifestLoadingARNS({
-    required this.parentFolder,
-    required this.manifestName,
-  });
-
-  @override
-  @override
-  List<Object?> get props => [];
 }

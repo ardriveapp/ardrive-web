@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
@@ -30,7 +29,6 @@ import 'package:ardrive/utils/upload_plan_utils.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart'
     hide TurboUploadTimeoutException, TurboRateLimitException;
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -55,7 +53,6 @@ class UploadCubit extends Cubit<UploadState> {
     required ArDriveUploadPreparationManager arDriveUploadManager,
     required ActivityTracker activityTracker,
     required ConfigService configService,
-    required ARNSRepository arnsRepository,
     required UploadRepository uploadRepository,
     required ManifestRepository manifestRepository,
     required CreateManifestCubit createManifestCubit,
@@ -71,7 +68,6 @@ class UploadCubit extends Cubit<UploadState> {
         _driveDao = driveDao,
         _auth = auth,
         _activityTracker = activityTracker,
-        _arnsRepository = arnsRepository,
         _uploadRepository = uploadRepository,
         _uploadThumbnail = configService.config.uploadThumbnails,
         _manifestRepository = manifestRepository,
@@ -87,7 +83,6 @@ class UploadCubit extends Cubit<UploadState> {
   final UploadFileSizeChecker _uploadFileSizeChecker;
   final ArDriveAuth _auth;
   final ActivityTracker _activityTracker;
-  final ARNSRepository _arnsRepository;
   final ManifestRepository _manifestRepository;
   final CreateManifestCubit _createManifestCubit;
   final ArDriveUploadPreparationManager _arDriveUploadManager;
@@ -155,8 +150,6 @@ class UploadCubit extends Cubit<UploadState> {
               entry: e.manifest,
               freeThanksToTurbo: false,
               existingManifestFileId: e.manifest.id,
-              antRecord: e.antRecord,
-              undername: e.undername,
             ))
         .toList();
 
@@ -254,60 +247,6 @@ class UploadCubit extends Cubit<UploadState> {
       ));
 
       await _createManifestCubit.uploadManifest(method: _manifestUploadMethod);
-
-      final manifestFile = await _driveDao
-          .fileById(fileId: manifestModels[i].existingManifestFileId)
-          .getSingleOrNull();
-
-      if (manifestFile == null) {
-        throw StateError('Manifest file not found');
-      }
-
-      if (manifestModels[i].antRecord != null) {
-        ARNSUndername undername;
-
-        if (manifestModels[i].undername == null) {
-          undername = ARNSUndernameFactory.createDefaultUndername(
-            transactionId: manifestFile.dataTxId,
-            domain: manifestModels[i].antRecord!.domain,
-          );
-        } else {
-          undername = ARNSUndernameFactory.create(
-            name: manifestModels[i].undername!.name,
-            transactionId: manifestFile.dataTxId,
-            domain: manifestModels[i].antRecord!.domain,
-          );
-        }
-
-        manifestModels[i] = manifestModels[i].copyWith(
-            isCompleted: false, isUploading: false, isAssigningUndername: true);
-        emit(UploadingManifests(
-          manifestFiles: manifestModels,
-          completedCount: ++completedCount,
-        ));
-
-        try {
-          await _arnsRepository.setUndernamesToFile(
-            undername: undername,
-            driveId: _driveId,
-            fileId: manifestModels[i].existingManifestFileId,
-            processId: manifestModels[i].antRecord!.processId,
-          );
-        } catch (e) {
-          // The manifest already uploaded; a failed name assignment (e.g. a
-          // payment rejection on the name data item) must not hang the flow.
-          // The name can be reassigned later from the details panel.
-          logger.e('Failed to assign name to uploaded manifest', e);
-        }
-
-        manifestModels[i] = manifestModels[i].copyWith(
-            isCompleted: true, isUploading: false, isAssigningUndername: false);
-
-        emit(UploadingManifests(
-          manifestFiles: manifestModels,
-          completedCount: completedCount,
-        ));
-      }
     }
 
     emit(UploadComplete());
@@ -337,7 +276,6 @@ class UploadCubit extends Cubit<UploadState> {
   Map<String, WebFolder> _foldersByPath = {};
   UploadMethod? _uploadMethod;
   bool _uploadThumbnail;
-  bool _showArnsNameSelectionCheckBoxValue = false;
   bool? _containsLargeTurboUpload;
   List<String> _paidBy = [];
 
@@ -345,11 +283,6 @@ class UploadCubit extends Cubit<UploadState> {
   final Map<String, String> _conflictingFiles = {};
   final List<String> _conflictingFolders = [];
   final List<String> _failedFiles = [];
-
-  /// ArNS
-  ANTRecord? _selectedAntRecord;
-  List<ANTRecord> _ants = [];
-  ARNSUndername? _selectedUndername;
 
   /// Thumbnail upload
   void changeUploadThumbnailOption(bool uploadThumbnail) {
@@ -366,82 +299,6 @@ class UploadCubit extends Cubit<UploadState> {
 
   void hideSettings() {
     emit((state as UploadReady).copyWith(showSettings: false));
-  }
-
-  /// ArNS name selection
-  void selectUndernameWithLicense({
-    ANTRecord? antRecord,
-    ARNSUndername? undername,
-  }) {
-    _selectedAntRecord = antRecord;
-    _selectedUndername = undername;
-
-    final reviewWithLicense = state as UploadReviewWithLicense;
-
-    final params = reviewWithLicense.readyState.params.copyWith(
-      arnsUnderName: _getSelectedUndername(),
-    );
-
-    final readyState = reviewWithLicense.readyState.copyWith(
-      params: params,
-      showArnsNameSelection: false,
-    );
-
-    emit(reviewWithLicense.copyWith(readyState: readyState));
-  }
-
-  void selectUndername(ANTRecord? antRecord, ARNSUndername? undername) {
-    _selectedAntRecord = antRecord;
-    _selectedUndername = undername;
-
-    final readyState = (state as UploadReady).copyWith(
-      params: (state as UploadReady).params.copyWith(
-            arnsUnderName: _getSelectedUndername(),
-          ),
-    );
-
-    emit(UploadReview(readyState: readyState));
-  }
-
-  void changeShowArnsNameSelection(bool showArnsNameSelection) {
-    _showArnsNameSelectionCheckBoxValue = showArnsNameSelection;
-
-    if (state is UploadReady) {
-      final readyState = state as UploadReady;
-      emit(readyState.copyWith(arnsCheckboxChecked: showArnsNameSelection));
-    }
-  }
-
-  void showArnsNameSelection(UploadReady readyState) {
-    emit(readyState.copyWith(showArnsNameSelection: true));
-  }
-
-  void hideArnsNameSelection(UploadReady readyState) {
-    emit(readyState.copyWith(showArnsNameSelection: false));
-  }
-
-  void cancelArnsNameSelection() {
-    if (state is UploadReady) {
-      logger.d('Cancelling ARNS name selection');
-
-      final readyState = state as UploadReady;
-
-      emit(readyState.copyWith(
-        showArnsNameSelection: false,
-        loadingArNSNames: false,
-        loadingArNSNamesError: false,
-        showArnsCheckbox: true,
-      ));
-    } else if (state is UploadReviewWithLicense) {
-      final reviewWithLicense = state as UploadReviewWithLicense;
-      final readyState = reviewWithLicense.readyState.copyWith(
-        showArnsNameSelection: false,
-        loadingArNSNames: false,
-        loadingArNSNamesError: false,
-        showArnsCheckbox: true,
-      );
-      emit(readyState);
-    }
   }
 
   /// Upload method
@@ -467,8 +324,6 @@ class UploadCubit extends Cubit<UploadState> {
         isNextButtonEnabled: canUpload,
       ));
     } else if (state is UploadReadyToPrepare) {
-      bool showArnsCheckbox = false;
-
       if (_targetDrive.isPublic && _files.length == 1) {
         final fileIsACustomManifest =
             await isCustomManifest(_files.first.ioFile);
@@ -484,45 +339,16 @@ class UploadCubit extends Cubit<UploadState> {
             isDragNDrop: _isDragNDrop,
             isNextButtonEnabled: canUpload,
             isArConnect: (state as UploadReadyToPrepare).isArConnect,
-            showArnsCheckbox: showArnsCheckbox,
-            showArnsNameSelection: false,
-            loadingArNSNames: true,
-            arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
             showSettings: showSettings,
             canShowSettings: showSettings,
             manifestFiles: _manifestFiles.values.toList(),
-            arnsRecords: _ants,
             showReviewButtonText: false,
             selectedManifestSelections: _selectedManifestModels,
             shouldShowCustomManifestCheckbox: fileIsACustomManifest,
             uploadFileAsCustomManifest: false,
           ),
         );
-
-        try {
-          final hasUndernames = (await _arnsRepository
-                  .getAntRecordsForWallet(_auth.currentUser.walletAddress))
-              .isNotEmpty;
-
-          showArnsCheckbox = hasUndernames;
-
-          if (state is! UploadReady) {
-            logger.d('State is not UploadReady');
-            return;
-          }
-
-          final readyState = state as UploadReady;
-
-          emit(readyState.copyWith(
-              loadingArNSNames: false, showArnsCheckbox: showArnsCheckbox));
-        } catch (e) {
-          if (state is UploadReady) {
-            final readyState = state as UploadReady;
-            emit(readyState.copyWith(
-                loadingArNSNamesError: true, loadingArNSNames: false));
-          }
-        }
       } else {
         emit(
           UploadReady(
@@ -535,13 +361,9 @@ class UploadCubit extends Cubit<UploadState> {
             isDragNDrop: _isDragNDrop,
             isNextButtonEnabled: canUpload,
             isArConnect: (state as UploadReadyToPrepare).isArConnect,
-            showArnsCheckbox: showArnsCheckbox,
-            showArnsNameSelection: false,
-            arnsCheckboxChecked: _showArnsNameSelectionCheckBoxValue,
             totalSize: await _getTotalSize(),
             showSettings: showSettings,
             manifestFiles: _manifestFiles.values.toList(),
-            arnsRecords: _ants,
             canShowSettings: showSettings,
             showReviewButtonText: false,
             selectedManifestSelections: _selectedManifestModels,
@@ -556,9 +378,7 @@ class UploadCubit extends Cubit<UploadState> {
 
   void initialScreenUpload() {
     if (state is UploadReady) {
-      if (_showArnsNameSelectionCheckBoxValue) {
-        showArnsNameSelection(state as UploadReady);
-      } else if (_selectedManifestModels.isNotEmpty) {
+      if (_selectedManifestModels.isNotEmpty) {
         emit(UploadReview(readyState: state as UploadReady));
       } else {
         final readyState = state as UploadReady;
@@ -625,12 +445,8 @@ class UploadCubit extends Cubit<UploadState> {
               'Invalid license category: ${configuringLicense.licenseCategory}');
       }
 
-      final readyState = configuringLicense.readyState.copyWith(
-        showArnsNameSelection: _showArnsNameSelectionCheckBoxValue,
-      );
-
       emit(UploadReviewWithLicense(
-        readyState: readyState,
+        readyState: configuringLicense.readyState,
         licenseCategory: configuringLicense.licenseCategory,
         licenseState: licenseState,
       ));
@@ -648,12 +464,7 @@ class UploadCubit extends Cubit<UploadState> {
       );
       emit(prevState);
     } else if (state is UploadReview) {
-      final reviewWithArnsName = state as UploadReview;
-      final readyState = reviewWithArnsName.readyState.copyWith(
-        showArnsNameSelection: false,
-      );
-
-      emit(readyState);
+      emit((state as UploadReview).readyState);
     }
   }
 
@@ -668,7 +479,7 @@ class UploadCubit extends Cubit<UploadState> {
         licenseStateConfigured: reviewWithLicense.licenseState,
       );
     } else if (state is UploadReview) {
-      startUploadWithArnsName();
+      _startReviewedUpload();
     }
   }
 
@@ -933,27 +744,9 @@ class UploadCubit extends Cubit<UploadState> {
     emit(UploadLoadingFilesSuccess());
   }
 
-  Future<List<ARNSUndername>> getARNSUndernames(
-    ANTRecord antRecord,
-  ) async {
-    return _arnsRepository.getARNSUndernames(antRecord);
-  }
-
   Future<void> startUploadPreparation({
     bool isRetryingToPayWithTurbo = false,
   }) async {
-    final walletAddress = await _auth.getWalletAddress();
-    _arnsRepository.getAntRecordsForWallet(walletAddress!).then((value) {
-      _ants = value;
-      if (state is UploadReady) {
-        emit((state as UploadReady).copyWith(arnsRecords: value));
-      }
-    }).catchError((e) {
-      logger.e(
-          'Error getting ant records for wallet. Proceeding with the upload...',
-          e);
-    });
-
     _files
         .removeWhere((file) => filesNamesToExclude.contains(file.ioFile.name));
     _targetDrive = await _driveDao.driveById(driveId: _driveId).getSingle();
@@ -1109,17 +902,6 @@ class UploadCubit extends Cubit<UploadState> {
         _uploadThumbnail = false;
       }
 
-      if (manifestFileEntries.isNotEmpty && _ants.isEmpty) {
-        try {
-          _ants = await _arnsRepository
-              .getAntRecordsForWallet(_auth.currentUser.walletAddress);
-        } catch (e) {
-          logger.e(
-              'Error getting ant records for wallet. Proceeding with the upload...',
-              e);
-        }
-      }
-
       emit(
         UploadReadyToPrepare(
           params: UploadParams(
@@ -1146,14 +928,12 @@ class UploadCubit extends Cubit<UploadState> {
   }
 
   /// Upload
-  void startUploadWithArnsName() {
-    final reviewWithArnsName = state as UploadReview;
+  void _startReviewedUpload() {
+    final review = state as UploadReview;
 
     startUpload(
-      uploadPlanForAr:
-          reviewWithArnsName.readyState.paymentInfo.uploadPlanForAR!,
-      uploadPlanForTurbo:
-          reviewWithArnsName.readyState.paymentInfo.uploadPlanForTurbo,
+      uploadPlanForAr: review.readyState.paymentInfo.uploadPlanForAR!,
+      uploadPlanForTurbo: review.readyState.paymentInfo.uploadPlanForTurbo,
     );
   }
 
@@ -1313,9 +1093,6 @@ class UploadCubit extends Cubit<UploadState> {
       foldersByPath: _foldersByPath,
       licenseStateConfigured: licenseStateConfigured,
       uploadThumbnail: _uploadThumbnail,
-      assignedName: _files.length == 1 && _getSelectedUndername() != null
-          ? getLiteralARNSRecordName(_getSelectedUndername()!)
-          : null,
       paidBy: _paidBy,
     );
 
@@ -1347,15 +1124,6 @@ class UploadCubit extends Cubit<UploadState> {
 
     uploadController.onDone(
       (tasks) async {
-        /// If there is only one file in the upload, we assign the undername if any assigned
-        if (tasks.whereType<FileUploadTask>().length == 1) {
-          final task = tasks.whereType<FileUploadTask>().first;
-          await _postUploadFile(
-            task: task,
-            uploadController: uploadController,
-          );
-        }
-
         if (_selectedManifestModels.isNotEmpty) {
           await prepareManifestUpload();
         }
@@ -1382,9 +1150,6 @@ class UploadCubit extends Cubit<UploadState> {
       uploadMethod: _uploadMethod!,
       uploadThumbnail: _uploadThumbnail,
       paidBy: _paidBy,
-      assignedName: _getSelectedUndername() != null
-          ? getLiteralARNSRecordName(_getSelectedUndername()!)
-          : null,
     );
 
     uploadController.onError((tasks) {
@@ -1419,16 +1184,6 @@ class UploadCubit extends Cubit<UploadState> {
     // TODO: implement on the upload repository
     uploadController.onDone(
       (tasks) async {
-        /// If there is only one file in the upload, we assign the undername if any assigned
-        if (tasks.length == 1) {
-          if (tasks.first is FileUploadTask) {
-            await _postUploadFile(
-              task: tasks.first as FileUploadTask,
-              uploadController: uploadController,
-            );
-          }
-        }
-
         unawaited(_profileCubit.refreshBalance());
 
         logger.i(
@@ -1446,62 +1201,6 @@ class UploadCubit extends Cubit<UploadState> {
     );
   }
 
-  Future<void> _postUploadFile({
-    required FileUploadTask task,
-    required UploadController uploadController,
-  }) async {
-    if (task.status != UploadStatus.canceled) {
-      final metadata = task.metadata;
-      if (_selectedAntRecord != null || _selectedUndername != null) {
-        final updatedTask = task.copyWith(
-          status: UploadStatus.assigningUndername,
-        );
-
-        /// Emits
-        emit(
-          UploadInProgress(
-            progress: UploadProgress(
-              progressInPercentage: 1,
-              numberOfItems: 1,
-              numberOfUploadedItems: 1,
-              tasks: {task.id: updatedTask},
-              totalSize: task.uploadItem!.size,
-              totalUploaded: task.uploadItem!.size,
-              hasUploadInProgress: false,
-            ),
-            totalProgress: 1,
-            controller: uploadController,
-            equatableBust: UniqueKey(),
-            uploadMethod: _uploadMethod!,
-          ),
-        );
-
-        final undername = _getSelectedUndername()!;
-
-        final newUndername = ARNSUndernameFactory.create(
-          name: undername.name,
-          domain: undername.domain,
-          transactionId: metadata.dataTxId!,
-        );
-
-        try {
-          await _arnsRepository.setUndernamesToFile(
-            undername: newUndername,
-            driveId: _targetDrive.id,
-            fileId: metadata.id,
-            processId: _selectedAntRecord!.processId,
-            uploadNewRevision: false,
-          );
-        } catch (e) {
-          // The file already uploaded; a failed name assignment (e.g. a
-          // payment rejection on the name data item) must not hang the
-          // upload. The name can be reassigned later from the details panel.
-          logger.e('Failed to assign name to uploaded file', e);
-        }
-      }
-    }
-  }
-
   Future<void> _verifyIfUploadContainsLargeFilesUsingTurbo() async {
     if (_containsLargeTurboUpload == null) {
       _containsLargeTurboUpload = false;
@@ -1511,21 +1210,6 @@ class UploadCubit extends Cubit<UploadState> {
         return;
       }
     }
-  }
-
-  ARNSUndername? _getSelectedUndername() {
-    if (_selectedUndername != null) {
-      return _selectedUndername;
-    }
-
-    if (_selectedAntRecord != null) {
-      return ARNSUndernameFactory.createDefaultUndername(
-        domain: _selectedAntRecord!.domain,
-        transactionId: 'to_assign',
-      );
-    }
-
-    return null;
   }
 
   void _removeFilesWithFileNameConflicts() {

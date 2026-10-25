@@ -1,8 +1,6 @@
 import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/components/turbo_payment_required_dialog.dart';
-import 'package:ardrive/arns/presentation/assign_name_modal.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
@@ -80,10 +78,8 @@ Future<void> promptToCreateManifest(
                 folderRepository: context.read<FolderRepository>(),
               ),
               ARFSRevisionStatusUtils(context.read<FileRepository>()),
-              context.read<ARNSRepository>(),
               context.read<FileRepository>(),
             ),
-            arnsRepository: context.read<ARNSRepository>(),
           ),
         ),
       ],
@@ -188,10 +184,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         return ProgressDialog(
           title: appLocalizationsOf(context).preparingManifestEmphasized,
         );
-      } else if (state is CreateManifestLoadingARNS) {
-        return const ProgressDialog(
-          title: 'Loading ArNS Records...',
-        );
       } else if (state is CreateManifestNameConflict) {
         return _createManifestNameConflict(
           contexty: context,
@@ -232,18 +224,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         );
       } else if (state is CreateManifestFolderLoadSuccess) {
         return _selectFolder(state, context);
-      } else if (state is CreateManifestPreparingManifestWithARNS) {
-        if (state.showAssignNameModal) {
-          return _assignArNSNameModal(
-            context: context,
-            textStyle: textStyle,
-          );
-        }
-
-        return _createManifestPreparingManifestWithARNS(
-          context: context,
-          textStyle: textStyle,
-        );
       }
 
       return const SizedBox();
@@ -277,23 +257,12 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            if (!state.nameAssignedByArNS) ...[
-              Text(
-                'Your deployment has been created.',
-                style: typography.paragraphNormal(
-                  color: colorTokens.textMid,
-                ),
+            Text(
+              'Your deployment has been created.',
+              style: typography.paragraphNormal(
+                color: colorTokens.textMid,
               ),
-            ],
-            if (state.nameAssignedByArNS) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Your deployment has been assigned an ArNS name',
-                style: typography.paragraphNormal(
-                  color: colorTokens.textMid,
-                ),
-              ),
-            ],
+            ),
           ],
         ),
       ),
@@ -318,8 +287,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         return 'Preparing deployment...';
       case CreateManifestUploadProgress.uploadingManifest:
         return 'Uploading deployment...';
-      case CreateManifestUploadProgress.assigningArNS:
-        return 'Assigning ArNS Name...';
       case CreateManifestUploadProgress.completed:
         return 'Completed';
     }
@@ -333,59 +300,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     }
 
     return folderNode.isEmpty();
-  }
-
-  Widget _assignArNSNameModal({
-    required BuildContext context,
-    required TextStyle textStyle,
-  }) {
-    return AssignArNSNameModal(
-      driveDetailCubit: context.read<DriveDetailCubit>(),
-      justSelectName: true,
-      updateARNSRecords: false,
-      customLoadingText: 'Fetching ArNS names...',
-      customNameSelectionTitle: 'Assign ArNS name to new deployment',
-      onSelectionConfirmed: (selection) {
-        context.read<CreateManifestCubit>().selectArns(
-              selection.selectedName,
-              selection.selectedUndername,
-            );
-      },
-      onEmptySelection: (state) {
-        context.read<CreateManifestCubit>().prepareManifestTx(
-              manifestName: (context.read<CreateManifestCubit>().state
-                      as CreateManifestPreparingManifestWithARNS)
-                  .manifestName,
-            );
-      },
-      canClose: false,
-    );
-  }
-
-  Widget _createManifestPreparingManifestWithARNS({
-    required BuildContext context,
-    required TextStyle textStyle,
-  }) {
-    return ArDriveStandardModalNew(
-      width: kMediumDialogWidth,
-      title: 'Assign ArNS name?',
-      description:
-          'You have ArNS names associated with your address. Do you want to assign one to this new deployment? You can always do this later.',
-      actions: [
-        ModalAction(
-          action: () {
-            context.read<CreateManifestCubit>().selectArns(null, null);
-          },
-          title: 'No',
-        ),
-        ModalAction(
-          action: () async {
-            context.read<CreateManifestCubit>().openAssignNameModal();
-          },
-          title: 'Yes',
-        ),
-      ],
-    );
   }
 
   Widget _createManifestNameConflict({
@@ -561,31 +475,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                         fontWeight: ArFontWeight.bold,
                       ),
                     ),
-                    if (state.assignedName != null) ...[
-                      RichText(
-                        text: TextSpan(
-                          style: typography.paragraphNormal(
-                            color: colorTokens.textMid,
-                          ),
-                          children: [
-                            TextSpan(
-                              text: 'ArNS Name: ',
-                              style: typography.paragraphNormal(
-                                color: colorTokens.textMid,
-                                fontWeight: ArFontWeight.semiBold,
-                              ),
-                            ),
-                            TextSpan(
-                              text: state.assignedName,
-                              style: typography.paragraphNormal(
-                                color: colorTokens.textMid,
-                                fontWeight: ArFontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                     Text(
                       filesize(state.manifestSize),
                       style: textStyle,

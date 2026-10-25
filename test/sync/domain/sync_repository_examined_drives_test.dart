@@ -1,4 +1,3 @@
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/config/app_config.dart';
@@ -7,7 +6,6 @@ import 'package:ardrive/sync/domain/repositories/sync_repository.dart';
 import 'package:ardrive/sync/domain/sync_progress.dart';
 import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -34,8 +32,6 @@ class _MockBatchProcessor extends Mock implements BatchProcessor {}
 
 class _MockSnapshotValidationService extends Mock
     implements SnapshotValidationService {}
-
-class _MockARNSRepository extends Mock implements ARNSRepository {}
 
 class _MockUserPreferencesRepository extends Mock
     implements UserPreferencesRepository {}
@@ -89,7 +85,6 @@ void main() {
   late MockArweaveService arweave;
   late MockDriveDao driveDao;
   late MockConfigService configService;
-  late _MockARNSRepository arnsRepository;
   late SyncRepository syncRepository;
   late _MockWallet wallet;
 
@@ -102,7 +97,6 @@ void main() {
     arweave = MockArweaveService();
     driveDao = MockDriveDao();
     configService = MockConfigService();
-    arnsRepository = _MockARNSRepository();
     wallet = _MockWallet();
 
     when(() => wallet.getAddress()).thenAnswer((_) async => ownerAddress);
@@ -120,11 +114,6 @@ void main() {
     when(() => arweave.gatewayFallback).thenReturn(gatewayFallback);
     when(() => gatewayFallback.cachedGateways).thenReturn([]);
 
-    when(() => arnsRepository.getAntRecordsForWallet(
-          any(),
-          update: any(named: 'update'),
-        )).thenAnswer((_) async => <ANTRecord>[]);
-
     when(() => arweave.getCurrentBlockHeight()).thenAnswer((_) async => 100000);
 
     syncRepository = SyncRepository(
@@ -133,7 +122,6 @@ void main() {
       configService: configService,
       batchProcessor: _MockBatchProcessor(),
       snapshotValidationService: _MockSnapshotValidationService(),
-      arnsRepository: arnsRepository,
       userPreferencesRepository: _MockUserPreferencesRepository(),
     );
   });

@@ -1,4 +1,3 @@
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/entities/entities.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
@@ -13,7 +12,6 @@ import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,8 +21,6 @@ import '../../test_utils/utils.dart';
 
 class _MockSnapshotValidationService extends Mock
     implements SnapshotValidationService {}
-
-class _MockARNSRepository extends Mock implements ARNSRepository {}
 
 class _MockUserPreferencesRepository extends Mock
     implements UserPreferencesRepository {}
@@ -56,7 +52,6 @@ void main() {
   late MockArweaveService arweave;
   late MockConfigService configService;
   late _MockSnapshotValidationService snapshotValidation;
-  late _MockARNSRepository arnsRepository;
   late _MockUserPreferencesRepository userPreferences;
   late _MockWallet wallet;
   late SyncRepository syncRepository;
@@ -200,7 +195,6 @@ void main() {
     arweave = MockArweaveService();
     configService = MockConfigService();
     snapshotValidation = _MockSnapshotValidationService();
-    arnsRepository = _MockARNSRepository();
     userPreferences = _MockUserPreferencesRepository();
     wallet = _MockWallet();
 
@@ -232,12 +226,6 @@ void main() {
           ownerOverrides: any(named: 'ownerOverrides'),
           verifiedSink: any(named: 'verifiedSink'),
         )).thenAnswer((_) async => <String?, int>{});
-    when(() => arnsRepository.getAntRecordsForWallet(any(),
-        update: any(named: 'update'))).thenAnswer((_) async => <ANTRecord>[]);
-    when(() => arnsRepository.waitForARNSRecordsToUpdate())
-        .thenAnswer((_) async {});
-    when(() => arnsRepository.saveAllFilesWithAssignedNames())
-        .thenAnswer((_) async {});
     when(() => userPreferences.load()).thenAnswer(
       (_) async => const UserPreferences(
         currentTheme: ArDriveThemes.light,
@@ -255,7 +243,6 @@ void main() {
       configService: configService,
       batchProcessor: BatchProcessor(),
       snapshotValidationService: snapshotValidation,
-      arnsRepository: arnsRepository,
       userPreferencesRepository: userPreferences,
     );
   });

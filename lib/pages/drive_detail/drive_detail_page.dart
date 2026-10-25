@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:ardrive/app_shell.dart';
-import 'package:ardrive/arns/presentation/ant_icon.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -59,7 +58,6 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/compare_alphabetically_and_natural.dart';
 import 'package:ardrive/utils/file_type_label.dart';
 import 'package:ardrive/utils/format_date.dart';
-import 'package:ardrive/utils/has_arns_name.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/mobile_screen_orientation.dart';
@@ -1532,14 +1530,6 @@ class ArDriveItemListTile extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (hasArnsNames(item)) ...[
-                            const SizedBox(width: 8),
-                            Transform(
-                              transform: Matrix4.translationValues(0, 2, 0),
-                              child: AntIcon(
-                                  fileDataTableItem: item as FileDataTableItem),
-                            ),
-                          ],
                         ],
                       ),
                       Row(
