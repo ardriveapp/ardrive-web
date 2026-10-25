@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/copy_button.dart';
@@ -42,6 +44,7 @@ import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 
 class ProfileCard extends StatefulWidget {
@@ -70,14 +73,77 @@ class _ProfileCardState extends State<ProfileCard> {
   /// this, rather than a scan of every revision.
   _AccountStats? _countedStats;
   String? _countedStatsKey;
+  String? _countedVersion;
+
+  /// Raised each time the watch reports a change. The version alone can't
+  /// say whether the cache is current: it can come back to a value it had
+  /// before while what it counts has changed, so a count started before a
+  /// change must not be kept.
+  int _statsGeneration = 0;
+
+  /// Counts again while the card is open, whenever what it counts changes.
+  /// Opening the card alone was not enough: a sync can say it is done while
+  /// the gateway is still confirming its files, and the card went on reading
+  /// "0 files" until it was closed and opened again.
+  StreamSubscription<String>? _permanentDataChanges;
+
+  @override
+  void dispose() {
+    _permanentDataChanges?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileCubit, ProfileState>(
-      builder: (context, state) => state is ProfileLoggedIn
-          ? _loggedInView(context)
-          : _notLoggedInView(context),
+      builder: (context, state) {
+        _followPermanentData(state is ProfileLoggedIn && _showProfileCard);
+
+        return state is ProfileLoggedIn
+            ? _loggedInView(context)
+            : _notLoggedInView(context);
+      },
     );
+  }
+
+  /// Watches only while the card is open: the version is re-read on every
+  /// write to the tables it reads, which during a sync is every batch.
+  void _followPermanentData(bool follow) {
+    if (!follow) {
+      _permanentDataChanges?.cancel();
+      _permanentDataChanges = null;
+      return;
+    }
+
+    if (_permanentDataChanges != null) return;
+
+    var isFirst = true;
+    _permanentDataChanges = context
+        .read<DriveDao>()
+        .watchPermanentDataVersion()
+        .distinct()
+        // A recount scans every revision, so at most one a second, and
+        // always one after the last change.
+        .throttleTime(
+          const Duration(seconds: 1),
+          leading: true,
+          trailing: true,
+        )
+        .listen((version) {
+      // The first value is what the card counted from when it opened, unless
+      // a change landed in between: skipping it then lost the only notice of
+      // that change.
+      final isOpeningValue = isFirst && version == _countedVersion;
+      isFirst = false;
+      if (isOpeningValue || !mounted) return;
+
+      setState(() {
+        _statsGeneration++;
+        _countedStats = null;
+        _countedStatsKey = null;
+        _accountStatsFuture = null;
+      });
+    });
   }
 
   Widget _notLoggedInView(BuildContext context) {
@@ -500,8 +566,13 @@ class _ProfileCardState extends State<ProfileCard> {
                 Text(
                   [
                     permanenceCount(stats.driveCount, 'drive'),
-                    permanenceCount(stats.fileCount, 'file'),
-                    formatPermanenceSize(stats.permanentBytes),
+                    // "0 files" while every file is still waiting to be
+                    // confirmed reads as a statement about the account, so
+                    // the line waits for a figure that means something.
+                    if (!stats.isStillLanding) ...[
+                      permanenceCount(stats.fileCount, 'file'),
+                      formatPermanenceSize(stats.permanentBytes),
+                    ],
                   ].join(permanenceSeparator),
                   style: typography.caption(
                     color: colorTokens.textLow,
@@ -682,6 +753,8 @@ class _ProfileCardState extends State<ProfileCard> {
     DriveDao driveDao,
     String walletAddress,
   ) async {
+    final generation = _statsGeneration;
+
     // Only the drives this wallet owns, and only the ones it is showing.
     //
     // A drive shared with the account is somebody else's storage, readable
@@ -704,11 +777,8 @@ class _ProfileCardState extends State<ProfileCard> {
         .toList();
 
     final driveIds = [for (final drive in drives) drive.id];
-    final key = [
-      walletAddress,
-      ...driveIds,
-      await driveDao.permanentDataVersion(),
-    ].join('|');
+    final version = await driveDao.permanentDataVersion();
+    final key = [walletAddress, ...driveIds, version].join('|');
 
     if (key == _countedStatsKey && _countedStats != null) {
       return _countedStats!;
@@ -722,9 +792,13 @@ class _ProfileCardState extends State<ProfileCard> {
       fileCount: fileCount,
       permanentByYear: permanentByYear,
       driveIds: driveIds,
+      isStillLanding: fileCount == 0 && await driveDao.hasPendingData(driveIds),
     );
-    _countedStats = stats;
-    _countedStatsKey = key;
+    if (generation == _statsGeneration) {
+      _countedStats = stats;
+      _countedStatsKey = key;
+      _countedVersion = version;
+    }
 
     return stats;
   }
@@ -1725,6 +1799,10 @@ class _AccountStats {
   /// [DriveDao.permanentFileCount].
   final int fileCount;
 
+  /// No file counted yet, but some are waiting for their data to be
+  /// confirmed. See [DriveDao.hasPendingData].
+  final bool isStillLanding;
+
   int get permanentBytes =>
       permanentByYear.values.fold(0, (sum, year) => sum + year.bytes);
 
@@ -1733,5 +1811,6 @@ class _AccountStats {
     this.fileCount = 0,
     this.permanentByYear = const {},
     this.driveIds = const [],
+    this.isStillLanding = false,
   });
 }

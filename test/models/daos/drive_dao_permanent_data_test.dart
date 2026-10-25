@@ -192,5 +192,65 @@ void main() {
         await driveDao.permanentDataVersion(),
       );
     });
+
+    // The open profile card follows this to count again when the gateway
+    // confirms what a sync wrote as pending.
+    test('can be watched, and moves when an upload lands', () async {
+      await addRevision('a', size: 100);
+      await markTx('a-tx', TransactionStatus.pending);
+
+      final versions = <String>[];
+      final subscription =
+          driveDao.watchPermanentDataVersion().listen(versions.add);
+      await pumpEventQueue();
+
+      await (db.update(db.networkTransactions)
+            ..where((t) => t.id.equals('a-tx')))
+          .write(const NetworkTransactionsCompanion(
+              status: Value(TransactionStatus.confirmed)));
+      await pumpEventQueue();
+      await subscription.cancel();
+
+      expect(versions.toSet(), hasLength(2));
+      expect(versions.last, await driveDao.permanentDataVersion());
+    });
+  });
+
+  group('pending data', () {
+    // What a first sync leaves behind until the gateway answers: every file
+    // written with its data pending, so none of them is counted yet.
+    test("is there while a file's data waits to be confirmed", () async {
+      await addRevision('a', size: 100);
+      await markTx('a-tx', TransactionStatus.pending);
+
+      expect(await driveDao.permanentFileCount(['drive']), 0);
+      expect(await driveDao.hasPendingData(['drive']), isTrue);
+    });
+
+    test('is gone once it is confirmed, or when it failed', () async {
+      await addRevision('a', size: 100);
+      await addRevision('b', size: 100);
+      await markTx('a-tx', TransactionStatus.confirmed);
+      await markTx('b-tx', TransactionStatus.failed);
+
+      expect(await driveDao.hasPendingData(['drive']), isFalse);
+    });
+
+    test('belongs to the drives asked about, and not to a pin', () async {
+      await addRevision('theirs', size: 100, driveId: 'other');
+      await markTx('theirs-tx', TransactionStatus.pending);
+      await addRevision('pin', size: 100, pinnedBy: 'someone');
+      await markTx('pin-tx', TransactionStatus.pending);
+
+      expect(await driveDao.hasPendingData(['drive']), isFalse);
+      expect(await driveDao.hasPendingData([]), isFalse);
+    });
+
+    test('is not data synced from the network with no row of its own',
+        () async {
+      await addRevision('a', size: 100);
+
+      expect(await driveDao.hasPendingData(['drive']), isFalse);
+    });
   });
 }

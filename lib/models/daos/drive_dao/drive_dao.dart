@@ -1202,20 +1202,53 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   /// Revisions are only ever added, so the newest row's id moves with every
   /// one written. An upload that lands leaves the pending count; one that
   /// fails moves to the failed count.
-  Future<String> permanentDataVersion() async {
-    final row = await customSelect(
-      '''
+  Future<String> permanentDataVersion() =>
+      _permanentDataVersionQuery().getSingle();
+
+  /// [permanentDataVersion] as it changes, for figures that stay on screen
+  /// while a sync or an upload is still settling what they count.
+  Stream<String> watchPermanentDataVersion() =>
+      _permanentDataVersionQuery().watchSingle();
+
+  Selectable<String> _permanentDataVersionQuery() => customSelect(
+        '''
       SELECT (SELECT MAX(rowid) FROM file_revisions) AS revisions,
              (SELECT COUNT(*) FROM network_transactions
                WHERE status = '${TransactionStatus.pending}') AS pending,
              (SELECT COUNT(*) FROM network_transactions
                WHERE status = '${TransactionStatus.failed}') AS failed
       ''',
+        readsFrom: {fileRevisions, networkTransactions},
+      ).map(
+          (row) => '${row.read<int?>('revisions')}:${row.read<int>('pending')}'
+              ':${row.read<int>('failed')}');
+
+  /// Whether any file in [driveIds] has data still waiting to land: what
+  /// [permanentFileCount] leaves out until it does. Sync writes every file it
+  /// finds with its data pending, until the gateway confirms it, so right
+  /// after a first sync this can hold for every file.
+  Future<bool> hasPendingData(Iterable<String> driveIds) async {
+    final ids = driveIds.toList();
+
+    if (ids.isEmpty) {
+      return false;
+    }
+
+    final row = await customSelect(
+      '''
+      SELECT EXISTS (
+        SELECT 1 FROM file_revisions r
+        JOIN network_transactions t ON t.id = r.dataTxId
+        WHERE r.driveId IN (${List.filled(ids.length, '?').join(', ')})
+          AND r.pinnedDataOwnerAddress IS NULL
+          AND t.status = '${TransactionStatus.pending}'
+      ) AS pending
+      ''',
+      variables: [for (final id in ids) Variable.withString(id)],
       readsFrom: {fileRevisions, networkTransactions},
     ).getSingle();
 
-    return '${row.read<int?>('revisions')}:${row.read<int>('pending')}'
-        ':${row.read<int>('failed')}';
+    return row.read<bool>('pending');
   }
 
   /// The revisions of [ids] whose data is stored for good: not a pin, and
