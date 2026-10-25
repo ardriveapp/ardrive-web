@@ -25,6 +25,7 @@ class ArDriveCopyField extends StatefulWidget {
     this.revealLabel,
     this.isSecret = false,
     this.alignsWithSecret = false,
+    this.isMonospace = false,
   }) : assert(!isSecret || revealLabel != null,
             'A secret needs a label for its reveal control');
 
@@ -53,6 +54,10 @@ class ArDriveCopyField extends StatefulWidget {
   /// are the same width. Kept everywhere, it left a gap before Copy on every
   /// link with no key.
   final bool alignsWithSecret;
+
+  /// Whether the value is an ID or a key, drawn in monospace so every
+  /// character can be told apart. A link stays in the body face.
+  final bool isMonospace;
 
   @override
   State<ArDriveCopyField> createState() => _ArDriveCopyFieldState();
@@ -206,6 +211,7 @@ class _ArDriveCopyFieldState extends State<ArDriveCopyField> {
                     controller: _controller,
                     isEnabled: false,
                     obscureText: isMasked,
+                    textStyle: widget.isMonospace ? typography.code() : null,
                     // Not the field's own toggle: it sits inside a disabled
                     // field, which swallows the tap, so the mask could never
                     // be lifted.

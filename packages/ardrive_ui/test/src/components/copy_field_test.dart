@@ -36,6 +36,29 @@ void main() {
       tester.widget<EditableText>(find.byType(EditableText)).obscureText;
 
   group('ArDriveCopyField', () {
+    testWidgets('a key is drawn in monospace, a link in the body face',
+        (tester) async {
+      Widget field({required bool isMonospace}) => ArDriveCopyField(
+            label: 'Access key',
+            text: secret,
+            copyLabel: 'Copy',
+            copiedLabel: 'Copied!',
+            copyFailedLabel: "Couldn't copy",
+            isMonospace: isMonospace,
+          );
+      String? family(WidgetTester tester) => tester
+          .widget<EditableText>(find.byType(EditableText))
+          .style
+          .fontFamily;
+
+      await tester.pumpWidget(wrap(field(isMonospace: true)));
+      expect(family(tester), ArDriveMonospace.family);
+
+      await tester.pumpWidget(wrap(field(isMonospace: false)));
+      await tester.pump();
+      expect(family(tester), isNot(ArDriveMonospace.family));
+    });
+
     testWidgets('a secret artifact starts masked', (tester) async {
       await tester.pumpWidget(wrap(artifact(isSecret: true)));
 

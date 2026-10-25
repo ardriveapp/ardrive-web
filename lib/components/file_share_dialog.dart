@@ -134,6 +134,7 @@ class FileShareDialogState extends State<FileShareDialog> {
                   copyLabel: appLocalizationsOf(context).copyAccessKey,
                   revealLabel: appLocalizationsOf(context).shareFileRevealKey,
                   isSecret: true,
+                  isKey: true,
                 ),
                 _HelperText(
                   appLocalizationsOf(context).shareFileSendKeySeparately,

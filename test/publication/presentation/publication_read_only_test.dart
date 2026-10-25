@@ -195,13 +195,19 @@ void main() {
       await header(tester, config: withOwnerName('Phil'));
 
       expect(find.text('By Phil'), findsOneWidget);
+      // A name is a name, in the body face.
+      expect(find.byType(ArDriveIdText), findsNothing);
       expect(find.byTooltip(_config.owner), findsOneWidget);
     });
 
     testWidgets('or by their address, shortened', (tester) async {
       await header(tester, config: withOwnerName(null));
 
-      expect(find.textContaining('By iKryOe'), findsOneWidget);
+      // The address is set apart in monospace inside the sentence.
+      expect(find.textContaining('By ', findRichText: true), findsWidgets);
+      final address = tester.widget<ArDriveIdText>(find.byType(ArDriveIdText));
+      expect(address.text, startsWith('iKryOe'));
+      expect(address.style.fontFamily, ArDriveMonospace.family);
       expect(find.textContaining('79 files'), findsOneWidget);
       expect(find.text('A description.'), findsOneWidget);
     });

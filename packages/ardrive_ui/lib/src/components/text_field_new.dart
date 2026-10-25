@@ -297,6 +297,28 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
     final isMultline = (controller is ArDriveMultilineObscureTextControllerNew);
     final obscureText = isMultline ? false : _isObscureText;
 
+    // An ID or a key passes a code() style as [textStyle] for its face. It
+    // takes the field's colour for its enabled state unless it names one,
+    // and its line stays the height of the field's own, so the field is the
+    // same height as the others in the form whatever size the text is.
+    //
+    // Not merged over the field's style: the field's style names the
+    // package its face comes from, and a merge prefixed the passed family
+    // with it, naming a face that isn't registered.
+    final baseStyle = typography.paragraphNormal(
+      color: widget.isEnabled ? colorTokens.textMid : colorTokens.textXLow,
+      fontWeight: ArFontWeight.semiBold,
+    );
+    final textStyle = widget.textStyle;
+    final fieldStyle = textStyle == null
+        ? baseStyle
+        : textStyle.copyWith(
+            color: textStyle.color ?? baseStyle.color,
+            height: baseStyle.fontSize! *
+                baseStyle.height! /
+                (textStyle.fontSize ?? baseStyle.fontSize!),
+          );
+
     if (isMultline) {
       (controller).isObscured = _isObscureText;
     }
@@ -330,13 +352,7 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
             key: widget.key,
             textInputAction: widget.textInputAction,
             obscureText: obscureText,
-            // style: widget.textStyle ??
-            style: typography.paragraphNormal(
-              color:
-                  widget.isEnabled ? colorTokens.textMid : colorTokens.textXLow,
-              // colorTokens.textRed,
-              fontWeight: ArFontWeight.semiBold,
-            ),
+            style: fieldStyle,
             autovalidateMode: widget.autovalidateMode,
             minLines: widget.minLines,
             maxLines: widget.maxLines,

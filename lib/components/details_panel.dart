@@ -1052,7 +1052,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                       txId: file.importSource!,
                                       customUrl:
                                           '${configService.config.arweaveGatewayForDataRequest.url}/raw/${file.importSource}',
-                                      isBold: true,
                                     ),
                                   ),
                                 ),
@@ -1076,9 +1075,8 @@ class _DetailsPanelState extends State<DetailsPanel> {
                                         offsetStart: 6,
                                         offsetEnd: 6,
                                       ),
-                                      style: typography.paragraphNormal(
-                                        fontWeight: ArFontWeight.bold,
-                                      ),
+                                      // An address, so monospace.
+                                      style: typography.code(),
                                       color: colorTokens.textHigh,
                                       external: true,
                                       onTap: () => openUrl(
@@ -1139,12 +1137,10 @@ class _DetailsPanelState extends State<DetailsPanel> {
 class _TxIdTextLink extends StatelessWidget {
   const _TxIdTextLink({
     required this.txId,
-    this.isBold = false,
     this.customUrl,
   });
 
   final String txId;
-  final bool isBold;
   final String? customUrl;
 
   @override
@@ -1157,15 +1153,13 @@ class _TxIdTextLink extends StatelessWidget {
         child: ArDriveTooltip(
           message: txId,
           // A link the way the panel's other address is one: see
-          // [TruncatedAddress].
-          child: Text(
+          // [TruncatedAddress]. Monospace has one weight, so the link colour
+          // alone marks it.
+          child: ArDriveIdText(
             shortenId(txId),
-            style: ArDriveTypographyNew.of(context).paragraphNormal(
+            style: ArDriveTypographyNew.of(context).code(
               color: ArDriveTheme.of(context).themeData.colorTokens.textLink,
-              fontWeight: isBold ? ArFontWeight.bold : ArFontWeight.semiBold,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),
@@ -1195,11 +1189,9 @@ class _IdValue extends StatelessWidget {
               ? _TxIdTextLink(txId: id)
               : ArDriveTooltip(
                   message: id,
-                  child: Text(
+                  child: ArDriveIdText(
                     shortenId(id),
-                    style: ArDriveTypographyNew.of(context).paragraphNormal(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    style: ArDriveTypographyNew.of(context).code(),
                   ),
                 ),
         ),

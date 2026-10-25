@@ -7,6 +7,7 @@ export 'components/card.dart';
 export 'components/check_box.dart';
 export 'components/click_area.dart';
 export 'components/copy_field.dart';
+export 'components/id_text.dart';
 export 'components/data_table/data_table.dart';
 export 'components/drop_area.dart';
 export 'components/empty_state.dart';

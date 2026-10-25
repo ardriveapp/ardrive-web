@@ -633,10 +633,17 @@ class _HeaderPreview extends StatelessWidget {
     final strings = appLocalizationsOf(context);
     final state = context.watch<PublishCubit>().state;
     final summary = state.summary;
-    final owner = state.ownerName.trim().isNotEmpty
+    final hasName = state.ownerName.trim().isNotEmpty;
+    final owner = hasName
         ? state.ownerName.trim()
         : truncateString(context.read<PublishCubit>().drive.ownerAddress,
             offsetStart: 6, offsetEnd: 4);
+    final bylineStyle = typography.paragraphSmall(color: colors.textMid);
+    final byline = [
+      strings.publicationBy(owner),
+      if (summary != null) strings.publishFileCount(summary.fileCount),
+      if (state.licence != null) state.licence!.meta.shortName,
+    ].join(' • ');
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
@@ -683,15 +690,22 @@ class _HeaderPreview extends StatelessWidget {
                             fontWeight: ArFontWeight.bold),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        [
-                          strings.publicationBy(owner),
-                          if (summary != null)
-                            strings.publishFileCount(summary.fileCount),
-                          if (state.licence != null)
-                            state.licence!.meta.shortName,
-                        ].join(' • '),
-                        style: typography.paragraphSmall(color: colors.textMid),
+                      // A name in the body face; with no name, the address
+                      // in monospace, as on the published page.
+                      Text.rich(
+                        TextSpan(
+                          style: bylineStyle,
+                          children: hasName
+                              ? [TextSpan(text: byline)]
+                              : ArDriveIdText.spansIn(
+                                  byline,
+                                  owner,
+                                  idStyle: typography.code(
+                                    color: colors.textMid,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                        ),
                       ),
                       if (state.description.trim().isNotEmpty) ...[
                         const SizedBox(height: 4),

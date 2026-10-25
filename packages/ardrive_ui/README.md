@@ -43,9 +43,19 @@ system mono stack.
 
 `code()` takes a `fontSize`, a step under the text beside it by default,
 where monospace reads the same size. An ID or address that shares a row
-with other things gets `ArDriveMonospace.widthOf(text, fontSize)` as its
-width, so nothing moves when the face loads and replaces the narrower
-fallback.
+with other things is drawn at its final width, so nothing moves when the
+face loads and replaces the narrower fallback:
+
+- `ArDriveIdText(id, style: typography.code())` for an ID on its own, and
+  `ArDriveIdText.spansIn(sentence, id, idStyle: ...)` for one inside a
+  sentence, such as "Owner: abc123...xyz9".
+- `ArDriveLink` with a `code()` style sizes itself the same way.
+- `ArDriveCopyField(isMonospace: true)` for a key or an ID to copy. A link
+  stays in Wavehaus, key in it or not: it reads as an address to open.
+- `ArDriveTextFieldNew(textStyle: typography.code())` for a field that takes
+  an ID or a key. The field keeps the height of the others in the form.
+- For anything else, `ArDriveMonospace.widthOf(text, fontSize)` gives the
+  width.
 
 The face is an asset, not an entry in the pubspec's fonts block: Flutter
 web downloads every listed font before the first frame, and most sessions

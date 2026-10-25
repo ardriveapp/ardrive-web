@@ -408,8 +408,10 @@ class _Byline extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final style = typography.paragraphNormal(color: colors.textMid);
+    final hasName = config.ownerName != null;
     final owner = config.ownerName ??
         truncateString(config.owner, offsetStart: 6, offsetEnd: 4);
+    final by = strings.publicationBy(owner);
     final publishedAt = config.publishedAt;
     final stats = this.stats;
 
@@ -433,7 +435,20 @@ class _Byline extends StatelessWidget {
                     await Clipboard.setData(ClipboardData(text: config.owner));
                     if (context.mounted) _sayCopied(context);
                   },
-                  child: Text(strings.publicationBy(owner), style: style),
+                  // A name in the body face; with no name, the address in
+                  // monospace.
+                  child: hasName
+                      ? Text(by, style: style)
+                      : Text.rich(
+                          TextSpan(
+                            style: style,
+                            children: ArDriveIdText.spansIn(
+                              by,
+                              owner,
+                              idStyle: typography.code(color: colors.textMid),
+                            ),
+                          ),
+                        ),
                 ),
               ),
             ),
