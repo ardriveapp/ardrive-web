@@ -2739,6 +2739,7 @@ class _UploadInProgressWidget extends StatelessWidget {
             action: () {
               onChangeCancelWarning(true);
               final cubit = context.read<UploadCubit>();
+              final paidWithCredits = state.uploadMethod == UploadMethod.turbo;
 
               showArDriveDialog(
                 context,
@@ -2767,8 +2768,14 @@ class _UploadInProgressWidget extends StatelessWidget {
                     }
                     return ArDriveStandardModalNew(
                       title: appLocalizationsOf(context).warning,
-                      description: appLocalizationsOf(context)
-                          .cancelUploadMayStillCharge,
+                      // What a cancel costs depends on how the upload is
+                      // paid: credits for finished files are spent, while
+                      // AR already sent from the wallet may still be charged.
+                      description: paidWithCredits
+                          ? appLocalizationsOf(context)
+                              .cancelTurboUploadKeepsFinished
+                          : appLocalizationsOf(context)
+                              .cancelUploadMayStillCharge,
                       actions: [
                         ModalAction(
                           action: () {
