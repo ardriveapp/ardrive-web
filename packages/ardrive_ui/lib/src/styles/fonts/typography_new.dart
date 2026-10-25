@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'monospace.dart';
+
 const String _package = 'ardrive_ui';
 
 const String fontFamily = 'Wavehaus';
@@ -44,6 +46,26 @@ abstract class ArdriveTypographyNew {
   TextStyle paragraphNormal({Color? color, ArFontWeight? fontWeight});
   TextStyle paragraphSmall({Color? color, ArFontWeight? fontWeight});
   TextStyle caption({Color? color, ArFontWeight? fontWeight});
+
+  /// Roboto Mono, for code, text-file previews and the note editor only.
+  /// Starts loading the face the first time it is asked for; see
+  /// [ArDriveMonospace]. [fontSize] defaults to a step under paragraphNormal,
+  /// where monospace reads the same size.
+  TextStyle code({Color? color, double? fontSize});
+}
+
+TextStyle _codeStyle({required double fontSize, Color? color}) {
+  ArDriveMonospace.ensureLoaded();
+  return TextStyle(
+    color: color,
+    fontFamily: ArDriveMonospace.family,
+    fontFamilyFallback: ArDriveMonospace.fallback,
+    fontSize: fontSize,
+    // Regular is the one weight bundled; the fallback's book weight matches
+    // the body text while the face loads.
+    fontWeight: ArFontWeight.book.weight,
+    height: 1.5,
+  );
 }
 
 class ArDriveDesktopTypography implements ArdriveTypographyNew {
@@ -120,6 +142,10 @@ class ArDriveDesktopTypography implements ArdriveTypographyNew {
     return _textStyle(
         fontSize: 11, height: 1.5, color: color, fontWeight: fontWeight);
   }
+
+  @override
+  TextStyle code({Color? color, double? fontSize}) =>
+      _codeStyle(fontSize: fontSize ?? 13, color: color);
 }
 
 class ArDriveMobileTypography implements ArdriveTypographyNew {
@@ -196,6 +222,10 @@ class ArDriveMobileTypography implements ArdriveTypographyNew {
     return _textStyle(
         fontSize: 10, height: 1.5, color: color, fontWeight: fontWeight);
   }
+
+  @override
+  TextStyle code({Color? color, double? fontSize}) =>
+      _codeStyle(fontSize: fontSize ?? 12, color: color);
 }
 
 // FIXME: Rename this to not be confusing wing ArdriveTypographyNew

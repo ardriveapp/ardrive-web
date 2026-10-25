@@ -427,7 +427,8 @@ class _NoteEditorWidgetState extends State<NoteEditorWidget> {
       textAlignVertical: TextAlignVertical.top,
       textInputAction: TextInputAction.newline,
       cursorColor: colorTokens.textHigh,
-      style: typography.paragraphNormal(color: colorTokens.textHigh),
+      // Markdown source, so the monospace face: its markup lines up.
+      style: typography.code(color: colorTokens.textHigh),
       decoration: InputDecoration(
         contentPadding: const EdgeInsets.all(ArDriveSpacing.md),
         border: InputBorder.none,

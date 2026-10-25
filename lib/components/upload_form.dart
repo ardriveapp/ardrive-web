@@ -1511,26 +1511,9 @@ class _UploadFolderNameConflictWidget extends StatelessWidget {
                       ArDriveTheme.of(context).themeData.colorTokens.textMid),
             ),
             const SizedBox(height: ArDriveSpacing.md),
-            Text(
-              appLocalizationsOf(context).conflictingFiles,
-              style: ArDriveTypographyNew.of(context).paragraphNormal(
-                color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
-                fontWeight: ArFontWeight.semiBold,
-              ),
-            ),
-            const SizedBox(height: ArDriveSpacing.xs),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 320),
-              child: SingleChildScrollView(
-                child: Text(
-                  state.conflictingFileNames.join(', \n'),
-                  style: ArDriveTypographyNew.of(context).paragraphNormal(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colorTokens
-                          .textHigh),
-                ),
-              ),
+            _ConflictingFilesList(
+              names: state.conflictingFileNames,
+              areFolders: true,
             ),
           ],
         ),
@@ -1574,36 +1557,8 @@ class _UploadConflictWithFailedFilesWidget extends StatelessWidget {
                       ArDriveTheme.of(context).themeData.colorTokens.textMid),
             ),
             const SizedBox(height: ArDriveSpacing.md),
-            Text(
-              appLocalizationsOf(context).conflictingFiles,
-              style: ArDriveTypographyNew.of(context).paragraphNormal(
-                color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
-                fontWeight: ArFontWeight.semiBold,
-              ),
-            ),
-            const SizedBox(height: ArDriveSpacing.xs),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 320),
-              child: ListView.builder(
-                itemCount: state.conflictingFileNamesForFailedFiles.length,
-                shrinkWrap: true,
-                itemBuilder: (context, index) {
-                  final file = state.conflictingFileNamesForFailedFiles[index];
-                  final typography = ArDriveTypographyNew.of(context);
-                  final colorTokens =
-                      ArDriveTheme.of(context).themeData.colorTokens;
-
-                  return ListTile(
-                    title: Text(file,
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textMid,
-                        )),
-                    leading: getIconForContentType(
-                      getFileExtensionFromFileName(fileName: file),
-                    ),
-                  );
-                },
-              ),
+            _ConflictingFilesList(
+              names: state.conflictingFileNamesForFailedFiles,
             ),
           ],
         ),
@@ -1621,6 +1576,67 @@ class _UploadConflictWithFailedFilesWidget extends StatelessWidget {
               .prepareUploadPlanAndCostEstimates(
                   uploadAction: UploadActions.skipSuccessfulUploads),
           title: appLocalizationsOf(context).replaceFailedUploads,
+        ),
+      ],
+    );
+  }
+}
+
+/// The names an upload clashes with, under their label: one row per name with
+/// its type's icon, scrolling past a dozen or so. The three conflict dialogs
+/// each drew this their own way.
+class _ConflictingFilesList extends StatelessWidget {
+  const _ConflictingFilesList({required this.names, this.areFolders = false});
+
+  final List<String> names;
+  final bool areFolders;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          appLocalizationsOf(context).conflictingFiles,
+          style: typography.paragraphNormal(
+            color: colorTokens.textHigh,
+            fontWeight: ArFontWeight.semiBold,
+          ),
+        ),
+        const SizedBox(height: ArDriveSpacing.xs),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 320),
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: names.length,
+            itemBuilder: (context, index) => SizedBox(
+              height: 32,
+              child: Row(
+                children: [
+                  getIconForContentType(
+                    areFolders
+                        ? 'folder'
+                        : getFileExtensionFromFileName(fileName: names[index]),
+                    size: 16,
+                  ),
+                  const SizedBox(width: ArDriveSpacing.xs),
+                  Expanded(
+                    child: Text(
+                      names[index],
+                      overflow: TextOverflow.ellipsis,
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textHigh,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -1651,39 +1667,10 @@ class _UploadFileConflictWidget extends StatelessWidget {
               appLocalizationsOf(context).filesWithTheSameNameAlreadyExists(
                 state.conflictingFileNames.length,
               ),
-              style:
-                  typography.paragraphNormal(fontWeight: ArFontWeight.semiBold),
+              style: typography.paragraphNormal(color: colorTokens.textMid),
             ),
-            const SizedBox(height: 16),
-            Text(
-              appLocalizationsOf(context).conflictingFiles,
-              style:
-                  typography.paragraphNormal(fontWeight: ArFontWeight.semiBold),
-            ),
-            const SizedBox(height: 8),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 320),
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: state.conflictingFileNames.length,
-                itemBuilder: (context, index) {
-                  final file = state.conflictingFileNames[index];
-                  final typography = ArDriveTypographyNew.of(context);
-
-                  return ListTile(
-                    title: Text(
-                      file,
-                      style: typography.paragraphNormal(
-                        color: colorTokens.textMid,
-                      ),
-                    ),
-                    leading: getIconForContentType(
-                      getFileExtensionFromFileName(fileName: file),
-                    ),
-                  );
-                },
-              ),
-            ),
+            const SizedBox(height: ArDriveSpacing.md),
+            _ConflictingFilesList(names: state.conflictingFileNames),
           ],
         ),
       ),

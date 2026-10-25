@@ -136,23 +136,15 @@ class _DocumentPreviewWidgetState extends State<DocumentPreviewWidget> {
         ),
       );
     } else {
-      // Render as plain text. The inline view had no colour of its own, so
-      // it took whatever the surrounding text style happened to be.
+      // Render as plain text, in the monospace face: a text file's columns
+      // and indentation only line up in one. The inline view had no colour of
+      // its own, so it took whatever the surrounding text style happened to
+      // be.
       return Text(
         widget.content,
         style: isFullScreen
-            ? typography
-                .paragraphNormal(
-                  fontWeight: ArFontWeight.book,
-                  color: colorTokens.textHigh,
-                )
-                .copyWith(height: 1.8)
-            : typography
-                .paragraphSmall(
-                  fontWeight: ArFontWeight.book,
-                  color: colorTokens.textHigh,
-                )
-                .copyWith(height: 1.5),
+            ? typography.code(color: colorTokens.textHigh).copyWith(height: 1.7)
+            : typography.code(color: colorTokens.textHigh, fontSize: 11),
       );
     }
   }

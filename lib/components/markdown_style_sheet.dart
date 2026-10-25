@@ -40,17 +40,16 @@ MarkdownStyleSheet arDriveMarkdownStyleSheet(
     h5: typography.heading5(color: colorTokens.textHigh),
     h6: typography.heading6(color: colorTokens.textHigh),
     listBullet: typography.paragraphNormal(color: colorTokens.textHigh),
-    // Set apart by its tint. It named Courier New, but the package's
-    // type turned that into a family that does not exist, and the app
-    // bundles no monospace face, so it was always Wavehaus.
+    // In the monospace face, set apart by a tint: translucent rather than a
+    // container colour, so it shows on whatever it sits on (containerL2
+    // vanished on the note editor's input fill). It named Courier New before,
+    // which never loaded: the package's type turned it into a family that does
+    // not exist, so code was always Wavehaus.
     code: typography
-        .paragraphSmall(
-          fontWeight: ArFontWeight.book,
-          color: colorTokens.textHigh,
-        )
-        .copyWith(backgroundColor: colorTokens.containerL2),
+        .code(color: colorTokens.textHigh, fontSize: isFullScreen ? null : 11)
+        .copyWith(backgroundColor: colorTokens.buttonSecondaryDefault),
     codeblockDecoration: BoxDecoration(
-      color: colorTokens.containerL2,
+      color: colorTokens.buttonSecondaryDefault,
       borderRadius: BorderRadius.circular(ArDriveRadius.sm),
       border: Border.all(color: colorTokens.strokeLow),
     ),
