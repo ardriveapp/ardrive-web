@@ -134,8 +134,11 @@ class _DriveAttachFormState extends State<DriveAttachForm> {
                   controller:
                       context.read<DriveAttachCubit>().driveIdController,
                   autofocus: true,
-                  // An ID, so monospace.
-                  textStyle: ArDriveTypographyNew.of(context).code(),
+                  // An ID, so monospace, at a size where all 36 characters
+                  // of a drive ID fit the field: a step smaller, it scrolled
+                  // its start out of sight.
+                  textStyle:
+                      ArDriveTypographyNew.of(context).code(fontSize: 12),
                   onChanged: (s) async {
                     // Only look up when drive ID looks complete (UUID = 36 chars)
                     if (s.length >= 36) {
