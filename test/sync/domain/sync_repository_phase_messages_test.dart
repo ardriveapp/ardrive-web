@@ -1,4 +1,3 @@
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/config/app_config.dart';
@@ -9,7 +8,6 @@ import 'package:ardrive/sync/utils/batch_processor.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/user_preferences.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -23,8 +21,6 @@ class MockBatchProcessor extends Mock implements BatchProcessor {}
 
 class MockSnapshotValidationService extends Mock
     implements SnapshotValidationService {}
-
-class _MockARNSRepository extends Mock implements ARNSRepository {}
 
 class MockUserPreferencesRepository extends Mock
     implements UserPreferencesRepository {}
@@ -87,7 +83,6 @@ void main() {
   late MockConfigService mockConfigService;
   late MockBatchProcessor mockBatchProcessor;
   late MockSnapshotValidationService mockSnapshotValidation;
-  late _MockARNSRepository mockArnsRepository;
   late MockUserPreferencesRepository mockUserPrefsRepo;
   late SyncRepository syncRepository;
   late _MockWallet mockWallet;
@@ -115,7 +110,6 @@ void main() {
       configService: mockConfigService,
       batchProcessor: mockBatchProcessor,
       snapshotValidationService: mockSnapshotValidation,
-      arnsRepository: mockArnsRepository,
       userPreferencesRepository: mockUserPrefsRepo,
     );
   }
@@ -143,10 +137,6 @@ void main() {
     when(() => mockArweave.clearUserDriveTxsCache()).thenReturn(null);
 
     // Post-sync phase.
-    when(() => mockArnsRepository.waitForARNSRecordsToUpdate())
-        .thenAnswer((_) async {});
-    when(() => mockArnsRepository.saveAllFilesWithAssignedNames())
-        .thenAnswer((_) async {});
     when(() => mockDriveDao.hasHiddenItems())
         .thenReturn(FakeSelectable([false]));
     when(() => mockUserPrefsRepo.saveUserHasHiddenItem(any()))
@@ -213,7 +203,6 @@ void main() {
     mockConfigService = MockConfigService();
     mockBatchProcessor = MockBatchProcessor();
     mockSnapshotValidation = MockSnapshotValidationService();
-    mockArnsRepository = _MockARNSRepository();
     mockUserPrefsRepo = MockUserPreferencesRepository();
     mockWallet = _MockWallet();
 
@@ -223,12 +212,6 @@ void main() {
     final mockGatewayFallback = _MockDataGatewayFallback();
     when(() => mockArweave.gatewayFallback).thenReturn(mockGatewayFallback);
     when(() => mockGatewayFallback.cachedGateways).thenReturn([]);
-
-    // Mock ARNS repository
-    when(() => mockArnsRepository.getAntRecordsForWallet(any(),
-        update: any(named: 'update'))).thenAnswer(
-      (_) async => <ANTRecord>[],
-    );
 
     when(() => mockArweave.getCurrentBlockHeight())
         .thenAnswer((_) async => 100000);

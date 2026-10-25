@@ -1,19 +1,11 @@
-import 'package:ardrive/arns/data/arns_dao.dart';
-import 'package:ardrive/core/arfs/repository/file_repository.dart';
-import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
 import 'package:ardrive/search/search_result.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../../test_utils/utils.dart';
-
-class MockFileRepository extends Mock implements FileRepository {}
-
-class MockFolderRepository extends Mock implements FolderRepository {}
 
 /// Against a real database, because the rules under test are in SQL: which
 /// drives count as searched, and which matches survive the limit.
@@ -25,12 +17,7 @@ void main() {
   setUp(() {
     db = getTestDb();
     driveDao = db.driveDao;
-    repository = ArDriveSearchRepository(
-      driveDao,
-      ARNSDao(db),
-      MockFileRepository(),
-      MockFolderRepository(),
-    );
+    repository = ArDriveSearchRepository(driveDao);
   });
 
   tearDown(() async => db.close());

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:ardrive/utils/local_key_value_store.dart';
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/blocs/constants.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
@@ -43,7 +42,6 @@ import 'package:ardrive/utils/snapshots/range.dart';
 import 'package:ardrive/utils/snapshots/snapshot_drive_history.dart';
 import 'package:ardrive/utils/snapshots/snapshot_item.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -371,7 +369,6 @@ abstract class SyncRepository {
     required ConfigService configService,
     required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
-    required ARNSRepository arnsRepository,
     required UserPreferencesRepository userPreferencesRepository,
     DriveStateSyncSource? driveStateSyncSource,
   }) {
@@ -381,7 +378,6 @@ abstract class SyncRepository {
       configService: configService,
       batchProcessor: batchProcessor,
       snapshotValidationService: snapshotValidationService,
-      arnsRepository: arnsRepository,
       userPreferencesRepository: userPreferencesRepository,
       driveStateSyncSource: driveStateSyncSource,
     );
@@ -416,7 +412,6 @@ class _SyncRepository implements SyncRepository {
   final ConfigService _configService;
   final BatchProcessor _batchProcessor;
   final SnapshotValidationService _snapshotValidationService;
-  final ARNSRepository _arnsRepository;
   final UserPreferencesRepository _userPreferencesRepository;
 
   /// The drive state artifact source (`docs/DRIVE_STATE_ARTIFACT.md` §5).
@@ -573,7 +568,6 @@ class _SyncRepository implements SyncRepository {
     required ConfigService configService,
     required BatchProcessor batchProcessor,
     required SnapshotValidationService snapshotValidationService,
-    required ARNSRepository arnsRepository,
     required UserPreferencesRepository userPreferencesRepository,
     DriveStateSyncSource? driveStateSyncSource,
   })  : _driveStateSyncSource = driveStateSyncSource,
@@ -582,8 +576,7 @@ class _SyncRepository implements SyncRepository {
         _configService = configService,
         _snapshotValidationService = snapshotValidationService,
         _batchProcessor = batchProcessor,
-        _userPreferencesRepository = userPreferencesRepository,
-        _arnsRepository = arnsRepository;
+        _userPreferencesRepository = userPreferencesRepository;
 
   @override
   Stream<SyncProgress> syncAllDrives({
@@ -623,13 +616,6 @@ class _SyncRepository implements SyncRepository {
     String? walletAddress;
     if (wallet != null) {
       walletAddress = await wallet.getAddress();
-
-      _arnsRepository
-          .getAntRecordsForWallet(walletAddress, update: true)
-          .catchError((e) {
-        logger.e('Error getting ANT records for wallet. Continuing...', e);
-        return Future.value(<ANTRecord>[]);
-      });
     }
 
     // Sync the contents of each drive attached in the app.
@@ -1151,9 +1137,6 @@ class _SyncRepository implements SyncRepository {
         }
         // Clear cached transaction IDs now that we've used them
         SnapshotItemOnChain.clearAllCachedTransactionIds();
-        _arnsRepository
-            .waitForARNSRecordsToUpdate()
-            .then((value) => _arnsRepository.saveAllFilesWithAssignedNames());
         final hasHiddenItems = await _driveDao.hasHiddenItems().getSingle();
         await _userPreferencesRepository.saveUserHasHiddenItem(hasHiddenItems);
         await _userPreferencesRepository.load();

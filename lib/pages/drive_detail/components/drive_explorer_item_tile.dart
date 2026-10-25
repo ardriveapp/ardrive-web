@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:ardrive/arns/presentation/ant_icon.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
@@ -29,7 +28,6 @@ import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/format_date.dart';
-import 'package:ardrive/utils/has_arns_name.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_http/ardrive_http.dart';
@@ -73,13 +71,6 @@ class DriveExplorerItemTile extends TableRowWidget {
                           ),
                         ),
                       ),
-                      if (hasArnsNames(dataTableItem) &&
-                          dataTableItem is FileDataTableItem) ...[
-                        const SizedBox(width: 8),
-                        Transform(
-                            transform: Matrix4.translationValues(0, 2, 0),
-                            child: AntIcon(fileDataTableItem: dataTableItem)),
-                      ],
                       if (dataTableItem is FolderDataTableItem)
                         PublishedToWebMark(
                           driveId: dataTableItem.driveId,

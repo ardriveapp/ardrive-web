@@ -1,4 +1,3 @@
-import 'package:ardrive/arns/presentation/ant_icon.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/snapshots_tab/snapshots_tab.dart';
@@ -45,7 +44,6 @@ import 'package:responsive_builder/responsive_builder.dart';
 
 import '../blocs/blocs.dart';
 import '../utils/file_revision_base.dart';
-import '../utils/has_arns_name.dart';
 
 /// The drive explorer's info panel: preview, details and activity for the item
 /// that is selected in a drive.
@@ -327,11 +325,6 @@ class _DetailsPanelState extends State<DetailsPanel> {
                             null) ...[
                       const PinIndicator(
                         size: 32,
-                      ),
-                    ],
-                    if (hasArnsNames(widget.item)) ...[
-                      AntIcon(
-                        fileDataTableItem: widget.item as FileDataTableItem,
                       ),
                     ],
                     if (widget.item is FileDataTableItem &&

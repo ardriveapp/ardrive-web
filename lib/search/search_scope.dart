@@ -1,7 +1,4 @@
-import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
-import 'package:ardrive/core/arfs/repository/file_repository.dart';
-import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/publication/data/publication_search_repository.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/presentation/publication_loader/publication_loader_cubit.dart';
@@ -97,12 +94,8 @@ class _SearchScopeState extends State<SearchScope> {
     );
   }
 
-  SearchRepository _appSearch() => ArDriveSearchRepository(
-        context.read<DriveDao>(),
-        ARNSDao(context.read<Database>()),
-        context.read<FileRepository>(),
-        context.read<FolderRepository>(),
-      );
+  SearchRepository _appSearch() =>
+      ArDriveSearchRepository(context.read<DriveDao>());
 
   /// A publication searches only its publication, once it is open.
   SearchRepository _publicationSearch() {

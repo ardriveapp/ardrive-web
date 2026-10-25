@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/blocs/create_manifest/create_manifest_cubit.dart';
 import 'package:ardrive/core/arfs/repository/file_repository.dart';
@@ -15,7 +14,6 @@ import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:collection/collection.dart';
 
@@ -28,8 +26,6 @@ abstract class ManifestRepository {
 
   Future<String> uploadManifest({
     required ManifestUploadParams params,
-    ARNSUndername? undername,
-    String? processId,
     Function(CreateManifestUploadProgress)? onProgress,
   });
 
@@ -63,7 +59,6 @@ class ManifestRepositoryImpl implements ManifestRepository {
   final FolderRepository _folderRepository;
   final ManifestDataBuilder _builder;
   final ARFSRevisionStatusUtils _versionRevisionStatusUtils;
-  final ARNSRepository _arnsRepository;
   final FileRepository _fileRepository;
 
   ManifestRepositoryImpl(
@@ -72,7 +67,6 @@ class ManifestRepositoryImpl implements ManifestRepository {
     this._folderRepository,
     this._builder,
     this._versionRevisionStatusUtils,
-    this._arnsRepository,
     this._fileRepository,
   );
 
@@ -118,8 +112,6 @@ class ManifestRepositoryImpl implements ManifestRepository {
   @override
   Future<String> uploadManifest({
     required ManifestUploadParams params,
-    ARNSUndername? undername,
-    String? processId,
     Function(CreateManifestUploadProgress)? onProgress,
   }) async {
     try {
@@ -134,8 +126,6 @@ class ManifestRepositoryImpl implements ManifestRepository {
           isPrivate: false,
           type: params.uploadType,
           privacy: DrivePrivacyTag.public,
-          assignedName:
-              undername != null ? getLiteralARNSRecordName(undername) : null,
           fallbackTxId: params.fallbackTxId,
         ),
         wallet: params.wallet,
@@ -154,23 +144,6 @@ class ManifestRepositoryImpl implements ManifestRepository {
           manifest: manifestMetadata,
           existingManifestFileId: params.existingManifestFileId,
         );
-
-        if (undername != null && processId != null) {
-          onProgress?.call(CreateManifestUploadProgress.assigningArNS);
-          final newUndername = ARNSUndernameFactory.create(
-            name: undername.name,
-            domain: undername.domain,
-            transactionId: manifestMetadata.dataTxId!,
-          );
-
-          await _arnsRepository.setUndernamesToFile(
-            undername: newUndername,
-            fileId: manifestMetadata.id,
-            uploadNewRevision: false,
-            driveId: params.driveId,
-            processId: processId,
-          );
-        }
 
         onProgress?.call(CreateManifestUploadProgress.completed);
 

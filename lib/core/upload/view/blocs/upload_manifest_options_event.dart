@@ -21,29 +21,3 @@ final class DeselectManifest extends UploadManifestOptionsEvent {
 
   const DeselectManifest({required this.manifest});
 }
-
-final class ShowArNSSelection extends UploadManifestOptionsEvent {
-  final FileEntry manifest;
-
-  const ShowArNSSelection({required this.manifest});
-}
-
-final class HideArNSSelection extends UploadManifestOptionsEvent {
-  final FileEntry manifest;
-
-  const HideArNSSelection({required this.manifest});
-}
-
-final class LinkManifestToUndername extends UploadManifestOptionsEvent {
-  final FileEntry manifest;
-  final ANTRecord antRecord;
-  final ARNSUndername? undername;
-
-  const LinkManifestToUndername({
-    required this.manifest,
-    required this.antRecord,
-    required this.undername,
-  });
-}
-
-final class LoadAnts extends UploadManifestOptionsEvent {}

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/config/app_config.dart';
@@ -10,7 +9,6 @@ import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/utils/snapshots/gql_drive_history.dart';
 import 'package:ardrive/utils/snapshots/height_range.dart';
 import 'package:ardrive/utils/snapshots/range.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart';
@@ -24,8 +22,6 @@ class MockBatchProcessor extends Mock implements BatchProcessor {}
 
 class MockSnapshotValidationService extends Mock
     implements SnapshotValidationService {}
-
-class _MockARNSRepository extends Mock implements ARNSRepository {}
 
 class MockUserPreferencesRepository extends Mock
     implements UserPreferencesRepository {}
@@ -82,7 +78,6 @@ void main() {
   late MockConfigService mockConfigService;
   late MockBatchProcessor mockBatchProcessor;
   late MockSnapshotValidationService mockSnapshotValidation;
-  late _MockARNSRepository mockArnsRepository;
   late MockUserPreferencesRepository mockUserPrefsRepo;
   late SyncRepository syncRepository;
   late _MockWallet mockWallet;
@@ -95,7 +90,6 @@ void main() {
     mockConfigService = MockConfigService();
     mockBatchProcessor = MockBatchProcessor();
     mockSnapshotValidation = MockSnapshotValidationService();
-    mockArnsRepository = _MockARNSRepository();
     mockUserPrefsRepo = MockUserPreferencesRepository();
     mockWallet = _MockWallet();
 
@@ -113,19 +107,12 @@ void main() {
     when(() => mockArweave.gatewayFallback).thenReturn(mockGatewayFallback);
     when(() => mockGatewayFallback.cachedGateways).thenReturn([]);
 
-    // Mock ARNS repository
-    when(() => mockArnsRepository.getAntRecordsForWallet(any(),
-        update: any(named: 'update'))).thenAnswer(
-      (_) async => <ANTRecord>[],
-    );
-
     syncRepository = SyncRepository(
       arweave: mockArweave,
       driveDao: mockDriveDao,
       configService: mockConfigService,
       batchProcessor: mockBatchProcessor,
       snapshotValidationService: mockSnapshotValidation,
-      arnsRepository: mockArnsRepository,
       userPreferencesRepository: mockUserPrefsRepo,
     );
   });

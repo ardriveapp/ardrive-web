@@ -1,7 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive/arns/data/arns_dao.dart';
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
@@ -415,7 +413,6 @@ class AppState extends State<App> {
         ),
         BlocProvider(
           create: (context) => ProfileNameBloc(
-            context.read<ARNSRepository>(),
             context.read<ProfileLogoRepository>(),
             context.read<ArDriveAuth>(),
           ),
@@ -529,17 +526,6 @@ class AppState extends State<App> {
           ),
         ),
         RepositoryProvider(
-          create: (context) => ARNSRepository(
-            sdk: ArioSDKFactory().create(),
-            auth: context.read<ArDriveAuth>(),
-            fileRepository: context.read<FileRepository>(),
-            arnsDao: ARNSDao(context.read<Database>()),
-            driveDao: context.read<DriveDao>(),
-            turboUploadService: context.read<TurboUploadService>(),
-            arweave: context.read<ArweaveService>(),
-          ),
-        ),
-        RepositoryProvider(
           create: (_) => SyncRepository(
             arweave: arweave,
             configService: configService,
@@ -548,7 +534,6 @@ class AppState extends State<App> {
             snapshotValidationService: SnapshotValidationService(
               configService: configService,
             ),
-            arnsRepository: _.read<ARNSRepository>(),
             userPreferencesRepository: _.read<UserPreferencesRepository>(),
           ),
         ),

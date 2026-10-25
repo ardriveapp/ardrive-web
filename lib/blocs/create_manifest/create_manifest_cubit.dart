@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive/arns/domain/arns_repository.dart';
 import 'package:ardrive/manifest/domain/exceptions.dart';
 import 'package:ardrive/turbo/models/free_upload_status.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
@@ -14,7 +13,6 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:ario_sdk/ario_sdk.dart';
 import 'package:arweave/arweave.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -34,16 +32,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
   final ManifestRepository _manifestRepository;
   final FolderRepository _folderRepository;
-  final ARNSRepository _arnsRepository;
 
   bool _hasPendingFiles = false;
 
   StreamSubscription? _selectedFolderSubscription;
 
   final ArDriveAuth _auth;
-
-  ArNSNameModel? _selectedAntRecord;
-  ARNSUndername? _selectedUndername;
 
   CreateManifestCubit({
     required ProfileCubit profileCubit,
@@ -53,14 +47,12 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     required FolderRepository folderRepository,
     required ArDriveAuth auth,
     bool hasPendingFiles = false,
-    required ARNSRepository arnsRepository,
   })  : _drive = drive,
         _initialFolderId = initialFolderId,
         _profileCubit = profileCubit,
         _hasPendingFiles = hasPendingFiles,
         _manifestRepository = manifestRepository,
         _folderRepository = folderRepository,
-        _arnsRepository = arnsRepository,
         _auth = auth,
         super(CreateManifestInitial()) {
     logger.i('Initializing CreateManifestCubit for drive: ${_drive.id}');
@@ -138,7 +130,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           uploadMethod: method,
           canUpload: canUpload,
           freeStatus: info.freeStatus,
-          assignedName: (state as CreateManifestUploadReview).assignedName,
           fallbackTxId: (state as CreateManifestUploadReview).fallbackTxId,
         ),
       );
@@ -164,30 +155,13 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
   ) async {
     logger.i('Confirming manifest revision for name: $name');
     final revisionConfirmationState = state as CreateManifestRevisionConfirm;
+    final parentFolder = revisionConfirmationState.parentFolder;
+    final existingManifestFileId =
+        revisionConfirmationState.existingManifestFileId;
 
-    final arns = await _arnsRepository
-        .getAntRecordsForWallet(_auth.currentUser.walletAddress);
-    logger.d(
-        'Found ${arns.length} ANT records for wallet: ${_auth.currentUser.walletAddress}');
-
-    if (arns.isNotEmpty) {
-      emit(
-        CreateManifestPreparingManifestWithARNS(
-          parentFolder: revisionConfirmationState.parentFolder,
-          manifestName: name,
-          existingManifestFileId:
-              revisionConfirmationState.existingManifestFileId,
-        ),
-      );
-    } else {
-      final parentFolder = revisionConfirmationState.parentFolder;
-      final existingManifestFileId =
-          revisionConfirmationState.existingManifestFileId;
-
-      emit(CreateManifestPreparingManifest(parentFolder: parentFolder));
-      await prepareManifestTx(
-          existingManifestFileId: existingManifestFileId, manifestName: name);
-    }
+    emit(CreateManifestPreparingManifest(parentFolder: parentFolder));
+    await prepareManifestTx(
+        existingManifestFileId: existingManifestFileId, manifestName: name);
   }
 
   Future<void> loadParentFolder() async {
@@ -258,14 +232,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
     final parentFolder =
         (state as CreateManifestCheckingForConflicts).parentFolder;
 
-    emit(CreateManifestLoadingARNS(
-      parentFolder: parentFolder,
-      manifestName: name,
-    ));
-
     logger.i('Performing name conflict check for: $name');
-    final arns = await _getAntRecordsForWallet();
-    logger.d('Found ${arns.length} ANT records for current wallet');
 
     await _selectedFolderSubscription?.cancel();
 
@@ -299,27 +266,10 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       return;
     }
 
-    if (arns.isNotEmpty) {
-      emit(CreateManifestPreparingManifestWithARNS(
-          parentFolder: parentFolder, manifestName: name));
-    } else {
-      emit(CreateManifestPreparingManifest(
-        parentFolder: parentFolder,
-      ));
-      await prepareManifestTx(manifestName: name);
-    }
-  }
-
-  /// Fetches ANT records for the current wallet, returns an empty list if the operation fails
-  Future<List<ANTRecord>> _getAntRecordsForWallet() async {
-    try {
-      return await _arnsRepository
-          .getAntRecordsForWallet(_auth.currentUser.walletAddress)
-          .timeout(const Duration(seconds: 30));
-    } catch (e) {
-      logger.e('Failed to load ANT records. Proceeding with empty list', e);
-      return [];
-    }
+    emit(CreateManifestPreparingManifest(
+      parentFolder: parentFolder,
+    ));
+    await prepareManifestTx(manifestName: name);
   }
 
   Future<void> prepareManifestTx({
@@ -337,9 +287,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
       parentFolder = rootFolderNode.folder;
     } else {
       switch (state) {
-        case CreateManifestPreparingManifestWithARNS s:
-          parentFolder = s.parentFolder;
-          existingManifestFileId = s.existingManifestFileId;
         case CreateManifestPreparingManifest s:
           parentFolder = s.parentFolder;
         default:
@@ -356,8 +303,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         fallbackTxId: _getFallbackTxId(),
       );
 
-      ARNSUndername? undername = getSelectedUndername();
-
       emit(
         CreateManifestUploadReview(
           manifestSize: await manifestFile.length,
@@ -367,8 +312,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
           drive: _drive,
           parentFolder: parentFolder,
           existingManifestFileId: existingManifestFileId,
-          assignedName:
-              undername != null ? getLiteralARNSRecordName(undername) : null,
           fallbackTxId: _getFallbackTxId(),
         ),
       );
@@ -413,8 +356,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
             wallet: _auth.currentUser.wallet,
             fallbackTxId: _getFallbackTxId(),
           ),
-          processId: _selectedAntRecord?.processId,
-          undername: getSelectedUndername(),
           onProgress: (progress) => emit(
             CreateManifestUploadInProgress(
               progress: progress,
@@ -423,7 +364,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         );
 
         emit(CreateManifestSuccess(
-          nameAssignedByArNS: _selectedUndername != null,
           parentFolder: createManifestUploadReview.parentFolder,
         ));
       } catch (e) {
@@ -431,49 +371,6 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         addError(e);
       }
     }
-  }
-
-  void openAssignNameModal() {
-    logger.d('Opening assign name modal');
-    emit(
-      CreateManifestPreparingManifestWithARNS(
-        parentFolder:
-            (state as CreateManifestPreparingManifestWithARNS).parentFolder,
-        manifestName:
-            (state as CreateManifestPreparingManifestWithARNS).manifestName,
-        existingManifestFileId:
-            (state as CreateManifestPreparingManifestWithARNS)
-                .existingManifestFileId,
-        showAssignNameModal: true,
-      ),
-    );
-  }
-
-  ARNSUndername? getSelectedUndername() {
-    if (_selectedUndername != null) {
-      return _selectedUndername;
-    }
-
-    if (_selectedAntRecord != null) {
-      return ARNSUndernameFactory.createDefaultUndername(
-        domain: _selectedAntRecord!.name,
-        transactionId: 'to_assign',
-      );
-    }
-
-    return null;
-  }
-
-  void selectArns(ArNSNameModel? antRecord, ARNSUndername? undername) {
-    logger.i(
-        'Selecting ARNS: antRecord: ${antRecord?.name}, undername: ${undername?.name}');
-    _selectedAntRecord = antRecord;
-    _selectedUndername = undername;
-
-    final manifestName =
-        (state as CreateManifestPreparingManifestWithARNS).manifestName;
-
-    prepareManifestTx(manifestName: manifestName);
   }
 
   TxID? _fallbackTxId;
