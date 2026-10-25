@@ -743,7 +743,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           child: Column(
             children: [
               Text(
-                'Loading payment methods...',
+                appLocalizationsOf(context).loadingPaymentMethods,
                 style: typography.paragraphLarge(
                   color: colorTokens.textHigh,
                   fontWeight: ArFontWeight.bold,
@@ -756,7 +756,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             ],
           ),
         ),
-        useNewArDriveUI: true,
       ),
     );
   }

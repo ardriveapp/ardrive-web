@@ -22,7 +22,6 @@ import 'package:ardrive/blocs/upload/upload_progress_summary.dart';
 import 'package:ardrive/blocs/upload/upload_handles/file_v2_upload_handle.dart';
 import 'package:ardrive/blocs/upload/upload_handles/upload_handle.dart';
 import 'package:ardrive/components/help_info_modals.dart';
-import 'package:ardrive/components/inline_warning.dart';
 import 'package:ardrive/components/license/cc_type_form.dart';
 import 'package:ardrive/components/license/udl_params_form.dart';
 import 'package:ardrive/components/license/view_license_definition.dart';
@@ -341,7 +340,8 @@ class _UploadFormState extends State<UploadForm> {
               // TODO: Fix use of startUpload
               return _UploadShowingWarningWidget(state: state);
             } else if (state is AssigningUndername) {
-              return const ProgressDialog(title: 'Assigning ArNS Name...');
+              return ProgressDialog(
+                  title: appLocalizationsOf(context).uploadAssigningArnsName);
             } else if (state is UploadingManifests) {
               return _UploadingManifestsWidget(state: state);
             } else if (state is UploadManifestSelectPaymentMethod) {
@@ -369,7 +369,9 @@ class _UploadFormState extends State<UploadForm> {
 
               return _UploadReviewWithLicenseWidget(state: state);
             }
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+            );
           },
         ),
       );
@@ -385,7 +387,7 @@ class _UploadingManifestsWidget extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
 
     return ArDriveStandardModalNew(
-      title: 'Uploading deployments',
+      title: appLocalizationsOf(context).uploadingDeployments,
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 400),
         child: Column(
@@ -413,13 +415,7 @@ class _UploadingManifestsWidget extends StatelessWidget {
                           const Spacer(),
                           if (state.manifestFiles[index].isUploading) ...[
                             const SizedBox(width: 8),
-                            const SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            ),
+                            const ArDriveSpinner(),
                           ],
                           if (state.manifestFiles[index].isCompleted) ...[
                             const SizedBox(width: 8),
@@ -451,7 +447,7 @@ class _UploadingManifestsWidget extends StatelessWidget {
           action: () {
             context.read<UploadCubit>().cancelManifestsUpload();
           },
-          title: 'Cancel',
+          title: appLocalizationsOf(context).cancel,
         ),
       ],
     );
@@ -597,7 +593,7 @@ class _StatsScreenState extends State<StatsScreen> {
       children: [
         if (rows == null)
           // TODO: Replace progress indicator with error view
-          const Center(child: CircularProgressIndicator())
+          const Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.large))
         else if (collapsible && _showAllFiles)
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 156),
@@ -678,8 +674,9 @@ class ConfiguringLicenseScreen extends StatelessWidget {
           children: [
             Text(
               headingText,
-              style: ArDriveTypography.body.smallBold(
-                color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              style: ArDriveTypographyNew.of(context).paragraphLarge(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+                fontWeight: ArFontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
@@ -949,7 +946,8 @@ class _UploadReadyModalBaseState extends State<UploadReadyModalBase> {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Update deployments',
+                                        appLocalizationsOf(context)
+                                            .updateDeployments,
                                         style: typography.heading5(
                                           fontWeight: ArFontWeight.bold,
                                         ),
@@ -1146,8 +1144,7 @@ class LicenseReviewInfo extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          // TODO: Localize
-          'License',
+          appLocalizationsOf(context).licenseHeading,
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
             color: colorTokens.textLow,
@@ -1236,18 +1233,14 @@ class _LicenseNameWithPopoverButtonState
       ),
       child: HoverWidget(
         hoverScale: 1.0,
-        tooltip:
-            // TODO: Localize
-            // appLocalizations.of(context).licenseDetails,
-            'Show license configuration',
+        tooltip: appLocalizationsOf(context).showLicenseConfiguration,
         child: Text.rich(
           TextSpan(
             text: widget.licenseState.meta.nameWithShortName,
-            style: ArDriveTypography.body
-                .buttonLargeRegular(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-                )
+            style: ArDriveTypographyNew.of(context)
+                .paragraphLarge(
+                    color:
+                        ArDriveTheme.of(context).themeData.colorTokens.textHigh)
                 .copyWith(decoration: TextDecoration.underline),
             recognizer: TapGestureRecognizer()
               ..onTap = () {
@@ -1325,7 +1318,6 @@ class _UploadReadyModalState extends State<UploadReadyModal> {
                                     isRetryingToPayWithTurbo: true,
                                   );
                             },
-                            useNewArDriveUI: true,
                             onUploadMethodChanged: (method, info, canUpload) {
                               context
                                   .read<UploadCubit>()
@@ -1398,15 +1390,13 @@ class _SelectPaymentMethodManifestUploadState
           }
         },
         child: ArDriveStandardModalNew(
-          title: 'Upload settings',
+          title: appLocalizationsOf(context).uploadSettings,
           width: kMediumDialogWidth,
           content: Column(
             children: [
               Text(
-                'One or more deployments are bigger than our free Turbo upload limit. You can select the payment method for each deployment below.',
-                style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                ),
+                appLocalizationsOf(context).deploymentsOverFreeLimit,
+                style: typography.paragraphNormal(color: colorTokens.textMid),
               ),
               const SizedBox(height: 16),
               UploadPaymentMethodView(
@@ -1420,7 +1410,7 @@ class _SelectPaymentMethodManifestUploadState
                   child: Column(
                     children: [
                       Text(
-                        'Loading payment methods...',
+                        appLocalizationsOf(context).loadingPaymentMethods,
                         style: typography.paragraphLarge(
                           color: colorTokens.textHigh,
                           fontWeight: ArFontWeight.bold,
@@ -1429,14 +1419,11 @@ class _SelectPaymentMethodManifestUploadState
                       const Padding(
                         padding:
                             EdgeInsets.symmetric(vertical: 8.0, horizontal: 32),
-                        child: SizedBox(
-                          child: LinearProgressIndicator(),
-                        ),
+                        child: ArDriveLinearProgress(),
                       ),
                     ],
                   ),
                 ),
-                useNewArDriveUI: true,
               ),
             ],
           ),
@@ -1482,7 +1469,7 @@ class CircularProgressWidget extends StatelessWidget {
             value: progress,
             strokeWidth: 4,
             valueColor: AlwaysStoppedAnimation<Color>(colorTokens.strokeRed),
-            backgroundColor: Colors.grey[850], // or any other background color
+            backgroundColor: colorTokens.strokeMid,
           ),
         ),
         Center(
@@ -1519,17 +1506,29 @@ class _UploadFolderNameConflictWidget extends StatelessWidget {
               appLocalizationsOf(context).foldersWithTheSameNameAlreadyExists(
                 state.conflictingFileNames.length,
               ),
-              style: ArDriveTypography.body.buttonNormalRegular(),
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.textMid),
             ),
-            const SizedBox(height: 16),
-            Text(appLocalizationsOf(context).conflictingFiles),
-            const SizedBox(height: 8),
+            const SizedBox(height: ArDriveSpacing.md),
+            Text(
+              appLocalizationsOf(context).conflictingFiles,
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
+            const SizedBox(height: ArDriveSpacing.xs),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 320),
               child: SingleChildScrollView(
                 child: Text(
                   state.conflictingFileNames.join(', \n'),
-                  style: ArDriveTypography.body.buttonNormalRegular(),
+                  style: ArDriveTypographyNew.of(context).paragraphNormal(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colorTokens
+                          .textHigh),
                 ),
               ),
             ),
@@ -1559,7 +1558,7 @@ class _UploadConflictWithFailedFilesWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveStandardModalNew(
-      title: 'Retry failed uploads?',
+      title: appLocalizationsOf(context).retryFailedUploadsTitle,
       content: SizedBox(
         width: kMediumDialogWidth,
         child: Column(
@@ -1567,15 +1566,22 @@ class _UploadConflictWithFailedFilesWidget extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'There are ${state.conflictingFileNamesForFailedFiles.length} file(s) marked with a red dot, indicating they failed to upload. Would you like to retry uploading these files by replacing the failed versions? This action will only affect the failed uploads and will not alter any successfully uploaded files. Alternatively, you can choose to skip these files and proceed with the others.',
-              style: ArDriveTypography.body.buttonNormalRegular(),
+              appLocalizationsOf(context).retryFailedUploadsDescription(
+                state.conflictingFileNamesForFailedFiles.length,
+              ),
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.textMid),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: ArDriveSpacing.md),
             Text(
-              'Conflicting files',
-              style: ArDriveTypography.body.buttonNormalRegular(),
+              appLocalizationsOf(context).conflictingFiles,
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+                fontWeight: ArFontWeight.semiBold,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: ArDriveSpacing.xs),
             ConstrainedBox(
               constraints: const BoxConstraints(maxHeight: 320),
               child: ListView.builder(
@@ -1614,7 +1620,7 @@ class _UploadConflictWithFailedFilesWidget extends StatelessWidget {
               .read<UploadCubit>()
               .prepareUploadPlanAndCostEstimates(
                   uploadAction: UploadActions.skipSuccessfulUploads),
-          title: 'Replace failed uploads',
+          title: appLocalizationsOf(context).replaceFailedUploads,
         ),
       ],
     );
@@ -1732,17 +1738,24 @@ class _UploadFileTooLargeWidget extends StatelessWidget {
                       : appLocalizationsOf(context)
                           .filesTooLargeExplanationPublic)
                   : appLocalizationsOf(context).filesTooLargeExplanationMobile,
-              style: ArDriveTypography.body.buttonNormalRegular(),
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.textMid),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: ArDriveSpacing.md),
             Text(
               appLocalizationsOf(context).tooLargeForUpload,
-              style: ArDriveTypography.body.buttonNormalRegular(),
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+                fontWeight: ArFontWeight.semiBold,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: ArDriveSpacing.xs),
             Text(
               state.tooLargeFileNames.join(', '),
-              style: ArDriveTypography.body.buttonNormalRegular(),
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.textHigh),
             ),
           ],
         ),
@@ -1777,19 +1790,18 @@ class _PreparingUploadWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            if (state is UploadPreparationInProgress &&
-                (state as UploadPreparationInProgress).isArConnect)
-              Text(
-                appLocalizationsOf(context).arConnectRemainOnThisTab,
-                style: ArDriveTypography.body.buttonNormalBold(),
-              )
-            else
-              Text(
-                appLocalizationsOf(context).thisMayTakeAWhile,
-                style: ArDriveTypography.body.buttonNormalBold(),
-              )
+            const ArDriveSpinner(size: ArDriveSpinnerSize.large),
+            const SizedBox(height: ArDriveSpacing.md),
+            Text(
+              state is UploadPreparationInProgress &&
+                      (state as UploadPreparationInProgress).isArConnect
+                  ? appLocalizationsOf(context).arConnectRemainOnThisTab
+                  : appLocalizationsOf(context).thisMayTakeAWhile,
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.textMid),
+              textAlign: TextAlign.center,
+            )
           ],
         ),
       ),
@@ -1873,7 +1885,6 @@ class _UploadReadyWidget extends StatelessWidget {
                           .read<UploadCubit>()
                           .setUploadMethod(method, info, canUpload);
                     },
-                    useNewArDriveUI: true,
                   ),
                 ),
               const Divider(height: 32),
@@ -1907,7 +1918,7 @@ class _UploadReadyWidget extends StatelessWidget {
                 children: [
                   if (state.loadingArNSNamesError)
                     Text(
-                      'Error loading ArNS names',
+                      appLocalizationsOf(context).errorLoadingArnsNames,
                       style: typography.paragraphNormal(
                         fontWeight: ArFontWeight.semiBold,
                         color: colorTokens.textRed,
@@ -1917,17 +1928,13 @@ class _UploadReadyWidget extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Loading ArNS names...',
+                          appLocalizationsOf(context).loadingArnsNames,
                           style: typography.paragraphNormal(
                             fontWeight: ArFontWeight.semiBold,
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                        const ArDriveSpinner()
                       ],
                     ),
                   Row(
@@ -1940,7 +1947,8 @@ class _UploadReadyWidget extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       ArDriveClickArea(
-                        tooltip: 'Learn more about licenses',
+                        tooltip:
+                            appLocalizationsOf(context).learnMoreAboutLicenses,
                         child: GestureDetector(
                           onTap: () {
                             showLicensingInfoModal(context: context);
@@ -1998,7 +2006,8 @@ class _UploadReadyWidget extends StatelessWidget {
                   ),
                   if (state.shouldShowCustomManifestCheckbox)
                     ArDriveCheckBox(
-                      title: 'Publish this manifest file as a deployment.',
+                      title: appLocalizationsOf(context)
+                          .publishManifestAsDeployment,
                       checked: state.uploadFileAsCustomManifest,
                       useNewIcons: true,
                       titleStyle: typography.paragraphNormal(
@@ -2171,7 +2180,7 @@ class _UploadReviewWithLicenseWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
-                    'Updated deployments:',
+                    appLocalizationsOf(context).updatedDeployments,
                     style: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
                       color: colorTokens.textLow,
@@ -2321,7 +2330,7 @@ class _UploadReviewWithArnsNameWidget extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   Text(
-                    'Updated deployments:',
+                    appLocalizationsOf(context).updatedDeployments,
                     style: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
                       color: colorTokens.textLow,
@@ -2402,16 +2411,17 @@ class _UploadSigningInProgressWidget extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            if (state.isArConnect)
-              Text(
-                appLocalizationsOf(context).arConnectRemainOnThisTab,
-                style: ArDriveTypography.body.buttonNormalRegular(),
-              )
-            else
-              Text(appLocalizationsOf(context).thisMayTakeAWhile,
-                  style: ArDriveTypography.body.buttonNormalRegular()),
+            const ArDriveSpinner(size: ArDriveSpinnerSize.large),
+            const SizedBox(height: ArDriveSpacing.md),
+            Text(
+              state.isArConnect
+                  ? appLocalizationsOf(context).arConnectRemainOnThisTab
+                  : appLocalizationsOf(context).thisMayTakeAWhile,
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.textMid),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -2551,11 +2561,20 @@ class _UploadFailureWidget extends StatelessWidget {
                 isWalletPaid
                     ? appLocalizationsOf(context).uploadFailedWalletFiles
                     : appLocalizationsOf(context).uploadFailedPartial,
-                style: ArDriveTypography.body.buttonLargeBold()),
+                style: ArDriveTypographyNew.of(context).paragraphLarge(
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+                  fontWeight: ArFontWeight.bold,
+                )),
             if (isWalletPaid) ...[
               const SizedBox(height: 12),
-              InlineWarning(
-                text: appLocalizationsOf(context).uploadFailedWalletKeepTabOpen,
+              SizedBox(
+                width: double.infinity,
+                child: ArDriveNotice(
+                  type: ArDriveNoticeType.warning,
+                  message:
+                      appLocalizationsOf(context).uploadFailedWalletKeepTabOpen,
+                ),
               ),
             ],
             const SizedBox(height: 8),
@@ -2596,15 +2615,14 @@ class _UploadFailureWidget extends StatelessWidget {
                                   children: [
                                     Text(
                                       file.name,
-                                      style: ArDriveTypography.body
-                                          .buttonNormalBold(
-                                            color: ArDriveTheme.of(context)
-                                                .themeData
-                                                .colors
-                                                .themeFgDefault,
-                                          )
-                                          .copyWith(
-                                              fontWeight: FontWeight.bold),
+                                      style: ArDriveTypographyNew.of(context)
+                                          .paragraphNormal(
+                                        color: ArDriveTheme.of(context)
+                                            .themeData
+                                            .colorTokens
+                                            .textHigh,
+                                        fontWeight: ArFontWeight.semiBold,
+                                      ),
                                     ),
                                     AnimatedSwitcher(
                                       duration: const Duration(seconds: 1),
@@ -2613,12 +2631,13 @@ class _UploadFailureWidget extends StatelessWidget {
                                           if (file is ARFSFileUploadMetadata)
                                             Text(
                                               filesize(file.size),
-                                              style: ArDriveTypography.body
-                                                  .buttonNormalBold(
+                                              style: ArDriveTypographyNew.of(
+                                                      context)
+                                                  .paragraphSmall(
                                                 color: ArDriveTheme.of(context)
                                                     .themeData
-                                                    .colors
-                                                    .themeFgOnDisabled,
+                                                    .colorTokens
+                                                    .textLow,
                                               ),
                                             ),
                                         ],
@@ -2663,7 +2682,9 @@ class _UploadShowingWarningWidget extends StatelessWidget {
               appLocalizationsOf(context).weDontRecommendUploadsAboveASafeLimit(
                 filesize(fileSizeWarning),
               ),
-              style: ArDriveTypography.body.buttonNormalRegular(),
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color:
+                      ArDriveTheme.of(context).themeData.colorTokens.textMid),
             ),
           ],
         ),
@@ -2697,8 +2718,8 @@ class _UploadCanceledWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ArDriveStandardModalNew(
-      title: 'Upload canceled',
-      description: 'Your upload was canceled',
+      title: appLocalizationsOf(context).uploadCanceledTitle,
+      description: appLocalizationsOf(context).uploadCanceledDescription,
       actions: [
         ModalAction(
           action: () => Navigator.of(context).pop(false),
@@ -2732,17 +2753,16 @@ class _UploadInProgressWidget extends StatelessWidget {
               onChangeCancelWarning(true);
               final cubit = context.read<UploadCubit>();
 
-              showAnimatedDialog(
+              showArDriveDialog(
                 context,
                 content: BlocBuilder<UploadCubit, UploadState>(
                   bloc: cubit,
                   builder: (context, state) {
                     if (state is UploadComplete) {
-                      // TODO: localize
                       return ArDriveStandardModalNew(
-                        title: 'Upload complete',
-                        description:
-                            'Your upload is complete. You can not cancel it anymore.',
+                        title: appLocalizationsOf(context).uploadCompleteTitle,
+                        description: appLocalizationsOf(context)
+                            .uploadCompleteCannotCancel,
                         actions: [
                           ModalAction(
                             action: () {
@@ -2753,23 +2773,22 @@ class _UploadInProgressWidget extends StatelessWidget {
 
                               onChangeCancelWarning(false);
                             },
-                            title: 'Ok',
+                            title: appLocalizationsOf(context).ok,
                           ),
                         ],
                       );
                     }
-                    // TODO: localize
                     return ArDriveStandardModalNew(
-                      title: 'Warning',
-                      description:
-                          'Cancelling this upload may still result in a charge to your wallet. Do you still wish to proceed?',
+                      title: appLocalizationsOf(context).warning,
+                      description: appLocalizationsOf(context)
+                          .cancelUploadMayStillCharge,
                       actions: [
                         ModalAction(
                           action: () {
                             onChangeCancelWarning(false);
                             Navigator.pop(context);
                           },
-                          title: 'No',
+                          title: appLocalizationsOf(context).keepUploading,
                         ),
                         ModalAction(
                           action: () {
@@ -2777,7 +2796,7 @@ class _UploadInProgressWidget extends StatelessWidget {
                             cubit.cancelUpload();
                             Navigator.pop(context);
                           },
-                          title: 'Yes',
+                          title: appLocalizationsOf(context).cancelUpload,
                         ),
                       ],
                     );
@@ -2785,9 +2804,8 @@ class _UploadInProgressWidget extends StatelessWidget {
                 ),
               );
             },
-            // TODO: localize
             title: state.isCanceling
-                ? 'Canceling...'
+                ? appLocalizationsOf(context).cancelingUpload
                 : appLocalizationsOf(context).cancel,
             // A lone action is primary by default, and Cancel is not the
             // main action here.
@@ -2816,47 +2834,60 @@ class _UploadInProgressWidget extends StatelessWidget {
                       String? progressMessage;
                       String status = '';
 
-                      // TODO: localize
                       switch (task.status) {
                         case UploadStatus.notStarted:
-                          status = 'Not started';
+                          status = appLocalizationsOf(context)
+                              .uploadStatusNotStarted;
                           break;
                         case UploadStatus.inProgress:
-                          status = 'In progress';
+                          status = appLocalizationsOf(context)
+                              .uploadStatusInProgress;
                           break;
                         case UploadStatus.paused:
-                          status = 'Paused';
+                          status =
+                              appLocalizationsOf(context).uploadStatusPaused;
                           break;
                         case UploadStatus.creatingMetadata:
-                          status = 'Preparing';
+                          status =
+                              appLocalizationsOf(context).uploadStatusPreparing;
                           break;
                         case UploadStatus.encryting:
-                          status = 'Encrypting';
+                          status = appLocalizationsOf(context)
+                              .uploadStatusEncrypting;
                           break;
                         case UploadStatus.finalizing:
-                          status = 'Finalizing upload';
+                          status = appLocalizationsOf(context)
+                              .uploadStatusFinalizing;
                           break;
                         case UploadStatus.complete:
-                          status = 'Complete';
+                          status =
+                              appLocalizationsOf(context).uploadStatusComplete;
                           break;
                         case UploadStatus.failed:
-                          status = 'Failed';
+                          status =
+                              appLocalizationsOf(context).uploadStatusFailed;
                           break;
                         case UploadStatus.preparationDone:
-                          status = 'Preparation done';
+                          status = appLocalizationsOf(context)
+                              .uploadStatusPreparationDone;
                           break;
                         case UploadStatus.canceled:
-                          status = 'Canceled';
+                          status =
+                              appLocalizationsOf(context).uploadStatusCanceled;
                           break;
                         case UploadStatus.creatingBundle:
-                          status = 'Preparing';
+                          status =
+                              appLocalizationsOf(context).uploadStatusPreparing;
                         case UploadStatus.uploadingThumbnail:
-                          status = 'Uploading thumbnail...';
+                          status = appLocalizationsOf(context)
+                              .uploadStatusUploadingThumbnail;
                           break;
                         case UploadStatus.assigningUndername:
                           if (task is FileUploadTask) {
-                            status =
-                                'Assigning ArNS Name: ${task.metadata.assignedName}...';
+                            status = appLocalizationsOf(context)
+                                .uploadStatusAssigningArnsName(
+                              task.metadata.assignedName ?? '',
+                            );
                           }
                           break;
                       }
@@ -2869,9 +2900,8 @@ class _UploadInProgressWidget extends StatelessWidget {
 
                       if (!task.isProgressAvailable &&
                           task.status == UploadStatus.inProgress) {
-                        // TODO: localize
-                        progressMessage =
-                            'Your upload is in progress, but for large files the progress it not available. Please wait...';
+                        progressMessage = appLocalizationsOf(context)
+                            .uploadProgressNotAvailable;
                       }
 
                       // Each file at its own size, as on the confirm step. A
@@ -2992,8 +3022,8 @@ class _UploadInProgressWidget extends StatelessWidget {
                                                   color:
                                                       ArDriveTheme.of(context)
                                                           .themeData
-                                                          .colors
-                                                          .themeFgDefault,
+                                                          .colorTokens
+                                                          .textHigh,
                                                   size: 40,
                                                 ),
                                               ),
@@ -3043,8 +3073,13 @@ class _UploadInProgressWidget extends StatelessWidget {
             ),
           if (state.uploadMethod == UploadMethod.ar) ...[
             const SizedBox(height: 12),
-            InlineWarning(
-              text: appLocalizationsOf(context).uploadInProgressKeepTabOpen,
+            SizedBox(
+              width: double.infinity,
+              child: ArDriveNotice(
+                type: ArDriveNoticeType.warning,
+                message:
+                    appLocalizationsOf(context).uploadInProgressKeepTabOpen,
+              ),
             ),
           ],
         ],

@@ -15,7 +15,6 @@ class UploadPaymentMethodView extends StatefulWidget {
     required this.onError,
     this.onTurboTopupSucess,
     this.loadingIndicator,
-    this.useNewArDriveUI = false,
   });
 
   final Function(UploadMethod, UploadPaymentMethodInfo, bool)
@@ -23,7 +22,6 @@ class UploadPaymentMethodView extends StatefulWidget {
   final Function() onError;
   final Function()? onTurboTopupSucess;
   final Widget? loadingIndicator;
-  final bool useNewArDriveUI;
 
   @override
   State<UploadPaymentMethodView> createState() =>
@@ -90,7 +88,6 @@ class _UploadPaymentMethodViewState extends State<UploadPaymentMethodView> {
       builder: (context, state) {
         if (state is UploadPaymentMethodLoaded) {
           return PaymentMethodSelector(
-            useNewArDriveUI: widget.useNewArDriveUI,
             uploadMethodInfo: state.paymentMethodInfo,
             showCongestionWarning: _showCongestionWarning,
             onArSelect: () {

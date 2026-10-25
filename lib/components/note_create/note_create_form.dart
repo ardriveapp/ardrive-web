@@ -3,6 +3,7 @@ import 'package:ardrive/blocs/note_create/note_create_state.dart';
 import 'package:ardrive/components/upload_form.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +17,7 @@ Future<void> promptToCreateNote(
   required String driveId,
   required String parentFolderId,
 }) async {
-  final ioFile = await showAnimatedDialogWithBuilder<IOFile>(
+  final ioFile = await showArDriveDialogWithBuilder<IOFile>(
     context,
     builder: (context) => BlocProvider(
       create: (context) => NoteCreateCubit(
@@ -73,7 +74,7 @@ Future<void> promptToEditNote(
   // Warn for files over 1MB
   if (fileSize > warnFileSize && context.mounted) {
     final fileSizeMB = (fileSize / 1024 / 1024).toStringAsFixed(1);
-    final proceed = await showAnimatedDialogWithBuilder<bool>(
+    final proceed = await showArDriveDialogWithBuilder<bool>(
       context,
       builder: (context) => ArDriveStandardModalNew(
         title: appLocalizationsOf(context).noteLargeFileWarningTitle,
@@ -97,7 +98,7 @@ Future<void> promptToEditNote(
 
   if (!context.mounted) return;
 
-  final ioFile = await showAnimatedDialogWithBuilder<IOFile>(
+  final ioFile = await showArDriveDialogWithBuilder<IOFile>(
     context,
     builder: (context) => BlocProvider(
       create: (context) => NoteCreateCubit(
@@ -167,7 +168,7 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
   Future<bool> _confirmDiscard() async {
     if (!_hasUnsavedChanges) return true;
 
-    final result = await showAnimatedDialogWithBuilder<bool>(
+    final result = await showArDriveDialogWithBuilder<bool>(
       context,
       builder: (context) => ArDriveStandardModalNew(
         title: appLocalizationsOf(context).discardChanges,
@@ -287,18 +288,19 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
 
   /// Build full-page mobile layout
   Widget _buildMobileLayout(BuildContext context, NoteCreateEditing state) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
     final cubit = context.read<NoteCreateCubit>();
     final isEditMode = cubit.isEditMode;
 
     return Scaffold(
-      backgroundColor: colors.themeBgSurface,
+      backgroundColor: colorTokens.containerL0,
       appBar: AppBar(
-        backgroundColor: colors.themeBgSurface,
+        backgroundColor: colorTokens.containerL0,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.close, color: colors.themeFgDefault),
+          icon: Icon(Icons.close, color: colorTokens.iconHigh),
+          tooltip: appLocalizationsOf(context).close,
           onPressed: () async {
             final navigator = Navigator.of(context);
             if (await _confirmDiscard()) {
@@ -311,22 +313,22 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
               ? appLocalizationsOf(context).editNote
               : appLocalizationsOf(context).createNewNote,
           style: typography.heading5(
-            color: colors.themeFgDefault,
+            color: colorTokens.textHigh,
+            fontWeight: ArFontWeight.bold,
           ),
         ),
         actions: [
-          ArDriveButton(
-            text: appLocalizationsOf(context).nextEmphasized,
-            maxHeight: 36,
-            maxWidth: 80,
-            fontStyle: typography.paragraphNormal(
-              color: colors.themeFgOnAccent,
-              fontWeight: ArFontWeight.semiBold,
+          Center(
+            child: ArDriveButtonNew(
+              text: appLocalizationsOf(context).nextEmphasized,
+              typography: typography,
+              variant: ButtonVariant.primary,
+              size: ArDriveButtonSize.compact,
+              isDisabled: !state.isValidName,
+              onPressed: state.isValidName ? _createNote : null,
             ),
-            isDisabled: !state.isValidName,
-            onPressed: state.isValidName ? _createNote : null,
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: ArDriveSpacing.md),
         ],
       ),
       body: _buildMobileContent(context, state),
@@ -354,13 +356,11 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
             }
           },
           title: appLocalizationsOf(context).cancelEmphasized,
-          customWidth: 100,
         ),
         ModalAction(
           action: _createNote,
           title: appLocalizationsOf(context).nextEmphasized,
           isEnable: state.isValidName,
-          customWidth: 100,
         ),
       ],
     );
@@ -368,58 +368,13 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
 
   /// Build mobile-optimized content (full height)
   Widget _buildMobileContent(BuildContext context, NoteCreateEditing state) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final cubit = context.read<NoteCreateCubit>();
-
-    return Container(
-      color: colors.themeBgCanvas,
-      padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.all(ArDriveSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Note name input
-          Text(
-            appLocalizationsOf(context).noteName,
-            style: ArDriveTypographyNew.of(context).heading6(),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: ArDriveTextFieldNew(
-                  key: const Key('note_name_text_field'),
-                  controller: _nameController,
-                  onChanged: cubit.isEditMode
-                      ? null
-                      : (value) {
-                          context.read<NoteCreateCubit>().updateNoteName(value);
-                        },
-                  hintText: appLocalizationsOf(context).enterNoteName,
-                  autofocus: !cubit.isEditMode,
-                  isEnabled: !cubit.isEditMode,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '.md',
-                style:
-                    ArDriveTypographyNew.of(context).paragraphNormal().copyWith(
-                          color: colors.themeFgSubtle,
-                        ),
-              ),
-            ],
-          ),
-          if (state.nameError != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                _getErrorMessage(context, state.nameError!),
-                style: ArDriveTypographyNew.of(context).paragraphSmall(
-                  color: colors.themeErrorDefault,
-                ),
-              ),
-            ),
-          const SizedBox(height: 16),
+          _buildNameField(context, state),
+          const SizedBox(height: ArDriveSpacing.md),
 
           // Markdown editor - takes remaining space
           Expanded(
@@ -443,7 +398,6 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
   Widget _buildContent(
       BuildContext context, NoteCreateEditing state, double modalWidth) {
     final editorHeight = _getResponsiveEditorHeight(context);
-    final cubit = context.read<NoteCreateCubit>();
 
     return SizedBox(
       width: modalWidth,
@@ -451,55 +405,8 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Note name input
-          Text(
-            appLocalizationsOf(context).noteName,
-            style: ArDriveTypographyNew.of(context).heading5(),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: ArDriveTextFieldNew(
-                  key: const Key('note_name_text_field'),
-                  controller: _nameController,
-                  onChanged: cubit.isEditMode
-                      ? null
-                      : (value) {
-                          context.read<NoteCreateCubit>().updateNoteName(value);
-                        },
-                  hintText: appLocalizationsOf(context).enterNoteName,
-                  autofocus: !cubit.isEditMode,
-                  isEnabled: !cubit.isEditMode,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '.md',
-                style:
-                    ArDriveTypographyNew.of(context).paragraphNormal().copyWith(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgSubtle,
-                        ),
-              ),
-            ],
-          ),
-          if (state.nameError != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                _getErrorMessage(context, state.nameError!),
-                style: ArDriveTypographyNew.of(context).paragraphSmall(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeErrorDefault,
-                ),
-              ),
-            ),
-          const SizedBox(height: 16),
+          _buildNameField(context, state),
+          const SizedBox(height: ArDriveSpacing.md),
 
           // Markdown editor
           SizedBox(
@@ -517,6 +424,66 @@ class _NoteCreateFormState extends State<NoteCreateForm> {
           ),
         ],
       ),
+    );
+  }
+
+  /// The name, labelled the way [ArDriveTextFieldNew] labels a field. The
+  /// label and error sit outside the field so that ".md" lines up with the
+  /// box rather than with the box and its label together.
+  Widget _buildNameField(BuildContext context, NoteCreateEditing state) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final cubit = context.read<NoteCreateCubit>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: ArDriveSpacing.xxs),
+          child: Text(
+            appLocalizationsOf(context).noteName,
+            style: typography.paragraphNormal(
+              color: colorTokens.textLow,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: ArDriveTextFieldNew(
+                key: const Key('note_name_text_field'),
+                controller: _nameController,
+                onChanged: cubit.isEditMode
+                    ? null
+                    : (value) {
+                        context.read<NoteCreateCubit>().updateNoteName(value);
+                      },
+                hintText: appLocalizationsOf(context).enterNoteName,
+                autofocus: !cubit.isEditMode,
+                isEnabled: !cubit.isEditMode,
+              ),
+            ),
+            const SizedBox(width: ArDriveSpacing.xs),
+            Text(
+              '.md',
+              style: typography.paragraphNormal(color: colorTokens.textLow),
+            ),
+          ],
+        ),
+        if (state.nameError != null)
+          Padding(
+            padding: const EdgeInsets.only(top: ArDriveSpacing.xs),
+            child: Text(
+              _getErrorMessage(context, state.nameError!),
+              style: typography.paragraphNormal(
+                color: colorTokens.statusErrorFg,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
+          ),
+      ],
     );
   }
 

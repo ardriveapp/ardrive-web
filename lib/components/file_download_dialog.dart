@@ -338,7 +338,7 @@ class FileDownloadDialog extends StatelessWidget {
       child: const Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Center(child: CircularProgressIndicator()),
+          Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.large)),
         ],
       ),
       actions: [
@@ -360,19 +360,19 @@ class FileDownloadDialog extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(
             state.fileName,
-            style: ArDriveTypography.body.bodyRegular(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            style: ArDriveTypographyNew.of(context).paragraphLarge(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+              fontWeight: ArFontWeight.semiBold,
             ),
           ),
           subtitle: Text(
             filesize(
               state.totalByteCount,
             ),
-            style: ArDriveTypography.body.smallRegular(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-            ),
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textMid),
           ),
-          trailing: const CircularProgressIndicator(),
+          trailing: const ArDriveSpinner(),
         ),
       ),
       actions: [
@@ -404,17 +404,17 @@ class FileDownloadDialog extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
           title: Text(
             state.fileName,
-            style: ArDriveTypography.body.bodyRegular(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            style: ArDriveTypographyNew.of(context).paragraphLarge(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+              fontWeight: ArFontWeight.semiBold,
             ),
           ),
           subtitle: Text(
             appLocalizationsOf(context).downloadVerifyingDescription,
-            style: ArDriveTypography.body.smallRegular(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-            ),
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textMid),
           ),
-          trailing: const CircularProgressIndicator(),
+          trailing: const ArDriveSpinner(),
         ),
       ),
     );
@@ -469,8 +469,8 @@ class FileDownloadDialog extends StatelessWidget {
 
   ArDriveStandardModalNew _downloadingFileWithProgressDialog(
       BuildContext context, FileDownloadWithProgress state) {
-    final theme = ArDriveTheme.of(context).themeData;
-    final colors = theme.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
     final progressText =
         '${filesize(((state.fileSize) * (state.progress / 100)).ceil())}/${filesize(state.fileSize)}';
 
@@ -484,19 +484,19 @@ class FileDownloadDialog extends StatelessWidget {
     // the word above it, without anything moving to suggest bytes are still
     // arriving.
     //
-    // `textLow` and not `themeFgOnDisabled`, which would be the obvious
-    // "inactive" token: in the dark theme that is grey.300 against a white
-    // fill, a change of 1.3:1 that nobody can see on a 4px bar. `textLow`
-    // reads as a change against the fill in both themes (3.7:1 light, 4.1:1
-    // dark) while staying visible against the track (5.0:1 and 4.5:1), which
-    // is what keeps 62% legible as a position.
-    final Color indicatorColor;
+    // The bar is the design system's, so it fills in the primary red like
+    // every other progress bar. Stalled, it turns `textHigh`: the change that
+    // reads against the red as well as against the track (4.1:1 and 9.9:1
+    // dark, 2.1:1 and 5.9:1 light, on top of the change of hue), which is
+    // what keeps 62% legible as a position. The grey tokens that look
+    // "inactive" all sit within 1.6:1 of the red.
+    final Color? indicatorColor;
     if (state.isReconnecting) {
-      indicatorColor = theme.colorTokens.textLow;
+      indicatorColor = colorTokens.textHigh;
     } else if (state.progress == 100) {
-      indicatorColor = colors.themeSuccessDefault;
+      indicatorColor = colorTokens.statusSuccessFg;
     } else {
-      indicatorColor = colors.themeFgDefault;
+      indicatorColor = null;
     }
 
     return _modalWrapper(
@@ -526,8 +526,9 @@ class FileDownloadDialog extends StatelessWidget {
                 children: [
                   Text(
                     state.fileName,
-                    style: ArDriveTypography.body.bodyBold(
-                      color: colors.themeFgDefault,
+                    style: typography.paragraphLarge(
+                      color: colorTokens.textHigh,
+                      fontWeight: ArFontWeight.semiBold,
                     ),
                   ),
                   AnimatedSwitcher(
@@ -541,30 +542,30 @@ class FileDownloadDialog extends StatelessWidget {
                           ? appLocalizationsOf(context).downloadReconnecting
                           : appLocalizationsOf(context).downloading,
                       key: ValueKey<bool>(state.isReconnecting),
-                      style: ArDriveTypography.body.buttonNormalBold(
+                      style: typography.paragraphNormal(
                         color: state.isReconnecting
-                            ? colors.themeFgDefault
-                            : colors.themeFgOnDisabled,
+                            ? colorTokens.textHigh
+                            : colorTokens.textMid,
+                        fontWeight: ArFontWeight.semiBold,
                       ),
                     ),
                   ),
                   Text(
                     progressText,
-                    style: ArDriveTypography.body.buttonNormalRegular(
-                      color: colors.themeFgOnDisabled,
+                    style: typography.paragraphNormal(
+                      color: colorTokens.textLow,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: ArDriveSpacing.sm),
                   Row(
                     children: [
                       Expanded(
-                        child: ArDriveProgressBar(
-                          height: 4,
-                          indicatorColor: indicatorColor,
-                          percentage: state.progress / 100,
+                        child: ArDriveLinearProgress(
+                          value: state.progress / 100,
+                          color: indicatorColor,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: ArDriveSpacing.sm),
                       // Fixed width so the bar's right-hand end does not
                       // twitch left and right as the reading goes 9% to 62%
                       // to 100%.
@@ -573,8 +574,13 @@ class FileDownloadDialog extends StatelessWidget {
                         child: Text(
                           '${state.progress}%',
                           textAlign: TextAlign.right,
-                          style: ArDriveTypography.body.buttonNormalBold(
-                            color: colors.themeFgDefault,
+                          style: typography
+                              .paragraphNormal(
+                            color: colorTokens.textHigh,
+                            fontWeight: ArFontWeight.semiBold,
+                          )
+                              .copyWith(
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ),
