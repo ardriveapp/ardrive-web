@@ -391,7 +391,7 @@ class _TutorialContentState extends State<_TutorialContent> {
                 child: Center(
                   child: _loadingVideo
                       ? const Center(
-                          child: CircularProgressIndicator(),
+                          child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
                         )
                       : Container(
                           padding: const EdgeInsets.all(1),

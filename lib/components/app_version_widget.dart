@@ -5,11 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class AppVersionWidget extends StatelessWidget {
-  final Color color;
+  /// The text colour; the theme's low-emphasis text when not given.
+  final Color? color;
 
   const AppVersionWidget({
     super.key,
-    this.color = Colors.grey,
+    this.color,
   });
 
   @override
@@ -28,8 +29,9 @@ class AppVersionWidget extends StatelessWidget {
             kIsWeb ? info.version : '${info.version}+${info.buildNumber}';
         return Text(
           appLocalizationsOf(context).appVersion(literalVersion),
-          style: ArDriveTypography.body.buttonNormalRegular(
-            color: color,
+          style: ArDriveTypographyNew.of(context).paragraphNormal(
+            color:
+                color ?? ArDriveTheme.of(context).themeData.colorTokens.textLow,
           ),
           textAlign: TextAlign.center,
         );

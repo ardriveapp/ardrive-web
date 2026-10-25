@@ -504,7 +504,7 @@ class _PermanentStorageTileState extends State<_PermanentStorageTile> {
                     Text(
                       'Permanent',
                       style: typography.heading2(
-                          color: const Color(0xffDB323B),
+                          color: colorTokens.textRed,
                           fontWeight: ArFontWeight.semiBold),
                     ),
                     Text(
@@ -723,7 +723,7 @@ class _CustomIndicatorState extends State<CustomIndicator>
                 width: indicatorWidth,
                 height: 9.0,
                 decoration: BoxDecoration(
-                  color: const Color(0xffC4C4C4),
+                  color: colorTokens.strokeHigh,
                   borderRadius: BorderRadius.circular(4.5),
                 ),
               );
@@ -735,7 +735,7 @@ class _CustomIndicatorState extends State<CustomIndicator>
               height: 9.0,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4.5),
-                color: const Color(0xffC4C4C4),
+                color: colorTokens.strokeHigh,
               ),
               child: Stack(
                 children: [

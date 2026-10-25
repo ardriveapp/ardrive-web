@@ -41,8 +41,8 @@ class SettingsSubmenu extends StatelessWidget {
                 .themeData
                 .dropdownTheme
                 .backgroundColor,
-            child: const ArDriveDropdownItemTile(
-              name: 'Set gateway',
+            child: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).settingsSetGateway,
             ),
           ),
         ),
@@ -57,8 +57,8 @@ class SettingsSubmenu extends StatelessWidget {
                 .themeData
                 .dropdownTheme
                 .backgroundColor,
-            child: const ArDriveDropdownItemTile(
-              name: 'Set GraphQL server',
+            child: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).settingsSetGraphQLServer,
             ),
           ),
         ),
@@ -73,8 +73,8 @@ class SettingsSubmenu extends StatelessWidget {
                 .themeData
                 .dropdownTheme
                 .backgroundColor,
-            child: const ArDriveDropdownItemTile(
-              name: 'Set Turbo services',
+            child: ArDriveDropdownItemTile(
+              name: appLocalizationsOf(context).settingsSetTurboServices,
             ),
           ),
         ),
@@ -101,7 +101,6 @@ class SettingsSubmenu extends StatelessWidget {
                     child: ArDriveToggleSwitch(
                       value: syncAllDrivesOnLogin,
                       text: appLocalizationsOf(context).syncAllDrivesOnLogin,
-                      textStyle: ArDriveTypography.body.buttonNormalBold(),
                       onChanged: (value) {
                         repo.saveSyncAllDrivesOnLogin(value);
                       },

@@ -1,5 +1,7 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -154,5 +156,42 @@ void main() {
 
     // should not change the value of the variable
     expect(onChangedValue, null);
+  });
+
+  // A screen reader heard only the label, and the keyboard couldn't reach
+  // the switch at all.
+  testWidgets('is one switch for a screen reader and the keyboard',
+      (tester) async {
+    bool? changedTo;
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(ArDriveApp(
+      builder: (context) => MaterialApp(
+        home: Scaffold(
+          body: ArDriveToggleSwitch(
+            text: 'Sync all drives on login',
+            onChanged: (value) => changedTo = value,
+          ),
+        ),
+      ),
+    ));
+
+    final node = tester.getSemantics(find.byType(ArDriveToggleSwitch));
+    expect(node.label, 'Sync all drives on login');
+    expect(node.hasFlag(SemanticsFlag.hasToggledState), isTrue);
+    expect(node.hasFlag(SemanticsFlag.isToggled), isFalse);
+    expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.space);
+    await tester.pumpAndSettle();
+    expect(changedTo, isTrue);
+    expect(
+      tester
+          .getSemantics(find.byType(ArDriveToggleSwitch))
+          .hasFlag(SemanticsFlag.isToggled),
+      isTrue,
+    );
+    handle.dispose();
   });
 }

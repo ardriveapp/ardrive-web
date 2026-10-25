@@ -110,7 +110,7 @@ Future<void> showBiometricExceptionDialog(
 }) async {
   return showArDriveDialog(
     context,
-    content: ArDriveStandardModal(
+    content: ArDriveStandardModalNew(
       title: appLocalizationsOf(context).enableBiometricLogin,
       description: description,
       actions: [

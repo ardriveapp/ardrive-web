@@ -88,28 +88,16 @@ class _LandingViewState extends State<LandingView> {
               const LinedTextDivider(),
               const SizedBox(height: 24),
               Center(
-                child: ArDriveClickArea(
-                  // An InkWell rather than a bare gesture, so the link takes
-                  // keyboard focus; the semantics say it is a button, which
-                  // an InkWell around plain text does not on its own.
-                  child: Semantics(
-                    button: true,
-                    child: InkWell(
-                      key: const Key('openDriveLandingLink'),
-                      onTap: () {
-                        PlausibleEventTracker.trackClickOpenDriveAsVisitor();
-                        showOpenDriveDialog(context);
-                      },
-                      child: Text(
-                        appLocalizationsOf(context).openDriveLandingAction,
-                        textAlign: TextAlign.center,
-                        style: typography.paragraphNormal(
-                          color: colorTokens.textLink,
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                      ),
-                    ),
-                  ),
+                // Opens a dialog rather than a page, so it is announced as a
+                // button.
+                child: ArDriveLink(
+                  key: const Key('openDriveLandingLink'),
+                  text: appLocalizationsOf(context).openDriveLandingAction,
+                  isAction: true,
+                  onTap: () {
+                    PlausibleEventTracker.trackClickOpenDriveAsVisitor();
+                    showOpenDriveDialog(context);
+                  },
                 ),
               ),
               const SizedBox(height: 40),

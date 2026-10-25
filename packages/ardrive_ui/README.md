@@ -28,9 +28,24 @@ Material one such as `Colors.green`, looks right in one theme only.
 ### Monospace
 
 `ArDriveTypographyNew.of(context).code()` is Roboto Mono, Regular only. It
-is for code, text-file previews and the note editor, where columns and
-markup have to line up. Wavehaus stays the face for everything else. The
-brand kit names no monospace face; ardrive.io uses the system mono stack.
+is for two kinds of text:
+
+- Code, text-file previews and the note editor, where columns and markup
+  have to line up.
+- Transaction, file and drive IDs, wallet addresses and keys, whole or
+  shortened (`abc123...xyz9`), where every character has to be told apart.
+  An ArNS, ENS or SNS name is a name and stays in Wavehaus; the address
+  under it is monospace.
+
+Wavehaus stays the face for everything else, the same rule as the desktop
+app (its D-046). The brand kit names no monospace face; ardrive.io uses the
+system mono stack.
+
+`code()` takes a `fontSize`, a step under the text beside it by default,
+where monospace reads the same size. An ID or address that shares a row
+with other things gets `ArDriveMonospace.widthOf(text, fontSize)` as its
+width, so nothing moves when the face loads and replaces the narrower
+fallback.
 
 The face is an asset, not an entry in the pubspec's fonts block: Flutter
 web downloads every listed font before the first frame, and most sessions

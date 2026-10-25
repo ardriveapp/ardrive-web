@@ -26,8 +26,8 @@ class TruncatedAddress extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    final url = explorerUrl ??
-        'https://viewblock.io/arweave/address/$walletAddress';
+    final url =
+        explorerUrl ?? 'https://viewblock.io/arweave/address/$walletAddress';
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -41,9 +41,10 @@ class TruncatedAddress extends StatelessWidget {
             offsetStart: offsetStart,
             offsetEnd: offsetEnd,
           ),
-          style: typography.paragraphNormal(
+          // An address, so monospace.
+          style: typography.code(
+            fontSize: fontSize,
             color: colorTokens.textLink,
-            fontWeight: ArFontWeight.semiBold,
           ),
         ),
       ),

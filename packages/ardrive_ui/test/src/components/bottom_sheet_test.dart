@@ -75,4 +75,25 @@ void main() {
         reason: 'the actions stay in view');
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('a sheet that fills its height gives a list the room to scroll',
+      (tester) async {
+    await openSheet(
+      tester,
+      (context) => ArDriveBottomSheet(
+        title: 'Search',
+        fillsHeight: true,
+        content: ListView.builder(
+          itemCount: 100,
+          itemBuilder: (_, i) => SizedBox(height: 40, child: Text('Row $i')),
+        ),
+      ),
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(tester.getSize(find.byType(ArDriveBottomSheet)).height,
+        moreOrLessEquals(844 * 0.85, epsilon: 1));
+    expect(find.text('Row 0'), findsOneWidget);
+    expect(find.text('Row 99'), findsNothing);
+  });
 }

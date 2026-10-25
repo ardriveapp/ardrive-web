@@ -247,12 +247,6 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "cookieConsent": "クッキーの使用許諾",
-  "@cookieConsent": {},
-  "cookieConsentBodyPart1": "当社の決済プロバイダであるStripeは、ユーザーが クレジットで購入できるようにするためにクッキーを使用します。これらのクッキーは、クレジットのご利用に必要です。",
-  "@cookieConsentBodyPart1": {},
-  "cookieConsentBodyPart2": "「同意する」をクリックすると、クッキーの使用に同意したことになります。",
-  "@cookieConsentBodyPart2": {},
   "copyAccessKey": "キーをコピーする",
   "@copyAccessKey": {
     "description": "Label of the button that copies the access key on the share file dialog"

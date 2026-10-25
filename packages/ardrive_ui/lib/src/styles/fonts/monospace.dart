@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 
-/// Roboto Mono, the face for code, text-file previews and the note editor.
-/// Wavehaus stays the brand face everywhere else.
+/// Roboto Mono, the face for code, text-file previews, the note editor, and
+/// IDs, addresses and keys, whole or shortened. Wavehaus stays the brand face
+/// everywhere else.
 ///
 /// It is loaded the first time something asks for it, not at startup: a font
 /// listed in the pubspec's fonts block is in the font manifest, and Flutter
@@ -21,6 +23,20 @@ abstract final class ArDriveMonospace {
       'packages/ardrive_ui/assets/fonts/mono/RobotoMono-Regular.ttf';
 
   static Future<void>? _loading;
+
+  /// Every Roboto Mono character is this many ems wide.
+  static const advance = 0.6;
+
+  /// How wide [text] is in Roboto Mono at [fontSize], with a pixel to spare.
+  /// Give an ID or address that sits beside other things this width, with
+  /// `softWrap: false`, so nothing moves when the face arrives and replaces
+  /// the narrower fallback.
+  ///
+  /// The spare pixel matters: the browser measures a line a fraction wider
+  /// than its characters' advances, and a box of the exact width wrapped the
+  /// last character out of sight.
+  static double widthOf(String text, double fontSize) =>
+      (text.characters.length * advance * fontSize).ceilToDouble() + 1;
 
   /// Reads the font file. Replaced in tests to count or fail loads.
   @visibleForTesting

@@ -1,4 +1,3 @@
-import 'package:ardrive/authentication/components/login_modal.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/file_download_dialog.dart';
@@ -19,7 +18,6 @@ import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 import '../models/models.dart';
 
@@ -37,34 +35,27 @@ Future<void> showSearchModalBottomSheet({
 }) {
   PlausibleEventTracker.trackPageview(page: PlausiblePageView.searchPage);
 
-  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-  return showModalBottomSheet(
-    isScrollControlled: true,
-    context: context,
-    backgroundColor: Colors.transparent,
-    builder: (_) => Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: BoxDecoration(
-        color: colorTokens.containerL2,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(6.0),
-          topRight: Radius.circular(6.0),
-        ),
-      ),
-      child: Padding(
-        padding: MediaQuery.of(context).viewInsets,
-        child: BlocProvider.value(
-          value: context.read<DriveDetailCubit>(),
-          child: FileSearchModal(
-            driveDetailCubit: context.read<DriveDetailCubit>(),
-            drivesCubit: drivesCubit,
-            onNavigateToFolder: onNavigateToFolder,
-          ),
+  return showArDriveBottomSheet(
+    context,
+    builder: (_) => ArDriveBottomSheet(
+      title: _searchTitle(context),
+      fillsHeight: true,
+      content: BlocProvider.value(
+        value: context.read<DriveDetailCubit>(),
+        child: FileSearchModal(
+          driveDetailCubit: context.read<DriveDetailCubit>(),
+          drivesCubit: drivesCubit,
+          onNavigateToFolder: onNavigateToFolder,
+          inSheet: true,
         ),
       ),
     ),
   );
 }
+
+String _searchTitle(BuildContext context) => PublicationMode.isOn
+    ? appLocalizationsOf(context).publicationSearchTitle
+    : appLocalizationsOf(context).searchTitle;
 
 /// Every result for the session's query, in a dialog. Opened from the search
 /// box with Enter or "See all results".
@@ -98,7 +89,14 @@ class FileSearchModal extends StatefulWidget {
     required this.driveDetailCubit,
     required this.drivesCubit,
     this.onNavigateToFolder,
+    this.inSheet = false,
   });
+
+  /// Whether a bottom sheet holds it, which gives the title. Otherwise it is
+  /// the standard dialog. Set by how it was opened rather than read from the
+  /// screen's width, so a window resized while it is open can't leave it
+  /// without a surface.
+  final bool inSheet;
 
   final DriveDetailCubit driveDetailCubit;
   final DrivesCubit drivesCubit;
@@ -131,57 +129,26 @@ class _FileSearchModalState extends State<FileSearchModal> {
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    return ScreenTypeLayout.builder(mobile: (context) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            clipBehavior: Clip.hardEdge,
-            decoration: BoxDecoration(
-              color: colorTokens.containerRed,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(9),
-                topRight: Radius.circular(9),
-              ),
-            ),
-            height: 6,
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildSearchHeader(typography, colorTokens),
-                  const SizedBox(height: 16),
-                  _buildSearchField(),
-                  const SizedBox(height: 16),
-                  const SearchCoverageNotice(),
-                  _buildSearchResults(context, typography, colorTokens),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
-    }, desktop: (context) {
-      return ArDriveLoginModal(
-        width: MediaQuery.of(context).size.width * 0.6,
-        content: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.7,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildSearchHeader(typography, colorTokens),
-              const SizedBox(height: 16),
-              _buildSearchField(),
-              const SizedBox(height: 16),
-              const SearchCoverageNotice(),
-              _buildSearchResults(context, typography, colorTokens),
-            ],
-          ),
-        ),
-      );
-    });
+    final body = [
+      _buildSearchField(),
+      const SizedBox(height: ArDriveSpacing.md),
+      const SearchCoverageNotice(),
+      _buildSearchResults(context, typography, colorTokens),
+    ];
+
+    if (widget.inSheet) {
+      return Column(children: body);
+    }
+
+    return ArDriveStandardModalNew(
+      title: _searchTitle(context),
+      hasCloseButton: true,
+      width: MediaQuery.sizeOf(context).width * 0.6,
+      content: SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.7,
+        child: Column(children: body),
+      ),
+    );
   }
 
   Widget _buildSearchField() {
@@ -191,19 +158,6 @@ class _FileSearchModalState extends State<FileSearchModal> {
       autofocus: true,
       onEditingComplete: () {},
       onFieldSubmitted: (_) => _session.submit(),
-    );
-  }
-
-  Widget _buildSearchHeader(
-    ArdriveTypographyNew typography,
-    ArDriveColorTokens colorTokens,
-  ) {
-    return Text(
-      PublicationMode.isOn
-          ? appLocalizationsOf(context).publicationSearchTitle
-          : 'Search for a file, folder, or drive',
-      style: typography.heading4(
-          color: colorTokens.textHigh, fontWeight: ArFontWeight.bold),
     );
   }
 
@@ -238,32 +192,30 @@ class _FileSearchModalState extends State<FileSearchModal> {
               ),
             );
           } else if (state.status == SearchStatus.idle) {
-            return Center(
-              child: Text(
-                PublicationMode.isOn
-                    ? appLocalizationsOf(context).publicationSearchStart
-                    : 'Nothing here yet! Start by searching for a file name, folder, or drive above.',
-                style: typography.paragraphXLarge(
-                  color: colorTokens.textHigh,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
-                textAlign: TextAlign.center,
+            final strings = appLocalizationsOf(context);
+            return SingleChildScrollView(
+              child: ArDriveEmptyState(
+                icon: Icon(Icons.search, size: 32, color: colorTokens.iconLow),
+                title: PublicationMode.isOn
+                    ? strings.publicationSearchStart
+                    : strings.searchStartTitle,
+                message:
+                    PublicationMode.isOn ? null : strings.searchStartMessage,
               ),
             );
           } else if (state.status == SearchStatus.loading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+            );
           }
-          return Center(
-            child: Text(
-              PublicationMode.isOn
-                  ? appLocalizationsOf(context)
-                      .publicationSearchNoMatches(state.query)
-                  : 'We couldn\'t find any files, folders, or drives matching your search. Please check your spelling or try searching with a different keyword.',
-              style: typography.paragraphXLarge(
-                fontWeight: ArFontWeight.semiBold,
-                color: colorTokens.textHigh,
-              ),
-              textAlign: TextAlign.center,
+          final strings = appLocalizationsOf(context);
+          return SingleChildScrollView(
+            child: ArDriveEmptyState(
+              icon: Icon(Icons.search, size: 32, color: colorTokens.iconLow),
+              title: PublicationMode.isOn
+                  ? strings.publicationSearchNoMatches(state.query)
+                  : strings.searchNoMatches(state.query),
+              message: strings.searchNoMatchesHint,
             ),
           );
         },
@@ -339,7 +291,7 @@ class _FileSearchModalState extends State<FileSearchModal> {
       children: [
         if (searchResult.hasArNSName ?? false)
           ArDriveTooltip(
-            message: 'This file has an ArNS name',
+            message: appLocalizationsOf(context).searchHasArnsName,
             child: Padding(
               padding: const EdgeInsets.only(right: 8),
               child: ArDriveIcons.arnsName(color: colorTokens.iconHigh),

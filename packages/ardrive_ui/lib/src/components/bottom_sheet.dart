@@ -48,6 +48,7 @@ class ArDriveBottomSheet extends StatelessWidget {
     this.contentPadding = const EdgeInsets.symmetric(
       horizontal: ArDriveSpacing.lg,
     ),
+    this.fillsHeight = false,
   });
 
   final String? title;
@@ -58,6 +59,11 @@ class ArDriveBottomSheet extends StatelessWidget {
   /// pass zero.
   final EdgeInsets contentPadding;
 
+  /// Whether the sheet takes its full height, with [content] filling what the
+  /// title and actions leave. For content that scrolls itself, such as a list
+  /// of results, which can't sit inside the sheet's own scroll view.
+  final bool fillsHeight;
+
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
@@ -65,9 +71,11 @@ class ArDriveBottomSheet extends StatelessWidget {
     final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
 
     return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: maxHeight),
+      constraints: fillsHeight
+          ? BoxConstraints.tightFor(height: maxHeight)
+          : BoxConstraints(maxHeight: maxHeight),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: fillsHeight ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Center(
@@ -103,12 +111,17 @@ class ArDriveBottomSheet extends StatelessWidget {
                 ),
               ),
             ),
-          Flexible(
-            child: SingleChildScrollView(
-              padding: contentPadding,
-              child: content,
+          if (fillsHeight)
+            Expanded(
+              child: Padding(padding: contentPadding, child: content),
+            )
+          else
+            Flexible(
+              child: SingleChildScrollView(
+                padding: contentPadding,
+                child: content,
+              ),
             ),
-          ),
           if (actions != null && actions!.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(

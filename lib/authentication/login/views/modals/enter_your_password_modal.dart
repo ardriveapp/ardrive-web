@@ -275,18 +275,11 @@ class _EnterYourPasswordWidgetState extends State<EnterYourPasswordWidget> {
                   ? Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              ArDriveTheme.of(context)
-                                  .themeData
-                                  .colorTokens
-                                  .textLow,
-                            ),
-                          ),
+                        ArDriveSpinner(
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colorTokens
+                              .textLow,
                         ),
                         const SizedBox(width: 10),
                         // Flexible so a narrow button ellipsises the label

@@ -247,12 +247,6 @@
   "@continueEmphasized": {
     "description": "To go ahead. Emphasized with upper case"
   },
-  "cookieConsent": "कुकी कंसेंट ",
-  "@cookieConsent": {},
-  "cookieConsentBodyPart1": "हमारा पेमेंट प्रोवाइडर, Stripe, उपयोगकर्ताओं को क्रेडिट खरीदेने के लिए इनेबल करने के लिए कुकीज़ का इस्तेमाल करता है. ये कुकीज़ क्रेडिट्स खरीदने के लिए रिक्वायर्ड है. ",
-  "@cookieConsentBodyPart1": {},
-  "cookieConsentBodyPart2": "\"Accept\" क्लिक करके आप इन कुकीज़ के इस्तेमाल के लिए कंसेंट देते हैं ",
-  "@cookieConsentBodyPart2": {},
   "copyAccessKey": "कुंजी कॉपी करें",
   "@copyAccessKey": {
     "description": "Label of the button that copies the access key on the share file dialog"
