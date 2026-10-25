@@ -200,34 +200,23 @@ class _InlinePdfViewState extends State<InlinePdfView> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Column(
       children: [
         Expanded(
           child: PdfView(
             controller: _controller,
-            backgroundDecoration: BoxDecoration(color: colors.themeBgSubtle),
+            backgroundDecoration: BoxDecoration(color: colorTokens.containerL2),
             onDocumentError: (error) {
               logger.d('Could not render a PDF preview inline: $error');
               widget.onRenderFailed();
             },
             builders: PdfViewBuilders<DefaultBuilderOptions>(
               options: const DefaultBuilderOptions(),
-              documentLoaderBuilder: (_) => const Center(
-                child: SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-              pageLoaderBuilder: (_) => const Center(
-                child: SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(),
-                ),
-              ),
+              documentLoaderBuilder: (_) =>
+                  const Center(child: ArDriveSpinner()),
+              pageLoaderBuilder: (_) => const Center(child: ArDriveSpinner()),
               // The card around this one takes over on an error, so this frame
               // shows nothing rather than a raw exception.
               errorBuilder: (_, __) => const SizedBox.shrink(),
@@ -240,11 +229,15 @@ class _InlinePdfViewState extends State<InlinePdfView> {
   }
 
   Widget _buildBar(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
 
     return Container(
-      color: colors.themeBgCanvas,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      color: colorTokens.containerRaised,
+      padding: const EdgeInsets.symmetric(
+        horizontal: ArDriveSpacing.xs,
+        vertical: ArDriveSpacing.xxs,
+      ),
       child: PdfPageNumber(
         controller: _controller,
         builder: (context, loadingState, page, pagesCount) {
@@ -258,27 +251,32 @@ class _InlinePdfViewState extends State<InlinePdfView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
+                tooltip: l10n.previewPreviousPage,
                 onPressed: page > 1 ? _previousPage : null,
+                color: colorTokens.iconMid,
+                disabledColor: colorTokens.iconLow,
                 icon: const Icon(Icons.arrow_back_ios_outlined, size: 16),
               ),
               Text(
-                appLocalizationsOf(context)
-                    .previewPdfPageIndicator(page, pagesCount),
-                style: ArDriveTypography.body.captionRegular(
-                  color: colors.themeFgSubtle,
+                l10n.previewPdfPageIndicator(page, pagesCount),
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color: colorTokens.textMid,
                 ),
               ),
               IconButton(
+                tooltip: l10n.previewNextPage,
                 onPressed: page < pagesCount ? _nextPage : null,
+                color: colorTokens.iconMid,
+                disabledColor: colorTokens.iconLow,
                 icon: const Icon(Icons.arrow_forward_ios_outlined, size: 16),
               ),
               if (widget.onOpen != null)
                 IconButton(
-                  tooltip: appLocalizationsOf(context).previewPdfOpen,
+                  tooltip: l10n.previewPdfOpen,
                   onPressed: widget.onOpen,
                   icon: ArDriveIcons.newWindow(
                     size: 16,
-                    color: colors.themeFgSubtle,
+                    color: colorTokens.iconMid,
                   ),
                 ),
             ],
@@ -316,15 +314,12 @@ class _PdfFallbackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ArDriveTheme.of(context);
-    final colors = theme.themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
 
-    // `themeFgSubtle` is `grey.500` in both themes, which reads at ~2.7:1 on
-    // the light surface this card is painted on. The caption underneath the
-    // button is a sentence, so it takes the token that passes in the theme it
-    // is actually in.
-    final captionColor =
-        theme.isLight() ? colors.themeFgMuted : colors.themeFgSubtle;
+    // textMid clears 4.5:1 in both themes, which the old subtle grey did not
+    // on the light surface.
+    final captionColor = colorTokens.textMid;
 
     // Sized by its content rather than by whatever box it is handed. Both of
     // its callers centre it - the details panel with an [Align], the shared
@@ -343,40 +338,38 @@ class _PdfFallbackCard extends StatelessWidget {
             maxLines: 2,
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
-            style: ArDriveTypography.body.bodyBold(
-              color: colors.themeFgDefault,
+            style: typography.paragraphXLarge(
+              color: colorTokens.textHigh,
+              fontWeight: ArFontWeight.bold,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: ArDriveSpacing.md),
           if (onOpen != null) ...[
             // Secondary, not primary. On the shared file page this card sits
             // beside a red Download button, and a page with two equally loud
             // calls to action has told the recipient nothing about which one
             // it wants them to press.
-            ArDriveButton(
-              style: ArDriveButtonStyle.secondary,
+            ArDriveButtonNew(
+              variant: ButtonVariant.secondary,
+              typography: typography,
               icon: ArDriveIcons.newWindow(
                 size: 20,
-                color: colors.themeFgDefault,
+                color: colorTokens.textHigh,
               ),
               text: appLocalizationsOf(context).previewPdfOpen,
               onPressed: onOpen!,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: ArDriveSpacing.xs),
             Text(
               appLocalizationsOf(context).previewPdfOpensInNewTab,
               textAlign: TextAlign.center,
-              style: ArDriveTypography.body.captionRegular(
-                color: captionColor,
-              ),
+              style: typography.paragraphNormal(color: captionColor),
             ),
           ] else
             Text(
               appLocalizationsOf(context).previewUnavailable,
               textAlign: TextAlign.center,
-              style: ArDriveTypography.body.captionRegular(
-                color: captionColor,
-              ),
+              style: typography.paragraphNormal(color: captionColor),
             ),
         ],
       ),

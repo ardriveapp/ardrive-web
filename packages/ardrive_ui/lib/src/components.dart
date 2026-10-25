@@ -16,6 +16,7 @@ export 'components/image.dart';
 export 'components/link.dart';
 export 'components/modal.dart';
 export 'components/notice.dart';
+export 'components/on_dark.dart';
 export 'components/overlay.dart';
 export 'components/pagination_dots.dart';
 export 'components/progress_bar.dart';

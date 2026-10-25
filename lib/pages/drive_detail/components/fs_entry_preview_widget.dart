@@ -30,8 +30,8 @@ class FsEntryPreviewWidget extends StatefulWidget {
 /// Before this, each state drew its own - a bare spinner in the players, a
 /// spinner and caption for a download, an icon and a button for a failure -
 /// and they read as three different designs. On a video's black stage it is
-/// drawn [onDark], so the same words and the same button sit in the player
-/// that will play the file.
+/// drawn [onDark], with the dark theme's tokens ([ArDriveOnDark]), so the same
+/// words and the same button sit in the player that will play the file.
 class _PreviewStatusLayout extends StatelessWidget {
   const _PreviewStatusLayout({
     required this.leading,
@@ -51,33 +51,37 @@ class _PreviewStatusLayout extends StatelessWidget {
   /// one, still readable on an audio player's tinted stage.
   final bool isMessage;
 
-  /// On a video's black stage: a message near-white, a status a step back.
-  static const Color _messageOnDark = Color(0xF2FFFFFF);
-  static const Color _statusOnDark = Color(0xBFFFFFFF);
-
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    if (onDark) {
+      // Built under the dark theme, so it reads the dark tokens.
+      return ArDriveOnDark(child: Builder(builder: _build));
+    }
+
+    return _build(context);
+  }
+
+  Widget _build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
     final action = this.action;
 
     final content = Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(ArDriveSpacing.md),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           leading,
-          const SizedBox(height: 12),
+          const SizedBox(height: ArDriveSpacing.sm),
           Text(
             label,
             textAlign: TextAlign.center,
-            style: ArDriveTypography.body.captionRegular(
-              color: onDark
-                  ? (isMessage ? _messageOnDark : _statusOnDark)
-                  : (isMessage ? colors.themeFgDefault : colors.themeFgMuted),
+            style: typography.paragraphNormal(
+              color: isMessage ? colorTokens.textHigh : colorTokens.textMid,
             ),
           ),
           if (action != null) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: ArDriveSpacing.md),
             action,
           ],
         ],
@@ -100,53 +104,50 @@ class _PreviewStatusLayout extends StatelessWidget {
   }
 }
 
-/// A spinner sized to sit above a caption in [_PreviewStatusLayout].
+/// The spinner above a caption in [_PreviewStatusLayout], the size of the
+/// icons the other states put there.
 class _PreviewSpinner extends StatelessWidget {
   const _PreviewSpinner();
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 24,
-      width: 24,
-      child: CircularProgressIndicator(strokeWidth: 2.5),
+    return const SizedBox.square(
+      dimension: 24,
+      child: Center(child: ArDriveSpinner()),
     );
   }
 }
 
 /// The icon above a caption: decorative, since the caption says the same in
-/// words.
+/// words. Its colour is read where it is drawn, so on a dark stage it takes
+/// the dark theme's.
 Widget _previewStatusIcon(
   BuildContext context,
-  ArDriveIcon Function({double? size, Color? color}) icon, {
-  required bool onDark,
-}) {
-  final colors = ArDriveTheme.of(context).themeData.colors;
-
+  ArDriveIcon Function({double? size, Color? color}) icon,
+) {
   return ExcludeSemantics(
-    child: icon(
-      size: 24,
-      color: onDark ? _PreviewStatusLayout._statusOnDark : colors.themeFgMuted,
+    child: Builder(
+      builder: (context) => icon(
+        size: 24,
+        color: ArDriveTheme.of(context).themeData.colorTokens.iconMid,
+      ),
     ),
   );
 }
 
-/// The button under a caption. On a dark stage the filled one: an outlined
-/// button there is a dark outline on black.
-///
-/// Sized like the details panel's inline buttons, not the default's headline
-/// type, which is meant for a dialog's call to action and outweighs the
-/// caption above it.
-Widget _previewStatusButton({
+/// The button under a caption: compact, since it sits in a panel or a
+/// player. On a dark stage the primary one, the one thing to do there.
+Widget _previewStatusButton(
+  BuildContext context, {
   required String text,
   required VoidCallback onPressed,
   required bool onDark,
 }) {
-  return ArDriveButton(
-    style: onDark ? ArDriveButtonStyle.primary : ArDriveButtonStyle.secondary,
+  return ArDriveButtonNew(
+    variant: onDark ? ButtonVariant.primary : ButtonVariant.secondary,
+    size: ArDriveButtonSize.compact,
     text: text,
-    maxHeight: 36,
-    fontStyle: ArDriveTypography.body.buttonNormalBold(),
+    typography: ArDriveTypographyNew.of(context),
     onPressed: onPressed,
   );
 }
@@ -197,7 +198,6 @@ class FsEntryPreviewProgress extends StatelessWidget {
   Widget build(BuildContext context) {
     final fraction = state.fraction;
     final label = _label(context);
-    final colors = ArDriveTheme.of(context).themeData.colors;
 
     return _PreviewStatusLayout(
       leading: fraction == null
@@ -209,19 +209,9 @@ class FsEntryPreviewProgress extends StatelessWidget {
               width: barWidth,
               height: 24,
               child: Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: fraction,
-                    minHeight: 4,
-                    // The track shows how far there is to go; the theme's
-                    // default is the surface colour, so it would not show.
-                    backgroundColor: onDark
-                        ? const Color(0x33FFFFFF)
-                        : colors.themeFgMuted.withOpacity(0.2),
-                    semanticsLabel: label,
-                    semanticsValue: '${(fraction * 100).round()}%',
-                  ),
+                child: ArDriveLinearProgress(
+                  value: fraction,
+                  semanticsLabel: label,
                 ),
               ),
             ),
@@ -275,10 +265,10 @@ class FsEntryPreviewOnRequestPrompt extends StatelessWidget {
     final l10n = appLocalizationsOf(context);
 
     return _PreviewStatusLayout(
-      leading:
-          _previewStatusIcon(context, ArDriveIcons.eyeOpen, onDark: onDark),
+      leading: _previewStatusIcon(context, ArDriveIcons.eyeOpen),
       label: l10n.previewOnRequestNote(filesize(state.size)),
       action: _previewStatusButton(
+        context,
         text: l10n.preview,
         onPressed: onPreview,
         onDark: onDark,
@@ -312,13 +302,13 @@ class FsEntryPreviewFailedMessage extends StatelessWidget {
     final l10n = appLocalizationsOf(context);
 
     return _PreviewStatusLayout(
-      leading:
-          _previewStatusIcon(context, ArDriveIcons.triangle, onDark: onDark),
+      leading: _previewStatusIcon(context, ArDriveIcons.triangle),
       label: state.canRetry
           ? l10n.previewDownloadFailed
           : l10n.previewDecryptFailed,
       action: state.canRetry
           ? _previewStatusButton(
+              context,
               text: l10n.tryAgain,
               onPressed: onRetry,
               onDark: onDark,
@@ -337,19 +327,19 @@ class _FsEntryPreviewWidgetState extends State<FsEntryPreviewWidget> {
     switch (stateType) {
       case const (FsEntryPreviewUnavailable):
         return Center(
-          child: Text(appLocalizationsOf(context).previewUnavailable),
+          child: _PreviewStatusLayout(
+            leading: _previewStatusIcon(context, ArDriveIcons.eyeClosed),
+            label: appLocalizationsOf(context).previewUnavailable,
+          ),
         );
 
       case const (FsEntryPreviewOversized):
         final oversizedState = widget.state as FsEntryPreviewOversized;
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Center(
-            child: Text(
-              appLocalizationsOf(context).filePreviewTooLarge(
-                filesize(oversizedState.maxFileSize),
-              ),
-              textAlign: TextAlign.center,
+        return Center(
+          child: _PreviewStatusLayout(
+            leading: _previewStatusIcon(context, ArDriveIcons.eyeClosed),
+            label: appLocalizationsOf(context).filePreviewTooLarge(
+              filesize(oversizedState.maxFileSize),
             ),
           ),
         );
@@ -513,6 +503,201 @@ String getTimeString(Duration duration) {
 
   return timeString;
 }
+
+/// The play and pause button of the players: their one filled control.
+class _PlayPauseButton extends StatelessWidget {
+  const _PlayPauseButton({required this.isPlaying, required this.onPressed});
+
+  final bool isPlaying;
+
+  /// Null while there is nothing to play yet.
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
+    final label = isPlaying ? l10n.previewPause : l10n.previewPlay;
+
+    // It had no name at all: a screen reader heard "button".
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        enabled: onPressed != null,
+        label: label,
+        child: MaterialButton(
+          onPressed: onPressed,
+          color: colorTokens.buttonPrimaryDefault,
+          hoverColor: colorTokens.buttonPrimaryHover,
+          highlightColor: colorTokens.buttonPrimaryPress,
+          disabledColor: colorTokens.buttonDisabled,
+          elevation: 0,
+          hoverElevation: 0,
+          focusElevation: 0,
+          highlightElevation: 0,
+          disabledElevation: 0,
+          shape: const CircleBorder(),
+          child: Padding(
+            padding: const EdgeInsets.all(ArDriveSpacing.xs),
+            child: ExcludeSemantics(
+              child: Icon(
+                isPlaying ? Icons.pause_outlined : Icons.play_arrow_outlined,
+                size: 32,
+                color: onPressed == null
+                    ? colorTokens.textLow
+                    : colorTokens.textOnPrimary,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// An icon-only control of the players and previewers, with the name a
+/// screen reader says and a pointer's tooltip shows.
+class _PreviewIconButton extends StatelessWidget {
+  const _PreviewIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+    this.outlined = false,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  /// The share page's skip buttons, drawn around the play button.
+  final bool outlined;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final iconWidget = Icon(icon, size: 24);
+
+    if (outlined) {
+      return IconButton.outlined(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        color: colorTokens.iconMid,
+        disabledColor: colorTokens.iconLow,
+        style: IconButton.styleFrom(
+          side: BorderSide(color: colorTokens.strokeMid),
+        ),
+        icon: iconWidget,
+      );
+    }
+
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      color: colorTokens.iconMid,
+      disabledColor: colorTokens.iconLow,
+      icon: iconWidget,
+    );
+  }
+}
+
+/// A player's position or length, in figures of one width so the time does
+/// not jiggle as it counts.
+class _PlayerTime extends StatelessWidget {
+  const _PlayerTime(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return Text(
+      text,
+      style: ArDriveTypographyNew.of(context)
+          .paragraphSmall(color: colorTokens.textMid)
+          .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+    );
+  }
+}
+
+/// A player's file name, above its controls.
+Widget _playerTitle(BuildContext context, String filename) {
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+  return Tooltip(
+    message: filename,
+    child: Text(
+      filename,
+      overflow: TextOverflow.ellipsis,
+      maxLines: 2,
+      textAlign: TextAlign.center,
+      style: ArDriveTypographyNew.of(context).paragraphLarge(
+        color: colorTokens.textHigh,
+        fontWeight: ArFontWeight.bold,
+      ),
+    ),
+  );
+}
+
+/// The seek bar of every player: played in the primary colour, buffered a
+/// step lighter than the rest of the track.
+SliderThemeData _playerSliderTheme(ArDriveColorTokens colorTokens) {
+  return SliderThemeData(
+    trackHeight: 4,
+    trackShape: _NoAdditionalHeightRoundedRectSliderTrackShape(),
+    activeTrackColor: colorTokens.buttonPrimaryDefault,
+    inactiveTrackColor: colorTokens.strokeMid,
+    secondaryActiveTrackColor: colorTokens.strokeHigh,
+    thumbColor: colorTokens.buttonPrimaryDefault,
+    disabledActiveTrackColor: colorTokens.strokeMid,
+    disabledInactiveTrackColor: colorTokens.strokeMid,
+    disabledSecondaryActiveTrackColor: colorTokens.strokeMid,
+    disabledThumbColor: colorTokens.iconLow,
+    overlayShape: SliderComponentShape.noOverlay,
+    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+  );
+}
+
+/// The playback speeds in a pointer's menu, the current one ticked.
+List<Widget> _speedMenuItems(
+  BuildContext context, {
+  required double current,
+  required ValueChanged<double> onSelected,
+}) {
+  final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+  final typography = ArDriveTypographyNew.of(context);
+
+  return [
+    for (final speed in _speedOptions)
+      // A set width: sized to its label, the menu wrapped "Normal" beside
+      // its tick.
+      SizedBox(
+        width: 168,
+        child: ListTile(
+          tileColor: colorTokens.containerRaised,
+          selectedTileColor: colorTokens.containerRaised,
+          hoverColor: colorTokens.buttonSecondaryHover,
+          selected: speed == current,
+          onTap: () => onSelected(speed),
+          title: Text(
+            _speedLabel(context, speed),
+            style: typography.paragraphNormal(
+              color: colorTokens.textHigh,
+              fontWeight: ArFontWeight.semiBold,
+            ),
+          ),
+          trailing: speed == current
+              ? ArDriveIcons.checkmark(size: 16, color: colorTokens.iconMid)
+              : null,
+        ),
+      ),
+  ];
+}
+
+String _speedLabel(BuildContext context, double speed) => speed == 1.0
+    ? appLocalizationsOf(context).normal
+    : '${speed.toString().replaceAll(RegExp(r'\.0$'), '')}x';
 
 /// The inline video player - and, before it has a file, the frame the file
 /// will play in.
@@ -700,7 +885,8 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   Widget build(BuildContext context) {
     super.build(context);
 
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
     final videoValue = _value;
     final currentTime = getTimeString(videoValue.position);
     final duration = getTimeString(videoValue.duration);
@@ -735,18 +921,16 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                   child: Stack(
             fit: StackFit.expand,
             children: [
-              Container(color: Colors.black),
+              const ColoredBox(color: Colors.black),
               Center(
                   child: _errorMessage != null
-                      ? Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Text(
-                            _errorMessage ?? '',
-                            textAlign: TextAlign.center,
-                            style: ArDriveTypography.body
-                                .smallBold700(color: colors.themeFgMuted)
-                                .copyWith(fontSize: 13),
-                          ))
+                      ? _PreviewStatusLayout(
+                          leading: _previewStatusIcon(
+                              context, ArDriveIcons.triangle),
+                          label: _errorMessage!,
+                          onDark: true,
+                          isMessage: true,
+                        )
                       : !videoValue.isInitialized
                           ? widget.stage ??
                               const FsEntryPreviewStarting(onDark: true)
@@ -757,44 +941,24 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
             ],
           ))),
           Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+              padding: const EdgeInsets.fromLTRB(ArDriveSpacing.lg,
+                  ArDriveSpacing.xs, ArDriveSpacing.lg, ArDriveSpacing.xl),
               child: Column(children: [
-                Tooltip(
-                  message: widget.filename,
-                  child: Text(
-                    widget.filename,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                    style: ArDriveTypography.body.smallBold700(
-                      color: colors.themeFgDefault,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
+                _playerTitle(context, widget.filename),
+                const SizedBox(height: ArDriveSpacing.xs),
                 Row(
                   children: [
                     if (widget.isSharePage)
                       ScreenTypeLayout.builder(
                         desktop: (context) => Row(children: [
-                          Text(currentTime),
-                          const SizedBox(width: 8),
+                          _PlayerTime(currentTime),
+                          const SizedBox(width: ArDriveSpacing.xs),
                         ]),
                         mobile: (context) => const SizedBox.shrink(),
                       ),
                     Expanded(
                       child: SliderTheme(
-                        data: SliderThemeData(
-                            trackHeight: 4,
-                            trackShape:
-                                _NoAdditionalHeightRoundedRectSliderTrackShape(),
-                            inactiveTrackColor: colors.themeBgSubtle,
-                            disabledThumbColor: colors.themeAccentBrand,
-                            disabledInactiveTrackColor: colors.themeBgSubtle,
-                            overlayShape: SliderComponentShape.noOverlay,
-                            thumbShape: const RoundSliderThumbShape(
-                              enabledThumbRadius: 8,
-                            )),
+                        data: _playerSliderTheme(colorTokens),
                         child: Slider(
                           value: min(
                               videoValue.position.inMilliseconds.toDouble(),
@@ -850,14 +1014,14 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                     if (widget.isSharePage)
                       ScreenTypeLayout.builder(
                         desktop: (context) => Row(children: [
-                          const SizedBox(width: 8),
-                          Text(duration),
+                          const SizedBox(width: ArDriveSpacing.xs),
+                          _PlayerTime(duration),
                         ]),
                         mobile: (context) => const SizedBox.shrink(),
                       ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: ArDriveSpacing.xxs),
                 ScreenTypeLayout.builder(
                   mobile: (BuildContext context) => const SizedBox.shrink(),
                   desktop: (BuildContext context) {
@@ -869,12 +1033,12 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                       children: [
                         Row(
                           children: [
-                            Text(currentTime),
+                            _PlayerTime(currentTime),
                             const Expanded(child: SizedBox.shrink()),
-                            Text(duration)
+                            _PlayerTime(duration)
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: ArDriveSpacing.xs),
                       ],
                     );
                   },
@@ -895,32 +1059,27 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                               child: ScreenTypeLayout.builder(
                                 mobile: (context) {
                                   if (widget.isSharePage) {
-                                    return IconButton(
+                                    return _PreviewIconButton(
+                                      tooltip: l10n.previewPlaybackSpeed,
                                       onPressed: () {
-                                        _displaySpeedOptionsModal(context, (v) {
+                                        _displaySpeedOptionsModal(context,
+                                            current: _value.playbackSpeed, (v) {
                                           setState(() {
                                             _controller?.setPlaybackSpeed(v);
                                           });
                                         });
                                       },
-                                      icon: const Icon(
-                                        Icons.settings_outlined,
-                                        size: 24,
-                                      ),
+                                      icon: Icons.settings_outlined,
                                     );
                                   } else {
-                                    return IconButton(
-                                      tooltip:
-                                          appLocalizationsOf(context).expand,
+                                    return _PreviewIconButton(
+                                      tooltip: l10n.expand,
                                       onPressed: !controlsEnabled
                                           ? null
                                           : () {
                                               goFullScreen();
                                             },
-                                      icon: const Icon(
-                                        Icons.fullscreen_outlined,
-                                        size: 24,
-                                      ),
+                                      icon: Icons.fullscreen_outlined,
                                     );
                                   }
                                 },
@@ -941,18 +1100,23 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                               ))),
                       if (widget.isSharePage)
                         ScreenTypeLayout.builder(
-                          desktop: (context) => IconButton.outlined(
-                            onPressed: () {
-                              setState(() {
-                                _controller?.seekTo(_value.position -
-                                    const Duration(seconds: 10));
-                              });
-                            },
-                            icon: const Icon(Icons.replay_10, size: 24),
+                          desktop: (context) => _PreviewIconButton(
+                            tooltip: l10n.previewBack10,
+                            outlined: true,
+                            onPressed: !controlsEnabled
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _controller?.seekTo(_value.position -
+                                          const Duration(seconds: 10));
+                                    });
+                                  },
+                            icon: Icons.replay_10,
                           ),
                           mobile: (_) => const SizedBox.shrink(),
                         ),
-                      MaterialButton(
+                      _PlayPauseButton(
+                        isPlaying: _value.isPlaying,
                         onPressed: !controlsEnabled
                             ? null
                             : () async {
@@ -981,33 +1145,21 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                                   setState(() {});
                                 }
                               },
-                        color: colors.themeAccentBrand,
-                        disabledColor: colors.themeAccentDisabled,
-                        shape: const CircleBorder(),
-                        child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: (_value.isPlaying)
-                                ? Icon(
-                                    Icons.pause_outlined,
-                                    size: 32,
-                                    color: colors.themeFgOnAccent,
-                                  )
-                                : Icon(
-                                    Icons.play_arrow_outlined,
-                                    size: 32,
-                                    color: colors.themeFgOnAccent,
-                                  )),
                       ),
                       if (widget.isSharePage)
                         ScreenTypeLayout.builder(
-                          desktop: (context) => IconButton.outlined(
-                            onPressed: () {
-                              setState(() {
-                                _controller?.seekTo(_value.position +
-                                    const Duration(seconds: 10));
-                              });
-                            },
-                            icon: const Icon(Icons.forward_10, size: 24),
+                          desktop: (context) => _PreviewIconButton(
+                            tooltip: l10n.previewForward10,
+                            outlined: true,
+                            onPressed: !controlsEnabled
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _controller?.seekTo(_value.position +
+                                          const Duration(seconds: 10));
+                                    });
+                                  },
+                            icon: Icons.forward_10,
                           ),
                           mobile: (context) => const SizedBox.shrink(),
                         ),
@@ -1019,76 +1171,62 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                           children: [
                             ScreenTypeLayout.builder(
                               desktop: (context) => MenuAnchor(
-                                menuChildren: [
-                                  ..._speedOptions.map((v) {
-                                    return ListTile(
-                                      tileColor: colors.themeBgSurface,
-                                      onTap: () {
-                                        setState(() {
-                                          _controller?.setPlaybackSpeed(v);
-                                          _menuController.close();
-                                        });
-                                      },
-                                      title: Text(
-                                        v == 1.0
-                                            ? appLocalizationsOf(context).normal
-                                            : '$v',
-                                        style: ArDriveTypography.body
-                                            .buttonNormalBold(
-                                                color: colors.themeFgDefault),
-                                      ),
-                                    );
-                                  })
-                                ],
+                                menuChildren: _speedMenuItems(
+                                  context,
+                                  current: _value.playbackSpeed,
+                                  onSelected: (v) {
+                                    setState(() {
+                                      _controller?.setPlaybackSpeed(v);
+                                      _menuController.close();
+                                    });
+                                  },
+                                ),
                                 controller: _menuController,
-                                child: IconButton(
-                                    onPressed: () {
-                                      _menuController.open();
-                                    },
-                                    icon: const Icon(Icons.settings_outlined,
-                                        size: 24)),
+                                child: _PreviewIconButton(
+                                  tooltip: l10n.previewPlaybackSpeed,
+                                  onPressed: () {
+                                    _menuController.open();
+                                  },
+                                  icon: Icons.settings_outlined,
+                                ),
                               ),
                               mobile: (context) {
                                 if (widget.isSharePage) {
-                                  return IconButton(
-                                    tooltip: appLocalizationsOf(context).expand,
+                                  return _PreviewIconButton(
+                                    tooltip: l10n.expand,
                                     onPressed: !controlsEnabled
                                         ? null
                                         : () {
                                             goFullScreen();
                                           },
-                                    icon: const Icon(
-                                      Icons.fullscreen_outlined,
-                                      size: 24,
-                                    ),
+                                    icon: Icons.fullscreen_outlined,
                                   );
                                 } else {
-                                  return IconButton(
+                                  return _PreviewIconButton(
+                                    tooltip: l10n.previewPlaybackSpeed,
                                     onPressed: () {
-                                      _displaySpeedOptionsModal(context, (v) {
+                                      _displaySpeedOptionsModal(context,
+                                          current: _value.playbackSpeed, (v) {
                                         setState(() {
                                           _controller?.setPlaybackSpeed(v);
                                         });
                                       });
                                     },
-                                    icon: const Icon(
-                                      Icons.settings_outlined,
-                                      size: 24,
-                                    ),
+                                    icon: Icons.settings_outlined,
                                   );
                                 }
                               },
                             ),
                             ScreenTypeLayout.builder(
-                              desktop: (context) => IconButton(
-                                  tooltip: appLocalizationsOf(context).expand,
-                                  onPressed: !controlsEnabled
-                                      ? null
-                                      : () {
-                                          goFullScreen();
-                                        },
-                                  icon: const Icon(Icons.fullscreen_outlined,
-                                      size: 24)),
+                              desktop: (context) => _PreviewIconButton(
+                                tooltip: l10n.expand,
+                                onPressed: !controlsEnabled
+                                    ? null
+                                    : () {
+                                        goFullScreen();
+                                      },
+                                icon: Icons.fullscreen_outlined,
+                              ),
                               mobile: (context) => const SizedBox.shrink(),
                             )
                           ],
@@ -1217,12 +1355,13 @@ class _FullScreenVideoPlayerWidgetState
   }
 
   void _listener() {
+    // One rebuild per tick, error or not; this called setState inside
+    // setState, as the inline player once did.
     setState(() {
       if (_videoPlayerController.value.hasError) {
-        logger.e('>>> ${_videoPlayerController.value.errorDescription}');
-        setState(() {
-          _errorMessage = appLocalizationsOf(context).couldNotLoadFile;
-        });
+        logger.e(
+            'Video player error: ${_videoPlayerController.value.errorDescription}');
+        _errorMessage = appLocalizationsOf(context).couldNotLoadFile;
       }
     });
   }
@@ -1247,7 +1386,8 @@ class _FullScreenVideoPlayerWidgetState
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
     var videoValue = _videoPlayerController.value;
     var currentTime = getTimeString(videoValue.position);
     var duration = getTimeString(videoValue.duration);
@@ -1261,20 +1401,18 @@ class _FullScreenVideoPlayerWidgetState
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Container(color: Colors.black),
+            const ColoredBox(color: Colors.black),
             Center(
                 child: AspectRatio(
               aspectRatio: _videoPlayerController.value.aspectRatio,
               child: _errorMessage != null
-                  ? Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Text(
-                        _errorMessage ?? '',
-                        textAlign: TextAlign.center,
-                        style: ArDriveTypography.body
-                            .smallBold700(color: colors.themeFgMuted)
-                            .copyWith(fontSize: 13),
-                      ))
+                  ? _PreviewStatusLayout(
+                      leading:
+                          _previewStatusIcon(context, ArDriveIcons.triangle),
+                      label: _errorMessage!,
+                      onDark: true,
+                      isMessage: true,
+                    )
                   : !videoValue.isInitialized
                       ? const FsEntryPreviewStarting(onDark: true)
                       : _videoPlayer ?? const SizedBox.shrink(),
@@ -1337,41 +1475,23 @@ class _FullScreenVideoPlayerWidgetState
                               }
                             },
                             child: Container(
-                              padding:
-                                  const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                              color: colors.themeBgCanvas,
+                              padding: const EdgeInsets.fromLTRB(
+                                  ArDriveSpacing.md,
+                                  ArDriveSpacing.sm,
+                                  ArDriveSpacing.md,
+                                  ArDriveSpacing.lg),
+                              color: colorTokens.containerL1,
                               child: Column(
                                 children: [
-                                  Tooltip(
-                                    message: widget.filename,
-                                    child: Text(widget.filename,
-                                        style: ArDriveTypography.body
-                                            .smallBold700(
-                                                color: colors.themeFgDefault)),
-                                  ),
-                                  const SizedBox(height: 8),
+                                  _playerTitle(context, widget.filename),
+                                  const SizedBox(height: ArDriveSpacing.xs),
                                   Row(
                                     children: [
-                                      Text(currentTime),
-                                      const SizedBox(width: 8),
+                                      _PlayerTime(currentTime),
+                                      const SizedBox(width: ArDriveSpacing.xs),
                                       Expanded(
                                         child: SliderTheme(
-                                          data: SliderThemeData(
-                                              trackHeight: 4,
-                                              trackShape:
-                                                  _NoAdditionalHeightRoundedRectSliderTrackShape(),
-                                              inactiveTrackColor:
-                                                  colors.themeBgSubtle,
-                                              disabledThumbColor:
-                                                  colors.themeAccentBrand,
-                                              disabledInactiveTrackColor:
-                                                  colors.themeBgSubtle,
-                                              overlayShape: SliderComponentShape
-                                                  .noOverlay,
-                                              thumbShape:
-                                                  const RoundSliderThumbShape(
-                                                enabledThumbRadius: 8,
-                                              )),
+                                          data: _playerSliderTheme(colorTokens),
                                           child: Slider(
                                             value: min(
                                                 videoValue
@@ -1438,11 +1558,11 @@ class _FullScreenVideoPlayerWidgetState
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
-                                      Text(duration),
+                                      const SizedBox(width: ArDriveSpacing.xs),
+                                      _PlayerTime(duration),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: ArDriveSpacing.xs),
                                   MouseRegion(
                                     onExit: (event) {
                                       setState(() {
@@ -1460,18 +1580,15 @@ class _FullScreenVideoPlayerWidgetState
                                             child: Align(
                                               alignment: Alignment.centerLeft,
                                               child: ScreenTypeLayout.builder(
-                                                mobile: (context) => IconButton(
-                                                    tooltip: appLocalizationsOf(
-                                                            context)
-                                                        .collapse,
-                                                    onPressed: () {
-                                                      Navigator.of(context)
-                                                          .pop();
-                                                    },
-                                                    icon: const Icon(
-                                                        Icons
-                                                            .fullscreen_exit_outlined,
-                                                        size: 24)),
+                                                mobile: (context) =>
+                                                    _PreviewIconButton(
+                                                  tooltip: l10n.collapse,
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  icon: Icons
+                                                      .fullscreen_exit_outlined,
+                                                ),
                                                 desktop: (context) => Row(
                                                   children: [
                                                     SizedBox(
@@ -1506,19 +1623,23 @@ class _FullScreenVideoPlayerWidgetState
                                             ),
                                           ),
                                         ),
-                                        IconButton.outlined(
-                                            onPressed: () {
-                                              setState(() {
-                                                _videoPlayerController.seekTo(
-                                                    _videoPlayerController
-                                                            .value.position -
-                                                        const Duration(
-                                                            seconds: 10));
-                                              });
-                                            },
-                                            icon: const Icon(Icons.replay_10,
-                                                size: 24)),
-                                        MaterialButton(
+                                        _PreviewIconButton(
+                                          tooltip: l10n.previewBack10,
+                                          outlined: true,
+                                          onPressed: () {
+                                            setState(() {
+                                              _videoPlayerController.seekTo(
+                                                  _videoPlayerController
+                                                          .value.position -
+                                                      const Duration(
+                                                          seconds: 10));
+                                            });
+                                          },
+                                          icon: Icons.replay_10,
+                                        ),
+                                        _PlayPauseButton(
+                                          isPlaying: _videoPlayerController
+                                              .value.isPlaying,
                                           onPressed: () async {
                                             final value =
                                                 _videoPlayerController.value;
@@ -1559,26 +1680,10 @@ class _FullScreenVideoPlayerWidgetState
                                             }
                                             setState(() {});
                                           },
-                                          color: colors.themeAccentBrand,
-                                          shape: const CircleBorder(),
-                                          child: Padding(
-                                              padding: const EdgeInsets.all(8),
-                                              child: (_videoPlayerController
-                                                      .value.isPlaying)
-                                                  ? Icon(
-                                                      Icons.pause_outlined,
-                                                      size: 32,
-                                                      color: colors
-                                                          .themeFgOnAccent,
-                                                    )
-                                                  : Icon(
-                                                      Icons.play_arrow_outlined,
-                                                      size: 32,
-                                                      color: colors
-                                                          .themeFgOnAccent,
-                                                    )),
                                         ),
-                                        IconButton.outlined(
+                                        _PreviewIconButton(
+                                          tooltip: l10n.previewForward10,
+                                          outlined: true,
                                           onPressed: () {
                                             setState(() {
                                               _videoPlayerController.seekTo(
@@ -1588,10 +1693,7 @@ class _FullScreenVideoPlayerWidgetState
                                                           seconds: 10));
                                             });
                                           },
-                                          icon: const Icon(
-                                            Icons.forward_10,
-                                            size: 24,
-                                          ),
+                                          icon: Icons.forward_10,
                                         ),
                                         Expanded(
                                           child: Align(
@@ -1603,51 +1705,46 @@ class _FullScreenVideoPlayerWidgetState
                                                 ScreenTypeLayout.builder(
                                                   desktop: (context) =>
                                                       MenuAnchor(
-                                                    menuChildren: [
-                                                      ..._speedOptions.map((v) {
-                                                        return ListTile(
-                                                          tileColor: colors
-                                                              .themeBgSurface,
-                                                          onTap: () {
-                                                            setState(() {
-                                                              _videoPlayerController
-                                                                  .setPlaybackSpeed(
-                                                                      v);
-                                                              _menuController
-                                                                  .close();
-                                                            });
-                                                          },
-                                                          title: Text(
-                                                            v == 1.0
-                                                                ? appLocalizationsOf(
-                                                                        context)
-                                                                    .normal
-                                                                : '$v',
-                                                            style: ArDriveTypography
-                                                                .body
-                                                                .buttonNormalBold(
-                                                                    color: colors
-                                                                        .themeFgDefault),
-                                                          ),
-                                                        );
-                                                      })
-                                                    ],
-                                                    controller: _menuController,
-                                                    child: IconButton(
-                                                        onPressed: () {
+                                                    menuChildren:
+                                                        _speedMenuItems(
+                                                      context,
+                                                      current:
+                                                          _videoPlayerController
+                                                              .value
+                                                              .playbackSpeed,
+                                                      onSelected: (v) {
+                                                        setState(() {
+                                                          _videoPlayerController
+                                                              .setPlaybackSpeed(
+                                                                  v);
                                                           _menuController
-                                                              .open();
-                                                        },
-                                                        icon: const Icon(
-                                                            Icons
-                                                                .settings_outlined,
-                                                            size: 24)),
+                                                              .close();
+                                                        });
+                                                      },
+                                                    ),
+                                                    controller: _menuController,
+                                                    child: _PreviewIconButton(
+                                                      tooltip: l10n
+                                                          .previewPlaybackSpeed,
+                                                      onPressed: () {
+                                                        _menuController.open();
+                                                      },
+                                                      icon: Icons
+                                                          .settings_outlined,
+                                                    ),
                                                   ),
                                                   mobile: (context) =>
-                                                      IconButton(
+                                                      _PreviewIconButton(
+                                                    tooltip: l10n
+                                                        .previewPlaybackSpeed,
                                                     onPressed: () {
                                                       _displaySpeedOptionsModal(
-                                                          context, (v) {
+                                                          context,
+                                                          current:
+                                                              _videoPlayerController
+                                                                  .value
+                                                                  .playbackSpeed,
+                                                          (v) {
                                                         setState(() {
                                                           _videoPlayerController
                                                               .setPlaybackSpeed(
@@ -1655,30 +1752,23 @@ class _FullScreenVideoPlayerWidgetState
                                                         });
                                                       });
                                                     },
-                                                    icon: const Icon(
-                                                      Icons.settings_outlined,
-                                                      size: 24,
-                                                    ),
+                                                    icon:
+                                                        Icons.settings_outlined,
                                                   ),
                                                 ),
                                                 SafeArea(
                                                   child:
                                                       ScreenTypeLayout.builder(
                                                     desktop: (context) =>
-                                                        IconButton(
-                                                            tooltip:
-                                                                appLocalizationsOf(
-                                                                        context)
-                                                                    .collapse,
-                                                            onPressed: () {
-                                                              Navigator.of(
-                                                                      context)
-                                                                  .pop();
-                                                            },
-                                                            icon: const Icon(
-                                                                Icons
-                                                                    .fullscreen_exit_outlined,
-                                                                size: 24)),
+                                                        _PreviewIconButton(
+                                                      tooltip: l10n.collapse,
+                                                      onPressed: () {
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                      },
+                                                      icon: Icons
+                                                          .fullscreen_exit_outlined,
+                                                    ),
                                                     mobile: (context) =>
                                                         const SizedBox.shrink(),
                                                   ),
@@ -1907,7 +1997,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Widget _buildActionBar() {
-    final theme = ArDriveTheme.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final isFileExplorer = !widget.isSharePage && !widget.isFullScreen;
     final isFileExplorerFullScreen = !widget.isSharePage && widget.isFullScreen;
 
@@ -2023,8 +2113,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               _showControls();
             }
           },
-          child: Container(
-            color: theme.themeData.colors.themeBgCanvas,
+          child: ColoredBox(
+            color: colorTokens.containerL1,
             child: IgnorePointer(
               ignoring: !_controlsVisible,
               child: _controlsDisabled ? const SizedBox.shrink() : actionBar,
@@ -2033,8 +2123,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         ),
       );
     } else {
-      return Container(
-        color: theme.themeData.colors.themeBgCanvas,
+      return ColoredBox(
+        color: colorTokens.containerRaised,
         child: actionBar,
       );
     }
@@ -2062,6 +2152,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
             final contentType = imagePreview.contentType;
             final fileNameWithoutExtension =
                 getBasenameWithoutExtension(filePath: filename);
+            final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+            final typography = ArDriveTypographyNew.of(context);
             return Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: isFileExplorer
@@ -2074,26 +2166,21 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                     fileNameWithoutExtension,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
-                    style: ArDriveTypography.body.smallBold700(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
+                    style: typography.paragraphLarge(
+                      color: colorTokens.textHigh,
+                      fontWeight: ArFontWeight.bold,
                     ),
                   ),
                 ),
+                // textLow, not the disabled grey it was: a type label is read,
+                // and that grey was under 2:1 on the light preview.
                 Text(
                   fileTypeLabel(
                     contentType: contentType,
                     fileName: filename,
                     manifestLabel: appLocalizationsOf(context).manifestFileType,
                   ),
-                  style: ArDriveTypography.body.smallRegular(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDisabled,
-                  ),
+                  style: typography.paragraphLarge(color: colorTokens.textLow),
                 ),
               ],
             );
@@ -2111,17 +2198,19 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
           ? MainAxisAlignment.spaceEvenly
           : MainAxisAlignment.spaceBetween,
       children: [
-        IconButton(
+        _PreviewIconButton(
+          tooltip: appLocalizationsOf(context).previewPreviousImage,
           onPressed: widget.canNavigateThroughImages
               ? () => widget.onPreviousImageNavigate?.call()
               : null,
-          icon: const Icon(Icons.arrow_back_ios_outlined),
+          icon: Icons.arrow_back_ios_outlined,
         ),
-        IconButton(
+        _PreviewIconButton(
+          tooltip: appLocalizationsOf(context).previewNextImage,
           onPressed: widget.canNavigateThroughImages
               ? () => widget.onNextImageNavigate?.call()
               : null,
-          icon: const Icon(Icons.arrow_forward_ios_outlined),
+          icon: Icons.arrow_forward_ios_outlined,
         ),
       ],
     );
@@ -2140,14 +2229,14 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                 top: 24,
                 bottom: 24,
               ),
-        child: IconButton(
+        child: _PreviewIconButton(
           tooltip: widget.isFullScreen
               ? appLocalizationsOf(context).collapse
               : appLocalizationsOf(context).expand,
           onPressed: _toggleFullScreen,
           icon: widget.isFullScreen
-              ? const Icon(Icons.fullscreen_exit_outlined)
-              : const Icon(Icons.fullscreen_outlined, size: 24),
+              ? Icons.fullscreen_exit_outlined
+              : Icons.fullscreen_outlined,
         ),
       ),
     );
@@ -2311,23 +2400,15 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    var colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
 
     final currentTime = getTimeString(_position);
     final duration = _duration;
     final durationText = duration != null ? getTimeString(duration) : '0:00';
 
     final slider = SliderTheme(
-        data: SliderThemeData(
-            trackHeight: 4,
-            trackShape: _NoAdditionalHeightRoundedRectSliderTrackShape(),
-            inactiveTrackColor: colors.themeBgSubtle,
-            disabledThumbColor: colors.themeAccentBrand,
-            disabledInactiveTrackColor: colors.themeBgSubtle,
-            overlayShape: SliderComponentShape.noOverlay,
-            thumbShape: const RoundSliderThumbShape(
-              enabledThumbRadius: 8,
-            )),
+        data: _playerSliderTheme(colorTokens),
         child: Slider(
             value: !_controlsEnabled
                 ? 0
@@ -2383,38 +2464,36 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
               fit: StackFit.expand,
               alignment: Alignment.center,
               children: [
-                Container(color: colors.themeBgSubtle),
+                ColoredBox(color: colorTokens.containerL2),
                 Align(
                   alignment: Alignment.center,
-                  child: _buildStage(colors),
+                  child: _buildStage(colorTokens),
                 ),
               ],
             ),
           ),
           Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              padding: const EdgeInsets.fromLTRB(ArDriveSpacing.lg,
+                  ArDriveSpacing.lg, ArDriveSpacing.lg, ArDriveSpacing.xl),
               child: Column(children: [
-                Text(widget.filename,
-                    textAlign: TextAlign.center,
-                    style: ArDriveTypography.body
-                        .smallBold700(color: colors.themeFgDefault)),
+                _playerTitle(context, widget.filename),
                 if (!widget.isSharePage) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: ArDriveSpacing.xs),
                   slider,
                 ],
-                const SizedBox(height: 4),
+                const SizedBox(height: ArDriveSpacing.xxs),
                 Row(
                   children: [
-                    Text(currentTime),
-                    const SizedBox(width: 8),
+                    _PlayerTime(currentTime),
+                    const SizedBox(width: ArDriveSpacing.xs),
                     widget.isSharePage
                         ? Expanded(child: slider)
                         : const Expanded(child: SizedBox.shrink()),
-                    const SizedBox(width: 8),
-                    Text(durationText)
+                    const SizedBox(width: ArDriveSpacing.xs),
+                    _PlayerTime(durationText)
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: ArDriveSpacing.xs),
                 MouseRegion(
                     onExit: (event) {
                       setState(() {
@@ -2445,7 +2524,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                                     },
                                   ),
                                 ))),
-                        MaterialButton(
+                        _PlayPauseButton(
+                          isPlaying: !_isCompleted && _isPlaying,
                           onPressed: !_controlsEnabled
                               ? null
                               : () {
@@ -2461,75 +2541,44 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                                     }
                                   });
                                 },
-                          color: colors.themeAccentBrand,
-                          disabledColor: colors.themeAccentDisabled,
-                          shape: const CircleBorder(),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8),
-                            child: (_isCompleted || !_isPlaying)
-                                ? Icon(
-                                    Icons.play_arrow_outlined,
-                                    size: 32,
-                                    color: colors.themeFgOnAccent,
-                                  )
-                                : Icon(
-                                    Icons.pause_outlined,
-                                    size: 32,
-                                    color: colors.themeFgOnAccent,
-                                  ),
-                          ),
                         ),
                         Expanded(
                             child: Align(
                                 alignment: Alignment.centerRight,
                                 child: ScreenTypeLayout.builder(
                                     desktop: (context) => MenuAnchor(
-                                          menuChildren: [
-                                            ..._speedOptions.map((v) {
-                                              return ListTile(
-                                                tileColor:
-                                                    colors.themeBgSurface,
-                                                onTap: () {
-                                                  setState(() {
-                                                    _player?.setSpeed(v);
-                                                    _menuController.close();
-                                                  });
-                                                },
-                                                title: Text(
-                                                  v == 1.0
-                                                      ? appLocalizationsOf(
-                                                              context)
-                                                          .normal
-                                                      : '$v',
-                                                  style: ArDriveTypography.body
-                                                      .buttonNormalBold(
-                                                          color: colors
-                                                              .themeFgDefault),
-                                                ),
-                                              );
-                                            })
-                                          ],
+                                          menuChildren: _speedMenuItems(
+                                            context,
+                                            current: _player?.speed ?? 1,
+                                            onSelected: (v) {
+                                              setState(() {
+                                                _player?.setSpeed(v);
+                                                _menuController.close();
+                                              });
+                                            },
+                                          ),
                                           controller: _menuController,
-                                          child: IconButton(
-                                              onPressed: () {
-                                                _menuController.open();
-                                              },
-                                              icon: const Icon(
-                                                  Icons.settings_outlined,
-                                                  size: 24)),
+                                          child: _PreviewIconButton(
+                                            tooltip: l10n.previewPlaybackSpeed,
+                                            onPressed: () {
+                                              _menuController.open();
+                                            },
+                                            icon: Icons.settings_outlined,
+                                          ),
                                         ),
-                                    mobile: (context) => IconButton(
-                                        onPressed: () {
-                                          _displaySpeedOptionsModal(context,
-                                              (v) {
-                                            setState(() {
-                                              _player?.setSpeed(v);
+                                    mobile: (context) => _PreviewIconButton(
+                                          tooltip: l10n.previewPlaybackSpeed,
+                                          onPressed: () {
+                                            _displaySpeedOptionsModal(context,
+                                                current: _player?.speed ?? 1,
+                                                (v) {
+                                              setState(() {
+                                                _player?.setSpeed(v);
+                                              });
                                             });
-                                          });
-                                        },
-                                        icon: const Icon(
-                                            Icons.settings_outlined,
-                                            size: 24))))),
+                                          },
+                                          icon: Icons.settings_outlined,
+                                        )))),
                       ],
                     ))
               ]))
@@ -2538,7 +2587,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
 
   /// The stage: what the player is waiting for, that it is starting, that it
   /// could not play the file, or - once it can - the music glyph.
-  Widget _buildStage(ArDriveColors colors) {
+  Widget _buildStage(ArDriveColorTokens colorTokens) {
     if (_player == null) {
       return widget.stage ?? const FsEntryPreviewStarting();
     }
@@ -2554,7 +2603,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
       case _AudioLoadState.loaded:
         return FittedBox(
           fit: BoxFit.contain,
-          child: ArDriveIcons.music(size: 100, color: colors.themeFgMuted),
+          child: ArDriveIcons.music(size: 100, color: colorTokens.iconLow),
         );
     }
   }
@@ -2586,7 +2635,8 @@ class _VolumeSliderWidgetState extends State<VolumeSliderWidget> {
 
   @override
   Widget build(BuildContext context) {
-    var colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final l10n = appLocalizationsOf(context);
 
     bool isMuted = widget.volume <= 0;
 
@@ -2595,23 +2645,22 @@ class _VolumeSliderWidgetState extends State<VolumeSliderWidget> {
         onEnter: (event) {
           widget.setSliderVisible(true);
         },
-        child: IconButton(
-            onPressed: () {
-              setState(() {
-                if (isMuted) {
-                  widget.setVolume(_lastVolume);
-                } else {
-                  if (widget.volume > 0) {
-                    _lastVolume = widget.volume;
-                    widget.setVolume(0);
-                  }
+        child: _PreviewIconButton(
+          tooltip: isMuted ? l10n.previewUnmute : l10n.previewMute,
+          onPressed: () {
+            setState(() {
+              if (isMuted) {
+                widget.setVolume(_lastVolume);
+              } else {
+                if (widget.volume > 0) {
+                  _lastVolume = widget.volume;
+                  widget.setVolume(0);
                 }
-              });
-            },
-            icon: Icon(
-              isMuted ? Icons.volume_off_outlined : Icons.volume_up_outlined,
-              size: 24,
-            )),
+              }
+            });
+          },
+          icon: isMuted ? Icons.volume_off_outlined : Icons.volume_up_outlined,
+        ),
       ),
       Expanded(
           child: ClipRect(
@@ -2619,17 +2668,12 @@ class _VolumeSliderWidgetState extends State<VolumeSliderWidget> {
                   offset: Offset(widget.sliderVisible ? 0 : -1, 0),
                   duration: const Duration(milliseconds: 100),
                   child: SliderTheme(
-                    data: SliderThemeData(
-                        trackHeight: 4,
-                        trackShape:
-                            _NoAdditionalHeightRoundedRectSliderTrackShape(),
-                        inactiveTrackColor: colors.themeBgSubtle,
-                        activeTrackColor: colors.themeFgMuted,
-                        overlayShape: SliderComponentShape.noOverlay,
-                        thumbColor: colors.themeFgMuted,
-                        thumbShape: const RoundSliderThumbShape(
-                          enabledThumbRadius: 8,
-                        )),
+                    // Quieter than the seek bar: the primary colour is for
+                    // where the file is, not how loud it is.
+                    data: _playerSliderTheme(colorTokens).copyWith(
+                      activeTrackColor: colorTokens.iconMid,
+                      thumbColor: colorTokens.iconMid,
+                    ),
                     child: Slider(
                       value: widget.volume,
                       min: 0.0,
@@ -2677,44 +2721,46 @@ class _NoAdditionalHeightRoundedRectSliderTrackShape
   }
 }
 
+/// The playback speeds on a phone, in the standard bottom sheet.
 void _displaySpeedOptionsModal(
   BuildContext context,
-  Function(double) setPlaybackSpeed,
-) {
-  final colors = ArDriveTheme.of(context).themeData.colors;
-  final dropDownTheme = ArDriveTheme.of(context).themeData.dropdownTheme;
-
-  showModalBottomSheet(
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(8),
-        topRight: Radius.circular(8),
-      ),
-    ),
-    context: context,
+  Function(double) setPlaybackSpeed, {
+  required double current,
+}) {
+  showArDriveBottomSheet(
+    context,
     builder: (context) {
-      return ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(8),
-          topRight: Radius.circular(8),
-        ),
-        child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: _speedOptions.length,
-          itemBuilder: (context, index) {
-            final speed = _speedOptions[index];
-            return ListTile(
-              tileColor: dropDownTheme.backgroundColor,
-              hoverColor: dropDownTheme.hoverColor,
-              textColor: colors.themeFgDefault,
-              onTap: () {
-                setPlaybackSpeed(speed);
-                Navigator.of(context).pop();
-              },
-              title: Text(
-                  speed == 1.0 ? appLocalizationsOf(context).normal : '$speed'),
-            );
-          },
+      final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+      final typography = ArDriveTypographyNew.of(context);
+
+      return ArDriveBottomSheet(
+        title: appLocalizationsOf(context).previewPlaybackSpeed,
+        contentPadding: EdgeInsets.zero,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final speed in _speedOptions)
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: ArDriveSpacing.lg,
+                ),
+                selected: speed == current,
+                onTap: () {
+                  setPlaybackSpeed(speed);
+                  Navigator.of(context).pop();
+                },
+                title: Text(
+                  _speedLabel(context, speed),
+                  style: typography.paragraphLarge(color: colorTokens.textHigh),
+                ),
+                trailing: speed == current
+                    ? ArDriveIcons.checkmark(
+                        size: 20,
+                        color: colorTokens.iconMid,
+                      )
+                    : null,
+              ),
+          ],
         ),
       );
     },

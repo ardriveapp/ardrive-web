@@ -67,6 +67,52 @@ void main() {
   MaterialButton playButton(WidgetTester tester) =>
       tester.widget<MaterialButton>(find.byType(MaterialButton).last);
 
+  group('the controls say what they are', () {
+    // The play button had no name at all, and the speed, skip and mute
+    // buttons no tooltip: a screen reader heard "button".
+    testWidgets('the play button is named, and says Pause when playing',
+        (tester) async {
+      await tester.pumpWidget(wrap(const VideoPlayerWidget(
+        filename: 'clip.mp4',
+        videoUrl: null,
+        isSharePage: false,
+      )));
+
+      expect(find.bySemanticsLabel('Play'), findsOneWidget);
+      expect(find.byTooltip('Play'), findsOneWidget);
+    });
+
+    testWidgets('the speed control is named', (tester) async {
+      await tester.pumpWidget(wrap(const AudioPlayerWidget(
+        filename: 'memo.mp3',
+        audioUrl: null,
+        isSharePage: false,
+      )));
+
+      expect(find.byTooltip('Playback speed'), findsOneWidget);
+    });
+
+    testWidgets('on a phone the speeds open in the standard sheet, ticked',
+        (tester) async {
+      await tester.pumpWidget(wrap(const AudioPlayerWidget(
+        filename: 'memo.mp3',
+        audioUrl: null,
+        isSharePage: false,
+      )));
+
+      await tester.tap(find.byTooltip('Playback speed'));
+      // Not settled: the stage's "Loading..." spinner never stops.
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(ArDriveBottomSheet), findsOneWidget);
+      expect(find.text('Playback speed'), findsOneWidget);
+      expect(find.text('1.5x'), findsOneWidget);
+      final normal = tester.widget<ListTile>(find.ancestor(
+          of: find.text('Normal'), matching: find.byType(ListTile)));
+      expect(normal.selected, isTrue);
+    });
+  });
+
   group('a player with no file yet', () {
     testWidgets('a video player draws its frame, with the stage given',
         (tester) async {
@@ -233,9 +279,23 @@ void main() {
         const FsEntryPreviewOnRequest(size: 30 * 1024 * 1024, media: video),
       );
 
-      // An outlined button on black is a dark outline on black.
-      final button = tester.widget<ArDriveButton>(find.byType(ArDriveButton));
-      expect(button.style, ArDriveButtonStyle.primary);
+      // The one thing to do on the stage, so the primary one.
+      final button =
+          tester.widget<ArDriveButtonNew>(find.byType(ArDriveButtonNew));
+      expect(button.variant, ButtonVariant.primary);
+      expect(button.size, ArDriveButtonSize.compact);
+    });
+
+    testWidgets('what is on a dark stage takes the dark theme', (tester) async {
+      await pump(
+        tester,
+        const FsEntryPreviewOnRequest(size: 30 * 1024 * 1024, media: video),
+      );
+
+      // The app under test is in the light theme; the words on the black
+      // stage must still be the dark theme's, or they are dark on black.
+      final text = tester.widget<Text>(find.textContaining('This file is'));
+      expect(text.style?.color, ArDriveColorTokens.darkMode().textHigh);
     });
   });
 

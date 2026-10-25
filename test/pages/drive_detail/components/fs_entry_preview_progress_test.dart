@@ -44,6 +44,8 @@ void main() {
       await tester.pumpWidget(wrap(const FsEntryPreviewProgress(
         state: FsEntryPreviewLoading(received: received, total: total),
       )));
+      // The bar walks to its value rather than jumping.
+      await tester.pump(const Duration(milliseconds: 400));
 
       final bar = tester.widget<LinearProgressIndicator>(
         find.byType(LinearProgressIndicator),

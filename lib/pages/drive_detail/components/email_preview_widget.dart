@@ -1,11 +1,12 @@
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
+import 'package:ardrive/pages/drive_detail/components/document_preview_widget.dart';
 import 'package:ardrive/pages/drive_detail/components/email_attachment_list.dart';
 import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class EmailPreviewWidget extends StatefulWidget {
   final FsEntryPreviewEmail state;
@@ -68,7 +69,9 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
     );
   }
 
-  void _copyEmailToClipboard() {
+  /// The header names stay the email's own (From, To, Subject), since this
+  /// is the message as text.
+  Future<void> _copyEmailToClipboard() {
     final buffer = StringBuffer();
     buffer.writeln('From: ${widget.state.email.from}');
     buffer.writeln('To: ${widget.state.email.to}');
@@ -85,19 +88,7 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
         : _stripHtmlTags(widget.state.email.htmlBody);
     buffer.writeln(bodyContent);
 
-    Clipboard.setData(ClipboardData(text: buffer.toString()));
-
-    final theme = ArDriveTheme.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: theme.themeData.colors.themeBgSurface,
-        content: Text(
-          'Email content copied to clipboard',
-          style: TextStyle(color: theme.themeData.colors.themeFgDefault),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    return copyPreviewText(context, buffer.toString());
   }
 
   Future<void> _toggleFullScreen() async {
@@ -111,7 +102,7 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
           reverseTransitionDuration: Duration.zero,
           pageBuilder: (context, _, __) => Scaffold(
             backgroundColor:
-                ArDriveTheme.of(context).themeData.colors.themeBgSurface,
+                ArDriveTheme.of(context).themeData.colorTokens.containerL1,
             body: EmailPreviewWidget(
               state: widget.state,
               isSharePage: widget.isSharePage,
@@ -148,7 +139,7 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Column(
@@ -158,21 +149,23 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
           child: Stack(
             children: [
               Container(
-                color: colors.themeBgSurface,
+                color: widget.isFullScreen
+                    ? colorTokens.containerL1
+                    : colorTokens.containerRaised,
                 child: ArDriveScrollBar(
                   controller: _scrollController,
                   alwaysVisible: true,
                   child: SingleChildScrollView(
                     controller: _scrollController,
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(ArDriveSpacing.lg),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildEmailHeaders(colors, typography),
-                        const SizedBox(height: 24),
-                        _buildEmailBody(colors, typography),
+                        _buildEmailHeaders(colorTokens, typography),
+                        const SizedBox(height: ArDriveSpacing.lg),
+                        _buildEmailBody(colorTokens, typography),
                         if (widget.state.email.hasAttachments) ...[
-                          const SizedBox(height: 16),
+                          const SizedBox(height: ArDriveSpacing.md),
                           EmailAttachmentList(
                             attachments: widget.state.email.attachments,
                           ),
@@ -185,11 +178,12 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
               // Scroll to top button
               if (_showScrollToTop)
                 Positioned(
-                  bottom: 16,
-                  right: 16,
+                  bottom: ArDriveSpacing.md,
+                  right: ArDriveSpacing.md,
                   child: ArDriveIconButton(
-                    icon: ArDriveIcons.chevronUp(size: 20),
-                    tooltip: 'Scroll to top',
+                    icon: ArDriveIcons.chevronUp(
+                        size: 20, color: colorTokens.iconMid),
+                    tooltip: appLocalizationsOf(context).previewScrollToTop,
                     onPressed: _scrollToTop,
                   ),
                 ),
@@ -197,48 +191,57 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
           ),
         ),
         // Bottom action bar
-        _buildActionBar(colors, typography),
+        _buildActionBar(colorTokens, typography),
       ],
     );
   }
 
-  Widget _buildEmailHeaders(dynamic colors, dynamic typography) {
+  BoxDecoration _cardDecoration(ArDriveColorTokens colorTokens) =>
+      BoxDecoration(
+        color: colorTokens.containerL2,
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
+        border: Border.all(color: colorTokens.strokeLow),
+      );
+
+  Widget _buildEmailHeaders(
+    ArDriveColorTokens colorTokens,
+    ArdriveTypographyNew typography,
+  ) {
+    final l10n = appLocalizationsOf(context);
+    final email = widget.state.email;
+
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.themeBgCanvas,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.themeBorderDefault),
-      ),
+      padding: const EdgeInsets.all(ArDriveSpacing.md),
+      decoration: _cardDecoration(colorTokens),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Subject
           Text(
-            widget.state.email.subject,
+            email.subject,
             style: typography.heading6(
+              color: colorTokens.textHigh,
               fontWeight: ArFontWeight.bold,
             ),
           ),
-          const SizedBox(height: 16),
-          Divider(color: colors.themeBorderDefault, height: 1),
-          const SizedBox(height: 16),
-          // From
-          _buildHeaderRow('From', widget.state.email.from, colors, typography),
-          const SizedBox(height: 8),
-          // To
-          _buildHeaderRow('To', widget.state.email.to, colors, typography),
-          // CC (if present)
-          if (widget.state.email.cc.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            _buildHeaderRow('CC', widget.state.email.cc, colors, typography),
-          ],
-          // Date
-          const SizedBox(height: 8),
+          const SizedBox(height: ArDriveSpacing.md),
+          Divider(color: colorTokens.strokeLow, height: 1),
+          const SizedBox(height: ArDriveSpacing.md),
           _buildHeaderRow(
-            'Date',
-            _formatDate(widget.state.email.date),
-            colors,
+              l10n.emailPreviewFrom, email.from, colorTokens, typography),
+          const SizedBox(height: ArDriveSpacing.xs),
+          _buildHeaderRow(
+              l10n.emailPreviewTo, email.to, colorTokens, typography),
+          if (email.cc.isNotEmpty) ...[
+            const SizedBox(height: ArDriveSpacing.xs),
+            _buildHeaderRow(
+                l10n.emailPreviewCc, email.cc, colorTokens, typography),
+          ],
+          const SizedBox(height: ArDriveSpacing.xs),
+          _buildHeaderRow(
+            l10n.emailPreviewDate,
+            _formatDate(email.date),
+            colorTokens,
             typography,
           ),
         ],
@@ -249,8 +252,8 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
   Widget _buildHeaderRow(
     String label,
     String value,
-    dynamic colors,
-    dynamic typography,
+    ArDriveColorTokens colorTokens,
+    ArdriveTypographyNew typography,
   ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,59 +264,54 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
             label,
             style: typography.paragraphSmall(
               fontWeight: ArFontWeight.semiBold,
-              color: colors.themeFgMuted,
+              color: colorTokens.textMid,
             ),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: typography.paragraphSmall(),
+            style: typography.paragraphSmall(color: colorTokens.textHigh),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildViewToggle(dynamic colors, dynamic typography) {
+  Widget _buildViewToggle(
+    ArDriveColorTokens colorTokens,
+    ArdriveTypographyNew typography,
+  ) {
+    final l10n = appLocalizationsOf(context);
+
     return Container(
       height: 32,
       decoration: BoxDecoration(
-        color: colors.themeBgSurface,
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(
-          color: colors.themeBorderDefault,
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(ArDriveRadius.sm),
+        border: Border.all(color: colorTokens.strokeMid),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildToggleButton(
-            label: 'Plain text',
+            label: l10n.emailPreviewPlainText,
             isSelected: !_showHtml,
             onTap: () => setState(() => _showHtml = false),
-            colors: colors,
+            colorTokens: colorTokens,
             typography: typography,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              bottomLeft: Radius.circular(4),
+            borderRadius: const BorderRadius.horizontal(
+              left: Radius.circular(ArDriveRadius.sm),
             ),
           ),
-          Container(
-            width: 1,
-            height: 32,
-            color: colors.themeBorderDefault,
-          ),
+          Container(width: 1, height: 32, color: colorTokens.strokeMid),
           _buildToggleButton(
-            label: 'HTML',
+            label: l10n.emailPreviewHtml,
             isSelected: _showHtml,
             onTap: () => setState(() => _showHtml = true),
-            colors: colors,
+            colorTokens: colorTokens,
             typography: typography,
-            borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(4),
-              bottomRight: Radius.circular(4),
+            borderRadius: const BorderRadius.horizontal(
+              right: Radius.circular(ArDriveRadius.sm),
             ),
           ),
         ],
@@ -321,45 +319,58 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
     );
   }
 
+  /// One side of the plain text / HTML switch. The chosen side is a tint,
+  /// not the primary red it was: the switch is a view setting, not the
+  /// page's call to action.
   Widget _buildToggleButton({
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
-    required dynamic colors,
-    required dynamic typography,
+    required ArDriveColorTokens colorTokens,
+    required ArdriveTypographyNew typography,
     required BorderRadius borderRadius,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: borderRadius,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? colors.themeAccentBrand : Colors.transparent,
-          borderRadius: borderRadius,
-        ),
-        child: Text(
-          label,
-          style: typography.paragraphSmall(
-            color: isSelected ? colors.themeFgOnAccent : colors.themeFgDefault,
-            fontWeight: isSelected ? ArFontWeight.semiBold : ArFontWeight.book,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: borderRadius,
+        hoverColor: colorTokens.buttonSecondaryHover,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: ArDriveSpacing.md,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? colorTokens.buttonSecondaryPress
+                : Colors.transparent,
+            borderRadius: borderRadius,
+          ),
+          child: Text(
+            label,
+            style: typography.paragraphSmall(
+              color: isSelected ? colorTokens.textHigh : colorTokens.textMid,
+              fontWeight:
+                  isSelected ? ArFontWeight.semiBold : ArFontWeight.book,
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildEmailBody(dynamic colors, dynamic typography) {
+  Widget _buildEmailBody(
+    ArDriveColorTokens colorTokens,
+    ArdriveTypographyNew typography,
+  ) {
     final hasHtmlBody = widget.state.email.hasHtmlBody;
     final hasTextBody = widget.state.email.textBody.trim().isNotEmpty;
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.themeBgCanvas,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.themeBorderDefault),
-      ),
+      padding: const EdgeInsets.all(ArDriveSpacing.md),
+      decoration: _cardDecoration(colorTokens),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -368,16 +379,15 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
             Row(
               children: [
                 Text(
-                  'View as:',
-                  style: typography.paragraphSmall(
-                    color: colors.themeFgMuted,
-                  ),
+                  appLocalizationsOf(context).emailPreviewViewAs,
+                  style: typography.paragraphSmall(color: colorTokens.textMid),
                 ),
-                const SizedBox(width: 12),
-                _buildViewToggle(colors, typography),
+                const SizedBox(width: ArDriveSpacing.sm),
+                _buildViewToggle(colorTokens, typography),
               ],
             ),
-          if (hasHtmlBody && hasTextBody) const SizedBox(height: 16),
+          if (hasHtmlBody && hasTextBody)
+            const SizedBox(height: ArDriveSpacing.md),
           // Body content
           SelectableText(
             _showHtml && hasHtmlBody
@@ -386,24 +396,28 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
             style: typography
                 .paragraphSmall(
                   fontWeight: ArFontWeight.book,
+                  color: colorTokens.textHigh,
                 )
-                .copyWith(
-                  fontFamily: _showHtml ? null : 'Courier New',
-                  height: 1.5,
-                ),
+                .copyWith(height: 1.5),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildActionBar(dynamic colors, dynamic typography) {
+  Widget _buildActionBar(
+    ArDriveColorTokens colorTokens,
+    ArdriveTypographyNew typography,
+  ) {
+    final l10n = appLocalizationsOf(context);
     final fileNameWithoutExtension =
         getBasenameWithoutExtension(filePath: widget.state.filename);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      color: colors.themeBgCanvas,
+      padding: const EdgeInsets.all(ArDriveSpacing.lg),
+      color: widget.isFullScreen
+          ? colorTokens.containerL2
+          : colorTokens.containerRaised,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -418,37 +432,38 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
                     fileNameWithoutExtension,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
-                    style: ArDriveTypography.body.smallBold700(
-                      color: colors.themeFgDefault,
+                    style: typography.paragraphLarge(
+                      color: colorTokens.textHigh,
+                      fontWeight: ArFontWeight.bold,
                     ),
                   ),
                 ),
+                // The same case and colour as every other preview's type.
                 Text(
-                  'EMAIL MESSAGE',
-                  style: ArDriveTypography.body.smallRegular(
-                    color: colors.themeFgDisabled,
-                  ),
+                  l10n.emailPreviewFileType,
+                  style: typography.paragraphLarge(color: colorTokens.textLow),
                 ),
               ],
             ),
           ),
           Row(
             children: [
-              ArDriveIconButton(
-                icon: ArDriveIcons.copy(size: 20),
-                tooltip: 'Copy email text',
-                onPressed: _copyEmailToClipboard,
-              ),
-              const SizedBox(width: 8),
               IconButton(
+                tooltip: l10n.previewCopyText,
+                onPressed: _copyEmailToClipboard,
+                icon: ArDriveIcons.copy(size: 20, color: colorTokens.iconMid),
+              ),
+              const SizedBox(width: ArDriveSpacing.xs),
+              IconButton(
+                tooltip: widget.isFullScreen ? l10n.collapse : l10n.expand,
+                onPressed: _toggleFullScreen,
+                color: colorTokens.iconMid,
                 icon: Icon(
                   widget.isFullScreen
                       ? Icons.fullscreen_exit_outlined
                       : Icons.fullscreen_outlined,
                   size: 24,
                 ),
-                tooltip: widget.isFullScreen ? 'Exit fullscreen' : 'Expand',
-                onPressed: _toggleFullScreen,
               ),
             ],
           ),
@@ -458,7 +473,9 @@ class _EmailPreviewWidgetState extends State<EmailPreviewWidget> {
   }
 
   String _formatDate(String dateString) {
-    if (dateString.isEmpty) return 'Unknown date';
+    if (dateString.isEmpty) {
+      return appLocalizationsOf(context).emailPreviewUnknownDate;
+    }
 
     try {
       // Try parsing common email date formats
