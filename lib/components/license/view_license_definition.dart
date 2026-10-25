@@ -1,24 +1,19 @@
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-viewLicenseDefinitionTextSpan(
+/// "View": a link to the license's definition on the gateway, for placing
+/// beside a license's name in text.
+InlineSpan viewLicenseDefinitionTextSpan(
   BuildContext context,
   String licenseDefinitionTxId,
 ) =>
-    TextSpan(
+    ArDriveLink.span(
       text: 'View',
-      style: ArDriveTypography.body
-          .buttonLargeRegular(
-            color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
-          )
-          .copyWith(
-            decoration: TextDecoration.underline,
-          ),
-      recognizer: TapGestureRecognizer()
-        ..onTap = () async {
-          final url = 'https://turbo-gateway.com/$licenseDefinitionTxId';
-          await openUrl(url: url);
-        },
+      style: ArDriveTypographyNew.of(context).paragraphLarge(),
+      color: ArDriveTheme.of(context).themeData.colorTokens.textLow,
+      external: true,
+      onTap: () => openUrl(
+        url: 'https://turbo-gateway.com/$licenseDefinitionTxId',
+      ),
     );

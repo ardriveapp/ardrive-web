@@ -267,13 +267,13 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      const CircularProgressIndicator(),
+                      const ArDriveSpinner(size: ArDriveSpinnerSize.large),
                     ],
                   )
                 else if (state is BulkImportResolvingPaths)
                   Column(
                     children: [
-                      LinearProgressIndicator(
+                      ArDriveLinearProgress(
                         value: state.processedPaths / state.totalPaths,
                       ),
                       const SizedBox(height: 16),
@@ -290,7 +290,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
                 else if (state is BulkImportCreatingFolders)
                   Column(
                     children: [
-                      LinearProgressIndicator(
+                      ArDriveLinearProgress(
                         value: state.processedFolders / state.totalFolders,
                       ),
                       const SizedBox(height: 16),
@@ -307,7 +307,7 @@ class _BulkImportModalContentState extends State<_BulkImportModalContent> {
                 else if (state is BulkImportInProgress)
                   Column(
                     children: [
-                      LinearProgressIndicator(
+                      ArDriveLinearProgress(
                         value: state.processedFiles / state.fileIds.length,
                       ),
                       const SizedBox(height: 16),

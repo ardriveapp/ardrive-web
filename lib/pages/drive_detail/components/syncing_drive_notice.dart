@@ -90,23 +90,11 @@ class SyncingDriveNotice extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ArDriveIcons.info(size: 16, color: colorTokens.textLow),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              appLocalizationsOf(context).syncStillReadingThisDrive,
-              style: typography.paragraphSmall(color: colorTokens.textLow),
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.only(bottom: ArDriveSpacing.xs),
+      child: ArDriveNotice(
+        type: ArDriveNoticeType.info,
+        message: appLocalizationsOf(context).syncStillReadingThisDrive,
       ),
     );
   }

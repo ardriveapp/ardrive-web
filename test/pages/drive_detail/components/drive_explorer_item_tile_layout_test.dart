@@ -250,7 +250,7 @@ void main() {
 
       final menu = tester.getRect(find.byType(HoverWidget));
       final leftmost = item is FolderDataTableItem
-          ? tester.getRect(find.byType(ArDriveButton)).left
+          ? tester.getRect(find.byType(ArDriveButtonNew)).left
           : item is FileDataTableItem && item.pinnedDataOwnerAddress != null
               ? tester.getRect(find.byType(PinIndicator)).left
               : menu.left;

@@ -85,14 +85,16 @@ class PromptToSnapshotDialogState extends State<PromptToSnapshotDialog> {
           : localizations.snapshotRecommendedBody;
     }
 
-    return ArDriveStandardModal(
+    return ArDriveStandardModalNew(
       hasCloseButton: true,
       title: title,
       content: SizedBox(
         width: kMediumDialogWidth,
         child: Text(
           body,
-          style: ArDriveTypography.body.buttonNormalRegular(),
+          style: ArDriveTypographyNew.of(context).paragraphNormal(
+            color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+          ),
         ),
       ),
       actions: [

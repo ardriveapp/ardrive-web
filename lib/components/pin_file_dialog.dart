@@ -214,10 +214,7 @@ class _PinFileDialogState extends State<PinFileDialog> {
                     padding: const EdgeInsets.only(top: 8),
                     child: Row(
                       children: [
-                        const SizedBox.square(
-                          dimension: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
+                        const ArDriveSpinner(),
                         const SizedBox(width: 8),
                         Text(
                           appLocalizationsOf(context).lookingUpThisId,

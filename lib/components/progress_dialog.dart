@@ -10,7 +10,6 @@ Future<void> showProgressDialog(
   BuildContext context, {
   required String title,
   List<ModalAction>? actions,
-  bool useNewArDriveUI = false,
 }) =>
     showArDriveDialog(
       context,
@@ -18,7 +17,6 @@ Future<void> showProgressDialog(
       content: ProgressDialog(
         title: title,
         actions: actions ?? const [],
-        useNewArDriveUI: useNewArDriveUI,
       ),
     );
 
@@ -31,7 +29,6 @@ class ProgressDialog extends StatelessWidget {
     this.progressDescription,
     this.progressBar,
     this.percentageDetails,
-    this.useNewArDriveUI = false,
   })  : assert(title != null || titleWidget != null,
             'Either title or titleWidget must be provided'),
         assert(!(title != null && titleWidget != null),
@@ -47,7 +44,6 @@ class ProgressDialog extends StatelessWidget {
   final Widget? progressDescription;
   final Widget? progressBar;
   final Widget? percentageDetails;
-  final bool useNewArDriveUI;
 
   @override
   Widget build(BuildContext context) {
@@ -85,19 +81,10 @@ class ProgressDialog extends StatelessWidget {
       ),
     );
 
-    if (useNewArDriveUI) {
-      return ArDriveStandardModalNew(
-        // title and titleWidget are mutually exclusive per constructor assertion
-        title: title,
-        titleWidget: titleWidget,
-        content: content,
-        actions: actions,
-      );
-    }
-
-    // Legacy UI only supports title (not titleWidget)
-    return ArDriveStandardModal(
-      title: title ?? '',
+    return ArDriveStandardModalNew(
+      // title and titleWidget are mutually exclusive per constructor assertion
+      title: title,
+      titleWidget: titleWidget,
       content: content,
       actions: actions,
     );

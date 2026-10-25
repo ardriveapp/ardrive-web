@@ -79,13 +79,11 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
             showProgressDialog(
               context,
               title: appLocalizationsOf(context).renamingFolderEmphasized,
-              useNewArDriveUI: true,
             );
           } else if (state is FileEntryRenameInProgress) {
             showProgressDialog(
               context,
               title: appLocalizationsOf(context).renamingFileEmphasized,
-              useNewArDriveUI: true,
             );
           } else if (state is FolderEntryRenameSuccess ||
               state is FileEntryRenameSuccess) {
@@ -109,8 +107,7 @@ class _FsEntryRenameFormState extends State<FsEntryRenameForm> {
                 context,
                 content: ArDriveStandardModalNew(
                   title: appLocalizationsOf(context).error,
-                  description:
-                      appLocalizationsOf(context).actionFailedTryAgain,
+                  description: appLocalizationsOf(context).actionFailedTryAgain,
                 ),
               );
             }

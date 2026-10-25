@@ -82,5 +82,66 @@ void main() {
             equals(dataExportSnapshot),
           );
         });
+
+    // A failure used to escape the cubit as an unhandled error and leave the
+    // dialog waiting forever.
+    blocTest<DataExportCubit, DataExportState>(
+        'a read that fails reports a failure',
+        setUp: () => when(() => folderRepository.getLatestFolderRevisionInfo(
+              any(),
+              any(),
+            )).thenThrow(Exception('database gone')),
+        build: () => DataExportCubit(
+              gatewayURL: testGatewayURL,
+              folderRepository: folderRepository,
+              driveId: driveId,
+              driveDao: driveDao,
+            ),
+        act: (cubit) async => await cubit.exportData(),
+        expect: () => [
+              const TypeMatcher<DataExportInProgress>(),
+              const TypeMatcher<DataExportFailure>(),
+            ]);
+
+    blocTest<DataExportCubit, DataExportState>(
+        'an export cancelled while it reads is not delivered',
+        build: () => DataExportCubit(
+              gatewayURL: testGatewayURL,
+              folderRepository: folderRepository,
+              driveDao: driveDao,
+              driveId: driveId,
+            ),
+        act: (cubit) async {
+          final export = cubit.exportData();
+          cubit.abort();
+          await export;
+        },
+        expect: () => [
+              const TypeMatcher<DataExportInProgress>(),
+              const TypeMatcher<DataExportAborted>(),
+            ]);
+
+    // A large drive went on reading every remaining file's folder after a
+    // cancel, only to throw the rows away.
+    test('stops looking up folders once cancelled', () async {
+      final cubit = DataExportCubit(
+        gatewayURL: testGatewayURL,
+        folderRepository: folderRepository,
+        driveDao: driveDao,
+        driveId: driveId,
+      );
+      var lookups = 0;
+      when(() => folderRepository.getLatestFolderRevisionInfo(any(), any()))
+          .thenAnswer((_) async {
+        if (++lookups == 2) cubit.abort();
+        return null;
+      });
+
+      await cubit.exportData();
+
+      expect(lookups, 2);
+      expect(cubit.state, isA<DataExportAborted>());
+      await cubit.close();
+    });
   });
 }

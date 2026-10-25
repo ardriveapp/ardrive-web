@@ -49,8 +49,8 @@ class _HoverWidgetState extends State<HoverWidget> {
                   ? widget.hoverColor ??
                       ArDriveTheme.of(context)
                           .themeData
-                          .colors
-                          .themeBorderDefault
+                          .colorTokens
+                          .buttonSecondaryHover
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(5.0),
             ),

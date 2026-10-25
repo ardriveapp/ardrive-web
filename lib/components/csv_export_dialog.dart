@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/data_export/data_export_cubit.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/models/models.dart';
@@ -29,83 +28,86 @@ Future<void> promptToExportCSVData({
                 context.read<ArweaveService>().client.api.gatewayUrl.toString(),
           )..exportData();
         },
-        child: const FileDownloadDialog(),
+        child: const CsvExportDialog(),
       ),
       barrierDismissible: false,
     );
 
-class FileDownloadDialog extends StatelessWidget {
-  const FileDownloadDialog({super.key});
+/// Exports a drive's file list as a CSV and saves it.
+///
+/// Built against the states [DataExportCubit] actually emits. It used to check
+/// the download dialog's states, which this cubit never emits, so it drew
+/// nothing at all: an invisible dialog that could not be dismissed until the
+/// file was ready, a failure that was never shown, and a Cancel that reached
+/// for a cubit this dialog does not have.
+class CsvExportDialog extends StatelessWidget {
+  const CsvExportDialog({super.key});
 
   @override
   Widget build(BuildContext context) =>
       BlocConsumer<DataExportCubit, DataExportState>(
         listener: (context, state) async {
           if (state is DataExportSuccess) {
-            final ArDriveIO io = ArDriveIO();
-
-            final saveFile = io.saveFile(await IOFile.fromData(state.bytes,
-                name: state.fileName, lastModifiedDate: state.lastModified));
-
-            saveFile.then((value) => Navigator.pop(context));
+            final cubit = context.read<DataExportCubit>();
+            try {
+              await ArDriveIO().saveFile(await IOFile.fromData(state.bytes,
+                  name: state.fileName, lastModifiedDate: state.lastModified));
+              if (context.mounted) Navigator.pop(context);
+            } catch (_) {
+              cubit.reportSaveFailure();
+            }
           }
         },
         builder: (context, state) {
-          if (state is FileDownloadStarting) {
-            return ArDriveStandardModal(
-              title: appLocalizationsOf(context).downloadingCSV,
-              content: const Column(
-                mainAxisSize: MainAxisSize.min,
+          final strings = appLocalizationsOf(context);
+
+          if (state is DataExportFailure) {
+            return ArDriveStandardModalNew(
+              title: strings.fileDownloadFailed,
+              actions: [
+                ModalAction(
+                  action: () => Navigator.pop(context),
+                  title: strings.ok,
+                ),
+              ],
+            );
+          }
+
+          final typography = ArDriveTypographyNew.of(context);
+          final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+          return ArDriveStandardModalNew(
+            title: strings.downloadingCSV,
+            content: SizedBox(
+              width: kMediumDialogWidth,
+              child: Row(
                 children: [
-                  Center(child: CircularProgressIndicator()),
+                  const ArDriveSpinner(),
+                  const SizedBox(width: ArDriveSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      strings.exportingData,
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textMid,
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              actions: [
-                ModalAction(
-                  action: () => Navigator.pop(context),
-                  title: appLocalizationsOf(context).cancel,
-                ),
-              ],
-            );
-          } else if (state is FileDownloadInProgress) {
-            return ArDriveStandardModal(
-              title: appLocalizationsOf(context).downloadingCSV,
-              content: SizedBox(
-                width: kMediumDialogWidth,
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    appLocalizationsOf(context).exportingData,
-                  ),
-                  trailing: const CircularProgressIndicator(),
-                ),
-              ),
-              actions: [
-                ModalAction(
-                  action: () {
-                    context.read<FileDownloadCubit>().abortDownload();
-                    Navigator.pop(context);
-                  },
-                  title: appLocalizationsOf(context).cancel,
-                ),
-              ],
-            );
-          } else if (state is FileDownloadFailure) {
-            return ArDriveStandardModal(
-              title: appLocalizationsOf(context).fileDownloadFailed,
-              content: const SizedBox(
-                width: kMediumDialogWidth,
-              ),
-              actions: [
-                ModalAction(
-                  action: () => Navigator.pop(context),
-                  title: appLocalizationsOf(context).ok,
-                ),
-              ],
-            );
-          } else {
-            return const SizedBox();
-          }
+            ),
+            // No Cancel once the file is being saved: closing the dialog
+            // would not stop the save, so the file could arrive after Cancel.
+            actions: state is DataExportSuccess
+                ? null
+                : [
+                    ModalAction.dismiss(
+                      action: () {
+                        context.read<DataExportCubit>().abort();
+                        Navigator.pop(context);
+                      },
+                      title: strings.cancel,
+                    ),
+                  ],
+          );
         },
       );
 }

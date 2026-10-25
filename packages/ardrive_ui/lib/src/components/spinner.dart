@@ -53,11 +53,15 @@ class ArDriveSpinner extends StatelessWidget {
 
 /// A progress bar: how far something has got, or that it is under way when
 /// [value] is null.
-class ArDriveLinearProgress extends StatelessWidget {
+///
+/// A new value is walked to from wherever the fill is, never from zero, so
+/// progress reported in steps still reads as one movement.
+class ArDriveLinearProgress extends StatefulWidget {
   const ArDriveLinearProgress({
     super.key,
     this.value,
     this.semanticsLabel,
+    this.duration = const Duration(milliseconds: 300),
   });
 
   /// From 0 to 1, or null when how far along isn't known.
@@ -65,17 +69,39 @@ class ArDriveLinearProgress extends StatelessWidget {
 
   final String? semanticsLabel;
 
+  /// How long the fill takes to reach a new value. Zero jumps.
+  final Duration duration;
+
+  @override
+  State<ArDriveLinearProgress> createState() => _ArDriveLinearProgressState();
+}
+
+class _ArDriveLinearProgressState extends State<ArDriveLinearProgress> {
+  /// Where the fill last stood. While the value is unknown the tween holds
+  /// here, so it resumes from it: aimed at zero, the fill drifted down out of
+  /// sight and climbed back when a value returned.
+  double _lastValue = 0;
+
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final value = widget.value;
+    if (value != null) _lastValue = value.clamp(0.0, 1.0);
+
+    Widget bar(double? value) => LinearProgressIndicator(
+          value: value,
+          minHeight: 4,
+          color: colorTokens.buttonPrimaryDefault,
+          backgroundColor: colorTokens.strokeMid,
+          semanticsLabel: widget.semanticsLabel,
+        );
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(2),
-      child: LinearProgressIndicator(
-        value: value,
-        minHeight: 4,
-        color: colorTokens.buttonPrimaryDefault,
-        backgroundColor: colorTokens.strokeMid,
-        semanticsLabel: semanticsLabel,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: _lastValue),
+        duration: widget.duration,
+        builder: (context, animated, _) => bar(value == null ? null : animated),
       ),
     );
   }

@@ -26,7 +26,7 @@ class SnapshotsTab extends StatelessWidget {
         if (state is FsEntrySnapshotsLoading ||
             state is FsEntrySnapshotsInitial) {
           return const Center(
-            child: CircularProgressIndicator(),
+            child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
           );
         }
 
@@ -51,123 +51,37 @@ class SnapshotsTab extends StatelessWidget {
   }
 
   Widget _buildErrorState(BuildContext context, String? errorMessage) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ArDriveIcons.triangle(
-              size: 48,
-              color: colorTokens.textLow,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              appLocalizationsOf(context).errorLoadingSnapshots,
-              style: typography.paragraphNormal(
-                color: colorTokens.textLow,
-                fontWeight: ArFontWeight.semiBold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (errorMessage != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                errorMessage,
-                style: typography.paragraphSmall(
-                  color: colorTokens.textLow,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-            const SizedBox(height: 16),
-            ArDriveButton(
-              text: appLocalizationsOf(context).tryAgain,
-              style: ArDriveButtonStyle.secondary,
-              onPressed: () {
-                context.read<FsEntrySnapshotsCubit>().refresh();
-              },
-            ),
-          ],
-        ),
-      ),
+    return ArDriveEmptyState(
+      icon: ArDriveIcons.triangle(),
+      title: appLocalizationsOf(context).errorLoadingSnapshots,
+      message: errorMessage,
+      actionLabel: appLocalizationsOf(context).tryAgain,
+      onAction: () => context.read<FsEntrySnapshotsCubit>().refresh(),
     );
   }
 
   Widget _buildEmptyState(BuildContext context, bool shouldRecommendSnapshot) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    // Snapshots are signed by the drive owner's wallet, so nobody else is
+    // offered one - a visitor least of all. A drive that would benefit gets
+    // the main button; a small one only the quieter "anyway".
+    final canCreate = _canCreateSnapshot(context);
+    final strings = appLocalizationsOf(context);
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ArDriveIcons.iconCreateSnapshot(
-              size: 48,
-              color: shouldRecommendSnapshot
-                  ? colorTokens.textHigh
-                  : colorTokens.textLow,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              shouldRecommendSnapshot
-                  ? appLocalizationsOf(context).snapshotRecommended
-                  : appLocalizationsOf(context).noSnapshotsFound,
-              style: typography.paragraphNormal(
-                color: shouldRecommendSnapshot
-                    ? colorTokens.textHigh
-                    : colorTokens.textLow,
-                fontWeight: ArFontWeight.semiBold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              shouldRecommendSnapshot
-                  ? appLocalizationsOf(context).snapshotRecommendedBody
-                  : appLocalizationsOf(context).snapshotsHelpSyncSpeed,
-              style: typography.paragraphSmall(
-                color: colorTokens.textLow,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            // Snapshots are signed by the drive owner's wallet, so nobody
-            // else is offered one - a visitor least of all.
-            if (!_canCreateSnapshot(context))
-              const SizedBox.shrink()
-            else if (shouldRecommendSnapshot)
-              ArDriveButton(
-                text: appLocalizationsOf(context).createSnapshot,
-                onPressed: () => _launchCreateSnapshotDialog(context),
-              )
-            else
-              // Subtle link for small drives
-              ArDriveClickArea(
-                child: GestureDetector(
-                  onTap: () => _launchCreateSnapshotDialog(context),
-                  child: Text(
-                    appLocalizationsOf(context).createSnapshotAnyway,
-                    style: typography
-                        .paragraphSmall(
-                          color: colorTokens.textLow,
-                        )
-                        .copyWith(
-                          decoration: TextDecoration.underline,
-                        ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+    return ArDriveEmptyState(
+      icon: ArDriveIcons.iconCreateSnapshot(),
+      title: shouldRecommendSnapshot
+          ? strings.snapshotRecommended
+          : strings.noSnapshotsFound,
+      message: shouldRecommendSnapshot
+          ? strings.snapshotRecommendedBody
+          : strings.snapshotsHelpSyncSpeed,
+      actionLabel:
+          canCreate && shouldRecommendSnapshot ? strings.createSnapshot : null,
+      onAction: () => _launchCreateSnapshotDialog(context),
+      secondaryActionLabel: canCreate && !shouldRecommendSnapshot
+          ? strings.createSnapshotAnyway
+          : null,
+      onSecondaryAction: () => _launchCreateSnapshotDialog(context),
     );
   }
 
@@ -209,124 +123,14 @@ class SnapshotsTab extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: colorTokens.containerL2,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: colorTokens.strokeMid,
-          ),
-        ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Use vertical layout on narrow screens (mobile)
-            final isNarrow = constraints.maxWidth < 400;
-
-            if (isNarrow) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: ArDriveIcons.info(
-                          size: 20,
-                          color: colorTokens.textMid,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              appLocalizationsOf(context).snapshotRecommended,
-                              style: typography.paragraphSmall(
-                                fontWeight: ArFontWeight.semiBold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              appLocalizationsOf(context)
-                                  .createNewSnapshotRecommendation,
-                              style: typography.paragraphSmall(
-                                color: colorTokens.textLow,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ArDriveButton(
-                      text: appLocalizationsOf(context).createSnapshot,
-                      style: ArDriveButtonStyle.secondary,
-                      maxHeight: 36,
-                      fontStyle: typography.paragraphSmall(
-                        fontWeight: ArFontWeight.semiBold,
-                      ),
-                      onPressed: () => _launchCreateSnapshotDialog(context),
-                    ),
-                  ),
-                ],
-              );
-            }
-
-            // Desktop/wide layout
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                ArDriveIcons.info(
-                  size: 20,
-                  color: colorTokens.textMid,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        appLocalizationsOf(context).snapshotRecommended,
-                        style: typography.paragraphSmall(
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        appLocalizationsOf(context)
-                            .createNewSnapshotRecommendation,
-                        style: typography.paragraphSmall(
-                          color: colorTokens.textLow,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ArDriveButton(
-                  text: appLocalizationsOf(context).createSnapshot,
-                  style: ArDriveButtonStyle.secondary,
-                  maxHeight: 36,
-                  fontStyle: typography.paragraphSmall(
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                  onPressed: () => _launchCreateSnapshotDialog(context),
-                ),
-              ],
-            );
-          },
-        ),
+      padding: const EdgeInsets.only(bottom: ArDriveSpacing.md),
+      child: ArDriveNotice(
+        type: ArDriveNoticeType.info,
+        title: appLocalizationsOf(context).snapshotRecommended,
+        message: appLocalizationsOf(context).createNewSnapshotRecommendation,
+        actionLabel: appLocalizationsOf(context).createSnapshot,
+        onAction: () => _launchCreateSnapshotDialog(context),
       ),
     );
   }

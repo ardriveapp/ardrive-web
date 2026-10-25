@@ -37,6 +37,11 @@ class DataExportCubit extends Cubit<DataExportState> {
         _folderRepository = folderRepository,
         super(DataExportInitial());
 
+  bool get _isStopped => isClosed || state is DataExportAborted;
+
+  /// The drive's files as CSV rows. Stops early, returning what it has, once
+  /// the export is cancelled: a lookup already running finishes, but no other
+  /// starts.
   Future<String> getFilesInDriveAsCSV(String driveId) async {
     final files = await _driveDao
         .filesInDriveWithRevisionTransactions(driveId: driveId)
@@ -60,6 +65,8 @@ class DataExportCubit extends Cubit<DataExportState> {
     final Map<String, String> folderNames = {};
 
     for (var file in files) {
+      if (_isStopped) break;
+
       final fileContent = <String>[];
 
       final parentFolder = await _folderRepository.getLatestFolderRevisionInfo(
@@ -89,17 +96,37 @@ class DataExportCubit extends Cubit<DataExportState> {
   Future<void> exportData() async {
     emit(const DataExportInProgress());
 
-    /// FIXME: context is not available here. Internationalization cannot be applied
-    /// name: appLocalizationsOf(context).exportFromCSV(driveId, DateTime.now().toString()),
-    final fileName = 'Export from $driveId ${DateTime.now().toString()}.csv';
-    final dataBytes = utf8.encode((await getFilesInDriveAsCSV(driveId)));
-    emit(
-      DataExportSuccess(
-        bytes: dataBytes,
-        fileName: fileName,
-        mimeType: 'text/csv',
-        lastModified: DateTime.now(),
-      ),
-    );
+    try {
+      /// FIXME: context is not available here. Internationalization cannot be applied
+      /// name: appLocalizationsOf(context).exportFromCSV(driveId, DateTime.now().toString()),
+      final fileName = 'Export from $driveId ${DateTime.now().toString()}.csv';
+      final dataBytes = utf8.encode((await getFilesInDriveAsCSV(driveId)));
+
+      // Cancelled while the rows were read: the dialog is gone, and nothing
+      // is saved.
+      if (_isStopped) return;
+
+      emit(
+        DataExportSuccess(
+          bytes: dataBytes,
+          fileName: fileName,
+          mimeType: 'text/csv',
+          lastModified: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      if (_isStopped) return;
+      emit(DataExportFailure());
+    }
+  }
+
+  /// Stops the export. A result that arrives afterwards is dropped.
+  void abort() {
+    if (!isClosed) emit(DataExportAborted());
+  }
+
+  /// The file was made but could not be saved, such as a refused download.
+  void reportSaveFailure() {
+    if (!isClosed) emit(DataExportFailure());
   }
 }

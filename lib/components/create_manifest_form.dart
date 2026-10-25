@@ -33,7 +33,6 @@ import 'package:ardrive/utils/validate_folder_name.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_uploader/ardrive_uploader.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pst/pst.dart';
@@ -146,8 +145,8 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         fontWeight: ArFontWeight.semiBold,
       );
 
-      ArDriveStandardModal errorDialog({required String errorText}) =>
-          ArDriveStandardModal(
+      ArDriveStandardModalNew errorDialog({required String errorText}) =>
+          ArDriveStandardModalNew(
             width: kMediumDialogWidth,
             title: appLocalizationsOf(context).failedToCreateManifestEmphasized,
             content: Column(
@@ -187,12 +186,10 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         );
       } else if (state is CreateManifestPreparingManifest) {
         return ProgressDialog(
-          useNewArDriveUI: true,
           title: appLocalizationsOf(context).preparingManifestEmphasized,
         );
       } else if (state is CreateManifestLoadingARNS) {
         return const ProgressDialog(
-          useNewArDriveUI: true,
           title: 'Loading ArNS Records...',
         );
       } else if (state is CreateManifestNameConflict) {
@@ -207,7 +204,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         );
       } else if (state is CreateManifestInitial) {
         return const ProgressDialog(
-          useNewArDriveUI: true,
           title: 'Loading Folders...',
         );
       } else if (state is CreateManifestNameInput) {
@@ -219,7 +215,6 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
       }
       if (state is CreateManifestUploadInProgress) {
         return ProgressDialog(
-          useNewArDriveUI: true,
           title: 'Creating deployment...',
           progressDescription: Text(
             _getProgressDescription(state.progress),
@@ -268,8 +263,10 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           children: [
             ArDriveIcons.checkCirle(
               size: 50,
-              color:
-                  ArDriveTheme.of(context).themeData.colors.themeSuccessDefault,
+              color: ArDriveTheme.of(context)
+                  .themeData
+                  .colorTokens
+                  .statusSuccessFg,
             ),
             const SizedBox(height: 16),
             Text(
@@ -301,7 +298,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
         ),
       ),
       actions: [
-        ModalAction(
+        ModalAction.dismiss(
           action: () {
             context
                 .read<DriveDetailCubit>()
@@ -502,15 +499,14 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                     style: textStyle,
                   ),
                   const TextSpan(text: ' '),
-                  TextSpan(
+                  ArDriveLink.span(
                     text: appLocalizationsOf(context).learnMore,
-                    style: textStyle.copyWith(
-                      decoration: TextDecoration.underline,
+                    style: textStyle,
+                    color: textStyle.color,
+                    external: true,
+                    onTap: () => openUrl(
+                      url: Resources.manifestLearnMoreLink,
                     ),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () => openUrl(
-                            url: Resources.manifestLearnMoreLink,
-                          ),
                   ),
                 ]),
               ),
@@ -755,9 +751,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 32),
-                child: SizedBox(
-                  child: LinearProgressIndicator(),
-                ),
+                child: ArDriveLinearProgress(),
               ),
             ],
           ),

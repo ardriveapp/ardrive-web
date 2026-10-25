@@ -219,8 +219,7 @@ class _InputStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final errorColor =
-        ArDriveTheme.of(context).themeData.colors.themeErrorDefault;
+    final errorColor = colorTokens.statusErrorFg;
     final typography = ArDriveTypographyNew.of(context);
 
     Widget line(String text, Color color, {Key? key}) => Text(
@@ -233,7 +232,7 @@ class _InputStatus extends StatelessWidget {
       OpenDriveLookingUp() => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const LinearProgressIndicator(minHeight: 2),
+            const ArDriveLinearProgress(),
             const SizedBox(height: 6),
             line(strings.attachDriveLookingUp, colorTokens.textLow),
           ],
@@ -291,12 +290,11 @@ class _KeyStatus extends StatelessWidget {
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final errorColor =
-        ArDriveTheme.of(context).themeData.colors.themeErrorDefault;
+    final errorColor = colorTokens.statusErrorFg;
     final typography = ArDriveTypographyNew.of(context);
 
     if (state.validating) {
-      return const LinearProgressIndicator(minHeight: 2);
+      return const ArDriveLinearProgress();
     }
 
     if (state.keyRejected) {

@@ -33,16 +33,28 @@ class ArDriveDropdownItemTile extends StatelessWidget {
 
   TextStyle _nameStyle(BuildContext context) =>
       fontStyle ??
-      ArDriveTypography.body.buttonNormalBold(
+      ArDriveTypographyNew.of(context).paragraphNormal(
+        color: _labelColor(context),
+        fontWeight: ArFontWeight.semiBold,
+      );
+
+  Color _labelColor(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    return isDisabled ? colorTokens.textLow : colorTokens.textHigh;
+  }
+
+  /// The icon in the label's colour, unless it was given one of its own (a
+  /// red delete, say). A disabled item greys it either way.
+  ArDriveIcon _icon(BuildContext context) => icon!.copyWith(
         color: isDisabled
-            ? ArDriveTheme.of(context).themeData.colors.themeAccentDisabled
-            : null,
+            ? ArDriveTheme.of(context).themeData.colorTokens.textLow
+            : icon!.color ?? _labelColor(context),
       );
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18.0),
+      padding: const EdgeInsets.symmetric(horizontal: ArDriveSpacing.md),
       child: SizedBox(
         // Scaled: the row is a fixed 48 at scale 1, and a label at text scale
         // 2 needs twice the line box. Without this the label is squeezed
@@ -57,15 +69,8 @@ class ArDriveDropdownItemTile extends StatelessWidget {
             if (icon != null &&
                 iconAlignment ==
                     ArDriveArDriveDropdownItemTileIconAlignment.left) ...[
-              icon!.copyWith(
-                color: isDisabled
-                    ? ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeAccentDisabled
-                    : null,
-              ),
-              const SizedBox(width: 20),
+              _icon(context),
+              const SizedBox(width: ArDriveSpacing.md),
             ],
             // Flexible, and allowed to ellipsize. The row is `MainAxisSize.max`
             // inside a menu whose width is the screen's on a phone, so a label
@@ -110,8 +115,8 @@ class ArDriveDropdownItemTile extends StatelessWidget {
                               color: isDisabled
                                   ? ArDriveTheme.of(context)
                                       .themeData
-                                      .colors
-                                      .themeAccentDisabled
+                                      .colorTokens
+                                      .textLow
                                   : ArDriveTheme.of(context)
                                       .themeData
                                       .colorTokens
@@ -126,14 +131,7 @@ class ArDriveDropdownItemTile extends StatelessWidget {
                 iconAlignment ==
                     ArDriveArDriveDropdownItemTileIconAlignment.right) ...[
               const Spacer(),
-              icon!.copyWith(
-                color: isDisabled
-                    ? ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeAccentDisabled
-                    : null,
-              ),
+              _icon(context),
             ]
           ],
         ),

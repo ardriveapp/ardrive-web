@@ -69,7 +69,8 @@ class FileShareDialogState extends State<FileShareDialog> {
                 ),
               ),
             if (state is FileShareLoadInProgress)
-              const Center(child: CircularProgressIndicator())
+              const Center(
+                  child: ArDriveSpinner(size: ArDriveSpinnerSize.large))
             else if (state is FileShareLoadedFailedFile)
               Text(
                 appLocalizationsOf(context).shareFailedFile,
@@ -118,10 +119,7 @@ class FileShareDialogState extends State<FileShareDialog> {
               if (state.cipherDetailsFailed)
                 _HelperText(
                   appLocalizationsOf(context).shareFileLinkIncomplete,
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeErrorDefault,
+                  color: colorTokens.statusErrorFg,
                 ),
               if (state.isPublicFile)
                 _HelperText(

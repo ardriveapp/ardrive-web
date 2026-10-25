@@ -134,7 +134,7 @@ class _MultiThumbnailCreationModalContentState
                         fontWeight: ArFontWeight.semiBold)),
               ),
               actions: [
-                ModalAction(
+                ModalAction.dismiss(
                   action: () {
                     context
                         .read<MultiThumbnailCreationBloc>()
@@ -156,7 +156,7 @@ class _MultiThumbnailCreationModalContentState
                         fontWeight: ArFontWeight.semiBold)),
               ),
               actions: [
-                ModalAction(
+                ModalAction.dismiss(
                   action: () {
                     context
                         .read<MultiThumbnailCreationBloc>()
@@ -183,7 +183,7 @@ class _MultiThumbnailCreationModalContentState
                         fontWeight: ArFontWeight.semiBold)),
               ),
               actions: [
-                ModalAction(
+                ModalAction.dismiss(
                   action: () {
                     context
                         .read<MultiThumbnailCreationBloc>()

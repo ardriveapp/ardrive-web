@@ -406,9 +406,15 @@ void main() {
       await pumpAt(tester, const Size(1280, 800),
           isRootFolder: false, textScale: 0.5, desktop: true);
 
+      expect(find.byType(ArDriveEmptyState), findsOneWidget);
       expect(find.text('This folder is empty'), findsOneWidget);
-      expect(find.text('Upload one or more files into this folder.'),
-          findsOneWidget);
+      // The two ways to fill it, the upload as the main one.
+      final buttons =
+          tester.widgetList<ArDriveButtonNew>(find.byType(ArDriveButtonNew));
+      expect(buttons.map((b) => (b.text, b.variant)), [
+        ('Upload folder', ButtonVariant.secondary),
+        ('Upload files', ButtonVariant.primary),
+      ]);
       expect(find.textContaining('new drive'), findsNothing);
       expect(find.textContaining('Your drive is ready'), findsNothing);
     });

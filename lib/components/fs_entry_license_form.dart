@@ -93,186 +93,94 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
         return Builder(builder: (context) {
           final licenseMeta =
               context.read<FsEntryLicenseBloc>().selectedLicenseMeta;
-          if (state is FsEntryLicenseNoFiles) {
-            return ArDriveCard(
-              height: 350,
-              width: kMediumDialogWidth,
-              contentPadding: EdgeInsets.zero,
-              content: Column(
-                mainAxisSize: MainAxisSize.max,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.only(left: 16, right: 16),
-                    width: double.infinity,
-                    height: 37,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        ArDriveClickArea(
-                          child: GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: const Align(
-                              alignment: Alignment.centerRight,
-                              child: ArDriveIcon(
-                                icon: ArDriveIconsData.x,
-                                size: 32,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        bottom: 37,
-                      ),
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          ArDriveIcon(
-                            icon: ArDriveIconsData.close_circle,
-                            size: 64,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeErrorOnEmphasis,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            // TODO: Localize
-                            'No valid file to license.',
-                            textAlign: TextAlign.center,
-                            style: ArDriveTypography.headline.headline4Bold(),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            // TODO: Localize
-                            'Please try again with another file.',
-                            textAlign: TextAlign.center,
-                            style: ArDriveTypography.body.buttonLargeRegular(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgDefault,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          ArDriveButton(
-                            maxHeight: 36,
-                            backgroundColor: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                            fontStyle: ArDriveTypography.body
-                                .buttonNormalBold(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeAccentSubtle,
-                                )
-                                .copyWith(fontWeight: FontWeight.bold),
-                            text: appLocalizationsOf(context).close,
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+          final typography = ArDriveTypographyNew.of(context);
+          final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+          final divider = Divider(color: colorTokens.strokeLow, height: 32);
+          final cost = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                // TODO: Localize
+                'Cost: 0 AR',
+                style: typography.paragraphLarge(color: colorTokens.textHigh),
               ),
+              Text(
+                // TODO: Localize
+                'Free for now, maybe paid later.',
+                style: typography.paragraphSmall(color: colorTokens.textLow),
+              ),
+            ],
+          );
+
+          if (state is FsEntryLicenseNoFiles) {
+            return _LicenseResult(
+              icon: ArDriveIcons.closeCircle(
+                size: 24,
+                color: colorTokens.statusErrorFg,
+              ),
+              // TODO: Localize
+              title: 'No valid file to license.',
+              // TODO: Localize
+              message: 'Please try again with another file.',
+              actions: [
+                ModalAction.dismiss(
+                  action: () => Navigator.of(context).pop(),
+                  title: appLocalizationsOf(context).close,
+                ),
+              ],
             );
           } else if (state is FsEntryLicenseSelecting) {
             final filesToLicense =
                 context.read<FsEntryLicenseBloc>().filesToLicense;
-            return ArDriveStandardModal(
+            return ArDriveStandardModalNew(
               title:
                   "Add license to ${filesToLicense!.length} file${filesToLicense.length > 1 ? 's' : ''}",
               width: kMediumDialogWidth,
-              // TODO: Localize
-              // title: appLocalizationsOf(context).renameFolderEmphasized,
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   LicenseFileList(fileList: filesToLicense),
-                  const SizedBox(height: 16),
-                  const Divider(height: 24),
-                  SizedBox(
-                    child: ReactiveForm(
-                      formGroup:
-                          context.watch<FsEntryLicenseBloc>().categoryForm,
-                      child: ReactiveDropdownField(
-                        alignment: AlignmentDirectional.centerStart,
-                        isExpanded: true,
-                        formControlName: 'licenseCategory',
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          label: Text(
-                            'License',
-                            // TODO: Localize
-                            // appLocalizationsOf(context).licenseType,
-                            style: ArDriveTheme.of(context)
-                                .themeData
-                                .textFieldTheme
-                                .inputTextStyle
-                                .copyWith(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeFgDisabled,
-                                  fontSize: 16,
-                                ),
-                          ),
-                          focusedBorder: InputBorder.none,
-                        ),
-                        showErrors: (control) =>
-                            control.dirty && control.invalid,
-                        validationMessages:
-                            kValidationMessages(appLocalizationsOf(context)),
-                        items: LicenseCategory.values.map(
-                          (value) {
-                            return DropdownMenuItem(
-                              value: value,
-                              child: Text(
-                                '${licenseCategoryNames[value]}',
-                              ),
-                            );
-                          },
-                        ).toList(),
+                  divider,
+                  ReactiveForm(
+                    formGroup: context.watch<FsEntryLicenseBloc>().categoryForm,
+                    child: ReactiveDropdownField(
+                      alignment: AlignmentDirectional.centerStart,
+                      isExpanded: true,
+                      formControlName: 'licenseCategory',
+                      dropdownColor: colorTokens.containerL2,
+                      style: typography.paragraphLarge(
+                        color: colorTokens.textHigh,
                       ),
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        label: Text(
+                          'License',
+                          // TODO: Localize
+                          // appLocalizationsOf(context).licenseType,
+                          style: typography.paragraphLarge(
+                            color: colorTokens.textLow,
+                          ),
+                        ),
+                        focusedBorder: InputBorder.none,
+                      ),
+                      showErrors: (control) => control.dirty && control.invalid,
+                      validationMessages:
+                          kValidationMessages(appLocalizationsOf(context)),
+                      items: LicenseCategory.values.map(
+                        (value) {
+                          return DropdownMenuItem(
+                            value: value,
+                            child: Text(
+                              '${licenseCategoryNames[value]}',
+                            ),
+                          );
+                        },
+                      ).toList(),
                     ),
                   ),
-                  const Divider(height: 32),
-                  Text(
-                    // TODO: Localize
-                    'Cost: 0 AR',
-                    style: ArDriveTypography.body.buttonLargeRegular(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgDefault,
-                    ),
-                  ),
-                  Text(
-                    // TODO: Localize
-                    'Free for now, maybe paid later.',
-                    style: ArDriveTypography.body.captionRegular(
-                      color: ArDriveTheme.of(context)
-                          .themeData
-                          .colors
-                          .themeFgSubtle,
-                    ),
-                  ),
+                  divider,
+                  cost,
                 ],
               ),
               actions: [
@@ -304,345 +212,197 @@ class _FsEntryLicenseFormState extends State<FsEntryLicenseForm> {
             return ReactiveForm(
               formGroup: activeForm,
               child: ReactiveFormConsumer(
-                builder: (context, _, __) => ArDriveScrollBar(
-                  child: SingleChildScrollView(
-                    child: ArDriveStandardModal(
-                      title: modalTitle,
-                      width: kLargeDialogWidth,
-                      content: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          LicenseFileList(
-                              fileList: context
-                                  .read<FsEntryLicenseBloc>()
-                                  .filesToLicense!),
-                          const SizedBox(height: 16),
-                          const Divider(height: 24),
-                          licenseCategory == LicenseCategory.udl
-                              ? UdlParamsForm(
-                                  onChangeLicenseFee: () {
-                                    setState(() {});
-                                  },
-                                  formGroup: context
-                                      .watch<FsEntryLicenseBloc>()
-                                      .udlParamsForm,
-                                )
-                              : licenseCategory == LicenseCategory.cc
-                                  ? CcTypeForm(
-                                      formGroup: context
-                                          .watch<FsEntryLicenseBloc>()
-                                          .ccTypeForm,
-                                    )
-                                  : const Text('Unsupported license type'),
-                        ],
-                      ),
-                      actions: [
-                        ModalAction(
-                          action: () => context
-                              .read<FsEntryLicenseBloc>()
-                              .add(const FsEntryLicenseConfigurationBack()),
-                          title: appLocalizationsOf(context).backEmphasized,
-                        ),
-                        ModalAction(
-                          // The form on screen, not always the UDL one: with no
-                          // Creative Commons type preselected, gating on the UDL
-                          // form let a CC license go on with none chosen.
-                          isEnable: activeForm.valid,
-                          action: () => context
-                              .read<FsEntryLicenseBloc>()
-                              .add(const FsEntryLicenseConfigurationSubmit()),
-                          title: appLocalizationsOf(context).nextEmphasized,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          } else if (state is FsEntryLicenseReviewing) {
-            return ArDriveScrollBar(
-              child: SingleChildScrollView(
-                child: ArDriveStandardModal(
-                  title: 'Review',
-                  width: kMediumDialogWidth,
+                builder: (context, _, __) => ArDriveStandardModalNew(
+                  title: modalTitle,
+                  width: kLargeDialogWidth,
+                  // The UDL form is long: it scrolls under the title and the
+                  // actions stay in view.
+                  scrollableContent: true,
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       LicenseFileList(
                           fileList: context
                               .read<FsEntryLicenseBloc>()
                               .filesToLicense!),
-                      const SizedBox(height: 16),
-                      const Divider(height: 24),
-                      const SizedBox(height: 16),
-                      LicenseSummary(
-                        licenseState: LicenseState(
-                            meta: licenseMeta,
-                            params: context
-                                .read<FsEntryLicenseBloc>()
-                                .licenseParams),
-                      ),
-                      const Divider(height: 32),
-                      Text(
-                        // TODO: Localize
-                        'Cost: 0 AR',
-                        style: ArDriveTypography.body.buttonLargeRegular(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgDefault,
-                        ),
-                      ),
-                      Text(
-                        // TODO: Localize
-                        'Free for now, maybe paid later.',
-                        style: ArDriveTypography.body.captionRegular(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgSubtle,
-                        ),
-                      ),
+                      divider,
+                      licenseCategory == LicenseCategory.udl
+                          ? UdlParamsForm(
+                              onChangeLicenseFee: () {
+                                setState(() {});
+                              },
+                              formGroup: context
+                                  .watch<FsEntryLicenseBloc>()
+                                  .udlParamsForm,
+                            )
+                          : licenseCategory == LicenseCategory.cc
+                              ? CcTypeForm(
+                                  formGroup: context
+                                      .watch<FsEntryLicenseBloc>()
+                                      .ccTypeForm,
+                                )
+                              : const Text('Unsupported license type'),
                     ],
                   ),
                   actions: [
                     ModalAction(
                       action: () => context
                           .read<FsEntryLicenseBloc>()
-                          .add(const FsEntryLicenseReviewBack()),
+                          .add(const FsEntryLicenseConfigurationBack()),
                       title: appLocalizationsOf(context).backEmphasized,
                     ),
                     ModalAction(
+                      // The form on screen, not always the UDL one: with no
+                      // Creative Commons type preselected, gating on the UDL
+                      // form let a CC license go on with none chosen.
+                      isEnable: activeForm.valid,
                       action: () => context
                           .read<FsEntryLicenseBloc>()
-                          .add(const FsEntryLicenseReviewConfirm()),
-                      title: appLocalizationsOf(context).confirmEmphasized,
+                          .add(const FsEntryLicenseConfigurationSubmit()),
+                      title: appLocalizationsOf(context).nextEmphasized,
                     ),
                   ],
                 ),
               ),
             );
-          } else if (state is FsEntryLicenseSuccess) {
-            return ArDriveCard(
-              height: 400,
+          } else if (state is FsEntryLicenseReviewing) {
+            return ArDriveStandardModalNew(
+              title: 'Review',
               width: kMediumDialogWidth,
-              contentPadding: EdgeInsets.zero,
+              scrollableContent: true,
               content: Column(
-                mainAxisSize: MainAxisSize.max,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.only(left: 16, right: 16),
-                    width: double.infinity,
-                    height: 77,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        ArDriveClickArea(
-                          child: GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: const Align(
-                              alignment: Alignment.centerRight,
-                              child: ArDriveIcon(
-                                icon: ArDriveIconsData.x,
-                                size: 32,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                  LicenseFileList(
+                      fileList:
+                          context.read<FsEntryLicenseBloc>().filesToLicense!),
+                  divider,
+                  LicenseSummary(
+                    licenseState: LicenseState(
+                        meta: licenseMeta,
+                        params:
+                            context.read<FsEntryLicenseBloc>().licenseParams),
                   ),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        bottom: 77,
-                      ),
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          ArDriveIcon(
-                            icon: ArDriveIconsData.check_cirle,
-                            size: 64,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeSuccessEmphasis,
-                          ),
-                          const SizedBox(height: 16),
-                          Flexible(
-                            child: Text(
-                              // TODO: Localize
-                              'You little licenser, you.',
-                              style: ArDriveTypography.headline.headline4Bold(),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            // TODO: Localize
-                            'Your files have successfully been licensed. You can go ahead and do your thing now.',
-                            textAlign: TextAlign.center,
-                            style: ArDriveTypography.body.buttonLargeRegular(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgDefault,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          ArDriveButton(
-                            maxHeight: 36,
-                            backgroundColor: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                            fontStyle: ArDriveTypography.body
-                                .buttonNormalBold(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeAccentSubtle,
-                                )
-                                .copyWith(fontWeight: FontWeight.bold),
-                            text: appLocalizationsOf(context).close,
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  divider,
+                  cost,
                 ],
               ),
+              actions: [
+                ModalAction(
+                  action: () => context
+                      .read<FsEntryLicenseBloc>()
+                      .add(const FsEntryLicenseReviewBack()),
+                  title: appLocalizationsOf(context).backEmphasized,
+                ),
+                ModalAction(
+                  action: () => context
+                      .read<FsEntryLicenseBloc>()
+                      .add(const FsEntryLicenseReviewConfirm()),
+                  title: appLocalizationsOf(context).confirmEmphasized,
+                ),
+              ],
+            );
+          } else if (state is FsEntryLicenseSuccess) {
+            return _LicenseResult(
+              icon: ArDriveIcons.checkCirle(
+                size: 24,
+                color: colorTokens.statusSuccessFg,
+              ),
+              // TODO: Localize
+              title: 'You little licenser, you.',
+              // TODO: Localize
+              message:
+                  'Your files have successfully been licensed. You can go ahead and do your thing now.',
+              actions: [
+                ModalAction.dismiss(
+                  action: () => Navigator.of(context).pop(),
+                  title: appLocalizationsOf(context).close,
+                ),
+              ],
             );
           } else if (state is FsEntryLicenseFailure) {
-            return ArDriveCard(
-              height: 400,
-              width: kMediumDialogWidth,
-              contentPadding: EdgeInsets.zero,
-              content: Column(
-                mainAxisSize: MainAxisSize.max,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.only(left: 16, right: 16),
-                    width: double.infinity,
-                    height: 77,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        ArDriveClickArea(
-                          child: GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: const Align(
-                              alignment: Alignment.centerRight,
-                              child: ArDriveIcon(
-                                icon: ArDriveIconsData.x,
-                                size: 32,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.only(
-                        left: 16,
-                        right: 16,
-                        bottom: 77,
-                      ),
-                      alignment: Alignment.center,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          ArDriveIcon(
-                            icon: ArDriveIconsData.close_circle,
-                            size: 64,
-                            color: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeErrorOnEmphasis,
-                          ),
-                          const SizedBox(height: 16),
-                          Flexible(
-                            child: Text(
-                              state.isPaymentError
-                                  ? appLocalizationsOf(context)
-                                      .freeAllowanceUsedUpTitle
-                                  // TODO: Localize
-                                  : 'No dice.',
-                              style: ArDriveTypography.headline.headline4Bold(),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            state.isPaymentError
-                                ? appLocalizationsOf(context)
-                                    .freeAllowanceUsedUpDescription
-                                // TODO: Localize
-                                : 'Your attempted licensing failed, want to try again now?',
-                            textAlign: TextAlign.center,
-                            style: ArDriveTypography.body.buttonLargeRegular(
-                              color: ArDriveTheme.of(context)
-                                  .themeData
-                                  .colors
-                                  .themeFgDefault,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          ArDriveButton(
-                            maxHeight: 36,
-                            backgroundColor: ArDriveTheme.of(context)
-                                .themeData
-                                .colors
-                                .themeFgDefault,
-                            fontStyle: ArDriveTypography.body
-                                .buttonNormalBold(
-                                  color: ArDriveTheme.of(context)
-                                      .themeData
-                                      .colors
-                                      .themeAccentSubtle,
-                                )
-                                .copyWith(fontWeight: FontWeight.bold),
-                            text: state.isPaymentError
-                                ? appLocalizationsOf(context).buyCredits
-                                : appLocalizationsOf(context).tryAgain,
-                            onPressed: () {
-                              if (state.isPaymentError) {
-                                showTurboPaymentRequiredDialog(context);
-                              } else {
-                                context
-                                    .read<FsEntryLicenseBloc>()
-                                    .add(const FsEntryLicenseFailureTryAgain());
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+            return _LicenseResult(
+              icon: ArDriveIcons.closeCircle(
+                size: 24,
+                color: colorTokens.statusErrorFg,
               ),
+              title: state.isPaymentError
+                  ? appLocalizationsOf(context).freeAllowanceUsedUpTitle
+                  // TODO: Localize
+                  : 'No dice.',
+              message: state.isPaymentError
+                  ? appLocalizationsOf(context).freeAllowanceUsedUpDescription
+                  // TODO: Localize
+                  : 'Your attempted licensing failed, want to try again now?',
+              actions: [
+                ModalAction.dismiss(
+                  action: () => Navigator.of(context).pop(),
+                  title: appLocalizationsOf(context).close,
+                ),
+                ModalAction(
+                  action: () {
+                    if (state.isPaymentError) {
+                      showTurboPaymentRequiredDialog(context);
+                    } else {
+                      context
+                          .read<FsEntryLicenseBloc>()
+                          .add(const FsEntryLicenseFailureTryAgain());
+                    }
+                  },
+                  title: state.isPaymentError
+                      ? appLocalizationsOf(context).buyCredits
+                      : appLocalizationsOf(context).tryAgain,
+                ),
+              ],
             );
           } else {
             return const SizedBox();
           }
         });
       },
+    );
+  }
+}
+
+/// The end of a licensing attempt: a standard dialog with the outcome's icon
+/// beside what happened. These were hand-made cards with their own close
+/// cross and an inverted button, unlike every other dialog.
+class _LicenseResult extends StatelessWidget {
+  const _LicenseResult({
+    required this.icon,
+    required this.title,
+    required this.message,
+    required this.actions,
+  });
+
+  final Widget icon;
+  final String title;
+  final String message;
+  final List<ModalAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    return ArDriveStandardModalNew(
+      title: title,
+      width: kMediumDialogWidth,
+      content: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ExcludeSemantics(child: icon),
+          const SizedBox(width: ArDriveSpacing.sm),
+          Expanded(
+            child: Text(
+              message,
+              style: typography.paragraphNormal(color: colorTokens.textMid),
+            ),
+          ),
+        ],
+      ),
+      actions: actions,
     );
   }
 }
@@ -671,7 +431,7 @@ class LicenseFileList extends StatelessWidget {
           ),
           child: Text(
             fileList[index].name,
-            style: ArDriveTypography.body.inputNormalRegular(
+            style: ArDriveTypographyNew.of(context).paragraphLarge(
               color: _colorDisabled(context),
             ),
           ),
@@ -681,5 +441,5 @@ class LicenseFileList extends StatelessWidget {
   }
 
   Color _colorDisabled(BuildContext context) =>
-      ArDriveTheme.of(context).themeData.colors.themeInputPlaceholder;
+      ArDriveTheme.of(context).themeData.colorTokens.textLow;
 }

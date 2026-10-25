@@ -52,7 +52,7 @@ class UploadDestinationDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        ModalAction(
+        ModalAction.dismiss(
           action: () => Navigator.of(context).pop(),
           title: appLocalizationsOf(context).cancel,
         ),

@@ -238,7 +238,8 @@ class FileDownloadDialog extends StatelessWidget {
                 );
               case FileDownloadFailureReason.fileAboveLimit:
                 return _fileDownloadFailedDueToFileAbovePrivateLimit(context);
-              case FileDownloadFailureReason.browserDoesNotSupportLargeDownloads:
+              case FileDownloadFailureReason
+                    .browserDoesNotSupportLargeDownloads:
               // Same message: from the user's side both mean "this file is
               // larger than this download can handle, and nothing was saved".
               case FileDownloadFailureReason.fileTooLargeToVerify:
@@ -341,7 +342,7 @@ class FileDownloadDialog extends StatelessWidget {
         ],
       ),
       actions: [
-        ModalAction(
+        ModalAction.dismiss(
           action: () => Navigator.pop(context),
           title: appLocalizationsOf(context).cancel,
         ),
@@ -375,7 +376,7 @@ class FileDownloadDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        ModalAction(
+        ModalAction.dismiss(
           action: () async {
             await context.read<FileDownloadCubit>().abortDownload();
             // ignore: use_build_context_synchronously
@@ -586,7 +587,7 @@ class FileDownloadDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        ModalAction(
+        ModalAction.dismiss(
           action: () {
             context.read<FileDownloadCubit>().abortDownload();
             Navigator.pop(context);

@@ -73,7 +73,6 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
             showProgressDialog(
               context,
               title: appLocalizationsOf(context).creatingFolderEmphasized,
-              useNewArDriveUI: true,
             );
           } else if (state is FolderCreateSuccess) {
             Navigator.pop(context);
@@ -102,7 +101,6 @@ class _FolderCreateFormState extends State<FolderCreateForm> {
               description: appLocalizationsOf(context).entityAlreadyExists(
                 state.folderName,
               ),
-              useNewArDriveUI: true,
             );
           }
         },

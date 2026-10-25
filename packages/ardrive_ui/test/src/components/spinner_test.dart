@@ -32,6 +32,8 @@ void main() {
       width: 200,
       child: ArDriveLinearProgress(value: 0.25),
     )));
+    // The fill walks to a new value.
+    await tester.pumpAndSettle();
 
     expect(tester.getSize(find.byType(ArDriveLinearProgress)).height, 4);
     expect(
@@ -40,5 +42,28 @@ void main() {
                 find.byType(LinearProgressIndicator))
             .value,
         0.25);
+  });
+
+  testWidgets('ArDriveLinearProgress never falls back after an unknown spell',
+      (tester) async {
+    Future<void> show(double? value) => tester.pumpWidget(wrap(SizedBox(
+          width: 200,
+          child: ArDriveLinearProgress(value: value),
+        )));
+    double? drawn() => tester
+        .widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
+        .value;
+
+    await show(0.8);
+    await tester.pumpAndSettle();
+    await show(null);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(drawn(), isNull);
+
+    await show(1.0);
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(drawn(), greaterThanOrEqualTo(0.8));
+    }
   });
 }

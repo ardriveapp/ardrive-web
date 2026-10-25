@@ -11,29 +11,19 @@ class PinIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: ArDriveTheme.of(context)
-            .themeData
-            .colors
-            .themeFgMuted
-            .withAlpha(25),
-        border: Border.all(
-          color: ArDriveTheme.of(context)
-              .themeData
-              .colors
-              .themeGbMuted
-              .withAlpha(25),
-          width: 2,
-        ),
+        color: colorTokens.strokeLow,
+        border: Border.all(color: colorTokens.strokeMid, width: 2),
       ),
       child: Center(
         child: ArDriveIcons.pinNoCircle(
           size: size * .8,
-          color: ArDriveTheme.of(context).themeData.colors.themeFgMuted,
+          color: colorTokens.textMid,
         ),
       ),
     );

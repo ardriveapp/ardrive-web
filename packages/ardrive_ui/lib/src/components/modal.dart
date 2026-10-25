@@ -559,6 +559,17 @@ class ModalAction {
     this.variant,
   });
 
+  /// An action that only closes the dialog, such as Cancel or Close. It is
+  /// secondary even when it is the only action: red says "this does the
+  /// thing", and closing does nothing. A lone Cancel used to be drawn as a red
+  /// primary button.
+  ModalAction.dismiss({
+    required this.action,
+    required this.title,
+    this.customWidth,
+  })  : isEnable = true,
+        variant = ButtonVariant.secondary;
+
   final String title;
   final dynamic Function() action;
   final bool isEnable;
@@ -665,22 +676,15 @@ Future<void> showStandardDialog(
   required String description,
   List<ModalAction>? actions,
   bool barrierDismissible = true,
-  bool useNewArDriveUI = false,
 }) {
   return showAnimatedDialog(
     context,
     barrierDismissible: barrierDismissible,
-    content: useNewArDriveUI
-        ? ArDriveStandardModalNew(
-            description: description,
-            title: title,
-            actions: actions,
-          )
-        : ArDriveStandardModal(
-            description: description,
-            title: title,
-            actions: actions,
-          ),
+    content: ArDriveStandardModalNew(
+      description: description,
+      title: title,
+      actions: actions,
+    ),
   );
 }
 
@@ -785,7 +789,9 @@ class ArDriveStandardModalNew extends StatelessWidget {
         if (description != null) ...[
           Text(
             description!,
-            style: ArDriveTypography.body.smallRegular(),
+            style: typography.paragraphNormal(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+            ),
             textAlign: TextAlign.left,
           ),
         ],

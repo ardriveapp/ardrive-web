@@ -137,10 +137,16 @@ void main() {
       stateController.add(SyncInProgress(trigger: SyncTrigger.background));
       await tester.pump(const Duration(milliseconds: 10));
 
-      final text = tester.widget<Text>(find.text(line));
+      // The notice draws its sentence in the normal text colour; the info
+      // colour is the icon's and the surface's.
+      final text = tester.widget<RichText>(find.descendant(
+        of: find.byType(ArDriveNotice),
+        matching: find.byWidgetPredicate(
+            (w) => w is RichText && w.text.toPlainText() == line),
+      ));
       await tester.pumpWidget(const SizedBox());
 
-      return text.style!.color!;
+      return text.text.style!.color!;
     }
 
     final light = await textColourUnder(lightTheme());
@@ -148,8 +154,8 @@ void main() {
       ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode()),
     );
 
-    expect(light, lightTheme().colorTokens.textLow);
-    expect(dark, ArDriveColorTokens.darkMode().textLow);
+    expect(light, lightTheme().colorTokens.textHigh);
+    expect(dark, ArDriveColorTokens.darkMode().textHigh);
     expect(light, isNot(dark));
   });
 

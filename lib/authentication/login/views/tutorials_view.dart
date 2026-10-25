@@ -372,7 +372,7 @@ class _TutorialContentState extends State<_TutorialContent> {
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: colorTokens.buttonSecondaryHover,
+                          color: colorTokens.strokeMid,
                         ),
                         borderRadius: BorderRadius.circular(100),
                       ),
@@ -445,7 +445,7 @@ class _TutorialContentState extends State<_TutorialContent> {
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: colorTokens.buttonSecondaryHover,
+                        color: colorTokens.strokeMid,
                       ),
                       borderRadius: BorderRadius.circular(100),
                     ),
