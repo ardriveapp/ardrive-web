@@ -13,10 +13,14 @@ class GatewayInputModal extends StatefulWidget {
   final String initialGateway;
   final Function(String) onSave;
 
+  /// Checks a gateway URL. Replaced in tests.
+  final Future<GatewayValidationResult> Function(String url) validate;
+
   const GatewayInputModal({
     super.key,
     required this.initialGateway,
     required this.onSave,
+    this.validate = GatewayValidator.validateGateway,
   });
 
   @override
@@ -77,18 +81,22 @@ class _GatewayInputModalState extends State<GatewayInputModal> {
 
       setState(() => _isLoading = true);
 
-      try {
-        final validationResult =
-            await GatewayValidator.validateGateway(gateway);
+      // A result is for the URL it checked. One that comes back after the
+      // text changed is dropped: kept, it could enable Save for a URL
+      // nobody checked.
+      bool isCurrent() => mounted && _gatewayController.text.trim() == gateway;
 
-        if (mounted) {
+      try {
+        final validationResult = await widget.validate(gateway);
+
+        if (isCurrent()) {
           setState(() {
             _validationResult = validationResult;
             _isLoading = false;
           });
         }
       } catch (e) {
-        if (mounted) {
+        if (isCurrent()) {
           setState(() {
             _validationResult = GatewayValidationResult(
               isValid: false,

@@ -79,4 +79,11 @@ void main() {
       expect(painter.width, greaterThan(width - 2));
     }
   });
+
+  test('widthOf grows with the reader\'s text size', () {
+    final plain = ArDriveMonospace.widthOf('abc123...xyz9', 12);
+    final larger = ArDriveMonospace.widthOf('abc123...xyz9', 12,
+        textScaler: const TextScaler.linear(1.5));
+    expect(larger, greaterThan(plain * 1.4));
+  });
 }

@@ -847,7 +847,8 @@ class _ProfileCardState extends State<ProfileCard> {
                 final address = truncateString(state.user.displayAddress,
                     offsetStart: 6, offsetEnd: 4);
                 return SizedBox(
-                  width: ArDriveMonospace.widthOf(address, 15),
+                  width: ArDriveMonospace.widthOf(address, 15,
+                      textScaler: MediaQuery.textScalerOf(context)),
                   child: Text(
                     address,
                     maxLines: 1,
@@ -1532,7 +1533,8 @@ class ProfileCardHeader extends StatelessWidget {
                         fit: BoxFit.scaleDown,
                         child: SizedBox(
                           width: ArDriveMonospace.widthOf(
-                              truncatedWalletAddress, 14),
+                              truncatedWalletAddress, 14,
+                              textScaler: MediaQuery.textScalerOf(context)),
                           child: Text(
                             truncatedWalletAddress,
                             maxLines: 1,
@@ -1624,17 +1626,25 @@ class ProfileCardHeader extends StatelessWidget {
                                     color: colorTokens.textLow,
                                   ),
                                 )
-                              : SizedBox(
-                                  width: ArDriveMonospace.widthOf(
-                                      truncatedWalletAddress, 12),
-                                  child: Text(
-                                    truncatedWalletAddress,
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: false,
-                                    maxLines: 1,
-                                    style: typography.code(
-                                      fontSize: 12,
-                                      color: colorTokens.textLow,
+                              // Scaled down rather than cut short, as in the
+                              // button with no name: a long name leaves less
+                              // room, and an ellipsis took the address's end.
+                              : FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: SizedBox(
+                                    width: ArDriveMonospace.widthOf(
+                                        truncatedWalletAddress, 12,
+                                        textScaler:
+                                            MediaQuery.textScalerOf(context)),
+                                    child: Text(
+                                      truncatedWalletAddress,
+                                      softWrap: false,
+                                      maxLines: 1,
+                                      style: typography.code(
+                                        fontSize: 12,
+                                        color: colorTokens.textLow,
+                                      ),
                                     ),
                                   ),
                                 ),

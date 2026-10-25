@@ -32,11 +32,21 @@ abstract final class ArDriveMonospace {
   /// `softWrap: false`, so nothing moves when the face arrives and replaces
   /// the narrower fallback.
   ///
+  /// Pass the reader's [textScaler] (`MediaQuery.textScalerOf(context)`):
+  /// the text grows with their text size, and a box of the unscaled width
+  /// cut off the end of the address.
+  ///
   /// The spare pixel matters: the browser measures a line a fraction wider
   /// than its characters' advances, and a box of the exact width wrapped the
   /// last character out of sight.
-  static double widthOf(String text, double fontSize) =>
-      (text.characters.length * advance * fontSize).ceilToDouble() + 1;
+  static double widthOf(
+    String text,
+    double fontSize, {
+    TextScaler textScaler = TextScaler.noScaling,
+  }) =>
+      (text.characters.length * advance * textScaler.scale(fontSize))
+          .ceilToDouble() +
+      1;
 
   /// Reads the font file. Replaced in tests to count or fail loads.
   @visibleForTesting
