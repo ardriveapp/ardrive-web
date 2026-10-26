@@ -1114,7 +1114,9 @@ class _Done extends StatelessWidget {
               ? (undernameRemoved
                   ? strings.arnsRemovedUndernameDone(arnsHostFor(literal))
                   : strings.arnsRemovedMainNameDone(arnsHostFor(literal)))
-              : strings.arnsLiveWithinFiveMinutes,
+              : strings.arnsLiveWithin(
+                  arnsCacheTimeLabel(context, state.cacheTime),
+                ),
         ),
         if (!removed) ...[
           const SizedBox(height: ArDriveSpacing.md),
@@ -1529,7 +1531,9 @@ class ArNSFlowNameResult extends StatelessWidget {
             ),
           ),
         if (outcome.live.isNotEmpty)
-          ArNSCaption(strings.arnsLiveWithinFiveMinutes),
+          ArNSCaption(strings.arnsLiveWithin(
+            arnsTtlLabel(context, outcome.liveWithinSeconds),
+          )),
         if (outcome.failed.isNotEmpty) ...[
           const SizedBox(height: ArDriveSpacing.xs),
           ArDriveNotice(

@@ -926,6 +926,8 @@ void main() {
       final outcome = await cubit.applyTo(_itemTx);
 
       expect(outcome.live, ['blog_acme', 'docs_acme']);
+      // blog keeps its 15 minutes: that is when both are live.
+      expect(outcome.liveWithinSeconds, 900);
       final changes = verify(() => executor.execute(
             name: any(named: 'name'),
             change: captureAny(named: 'change'),

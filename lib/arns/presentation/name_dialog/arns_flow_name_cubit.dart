@@ -2,7 +2,11 @@ part of 'arns_name_dialog_cubit.dart';
 
 /// What a flow's names came to once its item existed.
 class ArNSFlowOutcome extends Equatable {
-  const ArNSFlowOutcome({this.live = const [], this.failed = const []});
+  const ArNSFlowOutcome({
+    this.live = const [],
+    this.failed = const [],
+    this.liveWithinSeconds = 300,
+  });
 
   /// Literal names that point at the new item now.
   final List<String> live;
@@ -10,10 +14,14 @@ class ArNSFlowOutcome extends Equatable {
   /// Literal names that couldn't be changed. Never tried again.
   final List<String> failed;
 
+  /// The longest cache time set on the [live] names: when gateways show
+  /// them all.
+  final int liveWithinSeconds;
+
   bool get isEmpty => live.isEmpty && failed.isEmpty;
 
   @override
-  List<Object?> get props => [live, failed];
+  List<Object?> get props => [live, failed, liveWithinSeconds];
 }
 
 /// A transaction ID only for pricing, before the flow's item exists.
@@ -240,6 +248,7 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
 
     final live = <String>[];
     final failed = <String>[];
+    int? liveWithinSeconds;
     for (final (of, setRecord, literal) in planned) {
       try {
         await _executor.execute(
@@ -253,6 +262,10 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
           },
         );
         live.add(literal);
+        if (liveWithinSeconds == null ||
+            setRecord.ttlSeconds > liveWithinSeconds) {
+          liveWithinSeconds = setRecord.ttlSeconds;
+        }
       } on ArNSChangeFailure catch (failure) {
         logger.w('The flow could not point $literal: ${failure.kind}');
         failed.add(literal);
@@ -284,6 +297,10 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
       }
     }
     if (!isClosed) emit(state.copyWith(step: () => null));
-    return ArNSFlowOutcome(live: live, failed: failed);
+    return ArNSFlowOutcome(
+      live: live,
+      failed: failed,
+      liveWithinSeconds: liveWithinSeconds ?? ArNSCacheTime.standard.seconds,
+    );
   }
 }
