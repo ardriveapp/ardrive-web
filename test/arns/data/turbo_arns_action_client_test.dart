@@ -471,10 +471,9 @@ void main() {
       expect(await c.status('action-1'), isA<ArNSActionFailed>());
     });
 
-    // After a reload: an action is resumed on the service it was created
-    // on, whatever the devnet switch says now.
-    test('reads and signs on the payment service the action was made on',
-        () async {
+    // After a reload: an action's status is read on the service it was
+    // created on, whatever the devnet switch says now.
+    test('reads on the payment service the action was made on', () async {
       final c = client((r) async => _json({
             'nonce': 'action-1',
             'action': 'set-record',
@@ -482,12 +481,9 @@ void main() {
           }));
 
       await c.status('action-1', paymentUrl: 'https://sandbox.example/');
-      await c.submitSigned('action-1', 'signed',
-          paymentUrl: 'https://sandbox.example');
 
       expect(requests.map((r) => r.url.toString()), [
         'https://sandbox.example/v1/arns/actions/action-1',
-        'https://sandbox.example/v1/arns/actions/action-1/sign',
       ]);
       expect(c.paymentUrl, 'https://payment.example');
     });

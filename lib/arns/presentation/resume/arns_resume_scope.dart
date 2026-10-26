@@ -31,11 +31,8 @@ class ArNSResumeScope extends StatelessWidget {
       child: BlocListener<ArNSResumeCubit, ArNSResumeState>(
         listenWhen: (previous, current) =>
             current.notice != null && current.serial != previous.serial,
-        listener: (context, state) => showArNSResumeNotice(
-          context,
-          state.notice!,
-          onFinish: context.read<ArNSResumeCubit>().finish,
-        ),
+        listener: (context, state) =>
+            showArNSResumeNotice(context, state.notice!),
         child: child,
       ),
     );
@@ -53,22 +50,16 @@ class ArNSResumeScope extends StatelessWidget {
   }
 }
 
-/// The notice for [notice], with "Finish" when the change can still be
-/// approved.
-void showArNSResumeNotice(
-  BuildContext context,
-  ArNSResumeNotice notice, {
-  required void Function(String nonce) onFinish,
-}) {
+/// The notice for [notice].
+void showArNSResumeNotice(BuildContext context, ArNSResumeNotice notice) {
   final strings = appLocalizationsOf(context);
   final typography = ArDriveTypographyNew.of(context);
   final colors = ArDriveTheme.of(context).themeData.colorTokens;
   final host = arnsHostFor(notice.name);
-  final canFinish = notice.outcome == ArNSResumeOutcome.canFinish;
   final message = switch (notice.outcome) {
     ArNSResumeOutcome.saved => strings.arnsResumeSaved(host),
     ArNSResumeOutcome.refunding => strings.arnsResumeRefunding(host),
-    ArNSResumeOutcome.canFinish => strings.arnsResumeCanFinish(host),
+    ArNSResumeOutcome.expired => strings.arnsExpiredRefunding,
   };
 
   ScaffoldMessenger.of(context).showSnackBar(
@@ -78,16 +69,7 @@ void showArNSResumeNotice(
         style: typography.paragraphNormal(color: colors.textHigh),
       ),
       backgroundColor: colors.containerL3,
-      // Turbo's transaction lives about a minute: long enough to act on.
-      duration: Duration(seconds: canFinish ? 30 : 8),
-      action: canFinish
-          ? SnackBarAction(
-              label: strings.arnsResumeFinish,
-              backgroundColor: colors.containerL3,
-              textColor: colors.textHigh,
-              onPressed: () => onFinish(notice.nonce),
-            )
-          : null,
+      duration: const Duration(seconds: 8),
     ),
   );
 }

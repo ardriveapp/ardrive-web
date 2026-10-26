@@ -6,11 +6,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  Future<void> show(
-    WidgetTester tester,
-    ArNSResumeNotice notice, {
-    void Function(String nonce)? onFinish,
-  }) async {
+  Future<void> show(WidgetTester tester, ArNSResumeNotice notice) async {
     await tester.pumpWidget(
       ArDriveApp(
         builder: (context) => MaterialApp(
@@ -19,11 +15,7 @@ void main() {
           home: Scaffold(
             body: Builder(
               builder: (context) => TextButton(
-                onPressed: () => showArNSResumeNotice(
-                  context,
-                  notice,
-                  onFinish: onFinish ?? (_) {},
-                ),
+                onPressed: () => showArNSResumeNotice(context, notice),
                 child: const Text('show'),
               ),
             ),
@@ -46,10 +38,9 @@ void main() {
     );
 
     expect(find.text('Name saved: blog_acme.ar.io'), findsOneWidget);
-    expect(find.text('Finish'), findsNothing);
   });
 
-  testWidgets('one that did not says the credits come back', (tester) async {
+  testWidgets('one that failed says the credits come back', (tester) async {
     await show(
       tester,
       const ArNSResumeNotice(
@@ -66,24 +57,22 @@ void main() {
     );
   });
 
-  testWidgets('one awaiting approval offers Finish', (tester) async {
-    final finished = <String>[];
+  testWidgets('one that expired or awaited approval says it was not made',
+      (tester) async {
     await show(
       tester,
       const ArNSResumeNotice(
-        outcome: ArNSResumeOutcome.canFinish,
+        outcome: ArNSResumeOutcome.expired,
         name: 'blog_acme',
         nonce: 'a1',
       ),
-      onFinish: finished.add,
     );
 
     expect(
-      find.text(
-          "The change to blog_acme.ar.io still needs your ArNS wallet's approval."),
+      find.text("The change wasn't approved in time, so it wasn't made. "
+          'Your credits come back within 15 minutes.'),
       findsOneWidget,
     );
-    await tester.tap(find.text('Finish'));
-    expect(finished, ['a1']);
+    expect(find.byType(SnackBarAction), findsNothing);
   });
 }

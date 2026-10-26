@@ -117,6 +117,16 @@ This follows the ar.io console.
   (within 15 minutes) and ArDrive says so, once: a declined prompt is
   forgotten, while a reload during the prompt is kept and reported on the
   next load.
+- **After a reload.** The next load reads the status of each change the
+  page left unfinished, once, and never creates it again. Completed: "Name
+  saved". Failed: the credits come back. Expired, or still awaiting the
+  ArNS wallet's approval: "The change wasn't approved in time, so it wasn't
+  made. Your credits come back within 15 minutes." A change still awaiting
+  approval can't be finished after a reload, because Turbo's status read
+  never returns its transaction, so it is left to expire and is refunded.
+  Each of these is then forgotten. A status that can't be read is asked
+  again on the next load, and anything still unresolved after a day is
+  dropped.
 - **Names you manage for someone else** (Q23). Turbo sponsors only a name's
   owner and rejects a controller's proof. A controller's ArNS wallet signs the
   change itself and pays the Solana fee: about 0.000005 SOL to repoint, about
@@ -347,8 +357,10 @@ into the bridge and the 17 MB turbo bundle isn't needed.
    Re-posting the same bytes is safe. 409, or 400 "expired": the action
    expired and its credits are refunded. 503 "Blockhash not found": re-post
    the same bytes, don't re-create.
-6. **Status.** `GET {payment}/v1/arns/actions/{nonce}` to resume after a lost
-   response or a reload.
+6. **Status.** `GET {payment}/v1/arns/actions/{nonce}` to learn how an
+   action ended after a lost response or a reload. It never returns the
+   transaction of an action awaiting signature, so such an action can't be
+   finished after a reload: it is left to expire and is refunded.
 
 Always pass `ttlSeconds` (300 by default): Turbo's own default is 3600.
 

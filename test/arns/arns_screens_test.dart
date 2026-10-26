@@ -1337,7 +1337,6 @@ void main() {
                     name: 'blog_acme',
                     outcome: outcome,
                   ),
-                  onFinish: (_) {},
                 ),
               ),
             ),

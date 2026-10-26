@@ -163,32 +163,66 @@ void main() {
         reason: 'a status read only: never a second create');
   });
 
-  test('a failed or expired change says the credits come back', () async {
+  test('a failed change says the credits come back', () async {
     await store.add(_profile, _action('a1'));
-    await store.add(_profile, _action('a2'));
     status('a1', {
       'nonce': 'a1',
       'status': 'failed',
       'failedDate': '2026-10-26T11:00:00Z',
     });
-    status('a2', {'nonce': 'a2', 'status': 'expired'});
 
     final cubit = build();
-    final seen = <ArNSResumeNotice?>[];
-    final sub = cubit.stream.listen((s) => seen.add(s.notice));
     await settle();
-    await sub.cancel();
 
-    expect(seen.map((n) => (n?.outcome, n?.nonce)), [
-      (ArNSResumeOutcome.refunding, 'a1'),
-      (ArNSResumeOutcome.refunding, 'a2'),
-    ]);
+    expect(cubit.state.notice?.outcome, ArNSResumeOutcome.refunding);
     expect(await store.pending(_profile), isEmpty);
     verifyNever(() => names.refresh());
   });
 
-  group('awaiting the ArNS wallet', () {
-    test('offers to finish, and finishing signs and submits only', () async {
+  test('an expired change says it was not approved in time', () async {
+    await store.add(_profile, _action('a1'));
+    status('a1', {'nonce': 'a1', 'status': 'expired'});
+
+    final cubit = build();
+    await settle();
+
+    expect(cubit.state.notice?.outcome, ArNSResumeOutcome.expired);
+    expect(await store.pending(_profile), isEmpty);
+    verifyNever(() => names.refresh());
+  });
+
+  group('still awaiting the ArNS wallet', () {
+    // Turbo's status read never carries the transaction, so nothing here
+    // can sign it: it is handled as expired, and only read.
+    test('is handled as expired and cleared', () async {
+      await store.add(_profile, _action('a1'));
+      status('a1', {
+        'nonce': 'a1',
+        'status': 'awaiting-signature',
+        'expiresAt': '2026-10-26T12:10:00Z',
+      });
+
+      final cubit = build();
+      await settle();
+
+      expect(
+        cubit.state.notice,
+        const ArNSResumeNotice(
+          outcome: ArNSResumeOutcome.expired,
+          name: 'blog_acme',
+          nonce: 'a1',
+        ),
+      );
+      expect(await store.pending(_profile), isEmpty);
+      expect(requests.map((r) => '${r.method} ${r.url.path}'),
+          ['GET /v1/arns/actions/a1'],
+          reason: 'a status read only: never a sign or a second create');
+      expect(owner.signed, isEmpty);
+      verifyNever(() => names.refresh());
+    });
+
+    test('is handled as expired even with a transaction in the answer',
+        () async {
       await store.add(_profile, _action('a1'));
       status('a1', {
         'nonce': 'a1',
@@ -196,73 +230,14 @@ void main() {
         'transaction': 'dHg=',
         'expiresAt': '2026-10-26T12:10:00Z',
       });
-      routes['POST $_sandbox/v1/arns/actions/a1/sign'] =
-          (_) => _json({'nonce': 'a1', 'status': 'completed'});
 
       final cubit = build();
       await settle();
 
-      expect(cubit.state.notice?.outcome, ArNSResumeOutcome.canFinish);
-      expect(await store.pending(_profile), hasLength(1),
-          reason: 'kept until it ends');
-
-      await cubit.finish('a1');
-
-      expect(owner.signed, ['dHg=']);
-      expect(
-        requests.map((r) => '${r.method} ${r.url.path}'),
-        ['GET /v1/arns/actions/a1', 'POST /v1/arns/actions/a1/sign'],
-      );
-      expect(jsonDecode(requests.last.body), {'transaction': 'signed-dHg='});
-      expect(cubit.state.notice?.outcome, ArNSResumeOutcome.saved);
+      expect(cubit.state.notice?.outcome, ArNSResumeOutcome.expired);
       expect(await store.pending(_profile), isEmpty);
-      verify(() => names.refresh()).called(1);
-    });
-
-    test('finishing too late says the credits come back', () async {
-      await store.add(_profile, _action('a1'));
-      status('a1', {
-        'nonce': 'a1',
-        'status': 'awaiting-signature',
-        'transaction': 'dHg=',
-      });
-      routes['POST $_sandbox/v1/arns/actions/a1/sign'] =
-          (_) => _json({'error': 'Action expired', 'refunded': true}, 409);
-
-      final cubit = build();
-      await settle();
-      await cubit.finish('a1');
-
-      expect(cubit.state.notice?.outcome, ArNSResumeOutcome.refunding);
-      expect(await store.pending(_profile), isEmpty);
-    });
-
-    test('past its expiry, nothing is offered', () async {
-      await store.add(_profile, _action('a1'));
-      status('a1', {
-        'nonce': 'a1',
-        'status': 'awaiting-signature',
-        'transaction': 'dHg=',
-        'expiresAt': '2026-10-26T11:59:00Z',
-      });
-
-      final cubit = build();
-      await settle();
-
-      expect(cubit.state.notice?.outcome, ArNSResumeOutcome.refunding);
-      expect(await store.pending(_profile), isEmpty);
-    });
-
-    test('with no transaction to sign, it will expire and be refunded',
-        () async {
-      await store.add(_profile, _action('a1'));
-      status('a1', {'nonce': 'a1', 'status': 'awaiting-signature'});
-
-      final cubit = build();
-      await settle();
-
-      expect(cubit.state.notice?.outcome, ArNSResumeOutcome.refunding);
-      expect(await store.pending(_profile), isEmpty);
+      expect(requests.map((r) => r.method), ['GET']);
+      expect(owner.signed, isEmpty);
     });
   });
 

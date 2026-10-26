@@ -14,13 +14,13 @@ enum ArNSResumeOutcome {
   /// It went through: "Name saved".
   saved,
 
-  /// It expired or failed, or can't be finished from here: Turbo refunds the
-  /// credits within about 15 minutes.
+  /// It failed: Turbo refunds the credits within about 15 minutes.
   refunding,
 
-  /// Turbo still waits for the ArNS wallet's approval of its transaction,
-  /// which can be given now: "Finish".
-  canFinish,
+  /// It expired, or still waits for an approval nothing here can give:
+  /// Turbo's status read never carries the transaction to sign, so it
+  /// expires and its credits come back within about 15 minutes.
+  expired,
 }
 
 class ArNSResumeNotice extends Equatable {
@@ -65,7 +65,6 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
     DateTime Function()? clock,
   })  : _store = store,
         _client = client,
-        _walletCubit = walletCubit,
         _namesCubit = namesCubit,
         _clock = clock ?? DateTime.now,
         super(const ArNSResumeState()) {
@@ -75,17 +74,12 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
 
   final ArNSPendingActionStore _store;
   final TurboArNSActionClient _client;
-  final ArNSWalletCubit _walletCubit;
   final ArNSNamesCubit _namesCubit;
   final DateTime Function() _clock;
   late final StreamSubscription<ArNSWalletState> _subscription;
 
   /// Profiles checked this session: once per load is enough.
   final _checked = <String>{};
-
-  /// Actions that can be finished now, by nonce.
-  final _awaiting =
-      <String, (ArNSPendingAction, ArNSActionAwaitingSignature)>{};
 
   /// Past this, an action still unresolved is dropped: Turbo refunds an
   /// abandoned one within 15 minutes, so it has long been settled.
@@ -142,19 +136,16 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
         await _forget(profile, action);
         _notify(ArNSResumeOutcome.refunding, action);
       case ArNSActionAwaitingSignature():
-        if (_isPast(result.expiresAt)) {
-          await _forget(profile, action);
-          _notify(ArNSResumeOutcome.refunding, action);
-          return;
-        }
-        // Kept until it ends, so the next load says how.
-        _awaiting[action.nonce] = (action, result);
-        _notify(ArNSResumeOutcome.canFinish, action);
+        // Its prompt went with the page and nothing here can sign it: it
+        // expires and is refunded, as below.
+        await _forget(profile, action);
+        _notify(ArNSResumeOutcome.expired, action);
       case ArNSActionInProgress(:final status):
+        // Turbo's status read leaves out the transaction of an action
+        // awaiting signature: it can only expire and be refunded.
         if (status == 'awaiting-signature' || status.contains('expired')) {
-          // Nothing here can sign it: it expires and is refunded.
           await _forget(profile, action);
-          _notify(ArNSResumeOutcome.refunding, action);
+          _notify(ArNSResumeOutcome.expired, action);
         } else if (_isStale(action)) {
           logger.w('Dropping ArNS action ${action.nonce}, still $status');
           await _forget(profile, action);
@@ -162,58 +153,8 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
     }
   }
 
-  /// Signs the transaction Turbo is waiting on with the ArNS wallet and
-  /// submits it, through the same path as the name dialog. Re-posting the
-  /// same signed bytes is safe; nothing is created.
-  Future<void> finish(String nonce) async {
-    final awaiting = _awaiting.remove(nonce);
-    final profile = _walletCubit.state.profileAddress;
-    if (awaiting == null || profile == null) return;
-    final (action, result) = awaiting;
-
-    var owner = _walletCubit.ownerSigner;
-    if (owner == null) {
-      try {
-        await _walletCubit.reconnect();
-      } catch (e) {
-        logger.w('Could not reconnect the ArNS wallet: $e');
-      }
-      owner = _walletCubit.ownerSigner;
-    }
-    if (owner == null) {
-      // Not approved: it expires unsigned and its credits come back. Kept,
-      // so the next load says how it ended.
-      _notify(ArNSResumeOutcome.refunding, action);
-      return;
-    }
-
-    try {
-      final signed = await owner.signTransaction(result.transaction);
-      await _client.submitSigned(
-        nonce,
-        signed,
-        paymentUrl: action.paymentUrl,
-      );
-      await _forget(profile, action);
-      unawaited(_namesCubit.refresh());
-      _notify(ArNSResumeOutcome.saved, action);
-    } on ArNSActionExpiredException {
-      await _forget(profile, action);
-      _notify(ArNSResumeOutcome.refunding, action);
-    } catch (e) {
-      // Rejected, or the answer was lost: the next load reads the status.
-      logger.w('Could not finish ArNS action $nonce: $e');
-      _notify(ArNSResumeOutcome.refunding, action);
-    }
-  }
-
   bool _isStale(ArNSPendingAction action) =>
       _clock().difference(action.createdAt) > staleAfter;
-
-  bool _isPast(String? timestamp) {
-    final at = timestamp == null ? null : DateTime.tryParse(timestamp);
-    return at != null && !_clock().isBefore(at);
-  }
 
   Future<void> _forget(String profile, ArNSPendingAction action) async {
     try {

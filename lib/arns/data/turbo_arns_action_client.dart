@@ -90,7 +90,8 @@ class TurboArNSActionClient {
   static const _ownerSignatureType = '4';
 
   /// The payment service actions are created on now, without a trailing
-  /// slash. Remembered with each action, so it is resumed where it lives.
+  /// slash. Remembered with each action, so its status is read where it
+  /// lives.
   String get paymentUrl => _paymentUrl().replaceAll(RegExp(r'/+$'), '');
 
   Uri _uri(String path, {String? paymentUrl}) {
@@ -133,7 +134,7 @@ class TurboArNSActionClient {
   }
 
   /// Creates the action, which debits the payer. Never call it twice for one
-  /// change: resume with [status] and [sign] instead.
+  /// change: read how it ended with [status] instead.
   ///
   /// [paidBy] names wallets that share credits with the payer, as uploads
   /// send them: an Ethereum or Solana sign-in keeps its credits on the
@@ -179,15 +180,13 @@ class TurboArNSActionClient {
   }
 
   /// Submits the owner-signed transaction of an awaiting action. Safe to
-  /// repeat with the same bytes. Sends no payer headers. [paymentUrl] is
-  /// the service the action was created on, when resuming it.
+  /// repeat with the same bytes. Sends no payer headers.
   Future<ArNSActionCompleted> sign(
     String nonce,
-    String signedTransaction, {
-    String? paymentUrl,
-  }) async {
+    String signedTransaction,
+  ) async {
     final response = await _client.post(
-      _uri('$nonce/sign', paymentUrl: paymentUrl),
+      _uri('$nonce/sign'),
       headers: {'content-type': 'application/json'},
       body: jsonEncode({'transaction': signedTransaction}),
     );
@@ -205,8 +204,8 @@ class TurboArNSActionClient {
     throw _signError(nonce, response);
   }
 
-  /// An action's state, to resume after a lost response or a reload.
-  /// [paymentUrl] is the service it was created on.
+  /// An action's state, to learn how one ended after a lost response or a
+  /// reload. [paymentUrl] is the service it was created on.
   Future<ArNSActionResult> status(String nonce, {String? paymentUrl}) async {
     final response = await _client.get(_uri(nonce, paymentUrl: paymentUrl));
     if (response.statusCode != 200) {
@@ -256,12 +255,11 @@ class TurboArNSActionClient {
   /// blockhash.
   Future<ArNSActionCompleted> submitSigned(
     String nonce,
-    String signedTransaction, {
-    String? paymentUrl,
-  }) async {
+    String signedTransaction,
+  ) async {
     for (var attempt = 0;; attempt++) {
       try {
-        return await sign(nonce, signedTransaction, paymentUrl: paymentUrl);
+        return await sign(nonce, signedTransaction);
       } on ArNSBlockhashNotFoundException {
         if (attempt >= blockhashRetries) rethrow;
         await _delay(_blockhashRetryDelay);

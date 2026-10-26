@@ -107,8 +107,8 @@ sealed class ArNSActionResult extends Equatable {
           antId: json['antId'] as String?,
           alreadyCompleted: json['alreadyCompleted'] == true,
         ),
-      // A status read may leave the transaction out: then it can't be
-      // signed from here, and is reported rather than guessed at.
+      // Turbo's status read leaves the transaction out: such an action
+      // can't be signed from here, and is reported rather than guessed at.
       'awaiting-signature' when json['transaction'] is String =>
         ArNSActionAwaitingSignature(
           nonce: nonce,
