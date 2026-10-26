@@ -260,7 +260,10 @@ no chip; the listing never waits for it (`lib/arns/data/arns_name_verifier.dart`
 
 `assets/arns/nothing_published.html` (about 1 KiB, no external requests,
 light and dark) is what a removed main name points at. It is not bundled
-into the app. To set it up, once per network:
+into the app. On mainnet it is
+`Tv30QDDNs-SZIGosGWsCEZnIbuZXsHxKzRywyEKGGFg` (uploaded 2026-10-26, set in
+all three configs; ar-io.dev serves it for devnet names too). To set up a
+new copy:
 
 1. Upload the file as a public file, `Content-Type: text/html`, from an
    ArDrive team wallet (any public drive, or `ardrive upload-file` with the
