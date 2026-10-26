@@ -86,6 +86,15 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   /// separate act. Without it the table behaves as it always has, so the
   /// dialogs that draw one to pick a row are unaffected.
   final void Function(T row)? onRowOpen;
+
+  /// Whether a mouse click opens a row, as a tap on a touch screen does,
+  /// rather than only selecting it. For a page people browse rather than a
+  /// file manager. Needs [onRowOpen].
+  ///
+  /// The second click of a habitual double-click opens nothing: not the row
+  /// again, and not whatever row it lands on in the table that opening a
+  /// folder put in this one's place.
+  final bool clickOpens;
   final Function(bool onChangeMultiSelecting)? onChangeMultiSelecting;
   final bool forceDisableMultiSelect;
   final bool lockMultiSelect;
@@ -151,6 +160,7 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
     this.onSelectedRows,
     this.onRowTap,
     this.onRowOpen,
+    this.clickOpens = false,
     this.onChangeMultiSelecting,
     this.forceDisableMultiSelect = false,
     this.lockMultiSelect = false,
@@ -216,6 +226,12 @@ class _ArDriveDataTableState<T extends IndexedItem>
 
   final _doubleClick = ArDriveDoubleClick<T>();
 
+  /// Running for a double-click's length after this table is built, when a
+  /// click opens. A click that opened a folder replaced the table it landed
+  /// on with this one, so a second click this soon finished that double-click
+  /// and is not a click of its own.
+  Timer? _justBuilt;
+
   /// Where Enter is heard. A click on a row puts focus here, so Enter opens
   /// the row just clicked even if the search box had focus a moment before,
   /// and a button focused anywhere else keeps Enter for itself.
@@ -278,6 +294,10 @@ class _ArDriveDataTableState<T extends IndexedItem>
       });
     }
 
+    if (widget.clickOpens) {
+      _justBuilt = Timer(kDoubleTapTimeout, () {});
+    }
+
     HardwareKeyboard.instance.addHandler(_handleKeyDownEvent);
     HardwareKeyboard.instance.addHandler(_handleEscapeKey);
     HardwareKeyboard.instance.addHandler(_handleSelectAllShortcut);
@@ -298,6 +318,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
       ..removeListener(_reportScrollOffset)
       ..dispose();
     _doubleClick.dispose();
+    _justBuilt?.cancel();
     _focusNode.dispose();
     super.dispose();
   }
@@ -346,11 +367,17 @@ class _ArDriveDataTableState<T extends IndexedItem>
     _tapKind = null;
 
     final onRowOpen = widget.onRowOpen;
+    final clickOpens = onRowOpen != null && widget.clickOpens;
 
     // A second click on the row a first one just selected: that is a
-    // double-click, and it opens. It does not select again on the way.
+    // double-click, and it opens. It does not select again on the way. Where
+    // a click opens, the first click already did.
     if (onRowOpen != null && _doubleClick.completes(row)) {
-      onRowOpen(row);
+      if (!clickOpens) onRowOpen(row);
+      return;
+    }
+
+    if (clickOpens && (_justBuilt?.isActive ?? false)) {
       return;
     }
 
@@ -364,6 +391,13 @@ class _ArDriveDataTableState<T extends IndexedItem>
     }
 
     _focusNode.requestFocus();
+
+    if (clickOpens) {
+      // Armed, not reset, so a second click on this row opens nothing more.
+      _doubleClick.arm(row);
+      onRowOpen(row);
+      return;
+    }
 
     if (ArDriveDoubleClick.tapOpens(kind)) {
       _doubleClick.reset();
