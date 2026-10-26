@@ -196,6 +196,12 @@ class ArNSNameDialogState extends Equatable {
   /// The old name is removed in the same flow.
   bool get removesPrevious => movesFrom != null && removePrevious;
 
+  /// Change name rather than Add name: the item had a name when the dialog
+  /// opened. Not read from [names], which point at the item once the change
+  /// is made, so the title would turn to Change name half way through.
+  bool get changesName =>
+      mode == ArNSNameDialogMode.nameItem && previousRecord != null;
+
   ArNSManagedName? get selectedName {
     final choice = this.choice;
     if (choice == null) return null;

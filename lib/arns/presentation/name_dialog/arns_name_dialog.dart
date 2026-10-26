@@ -358,7 +358,7 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
     final strings = appLocalizationsOf(context);
     return switch (state.mode) {
       ArNSNameDialogMode.nameItem =>
-        _itemHasName(state) ? strings.arnsChangeName : strings.arnsAddName,
+        state.changesName ? strings.arnsChangeName : strings.arnsAddName,
       ArNSNameDialogMode.pointRecord ||
       ArNSNameDialogMode.cacheTime =>
         strings.arnsSave,
@@ -382,17 +382,11 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
     }
     return switch (state.mode) {
       ArNSNameDialogMode.nameItem =>
-        _itemHasName(state) ? strings.arnsChangeName : strings.arnsAddName,
+        state.changesName ? strings.arnsChangeName : strings.arnsAddName,
       ArNSNameDialogMode.pointRecord => strings.arnsChangeWhatItPointsTo,
       ArNSNameDialogMode.cacheTime => strings.arnsCacheTime,
       ArNSNameDialogMode.remove => strings.arnsRemoveName,
     };
-  }
-
-  static bool _itemHasName(ArNSNameDialogState state) {
-    final item = state.item;
-    return item != null &&
-        recordsPointingAt(state.names, item.dataTxId).isNotEmpty;
   }
 }
 

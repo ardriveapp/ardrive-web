@@ -378,6 +378,64 @@ void main() {
     });
   });
 
+  group('Add name or Change name', () {
+    test('an unnamed item is Add name all the way through', () async {
+      when(() => executor.execute(
+            name: any(named: 'name'),
+            change: any(named: 'change'),
+            owner: any(named: 'owner'),
+            payer: any(named: 'payer'),
+            paidBy: any(named: 'paidBy'),
+            onStep: any(named: 'onStep'),
+            onNonce: any(named: 'onNonce'),
+          )).thenAnswer((_) async {
+        // Read again after the change: the new name points at the item.
+        chain = [
+          _name(records: const [
+            ArNSNameRecord(
+              name: 'acme',
+              undername: 'docs',
+              transactionId: _itemTx,
+              ttlSeconds: 300,
+            ),
+          ]),
+        ];
+      });
+      final cubit = await open();
+      cubit.startNewUndername('acme');
+      cubit.editNewUndername('docs');
+      await pumpEventQueue();
+
+      final states = <ArNSNameDialogState>[cubit.state];
+      final sub = cubit.stream.listen(states.add);
+      await cubit.commit();
+      await pumpEventQueue();
+      await sub.cancel();
+
+      expect(states.last.stage, ArNSDialogStage.done);
+      expect(states.map((s) => s.changesName), everyElement(isFalse),
+          reason: 'the progress title said Change name once the new name '
+              'pointed at the item');
+    });
+
+    test('an item that has a name is Change name', () async {
+      chain = [
+        _name(records: const [
+          ArNSNameRecord(
+            name: 'acme',
+            undername: 'www',
+            transactionId: _itemTx,
+            ttlSeconds: 300,
+          ),
+        ]),
+      ];
+
+      final cubit = await open();
+
+      expect(cubit.state.changesName, isTrue);
+    });
+  });
+
   group('committing', () {
     test('a name pointing elsewhere is confirmed before it moves', () async {
       final cubit = await open();
