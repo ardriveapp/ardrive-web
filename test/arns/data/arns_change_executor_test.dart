@@ -118,8 +118,9 @@ void main() {
   late ArNSPendingActionStore pending;
 
   ArNSChangeExecutor executor(
-    Future<http.Response> Function(http.Request) handler,
-  ) {
+    Future<http.Response> Function(http.Request) handler, {
+    bool pageLeaving = false,
+  }) {
     var n = 0;
     return ArNSChangeExecutor(
       client: TurboArNSActionClient(
@@ -135,6 +136,8 @@ void main() {
       pending: pending,
       profileAddress: () => 'profile',
       clock: () => DateTime.utc(2026, 10, 26),
+      pageLeaving: () => pageLeaving,
+      leaveGrace: Duration.zero,
     );
   }
 
@@ -369,18 +372,32 @@ void main() {
       expect((await pending.pending('profile')).single.nonce, 'a1');
     });
 
-    test('kept when the second prompt fails, as a reload makes it fail',
-        () async {
+    test('kept when a reload makes the second prompt fail', () async {
       // A reload aborts the wallet's prompt with an error like a rejection's,
       // and that error reaches here before the page goes: forgetting the
       // nonce then left the next load nothing to report.
       final failure = await run(
-        executor(awaiting),
+        executor(awaiting, pageLeaving: true),
         owner: _Owner(rejectTransaction: true),
       );
+      await pumpEventQueue();
 
       expect(failure?.kind, ArNSFailureKind.expired);
       expect((await pending.pending('profile')).single.nonce, 'a1');
+    });
+
+    // Declining the second prompt says the credits come back there and
+    // then; keeping the nonce said it again on the next load.
+    test('forgotten when the second prompt is declined and the page stays',
+        () async {
+      final failure = await run(
+        executor(awaiting),
+        owner: _Owner(rejectTransaction: true),
+      );
+      await pumpEventQueue();
+
+      expect(failure?.kind, ArNSFailureKind.expired);
+      expect(await pending.pending('profile'), isEmpty);
     });
 
     test('forgotten when the action expired', () async {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:ardrive/arns/data/arns_pending_action_store.dart';
@@ -7,6 +8,7 @@ import 'package:ardrive/arns/domain/arns_action.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/domain/undername_validation.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:ardrive/utils/page_leaving/page_leaving.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 
 /// Where a change is while it runs, for the progress line.
@@ -78,17 +80,30 @@ class ArNSChangeExecutor {
     ArNSPendingActionStore? pending,
     String? Function()? profileAddress,
     DateTime Function()? clock,
+    bool Function()? pageLeaving,
+    Duration leaveGrace = const Duration(seconds: 1),
   })  : _client = client,
         _arioSDK = arioSDK,
         _pending = pending,
         _profileAddress = profileAddress,
-        _clock = clock ?? DateTime.now;
+        _clock = clock ?? DateTime.now,
+        _pageLeaving = pageLeaving ?? pageIsLeaving,
+        _leaveGrace = leaveGrace {
+    if (pageLeaving == null) watchPageLeaving();
+  }
 
   final TurboArNSActionClient _client;
   final ArioSDK _arioSDK;
   final ArNSPendingActionStore? _pending;
   final String? Function()? _profileAddress;
   final DateTime Function() _clock;
+
+  /// Whether the page is being reloaded or closed.
+  final bool Function() _pageLeaving;
+
+  /// How long a declined second prompt waits to see whether the page is
+  /// going, before its action is forgotten.
+  final Duration _leaveGrace;
 
   Future<void> execute({
     required ArNSManagedName name,
@@ -154,10 +169,14 @@ class ArNSChangeExecutor {
         // The second prompt rejected or lost: the action expires unsigned and
         // its credits come back.
         if (tracked.signingTransaction) {
-          // Rejected, it can only expire; signed and then lost, it may have
-          // landed. Kept either way, so the next load reads how it ended: a
-          // reload aborts the wallet's prompt with an error like a
-          // rejection's, and that error lands here before the page goes.
+          // Declined, it can only expire, and the dialog says the credits
+          // come back now: forgotten, so the next load doesn't say it again.
+          // A reload aborts the prompt with the same kind of error before
+          // the page goes, and signed then lost it may have landed: kept
+          // either way, so the next load reads how it ended.
+          if (!tracked.signedTransaction) {
+            unawaited(_forgetUnlessLeaving(nonce));
+          }
           throw ArNSChangeFailure(ArNSFailureKind.expired, cause: e);
         }
         throw ArNSChangeFailure(ArNSFailureKind.lostAfterCreate, cause: e);
@@ -200,6 +219,15 @@ class ArNSChangeExecutor {
     } catch (e) {
       logger.w('Could not remember ArNS action $nonce: $e');
     }
+  }
+
+  /// Forgets a declined action once it is clear the page is staying: a
+  /// page that goes never gets this far, and one going keeps it.
+  Future<void> _forgetUnlessLeaving(String? nonce) async {
+    if (_pageLeaving()) return;
+    await Future<void>.delayed(_leaveGrace);
+    if (_pageLeaving()) return;
+    await _forget(nonce);
   }
 
   /// Forgets an action that reached an end here: done, or expired.
@@ -248,6 +276,7 @@ class _TrackedOwner implements ArNSOwnerSigner {
 
   final ArNSOwnerSigner _inner;
   bool signingTransaction = false;
+  bool signedTransaction = false;
 
   @override
   String get address => _inner.address;
@@ -259,7 +288,9 @@ class _TrackedOwner implements ArNSOwnerSigner {
   @override
   Future<String> signTransaction(String transactionBase64) async {
     signingTransaction = true;
-    return _inner.signTransaction(transactionBase64);
+    final signed = await _inner.signTransaction(transactionBase64);
+    signedTransaction = true;
+    return signed;
   }
 }
 
