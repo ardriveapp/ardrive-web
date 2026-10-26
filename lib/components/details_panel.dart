@@ -1,4 +1,3 @@
-import 'package:ardrive/arns/domain/arns_nameable_item.dart';
 import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
@@ -666,7 +665,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
       if (nameable != null) ...[
         ArNSNameSection(item: nameable),
         sizedBoxHeight16px,
-      ],
+      ] else if (!item.isOwner)
+        ArNSVisitorNameSection(
+          dataTxId: item.dataTxId,
+          hints: item.assignedNames ?? const [],
+        ),
       DetailsPanelItem(
         leading: _IdValue(id: item.id),
         itemTitle: appLocalizationsOf(context).fileID,
@@ -1011,12 +1014,21 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
         break;
       case RevisionAction.assignName:
-        final names = file.assignedNames ?? const [];
-        title = names.isEmpty
-            ? appLocalizationsOf(context).arnsActivityNameRemoved
-            : appLocalizationsOf(context)
-                .arnsActivityNameAssigned(arnsHostFor(names.last));
-        break;
+        final current = widget.item;
+        return ArNSNameActivity(
+          names: file.assignedNames ?? const [],
+          dataTxIds: {
+            if (file.dataTxId != null) file.dataTxId!,
+            if (current is FileDataTableItem) current.dataTxId,
+          },
+          isOwner: current.isOwner,
+          builder: (context, title) => DetailsPanelItem(
+            leading: leading ?? const SizedBox(),
+            itemTitle: title,
+            itemSubtitle: formatDateTime(file.unixTime),
+            expandLeading: false,
+          ),
+        );
       case RevisionAction.assertLicense:
         if (licenseState == null) {
           title = 'File had license updated';

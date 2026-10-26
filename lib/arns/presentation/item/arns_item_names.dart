@@ -17,6 +17,7 @@ import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -170,25 +171,122 @@ class ArNSNameChip extends StatelessWidget {
     if (hints.isEmpty) return const SizedBox.shrink();
     final verifier = arnsVisitorVerifier(context);
     if (verifier == null) return const SizedBox.shrink();
-    return FutureBuilder<List<String>>(
-      // Never blocks the row: it draws without a chip until confirmed.
-      future: _confirmed(verifier),
-      builder: (context, snapshot) {
-        final names = snapshot.data ?? const [];
-        if (names.isEmpty) return const SizedBox.shrink();
-        return _NameChipView(names: names);
-      },
+    // Never blocks the row: it draws without a chip until confirmed.
+    return ArNSConfirmedNames(
+      verifier: verifier,
+      hints: hints,
+      dataTxIds: {dataTxId},
+      builder: (context, names) =>
+          names.isEmpty ? const SizedBox.shrink() : _NameChipView(names: names),
     );
   }
+}
 
-  Future<List<String>> _confirmed(ArNSNameVerifier verifier) async {
-    final checks = await Future.wait([
-      for (final name in hints) verifier.confirms(name, dataTxId),
-    ]);
-    return [
-      for (var i = 0; i < hints.length; i++)
-        if (checks[i]) hints[i],
-    ];
+/// Builds with the names in [hints] the gateway confirms, empty until then.
+/// Asks once per set of hints, however often its parent rebuilds: a new
+/// future on each build left the answer waiting for good.
+class ArNSConfirmedNames extends StatefulWidget {
+  const ArNSConfirmedNames({
+    super.key,
+    required this.verifier,
+    required this.hints,
+    required this.dataTxIds,
+    required this.builder,
+  });
+
+  final ArNSNameVerifier verifier;
+  final List<String> hints;
+  final Set<String> dataTxIds;
+  final Widget Function(BuildContext context, List<String> names) builder;
+
+  @override
+  State<ArNSConfirmedNames> createState() => _ArNSConfirmedNamesState();
+}
+
+class _ArNSConfirmedNamesState extends State<ArNSConfirmedNames> {
+  late Future<List<String>> _names = _ask();
+
+  Future<List<String>> _ask() =>
+      arnsConfirmedNames(widget.verifier, widget.hints, widget.dataTxIds);
+
+  @override
+  void didUpdateWidget(ArNSConfirmedNames old) {
+    super.didUpdateWidget(old);
+    if (!listEquals(old.hints, widget.hints) ||
+        !setEquals(old.dataTxIds, widget.dataTxIds)) {
+      _names = _ask();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<List<String>>(
+        future: _names,
+        builder: (context, snapshot) =>
+            widget.builder(context, snapshot.data ?? const []),
+      );
+}
+
+/// The names in [hints] the gateway resolves to one of [dataTxIds]: what a
+/// visitor may see of a file's `assignedNames` (docs/NAMES.md, "Visitors").
+Future<List<String>> arnsConfirmedNames(
+  ArNSNameVerifier verifier,
+  List<String> hints,
+  Set<String> dataTxIds,
+) async {
+  final resolved = await Future.wait([
+    for (final name in hints) verifier.resolve(name),
+  ]);
+  return [
+    for (var i = 0; i < hints.length; i++)
+      if (resolved[i] != null && dataTxIds.contains(resolved[i])) hints[i],
+  ];
+}
+
+/// An Activity entry for a name change. The owner sees the name the
+/// revision wrote; anyone else sees it only once the gateway confirms it
+/// still points at the file, and otherwise a plain "modified" line (Q6).
+class ArNSNameActivity extends StatelessWidget {
+  const ArNSNameActivity({
+    super.key,
+    required this.names,
+    required this.dataTxIds,
+    required this.isOwner,
+    required this.builder,
+  });
+
+  /// The revision's `assignedNames`.
+  final List<String> names;
+
+  /// The file's data, this revision's and its latest.
+  final Set<String> dataTxIds;
+  final bool isOwner;
+  final Widget Function(BuildContext context, String title) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    if (names.isEmpty) {
+      return builder(context, strings.arnsActivityNameRemoved);
+    }
+    if (isOwner) {
+      return builder(
+        context,
+        strings.arnsActivityNameAssigned(arnsHostFor(names.last)),
+      );
+    }
+    final verifier = arnsVisitorVerifier(context);
+    if (verifier == null) return builder(context, strings.fileWasModified);
+    return ArNSConfirmedNames(
+      verifier: verifier,
+      hints: names,
+      dataTxIds: dataTxIds,
+      builder: (context, confirmed) => builder(
+        context,
+        confirmed.isEmpty
+            ? strings.fileWasModified
+            : strings.arnsActivityNameAssigned(arnsHostFor(confirmed.last)),
+      ),
+    );
   }
 }
 
@@ -321,32 +419,13 @@ class ArNSNameSection extends StatelessWidget {
               )
             else
               for (final record in records) ...[
-                Row(
-                  children: [
-                    Icon(arnsNameIcon, size: 16, color: colors.iconMid),
-                    const SizedBox(width: ArDriveSpacing.xs),
-                    Expanded(
-                      child: ArDriveLink(
-                        text: arnsHostFor(record.literalName),
-                        external: true,
-                        onTap: () =>
-                            openUrl(url: arnsUrlFor(record.literalName)),
-                      ),
-                    ),
-                  ],
-                ),
+                _NameLink(literal: record.literalName),
                 const SizedBox(height: ArDriveSpacing.xxs),
                 Wrap(
                   spacing: ArDriveSpacing.md,
                   runSpacing: ArDriveSpacing.xxs,
                   children: [
-                    ArDriveLink(
-                      text: strings.copyLink,
-                      isAction: true,
-                      onTap: () => Clipboard.setData(ClipboardData(
-                        text: arnsUrlFor(record.literalName),
-                      )),
-                    ),
+                    _CopyNameLink(literal: record.literalName),
                     ArDriveLink(
                       text: strings.arnsChange,
                       isAction: true,
@@ -375,6 +454,105 @@ class ArNSNameSection extends StatelessWidget {
               width: double.maxFinite,
             ),
           ],
+        );
+      },
+    );
+  }
+}
+
+/// A name as a link that opens it, with the globe.
+class _NameLink extends StatelessWidget {
+  const _NameLink({required this.literal});
+
+  final String literal;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    return Row(
+      children: [
+        Icon(arnsNameIcon, size: 16, color: colors.iconMid),
+        const SizedBox(width: ArDriveSpacing.xs),
+        Expanded(
+          child: ArDriveLink(
+            text: arnsHostFor(literal),
+            external: true,
+            onTap: () => openUrl(url: arnsUrlFor(literal)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CopyNameLink extends StatelessWidget {
+  const _CopyNameLink({required this.literal});
+
+  final String literal;
+
+  @override
+  Widget build(BuildContext context) => ArDriveLink(
+        text: appLocalizationsOf(context).copyLink,
+        isAction: true,
+        onTap: () =>
+            Clipboard.setData(ClipboardData(text: arnsUrlFor(literal))),
+      );
+}
+
+/// The details panel's Name section for someone else's file: its names
+/// once the gateway confirms them, to open or copy, and nothing to manage
+/// (Q6, Q14). Draws nothing until then, or when none is confirmed.
+class ArNSVisitorNameSection extends StatelessWidget {
+  const ArNSVisitorNameSection({
+    super.key,
+    required this.dataTxId,
+    required this.hints,
+  });
+
+  final String dataTxId;
+
+  /// The file's `assignedNames`.
+  final List<String> hints;
+
+  @override
+  Widget build(BuildContext context) {
+    if (hints.isEmpty) return const SizedBox.shrink();
+    final verifier = arnsVisitorVerifier(context);
+    if (verifier == null) return const SizedBox.shrink();
+    final strings = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+    return ArNSConfirmedNames(
+      verifier: verifier,
+      hints: hints,
+      dataTxIds: {dataTxId},
+      builder: (context, names) {
+        if (names.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: ArDriveSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                strings.arnsName,
+                style:
+                    typography.paragraphNormal(fontWeight: ArFontWeight.bold),
+              ),
+              const SizedBox(height: ArDriveSpacing.xs),
+              for (final literal in names) ...[
+                _NameLink(literal: literal),
+                const SizedBox(height: ArDriveSpacing.xxs),
+                _CopyNameLink(literal: literal),
+                const SizedBox(height: ArDriveSpacing.xs),
+              ],
+              const SizedBox(height: 10),
+              HorizontalDottedLine(
+                color: colors.strokeLow,
+                width: double.maxFinite,
+              ),
+            ],
+          ),
         );
       },
     );

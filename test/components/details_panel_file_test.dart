@@ -1,3 +1,4 @@
+import 'package:ardrive/arns/data/arns_name_verifier.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/components/details_panel.dart';
@@ -15,6 +16,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/fake_user.dart';
@@ -104,14 +107,23 @@ void main() {
 
   tearDown(() => db.close());
 
-  Future<void> pumpPanel(WidgetTester tester) async {
+  Future<void> pumpPanel(
+    WidgetTester tester, {
+    bool isOwner = true,
+    bool enableArNS = false,
+    List<String>? assignedNames,
+  }) async {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
     final config = MockConfigService();
     when(() => config.config).thenReturn(
-      AppConfig(allowedDataItemSizeForTurbo: 0, stripePublishableKey: ''),
+      AppConfig(
+        allowedDataItemSizeForTurbo: 0,
+        stripePublishableKey: '',
+        enableArNS: enableArNS,
+      ),
     );
 
     final sync = MockSyncBloc();
@@ -172,7 +184,8 @@ void main() {
                           dataTx: null,
                           pinnedDataOwnerAddress: null,
                           index: 0,
-                          isOwner: true,
+                          isOwner: isOwner,
+                          assignedNames: assignedNames,
                         ),
                         currentDrive: drive,
                         canNavigateThroughImages: false,
@@ -214,6 +227,46 @@ void main() {
     expect(find.text('3f2a9c...7d1e'), findsOneWidget);
     expect(find.text('datajF...w7Lp'), findsOneWidget);
     expect(find.text('jF3uAb...w7Lp'), findsOneWidget);
+
+    await takeDown(tester);
+  });
+
+  // Q14: names show in details for visitors too, once the gateway confirms
+  // them (Q6). A visitor's panel had no Name section at all.
+  testWidgets('shows a visitor the confirmed name, with nothing to manage',
+      (tester) async {
+    ArNSNameVerifier.session = ArNSNameVerifier(
+      gatewayUrl: () => 'https://ar-io.dev',
+      client: MockClient((request) async {
+        return http.Response('', 200, headers: {
+          'x-arns-resolved-id': request.url.host.startsWith('notes')
+              ? file.dataTxId
+              : 'somewhere-else',
+        });
+      }),
+    );
+    addTearDown(() => ArNSNameVerifier.session = null);
+
+    await pumpPanel(
+      tester,
+      isOwner: false,
+      enableArNS: true,
+      assignedNames: ['notes', 'old_dapp'],
+    );
+    await openTab(tester, 'Details');
+    // The gateway's answer, on the real clock.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pump();
+
+    expect(find.text('Name'), findsOneWidget);
+    expect(
+        find.textContaining('notes.ar.io', findRichText: true), findsOneWidget);
+    expect(find.textContaining('old_dapp', findRichText: true), findsNothing);
+    expect(find.text('Copy link', findRichText: true), findsOneWidget);
+    expect(find.text('Change', findRichText: true), findsNothing);
+    expect(find.text('Remove', findRichText: true), findsNothing);
 
     await takeDown(tester);
   });
