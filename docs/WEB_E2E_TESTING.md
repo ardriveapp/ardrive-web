@@ -323,6 +323,11 @@ page. `solana_wallet.js` gives the page one, a Wallet Standard wallet called
    another `SOLANA_KEYS` key, for the wrong-account state. Set
    `localStorage['e2e-solana-hidden'] = '1'` and reload for the no-wallet
    state.
+5. Test resuming after a reload: reload while `solana-delay` holds the
+   second prompt, or write `/sign` to `$E2E_DIR/arns-hold` to keep Turbo's
+   answer to a signed action from the page (Turbo has finished it) and
+   reload then. Delete `arns-hold` afterwards: while it exists, every
+   matching ArNS POST is held.
 
 `net.log` shows each prompt as a `solana` line and each ArNS action created
 as an `arns-action` line with Turbo's nonce and status. `launch.js` refuses

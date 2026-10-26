@@ -29,7 +29,12 @@
 //   testnet) is answered with a 503, so the app's Turbo failure handling
 //   can be tested;
 // - wallet-paid failures come from chaos_gateway.py's failure rate (see
-//   there).
+//   there);
+// - while $E2E_DIR/arns-hold exists, an ArNS action POST whose path contains
+//   the file's text (all of them when it's empty) goes to Turbo as usual,
+//   but its answer is kept from the page until the file is removed, so a
+//   reload can land after Turbo finished the action and before the app
+//   heard about it.
 //
 // ArNS actions (Turbo's /v1/arns/actions, which debit credits when created)
 // are refused on every payment service but the testnet one, whatever the
@@ -213,7 +218,16 @@ async function guardTurbo(route) {
     const body = await res.text();
     let answer = {};
     try { answer = JSON.parse(body); } catch (e) { answer = { error: body.slice(0, 160) }; }
-    log({ ev: 'arns-action', method: req.method(), path: new URL(req.url()).pathname.slice(0, 120), http: res.status(), nonce: answer.nonce, status: answer.status, error: answer.error });
+    const actionPath = new URL(req.url()).pathname.slice(0, 120);
+    log({ ev: 'arns-action', method: req.method(), path: actionPath, http: res.status(), nonce: answer.nonce, status: answer.status, error: answer.error });
+    const hold = `${E2E_DIR}/arns-hold`;
+    const held = () => fs.existsSync(hold) && actionPath.includes(fs.readFileSync(hold, 'utf8').trim());
+    if (held()) {
+      log({ ev: 'INJECTED', path: actionPath, why: 'arns-hold: answer kept from the page' });
+      while (held()) await new Promise((r) => setTimeout(r, 500));
+      // The page that asked may be gone by now: that's the point.
+      return route.fulfill({ response: res, body }).catch(() => log({ ev: 'arns-hold', path: actionPath, why: 'the page that asked was gone' }));
+    }
     return route.fulfill({ response: res, body });
   }));
   if (SOLANA_KEYS.length) {
