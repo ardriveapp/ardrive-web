@@ -130,10 +130,15 @@ class TurboArNSActionClient {
 
   /// Creates the action, which debits the payer. Never call it twice for one
   /// change: resume with [status] and [sign] instead.
+  ///
+  /// [paidBy] names wallets that share credits with the payer, as uploads
+  /// send them: an Ethereum or Solana sign-in keeps its credits on the
+  /// sign-in wallet, shared to the derived Arweave wallet that signs here.
   Future<ArNSActionResult> create(
     ArNSRecordChange change, {
     required ArNSPayerSigner payer,
     required ArNSOwnerSigner owner,
+    List<String> paidBy = const [],
   }) async {
     // The owner's prompt comes first: rejecting it must cost nothing, not
     // even a payer prompt.
@@ -149,6 +154,7 @@ class TurboArNSActionClient {
       headers: {
         ...payerHeaders,
         ...proof,
+        if (paidBy.isNotEmpty) 'x-paid-by': paidBy.join(', '),
         'content-type': 'application/json',
       },
       body: jsonEncode({...change.body, 'ownerAddress': owner.address}),
@@ -212,8 +218,10 @@ class TurboArNSActionClient {
     required ArNSPayerSigner payer,
     required ArNSOwnerSigner owner,
     required FutureOr<void> Function(ArNSActionResult created) onNonce,
+    List<String> paidBy = const [],
   }) async {
-    final created = await create(change, payer: payer, owner: owner);
+    final created =
+        await create(change, payer: payer, owner: owner, paidBy: paidBy);
     await onNonce(created);
 
     switch (created) {

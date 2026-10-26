@@ -170,6 +170,28 @@ void main() {
       expect(request.headers['x-owner-public-key'], _ownerKeyB64Url);
       expect(request.headers['x-owner-signature-type'], '4');
       expect(request.headers.containsKey('x-signature-type'), isFalse);
+      expect(request.headers.containsKey('x-paid-by'), isFalse);
+    });
+
+    test('names credit sharers in x-paid-by, as uploads do', () async {
+      final c = client((_) async => _json({
+            'nonce': 'action-1',
+            'action': 'set-record',
+            'status': 'completed',
+          }));
+
+      await c.create(
+        _set,
+        payer: payer,
+        owner: owner,
+        paidBy: ['sharer-1', 'sharer-2'],
+      );
+
+      expect(requests.single.headers['x-paid-by'], 'sharer-1, sharer-2');
+      expect(
+        (jsonDecode(requests.single.body) as Map).containsKey('paidBy'),
+        isFalse,
+      );
     });
 
     test('402 is insufficient credits', () async {
