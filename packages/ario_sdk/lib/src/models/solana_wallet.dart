@@ -118,6 +118,11 @@ class ArioNetworkConfig extends Equatable {
       );
 
   @override
-  List<Object?> get props =>
-      [mainnetRpcUrl, devnetRpcUrl, mainnetProgramIds, devnetProgramIds, isDevnet];
+  List<Object?> get props => [
+        mainnetRpcUrl,
+        devnetRpcUrl,
+        mainnetProgramIds,
+        devnetProgramIds,
+        isDevnet
+      ];
 }

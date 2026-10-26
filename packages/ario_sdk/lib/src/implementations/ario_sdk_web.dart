@@ -97,7 +97,8 @@ class ArioSDKWeb implements ArioSDK {
       _walletsChanges.stream;
 
   @override
-  Future<String?> connectSolanaWallet(String name, {bool silent = false}) async {
+  Future<String?> connectSolanaWallet(String name,
+      {bool silent = false}) async {
     final String address =
         await promiseToFuture(_connectSolanaWallet(name, silent));
     return address.isEmpty ? null : address;

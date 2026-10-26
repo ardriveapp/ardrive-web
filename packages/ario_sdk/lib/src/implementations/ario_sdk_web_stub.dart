@@ -36,8 +36,7 @@ class ArioSDKWeb implements ArioSDK {
   }
 
   @override
-  Future<ArioNetworkConfig> getNetworkConfig() =>
-      throw UnimplementedError();
+  Future<ArioNetworkConfig> getNetworkConfig() => throw UnimplementedError();
 
   @override
   List<SolanaWalletInfo> listSolanaWallets() => const [];
