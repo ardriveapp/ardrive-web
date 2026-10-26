@@ -441,8 +441,9 @@ String arnsPointsToLabel(
   };
 }
 
-/// "Points to" with the item, or "Points elsewhere" and the transaction ID
-/// in monospace (Q22).
+/// "Points to" with the item, or "Points elsewhere" (Q22). The transaction
+/// it points to is in the tooltip, not the row: it means nothing to most
+/// people, and nothing here acts on it.
 class ArNSPointsTo extends StatelessWidget {
   const ArNSPointsTo({super.key, required this.record, this.placeholder});
 
@@ -454,29 +455,15 @@ class ArNSPointsTo extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
     final label = arnsPointsToLabel(context, record, placeholder: placeholder);
-    final kind = arnsPointsToKind(record, placeholder: placeholder);
-    if (kind != ArNSPointsToKind.elsewhere) {
-      return Text(
-        label,
-        overflow: TextOverflow.ellipsis,
-        style: typography.paragraphSmall(color: colors.textMid),
-      );
+    final text = Text(
+      label,
+      overflow: TextOverflow.ellipsis,
+      style: typography.paragraphSmall(color: colors.textMid),
+    );
+    if (arnsPointsToKind(record, placeholder: placeholder) !=
+        ArNSPointsToKind.elsewhere) {
+      return text;
     }
-    final short = truncateString(
-      record.transactionId,
-      offsetStart: 6,
-      offsetEnd: 4,
-    );
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: ArDriveSpacing.xs,
-      children: [
-        Text(label, style: typography.paragraphSmall(color: colors.textMid)),
-        ArDriveIdText(
-          short,
-          style: typography.code(color: colors.textMid, fontSize: 12),
-        ),
-      ],
-    );
+    return ArDriveTooltip(message: record.transactionId, child: text);
   }
 }

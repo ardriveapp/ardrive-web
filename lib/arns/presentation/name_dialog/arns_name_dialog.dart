@@ -458,8 +458,7 @@ class _ChooseContent extends StatelessWidget {
     } else if (cubit.change != null || state.pricing || state.costFailed) {
       children.addAll([
         const SizedBox(height: ArDriveSpacing.md),
-        _CostLine(
-            state: state, isController: name?.role == ArNSRole.controller),
+        _CostLine(state: state),
       ]);
     }
 
@@ -513,9 +512,12 @@ class _ChooseContent extends StatelessWidget {
 
 /// The names, each with its undernames, in the console's simple style.
 class _NamePicker extends StatelessWidget {
-  const _NamePicker({required this.state});
+  const _NamePicker({required this.state, this.belowChoice});
 
   final ArNSNameDialogState state;
+
+  /// Shown under the chosen row, such as a flow's repoint question.
+  final Widget? belowChoice;
 
   @override
   Widget build(BuildContext context) {
@@ -527,7 +529,7 @@ class _NamePicker extends StatelessWidget {
         ArNSCaption(strings.arnsUndernameExplainer),
         const SizedBox(height: ArDriveSpacing.sm),
         for (final name in state.names) ...[
-          _NameGroup(name: name, state: state),
+          _NameGroup(name: name, state: state, belowChoice: belowChoice),
           const SizedBox(height: ArDriveSpacing.xs),
         ],
       ],
@@ -536,10 +538,15 @@ class _NamePicker extends StatelessWidget {
 }
 
 class _NameGroup extends StatelessWidget {
-  const _NameGroup({required this.name, required this.state});
+  const _NameGroup({
+    required this.name,
+    required this.state,
+    this.belowChoice,
+  });
 
   final ArNSManagedName name;
   final ArNSNameDialogState state;
+  final Widget? belowChoice;
 
   @override
   Widget build(BuildContext context) {
@@ -582,7 +589,8 @@ class _NameGroup extends StatelessWidget {
                 : null,
             onTap: () => cubit.choose(name.name, arnsApex),
           ),
-          for (final record in undernames)
+          if (isChosen(arnsApex)) ..._below(),
+          for (final record in undernames) ...[
             ArNSChoiceRow(
               selected: isChosen(record.undername),
               enabled: !blocked,
@@ -591,6 +599,8 @@ class _NameGroup extends StatelessWidget {
               subtitle: _pointsTo(context, record),
               onTap: () => cubit.choose(name.name, record.undername),
             ),
+            if (isChosen(record.undername)) ..._below(),
+          ],
           if (creating)
             _NewUndernameField(name: name, state: state)
           else
@@ -641,6 +651,19 @@ class _NameGroup extends StatelessWidget {
       ),
     );
   }
+
+  List<Widget> _below() => [
+        if (belowChoice != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              ArDriveSpacing.md,
+              ArDriveSpacing.xxs,
+              ArDriveSpacing.md,
+              ArDriveSpacing.xs,
+            ),
+            child: belowChoice,
+          ),
+      ];
 
   String? _pointsTo(BuildContext context, ArNSNameRecord? record) {
     if (record == null) return null;
@@ -906,14 +929,9 @@ class _CacheTimeSectionState extends State<_CacheTimeSection> {
 }
 
 class _CostLine extends StatelessWidget {
-  const _CostLine({
-    required this.state,
-    required this.isController,
-    this.inFlow = false,
-  });
+  const _CostLine({required this.state, this.inFlow = false});
 
   final ArNSNameDialogState state;
-  final bool isController;
 
   /// Inside a flow's own dialog: top-up opens over it rather than closing
   /// it.
@@ -925,13 +943,6 @@ class _CostLine extends StatelessWidget {
     final cubit = context.read<ArNSNameDialogCubit>();
     final cost = state.cost;
     final children = <Widget>[];
-
-    if (isController) {
-      children.addAll([
-        ArNSCaption(strings.arnsControllerPaysSol),
-        const SizedBox(height: ArDriveSpacing.xs),
-      ]);
-    }
 
     if (state.costFailed) {
       children.add(ArDriveNotice(
@@ -950,25 +961,24 @@ class _CostLine extends StatelessWidget {
                   formatSol(cost.solLamports!), credits)
               : strings.arnsCostSol(formatSol(cost.solLamports!)))
           : strings.arnsCostCredits(credits);
+      // A managed name's fee is said once, with its amount (Q23).
       children.add(ArNSCostRow(
         label: strings.arnsCost,
         value: value,
-        note: cost.metadataWrites > 0
-            ? (cost.paidInSol
-                ? strings.arnsCostNoteDetailsOnly
-                : state.removesPrevious
+        note: cost.paidInSol
+            ? strings.arnsControllerPaysSol
+            : cost.metadataWrites > 0
+                ? (state.removesPrevious
                     ? strings.arnsCostNoteMove
                     : strings.arnsCostNote)
-            : null,
+                : null,
       ));
       if (state.insufficientCredits) {
         children.addAll([
           const SizedBox(height: ArDriveSpacing.sm),
           ArDriveNotice(
             type: ArDriveNoticeType.error,
-            message: strings.arnsNotEnoughCreditsBody(
-              formatArNSCredits(state.creditBalance!),
-            ),
+            message: strings.arnsNotEnoughCreditsBody,
             actionLabel: strings.arnsTopUp,
             onAction: () {
               if (!inFlow) Navigator.of(context).pop();
@@ -982,7 +992,7 @@ class _CostLine extends StatelessWidget {
           const SizedBox(height: ArDriveSpacing.sm),
           ArDriveNotice(
             type: ArDriveNoticeType.error,
-            message: strings.arnsNotEnoughSol(formatSol(cost.solLamports!)),
+            message: strings.arnsNotEnoughSol,
           ),
         ]);
       }
@@ -1050,17 +1060,7 @@ class ArNSRepointQuestion extends StatelessWidget {
         ]),
       );
     }
-    final sentence = strings.arnsRepointElsewhere(host, record.transactionId);
-    return Text.rich(
-      TextSpan(
-        style: base,
-        children: ArDriveIdText.spansIn(
-          sentence,
-          record.transactionId,
-          idStyle: typography.code(color: colors.textHigh),
-        ),
-      ),
-    );
+    return Text(strings.arnsRepointElsewhere(host), style: base);
   }
 }
 
@@ -1401,6 +1401,24 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
       ),
     ));
 
+    // Under the chosen name while the step is open, under the step's
+    // heading while it is folded: the flow's button waits for the answer.
+    final repointing = cubit.repointing;
+    final repointQuestion = repointing == null
+        ? null
+        : ArDriveNotice(
+            type: ArDriveNoticeType.warning,
+            content: ArNSRepointQuestion(record: repointing),
+            actionLabel: strings.arnsPointItHere,
+            onAction: cubit.confirmRepoint,
+          );
+    if (!_open && repointQuestion != null) {
+      children.addAll([
+        const SizedBox(height: ArDriveSpacing.xs),
+        repointQuestion,
+      ]);
+    }
+
     if (_open) {
       children.add(const SizedBox(height: ArDriveSpacing.xs));
       switch (state.stage) {
@@ -1428,7 +1446,7 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
           children.add(ArNSCaption(strings.arnsNamesCouldNotBeRead));
         default:
           children.addAll([
-            _NamePicker(state: state),
+            _NamePicker(state: state, belowChoice: repointQuestion),
             if (state.choice != null) ...[
               const SizedBox(height: ArDriveSpacing.xs),
               ArDriveLink(
@@ -1443,27 +1461,10 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
       }
     }
 
-    final repointing = cubit.repointing;
-    if (repointing != null) {
-      children.addAll([
-        const SizedBox(height: ArDriveSpacing.sm),
-        ArDriveNotice(
-          type: ArDriveNoticeType.warning,
-          content: ArNSRepointQuestion(record: repointing),
-          actionLabel: strings.arnsPointItHere,
-          onAction: cubit.confirmRepoint,
-        ),
-      ]);
-    }
-
     if (cubit.hasWork) {
       children.addAll([
         const SizedBox(height: ArDriveSpacing.sm),
-        _CostLine(
-          state: state,
-          isController: state.selectedName?.role == ArNSRole.controller,
-          inFlow: true,
-        ),
+        _CostLine(state: state, inFlow: true),
       ]);
       if (wallet.status != ArNSWalletStatus.connected) {
         children.addAll([

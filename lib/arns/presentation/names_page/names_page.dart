@@ -250,27 +250,12 @@ class _Header extends StatelessWidget {
       children: [
         title,
         const SizedBox(height: ArDriveSpacing.xxs),
+        // The ArNS wallet's address is in the profile card, where it is
+        // linked and changed; here it was one more thing to read.
         Text(
           strings.arnsNamesPageIntro,
           style: typography.paragraphNormal(color: colors.textMid),
         ),
-        if (linked != null) ...[
-          const SizedBox(height: ArDriveSpacing.xs),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: ArDriveSpacing.xs,
-            children: [
-              Text(
-                strings.arnsWallet,
-                style: typography.paragraphSmall(color: colors.textLow),
-              ),
-              ArDriveIdText(
-                shortArNSAddress(linked.address),
-                style: typography.code(color: colors.textMid, fontSize: 12),
-              ),
-            ],
-          ),
-        ],
       ],
     );
   }
@@ -569,7 +554,7 @@ class _RecordRow extends StatelessWidget {
       ArNSRecordChoice(name: record.name, undername: record.undername);
 }
 
-/// The item, a link that opens it; or "Points elsewhere" and the ID.
+/// The item, a link that opens it; or "Points elsewhere".
 class _PointsToCell extends StatelessWidget {
   const _PointsToCell({required this.record, required this.placeholder});
 
