@@ -69,19 +69,23 @@ List<ArNSNameRecord> recordsPointingAt(
           if (record.transactionId == dataTxId) record,
     ];
 
-/// Credits from winc, for the cost line: never "free", never 0 when it isn't.
+/// Credits from winc, for the cost line: never "free", never 0 when it isn't,
+/// and rounded up, so the cost said before the prompt is never less than
+/// what is debited. Four decimals under one credit, two from one up.
 String formatArNSCredits(BigInt winc) {
-  final divisor = BigInt.from(10).pow(12);
   if (winc <= BigInt.zero) return '0';
   final minimum = BigInt.from(10).pow(8); // 0.0001
   if (winc < minimum) return '< 0.0001';
-  final whole = winc ~/ divisor;
-  final fraction = (winc % divisor) * BigInt.from(10000) ~/ divisor;
-  final digits = fraction.toString().padLeft(4, '0');
-  if (whole >= BigInt.one) {
-    return '$whole.${digits.substring(0, 2)}';
-  }
-  return '0.$digits';
+  final four = _creditsRoundedUp(winc, 4);
+  return four.startsWith('0.') ? four : _creditsRoundedUp(winc, 2);
+}
+
+String _creditsRoundedUp(BigInt winc, int places) {
+  final scale = BigInt.from(10).pow(places);
+  final step = BigInt.from(10).pow(12) ~/ scale;
+  final units = (winc + step - BigInt.one) ~/ step;
+  final fraction = (units % scale).toString().padLeft(places, '0');
+  return '${units ~/ scale}.$fraction';
 }
 
 /// SOL from lamports, to two significant digits: "0.000005", "0.0031".
