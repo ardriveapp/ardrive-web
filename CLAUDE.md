@@ -314,6 +314,8 @@ The drive state artifact (a published SQLite file of a drive's parsed state, imp
 
 Users see "deployment" for an Arweave manifest the app creates or updates (New deployment, Update deployments, the file type), while code, docs and the ArFS spec keep saying manifest. The word "manifest" stays in front of users only where it means any manifest: Import from manifest, and the one-line explanation that a deployment is stored as an Arweave manifest.
 
+ArNS names (naming deployments, public files and publications; the Names page; record changes paid in Turbo credits and approved by a linked Solana wallet) are specified in `docs/NAMES.md`, which is also the terminology standard for names across ArDrive apps. The feature is behind the `enableArNS` config flag.
+
 ## Deployment
 
 - Changes to `dev` auto-deploy to [staging.ardrive.io](https://staging.ardrive.io)
