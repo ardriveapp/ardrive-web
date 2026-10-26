@@ -14,6 +14,7 @@ import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/arns/presentation/names_page/names_page.dart';
+import 'package:ardrive/arns/presentation/resume/arns_resume_scope.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
 import 'package:ardrive/drive_explorer/dock/ardrive_dock.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_modal.dart';
@@ -848,7 +849,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         );
                       }
                     },
-                    child: SearchScope(child: navigator),
+                    child: ArNSResumeScope(
+                      child: SearchScope(child: navigator),
+                    ),
                   ),
                 );
               } else {

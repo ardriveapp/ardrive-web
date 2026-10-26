@@ -1,6 +1,7 @@
 import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/arns/data/arns_file_metadata_writer.dart';
+import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/turbo_arns_action_client.dart';
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
@@ -56,10 +57,7 @@ Future<void> showArNSNameDialog(
         namesCubit: namesCubit,
         walletCubit: walletCubit,
         actionClient: context.read<TurboArNSActionClient>(),
-        executor: ArNSChangeExecutor(
-          client: context.read<TurboArNSActionClient>(),
-          arioSDK: arioSDK,
-        ),
+        executor: arnsChangeExecutor(context, arioSDK),
         arioSDK: arioSDK,
         metadataWriter: DriveDaoArNSFileMetadataWriter(
           driveDao: driveDao,
@@ -1199,6 +1197,24 @@ class ArNSRemovePreviousBox extends StatelessWidget {
   }
 }
 
+/// The executor every name change runs through, remembering each Turbo
+/// action's nonce for the signed-in profile so a reload can resume it.
+ArNSChangeExecutor arnsChangeExecutor(BuildContext context, ArioSDK arioSDK) {
+  ArNSPendingActionStore? pending;
+  try {
+    pending = context.read<ArNSPendingActionStore>();
+  } on ProviderNotFoundException {
+    pending = null;
+  }
+  final walletCubit = context.read<ArNSWalletCubit>();
+  return ArNSChangeExecutor(
+    client: context.read<TurboArNSActionClient>(),
+    arioSDK: arioSDK,
+    pending: pending,
+    profileAddress: () => walletCubit.state.profileAddress,
+  );
+}
+
 /// Whether a flow offers names: the flag, outside a publication, with the
 /// names cubit provided. Returns the flow's name cubit, or null.
 ArNSFlowNameCubit? createArNSFlowNameCubit(
@@ -1216,10 +1232,7 @@ ArNSFlowNameCubit? createArNSFlowNameCubit(
     namesCubit: context.read<ArNSNamesCubit>(),
     walletCubit: context.read<ArNSWalletCubit>(),
     actionClient: context.read<TurboArNSActionClient>(),
-    executor: ArNSChangeExecutor(
-      client: context.read<TurboArNSActionClient>(),
-      arioSDK: arioSDK,
-    ),
+    executor: arnsChangeExecutor(context, arioSDK),
     arioSDK: arioSDK,
     metadataWriter: DriveDaoArNSFileMetadataWriter(
       driveDao: driveDao,

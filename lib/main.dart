@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/arns/data/arns_names_repository.dart';
+import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/arns/data/turbo_arns_action_client.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
@@ -507,6 +508,7 @@ class AppState extends State<App> {
         RepositoryProvider<DriveDao>(
             create: (context) => context.read<Database>().driveDao),
         RepositoryProvider(create: (_) => ArNSWalletStore()),
+        RepositoryProvider(create: (_) => ArNSPendingActionStore()),
         RepositoryProvider<UserRepository>(
           create: (context) => UserRepository(
             context.read<ProfileDao>(),
@@ -528,6 +530,7 @@ class AppState extends State<App> {
             arweave: arweave,
             userRepository: context.read<UserRepository>(),
             arnsWalletStore: context.read<ArNSWalletStore>(),
+            arnsPendingActionStore: context.read<ArNSPendingActionStore>(),
           ),
         ),
         RepositoryProvider(

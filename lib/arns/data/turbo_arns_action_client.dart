@@ -89,8 +89,12 @@ class TurboArNSActionClient {
 
   static const _ownerSignatureType = '4';
 
-  Uri _uri(String path) {
-    final base = _paymentUrl().replaceAll(RegExp(r'/+$'), '');
+  /// The payment service actions are created on now, without a trailing
+  /// slash. Remembered with each action, so it is resumed where it lives.
+  String get paymentUrl => _paymentUrl().replaceAll(RegExp(r'/+$'), '');
+
+  Uri _uri(String path, {String? paymentUrl}) {
+    final base = paymentUrl?.replaceAll(RegExp(r'/+$'), '') ?? this.paymentUrl;
     return Uri.parse('$base/v1/arns/actions/$path');
   }
 
@@ -175,11 +179,15 @@ class TurboArNSActionClient {
   }
 
   /// Submits the owner-signed transaction of an awaiting action. Safe to
-  /// repeat with the same bytes. Sends no payer headers.
+  /// repeat with the same bytes. Sends no payer headers. [paymentUrl] is
+  /// the service the action was created on, when resuming it.
   Future<ArNSActionCompleted> sign(
-      String nonce, String signedTransaction) async {
+    String nonce,
+    String signedTransaction, {
+    String? paymentUrl,
+  }) async {
     final response = await _client.post(
-      _uri('$nonce/sign'),
+      _uri('$nonce/sign', paymentUrl: paymentUrl),
       headers: {'content-type': 'application/json'},
       body: jsonEncode({'transaction': signedTransaction}),
     );
@@ -198,8 +206,9 @@ class TurboArNSActionClient {
   }
 
   /// An action's state, to resume after a lost response or a reload.
-  Future<ArNSActionResult> status(String nonce) async {
-    final response = await _client.get(_uri(nonce));
+  /// [paymentUrl] is the service it was created on.
+  Future<ArNSActionResult> status(String nonce, {String? paymentUrl}) async {
+    final response = await _client.get(_uri(nonce, paymentUrl: paymentUrl));
     if (response.statusCode != 200) {
       throw ArNSActionRequestException(
         _message(response),
@@ -247,11 +256,12 @@ class TurboArNSActionClient {
   /// blockhash.
   Future<ArNSActionCompleted> submitSigned(
     String nonce,
-    String signedTransaction,
-  ) async {
+    String signedTransaction, {
+    String? paymentUrl,
+  }) async {
     for (var attempt = 0;; attempt++) {
       try {
-        return await sign(nonce, signedTransaction);
+        return await sign(nonce, signedTransaction, paymentUrl: paymentUrl);
       } on ArNSBlockhashNotFoundException {
         if (attempt >= blockhashRetries) rethrow;
         await _delay(_blockhashRetryDelay);

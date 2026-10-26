@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
@@ -56,6 +57,7 @@ abstract class ArDriveAuth {
     required DatabaseHelpers databaseHelpers,
     MetadataCache? metadataCache,
     ArNSWalletStore? arnsWalletStore,
+    ArNSPendingActionStore? arnsPendingActionStore,
   }) =>
       ArDriveAuthImpl(
         arweave: arweave,
@@ -67,6 +69,7 @@ abstract class ArDriveAuth {
         arConnectService: arConnectService,
         metadataCache: metadataCache,
         arnsWalletStore: arnsWalletStore,
+        arnsPendingActionStore: arnsPendingActionStore,
       );
 }
 
@@ -82,6 +85,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     MetadataCache? metadataCache,
     PermanenceCache? permanenceCache,
     ArNSWalletStore? arnsWalletStore,
+    ArNSPendingActionStore? arnsPendingActionStore,
   })  : _arweave = arweave,
         _crypto = crypto,
         _databaseHelpers = databaseHelpers,
@@ -91,7 +95,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
         _userRepository = userRepository,
         _maybeMetadataCache = metadataCache,
         _permanenceCache = permanenceCache ?? PermanenceCache.shared,
-        _arnsWalletStore = arnsWalletStore ?? ArNSWalletStore();
+        _arnsWalletStore = arnsWalletStore ?? ArNSWalletStore(),
+        _arnsPendingActionStore =
+            arnsPendingActionStore ?? ArNSPendingActionStore();
 
   final UserRepository _userRepository;
   final ArweaveService _arweave;
@@ -107,6 +113,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   /// The ArNS wallet linked to each profile, forgotten at sign-out.
   final ArNSWalletStore _arnsWalletStore;
+
+  /// Each profile's unfinished Turbo ArNS actions, forgotten at sign-out.
+  final ArNSPendingActionStore _arnsPendingActionStore;
 
   User? _currentUser;
 
@@ -297,6 +306,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       await _databaseHelpers.clearSessionMemory();
       await _permanenceCache.clear();
       await _arnsWalletStore.clear();
+      await _arnsPendingActionStore.clear();
       currentUser = null;
       _userStreamController.add(null);
     } catch (e, stacktrace) {

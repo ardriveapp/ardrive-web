@@ -2,9 +2,11 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:ardrive/arns/data/arns_change_executor.dart';
+import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/turbo_arns_action_client.dart';
 import 'package:ardrive/arns/domain/arns_action.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
+import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -16,6 +18,48 @@ const _antId = 'EH9PsyfwJBk9KLMpZ2C5nUjWQfXsNTHaUzTqFa4BpbQj';
 const _txId = 'FWswWiH1FMFnuzLFzpqzdgxOBlMS8L7DiP5MxUnWODE';
 
 class _MockArioSDK extends Mock implements ArioSDK {}
+
+class _MemoryStore implements KeyValueStore {
+  final values = <String, String>{};
+
+  @override
+  Future<bool> putString(String key, String value) async {
+    values[key] = value;
+    return true;
+  }
+
+  @override
+  String? getString(String key) => values[key];
+
+  @override
+  Future<bool> remove(String key) async {
+    values.remove(key);
+    return true;
+  }
+
+  @override
+  Set<String> getKeys() => values.keys.toSet();
+
+  @override
+  Future<bool> putBool(String key, bool value) async => true;
+
+  @override
+  bool? getBool(String key) => null;
+}
+
+/// Records what the pending store held when the transaction was signed.
+class _WatchingOwner extends _Owner {
+  _WatchingOwner(this.store);
+
+  final ArNSPendingActionStore store;
+  List<ArNSPendingAction>? pendingAtSignature;
+
+  @override
+  Future<String> signTransaction(String transactionBase64) async {
+    pendingAtSignature = await store.pending('profile');
+    return super.signTransaction(transactionBase64);
+  }
+}
 
 class _Owner implements ArNSOwnerSigner {
   _Owner({this.rejectMessage = false, this.rejectTransaction = false});
@@ -71,6 +115,7 @@ void main() {
   late List<http.Request> requests;
   late _MockArioSDK sdk;
   late List<ArNSCommitStep> steps;
+  late ArNSPendingActionStore pending;
 
   ArNSChangeExecutor executor(
     Future<http.Response> Function(http.Request) handler,
@@ -87,6 +132,9 @@ void main() {
         delay: (_) async {},
       ),
       arioSDK: sdk,
+      pending: pending,
+      profileAddress: () => 'profile',
+      clock: () => DateTime.utc(2026, 10, 26),
     );
   }
 
@@ -97,6 +145,8 @@ void main() {
     requests = [];
     sdk = _MockArioSDK();
     steps = [];
+    final memory = _MemoryStore();
+    pending = ArNSPendingActionStore(openStore: () async => memory);
   });
 
   Future<ArNSChangeFailure?> run(
@@ -267,5 +317,81 @@ void main() {
         await run(executor((r) async => _json({})), role: ArNSRole.controller);
 
     expect(failure?.kind, ArNSFailureKind.rejected);
+  });
+
+  group('the nonce is remembered for a reload', () {
+    Future<http.Response> awaiting(http.Request r,
+        {http.Response? sign}) async {
+      if (r.method == 'POST' && r.url.path.endsWith('/set-record')) {
+        return _json({
+          'nonce': 'a1',
+          'action': 'set-record',
+          'status': 'awaiting-signature',
+          'transaction': 'dHg=',
+        });
+      }
+      return sign ?? _json({'nonce': 'a1', 'status': 'completed'});
+    }
+
+    test('before the second prompt, and forgotten once done', () async {
+      final owner = _WatchingOwner(pending);
+
+      final failure = await run(executor(awaiting), owner: owner);
+
+      expect(failure, isNull);
+      expect(owner.pendingAtSignature, [
+        ArNSPendingAction(
+          nonce: 'a1',
+          paymentUrl: 'https://payment.example',
+          name: 'blog_acme',
+          description: 'set-record blog_acme -> $_txId',
+          createdAt: DateTime.utc(2026, 10, 26),
+        ),
+      ]);
+      expect(await pending.pending('profile'), isEmpty);
+    });
+
+    test('kept when Turbo fails after the action exists', () async {
+      final failure = await run(executor(
+          (r) => awaiting(r, sign: _json({'error': 'Internal error'}, 500))));
+
+      expect(failure?.kind, ArNSFailureKind.lostAfterCreate);
+      expect((await pending.pending('profile')).single.nonce, 'a1');
+    });
+
+    test('kept when the signed transaction went out and no answer came',
+        () async {
+      await run(executor((r) async {
+        if (isCreate(r)) return awaiting(r);
+        throw http.ClientException('Connection closed');
+      }));
+
+      expect((await pending.pending('profile')).single.nonce, 'a1');
+    });
+
+    test('forgotten when the second prompt is rejected', () async {
+      final failure = await run(
+        executor(awaiting),
+        owner: _Owner(rejectTransaction: true),
+      );
+
+      expect(failure?.kind, ArNSFailureKind.expired);
+      expect(await pending.pending('profile'), isEmpty);
+    });
+
+    test('forgotten when the action expired', () async {
+      final failure = await run(executor((r) => awaiting(r,
+          sign: _json({'error': 'Action expired', 'refunded': true}, 409))));
+
+      expect(failure?.kind, ArNSFailureKind.expired);
+      expect(await pending.pending('profile'), isEmpty);
+    });
+
+    test('nothing is remembered when nothing was created', () async {
+      await run(
+          executor((r) async => _json({'error': 'Insufficient balance'}, 402)));
+
+      expect(await pending.pending('profile'), isEmpty);
+    });
   });
 }

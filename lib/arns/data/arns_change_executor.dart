@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 
+import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/arns/data/bridge_arns_owner_signer.dart';
 import 'package:ardrive/arns/data/turbo_arns_action_client.dart';
 import 'package:ardrive/arns/domain/arns_action.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
+import 'package:ardrive/arns/domain/undername_validation.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 
@@ -64,15 +66,29 @@ class ArNSChangeFailure implements Exception {
 /// Never creates a Turbo action twice: anything that fails after the create
 /// request was sent is [ArNSFailureKind.lostAfterCreate], expired or failed,
 /// never retried here.
+///
+/// Remembers each action's nonce in [pending] the moment Turbo returns it,
+/// before any further prompt, and forgets it once the action reaches an end
+/// here, so a reload in between can say what became of it (docs/NAMES.md,
+/// "Writes", steps 3 and 6).
 class ArNSChangeExecutor {
   ArNSChangeExecutor({
     required TurboArNSActionClient client,
     required ArioSDK arioSDK,
+    ArNSPendingActionStore? pending,
+    String? Function()? profileAddress,
+    DateTime Function()? clock,
   })  : _client = client,
-        _arioSDK = arioSDK;
+        _arioSDK = arioSDK,
+        _pending = pending,
+        _profileAddress = profileAddress,
+        _clock = clock ?? DateTime.now;
 
   final TurboArNSActionClient _client;
   final ArioSDK _arioSDK;
+  final ArNSPendingActionStore? _pending;
+  final String? Function()? _profileAddress;
+  final DateTime Function() _clock;
 
   Future<void> execute({
     required ArNSManagedName name,
@@ -90,6 +106,7 @@ class ArNSChangeExecutor {
     final tracked = _TrackedOwner(owner);
     final trackedPayer = _TrackedPayer(payer);
     var created = false;
+    String? nonce;
     onStep(ArNSCommitStep.approve);
     try {
       await _client.run(
@@ -97,8 +114,10 @@ class ArNSChangeExecutor {
         payer: trackedPayer,
         owner: tracked,
         paidBy: paidBy,
-        onNonce: (result) {
+        onNonce: (result) async {
           created = true;
+          nonce = result.nonce;
+          await _remember(result.nonce, name, change);
           onNonce?.call(result.nonce);
           if (result is ArNSActionAwaitingSignature) {
             onStep(ArNSCommitStep.approveTransaction);
@@ -107,15 +126,18 @@ class ArNSChangeExecutor {
           }
         },
       );
+      await _forget(nonce);
     } on ArNSInsufficientCreditsException catch (e) {
       throw ArNSChangeFailure(ArNSFailureKind.insufficientCredits, cause: e);
     } on ArNSActionExpiredException catch (e) {
+      await _forget(nonce);
       throw ArNSChangeFailure(
         ArNSFailureKind.expired,
         refunded: e.refunded,
         cause: e,
       );
     } on ArNSWrongAccountException catch (e) {
+      if (created) await _forget(nonce);
       throw ArNSChangeFailure(
         created ? ArNSFailureKind.expired : ArNSFailureKind.wrongAccount,
         cause: e,
@@ -132,6 +154,9 @@ class ArNSChangeExecutor {
         // The second prompt rejected or lost: the action expires unsigned and
         // its credits come back.
         if (tracked.signingTransaction) {
+          // Rejected, it can only expire. Signed and then lost, it may have
+          // landed: kept, so a reload reads how it ended.
+          if (!tracked.signedTransaction) await _forget(nonce);
           throw ArNSChangeFailure(ArNSFailureKind.expired, cause: e);
         }
         throw ArNSChangeFailure(ArNSFailureKind.lostAfterCreate, cause: e);
@@ -141,6 +166,50 @@ class ArNSChangeExecutor {
         throw ArNSChangeFailure(ArNSFailureKind.lostAfterCreate, cause: e);
       }
       throw ArNSChangeFailure(ArNSFailureKind.rejected, cause: e);
+    }
+  }
+
+  /// Persists the action before any further prompt. A store that fails is
+  /// logged, not fatal: the action is paid for, and stopping now would only
+  /// let it expire.
+  Future<void> _remember(
+    String nonce,
+    ArNSManagedName name,
+    ArNSRecordChange change,
+  ) async {
+    final pending = _pending;
+    final profile = _profileAddress?.call();
+    if (pending == null || profile == null) return;
+    final literal = literalArNSName(change.undername, name.name);
+    try {
+      await pending.add(
+        profile,
+        ArNSPendingAction(
+          nonce: nonce,
+          paymentUrl: _client.paymentUrl,
+          name: literal,
+          description: switch (change) {
+            ArNSSetRecord(:final transactionId) =>
+              '${change.action.path} $literal -> $transactionId',
+            ArNSRemoveRecord() => '${change.action.path} $literal',
+          },
+          createdAt: _clock(),
+        ),
+      );
+    } catch (e) {
+      logger.w('Could not remember ArNS action $nonce: $e');
+    }
+  }
+
+  /// Forgets an action that reached an end here: done, or expired.
+  Future<void> _forget(String? nonce) async {
+    final pending = _pending;
+    final profile = _profileAddress?.call();
+    if (pending == null || profile == null || nonce == null) return;
+    try {
+      await pending.remove(profile, nonce);
+    } catch (e) {
+      logger.w('Could not forget ArNS action $nonce: $e');
     }
   }
 
@@ -178,6 +247,7 @@ class _TrackedOwner implements ArNSOwnerSigner {
 
   final ArNSOwnerSigner _inner;
   bool signingTransaction = false;
+  bool signedTransaction = false;
 
   @override
   String get address => _inner.address;
@@ -187,9 +257,11 @@ class _TrackedOwner implements ArNSOwnerSigner {
       _inner.signMessage(message);
 
   @override
-  Future<String> signTransaction(String transactionBase64) {
+  Future<String> signTransaction(String transactionBase64) async {
     signingTransaction = true;
-    return _inner.signTransaction(transactionBase64);
+    final signed = await _inner.signTransaction(transactionBase64);
+    signedTransaction = true;
+    return signed;
   }
 }
 
