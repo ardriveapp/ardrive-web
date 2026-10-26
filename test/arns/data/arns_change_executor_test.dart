@@ -369,14 +369,18 @@ void main() {
       expect((await pending.pending('profile')).single.nonce, 'a1');
     });
 
-    test('forgotten when the second prompt is rejected', () async {
+    test('kept when the second prompt fails, as a reload makes it fail',
+        () async {
+      // A reload aborts the wallet's prompt with an error like a rejection's,
+      // and that error reaches here before the page goes: forgetting the
+      // nonce then left the next load nothing to report.
       final failure = await run(
         executor(awaiting),
         owner: _Owner(rejectTransaction: true),
       );
 
       expect(failure?.kind, ArNSFailureKind.expired);
-      expect(await pending.pending('profile'), isEmpty);
+      expect((await pending.pending('profile')).single.nonce, 'a1');
     });
 
     test('forgotten when the action expired', () async {

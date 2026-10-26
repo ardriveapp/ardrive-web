@@ -154,9 +154,10 @@ class ArNSChangeExecutor {
         // The second prompt rejected or lost: the action expires unsigned and
         // its credits come back.
         if (tracked.signingTransaction) {
-          // Rejected, it can only expire. Signed and then lost, it may have
-          // landed: kept, so a reload reads how it ended.
-          if (!tracked.signedTransaction) await _forget(nonce);
+          // Rejected, it can only expire; signed and then lost, it may have
+          // landed. Kept either way, so the next load reads how it ended: a
+          // reload aborts the wallet's prompt with an error like a
+          // rejection's, and that error lands here before the page goes.
           throw ArNSChangeFailure(ArNSFailureKind.expired, cause: e);
         }
         throw ArNSChangeFailure(ArNSFailureKind.lostAfterCreate, cause: e);
@@ -247,7 +248,6 @@ class _TrackedOwner implements ArNSOwnerSigner {
 
   final ArNSOwnerSigner _inner;
   bool signingTransaction = false;
-  bool signedTransaction = false;
 
   @override
   String get address => _inner.address;
@@ -259,9 +259,7 @@ class _TrackedOwner implements ArNSOwnerSigner {
   @override
   Future<String> signTransaction(String transactionBase64) async {
     signingTransaction = true;
-    final signed = await _inner.signTransaction(transactionBase64);
-    signedTransaction = true;
-    return signed;
+    return _inner.signTransaction(transactionBase64);
   }
 }
 
