@@ -18,10 +18,17 @@ FONTS = ROOT / 'packages/ardrive_ui/assets/fonts'
 BRAND = ROOT / 'assets/images/brand'
 OUT = ROOT / 'assets/arns/nothing_published.html'
 
-TITLE = 'Nothing published here'
-BODY = 'This address isn\u2019t showing anything right now.'
-ACTION = 'Publish with ArDrive'
-ACTION_URL = 'https://ardrive.io'
+TITLE = 'Nothing here right now'
+# {name} becomes the address the visitor opened, e.g. acme.ar.io; the page
+# says "this address" when it is opened by its transaction ID instead.
+BODY = 'The owner of {name} has taken down or moved what was here.'
+HINT = 'If someone sent you this link, ask them for the new one.'
+OWNER = 'Own this name?'
+OWNER_ACTION = 'Manage it in ArDrive'
+OWNER_URL = 'https://app.ardrive.io'
+ARDRIVE_URL = 'https://ardrive.io'
+# Characters a hostname can add to the body text.
+HOST_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789.-_'
 
 
 def woff2(name, text):
@@ -42,8 +49,10 @@ def png(name):
     return base64.b64encode((BRAND / name).read_bytes()).decode()
 
 
-semibold = woff2('Wavehaus-95SemiBold.otf', TITLE + ACTION)
-book = woff2('Wavehaus-66Book.otf', BODY)
+semibold = woff2('Wavehaus-95SemiBold.otf', TITLE + OWNER_ACTION)
+book = woff2(
+    'Wavehaus-66Book.otf', BODY + 'this address' + HINT + OWNER + HOST_CHARS)
+body_html = BODY.replace('{name}', '<strong id="name">this address</strong>')
 
 html = f'''<!doctype html>
 <html lang="en">
@@ -69,31 +78,38 @@ body {{
   -webkit-font-smoothing: antialiased; text-align: center;
 }}
 main {{ display: flex; flex-direction: column; align-items: center; max-width: 440px; }}
-.logo {{ display: block; height: 36px; width: auto; margin-bottom: 56px; }}
-.logo img {{ height: 36px; width: auto; display: block; }}
+.logo {{ display: block; margin-bottom: 48px; }}
+.logo img {{ height: 28px; width: auto; display: block; }}
 h1 {{ margin: 0; font-weight: 600; font-size: clamp(28px, 6vw, 40px); line-height: 1.15; letter-spacing: -0.01em; text-wrap: balance; }}
 p {{ margin: 16px 0 0; color: var(--muted); font-size: 17px; text-wrap: balance; }}
-.action {{
-  margin-top: 40px; display: inline-flex; align-items: center; justify-content: center;
-  height: 48px; padding: 0 24px; border-radius: 8px; background: var(--red); color: #fafafa;
-  font-weight: 600; font-size: 16px; text-decoration: none; transition: background-color .15s ease;
-}}
-.action:hover {{ background: var(--red-hover); }}
-.action:focus-visible {{ outline: 2px solid var(--fg); outline-offset: 3px; }}
+p strong {{ color: var(--fg); font-weight: 400; overflow-wrap: anywhere; }}
+.owner {{ margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 14px; }}
+.owner a {{ color: var(--fg); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--red); }}
+.owner a:hover {{ color: var(--red-hover); }}
+a:focus-visible {{ outline: 2px solid var(--fg); outline-offset: 3px; border-radius: 2px; }}
 </style>
 </head>
 <body>
 <main>
-  <a class="logo" href="{ACTION_URL}" rel="noopener" aria-label="ArDrive">
+  <a class="logo" href="{ARDRIVE_URL}" rel="noopener" aria-label="ArDrive">
     <picture>
       <source srcset="data:image/png;base64,{png('white_logo_2x.png')}" media="(prefers-color-scheme: dark)">
-      <img src="data:image/png;base64,{png('black_logo_2x.png')}" alt="ArDrive" width="159" height="36">
+      <img src="data:image/png;base64,{png('black_logo_2x.png')}" alt="ArDrive" width="124" height="28">
     </picture>
   </a>
   <h1>{TITLE}</h1>
-  <p>{BODY}</p>
-  <a class="action" href="{ACTION_URL}" rel="noopener">{ACTION}</a>
+  <p>{body_html}</p>
+  <p>{HINT}</p>
+  <p class="owner">{OWNER} <a href="{OWNER_URL}" rel="noopener">{OWNER_ACTION}</a></p>
 </main>
+<script>
+  // At a name the page is served from the name's own address (acme.ar.io);
+  // opened by its transaction ID it is on a gateway's sandbox subdomain.
+  var host = location.hostname;
+  if (location.pathname === '/' && host.indexOf('.') > 0 && !/^[a-z2-7]{{52}}\\./.test(host)) {{
+    document.getElementById('name').textContent = host;
+  }}
+</script>
 </body>
 </html>
 '''

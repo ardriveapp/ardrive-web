@@ -258,11 +258,11 @@ no chip; the listing never waits for it (`lib/arns/data/arns_name_verifier.dart`
 
 ### The "Nothing published here" page
 
-`assets/arns/nothing_published.html` (about 29 KiB, no external requests,
+`assets/arns/nothing_published.html` (about 32 KiB, no external requests,
 light and dark, with the ArDrive logo and Wavehaus inlined; rebuild it with
 `python3 tool/arns/build_nothing_published.py`) is what a removed main name points at. It is not bundled
 into the app. On mainnet it is
-`0ufTLXPcyad0Hyzh97sNyKEYqjadDwTnnIUoGdI-Duo` (uploaded 2026-10-26, set in
+`iVtxS-ksKzlU83vbKPUAOYtMspaPOUD8G0H228fuyaE` (uploaded 2026-10-26, set in
 all three configs; ar-io.dev serves it for devnet names too). To set up a
 new copy:
 
