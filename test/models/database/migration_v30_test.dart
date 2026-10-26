@@ -47,7 +47,8 @@ void main() {
           .data
           .values
           .single,
-      30,
+      // It carries on to the current version.
+      upgraded.schemaVersion,
     );
   });
 }
