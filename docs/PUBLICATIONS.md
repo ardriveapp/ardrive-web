@@ -296,7 +296,11 @@ folder on Google Drive or Dropbox, nothing said twice.
   rows pass beneath an edge.
 - **Subfolders:** no header; the breadcrumb row leads, with its menu. The
   root crumb is the title.
-- **Data table, details panel, previews:** unchanged.
+- **Data table, details panel, previews:** unchanged, except that a click on a
+  row opens it: a folder is entered, a file opens its details and preview. The
+  app's own model (a click selects, a double-click opens) is a file manager's;
+  a visitor is browsing a page, and the first visitor to try one expected a
+  click to open. Choosing several to download is the checkboxes' job.
 - **Row and toolbar actions offered:** Download, Download folder (zip), Preview
   in the panel, More info, and **Copy link**, which copies the publication's own
   link to that folder or file (`<page link>#/folders/<id>?file=<id>`).

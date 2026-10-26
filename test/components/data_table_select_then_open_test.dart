@@ -33,6 +33,7 @@ void main() {
   Future<void> pumpTable(
     WidgetTester tester, {
     bool opens = true,
+    bool clickOpens = false,
     bool withSearch = false,
     FocusNode? focusable,
     List<_Row> shown = rows,
@@ -64,6 +65,7 @@ void main() {
                     buildRow: (row) => TableRowWidget([Text(row.name)]),
                     onRowTap: (row) => selected.add(row.name),
                     onRowOpen: opens ? (row) => opened.add(row.name) : null,
+                    clickOpens: clickOpens,
                     // Read unconditionally by the table's key handler on
                     // Windows, which is where these tests run.
                     onChangeMultiSelecting: (_) {},
@@ -278,6 +280,124 @@ void main() {
       await tester.pump();
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
+
+      expect(opened, isEmpty);
+    });
+  });
+
+  /// A publication: its visitors browse a page rather than manage files, and
+  /// on a page a click opens what it lands on.
+  group('when a click opens', () {
+    Future<void> pumpPage(WidgetTester tester,
+        {List<_Row> shown = rows}) async {
+      await pumpTable(tester, clickOpens: true, shown: shown);
+      // A table just built ignores a click for a double-click's length.
+      await waitOutDoubleClick(tester);
+    }
+
+    testWidgets('a click opens, at once', (tester) async {
+      await pumpPage(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'Holidays');
+
+      expect(opened, ['Holidays']);
+      expect(selected, ['Holidays']);
+
+      await waitOutDoubleClick(tester);
+    });
+
+    testWidgets('a double-click opens once', (tester) async {
+      await pumpPage(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'Holidays');
+      await tester.pump(const Duration(milliseconds: 100));
+      await click(tester, pointer, 'Holidays');
+
+      expect(opened, ['Holidays']);
+
+      await waitOutDoubleClick(tester);
+    });
+
+    /// Opening a folder puts a new table under the pointer. The second click
+    /// of a double-click must not open whatever row it lands on there.
+    testWidgets(
+        'the second click of a double-click opens nothing in the folder '
+        'the first one entered', (tester) async {
+      await pumpPage(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'Holidays');
+      expect(opened, ['Holidays']);
+
+      // What the explorer does on opening a folder: a table for its rows.
+      await tester.pumpWidget(const SizedBox());
+      await pumpTable(
+        tester,
+        clickOpens: true,
+        shown: const [_Row(0, 'Beach'), _Row(1, 'Mountains')],
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      await click(tester, pointer, 'Beach');
+
+      expect(opened, ['Holidays']);
+
+      // A click of its own, later, opens as any other does.
+      await waitOutDoubleClick(tester);
+      await click(tester, pointer, 'Beach');
+      expect(opened, ['Holidays', 'Beach']);
+
+      await waitOutDoubleClick(tester);
+    });
+
+    testWidgets('two quick clicks on two rows open both', (tester) async {
+      await pumpPage(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'Holidays');
+      await tester.pump(const Duration(milliseconds: 100));
+      await click(tester, pointer, 'Receipts');
+
+      expect(opened, ['Holidays', 'Receipts']);
+
+      await waitOutDoubleClick(tester);
+    });
+
+    testWidgets('a tap on a touch screen still opens', (tester) async {
+      await pumpPage(tester);
+
+      await tester.tap(find.text('Holidays'), kind: PointerDeviceKind.touch);
+      await tester.pump();
+
+      expect(opened, ['Holidays']);
+
+      await waitOutDoubleClick(tester);
+    });
+
+    testWidgets('Enter still opens the chosen row', (tester) async {
+      await pumpPage(tester);
+      final pointer = await mouse(tester);
+
+      await click(tester, pointer, 'Receipts');
+      await waitOutDoubleClick(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(opened, ['Receipts', 'Receipts']);
+    });
+
+    /// Picking several to download is the checkboxes' job, and once any is
+    /// ticked a click on a row ticks it too, as it does in the app.
+    testWidgets('while choosing several, a click ticks rather than opens',
+        (tester) async {
+      await pumpPage(tester);
+      final pointer = await mouse(tester);
+
+      await tester.longPress(find.text('Holidays'));
+      await tester.pump();
+      await click(tester, pointer, 'Receipts');
+      await waitOutDoubleClick(tester);
 
       expect(opened, isEmpty);
     });
