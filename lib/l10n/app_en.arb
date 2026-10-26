@@ -5155,7 +5155,7 @@
   "@arnsNothingPublished": {"description": "A name pointing at the placeholder page."},
   "arnsPointsToItem": "Points to {item}",
   "@arnsPointsToItem": {"description": "What a name points to.", "placeholders": {"item": {"type": "String"}}},
-  "arnsPointsToOlderVersion": "{item} (older version)",
+  "arnsPointsToOlderVersion": "Points to an older version of {item}",
   "@arnsPointsToOlderVersion": {"description": "The name points at an older version.", "placeholders": {"item": {"type": "String"}}},
   "arnsPointsToPublication": "Points to a publication",
   "@arnsPointsToPublication": {"description": "The name points at a publication."},
@@ -5180,5 +5180,7 @@
   "arnsActivityNameAssigned": "Name set to {name}",
   "@arnsActivityNameAssigned": {"description": "Activity: a name was written to the file's details.", "placeholders": {"name": {"type": "String"}}},
   "arnsActivityNameRemoved": "Name removed",
-  "@arnsActivityNameRemoved": {"description": "Activity: names were removed from the file's details."}
+  "@arnsActivityNameRemoved": {"description": "Activity: names were removed from the file's details."},
+  "arnsOlderVersionOf": "Older version of {item}",
+  "@arnsOlderVersionOf": {"description": "Names page: the name points at an older version of the item.", "placeholders": {"item": {"type": "String"}}}
 }

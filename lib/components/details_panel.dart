@@ -639,20 +639,28 @@ class _DetailsPanelState extends State<DetailsPanel> {
       item.isOwner &&
       context.read<ProfileCubit>().state is ProfileLoggedIn;
 
+  /// The explorer's drive, when the panel is the explorer's.
+  static Drive? _explorerDrive(BuildContext context) {
+    try {
+      final state = context.read<DriveDetailCubit>().state;
+      return state is DriveDetailLoadSuccess ? state.currentDrive : null;
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
   List<Widget> _fileDetails(FsEntryInfoState state) {
     final item = widget.item as FileDataTableItem;
     String? pinnedDataOwnerAddress = item.pinnedDataOwnerAddress;
 
     final typography = ArDriveTypographyNew.of(context);
-    final driveState = context.read<DriveDetailCubit>().state;
-    final nameable = arnsNameableItem(
-      context,
-      item: item,
-      drive: widget.currentDrive ??
-          (driveState is DriveDetailLoadSuccess
-              ? driveState.currentDrive
-              : null),
-    );
+    final nameable = arnsNamesOn(context)
+        ? arnsNameableItem(
+            context,
+            item: item,
+            drive: widget.currentDrive ?? _explorerDrive(context),
+          )
+        : null;
 
     return [
       if (nameable != null) ...[

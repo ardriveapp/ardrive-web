@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
@@ -1530,6 +1531,10 @@ class ArDriveItemListTile extends StatelessWidget {
                               ),
                             ),
                           ),
+                          if (item is FileDataTableItem)
+                            ArNSNameChip(
+                              dataTxId: (item as FileDataTableItem).dataTxId,
+                            ),
                         ],
                       ),
                       Row(

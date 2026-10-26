@@ -340,6 +340,7 @@ class _NameCard extends StatelessWidget {
           if (!isPhone) const _RecordHeadings(),
           for (final record in name.records)
             _RecordRow(
+              isLast: identical(record, name.records.last),
               record: record,
               placeholder: placeholder,
               blocked: grace,
@@ -354,7 +355,9 @@ class _NameCard extends StatelessWidget {
 const _nameColumnFlex = 4;
 const _pointsToColumnFlex = 5;
 const _cacheColumnWidth = 96.0;
-const _actionsColumnWidth = 176.0;
+
+/// Wide enough for "Use this name" and Remove side by side.
+const _actionsColumnWidth = 264.0;
 
 class _RecordHeadings extends StatelessWidget {
   const _RecordHeadings();
@@ -396,6 +399,7 @@ class _RecordHeadings extends StatelessWidget {
 
 class _RecordRow extends StatelessWidget {
   const _RecordRow({
+    required this.isLast,
     required this.record,
     required this.placeholder,
     required this.blocked,
@@ -406,6 +410,7 @@ class _RecordRow extends StatelessWidget {
   final String? placeholder;
   final bool blocked;
   final bool isPhone;
+  final bool isLast;
 
   bool get _unused =>
       placeholder != null && record.transactionId == placeholder;
@@ -438,7 +443,7 @@ class _RecordRow extends StatelessWidget {
               ),
     );
     final actions = Wrap(
-      alignment: WrapAlignment.end,
+      alignment: isPhone ? WrapAlignment.start : WrapAlignment.end,
       spacing: ArDriveSpacing.xs,
       children: [
         ArDriveButtonNew(
@@ -465,7 +470,8 @@ class _RecordRow extends StatelessWidget {
     );
 
     final divider = BoxDecoration(
-      border: Border(bottom: BorderSide(color: colors.strokeLow)),
+      border:
+          isLast ? null : Border(bottom: BorderSide(color: colors.strokeLow)),
     );
 
     if (isPhone) {
@@ -564,7 +570,7 @@ class _PointsToCell extends StatelessWidget {
             child: ArDriveLink(
               text: target.isLatestVersion
                   ? target.name
-                  : strings.arnsPointsToOlderVersion(target.name),
+                  : strings.arnsOlderVersionOf(target.name),
               onTap: () => _open(context, target),
             ),
           ),

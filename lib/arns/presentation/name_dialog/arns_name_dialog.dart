@@ -508,10 +508,13 @@ class _NameGroup extends StatelessWidget {
         choice.name == name.name &&
         choice.undername == undername;
 
+    final shape = BorderRadius.circular(ArDriveRadius.md);
     return Container(
-      decoration: BoxDecoration(
+      decoration: BoxDecoration(borderRadius: shape),
+      // In front, so a highlighted row never paints over the edge.
+      foregroundDecoration: BoxDecoration(
         border: Border.all(color: colors.strokeLow),
-        borderRadius: BorderRadius.circular(ArDriveRadius.md),
+        borderRadius: shape,
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
