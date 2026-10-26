@@ -79,6 +79,7 @@ class PublishState extends Equatable {
     this.title = '',
     this.description = '',
     this.ownerName = '',
+    this.ownerNameReserved = false,
     this.keywords = const [],
     this.licence,
     this.icon,
@@ -105,6 +106,10 @@ class PublishState extends Equatable {
   final String title;
   final String description;
   final String ownerName;
+
+  /// [ownerName] is one of ArDrive's (`isReservedPublicationOwnerName`), and
+  /// the wallet is not ArDrive's own.
+  final bool ownerNameReserved;
   final List<String> keywords;
   final PublicationLicence? licence;
   final PickedImage? icon;
@@ -141,6 +146,9 @@ class PublishState extends Equatable {
 
   bool get titleIsValid => title.trim().isNotEmpty;
 
+  /// Whether Next can leave the look.
+  bool get lookIsValid => titleIsValid && !ownerNameReserved;
+
   bool get canPublish => cost != null && cost!.canPayWith(method);
 
   PublishState copyWith({
@@ -151,6 +159,7 @@ class PublishState extends Equatable {
     String? title,
     String? description,
     String? ownerName,
+    bool? ownerNameReserved,
     List<String>? keywords,
     PublicationLicence? Function()? licence,
     PickedImage? Function()? icon,
@@ -177,6 +186,7 @@ class PublishState extends Equatable {
         title: title ?? this.title,
         description: description ?? this.description,
         ownerName: ownerName ?? this.ownerName,
+        ownerNameReserved: ownerNameReserved ?? this.ownerNameReserved,
         keywords: keywords ?? this.keywords,
         licence: licence != null ? licence() : this.licence,
         icon: icon != null ? icon() : this.icon,
@@ -204,6 +214,7 @@ class PublishState extends Equatable {
         title,
         description,
         ownerName,
+        ownerNameReserved,
         keywords,
         licence,
         icon,

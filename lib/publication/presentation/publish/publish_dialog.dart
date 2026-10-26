@@ -93,11 +93,13 @@ Future<void> showPublishDialog(
   final driveDao = context.read<DriveDao>();
   final profileCubit = context.read<ProfileCubit>();
   final repository = context.read<PublicationRepository>();
-  String gatewayUrl() => configService.config.arweaveGatewayForDataRequest.url;
+  final turboUploadService = context.read<TurboUploadService>();
+  // Every publication is on one gateway, whatever the data gateway setting.
+  String gatewayUrl() => configService.config.publicationGatewayUrl;
   final publisher = PublicationPublisher(
     uploader: PublicationUploader(
       arweave: arweave,
-      turboUploadService: context.read<TurboUploadService>(),
+      turboUploadService: turboUploadService,
     ),
     // A publication may need a snapshot, and makes one only where snapshots
     // can be published at all.
@@ -105,7 +107,7 @@ Future<void> showPublishDialog(
       publishingEnabled: configService.config.enableDriveStatePublishing,
       whenEnabled: () => ArweaveDriveStateUploader(
         arweave: arweave,
-        turboUploadService: context.read<TurboUploadService>(),
+        turboUploadService: turboUploadService,
         profileCubit: profileCubit,
         tabVisibility: TabVisibilitySingleton(),
       ),
@@ -131,8 +133,11 @@ Future<void> showPublishDialog(
       turboBalanceRetriever:
           TurboBalanceRetriever(paymentService: paymentService),
       configService: configService,
+      // Turbo's own limit, as the upload flow reads it.
+      maxFreeItemBytes: () => turboUploadService.maxFreeItemSizeBytes,
     ),
     viewer: configService.config.publicationViewer,
+    officialPublishers: configService.config.officialPublisherAddresses,
     labels: PublicationLabels(
       filesPage: strings.publicationFilesPageLink,
       openPage: strings.publicationFilesOpen,
@@ -218,7 +223,7 @@ class PublishDialog extends StatelessWidget {
                 ModalAction(title: strings.back, action: cubit.back),
                 ModalAction(
                   title: strings.next,
-                  isEnable: state.titleIsValid,
+                  isEnable: state.lookIsValid,
                   action: cubit.next,
                 ),
               ],
@@ -480,6 +485,12 @@ class _Included extends StatelessWidget {
               child: Text('• $line',
                   style: typography.paragraphNormal(color: colors.textMid)),
             ),
+          // Hiding is not privacy: a public drive's data stays readable.
+          if (summary.hiddenItems > 0 || summary.inHiddenFolders > 0) ...[
+            const SizedBox(height: 8),
+            Text(strings.publishHiddenFindable,
+                style: typography.paragraphSmall(color: colors.textMid)),
+          ],
         ],
         const SizedBox(height: 16),
         Text(strings.publishIncludedNote,

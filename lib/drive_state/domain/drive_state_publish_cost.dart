@@ -130,6 +130,11 @@ class DriveStatePublishCostEstimator {
   final TurboBalanceRetriever _turboBalanceRetriever;
   final ConfigService _configService;
 
+  /// The largest item Turbo uploads free, as the service reports it
+  /// (`TurboUploadService.maxFreeItemSizeBytes`), as the upload flow reads
+  /// it; the config's value when not given or when it cannot be read.
+  final int Function()? _maxFreeItemBytes;
+
   /// Overrides every leg's own budget when set. Tests only.
   final Duration? _legTimeout;
 
@@ -144,9 +149,11 @@ class DriveStatePublishCostEstimator {
     required PstService pst,
     required TurboBalanceRetriever turboBalanceRetriever,
     required ConfigService configService,
+    int Function()? maxFreeItemBytes,
     Duration? legTimeout,
     Duration? pstFeeTimeout,
-  })  : _arweave = arweave,
+  })  : _maxFreeItemBytes = maxFreeItemBytes,
+        _arweave = arweave,
         _paymentService = paymentService,
         _pst = pst,
         _turboBalanceRetriever = turboBalanceRetriever,
@@ -187,12 +194,19 @@ class DriveStatePublishCostEstimator {
 
   /// Prices [sizeInBytes] against [wallet]'s balances.
   ///
+  /// [itemSizes], when the upload is several data items, is each one's size:
+  /// Turbo's free allowance is per item, so the upload is free when every
+  /// item is small enough and the wallet's allowance covers them all, as the
+  /// upload flow decides it. Without it the upload is one item of
+  /// [sizeInBytes].
+  ///
   /// Throws if the AR price cannot be obtained. That is on purpose: AR is the
   /// transport that must always exist (§4.4), so failing to price it means
   /// there is no honest number to show, and the caller turns that into a
   /// refusal rather than a confirm button over a blank cost.
   Future<DriveStatePublishCost> estimate({
     required int sizeInBytes,
+    List<int>? itemSizes,
     required Wallet wallet,
     required BigInt walletBalance,
   }) async {
@@ -272,6 +286,7 @@ class DriveStatePublishCostEstimator {
       sufficientTurboBalance: costEstimateTurbo.totalCost <= turboBalance,
       freeStatus: await _freeStatus(
         sizeInBytes: sizeInBytes,
+        itemSizes: itemSizes ?? [sizeInBytes],
         wallet: wallet,
         isTurboUploadPossible: isTurboUploadPossible,
       ),
@@ -289,13 +304,14 @@ class DriveStatePublishCostEstimator {
   /// silently removing the feature from users who were going to pay in AR.
   Future<FreeUploadStatus> _freeStatus({
     required int sizeInBytes,
+    required List<int> itemSizes,
     required Wallet wallet,
     required bool isTurboUploadPossible,
   }) async {
     if (!isTurboUploadPossible) return FreeUploadStatus.notEligible;
 
-    final isSizeEligible =
-        sizeInBytes <= _configService.config.allowedDataItemSizeForTurbo;
+    final maxFreeItemBytes = _maxFreeItemBytesOrConfig();
+    final isSizeEligible = itemSizes.every((size) => size <= maxFreeItemBytes);
     if (!isSizeEligible) return FreeUploadStatus.notEligible;
 
     final TurboFreeAllowance allowance;
@@ -318,5 +334,15 @@ class DriveStatePublishCostEstimator {
       byteCount: sizeInBytes,
       allowance: allowance,
     );
+  }
+
+  int _maxFreeItemBytesOrConfig() {
+    try {
+      final reported = _maxFreeItemBytes?.call();
+      if (reported != null) return reported;
+    } catch (e) {
+      // No Turbo upload service in this build (`DontUseUploadService`).
+    }
+    return _configService.config.allowedDataItemSizeForTurbo;
   }
 }

@@ -16,7 +16,10 @@ import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/domain/publication_social_card.dart';
 import 'package:ardrive/services/license/license.dart';
+import 'package:ardrive/publication/domain/publication_owner_name.dart';
+import 'package:ardrive/utils/leave_page_guard/leave_page_guard.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/widgets.dart' show StringCharacters;
 import 'package:drift/drift.dart' show Variable;
 import 'package:equatable/equatable.dart';
@@ -48,6 +51,7 @@ class PublishDependencies {
     required this.labels,
     required this.cardMark,
     required this.fileCountLabel,
+    this.officialPublishers = const [],
   });
 
   final DriveDao driveDao;
@@ -68,6 +72,10 @@ class PublishDependencies {
 
   /// "N files", worded.
   final String Function(int count) fileCountLabel;
+
+  /// Wallets that may use ArDrive's names as a display name
+  /// (`AppConfig.officialPublisherAddresses`).
+  final List<String> officialPublishers;
 }
 
 /// The publish dialog (docs/PUBLICATIONS.md, "The publish dialog"): what is
@@ -78,8 +86,15 @@ class PublishCubit extends Cubit<PublishState> {
     required this.folder,
     required PublishDependencies dependencies,
     this.previous,
+    @visibleForTesting void Function(Object holder)? holdGuard,
+    @visibleForTesting void Function(Object holder)? releaseGuard,
   })  : _deps = dependencies,
+        _holdGuard = holdGuard ?? holdLeavePageGuard,
+        _releaseGuard = releaseGuard ?? releaseLeavePageGuard,
         super(const PublishState(stage: PublishStage.loading));
+
+  final void Function(Object holder) _holdGuard;
+  final void Function(Object holder) _releaseGuard;
 
   final Drive drive;
 
@@ -140,7 +155,7 @@ class PublishCubit extends Cubit<PublishState> {
       );
       if (previous != null) next = await _prefillFrom(previous!, next);
       if (isClosed) return;
-      emit(next);
+      emit(next.copyWith(ownerNameReserved: _isReserved(next.ownerName)));
 
       // An update opens on the look, filled in from the published page: Next
       // keeps it, and anything to change is changed on the way.
@@ -320,7 +335,7 @@ class PublishCubit extends Cubit<PublishState> {
       case PublishStage.included:
         emit(state.copyWith(stage: PublishStage.look));
       case PublishStage.look:
-        if (state.titleIsValid) review();
+        if (state.lookIsValid) review();
       default:
     }
   }
@@ -349,8 +364,23 @@ class PublishCubit extends Cubit<PublishState> {
   void setDescription(String value) => emit(
       state.copyWith(description: _clip(value, publicationDescriptionMax)));
 
-  void setOwnerName(String value) =>
-      emit(state.copyWith(ownerName: _clip(value, publicationOwnerNameMax)));
+  void setOwnerName(String value) {
+    final name = _clip(value, publicationOwnerNameMax);
+    emit(state.copyWith(
+      ownerName: name,
+      ownerNameReserved: _isReserved(name),
+    ));
+  }
+
+  /// Whether [name] is ArDrive's, and this wallet is not one of ArDrive's
+  /// own. Only the display name is checked: a title or a drive's name may
+  /// say ArDrive.
+  bool _isReserved(String name) {
+    if (!isReservedPublicationOwnerName(name)) return false;
+    final profile = _deps.profileCubit.state;
+    return profile is! ProfileLoggedIn ||
+        !_deps.officialPublishers.contains(profile.user.walletAddress);
+  }
 
   void addKeyword(String value) {
     final keyword = value.trim();
@@ -431,7 +461,7 @@ class PublishCubit extends Cubit<PublishState> {
   // Review.
 
   Future<void> review() async {
-    if (!state.titleIsValid) {
+    if (!state.lookIsValid) {
       emit(state.copyWith(stage: PublishStage.look));
       return;
     }
@@ -451,6 +481,7 @@ class PublishCubit extends Cubit<PublishState> {
       final cost = await _deps.costEstimator
           .estimate(
             sizeInBytes: _deps.publisher.sizeOf(job),
+            itemSizes: _deps.publisher.itemSizesOf(job),
             wallet: profile.user.wallet,
             walletBalance: profile.user.walletBalance,
           )
@@ -500,7 +531,13 @@ class PublishCubit extends Cubit<PublishState> {
     if (newest != null &&
         newest.entityCount == await _localEntityCount() &&
         await _unchangedSince(newest.unixTime!)) {
-      return ReusedSnapshot(txId: newest.txId, tags: newest.tags);
+      // Mined is not the same as served: a page whose snapshot the gateway
+      // cannot hand over never opens. One that does not serve is replaced.
+      if (await _deps.publisher.snapshotServes(newest.txId)) {
+        return ReusedSnapshot(txId: newest.txId, tags: newest.tags);
+      }
+      logger.w('[publication] snapshot ${newest.txId} does not serve; '
+          'making a new one');
     }
 
     final prepared = await _deps.creationService.prepare(
@@ -612,6 +649,7 @@ class PublishCubit extends Cubit<PublishState> {
     try {
       final cost = await _deps.costEstimator.estimate(
         sizeInBytes: _deps.publisher.sizeOf(job),
+        itemSizes: _deps.publisher.itemSizesOf(job),
         wallet: profile.user.wallet,
         walletBalance: profile.user.walletBalance,
       );
@@ -668,6 +706,25 @@ class PublishCubit extends Cubit<PublishState> {
         canRetry: true,
       ));
     }
+  }
+
+  /// Keeps the browser asking before the tab is closed while a publish runs:
+  /// closing it midway leaves what was paid for half sent, and only this tab
+  /// holds the signed files that finish it.
+  @override
+  void onChange(Change<PublishState> change) {
+    super.onChange(change);
+    if (change.nextState.stage == PublishStage.publishing) {
+      _holdGuard(this);
+    } else {
+      _releaseGuard(this);
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _releaseGuard(this);
+    return super.close();
   }
 
   /// Tries a failed publish again, reusing what it already sent.
