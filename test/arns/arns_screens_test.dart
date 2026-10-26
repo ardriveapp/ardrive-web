@@ -12,6 +12,7 @@ import 'dart:ui' as ui;
 
 import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/data/arns_file_metadata_writer.dart';
+import 'package:ardrive/arns/data/arns_name_verifier.dart';
 import 'package:ardrive/arns/data/arns_names_repository.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/arns/data/turbo_arns_action_client.dart';
@@ -45,6 +46,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 import '../test_utils/mocks.dart' show createMockFileDataTableItem;
 
@@ -1233,6 +1236,8 @@ void main() {
     );
   });
 
+  visitorShots();
+
   testWidgets('explorer row: the chip beside a long name', (tester) async {
     for (final phone in [false, true]) {
       for (final dark in [true, false]) {
@@ -1379,6 +1384,112 @@ void main() {
         );
         await tester.pumpWidget(const SizedBox());
         await tester.pump(const Duration(milliseconds: 500));
+      }
+    }
+  });
+}
+
+/// Someone else's file: its confirmed name in the details panel and the
+/// Activity tab, and a hint the gateway no longer confirms.
+void visitorShots() {
+  testWidgets('visitor: name in details and activity', (tester) async {
+    ArNSNameVerifier.session = ArNSNameVerifier(
+      gatewayUrl: () => 'https://ar-io.dev',
+      client: MockClient((request) async => http.Response('', 200, headers: {
+            'x-arns-resolved-id':
+                request.url.host.startsWith('acme') ? _siteTx : _elseTx,
+          })),
+    );
+    addTearDown(() => ArNSNameVerifier.session = null);
+    final config = _MockConfigService();
+    when(() => config.config).thenReturn(AppConfig(
+      stripePublishableKey: '',
+      allowedDataItemSizeForTurbo: 100,
+      enableArNS: true,
+    ));
+    for (final phone in [false, true]) {
+      for (final dark in [true, false]) {
+        final size = phone ? const Size(390, 640) : const Size(1280, 640);
+        tester.view.devicePixelRatio = 2;
+        tester.view.physicalSize = size * 2;
+        addTearDown(tester.view.reset);
+        final key = GlobalKey();
+        await tester.pumpWidget(RepaintBoundary(
+          key: key,
+          child: RepositoryProvider<ConfigService>.value(
+            value: config,
+            child: ArDriveApp(
+              themeData: dark ? null : lightTheme(),
+              builder: (context) => MaterialApp(
+                debugShowCheckedModeBanner: false,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                theme: ArDriveTheme.of(context).themeData.materialThemeData,
+                home: Builder(builder: (context) {
+                  final colors = ArDriveTheme.of(context).themeData.colorTokens;
+                  final typography = ArDriveTypographyNew.of(context);
+                  Widget activity(List<String> names) => ArNSNameActivity(
+                        names: names,
+                        dataTxIds: const {_siteTx},
+                        isOwner: false,
+                        builder: (context, title) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Text(title,
+                              style: typography.paragraphNormal(
+                                  fontWeight: ArFontWeight.bold)),
+                        ),
+                      );
+                  return Scaffold(
+                    backgroundColor: colors.containerL0,
+                    body: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Container(
+                        width: phone ? 342 : 380,
+                        padding: const EdgeInsets.all(24),
+                        color: colors.containerRaised,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Details, someone else\'s file',
+                                style: typography.paragraphSmall(
+                                    color: colors.textLow)),
+                            const SizedBox(height: 8),
+                            const ArNSVisitorNameSection(
+                              dataTxId: _siteTx,
+                              hints: ['acme', 'old_dapp'],
+                            ),
+                            const SizedBox(height: 16),
+                            Text('Activity: confirmed, then not',
+                                style: typography.paragraphSmall(
+                                    color: colors.textLow)),
+                            const SizedBox(height: 8),
+                            activity(['acme']),
+                            activity(['old_dapp']),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+        ));
+        for (var i = 0; i < 5; i++) {
+          await tester
+              .runAsync(() => Future.delayed(const Duration(milliseconds: 50)));
+          await tester.pump(const Duration(milliseconds: 100));
+        }
+        await tester.runAsync(() async {
+          final boundary =
+              key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+          final image = await boundary.toImage(pixelRatio: 2);
+          final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+          File(
+              '${_outDir.path}/38-visitor-${phone ? '390' : 'desktop'}-${dark ? 'dark' : 'light'}.png')
+            ..createSync(recursive: true)
+            ..writeAsBytesSync(bytes!.buffer.asUint8List());
+        });
       }
     }
   });
