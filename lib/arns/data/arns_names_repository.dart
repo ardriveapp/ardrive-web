@@ -1,4 +1,5 @@
 import 'package:ardrive/arns/data/arns_dao.dart';
+import 'package:ardrive/arns/domain/arns_action.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/domain/undername_validation.dart';
 import 'package:ardrive/entities/constants.dart';
@@ -159,8 +160,31 @@ class ArNSNamesRepository {
   }
 
   /// Re-reads one name's records after a change and caches them.
-  Future<ArNSManagedName> refreshRecords(ArNSManagedName name) async {
-    final updated = await _withRecords(name);
+  ///
+  /// [made] are the changes just made to it. Solana RPC nodes can answer a
+  /// read with the state from before a write Turbo has already reported
+  /// done, so each is applied over what was read.
+  Future<ArNSManagedName> refreshRecords(
+    ArNSManagedName name, {
+    List<ArNSRecordChange> made = const [],
+  }) async {
+    final read = await _withRecords(name);
+    var records = read.records;
+    for (final change in made) {
+      if (change.antId != name.processId) continue;
+      records = [
+        for (final r in records)
+          if (r.undername != change.undername) r,
+        if (change case ArNSSetRecord(:final transactionId, :final ttlSeconds))
+          ArNSNameRecord(
+            name: name.name,
+            undername: change.undername,
+            transactionId: transactionId,
+            ttlSeconds: ttlSeconds,
+          ),
+      ];
+    }
+    final updated = read.withRecords(_sorted(records));
     await _dao.replaceRecordsForDomain(
       name.name,
       [for (final r in updated.records) _recordToRow(r)],

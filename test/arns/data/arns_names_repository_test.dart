@@ -1,4 +1,5 @@
 import 'package:ardrive/arns/data/arns_names_repository.dart';
+import 'package:ardrive/arns/domain/arns_action.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
@@ -235,6 +236,60 @@ void main() {
     expect(updated.records.map((r) => r.undername), ['@']);
     final cached = await repository.cached(_wallet);
     expect(cached.first.records.map((r) => r.undername), ['@']);
+  });
+
+  group('refreshRecords after a change', () {
+    // Turbo said the change was made, and the RPC node answered the re-read
+    // with the records from before it: the Names page showed the old cache
+    // time until it was opened again.
+    test('keeps a record just set, whatever a lagging read says', () async {
+      final acme = (await repository.refresh(_wallet)).first;
+      final before = acme.records.firstWhere((r) => r.isApex);
+
+      final updated = await repository.refreshRecords(acme, made: [
+        ArNSSetRecord(
+          antId: _antOwned,
+          undername: '@',
+          transactionId: before.transactionId,
+          ttlSeconds: 3600,
+        ),
+        const ArNSSetRecord(
+          antId: _antOwned,
+          undername: 'docs',
+          transactionId: 'docs-tx',
+          ttlSeconds: 300,
+        ),
+      ]);
+
+      expect(
+        updated.records.map((r) => (r.undername, r.ttlSeconds)),
+        containsAll([('@', 3600), ('docs', 300)]),
+      );
+      final cached = (await repository.cached(_wallet)).first;
+      expect(cached.records.firstWhere((r) => r.isApex).ttlSeconds, 3600);
+    });
+
+    test('drops a record just removed', () async {
+      when(() => sdk.getANTRecords(_antOwned)).thenAnswer(
+          (_) async => [_record('@', 'manifest-v1'), _record('blog', 'b')]);
+      final acme = (await repository.refresh(_wallet)).first;
+
+      final updated = await repository.refreshRecords(acme, made: [
+        const ArNSRemoveRecord(antId: _antOwned, undername: 'blog'),
+      ]);
+
+      expect(updated.records.map((r) => r.undername), ['@']);
+    });
+
+    test('ignores changes to another name', () async {
+      final acme = (await repository.refresh(_wallet)).first;
+
+      final updated = await repository.refreshRecords(acme, made: [
+        const ArNSRemoveRecord(antId: 'another-ant', undername: '@'),
+      ]);
+
+      expect(updated.records, acme.records);
+    });
   });
 
   test('a publication lookup that fails leaves those records unmapped',

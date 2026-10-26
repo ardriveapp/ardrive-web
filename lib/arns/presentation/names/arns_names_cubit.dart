@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/arns/data/arns_names_repository.dart';
+import 'package:ardrive/arns/domain/arns_action.dart';
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
@@ -156,12 +157,15 @@ class ArNSNamesCubit extends Cubit<ArNSNamesState> {
     }
   }
 
-  /// One name read again after a change to it.
-  Future<ArNSManagedName?> refreshName(String name) async {
+  /// One name read again after [made], the changes just made to it.
+  Future<ArNSManagedName?> refreshName(
+    String name, {
+    List<ArNSRecordChange> made = const [],
+  }) async {
     final current = state.nameOf(name);
     if (current == null) return null;
     try {
-      final updated = await _repository.refreshRecords(current);
+      final updated = await _repository.refreshRecords(current, made: made);
       if (isClosed) return updated;
       emit(state.copyWith(names: [
         for (final n in state.names) n.name == name ? updated : n,

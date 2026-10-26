@@ -485,7 +485,7 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
       return;
     }
 
-    await _namesCubit.refreshName(name.name);
+    await _namesCubit.refreshName(name.name, made: [change]);
 
     // Change name moves the name: the old one goes in a change of its own,
     // with its own nonce. If it fails the new name stands, and nothing is
@@ -516,9 +516,13 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
             unawaited(_namesCubit.refresh());
           }
         }
-        if (previousName.name != name.name) {
-          await _namesCubit.refreshName(previousName.name);
-        }
+        await _namesCubit.refreshName(
+          previousName.name,
+          made: [
+            if (previousName.name == name.name) change,
+            if (previousRemoved) removal,
+          ],
+        );
       }
     }
 

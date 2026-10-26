@@ -147,7 +147,7 @@ void main() {
     setUpWallet(_wallet());
     when(() => repository.cached(any())).thenAnswer((_) async => chain);
     when(() => repository.refresh(any())).thenAnswer((_) async => chain);
-    when(() => repository.refreshRecords(any()))
+    when(() => repository.refreshRecords(any(), made: any(named: 'made')))
         .thenAnswer((i) async => chain.first);
     when(() => client.price(ArNSRecordAction.setRecord))
         .thenAnswer((_) async => _price);

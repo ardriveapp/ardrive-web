@@ -655,8 +655,9 @@ void main() {
           onStep: any(named: 'onStep'),
           onNonce: any(named: 'onNonce'),
         )).thenAnswer((_) async {});
-    when(() => repository.refreshRecords(any())).thenAnswer(
-        (i) async => i.positionalArguments.first as ArNSManagedName);
+    when(() => repository.refreshRecords(any(), made: any(named: 'made')))
+        .thenAnswer(
+            (i) async => i.positionalArguments.first as ArNSManagedName);
     when(() => metadata.writeAssignedNames(
           driveId: any(named: 'driveId'),
           fileId: any(named: 'fileId'),
