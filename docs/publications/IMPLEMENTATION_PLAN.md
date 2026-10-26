@@ -274,8 +274,8 @@ clean browser and checked for their head tags, `files.html`, `sitemap.xml`,
 
 Built with ArNS-on-Solana support in the app, specified in `docs/NAMES.md`
 (phase 1, step 4): step 4's picker, `names` in `publication.json`, unpublish
-(remove an undername; point a main name at the shared "Nothing published
-here" page, `arnsPlaceholderTxId` in config), republish moving the name, and
+(remove an undername; point a main name at the shared empty page,
+`arnsPlaceholderTxId` in config), republish moving the name, and
 a cache time of 300 s. `og:image` keeps pointing at the social image's
 transaction.
 

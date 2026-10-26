@@ -54,9 +54,9 @@ costs nothing. Publish writes permanent objects to Arweave.
     An update is a new manifest with the same `Publication-Id`, so a new link;
     the earlier links keep working.
 11. **Names:** the owner picks the main name or an undername. Unpublishing an
-    undername removes its record; unpublishing a main name points it at a
-    shared "Nothing published here" page. See [Names](#names) and
-    `docs/NAMES.md`, the spec for names across ArDrive.
+    undername removes its record; unpublishing a main name points it at the
+    shared empty page (visitors see "Nothing here right now"). See
+    [Names](#names) and `docs/NAMES.md`, the spec for names across ArDrive.
 12. **A publication is an ArFS entity** (`Entity-Type: publication`), as a
     drive state is: owner only, never encrypted, never a file in the drive,
     found by GraphQL. Called "publication" because "page" collides with

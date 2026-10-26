@@ -168,9 +168,9 @@ This follows the ar.io console.
 name points the chosen name at it and removes the old one in the same flow
 ("Also remove blog_acme.ar.io", checked by default). The removal is its own
 change with its own nonce, and its cost is in the cost line: about 0.001
-credits for an undername; a main name goes to the "Nothing published here"
-page at the set-record price, and when no page is configured the box isn't
-offered and the old main name stays. If the removal fails, the new name is
+credits for an undername; a main name goes to the empty page at the
+set-record price, and when no page is configured the box isn't offered and
+the old main name stays. If the removal fails, the new name is
 live, the old one is unchanged, and nothing is tried again.
 
 **Undername rules.** Letters, digits, `-` and `_`; starts with a letter or
@@ -206,10 +206,10 @@ fails, the flow says so; the upload stands.
 ### Removing
 
 - **Remove an undername:** its record is deleted (Q13).
-- **Remove a main name** (`acme.ar.io`): it points at a small "Nothing
-  published here" page, so the name never breaks. The page is uploaded once by
-  ArDrive (a free-size upload) and its transaction ID is set in the app
-  config as `arnsPlaceholderTxId`.
+- **Remove a main name** (`acme.ar.io`): it points at the empty page, a
+  small page of ArDrive's, so the name never breaks. The page is uploaded
+  once by ArDrive (a free-size upload) and its transaction ID is set in the
+  app config as `arnsPlaceholderTxId`.
 - **Hide a named file:** ArDrive offers to remove its name. Files can't move
   between drives, so hiding is the only way an item leaves public view.
 
@@ -231,9 +231,9 @@ Every name and undername you own or manage, with no wallet address in the
 header (the profile card has it, where the ArNS wallet is linked), and:
 
 - what each points to: the ArDrive item when recognised, "Empty page" for a
-  main name on the "Nothing published here" page, otherwise "Points
-  elsewhere" (Q22), which you can point at an ArDrive item. The transaction
-  ID is in the tooltip, not the row;
+  main name on the empty page, otherwise "Points elsewhere" (Q22), which you
+  can point at an ArDrive item. The transaction ID is in the tooltip, not
+  the row;
 - its cache time, changeable here (Q16);
 - Change and Remove actions;
 - "Managed for its owner" on names you control but don't own (Q23);
@@ -274,12 +274,14 @@ header to browsers (`exposedHeaders: '*'` in `src/app.ts`). A name is shown
 when that ID is the file's data transaction. A failed or slow request means
 no chip; the listing never waits for it (`lib/arns/data/arns_name_verifier.dart`).
 
-### The "Nothing published here" page
+### The empty page
 
-`assets/arns/nothing_published.html` (about 32 KiB, no external requests,
-light and dark, with the ArDrive logo and Wavehaus inlined; rebuild it with
-`python3 tool/arns/build_nothing_published.py`) is what a removed main name points at. It is not bundled
-into the app. On mainnet it is
+The empty page is what a removed main name points at. Visitors see "Nothing
+here right now"; owners see "Empty page" in the Names page's "Points to"
+column. It is `assets/arns/nothing_published.html` (about 32 KiB, no
+external requests, light and dark, with the ArDrive logo and Wavehaus
+inlined; rebuild it with `python3 tool/arns/build_nothing_published.py`).
+It is not bundled into the app. On mainnet it is
 `hAs_l8a7vXqD2LTZ8MtM09-HpwYo21ynvZwoJtbYaTk` (uploaded 2026-10-26, set in
 all three configs; ar-io.dev serves it for devnet names too). To set up a
 new copy:
@@ -411,7 +413,7 @@ behind `enableArNS` after that.
 3. **Placement.** The On the web group and the Names page; the ArNS wallet
    row in the profile card.
 4. **Flows.** The name step in Publish, Create deployment and single-file
-   upload; names moving with new versions; the "Nothing published here" page;
+   upload; names moving with new versions; the empty page;
    visitor checks.
 
 ### Phase 2: getting a name
@@ -461,7 +463,7 @@ undername slots.
 | Q10 | A simple picker like console.ar.io: the name or an undername, new undernames inline. |
 | Q11 | Confirm before repointing. |
 | Q12 | New versions move the name automatically, said in the confirm step with its cost. |
-| Q13 | Undernames are deleted on removal; main names point at "Nothing published here"; offer removal when a file is hidden. |
+| Q13 | Undernames are deleted on removal; main names point at the empty page; offer removal when a file is hidden. |
 | Q14 | Names show as a row chip, a details Name section, in search, and on publications. |
 | Q15 | An "On the web" group in the left nav: Names now, Published later. |
 | Q16 | Cache time in the dialog's Advanced section and on the Names page. |
