@@ -318,6 +318,7 @@ class _AppSideBarState extends State<AppSideBar> {
           ),
           const SizedBox(height: 6),
           DriveScopeRail(showLabels: showLabels),
+          if (canGoToDrivesList) OnTheWebNavGroup(showLabel: showLabels),
         ],
       );
     }
@@ -357,6 +358,7 @@ class _AppSideBarState extends State<AppSideBar> {
             return const SizedBox();
           },
         ),
+        if (canGoToDrivesList) OnTheWebNavGroup(showLabel: showLabels),
       ],
     );
   }
@@ -1064,7 +1066,9 @@ class _DriveSectionsState extends State<_DriveSections> {
               hasAlert: state.drivesWithAlerts.contains(drive.id),
               drive: drive,
               onTap: () => _openDrive(context, drive),
-              isSelected: state.selectedDriveId == drive.id,
+              // Not lit on the Names page: the page is where the reader is.
+              isSelected: state.selectedDriveId == drive.id &&
+                  !context.watch<AppRouterDelegate>().showingNames,
               // Hiding is something a reader does to their own drives, so a
               // drive shared with them is never drawn as hidden.
               isHidden: scope != DriveScope.sharedWithMe && drive.isHidden,
@@ -1152,6 +1156,60 @@ class _AllDrivesRow extends StatelessWidget {
 
         context.read<AppRouterDelegate>().showDrivesList();
       },
+    );
+  }
+}
+
+/// "On the web" below the drives: what the reader has put on the web, with
+/// one row, Names, for now (docs/NAMES.md, "Where it lives", Q15). Its own
+/// row type: [DriveScope] filters drives and doesn't grow a value for it.
+class OnTheWebNavGroup extends StatelessWidget {
+  const OnTheWebNavGroup({super.key, required this.showLabel});
+
+  final bool showLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!AppRouterDelegate.namesPageIsOn(context)) {
+      return const SizedBox.shrink();
+    }
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final isCurrent = context.watch<AppRouterDelegate>().showingNames;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 6),
+        Divider(height: 1, color: colorTokens.strokeLow),
+        const SizedBox(height: 12),
+        if (showLabel)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 4),
+            child: Semantics(
+              header: true,
+              child: Text(
+                appLocalizationsOf(context).arnsOnTheWeb,
+                style: ArDriveTypographyNew.of(context).paragraphSmall(
+                  color: colorTokens.textLow,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+            ),
+          ),
+        DriveNavRow(
+          icon: Icons.language,
+          label: appLocalizationsOf(context).arnsNames,
+          showLabel: showLabel,
+          isCurrent: isCurrent,
+          onTap: () {
+            if (Scaffold.maybeOf(context) != null) {
+              Scaffold.of(context).closeDrawer();
+            }
+            context.read<AppRouterDelegate>().showNames();
+          },
+        ),
+      ],
     );
   }
 }

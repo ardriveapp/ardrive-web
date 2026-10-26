@@ -79,6 +79,13 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
         return AppRoutePath.signIn();
       case 'get-started':
         return AppRoutePath.getStarted();
+      case 'names':
+        // Handle '/names' - the Names page. A new segment: no share link has
+        // ever used it.
+        if (uri.pathSegments.length == 1) {
+          return AppRoutePath.names();
+        }
+        return AppRoutePath.unknown();
       case 'drives':
         // Handle '/drives' - the list of the user's drives. Only the bare
         // segment: every longer shape below addresses a particular drive and
@@ -244,6 +251,9 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       return RouteInformation(
         uri: Uri.parse('/drives'),
       );
+    } else if (configuration.names) {
+      // Before [driveId], for the reason [drivesList] is.
+      return RouteInformation(uri: Uri.parse('/names'));
     } else if (configuration.driveId != null) {
       final path = configuration.driveFolderId == null
           ? '/drives/${configuration.driveId}'

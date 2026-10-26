@@ -13,7 +13,9 @@ import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/core/arfs/repository/folder_repository.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
+import 'package:ardrive/arns/presentation/names_page/names_page.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
+import 'package:ardrive/drives_list/presentation/open_drive_on_selection.dart';
 import 'package:ardrive/drive_explorer/dock/ardrive_dock.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_modal.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
@@ -61,6 +63,10 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// the sidebar has to show something - so only this says which of the two
   /// the user is actually looking at.
   bool showingDrivesList = false;
+
+  /// Whether the Names page is what is on screen (docs/NAMES.md). Like the
+  /// drives list, a drive stays selected under it for the sidebar.
+  bool showingNames = false;
 
   String? driveId;
   String? driveName;
@@ -319,6 +325,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         signingIn: signingIn,
         getStarted: gettingStarted,
         drivesList: showingDrivesList,
+        names: showingNames,
         driveId: driveId,
         driveName: driveName,
         sharedDriveKey: sharedDriveKey,
@@ -481,7 +488,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 // to honour: a deep link - a drive, a folder, a shared file, a
                 // raw transaction - has already set its target in
                 // `setNewRoutePath`, and is left exactly as it was.
-                if (!hasARouteToHonour) {
+                if (!hasARouteToHonour && !showingNames) {
                   showingDrivesList = true;
                 }
 
@@ -539,7 +546,23 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               } else if (gettingStarted) {
                 shellKey = 'getStarted';
                 shell = const LoginPage(gettingStarted: true);
-              } else if (showingDrivesList && canShowDrivesList(state)) {
+              } else if (showingNames &&
+                  canShowDrivesList(state) &&
+                  namesPageIsOn(context)) {
+                shellKey = 'names';
+                // The drives list's shape: the sidebar reads an explorer
+                // cubit, and a drive chosen in it opens that drive.
+                shell = BlocProvider(
+                  create: (context) => _driveDetailCubit(context, rootPath),
+                  child: OpenDriveOnSelection(
+                    selections: context.read<DrivesCubit>().driveSelections,
+                    onOpenDrive: openDriveFromList,
+                    child: const AppShell(page: ArNSNamesPage()),
+                  ),
+                );
+              } else if ((showingDrivesList ||
+                      (showingNames && !namesPageIsOn(context))) &&
+                  canShowDrivesList(state)) {
                 shellKey = 'drivesList';
                 // A separate subtree from the explorer's, deliberately. The
                 // explorer's `DriveDetailCubit` is created once and switched
@@ -1007,6 +1030,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   @visibleForTesting
   void openDriveFromList(String driveId) {
     showingDrivesList = false;
+    showingNames = false;
     this.driveId = driveId;
 
     // A row tap has no folder in view and opens the drive at its root. A search
@@ -1081,6 +1105,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
     // Asked for, so nothing outranks it.
     showingDrivesList = true;
+    showingNames = false;
     signingIn = false;
     gettingStarted = false;
     // Going back to the list abandons whatever a search asked for - all of it,
@@ -1109,6 +1134,39 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     rawTransactionContentType = null;
 
     notifyListeners();
+  }
+
+  /// The Names page, from the nav's On the web group. Like
+  /// [showDrivesList], the drive in the sidebar stays selected underneath.
+  void showNames() {
+    showingNames = true;
+    showingDrivesList = false;
+    signingIn = false;
+    gettingStarted = false;
+    _requestedFolderDriveId = null;
+    _requestedFolderId = null;
+    _requestedItemId = null;
+    _selectedItemForFolder = null;
+    _selectedItemForFolderDriveId = null;
+    sharedFileId = null;
+    sharedFileKey = null;
+    sharedRawFileKey = null;
+    sharedFileLinkPayload = null;
+    sharedFileKeyIsDamaged = false;
+    rawTransactionId = null;
+    rawTransactionName = null;
+    rawTransactionContentType = null;
+    notifyListeners();
+  }
+
+  /// Whether the Names page can be shown: names on, outside a publication.
+  static bool namesPageIsOn(BuildContext context) {
+    if (PublicationMode.isOn) return false;
+    try {
+      return context.read<ConfigService>().config.enableArNS;
+    } on ProviderNotFoundException {
+      return false;
+    }
   }
 
   /// Where the user goes once the attach prompt a drive link opened is closed.
@@ -1162,13 +1220,16 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     signingIn = configuration.signingIn;
     gettingStarted = configuration.getStarted;
     showingDrivesList = configuration.drivesList;
+    showingNames = configuration.names;
     driveId = configuration.driveId;
     driveName = configuration.driveName;
     driveFolderId = configuration.driveFolderId;
     _pendingFolderDriveId =
         configuration.driveFolderId == null ? null : configuration.driveId;
     _pendingFolderId = configuration.driveFolderId;
-    _routeLink = configuration.driveId == null || configuration.drivesList
+    _routeLink = configuration.driveId == null ||
+            configuration.drivesList ||
+            configuration.names
         ? null
         : RouteLink(
             driveId: configuration.driveId!,
@@ -1248,6 +1309,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     signingIn = false;
     gettingStarted = false;
     showingDrivesList = false;
+    showingNames = false;
 
     this.driveId = driveId;
     driveName = null;
@@ -1280,6 +1342,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     signingIn = true;
     gettingStarted = false;
     showingDrivesList = false;
+    showingNames = false;
     notifyListeners();
   }
 
@@ -1375,6 +1438,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     signingIn = true;
     gettingStarted = false;
     showingDrivesList = false;
+    showingNames = false;
     driveId = null;
     driveName = null;
     driveFolderId = null;
