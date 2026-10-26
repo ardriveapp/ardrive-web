@@ -69,8 +69,8 @@ void main() {
     );
 
     expect(
-      find.text("The change wasn't approved in time, so it wasn't made. "
-          'Your credits come back within 15 minutes.'),
+      find.text("The change to blog_acme.ar.io wasn't approved in time, "
+          "so it wasn't made. Your credits come back within 15 minutes."),
       findsOneWidget,
     );
     expect(find.byType(SnackBarAction), findsNothing);

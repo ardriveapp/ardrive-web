@@ -120,8 +120,8 @@ This follows the ar.io console.
 - **After a reload.** The next load reads the status of each change the
   page left unfinished, once, and never creates it again. Completed: "Name
   saved". Failed: the credits come back. Expired, or still awaiting the
-  ArNS wallet's approval: "The change wasn't approved in time, so it wasn't
-  made. Your credits come back within 15 minutes." A change still awaiting
+  ArNS wallet's approval: "The change to blog_acme.ar.io wasn't approved in
+  time, so it wasn't made. Your credits come back within 15 minutes." A change still awaiting
   approval can't be finished after a reload, because Turbo's status read
   never returns its transaction, so it is left to expire and is refunded.
   Each of these is then forgotten. A status that can't be read is asked

@@ -59,7 +59,7 @@ void showArNSResumeNotice(BuildContext context, ArNSResumeNotice notice) {
   final message = switch (notice.outcome) {
     ArNSResumeOutcome.saved => strings.arnsResumeSaved(host),
     ArNSResumeOutcome.refunding => strings.arnsResumeRefunding(host),
-    ArNSResumeOutcome.expired => strings.arnsExpiredRefunding,
+    ArNSResumeOutcome.expired => strings.arnsResumeExpired(host),
   };
 
   ScaffoldMessenger.of(context).showSnackBar(
