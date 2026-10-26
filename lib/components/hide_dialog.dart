@@ -19,6 +19,10 @@ Future<void> promptToToggleHideState(
 }) async {
   final hideBloc = context.read<HideBloc>();
   final driveDetailCubit = context.read<DriveDetailCubit>();
+  // The hidden file's row leaves the list before the hide reports success,
+  // and [context] (its menu's) goes with it, so the name offer below is
+  // shown from the navigator's, which stays.
+  final navigator = Navigator.of(context, rootNavigator: true);
 
   final isHidden = item.isHidden;
 
@@ -71,9 +75,9 @@ Future<void> promptToToggleHideState(
       !isHidden &&
       item.isOwner &&
       hideBloc.state is SuccessHideState &&
-      context.mounted) {
+      navigator.mounted) {
     await offerToRemoveArNSNameAfterHide(
-      context,
+      navigator.context,
       item: ArNSNameableItem(
         fileId: item.id,
         driveId: item.driveId,
