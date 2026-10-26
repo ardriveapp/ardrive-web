@@ -1,3 +1,6 @@
+import 'package:ardrive/arns/domain/arns_nameable_item.dart';
+import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
+import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
@@ -57,11 +60,29 @@ Future<void> promptToToggleHideState(
     throw UnimplementedError('Unknown item type: ${item.runtimeType}');
   }
 
-  return showArDriveDialog(
+  await showArDriveDialog(
     context,
     barrierDismissible: false,
     content: HideDialog(driveDetailCubit: driveDetailCubit),
   );
+
+  // A named file just left public view: offer to remove its name too.
+  if (item is FileDataTableItem &&
+      !isHidden &&
+      item.isOwner &&
+      hideBloc.state is SuccessHideState &&
+      context.mounted) {
+    await offerToRemoveArNSNameAfterHide(
+      context,
+      item: ArNSNameableItem(
+        fileId: item.id,
+        driveId: item.driveId,
+        name: item.name,
+        dataTxId: item.dataTxId,
+        isManifest: item.contentType == ContentType.manifest,
+      ),
+    );
+  }
 }
 
 class HideDialog extends StatelessWidget {

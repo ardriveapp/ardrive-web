@@ -4,6 +4,7 @@ import 'package:ardrive/arns/data/arns_names_repository.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/arns/data/turbo_arns_action_client.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
+import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
@@ -415,7 +416,7 @@ class AppState extends State<App> {
             profileCubit: context.read<ProfileCubit>(),
           ),
         ),
-        // Lazy, and inert while names are off: nothing reads it yet.
+        // Lazy, and inert while names are off.
         BlocProvider(
           create: (context) => ArNSWalletCubit(
             arioSDK: ArioSDKFactory().create(),
@@ -423,6 +424,14 @@ class AppState extends State<App> {
             auth: context.read<ArDriveAuth>(),
             isEnabled: () =>
                 configService.config.enableArNS && !PublicationMode.isOn,
+          ),
+        ),
+        // The linked ArNS wallet's names, for rows, the details panel, the
+        // name dialog and the Names page. Lazy: only read while names are on.
+        BlocProvider(
+          create: (context) => ArNSNamesCubit(
+            repository: context.read<ArNSNamesRepository>(),
+            walletCubit: context.read<ArNSWalletCubit>(),
           ),
         ),
         BlocProvider(

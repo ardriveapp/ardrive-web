@@ -1,3 +1,5 @@
+import 'package:ardrive/arns/domain/arns_nameable_item.dart';
+import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/snapshots_tab/snapshots_tab.dart';
@@ -642,8 +644,21 @@ class _DetailsPanelState extends State<DetailsPanel> {
     String? pinnedDataOwnerAddress = item.pinnedDataOwnerAddress;
 
     final typography = ArDriveTypographyNew.of(context);
+    final driveState = context.read<DriveDetailCubit>().state;
+    final nameable = arnsNameableItem(
+      context,
+      item: item,
+      drive: widget.currentDrive ??
+          (driveState is DriveDetailLoadSuccess
+              ? driveState.currentDrive
+              : null),
+    );
 
     return [
+      if (nameable != null) ...[
+        ArNSNameSection(item: nameable),
+        sizedBoxHeight16px,
+      ],
       DetailsPanelItem(
         leading: _IdValue(id: item.id),
         itemTitle: appLocalizationsOf(context).fileID,
@@ -988,7 +1003,11 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
         break;
       case RevisionAction.assignName:
-        title = 'File had name assigned ${file.assignedNames?.last}';
+        final names = file.assignedNames ?? const [];
+        title = names.isEmpty
+            ? appLocalizationsOf(context).arnsActivityNameRemoved
+            : appLocalizationsOf(context)
+                .arnsActivityNameAssigned(arnsHostFor(names.last));
         break;
       case RevisionAction.assertLicense:
         if (licenseState == null) {

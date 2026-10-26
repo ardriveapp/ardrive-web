@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
@@ -76,6 +77,8 @@ class DriveExplorerItemTile extends TableRowWidget {
                           driveId: dataTableItem.driveId,
                           folderId: dataTableItem.id,
                         ),
+                      if (dataTableItem is FileDataTableItem)
+                        ArNSNameChip(dataTxId: dataTableItem.dataTxId),
                     ],
                   ),
                 )),
@@ -772,6 +775,12 @@ class _DriveExplorerItemTileTrailingState
               height: height,
             ),
           ),
+        ...arnsItemMenuItems(
+          context,
+          item: item,
+          drive: widget.drive,
+          height: height,
+        ),
         hideFileDropdownItem(context, item),
       ],
       ArDriveDropdownItem(
@@ -1390,6 +1399,7 @@ class EntityActionsMenu extends StatelessWidget {
             ),
           ),
         ),
+        ...arnsItemMenuItems(context, item: item, drive: drive),
         hideFileDropdownItem(context, item),
       ],
       if (withInfo) _buildInfoOption(context),
