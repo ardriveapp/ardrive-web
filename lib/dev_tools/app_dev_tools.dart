@@ -850,7 +850,11 @@ typedef OnChange<T> = void Function(T value);
 class ArDriveDevToolOption<T> {
   final String name;
   T value;
-  final OnChange<T> onChange;
+
+  /// Typed for any value, not [T]: options are called through the raw type,
+  /// and a callback inferred as `(String) => void` from a declaration without
+  /// a type isn't a `(dynamic) => void`, so calling it threw.
+  final OnChange<dynamic> onChange;
   final ArDriveDevToolOptionType type;
   final Function? onInteraction;
 
