@@ -50,6 +50,26 @@ void main() {
     }
   });
 
+  testWidgets('each type has its own icon', (tester) async {
+    final expected = {
+      ArDriveNoticeType.info: ArDriveIconsData.info,
+      ArDriveNoticeType.warning: ArDriveIconsData.triangle,
+      ArDriveNoticeType.error: ArDriveIconsData.close_circle,
+      ArDriveNoticeType.success: ArDriveIconsData.check_cirle,
+    };
+    for (final MapEntry(key: type, value: icon) in expected.entries) {
+      await tester.pumpWidget(wrap(ArDriveNotice(type: type, message: 'x')));
+      expect(
+          tester
+              .widget<ArDriveIcon>(find.descendant(
+                  of: find.byType(ArDriveNotice),
+                  matching: find.byType(ArDriveIcon)))
+              .icon,
+          icon,
+          reason: '$type');
+    }
+  });
+
   testWidgets('shows a close button only when it can be dismissed',
       (tester) async {
     await tester.pumpWidget(
