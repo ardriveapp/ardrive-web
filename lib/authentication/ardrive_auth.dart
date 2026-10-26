@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/arns/data/arns_wallet_store.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/entities/profile_types.dart';
@@ -54,6 +55,7 @@ abstract class ArDriveAuth {
     required ArConnectService arConnectService,
     required DatabaseHelpers databaseHelpers,
     MetadataCache? metadataCache,
+    ArNSWalletStore? arnsWalletStore,
   }) =>
       ArDriveAuthImpl(
         arweave: arweave,
@@ -64,6 +66,7 @@ abstract class ArDriveAuth {
         secureKeyValueStore: secureKeyValueStore,
         arConnectService: arConnectService,
         metadataCache: metadataCache,
+        arnsWalletStore: arnsWalletStore,
       );
 }
 
@@ -78,6 +81,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
     required DatabaseHelpers databaseHelpers,
     MetadataCache? metadataCache,
     PermanenceCache? permanenceCache,
+    ArNSWalletStore? arnsWalletStore,
   })  : _arweave = arweave,
         _crypto = crypto,
         _databaseHelpers = databaseHelpers,
@@ -86,7 +90,8 @@ class ArDriveAuthImpl implements ArDriveAuth {
         _biometricAuthentication = biometricAuthentication,
         _userRepository = userRepository,
         _maybeMetadataCache = metadataCache,
-        _permanenceCache = permanenceCache ?? PermanenceCache.shared;
+        _permanenceCache = permanenceCache ?? PermanenceCache.shared,
+        _arnsWalletStore = arnsWalletStore ?? ArNSWalletStore();
 
   final UserRepository _userRepository;
   final ArweaveService _arweave;
@@ -99,6 +104,9 @@ class ArDriveAuthImpl implements ArDriveAuth {
 
   /// What the permanence panel last read for this wallet.
   final PermanenceCache _permanenceCache;
+
+  /// The ArNS wallet linked to each profile, forgotten at sign-out.
+  final ArNSWalletStore _arnsWalletStore;
 
   User? _currentUser;
 
@@ -288,6 +296,7 @@ class ArDriveAuthImpl implements ArDriveAuth {
       await _databaseHelpers.deleteAllTables();
       await _databaseHelpers.clearSessionMemory();
       await _permanenceCache.clear();
+      await _arnsWalletStore.clear();
       currentUser = null;
       _userStreamController.add(null);
     } catch (e, stacktrace) {
