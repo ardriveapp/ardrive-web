@@ -304,6 +304,30 @@ it accepts headers and chunks and forwards nothing to Arweave.
 3. Upload. `launch.js` re-checks that ar-io.dev is still in dry-run mode
    before every header, and blocks the header if it isn't.
 
+**ArNS names on devnet.** Names (docs/NAMES.md) need a Solana wallet in the
+page. `solana_wallet.js` gives the page one, a Wallet Standard wallet called
+*E2E Test Wallet*, backed by throwaway keypairs whose secret keys stay in
+`launch.js`'s process.
+1. Make the keypairs, outside the repo: `node solana_wallet.js new <file>`
+   writes a chmod 600 key file and prints its address. Never use a real
+   wallet's key.
+2. Start `SOLANA_KEYS=<file>[,<file>] node launch.js` against a development
+   build, which pays with the testnet payment service. Turn on `enableArNS`
+   and *Switch ARIO to Devnet* in dev tools (Ctrl+Shift+Q).
+3. Get the names some other way: the sandbox's `buy-name` action, paid with
+   the test wallet's sandbox credits (topped up with a Stripe test card).
+4. Steer the wallet with files in `$E2E_DIR`, while everything runs:
+   `solana-reject` (`message`, `transaction`, `connect` or empty for all)
+   rejects prompts; `solana-delay` (milliseconds) answers transaction
+   prompts late, for the refund path; `solana-account` (a number) switches to
+   another `SOLANA_KEYS` key, for the wrong-account state. Set
+   `localStorage['e2e-solana-hidden'] = '1'` and reload for the no-wallet
+   state.
+
+`net.log` shows each prompt as a `solana` line and each ArNS action created
+as an `arns-action` line with Turbo's nonce and status. `launch.js` refuses
+ArNS actions on any payment service but the testnet one.
+
 ## What to test
 
 Don't try to test everything. There are three kinds of run:

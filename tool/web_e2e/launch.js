@@ -31,6 +31,13 @@
 // - wallet-paid failures come from chaos_gateway.py's failure rate (see
 //   there).
 //
+// ArNS actions (Turbo's /v1/arns/actions, which debit credits when created)
+// are refused on every payment service but the testnet one, whatever the
+// flavor: names are tested on devnet only (docs/NAMES.md, "Devnet").
+//
+// SOLANA_KEYS=<file>[,<file>] gives the page a Wallet Standard Solana wallet
+// backed by those throwaway keypairs (solana_wallet.js, which makes them).
+//
 // FAKE_AR_BALANCE=<winston> answers wallet balance lookups with that amount,
 // so the app allows an AR-paid upload the test wallet can't afford. Only
 // with AR_UPLOADS=chaos or block, so nothing is ever really sent.
@@ -51,6 +58,7 @@ const CHAOS_URL = process.env.CHAOS_URL || 'http://127.0.0.1:8850';
 const TURBO_FREE_BYTES = Number(process.env.TURBO_FREE_BYTES || 107520);
 const TURBO_PAID = process.env.TURBO_PAID === '1';
 const FAKE_AR_BALANCE = process.env.FAKE_AR_BALANCE;
+const SOLANA_KEYS = (process.env.SOLANA_KEYS || '').split(',').filter(Boolean);
 const DRY_RUN_GATEWAY = 'https://ar-io.dev';
 const AR_UPLOAD_PATHS = /^https?:\/\/[^/]+\/(tx|chunk|tx\/[^/]+\/status)$/;
 // The Turbo services that cost real money, read from the app's own config so
@@ -194,6 +202,24 @@ async function guardTurbo(route) {
   await ctx.route((url) => TURBO_UPLOAD_ANY.test(url.href), failClosed(guardTurbo));
   await ctx.route((url) => TURBO_PAYMENT.test(url.href), (route) =>
     route.request().method() === 'GET' ? route.continue() : refuse(route, 'Turbo top-ups are never automated'));
+  const TURBO_TESTNET = originMatcher(TURBO_TESTNET_ORIGINS);
+  await ctx.route(/\/v1\/arns\/actions\//, failClosed(async (route) => {
+    const req = route.request();
+    if (req.method() === 'GET' || req.method() === 'OPTIONS') return route.continue();
+    if (!TURBO_TESTNET.test(req.url())) return refuse(route, 'ArNS actions only on the testnet payment service');
+    // Each action with the nonce and status Turbo answered, so a run can
+    // list every action it created.
+    const res = await route.fetch({ timeout: 180000 });
+    const body = await res.text();
+    let answer = {};
+    try { answer = JSON.parse(body); } catch (e) { answer = { error: body.slice(0, 160) }; }
+    log({ ev: 'arns-action', method: req.method(), path: new URL(req.url()).pathname.slice(0, 120), http: res.status(), nonce: answer.nonce, status: answer.status, error: answer.error });
+    return route.fulfill({ response: res, body });
+  }));
+  if (SOLANA_KEYS.length) {
+    const addresses = await require('./solana_wallet').install(ctx, { keyFiles: SOLANA_KEYS, e2eDir: E2E_DIR, log });
+    console.log(`Solana test wallet: ${addresses.join(' ')}`);
+  }
   if (FAKE_AR_BALANCE) {
     await ctx.route(/\/wallet\/[^/]+\/balance$/, (route) => {
       log({ ev: 'fake-balance', winston: FAKE_AR_BALANCE });
