@@ -1161,12 +1161,32 @@ class _AllDrivesRow extends StatelessWidget {
 }
 
 /// "On the web" below the drives: what the reader has put on the web, with
-/// one row, Names, for now (docs/NAMES.md, "Where it lives", Q15). Its own
+/// one row, Names, for now (docs/NAMES.md, "Where it lives", Q15).
+///
+/// Drawn like the drive sections above it: a section row with its icon and
+/// chevron, and Names under it the way a drive sits under Public. Its own
 /// row type: [DriveScope] filters drives and doesn't grow a value for it.
-class OnTheWebNavGroup extends StatelessWidget {
+class OnTheWebNavGroup extends StatefulWidget {
   const OnTheWebNavGroup({super.key, required this.showLabel});
 
   final bool showLabel;
+
+  /// The section's icon: ArNS's own, not the globe Public already uses.
+  static const icon = ArDriveIconsData.arns_name;
+
+  @override
+  State<OnTheWebNavGroup> createState() => _OnTheWebNavGroupState();
+}
+
+class _OnTheWebNavGroupState extends State<OnTheWebNavGroup> {
+  bool _isExpanded = true;
+
+  void _showNames(BuildContext context) {
+    if (Scaffold.maybeOf(context) != null) {
+      Scaffold.of(context).closeDrawer();
+    }
+    context.read<AppRouterDelegate>().showNames();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1174,6 +1194,7 @@ class OnTheWebNavGroup extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final strings = appLocalizationsOf(context);
     final isCurrent = context.watch<AppRouterDelegate>().showingNames;
 
     return Column(
@@ -1182,33 +1203,41 @@ class OnTheWebNavGroup extends StatelessWidget {
       children: [
         const SizedBox(height: 6),
         Divider(height: 1, color: colorTokens.strokeLow),
-        const SizedBox(height: 12),
-        if (showLabel)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 10, 4),
-            child: Semantics(
-              header: true,
-              child: Text(
-                appLocalizationsOf(context).arnsOnTheWeb,
-                style: ArDriveTypographyNew.of(context).paragraphSmall(
-                  color: colorTokens.textLow,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
+        const SizedBox(height: 6),
+        // The collapsed rail has no room for a child row: the section's
+        // icon goes straight to Names.
+        if (!widget.showLabel)
+          DriveNavRow(
+            icon: OnTheWebNavGroup.icon,
+            label: strings.arnsNames,
+            showLabel: false,
+            isCurrent: isCurrent,
+            onTap: () => _showNames(context),
+          )
+        else ...[
+          DriveNavRow(
+            icon: OnTheWebNavGroup.icon,
+            label: strings.arnsOnTheWeb,
+            isExpanded: _isExpanded,
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            trailing: AnimatedRotation(
+              turns: _isExpanded ? 0.5 : 0,
+              duration: const Duration(milliseconds: 150),
+              child: ArDriveIcons.chevronDown(
+                size: 16,
+                color: colorTokens.textMid,
               ),
             ),
           ),
-        DriveNavRow(
-          icon: Icons.language,
-          label: appLocalizationsOf(context).arnsNames,
-          showLabel: showLabel,
-          isCurrent: isCurrent,
-          onTap: () {
-            if (Scaffold.maybeOf(context) != null) {
-              Scaffold.of(context).closeDrawer();
-            }
-            context.read<AppRouterDelegate>().showNames();
-          },
-        ),
+          if (_isExpanded)
+            DriveNavRow(
+              icon: null,
+              dense: true,
+              label: strings.arnsNames,
+              isCurrent: isCurrent,
+              onTap: () => _showNames(context),
+            ),
+        ],
       ],
     );
   }

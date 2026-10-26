@@ -62,6 +62,16 @@ void main() {
     expect(delegate.currentConfiguration.names, isTrue);
   });
 
+  testWidgets('On the web folds like the drive sections', (tester) async {
+    await pump(tester, enabled: true);
+
+    await tester.tap(find.text('On the web'));
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Names'), findsNothing);
+    expect(find.text('On the web'), findsOneWidget);
+  });
+
   testWidgets('nothing is drawn while names are off', (tester) async {
     await pump(tester, enabled: false);
 

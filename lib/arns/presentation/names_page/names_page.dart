@@ -17,7 +17,10 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
+import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:responsive_builder/responsive_builder.dart';
@@ -356,8 +359,8 @@ const _nameColumnFlex = 4;
 const _pointsToColumnFlex = 5;
 const _cacheColumnWidth = 96.0;
 
-/// Wide enough for "Use this name" and Remove side by side.
-const _actionsColumnWidth = 264.0;
+/// The overflow menu's button.
+const _actionsColumnWidth = 48.0;
 
 class _RecordHeadings extends StatelessWidget {
   const _RecordHeadings();
@@ -430,44 +433,25 @@ class _RecordRow extends StatelessWidget {
       ),
     );
     final pointsTo = _PointsToCell(record: record, placeholder: placeholder);
-    final cacheTime = ArDriveLink(
-      text: arnsTtlLabel(context, record.ttlSeconds),
-      isAction: true,
-      color: blocked ? colors.textLow : null,
-      onTap: blocked
-          ? null
-          : () => showArNSNameDialog(
-                context,
-                mode: ArNSNameDialogMode.cacheTime,
-                choice: _choice,
-              ),
+    final cacheTime = Text(
+      arnsTtlLabel(context, record.ttlSeconds),
+      style: typography.paragraphNormal(color: colors.textMid),
     );
-    final actions = Wrap(
-      alignment: isPhone ? WrapAlignment.start : WrapAlignment.end,
-      spacing: ArDriveSpacing.xs,
-      children: [
-        ArDriveButtonNew(
-          text: _unused ? strings.arnsUseThisName : strings.arnsChange,
-          typography: typography,
-          size: ArDriveButtonSize.compact,
-          variant: _unused ? ButtonVariant.primary : ButtonVariant.secondary,
-          isDisabled: blocked,
-          onPressed: () => showArNSNameDialog(
-            context,
-            mode: ArNSNameDialogMode.pointRecord,
-            choice: _choice,
-          ),
-        ),
-        ArDriveButtonNew(
-          text: strings.arnsRemove,
-          typography: typography,
-          size: ArDriveButtonSize.compact,
-          variant: ButtonVariant.outline,
-          isDisabled: blocked || (record.isApex && _unused),
-          onPressed: () => _remove(context),
-        ),
-      ],
-    );
+    // An unused name gets a quiet way in: "Get a name" stays the page's one
+    // primary action.
+    final use = _unused && !blocked
+        ? ArDriveLink(
+            text: strings.arnsUseThisName,
+            isAction: true,
+            onTap: () => showArNSNameDialog(
+              context,
+              mode: ArNSNameDialogMode.pointRecord,
+              choice: _choice,
+            ),
+          )
+        : null;
+    final menu =
+        ArNSRecordMenu(record: record, blocked: blocked, unused: _unused);
 
     final divider = BoxDecoration(
       border:
@@ -478,43 +462,77 @@ class _RecordRow extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.sm),
         decoration: divider,
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            host,
-            const SizedBox(height: ArDriveSpacing.xxs),
-            pointsTo,
-            const SizedBox(height: ArDriveSpacing.xxs),
-            Row(
-              children: [
-                Text(
-                  '${strings.arnsCacheTime}: ',
-                  style: typography.paragraphSmall(color: colors.textLow),
-                ),
-                cacheTime,
-              ],
-            ),
-            const SizedBox(height: ArDriveSpacing.xs),
-            Align(alignment: Alignment.centerLeft, child: actions),
+            Expanded(child: _phoneDetails(context, host, pointsTo, use)),
+            menu,
           ],
         ),
       );
     }
+    return _desktop(host, pointsTo, cacheTime, use, menu, divider);
+  }
 
+  Widget _phoneDetails(
+    BuildContext context,
+    Widget host,
+    Widget pointsTo,
+    Widget? use,
+  ) {
+    final strings = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        host,
+        const SizedBox(height: ArDriveSpacing.xxs),
+        pointsTo,
+        const SizedBox(height: ArDriveSpacing.xxs),
+        Text(
+          strings.arnsCacheTimeIs(arnsTtlLabel(context, record.ttlSeconds)),
+          style: typography.paragraphSmall(color: colors.textLow),
+        ),
+        if (use != null) ...[
+          const SizedBox(height: ArDriveSpacing.xs),
+          use,
+        ],
+      ],
+    );
+  }
+
+  Widget _desktop(
+    Widget host,
+    Widget pointsTo,
+    Widget cacheTime,
+    Widget? use,
+    Widget menu,
+    BoxDecoration divider,
+  ) {
     return Container(
       constraints: const BoxConstraints(minHeight: 56),
-      padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.xs),
+      padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.xxs),
       decoration: divider,
       child: Row(
         children: [
           Expanded(flex: _nameColumnFlex, child: host),
-          Expanded(flex: _pointsToColumnFlex, child: pointsTo),
-          SizedBox(
-            width: _cacheColumnWidth,
-            child: Align(alignment: Alignment.centerLeft, child: cacheTime),
+          Expanded(
+            flex: _pointsToColumnFlex,
+            child: use == null
+                ? pointsTo
+                : Wrap(
+                    spacing: ArDriveSpacing.sm,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [pointsTo, use],
+                  ),
           ),
-          SizedBox(width: _actionsColumnWidth, child: actions),
+          SizedBox(width: _cacheColumnWidth, child: cacheTime),
+          SizedBox(
+            width: _actionsColumnWidth,
+            child: Align(alignment: Alignment.centerRight, child: menu),
+          ),
         ],
       ),
     );
@@ -522,24 +540,6 @@ class _RecordRow extends StatelessWidget {
 
   ArNSRecordChoice get _choice =>
       ArNSRecordChoice(name: record.name, undername: record.undername);
-
-  void _remove(BuildContext context) {
-    final target = record.target;
-    promptToRemoveArNSName(
-      context,
-      record: record,
-      // The file whose metadata loses the name.
-      item: target is ArNSFileItem && target.isLatestVersion
-          ? ArNSNameableItem(
-              fileId: target.fileId,
-              driveId: target.driveId,
-              name: target.name,
-              dataTxId: record.transactionId,
-              isManifest: target.isManifest,
-            )
-          : null,
-    );
-  }
 }
 
 /// The item, a link that opens it; or "Points elsewhere" and the ID.
@@ -661,4 +661,119 @@ Future<void> showArNSWalletDialog(
     );
   }
   return showArDriveDialog(context, content: content);
+}
+
+/// One record's actions, the explorer's row menu pattern: Change, Change
+/// cache time, Copy link, Remove.
+class ArNSRecordMenu extends StatelessWidget {
+  const ArNSRecordMenu({
+    super.key,
+    required this.record,
+    required this.blocked,
+    required this.unused,
+  });
+
+  final ArNSNameRecord record;
+
+  /// In its grace period: nothing can change.
+  final bool blocked;
+
+  /// Pointing at "Nothing published here".
+  final bool unused;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final height =
+        MediaQuery.sizeOf(context).width < arnsSheetBreakpoint ? 44.0 : 48.0;
+    final choice =
+        ArNSRecordChoice(name: record.name, undername: record.undername);
+
+    ArDriveDropdownItem item(
+      String label,
+      IconData icon,
+      VoidCallback onTap, {
+      bool enabled = true,
+    }) =>
+        ArDriveDropdownItem(
+          onClick: enabled ? onTap : null,
+          content: ArDriveDropdownItemTile(
+            name: label,
+            icon: ArDriveIcon(icon: icon, size: 24),
+            isDisabled: !enabled,
+            height: height,
+          ),
+        );
+
+    final items = [
+      item(
+        unused ? strings.arnsUseThisName : strings.arnsChange,
+        Icons.edit_outlined,
+        () => showArNSNameDialog(
+          context,
+          mode: ArNSNameDialogMode.pointRecord,
+          choice: choice,
+        ),
+        enabled: !blocked,
+      ),
+      item(
+        strings.arnsChangeCacheTime,
+        Icons.schedule,
+        () => showArNSNameDialog(
+          context,
+          mode: ArNSNameDialogMode.cacheTime,
+          choice: choice,
+        ),
+        enabled: !blocked,
+      ),
+      item(
+        strings.copyLink,
+        Icons.link,
+        () => Clipboard.setData(
+          ClipboardData(text: arnsUrlFor(record.literalName)),
+        ),
+      ),
+      item(
+        strings.arnsRemove,
+        Icons.link_off,
+        () => _remove(context),
+        enabled: !blocked && !(record.isApex && unused),
+      ),
+    ];
+
+    return ArDriveDropdown(
+      height: height,
+      maxHeight: items.length * height,
+      anchor: const Aligned(
+        follower: Alignment.topRight,
+        target: Alignment.bottomRight,
+      ),
+      calculateVerticalAlignment: (isAboveHalfScreen) =>
+          isAboveHalfScreen ? Alignment.bottomRight : Alignment.topRight,
+      items: items,
+      child: HoverWidget(
+        tooltip: strings.showMenu,
+        child: ArDriveIcons.kebabMenu(color: colors.iconMid),
+      ),
+    );
+  }
+
+  void _remove(BuildContext context) {
+    final target = record.target;
+    promptToRemoveArNSName(
+      context,
+      record: record,
+      // The file whose metadata loses the name.
+      item: target is ArNSFileItem && target.isLatestVersion
+          ? ArNSNameableItem(
+              fileId: target.fileId,
+              driveId: target.driveId,
+              name: target.name,
+              dataTxId: record.transactionId,
+              isManifest: target.isManifest,
+            )
+          : null,
+    );
+  }
 }
