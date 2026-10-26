@@ -1,39 +1,32 @@
 import '../../../models/tables/arns_records.drift';
 import '../../../models/tables/ant_records.drift';
+import '../../../models/tables/file_entries.drift';
+import '../../../models/tables/file_revisions.drift';
 
-getARNSRecordByName as ARNSRecordQueryResult:
-SELECT * FROM arns_records
-WHERE domain = :domain AND name = :name;
+getAntRecordsForAddress:
+SELECT * FROM ant_records WHERE arns_address = :arnsAddress ORDER BY domain;
 
-getActiveARNSRecordByName as ARNSRecordQueryResult:
-SELECT * FROM arns_records
-WHERE domain = :domain AND name = :name
-  AND is_active = TRUE;
+getARNSRecordsForDomains:
+SELECT * FROM arns_records WHERE domain IN :domains ORDER BY domain, name;
 
+deleteAntRecordsForAddress:
+DELETE FROM ant_records WHERE arns_address = :arnsAddress;
 
-getActiveARNSRecordsForFileId as ARNSRecordQueryResult:
-SELECT * FROM arns_records
-WHERE file_id = :fileId
-  AND is_active = TRUE;
+deleteARNSRecordsForDomains:
+DELETE FROM arns_records WHERE domain IN :domains;
 
-getARNSRecordByDomain as ARNSRecordQueryResult:
-SELECT * FROM arns_records WHERE domain = :domain;
-
-getAllARNSRecords as ARNSRecordQueryResult:
-SELECT * FROM arns_records;
-
-getAllANTRecords as ANTRecordQueryResult:
-SELECT * FROM ant_records;
-
-getANTRecordByDomain as ANTRecordQueryResult:
-SELECT * FROM ant_records WHERE domain = :domain;
-
-getARNSRecordById as ANTRecordQueryResult:
-SELECT * FROM arns_records WHERE id = :id;
-
-getARNSRecordByNameAndFileId
- as ARNSRecordQueryResult:
-SELECT * FROM arns_records
-WHERE domain = :domain
-  AND name = :name
-  AND file_id = :fileId;
+-- Every file revision whose data a name may point to, with the file's
+-- current data, so a name on an older version can be told apart.
+fileRevisionsForDataTxIds AS ArNSFileRevisionRow:
+SELECT
+    rev.fileId AS file_id,
+    rev.driveId AS drive_id,
+    rev.dataTxId AS data_tx_id,
+    f.dataTxId AS latest_data_tx_id,
+    f.name AS name,
+    f.dataContentType AS data_content_type,
+    f.parentFolderId AS parent_folder_id,
+    f.isHidden AS is_hidden
+FROM file_revisions rev
+INNER JOIN file_entries f ON f.id = rev.fileId AND f.driveId = rev.driveId
+WHERE rev.dataTxId IN :txIds;

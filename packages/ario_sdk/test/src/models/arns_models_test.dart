@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('ArNSNameData.fromJson', () {
     test('reads a lease with its end', () {
-      final name = ArNSNameData.fromJson({
+      final name = ArNSNameData.fromJson(const {
         'name': 'forever-loved',
         'processId': 'EH9PsyfwJBk9KLMpZ2C5nUjWQfXsNTHaUzTqFa4BpbQj',
         'type': 'lease',
@@ -19,7 +19,7 @@ void main() {
     });
 
     test('reads a permanent name without an end', () {
-      final name = ArNSNameData.fromJson({
+      final name = ArNSNameData.fromJson(const {
         'name': 'turbo',
         'processId': 'CBsEKdomKa9nwF4fMiV5iFerfQPT73Et2ZKWpdCLHHsv',
         'type': 'permabuy',
@@ -34,7 +34,7 @@ void main() {
   });
 
   test('ANTSummary.fromJson reads owner, controllers and apex record', () {
-    final summary = ANTSummary.fromJson({
+    final summary = ANTSummary.fromJson(const {
       'processId': 'ant',
       'name': 'ArDrive',
       'ticker': 'ANT',

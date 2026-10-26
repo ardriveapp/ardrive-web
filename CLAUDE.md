@@ -158,7 +158,7 @@ Don't draw a one-off version of something the design system has; if it falls sho
 
 ### Database (Drift ORM)
 
-- Main database: `lib/models/database/database.dart` (currently `schemaVersion => 30`)
+- Main database: `lib/models/database/database.dart` (currently `schemaVersion => 31`)
 - Table definitions: `lib/models/tables/*.drift`
 - DAOs: `DriveDao`, `ProfileDao`, `ARNSDao`
 - Drift codegen options live in `build.yaml` (`named_parameters: true`); the same file
