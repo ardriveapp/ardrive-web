@@ -112,6 +112,7 @@ class ArNSNameDialogState extends Equatable {
     this.previousRemovalFailed = false,
     this.following = const [],
     this.leaveOnOld = false,
+    this.liveWithinSeconds,
   });
 
   final ArNSNameDialogMode mode;
@@ -169,6 +170,10 @@ class ArNSNameDialogState extends Equatable {
   /// unless [leaveOnOld] (Q12, Q29).
   final List<ArNSNameRecord> following;
   final bool leaveOnOld;
+
+  /// Once a change is made: when it is live everywhere, in seconds. The
+  /// longer of the record's cache time before the change and after it.
+  final int? liveWithinSeconds;
 
   /// The names that move with a new version.
   List<ArNSNameRecord> get moving => leaveOnOld ? const [] : following;
@@ -328,6 +333,7 @@ class ArNSNameDialogState extends Equatable {
     ArNSNameRecord? Function()? previousRecord,
     bool? leaveOnOld,
     List<ArNSNameRecord>? following,
+    int? Function()? liveWithinSeconds,
   }) =>
       ArNSNameDialogState(
         mode: mode,
@@ -359,6 +365,9 @@ class ArNSNameDialogState extends Equatable {
             previousRemovalFailed ?? this.previousRemovalFailed,
         following: following ?? this.following,
         leaveOnOld: leaveOnOld ?? this.leaveOnOld,
+        liveWithinSeconds: liveWithinSeconds != null
+            ? liveWithinSeconds()
+            : this.liveWithinSeconds,
       );
 
   @override
@@ -387,5 +396,6 @@ class ArNSNameDialogState extends Equatable {
         previousRemovalFailed,
         following,
         leaveOnOld,
+        liveWithinSeconds,
       ];
 }

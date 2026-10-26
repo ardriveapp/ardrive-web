@@ -1113,7 +1113,10 @@ class _Done extends StatelessWidget {
                   ? strings.arnsRemovedUndernameDone(arnsHostFor(literal))
                   : strings.arnsRemovedMainNameDone(arnsHostFor(literal)))
               : strings.arnsLiveWithin(
-                  arnsCacheTimeLabel(context, state.cacheTime),
+                  arnsTtlLabel(
+                    context,
+                    state.liveWithinSeconds ?? state.cacheTime.seconds,
+                  ),
                 ),
         ),
         if (!removed) ...[

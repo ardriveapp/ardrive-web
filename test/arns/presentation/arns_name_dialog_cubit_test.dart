@@ -460,6 +460,44 @@ void main() {
       expect((executedChange() as ArNSSetRecord).undername, 'blog');
     });
 
+    group('live within', () {
+      // Gateways may serve the old target for the cache time it had: "about
+      // 5 minutes" was wrong for a name that had an hour.
+      test('a repointed record takes its old cache time when longer', () async {
+        final cubit = await open();
+        cubit.choose('acme', '@');
+        await pumpEventQueue();
+        await cubit.commit();
+        await cubit.confirmRepoint();
+
+        expect((executedChange() as ArNSSetRecord).ttlSeconds, 300);
+        expect(cubit.state.stage, ArNSDialogStage.done);
+        expect(cubit.state.liveWithinSeconds, 3600);
+      });
+
+      test('a longer new cache time is the one that counts', () async {
+        final cubit = await open();
+        cubit.choose('acme', 'blog');
+        cubit.setCacheTime(ArNSCacheTime.oneDay);
+        await pumpEventQueue();
+        await cubit.commit();
+        await cubit.confirmRepoint();
+
+        expect(cubit.state.liveWithinSeconds, 86400);
+      });
+
+      test('a new undername takes the cache time set', () async {
+        final cubit = await open();
+        cubit.startNewUndername('acme');
+        cubit.editNewUndername('docs');
+        cubit.setCacheTime(ArNSCacheTime.oneMinute);
+        await pumpEventQueue();
+        await cubit.commit();
+
+        expect(cubit.state.liveWithinSeconds, 60);
+      });
+    });
+
     test('passes the credit sharers and reports each step', () async {
       when(() => executor.execute(
             name: any(named: 'name'),
@@ -956,6 +994,18 @@ void main() {
             fileId: 'file-1',
             names: any(named: 'names'),
           )).called(1);
+    });
+
+    test('a repointed name is live within its old cache time', () async {
+      final cubit = flow()..load();
+      await pumpEventQueue();
+      cubit.choose('acme', '@');
+      await pumpEventQueue();
+
+      final outcome = await cubit.applyTo(_itemTx);
+
+      expect(outcome.live, ['acme']);
+      expect(outcome.liveWithinSeconds, 3600);
     });
 
     test('a failure after the upload is reported, not retried', () async {

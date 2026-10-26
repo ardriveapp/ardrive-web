@@ -23,3 +23,12 @@ enum ArNSCacheTime {
     return null;
   }
 }
+
+/// When a record change is live everywhere, in seconds: gateways may keep
+/// serving the old target for the cache time it had, so a repointed record
+/// takes the longer of [previousTtlSeconds] and [ttlSeconds]. A new
+/// undername had none: just [ttlSeconds].
+int arnsLiveWithinSeconds({required int ttlSeconds, int? previousTtlSeconds}) =>
+    previousTtlSeconds != null && previousTtlSeconds > ttlSeconds
+        ? previousTtlSeconds
+        : ttlSeconds;

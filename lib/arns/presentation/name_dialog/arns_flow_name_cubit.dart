@@ -14,8 +14,8 @@ class ArNSFlowOutcome extends Equatable {
   /// Literal names that couldn't be changed. Never tried again.
   final List<String> failed;
 
-  /// The longest cache time set on the [live] names: when gateways show
-  /// them all.
+  /// When gateways show all the [live] names, in seconds: for each, the
+  /// longer of its cache time before the change and after it.
   final int liveWithinSeconds;
 
   bool get isEmpty => live.isEmpty && failed.isEmpty;
@@ -221,11 +221,17 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
   Future<ArNSFlowOutcome> applyTo(String dataTxId) async {
     if (!hasWork) return const ArNSFlowOutcome();
     final owner = _walletCubit.ownerSigner;
-    final planned = <(ArNSManagedName, ArNSSetRecord, String)>[];
+    // Each with its record's cache time before the change, if it had one.
+    final planned = <(ArNSManagedName, ArNSSetRecord, String, int?)>[];
     for (final record in state.moving) {
       final of = _nameOf(record.name);
       if (of == null) continue;
-      planned.add((of, _moveChange(of, record, dataTxId), record.literalName));
+      planned.add((
+        of,
+        _moveChange(of, record, dataTxId),
+        record.literalName,
+        record.ttlSeconds,
+      ));
     }
     final chosen = _chosen;
     final name = state.selectedName;
@@ -239,6 +245,7 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
           ttlSeconds: state.cacheTime.seconds,
         ),
         chosen.literalName,
+        state.selectedRecord?.ttlSeconds,
       ));
     }
 
@@ -249,7 +256,7 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
     final live = <String>[];
     final failed = <String>[];
     int? liveWithinSeconds;
-    for (final (of, setRecord, literal) in planned) {
+    for (final (of, setRecord, literal, previousTtl) in planned) {
       try {
         await _executor.execute(
           name: of,
@@ -262,9 +269,12 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
           },
         );
         live.add(literal);
-        if (liveWithinSeconds == null ||
-            setRecord.ttlSeconds > liveWithinSeconds) {
-          liveWithinSeconds = setRecord.ttlSeconds;
+        final within = arnsLiveWithinSeconds(
+          ttlSeconds: setRecord.ttlSeconds,
+          previousTtlSeconds: previousTtl,
+        );
+        if (liveWithinSeconds == null || within > liveWithinSeconds) {
+          liveWithinSeconds = within;
         }
       } on ArNSChangeFailure catch (failure) {
         logger.w('The flow could not point $literal: ${failure.kind}');

@@ -452,11 +452,20 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
       return;
     }
     final literal = choice.literalName;
+    // Read before the change: afterwards the names hold the new record.
+    final liveWithin = switch (change) {
+      ArNSSetRecord(:final ttlSeconds) => arnsLiveWithinSeconds(
+          ttlSeconds: ttlSeconds,
+          previousTtlSeconds: state.selectedRecord?.ttlSeconds,
+        ),
+      ArNSRemoveRecord() => null,
+    };
 
     emit(state.copyWith(
       stage: ArNSDialogStage.committing,
       step: () => ArNSCommitStep.approve,
       failure: () => null,
+      liveWithinSeconds: () => liveWithin,
     ));
 
     try {
