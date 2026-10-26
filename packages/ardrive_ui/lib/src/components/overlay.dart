@@ -46,7 +46,8 @@ class ArDriveDropdown extends StatefulWidget {
   /// the menu.
   final Widget? header;
 
-  // retruns the alignment based if the current widget y coordinate is greater than half the screen height
+  /// The menu's follower alignment, given whether it opens up: in the lower
+  /// half of the screen, or when it fits better above (see `_placeMenu`).
   final Alignment Function(bool)? calculateVerticalAlignment;
 
   @override
@@ -66,54 +67,70 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
     super.initState();
   }
 
+  /// The menu's height once [_placeMenu] fitted it to the screen, when the
+  /// whole of it fits on neither side of its button.
+  double? _fittedHeight;
+
   @override
   void didChangeDependencies() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-
-      final renderBox = context.findRenderObject() as RenderBox?;
-
-      final position = renderBox?.localToGlobal(Offset.zero);
-
-      if (position != null && widget.calculateVerticalAlignment != null) {
-        final y = position.dy;
-
-        final screenHeight = MediaQuery.of(context).size.height;
-
-        Alignment alignment;
-
-        alignment =
-            widget.calculateVerticalAlignment!.call(y > screenHeight / 2);
-
-        // Only the follower is the calculation's to decide. Everything else
-        // belongs to the caller and used to be discarded with it: a menu that
-        // asked to hang from its button's bottom-*right*, and to be shifted
-        // back inside the screen, got neither - it was re-anchored to
-        // bottom-left with no shifting, and on a 320px phone it opened 51px
-        // off the left edge with every item's icon outside the viewport.
-        final base = widget.anchor;
-
-        _anchor = base is Aligned
-            ? Aligned(
-                follower: alignment,
-                target: base.target,
-                offset: base.offset,
-                widthFactor: base.widthFactor,
-                heightFactor: base.heightFactor,
-                shiftToWithinBound: base.shiftToWithinBound,
-                backup: base.backup,
-              )
-            : Aligned(
-                follower: alignment,
-                target: Alignment.bottomLeft,
-              );
-      }
+      if (mounted) _placeMenu();
     });
 
     super.didChangeDependencies();
   }
+
+  /// Chooses whether the menu opens up or down from where its button is now,
+  /// not where it was first laid out: up in the lower half of the screen, as
+  /// before, and also from higher up when the menu would run off the bottom
+  /// and there is more room above. When it fits on neither side, it takes the
+  /// roomier one and scrolls, so every item stays in reach.
+  void _placeMenu() {
+    final calculate = widget.calculateVerticalAlignment;
+    if (calculate == null) return;
+
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null || !renderBox.hasSize) return;
+
+    final top = renderBox.localToGlobal(Offset.zero).dy;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final roomBelow = screenHeight - top - _screenMargin;
+    final roomAbove = top - _screenMargin;
+    final menuHeight = dropdownHeight;
+
+    final opensUp = top > screenHeight / 2 ||
+        (menuHeight > roomBelow && roomAbove > roomBelow);
+    final room = opensUp ? roomAbove : roomBelow;
+    _fittedHeight = menuHeight > room && room > 0 ? room : null;
+
+    final alignment = calculate(opensUp);
+
+    // Only the follower is the calculation's to decide. Everything else
+    // belongs to the caller and used to be discarded with it: a menu that
+    // asked to hang from its button's bottom-*right*, and to be shifted
+    // back inside the screen, got neither - it was re-anchored to
+    // bottom-left with no shifting, and on a 320px phone it opened 51px
+    // off the left edge with every item's icon outside the viewport.
+    final base = widget.anchor;
+
+    _anchor = base is Aligned
+        ? Aligned(
+            follower: alignment,
+            target: base.target,
+            offset: base.offset,
+            widthFactor: base.widthFactor,
+            heightFactor: base.heightFactor,
+            shiftToWithinBound: base.shiftToWithinBound,
+            backup: base.backup,
+          )
+        : Aligned(
+            follower: alignment,
+            target: Alignment.bottomLeft,
+          );
+  }
+
+  /// Kept clear between a placed menu and the screen's edge.
+  static const _screenMargin = 8.0;
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +152,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
       visible: visible,
       anchor: _anchor,
       content: _ArDriveDropdownContent(
-        height: dropdownHeight,
+        height: _fittedHeight ?? dropdownHeight,
         child: ArDriveCard(
           border: widget.hasBorder
               ? Border.all(
@@ -220,6 +237,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
           widget.onClick?.call();
           setState(() {
             visible = !visible;
+            if (visible) _placeMenu();
           });
         },
         child: IgnorePointer(ignoring: visible, child: widget.child),
