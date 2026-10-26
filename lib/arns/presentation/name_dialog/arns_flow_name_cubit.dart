@@ -65,10 +65,33 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
         if (_chosen != null) _chosen!.literalName,
       ];
 
+  /// The chosen name's record, while it points at something else and the
+  /// repoint isn't confirmed yet (Q11). The flow waits until it is, so
+  /// nothing is paid for before the question is answered.
+  ArNSNameRecord? get repointing {
+    final choice = _chosen;
+    final record = state.selectedRecord;
+    if (choice == null || record == null) return null;
+    if (record.transactionId == state.placeholderTxId) return null;
+    final moving = state.following.any(
+      (r) => r.name == record.name && r.undername == record.undername,
+    );
+    if (moving || state.repointConfirmed == choice) return null;
+    return record;
+  }
+
+  /// "Point it here instead?" answered yes.
+  @override
+  Future<void> confirmRepoint() async {
+    if (repointing == null) return;
+    emit(state.copyWith(repointConfirmed: () => state.choice));
+  }
+
   /// Ready to go: nothing to change, or a priced change the wallet can
   /// approve now.
   bool get ready {
     if (!hasWork) return true;
+    if (repointing != null) return false;
     final choice = state.choice;
     if (choice != null &&
         choice.isNew &&

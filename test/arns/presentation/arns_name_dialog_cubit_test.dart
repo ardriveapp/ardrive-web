@@ -1053,6 +1053,39 @@ void main() {
           ));
     });
 
+    // Q11: picking a name that points at something else asks first, in a
+    // flow as in the name dialog. The flow went straight to setting it.
+    test('waits for a repoint to be confirmed before the flow can start',
+        () async {
+      final cubit = flow()..load();
+      await pumpEventQueue();
+      cubit.choose('acme', 'blog');
+      await pumpEventQueue();
+
+      expect(cubit.ready, isFalse);
+
+      await cubit.confirmRepoint();
+      expect(cubit.ready, isTrue);
+
+      // Another name that points elsewhere asks again.
+      cubit.choose('acme', '@');
+      await pumpEventQueue();
+      expect(cubit.ready, isFalse);
+    });
+
+    test('a new undername or a moving name needs no repoint confirm', () async {
+      final cubit = flow(following: [blog])..load();
+      await pumpEventQueue();
+      cubit.choose('acme', 'blog');
+      await pumpEventQueue();
+      expect(cubit.ready, isTrue);
+
+      cubit.startNewUndername('acme');
+      cubit.editNewUndername('docs');
+      await pumpEventQueue();
+      expect(cubit.ready, isTrue);
+    });
+
     test('waits for the ArNS wallet before the flow can start', () async {
       setUpWallet(_wallet(connected: false));
       final cubit = flow(following: [blog])..load();

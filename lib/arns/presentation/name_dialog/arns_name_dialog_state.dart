@@ -113,6 +113,7 @@ class ArNSNameDialogState extends Equatable {
     this.following = const [],
     this.leaveOnOld = false,
     this.liveWithinSeconds,
+    this.repointConfirmed,
   });
 
   final ArNSNameDialogMode mode;
@@ -174,6 +175,10 @@ class ArNSNameDialogState extends Equatable {
   /// Once a change is made: when it is live everywhere, in seconds. The
   /// longer of the record's cache time before the change and after it.
   final int? liveWithinSeconds;
+
+  /// In a flow: the choice whose repoint was confirmed (Q11). Another
+  /// choice asks again.
+  final ArNSRecordChoice? repointConfirmed;
 
   /// The names that move with a new version.
   List<ArNSNameRecord> get moving => leaveOnOld ? const [] : following;
@@ -334,6 +339,7 @@ class ArNSNameDialogState extends Equatable {
     bool? leaveOnOld,
     List<ArNSNameRecord>? following,
     int? Function()? liveWithinSeconds,
+    ArNSRecordChoice? Function()? repointConfirmed,
   }) =>
       ArNSNameDialogState(
         mode: mode,
@@ -368,6 +374,9 @@ class ArNSNameDialogState extends Equatable {
         liveWithinSeconds: liveWithinSeconds != null
             ? liveWithinSeconds()
             : this.liveWithinSeconds,
+        repointConfirmed: repointConfirmed != null
+            ? repointConfirmed()
+            : this.repointConfirmed,
       );
 
   @override
@@ -397,5 +406,6 @@ class ArNSNameDialogState extends Equatable {
         following,
         leaveOnOld,
         liveWithinSeconds,
+        repointConfirmed,
       ];
 }

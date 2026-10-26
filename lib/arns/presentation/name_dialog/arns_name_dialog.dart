@@ -260,7 +260,7 @@ class _ArNSNameDialogState extends State<ArNSNameDialog> {
           _commitAction(context, state, wallet, cubit),
         ];
       case ArNSDialogStage.confirmRepoint:
-        content = _RepointQuestion(state: state);
+        content = ArNSRepointQuestion(record: state.selectedRecord!);
         actions = [
           ModalAction.dismiss(title: strings.back, action: cubit.backToChoose),
           ModalAction(
@@ -1022,15 +1022,16 @@ class _RemoveText extends StatelessWidget {
   }
 }
 
-class _RepointQuestion extends StatelessWidget {
-  const _RepointQuestion({required this.state});
+/// "blog_acme.ar.io points to *Last year's site*. Point it here instead?"
+/// (Q11), in the name dialog and in a flow's name step.
+class ArNSRepointQuestion extends StatelessWidget {
+  const ArNSRepointQuestion({super.key, required this.record});
 
-  final ArNSNameDialogState state;
+  final ArNSNameRecord record;
 
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
-    final record = state.selectedRecord!;
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final target = record.target;
@@ -1440,6 +1441,19 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
             _CacheTimeSection(state: state, folded: true),
           ]);
       }
+    }
+
+    final repointing = cubit.repointing;
+    if (repointing != null) {
+      children.addAll([
+        const SizedBox(height: ArDriveSpacing.sm),
+        ArDriveNotice(
+          type: ArDriveNoticeType.warning,
+          content: ArNSRepointQuestion(record: repointing),
+          actionLabel: strings.arnsPointItHere,
+          onAction: cubit.confirmRepoint,
+        ),
+      ]);
     }
 
     if (cubit.hasWork) {
