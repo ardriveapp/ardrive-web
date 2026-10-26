@@ -14,6 +14,7 @@
   "enableSyncFromDriveState": false,
   "publicationViewer": "ardrive",
   "enableDriveStatePublishing": false,
+  "enableArNS": false,
   "uploadThumbnails": true,
   "autoSync": false
 }
