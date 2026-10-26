@@ -82,7 +82,7 @@ main {{ display: flex; flex-direction: column; align-items: center; max-width: 4
 .logo img {{ height: 28px; width: auto; display: block; }}
 h1 {{ margin: 0; font-weight: 600; font-size: clamp(28px, 6vw, 40px); line-height: 1.15; letter-spacing: -0.01em; text-wrap: balance; }}
 p {{ margin: 16px 0 0; color: var(--muted); font-size: 17px; text-wrap: balance; }}
-p strong {{ color: var(--fg); font-weight: 400; overflow-wrap: anywhere; }}
+p strong {{ color: var(--fg); font-weight: 400; display: inline-block; max-width: 100%; overflow-wrap: anywhere; }}
 .owner {{ margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 14px; }}
 .owner a {{ color: var(--fg); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--red); }}
 .owner a:hover {{ color: var(--red-hover); }}
