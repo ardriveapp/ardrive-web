@@ -26,7 +26,11 @@ import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/arns/presentation/names_page/names_page.dart';
+import 'package:ardrive/arns/presentation/resume/arns_resume_cubit.dart';
+import 'package:ardrive/arns/presentation/resume/arns_resume_scope.dart';
 import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/core/activity_tracker.dart';
+import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/services/config/config.dart';
@@ -41,6 +45,8 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
+
+import '../test_utils/mocks.dart' show createMockFileDataTableItem;
 
 class _MockRepository extends Mock implements ArNSNamesRepository {}
 
@@ -993,6 +999,7 @@ void main() {
                       const SizedBox(height: 8),
                       for (final status in [
                         ArNSWalletStatus.connected,
+                        ArNSWalletStatus.wrongAccount,
                         ArNSWalletStatus.disconnected,
                         ArNSWalletStatus.notLinked,
                       ]) ...[
@@ -1194,6 +1201,16 @@ void main() {
     );
     await flowShot(
       tester,
+      '33-flow-repoint',
+      title: 'Create deployment',
+      open: true,
+      drive: (cubit) async {
+        cubit.choose('acme', 'blog');
+        await Future.delayed(const Duration(milliseconds: 50));
+      },
+    );
+    await flowShot(
+      tester,
       '27-flow-new-version',
       title: 'Upload 1 file',
       following: [_names().first.records[1]],
@@ -1215,4 +1232,175 @@ void main() {
       ),
     );
   });
+
+  testWidgets('explorer row: the chip beside a long name', (tester) async {
+    for (final phone in [false, true]) {
+      for (final dark in [true, false]) {
+        final names = _MockNamesCubit();
+        whenListen(names, const Stream<ArNSNamesState>.empty(),
+            initialState: ArNSNamesState(
+              status: ArNSNamesStatus.loaded,
+              address: _sol,
+              names: _names(),
+            ));
+        await capture(
+          tester,
+          '31-row-chip',
+          (context) {
+            final colors = ArDriveTheme.of(context).themeData.colorTokens;
+            final typography = ArDriveTypographyNew.of(context);
+            Widget row(String name, double width) {
+              final tile = DriveExplorerItemTile(
+                name: name,
+                size: '2.1 MB',
+                lastUpdated: DateTime(2026, 10, 26),
+                dateCreated: DateTime(2026, 10, 26),
+                license: '',
+                onPressed: () {},
+                isHidden: false,
+                typography: typography,
+                colorTokens: colors,
+                dataTableItem: createMockFileDataTableItem(
+                  name: name,
+                  dataTxId: _siteTx,
+                ),
+              );
+              return Container(
+                width: width,
+                height: 48,
+                color: colors.containerL1,
+                padding: const EdgeInsets.only(left: 16),
+                alignment: Alignment.centerLeft,
+                child: tile.row.first,
+              );
+            }
+
+            return MultiProvider(
+              providers: [
+                RepositoryProvider<ConfigService>.value(value: config),
+                BlocProvider<ArNSNamesCubit>.value(value: names),
+              ],
+              child: Scaffold(
+                backgroundColor: colors.containerL0,
+                body: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final width in [480.0, 300.0, 240.0, 190.0]) ...[
+                        Text('Name column ${width.toInt()} px',
+                            style: typography.paragraphSmall(
+                                color: colors.textLow)),
+                        const SizedBox(height: 4),
+                        row('e2e-name-1.txt', width),
+                        const SizedBox(height: 8),
+                        row('Quarterly report final draft.pdf', width),
+                        const SizedBox(height: 16),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+          phone: phone,
+          dark: dark,
+          height: 700,
+        );
+      }
+    }
+  });
+
+  testWidgets('resume notices and the hide offer', (tester) async {
+    for (final phone in [false, true]) {
+      for (final dark in [true, false]) {
+        for (final (name, outcome) in [
+          ('35-resume-saved', ArNSResumeOutcome.saved),
+          ('36-resume-refunding', ArNSResumeOutcome.refunding),
+        ]) {
+          await capture(
+            tester,
+            name,
+            (context) => Scaffold(
+              backgroundColor:
+                  ArDriveTheme.of(context).themeData.colorTokens.containerL0,
+              body: _Once(
+                (context) => showArNSResumeNotice(
+                  context,
+                  ArNSResumeNotice(
+                    nonce: 'n1',
+                    name: 'blog_acme',
+                    outcome: outcome,
+                  ),
+                  onFinish: (_) {},
+                ),
+              ),
+            ),
+            phone: phone,
+            dark: dark,
+          );
+        }
+        final names = _MockNamesCubit();
+        whenListen(names, const Stream<ArNSNamesState>.empty(),
+            initialState: ArNSNamesState(
+              status: ArNSNamesStatus.loaded,
+              address: _sol,
+              names: _names(),
+            ));
+        await capture(
+          tester,
+          '37-hide-offer',
+          (context) => MultiProvider(
+            providers: [
+              RepositoryProvider<ConfigService>.value(value: config),
+              ChangeNotifierProvider<ActivityTracker>(
+                  create: (_) => ActivityTracker()),
+              BlocProvider<ArNSNamesCubit>.value(value: names),
+            ],
+            child: Scaffold(
+              backgroundColor:
+                  ArDriveTheme.of(context).themeData.colorTokens.containerL0,
+              body: _Once(
+                (context) => offerToRemoveArNSNameAfterHide(
+                  context,
+                  item: const ArNSNameableItem(
+                    fileId: 'f1',
+                    driveId: 'd1',
+                    name: 'Portfolio site',
+                    dataTxId: _siteTx,
+                    isManifest: true,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          phone: phone,
+          dark: dark,
+        );
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 500));
+      }
+    }
+  });
+}
+
+/// Runs [action] once, after the first frame.
+class _Once extends StatefulWidget {
+  const _Once(this.action);
+
+  final void Function(BuildContext context) action;
+
+  @override
+  State<_Once> createState() => _OnceState();
+}
+
+class _OnceState extends State<_Once> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => widget.action(context));
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
 }
