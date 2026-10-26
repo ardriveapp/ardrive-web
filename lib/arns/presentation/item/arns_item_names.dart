@@ -15,6 +15,7 @@ import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
+import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -75,7 +76,9 @@ List<ArDriveDropdownItem> arnsItemMenuItems(
         onClick: onTap,
         content: ArDriveDropdownItemTile(
           name: label,
-          icon: ArDriveIcon(icon: icon, size: 24),
+          // The menu's own size: at 24 the icon and label sat 4 px right
+          // of every other item's.
+          icon: ArDriveIcon(icon: icon, size: defaultIconSize),
           height: height,
         ),
       );
