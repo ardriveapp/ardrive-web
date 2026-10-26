@@ -1516,30 +1516,27 @@ class ArDriveItemListTile extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              item.name,
-                              style: ArDriveTypographyNew.of(context)
-                                  .paragraphNormal(
-                                fontWeight: ArFontWeight.bold,
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colorTokens
-                                    .textHigh,
-                              ),
-                            ),
+                      ArNSTitleWithChip(
+                        title: Text(
+                          item.name,
+                          style:
+                              ArDriveTypographyNew.of(context).paragraphNormal(
+                            fontWeight: ArFontWeight.bold,
+                            color: ArDriveTheme.of(context)
+                                .themeData
+                                .colorTokens
+                                .textHigh,
                           ),
-                          if (item is FileDataTableItem)
-                            ArNSNameChip(
-                              dataTxId: (item as FileDataTableItem).dataTxId,
-                              hints:
-                                  (item as FileDataTableItem).assignedNames ??
-                                      const [],
-                              isOwner: item.isOwner,
-                            ),
-                        ],
+                        ),
+                        chip: item is FileDataTableItem
+                            ? ArNSNameChip(
+                                dataTxId: (item as FileDataTableItem).dataTxId,
+                                hints:
+                                    (item as FileDataTableItem).assignedNames ??
+                                        const [],
+                                isOwner: item.isOwner,
+                              )
+                            : const SizedBox.shrink(),
                       ),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,

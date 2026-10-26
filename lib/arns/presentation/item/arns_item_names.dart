@@ -203,6 +203,29 @@ ArNSNameVerifier? arnsVisitorVerifier(BuildContext context) {
   }
 }
 
+/// An item's title with its name chip: beside the title while both fit,
+/// under it when they don't. In a row, the chip kept its width and the
+/// title was left a few letters wide on a phone.
+class ArNSTitleWithChip extends StatelessWidget {
+  const ArNSTitleWithChip({
+    super.key,
+    required this.title,
+    required this.chip,
+  });
+
+  final Widget title;
+  final Widget chip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      runSpacing: ArDriveSpacing.xxs,
+      children: [title, chip],
+    );
+  }
+}
+
 class _NameChipView extends StatelessWidget {
   const _NameChipView({required this.names});
 
