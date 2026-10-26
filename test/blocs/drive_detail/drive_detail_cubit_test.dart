@@ -6,6 +6,10 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/core/arfs/repository/drive_repository.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
+import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -1929,6 +1933,186 @@ void main() {
 
       expect(resorted.showSelectedItemDetails, isTrue);
       expect(cubit.selectedItem?.id, 'folder-a');
+    });
+  });
+
+  /// A click selects and a double-click opens, as in Google Drive. A click
+  /// used to open the details panel too, which the reader then had to close
+  /// before they could double-click their way anywhere.
+  group('a click and the details panel', () {
+    Future<DriveDetailLoadSuccess> loadedIn(
+      DriveDetailCubit cubit,
+      String folderId,
+    ) async {
+      final state = cubit.state;
+      if (state is DriveDetailLoadSuccess &&
+          state.folderInView.folder.id == folderId) {
+        return state;
+      }
+      return await cubit.stream
+          .where((s) =>
+              s is DriveDetailLoadSuccess &&
+              s.folderInView.folder.id == folderId)
+          .cast<DriveDetailLoadSuccess>()
+          .first
+          .timeout(const Duration(seconds: 5));
+    }
+
+    DriveDetailLoadSuccess shown(DriveDetailCubit cubit) =>
+        cubit.state as DriveDetailLoadSuccess;
+
+    late DriveDetailCubit cubit;
+    late ArDriveDataTableItem folderA;
+    late ArDriveDataTableItem folderB;
+    late FileDataTableItem file;
+
+    setUp(() async {
+      when(() => configService.config).thenReturn(
+        AppConfig(
+          allowedDataItemSizeForTurbo: 1,
+          stripePublishableKey: 'stripePublishableKey',
+          arweaveGatewayForDataRequest: const SelectedGateway(
+            label: 'Gateway',
+            url: 'https://gateway.example',
+          ),
+        ),
+      );
+
+      await insertDrive(lastBlockHeight: 1);
+      await insertRootFolderRevision();
+      await insertSubfolder('folder-a');
+      await insertSubfolder('folder-b');
+
+      cubit = buildCubit();
+      addTearDown(cubit.close);
+
+      final atRoot = await loadedIn(cubit, rootFolderId);
+      folderA =
+          atRoot.currentFolderContents.firstWhere((i) => i.id == 'folder-a');
+      folderB =
+          atRoot.currentFolderContents.firstWhere((i) => i.id == 'folder-b');
+      file = createMockFileDataTableItem(
+        driveId: driveId,
+        fileId: 'file-1',
+        name: 'photo.png',
+        parentFolderId: rootFolderId,
+      );
+    });
+
+    /// What the drive explorer's rows do: a click is
+    /// `selectDataItem(openDetails: false)`, and opening is [openDataItem].
+    Future<void> click(ArDriveDataTableItem item) =>
+        cubit.selectDataItem(item, openDetails: false);
+
+    group('in the app', () {
+      test('a click selects without opening a closed panel', () async {
+        await click(file);
+
+        expect(shown(cubit).selectedItem, file);
+        expect(shown(cubit).showSelectedItemDetails, isFalse);
+      });
+
+      /// Every redraw of the folder re-emits the panel's state. It used to
+      /// say "open" whenever anything was selected.
+      test('and a redraw of the folder leaves it closed', () async {
+        await click(folderA);
+
+        cubit.sortFolder(contentOrderingMode: OrderingMode.desc);
+        final resorted = await cubit.stream
+            .where((s) =>
+                s is DriveDetailLoadSuccess &&
+                s.contentOrderingMode == OrderingMode.desc)
+            .cast<DriveDetailLoadSuccess>()
+            .first
+            .timeout(const Duration(seconds: 5));
+
+        expect(resorted.showSelectedItemDetails, isFalse);
+        expect(cubit.selectedItem?.id, 'folder-a');
+      });
+
+      test('with the panel open, a click moves it to the clicked item',
+          () async {
+        await cubit.selectDataItem(folderA);
+        expect(shown(cubit).showSelectedItemDetails, isTrue);
+
+        await click(folderB);
+
+        expect(shown(cubit).selectedItem, folderB);
+        expect(shown(cubit).showSelectedItemDetails, isTrue);
+      });
+
+      test('a click after the panel was closed leaves it closed', () async {
+        await cubit.selectDataItem(folderA);
+        cubit.toggleSelectedItemDetails();
+        expect(shown(cubit).showSelectedItemDetails, isFalse);
+
+        await click(folderB);
+
+        expect(shown(cubit).showSelectedItemDetails, isFalse);
+      });
+
+      test('a double-click on a file opens the panel on it', () async {
+        await click(file);
+        await cubit.openDataItem(file);
+
+        expect(shown(cubit).selectedItem, file);
+        expect(shown(cubit).showSelectedItemDetails, isTrue);
+      });
+
+      test('a double-click on a folder enters it', () async {
+        await click(folderA);
+        unawaited(cubit.openDataItem(folderA));
+
+        final inA = await loadedIn(cubit, 'folder-a');
+        expect(inA.showSelectedItemDetails, isFalse);
+      });
+
+      test('More info opens the panel on the selected item', () async {
+        await click(file);
+        await cubit.selectDataItem(file);
+
+        expect(shown(cubit).showSelectedItemDetails, isTrue);
+      });
+
+      /// The preview's next and previous, a search result: each asks for the
+      /// item to be shown, so each still opens the panel.
+      test('selecting without saying otherwise still opens the panel',
+          () async {
+        await cubit.selectDataItem(file);
+
+        expect(shown(cubit).showSelectedItemDetails, isTrue);
+      });
+    });
+
+    /// On a publication the table opens on one click (`clickOpens`), which
+    /// selects the row and opens it in one go.
+    group('on a publication', () {
+      setUp(() => PublicationMode.debugSet('publication.json'));
+      tearDown(() => PublicationMode.debugSet(null));
+
+      Future<void> clickOnPublication(ArDriveDataTableItem item) async {
+        await click(item);
+        await cubit.openDataItem(item);
+      }
+
+      test('one click on a folder enters it', () async {
+        unawaited(clickOnPublication(folderA));
+
+        final inA = await loadedIn(cubit, 'folder-a');
+        expect(inA.folderInView.folder.id, 'folder-a');
+        expect(inA.showSelectedItemDetails, isFalse);
+      });
+
+      test('one click on a file opens its details and preview', () async {
+        await clickOnPublication(file);
+
+        expect(shown(cubit).selectedItem, file);
+        expect(shown(cubit).showSelectedItemDetails, isTrue);
+        expect(
+          shown(cubit).selectedFilePreviewUrl,
+          'https://gateway.example/txId',
+        );
+      });
     });
   });
 }

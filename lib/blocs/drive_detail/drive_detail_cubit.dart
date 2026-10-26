@@ -642,6 +642,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     // Otherwise, clear the selected item to avoid showing stale file/folder data.
     if (_selectedItem is! DriveDataItem) {
       _selectedItem = null;
+      _detailsOpen = false;
     } else {
       // Enable refresh so the subscription callback updates the drive info
       _refreshSelectedItem = true;
@@ -850,6 +851,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         (folderId ?? inView.currentDrive.rootFolderId) !=
             inView.folderInView.folder.id) {
       _selectedItem = null;
+      _detailsOpen = false;
     }
 
     // A new folder redraws immediately whatever the last one did: the throttle
@@ -1217,6 +1219,9 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
               revealedSelectedItem = true;
               revealSelectedItem = true;
               _revealSelectedItem = true;
+              // An item asked for by name - a search result, a link - is
+              // shown, not just picked out.
+              _detailsOpen = true;
             }
           }
 
@@ -1249,7 +1254,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 pathSegments: pathSegments,
                 driveIsEmpty: driveIsEmpty,
                 contentsStillArriving: contentsMayStillArrive(drive),
-                showSelectedItemDetails: _selectedItem != null,
+                showSelectedItemDetails: _showsDetails,
                 revealSelectedItem: _revealSelectedItem,
                 // The table is kept when the folder is unchanged, so one
                 // already on screen has to be rebuilt to go to the item.
@@ -1283,7 +1288,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
                 multiselect: false,
                 currentFolderContents: currentFolderContents,
                 columnVisibility: columnsVisibility,
-                showSelectedItemDetails: _selectedItem != null,
+                showSelectedItemDetails: _showsDetails,
                 revealSelectedItem: _revealSelectedItem,
               ),
             );
@@ -1368,8 +1373,18 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     return availableRowsPerPage;
   }
 
-  Future<void> selectDataItem(ArDriveDataTableItem item,
-      {bool openSelectedPage = false}) async {
+  /// Makes [item] the selected item.
+  ///
+  /// [openDetails] opens the details panel on it, which is what every caller
+  /// but a click wants: More info, a preview's next and previous, a search
+  /// result. A click passes false - Google Drive's model - and only selects:
+  /// the panel, if it is already open, follows the selection, and if it is
+  /// closed it stays closed.
+  Future<void> selectDataItem(
+    ArDriveDataTableItem item, {
+    bool openSelectedPage = false,
+    bool openDetails = true,
+  }) async {
     var state = this.state as DriveDetailLoadSuccess;
 
     if (state.currentDrive.isPublic && item is FileDataTableItem) {
@@ -1381,6 +1396,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
 
     _selectedItem = item;
 
+    if (openDetails) {
+      _detailsOpen = true;
+    }
+
     if (openSelectedPage) {
       _revealSelectedItem = true;
     }
@@ -1388,7 +1407,7 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
     emit(
       state.copyWith(
         selectedItem: item,
-        showSelectedItemDetails: true,
+        showSelectedItemDetails: _detailsOpen,
         revealSelectedItem: openSelectedPage ? true : null,
         forceRebuildKey: openSelectedPage ? UniqueKey() : null,
       ),
@@ -1465,9 +1484,29 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
         : rowsPerPageOptions.first;
   }
 
+  /// Opens [item], as a double-click, a tap on a touch screen or Enter does,
+  /// and as a click does on a publication: a folder is entered, and a file,
+  /// which has no view of its own, is shown in the details panel with its
+  /// preview.
+  Future<void> openDataItem(ArDriveDataTableItem item) async {
+    if (item is FolderDataTableItem) {
+      await openFolder(folderId: item.id);
+    } else {
+      await selectDataItem(item);
+    }
+  }
+
   ArDriveDataTableItem? _selectedItem;
 
   ArDriveDataTableItem? get selectedItem => _selectedItem;
+
+  /// Whether the details panel is open, which is not the same as there being
+  /// a selected item: a click selects a row and leaves a closed panel closed.
+  /// Kept here rather than read back from the state, because every redraw of
+  /// the folder re-emits it.
+  bool _detailsOpen = false;
+
+  bool get _showsDetails => _selectedItem != null && _detailsOpen;
 
   Future<void> selectItems(List<ArDriveDataTableItem> items) async {
     var state = this.state as DriveDetailLoadSuccess;
@@ -1564,8 +1603,10 @@ class DriveDetailCubit extends Cubit<DriveDetailState> {
       _selectedItem = null;
     }
 
+    _detailsOpen = !state.showSelectedItemDetails;
+
     emit(
-      state.copyWith(showSelectedItemDetails: !state.showSelectedItemDetails),
+      state.copyWith(showSelectedItemDetails: _detailsOpen),
     );
   }
 

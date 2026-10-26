@@ -1,27 +1,19 @@
 part of '../drive_detail_page.dart';
 
-/// A click on a row: choose it, and show what it is.
+/// A click on a row: choose it, as Google Drive does.
 ///
-/// Clicking a row that is already chosen does nothing new. It used to open a
-/// folder or hide a file's details, which made a double-click on a file show
-/// its details and then snatch them away. The details panel closes from its
-/// own button.
+/// It does not open the details panel. It used to, so every click opened a
+/// panel the reader then had to close before double-clicking to go anywhere.
+/// An open panel follows the selection; More info in the row's menu opens a
+/// closed one. Clicking a row that is already chosen does nothing new.
 void _selectRow(BuildContext context, ArDriveDataTableItem item) {
-  context.read<DriveDetailCubit>().selectDataItem(item);
+  context.read<DriveDetailCubit>().selectDataItem(item, openDetails: false);
 }
 
-/// Opening a row: a double-click, a tap on a touch screen, or Enter.
-///
-/// A folder is entered. A file has no view of its own beyond the details
-/// panel, so opening one shows that, the same as choosing it.
+/// Opening a row: a double-click, a tap on a touch screen, Enter, or on a
+/// publication a click. See [DriveDetailCubit.openDataItem].
 void _openRow(BuildContext context, ArDriveDataTableItem item) {
-  final cubit = context.read<DriveDetailCubit>();
-
-  if (item is FolderDataTableItem) {
-    cubit.openFolder(folderId: item.id);
-  } else {
-    cubit.selectDataItem(item);
-  }
+  context.read<DriveDetailCubit>().openDataItem(item);
 }
 
 Widget _buildDataList(
@@ -229,6 +221,11 @@ Widget _buildDataListContent(
           // chosen - the gesture that means rename everywhere else - and it
           // made entering a folder slower than in any comparable app. A touch
           // screen still opens on a single tap: the table decides which.
+          //
+          // A publication's visitors are not managing files, they are
+          // browsing a page, and a page opens what is clicked: there a click
+          // opens too. Selecting many still works from the checkboxes.
+          clickOpens: PublicationMode.isOn,
           onRowTap: (item) => _selectRow(context, item),
           onRowOpen: (item) => _openRow(context, item),
           sortRows: (list, columnIndex, ascDescSort) {
