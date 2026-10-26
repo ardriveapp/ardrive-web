@@ -72,6 +72,24 @@ class PublicationConfig extends Equatable {
 
   bool get isPrivate => privacy == DrivePrivacyTag.private;
 
+  /// This publication shown by its owner's address alone.
+  PublicationConfig withoutOwnerName() => PublicationConfig(
+        version: version,
+        driveId: driveId,
+        rootFolderId: rootFolderId,
+        scope: scope,
+        privacy: privacy,
+        owner: owner,
+        snapshot: snapshot,
+        title: title,
+        description: description,
+        fileCount: fileCount,
+        license: license,
+        images: images,
+        publishedAt: publishedAt,
+        viewer: viewer,
+      );
+
   /// The folder the publication opens at: the drive's root, or the published
   /// folder.
   String get scopeRootFolderId => switch (scope) {

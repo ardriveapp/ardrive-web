@@ -146,6 +146,7 @@ void main() {
       PublicationConfig config = _config,
       bool collapsed = false,
       bool downloadsSelection = false,
+      bool ownerVerified = true,
     }) {
       final loader = _MockLoader();
       whenListen(
@@ -154,6 +155,7 @@ void main() {
         initialState: PublicationReady(
           config,
           stats: const PublicationStats(fileCount: 79, totalSize: 320794),
+          ownerVerified: ownerVerified,
         ),
       );
       return pump(
@@ -175,7 +177,9 @@ void main() {
       );
     }
 
-    PublicationConfig withOwnerName(String? name) => PublicationConfig(
+    PublicationConfig withOwnerName(String? name,
+            {String title = 'Publication'}) =>
+        PublicationConfig(
           version: _config.version,
           driveId: _config.driveId,
           rootFolderId: _config.rootFolderId,
@@ -184,20 +188,38 @@ void main() {
           owner: _config.owner,
           ownerName: name,
           snapshot: _config.snapshot,
-          title: 'Publication',
+          title: title,
           description: 'A description.',
           images: _config.images,
           publishedAt: DateTime.utc(2026, 10, 23),
           viewer: null,
         );
 
-    testWidgets('names its owner by the name they chose', (tester) async {
+    testWidgets('names its owner by the name they chose, beside the address',
+        (tester) async {
       await header(tester, config: withOwnerName('Phil'));
 
-      expect(find.text('By Phil'), findsOneWidget);
-      // A name is a name, in the body face.
-      expect(find.byType(ArDriveIdText), findsNothing);
+      // A typed name proves nothing, so the address is always there too, in
+      // monospace.
+      expect(find.textContaining('By Phil ', findRichText: true), findsWidgets);
+      final address = tester.widget<ArDriveIdText>(find.byType(ArDriveIdText));
+      expect(address.text, startsWith('iKryOe'));
+      expect(address.style.fontFamily, ArDriveMonospace.family);
       expect(find.byTooltip(_config.owner), findsOneWidget);
+    });
+
+    testWidgets('names no owner the gateway did not confirm', (tester) async {
+      await header(tester,
+          config: withOwnerName('Phil', title: 'ArDrive Photos Drive'),
+          ownerVerified: false);
+
+      expect(find.textContaining('By ', findRichText: true), findsNothing);
+      expect(find.byType(ArDriveIdText), findsNothing);
+      // The rest of the line stands, without a bullet to lead it.
+      expect(find.textContaining('79 files'), findsOneWidget);
+      expect(find.textContaining('• 79 files'), findsNothing);
+      // A title may say ArDrive.
+      expect(find.text('ArDrive Photos Drive'), findsOneWidget);
     });
 
     testWidgets('or by their address, shortened', (tester) async {

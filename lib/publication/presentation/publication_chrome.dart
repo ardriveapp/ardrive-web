@@ -210,7 +210,11 @@ class PublicationHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 4),
-        _Byline(config: config, stats: _statsOf(context)),
+        _Byline(
+          config: config,
+          stats: _statsOf(context),
+          ownerVerified: _ownerVerifiedOf(context),
+        ),
         if (config.description.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text(
@@ -284,6 +288,15 @@ class PublicationHeader extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  static bool _ownerVerifiedOf(BuildContext context) {
+    try {
+      final state = context.read<PublicationLoaderCubit>().state;
+      return state is PublicationReady && state.ownerVerified;
+    } on ProviderNotFoundException {
+      return false;
+    }
   }
 
   static PublicationStats? _statsOf(BuildContext context) {
@@ -393,14 +406,21 @@ class _LabelledButton extends StatelessWidget {
   }
 }
 
-/// "By <owner> • N files • size • published <date>". The owner is the name
-/// they chose, or their address shortened; either way the whole address is
-/// a hover away and a click copies it, since a typed name proves nothing.
+/// "By <owner> • N files • size • published <date>". The owner is their
+/// address shortened, after the name they chose when there is one, since a
+/// typed name proves nothing; the whole address is a hover away and a click
+/// copies it. No owner is named at all unless the gateway confirmed who
+/// signed the snapshot ([ownerVerified]).
 class _Byline extends StatelessWidget {
-  const _Byline({required this.config, required this.stats});
+  const _Byline({
+    required this.config,
+    required this.stats,
+    required this.ownerVerified,
+  });
 
   final PublicationConfig config;
   final PublicationStats? stats;
+  final bool ownerVerified;
 
   @override
   Widget build(BuildContext context) {
@@ -408,12 +428,20 @@ class _Byline extends StatelessWidget {
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final style = typography.paragraphNormal(color: colors.textMid);
-    final hasName = config.ownerName != null;
-    final owner = config.ownerName ??
-        truncateString(config.owner, offsetStart: 6, offsetEnd: 4);
-    final by = strings.publicationBy(owner);
+    final address = truncateString(config.owner, offsetStart: 6, offsetEnd: 4);
+    final name = config.ownerName;
+    final by = strings.publicationBy(name == null ? address : '$name $address');
     final publishedAt = config.publishedAt;
     final stats = this.stats;
+    // A bullet before every part but the first.
+    var first = !ownerVerified;
+    String bullet() {
+      if (first) {
+        first = false;
+        return '';
+      }
+      return '\u00a0• ';
+    }
 
     // One line that wraps between words. Each bullet is held to the word
     // before it by a no-break space, so a wrapped line never starts with one.
@@ -421,42 +449,42 @@ class _Byline extends StatelessWidget {
       TextSpan(
         style: style,
         children: [
-          WidgetSpan(
-            alignment: PlaceholderAlignment.baseline,
-            baseline: TextBaseline.alphabetic,
-            child: Tooltip(
-              message: config.owner,
-              // A screen reader reads the name; the whole address first was
-              // 43 characters of noise.
-              excludeFromSemantics: true,
-              child: ArDriveClickArea(
-                child: GestureDetector(
-                  onTap: () async {
-                    await Clipboard.setData(ClipboardData(text: config.owner));
-                    if (context.mounted) _sayCopied(context);
-                  },
-                  // A name in the body face; with no name, the address in
-                  // monospace.
-                  child: hasName
-                      ? Text(by, style: style)
-                      : Text.rich(
-                          TextSpan(
-                            style: style,
-                            children: ArDriveIdText.spansIn(
-                              by,
-                              owner,
-                              idStyle: typography.code(color: colors.textMid),
-                            ),
-                          ),
+          if (ownerVerified)
+            WidgetSpan(
+              alignment: PlaceholderAlignment.baseline,
+              baseline: TextBaseline.alphabetic,
+              child: Tooltip(
+                message: config.owner,
+                // A screen reader reads the name; the whole address first was
+                // 43 characters of noise.
+                excludeFromSemantics: true,
+                child: ArDriveClickArea(
+                  child: GestureDetector(
+                    onTap: () async {
+                      await Clipboard.setData(
+                          ClipboardData(text: config.owner));
+                      if (context.mounted) _sayCopied(context);
+                    },
+                    // A name in the body face, the address always beside it in
+                    // monospace.
+                    child: Text.rich(
+                      TextSpan(
+                        style: style,
+                        children: ArDriveIdText.spansIn(
+                          by,
+                          address,
+                          idStyle: typography.code(color: colors.textMid),
                         ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
           if (stats != null)
             TextSpan(
               text:
-                  '\u00a0• ${(publishedAt == null ? strings.publicationCountSummary(
+                  '${bullet()}${(publishedAt == null ? strings.publicationCountSummary(
                       stats.fileCount,
                       filesize(stats.totalSize),
                     ) : strings.publicationCoverSummary(
@@ -468,7 +496,7 @@ class _Byline extends StatelessWidget {
           // The licence its owner set for everything in it, named and linked
           // to the transaction that defines it.
           if (config.license case final license?) ...[
-            const TextSpan(text: '\u00a0• '),
+            TextSpan(text: bullet()),
             WidgetSpan(
               alignment: PlaceholderAlignment.baseline,
               baseline: TextBaseline.alphabetic,

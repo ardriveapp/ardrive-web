@@ -53,16 +53,20 @@ class PublicationImporting extends PublicationLoaderState {
 
 /// The publication is in the database; the explorer opens at its root.
 class PublicationReady extends PublicationLoaderState {
-  const PublicationReady(this.config, {this.stats});
+  const PublicationReady(this.config, {this.stats, this.ownerVerified = false});
 
   final PublicationConfig config;
+
+  /// Whether the serving gateway confirmed the snapshot was signed by
+  /// [PublicationConfig.owner]. The byline names an owner only then.
+  final bool ownerVerified;
 
   /// For the header's byline. Null if it could not be counted, which the
   /// byline survives by leaving the counts out.
   final PublicationStats? stats;
 
   @override
-  List<Object?> get props => [config, stats];
+  List<Object?> get props => [config, stats, ownerVerified];
 }
 
 /// One of the design's four error screens. [config] is set once

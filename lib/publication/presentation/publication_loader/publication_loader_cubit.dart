@@ -3,6 +3,7 @@ import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/publication/data/publication_source.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
+import 'package:ardrive/publication/domain/publication_owner_name.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/domain/publication_stats.dart';
 import 'package:ardrive/models/models.dart';
@@ -23,9 +24,11 @@ part 'publication_loader_state.dart';
 /// 4. downloads the snapshot, reporting progress;
 /// 5. imports it with the same `DriveStateImporter` a sync uses.
 ///
-/// The importer checks the snapshot was uploaded by the owner `publication.json`
-/// names, which is as trustworthy as the page itself, and nothing more is
-/// asked of anyone: there is no GraphQL owner lookup on a publication.
+/// `publication.json` names its owner, and anyone can write one naming
+/// anyone. So one GraphQL lookup on the serving gateway asks who really
+/// signed the snapshot ([ownerOf]): someone else refuses the page, and an
+/// answer of nobody (a snapshot not indexed yet) opens it without naming an
+/// owner at all, since the claim could not be checked.
 ///
 /// No sync runs here or afterwards. The publication is exactly the snapshot.
 class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
@@ -34,16 +37,27 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     required String settingsPath,
     required DriveDao driveDao,
     required DriveStateImporter importer,
+    required Future<String?> Function(String txId) ownerOf,
+    List<String> officialPublishers = const [],
   })  : _source = source,
         _settingsPath = settingsPath,
         _driveDao = driveDao,
         _importer = importer,
+        _ownerOf = ownerOf,
+        _officialPublishers = officialPublishers,
         super(const PublicationLoadingSettings());
 
   final PublicationSource _source;
   final String _settingsPath;
   final DriveDao _driveDao;
   final DriveStateImporter _importer;
+
+  /// Who signed a transaction, by the serving gateway; null when it does not
+  /// know (`PublicationOwnerLookup.ownerOf`).
+  final Future<String?> Function(String txId) _ownerOf;
+
+  /// Wallets that may use ArDrive's names as a display name.
+  final List<String> _officialPublishers;
 
   PublicationConfig? _config;
   SecretKey? _driveKey;
@@ -99,7 +113,38 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     }
   }
 
-  Future<void> _openSnapshotOrThrow(PublicationConfig config) async {
+  /// Whether the snapshot's real signer is [config]'s owner: true, false, or
+  /// null when the gateway cannot say.
+  Future<bool?> _ownerMatches(PublicationConfig config) async {
+    final String? signer;
+    try {
+      signer = await _ownerOf(config.snapshot.txId);
+    } catch (e) {
+      logger.w('Publication owner not checked: $e');
+      return null;
+    }
+    if (signer == null) return null;
+    return signer == config.owner;
+  }
+
+  Future<void> _openSnapshotOrThrow(PublicationConfig loaded) async {
+    final ownerMatches = await _ownerMatches(loaded);
+    if (ownerMatches == false) {
+      logger.w('Publication refused: its snapshot was signed by someone else '
+          'than the owner it names');
+      emit(PublicationFailed(PublicationFailure.snapshotRejected,
+          config: loaded));
+      return;
+    }
+    final ownerVerified = ownerMatches == true;
+    // A display name that passes for ArDrive is shown only for ArDrive's own
+    // wallets; anyone else's page shows the address alone.
+    final config = loaded.ownerName != null &&
+            isReservedPublicationOwnerName(loaded.ownerName!) &&
+            !(ownerVerified && _officialPublishers.contains(loaded.owner))
+        ? loaded.withoutOwnerName()
+        : loaded;
+
     await _driveDao.writePublicationDrive(
       driveId: config.driveId,
       rootFolderId: config.rootFolderId,
@@ -174,6 +219,10 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     // the drive's folder trees with it (see [PublicationContents.open]).
     final contents = await PublicationContents.load(_driveDao, config);
     PublicationContents.open = contents;
-    emit(PublicationReady(config, stats: PublicationStats.of(contents)));
+    emit(PublicationReady(
+      config,
+      stats: PublicationStats.of(contents),
+      ownerVerified: ownerVerified,
+    ));
   }
 }
