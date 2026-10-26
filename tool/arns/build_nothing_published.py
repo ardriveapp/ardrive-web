@@ -7,6 +7,7 @@ well under Turbo's free size. Needs fonttools and brotli.
     python3 tool/arns/build_nothing_published.py
 """
 import base64
+import json
 import io
 import pathlib
 
@@ -19,9 +20,12 @@ BRAND = ROOT / 'assets/images/brand'
 OUT = ROOT / 'assets/arns/nothing_published.html'
 
 TITLE = 'Nothing here right now'
-# {name} becomes the address the visitor opened, e.g. acme.ar.io; the page
-# says "this address" when it is opened by its transaction ID instead.
-BODY = 'The owner of {name} has taken down or moved what was here.'
+# Opened at a name, the page names it: "The owner of acme.ar.io has ...".
+# Opened by its transaction ID there is no name to show, so it says "The
+# owner has ...". Never "this address": to ArDrive users an address is a
+# wallet's.
+BODY = 'The owner has taken down or moved what was here.'
+BODY_AT_NAME = ('The owner of ', ' has taken down or moved what was here.')
 HINT = 'If someone sent you this link, ask them for the new one.'
 OWNER = 'Own this name?'
 OWNER_ACTION = 'Manage it in ArDrive'
@@ -50,9 +54,7 @@ def png(name):
 
 
 semibold = woff2('Wavehaus-95SemiBold.otf', TITLE + OWNER_ACTION)
-book = woff2(
-    'Wavehaus-66Book.otf', BODY + 'this address' + HINT + OWNER + HOST_CHARS)
-body_html = BODY.replace('{name}', '<strong id="name">this address</strong>')
+book = woff2('Wavehaus-66Book.otf', BODY + ''.join(BODY_AT_NAME) + HINT + OWNER + HOST_CHARS)
 
 html = f'''<!doctype html>
 <html lang="en">
@@ -98,17 +100,23 @@ a:focus-visible {{ outline: 2px solid var(--fg); outline-offset: 3px; border-rad
     </picture>
   </a>
   <h1>{TITLE}</h1>
-  <p>{body_html}</p>
+  <p id="what">{BODY}</p>
   <p>{HINT}</p>
   <p class="owner">{OWNER} <a href="{OWNER_URL}" rel="noopener">{OWNER_ACTION}</a></p>
 </main>
 <script>
-  // At a name the page is served from the name's own address (acme.ar.io);
+  // At a name the page is served from the name's own host (acme.ar.io);
   // opened by its transaction ID it is on a gateway's sandbox subdomain.
+  (function () {{
   var host = location.hostname;
   if (location.pathname === '/' && host.indexOf('.') > 0 && !/^[a-z2-7]{{52}}\\./.test(host)) {{
-    document.getElementById('name').textContent = host;
+    var what = document.getElementById('what');
+    var shown = document.createElement('strong');
+    shown.textContent = host;
+    what.textContent = '';
+    what.append({json.dumps(BODY_AT_NAME[0])}, shown, {json.dumps(BODY_AT_NAME[1])});
   }}
+  }})();
 </script>
 </body>
 </html>
