@@ -98,7 +98,7 @@ This follows the ar.io console.
   address is cleared on sign-out.
 - **Asked for at commit.** The action button itself becomes the next step:
   "Link a Solana wallet", then "Reconnect Solana wallet". The line under it:
-  "ArNS names live on Solana. Link a Solana wallet to name this. Your ArDrive
+  "Link the wallet that holds your names to approve this. Your ArDrive
   account stays the same."
 - **Signed in with Solana?** That wallet is the ArNS wallet already.
 - **Credits pay; the ArNS wallet approves.** Turbo allows the payer and the
@@ -113,14 +113,17 @@ This follows the ar.io console.
   small metadata update together.
 - **Nothing lost on a cancel.** Rejecting the proof prompt charges nothing,
   because it comes before the action is created. If the transaction approval
-  comes too late, Turbo refunds the credits automatically (within 15 minutes)
-  and ArDrive says so.
+  comes too late or is declined, Turbo refunds the credits automatically
+  (within 15 minutes) and ArDrive says so, once: a declined prompt is
+  forgotten, while a reload during the prompt is kept and reported on the
+  next load.
 - **Names you manage for someone else** (Q23). Turbo sponsors only a name's
   owner and rejects a controller's proof. A controller's ArNS wallet signs the
   change itself and pays the Solana fee: about 0.000005 SOL to repoint, about
-  0.003 SOL of rent for a new undername. Said before the prompt: "You manage
-  this name for its owner, so your wallet pays a small Solana fee instead of
-  credits." A wallet without enough SOL is told so before anything is signed.
+  0.003 SOL of rent for a new undername. Said once, under the amount in the
+  cost line: "You manage this name for its owner, so your ArNS wallet pays
+  this network fee instead of credits." A wallet without enough SOL is told
+  so before anything is signed.
   This is the only exception to credits only.
 - **Wrong account connected.** If the wallet is on a different account from
   the linked one: "Switch to 7xKp…q2Fd in your wallet, or change your ArNS
@@ -214,11 +217,13 @@ fails, the flow says so; the upload stands.
 
 ### The Names page
 
-Every name and undername you own or manage, with:
+Every name and undername you own or manage, with no wallet address in the
+header (the profile card has it, where the ArNS wallet is linked), and:
 
-- what each points to: the ArDrive item when recognised, otherwise "Points
-  elsewhere" with the transaction ID in monospace (Q22), which you can point
-  at an ArDrive item;
+- what each points to: the ArDrive item when recognised, "Empty page" for a
+  main name on the "Nothing published here" page, otherwise "Points
+  elsewhere" (Q22), which you can point at an ArDrive item. The transaction
+  ID is in the tooltip, not the row;
 - its cache time, changeable here (Q16);
 - Change and Remove actions;
 - "Managed for its owner" on names you control but don't own (Q23);
@@ -247,7 +252,10 @@ lease ends, changes are blocked (the chain rejects them) and the page says
 
 Someone viewing a public drive, a shared drive or a publication sees a file's
 name only after the gateway confirms the name still points at it, with one
-request per named item, cached for the session.
+request per named item, cached for the session. That holds for the row chip,
+the details panel's read-only Name section (the name to open or copy, nothing
+to manage) and the Activity tab, where an unconfirmed name change reads "This
+file was modified."
 
 The check is a `HEAD` to `https://<undername>_<name>.<gateway host>/`: ar.io
 gateways return the transaction the name resolved to in
