@@ -15,7 +15,6 @@ import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/arns/presentation/names_page/names_page.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
-import 'package:ardrive/drives_list/presentation/open_drive_on_selection.dart';
 import 'package:ardrive/drive_explorer/dock/ardrive_dock.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_modal.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
@@ -554,11 +553,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 // cubit, and a drive chosen in it opens that drive.
                 shell = BlocProvider(
                   create: (context) => _driveDetailCubit(context, rootPath),
-                  child: OpenDriveOnSelection(
-                    selections: context.read<DrivesCubit>().driveSelections,
-                    onOpenDrive: openDriveFromList,
-                    child: const AppShell(page: ArNSNamesPage()),
-                  ),
+                  child: ArNSNamesShell(onOpenDrive: openDriveFromList),
                 );
               } else if ((showingDrivesList ||
                       (showingNames && !namesPageIsOn(context))) &&

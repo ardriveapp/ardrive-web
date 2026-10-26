@@ -11,6 +11,7 @@ import 'package:ardrive/arns/presentation/widgets/arns_widgets.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
 import 'package:ardrive/components/profile_card.dart';
 import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/drives_list/presentation/open_drive_on_selection.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
@@ -27,6 +28,32 @@ import 'package:responsive_builder/responsive_builder.dart';
 
 /// From 30 days before a lease ends, "Renews in 12 days".
 const arnsRenewalNoticeWindow = Duration(days: 30);
+
+/// The Names page in the app shell: a drive chosen in the sidebar opens it,
+/// as on the drives list.
+///
+/// Reads the drives cubit in its own build. The router builds its shells
+/// above the providers that hold that cubit, so reading it there threw and
+/// the page never appeared.
+class ArNSNamesShell extends StatelessWidget {
+  const ArNSNamesShell({
+    super.key,
+    required this.onOpenDrive,
+    this.child = const AppShell(page: ArNSNamesPage()),
+  });
+
+  final void Function(String driveId) onOpenDrive;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return OpenDriveOnSelection(
+      selections: context.read<DrivesCubit>().driveSelections,
+      onOpenDrive: onOpenDrive,
+      child: child,
+    );
+  }
+}
 
 /// On the web › Names: every name and undername the ArNS wallet owns or
 /// manages, what each points to and its cache time (docs/NAMES.md, "The
