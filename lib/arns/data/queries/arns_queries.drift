@@ -2,6 +2,7 @@ import '../../../models/tables/arns_records.drift';
 import '../../../models/tables/ant_records.drift';
 import '../../../models/tables/file_entries.drift';
 import '../../../models/tables/file_revisions.drift';
+import '../../../models/tables/drives.drift';
 
 getAntRecordsForAddress:
 SELECT * FROM ant_records WHERE arns_address = :arnsAddress ORDER BY domain;
@@ -30,3 +31,36 @@ SELECT
 FROM file_revisions rev
 INNER JOIN file_entries f ON f.id = rev.fileId AND f.driveId = rev.driveId
 WHERE rev.dataTxId IN :txIds;
+
+-- Public files in the owner's drives that can be given a name, deployments
+-- first (docs/NAMES.md, Q5). Never a private file.
+nameableFiles AS ArNSNameableFileRow:
+SELECT
+    f.id AS file_id,
+    f.driveId AS drive_id,
+    f.name AS name,
+    f.dataTxId AS data_tx_id,
+    f.dataContentType AS data_content_type,
+    f.assignedNames AS assigned_names
+FROM file_entries f
+INNER JOIN drives d ON d.id = f.driveId
+WHERE d.privacy = 'public'
+    AND d.ownerAddress = :owner
+    AND f.isHidden = 0
+    AND f.name LIKE :pattern ESCAPE '\'
+ORDER BY
+    CASE WHEN f.dataContentType = 'application/x.arweave-manifest+json'
+        THEN 0 ELSE 1 END,
+    f.lastUpdated DESC
+LIMIT 50;
+
+-- Files a cached name points to, for search by name.
+filesNamedLike AS ArNSNamedFileRow:
+SELECT
+    f.id AS file_id,
+    f.driveId AS drive_id,
+    r.id AS literal_name
+FROM arns_records r
+INNER JOIN file_entries f ON f.dataTxId = r.transaction_id
+WHERE r.id LIKE :pattern ESCAPE '\'
+LIMIT 50;
