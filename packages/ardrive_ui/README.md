@@ -25,6 +25,14 @@ so they read as a step up from whatever surface they sit on.
 Every colour comes from a token, in both themes. A literal colour, or a
 Material one such as `Colors.green`, looks right in one theme only.
 
+Status colours come from the [brand palette](https://ardrive.io/brand-kit/):
+info from brand Info `#3142C4`, success from brand Success `#18A957`, and
+error from the brand reds (the `solidRed` primitives). A lighter or darker
+shade of the same hue is fine where the brand value can't be read on its
+container. The palette has no warning colour, so a warning is neutral: a
+raised surface, its edge and the normal text colour, with the warning icon
+carrying the meaning. Don't add a yellow, orange or pink.
+
 ### Monospace
 
 `ArDriveTypographyNew.of(context).code()` is Roboto Mono, Regular only. It
@@ -100,5 +108,6 @@ flutter test
 Tests wrap a widget in `ArDriveApp(builder: (context) => MaterialApp(...))`,
 which provides the dark theme; pass `themeData: lightTheme()` for light.
 `test/src/styles/status_colors_test.dart` checks that every status colour pair
-meets WCAG AA contrast in both themes, so a new status colour that fails it
-fails the suite.
+meets WCAG AA contrast for text (4.5:1) in both themes, that warning is a
+grey and that error is one of the brand reds, so a status colour that breaks
+any of those fails the suite.

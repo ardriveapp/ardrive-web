@@ -157,6 +157,12 @@ class Primitives {
   final Color transparent900_4;
 }
 
+/// The brand kit's status colours (https://ardrive.io/brand-kit/). The kit
+/// has no warning colour and no error colour of its own: warnings are neutral
+/// and errors use the brand reds, the solidRed primitives.
+const _brandInfo = Color(0xff3142c4);
+const _brandSuccess = Color(0xff18a957);
+
 class ArDriveColorTokens {
   ArDriveColorTokens({
     required this.primitives,
@@ -208,6 +214,9 @@ class ArDriveColorTokens {
 
   factory ArDriveColorTokens.darkMode() {
     var primitives = Primitives.darkMode();
+    const containerRaised = Color(0xff1f1f1f);
+    final textHigh = primitives.solidGrey100;
+    final strokeHigh = primitives.transparent100_16;
 
     return ArDriveColorTokens(
       primitives: primitives,
@@ -216,8 +225,8 @@ class ArDriveColorTokens {
       containerL2: primitives.solidGrey800,
       containerL3: primitives.solidGrey700,
       containerRed: primitives.solidRed700,
-      containerRaised: const Color(0xff1f1f1f),
-      textHigh: primitives.solidGrey100,
+      containerRaised: containerRaised,
+      textHigh: textHigh,
       textMid: primitives.solidGrey200,
       textLow: primitives.solidGrey300,
       textXLow: primitives.solidGrey500,
@@ -226,7 +235,7 @@ class ArDriveColorTokens {
       textRed: primitives.solidRed800,
       strokeLow: primitives.transparent100_8,
       strokeMid: primitives.transparent100_12,
-      strokeHigh: primitives.transparent100_16,
+      strokeHigh: strokeHigh,
       strokeRed: primitives.solidRed600,
       buttonPrimaryDefault: primitives.solidRed700,
       buttonPrimaryHover: primitives.solidRed600,
@@ -246,16 +255,18 @@ class ArDriveColorTokens {
       iconLow: primitives.solidGrey400,
       iconMid: primitives.solidGrey200,
       iconHigh: primitives.solidGrey50,
+      // A lighter tint of the brand Info hue: the brand value itself is too
+      // dark to read on a dark container.
       statusInfoFg: const Color(0xff8b98f9),
       statusInfoContainer: const Color(0xff111833),
       statusInfoStroke: const Color(0xff253293),
-      statusWarningFg: const Color(0xffffcf74),
-      statusWarningContainer: const Color(0xff33250b),
-      statusWarningStroke: const Color(0xff664b16),
-      statusErrorFg: const Color(0xffe95c7b),
-      statusErrorContainer: const Color(0xff2d040d),
-      statusErrorStroke: const Color(0xff59091a),
-      statusSuccessFg: const Color(0xff5dc389),
+      statusWarningFg: textHigh,
+      statusWarningContainer: containerRaised,
+      statusWarningStroke: strokeHigh,
+      statusErrorFg: primitives.solidRed900,
+      statusErrorContainer: primitives.solidRed200,
+      statusErrorStroke: primitives.solidRed400,
+      statusSuccessFg: _brandSuccess,
       statusSuccessContainer: const Color(0xff052211),
       statusSuccessStroke: const Color(0xff0a4423),
     );
@@ -263,6 +274,9 @@ class ArDriveColorTokens {
 
   factory ArDriveColorTokens.lightMode() {
     var primitives = Primitives.lightMode();
+    const containerRaised = Color(0xffffffff);
+    final textHigh = primitives.solidGrey800;
+    final strokeHigh = primitives.solidGrey300;
 
     return ArDriveColorTokens(
       primitives: primitives,
@@ -271,8 +285,8 @@ class ArDriveColorTokens {
       containerL2: primitives.solidGrey200,
       containerL3: primitives.solidGrey200,
       containerRed: primitives.solidRed700,
-      containerRaised: const Color(0xffffffff),
-      textHigh: primitives.solidGrey800,
+      containerRaised: containerRaised,
+      textHigh: textHigh,
       textMid: primitives.solidGrey700,
       textLow: primitives.solidGrey600,
       textXLow: primitives.solidGrey500,
@@ -281,7 +295,7 @@ class ArDriveColorTokens {
       textRed: primitives.solidRed800,
       strokeLow: primitives.transparent900_12,
       strokeMid: primitives.transparent900_16,
-      strokeHigh: primitives.solidGrey300,
+      strokeHigh: strokeHigh,
       strokeRed: primitives.solidRed600,
       buttonPrimaryDefault: primitives.solidRed700,
       buttonPrimaryHover: primitives.solidRed600,
@@ -301,15 +315,17 @@ class ArDriveColorTokens {
       iconLow: primitives.solidGrey500,
       iconMid: primitives.solidGrey600,
       iconHigh: primitives.solidGrey700,
-      statusInfoFg: const Color(0xff3142c4),
+      statusInfoFg: _brandInfo,
       statusInfoContainer: const Color(0xffeceefe),
       statusInfoStroke: const Color(0xffb1bafb),
-      statusWarningFg: const Color(0xff664b16),
-      statusWarningContainer: const Color(0xfffff8eb),
-      statusWarningStroke: const Color(0xffffe4af),
-      statusErrorFg: const Color(0xffc0151e),
-      statusErrorContainer: const Color(0xfffdf1f4),
-      statusErrorStroke: const Color(0xfff9d0d9),
+      statusWarningFg: textHigh,
+      statusWarningContainer: containerRaised,
+      statusWarningStroke: strokeHigh,
+      statusErrorFg: primitives.solidRed900,
+      statusErrorContainer: primitives.solidRed100,
+      statusErrorStroke: primitives.solidRed300,
+      // A darker shade of the brand Success hue: the brand value itself is
+      // too light to read on a light container.
       statusSuccessFg: const Color(0xff11763d),
       statusSuccessContainer: const Color(0xfff4fbf7),
       statusSuccessStroke: const Color(0xffd1eedd),
@@ -359,6 +375,11 @@ class ArDriveColorTokens {
   /// info, warning, error and success. Fg colours the icon and any emphasis,
   /// Container fills the surface behind it and Stroke draws its edge. Body
   /// text on a status container stays [textHigh].
+  ///
+  /// They come from the brand palette: info and success from the brand Info
+  /// and Success hues, error from the brand reds. The palette has no warning
+  /// colour, so warning is neutral, a raised surface with the normal text
+  /// colour, and its icon carries the meaning.
   final Color statusInfoFg;
   final Color statusInfoContainer;
   final Color statusInfoStroke;
