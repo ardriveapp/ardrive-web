@@ -213,6 +213,12 @@ Every file the manifest adds is a plain, public data item carrying `Publication-
 
 **Trust.** A client counts a Publication only when its owner is the drive's owner, as it does for Drive States, and only when the `snapshot` it names was published by that owner too. Anyone else's Publication of the same `Drive-Id` is ignored.
 
+A viewer opening a page cannot take `publication.json`'s `owner` on trust, since anyone can write one naming anyone. It asks the gateway serving the page who signed the `snapshot` transaction (one GraphQL `transactions(ids: [...]) { owner { address } }` lookup). A different signer means the page is refused. No answer (the snapshot not indexed yet, or the gateway unable to say) opens the page without naming any owner.
+
+**Display name.** `publication.json`'s optional `ownerName` is shown beside the owner's shortened address, never instead of it. A name that passes for ArDrive, ar.io or Turbo is refused: case, spaces, punctuation and look-alike characters are normalised, then `ardrive` anywhere, or `turbo`, `ario` or `ar` + `io` as words, is reserved. The publishing app refuses such a name and a viewer shows the address alone, except for wallets the app's config lists as ArDrive's own (`officialPublisherAddresses`), whose ownership the viewer has confirmed. Only the display name is checked; a title may say anything.
+
+Clients that sync a drive's history skip `publication` entities (and `drive-state` and `snapshot` ones) without fetching their data: they share the drive's `Drive-Id`, and their readers find them by GraphQL.
+
 **Discovery.** A client finds a drive's publications by querying the owner's transactions with `Entity-Type: publication` and the `Drive-Id`, and groups them by `Publication-Id`. `Publication-Scope` says which a version shows, the whole drive or one folder.
 
 The design and its reasoning are in `docs/PUBLICATIONS.md`.
