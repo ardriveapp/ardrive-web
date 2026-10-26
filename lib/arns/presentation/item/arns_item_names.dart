@@ -140,6 +140,7 @@ class ArNSNameChip extends StatelessWidget {
     required this.dataTxId,
     this.hints = const [],
     this.isOwner = true,
+    this.iconOnly = false,
   });
 
   final String dataTxId;
@@ -147,6 +148,10 @@ class ArNSNameChip extends StatelessWidget {
   /// The file's `assignedNames`, for a visitor.
   final List<String> hints;
   final bool isOwner;
+
+  /// Just the globe, the names in its tooltip: where a row has no room for
+  /// the name beside its title ([ArNSRowTitle]).
+  final bool iconOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +162,7 @@ class ArNSNameChip extends StatelessWidget {
           final records = state.recordsFor(dataTxId);
           if (records.isNotEmpty) {
             return _NameChipView(
+              iconOnly: iconOnly,
               names: [for (final r in records) r.literalName],
             );
           }
@@ -327,10 +333,72 @@ class ArNSTitleWithChip extends StatelessWidget {
   }
 }
 
+/// A row's title with its name chip beside it, the title first: the chip
+/// takes only the room the whole title leaves, ellipsized down to
+/// [minWidth], then just the globe, then nothing. With the details panel
+/// open, the chip kept its width and the file name was cut to "e2e-name-1.t…".
+class ArNSRowTitle extends StatelessWidget {
+  const ArNSRowTitle({
+    super.key,
+    required this.text,
+    required this.style,
+    required this.title,
+    required this.chip,
+  });
+
+  /// The title as drawn, to measure it.
+  final String text;
+  final TextStyle style;
+
+  /// The title widget: [text] in [style], ellipsized.
+  final Widget title;
+  final ArNSNameChip Function(bool iconOnly) chip;
+
+  /// The narrowest chip that still shows a few letters of the name.
+  static const minWidth = 72.0;
+
+  /// The globe alone, with its start padding.
+  static const iconOnlyWidth = 36.0;
+
+  /// The widest the chip gets.
+  static const maxWidth = 200.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          // As the Text draws it: its style over the inherited one.
+          text: TextSpan(
+            text: text,
+            style: DefaultTextStyle.of(context).style.merge(style),
+          ),
+          maxLines: 1,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout();
+        final room = constraints.maxWidth - painter.width.ceilToDouble();
+        painter.dispose();
+        return Row(
+          children: [
+            Flexible(child: title),
+            if (room >= iconOnlyWidth)
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: room.clamp(0, maxWidth)),
+                child: chip(room < minWidth),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _NameChipView extends StatelessWidget {
-  const _NameChipView({required this.names});
+  const _NameChipView({required this.names, this.iconOnly = false});
 
   final List<String> names;
+  final bool iconOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -356,19 +424,21 @@ class _NameChipView extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(arnsNameIcon, size: 12, color: colors.iconMid),
-              const SizedBox(width: ArDriveSpacing.xxs),
-              Flexible(
-                child: Text(
-                  more > 0 ? '$host +$more' : host,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  softWrap: false,
-                  style: typography.caption(
-                    color: colors.textMid,
-                    fontWeight: ArFontWeight.semiBold,
+              if (!iconOnly) ...[
+                const SizedBox(width: ArDriveSpacing.xxs),
+                Flexible(
+                  child: Text(
+                    more > 0 ? '$host +$more' : host,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    softWrap: false,
+                    style: typography.caption(
+                      color: colors.textMid,
+                      fontWeight: ArFontWeight.semiBold,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

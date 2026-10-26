@@ -56,35 +56,30 @@ class DriveExplorerItemTile extends TableRowWidget {
                 isHidden,
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: Row(
-                    children: [
-                      Flexible(
-                        child: ArDriveTooltip(
-                          message: name,
-                          child: Text(
-                            name,
-                            style: typography.paragraphNormal(
-                              fontWeight: ArFontWeight.semiBold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            softWrap: false,
+                  child: dataTableItem is FileDataTableItem
+                      // The file name first: the name chip takes the room
+                      // it leaves.
+                      ? ArNSRowTitle(
+                          text: name,
+                          style: _titleStyle(typography),
+                          title: _title(name, typography),
+                          chip: (iconOnly) => ArNSNameChip(
+                            dataTxId: dataTableItem.dataTxId,
+                            hints: dataTableItem.assignedNames ?? const [],
+                            isOwner: dataTableItem.isOwner,
+                            iconOnly: iconOnly,
                           ),
+                        )
+                      : Row(
+                          children: [
+                            Flexible(child: _title(name, typography)),
+                            if (dataTableItem is FolderDataTableItem)
+                              PublishedToWebMark(
+                                driveId: dataTableItem.driveId,
+                                folderId: dataTableItem.id,
+                              ),
+                          ],
                         ),
-                      ),
-                      if (dataTableItem is FolderDataTableItem)
-                        PublishedToWebMark(
-                          driveId: dataTableItem.driveId,
-                          folderId: dataTableItem.id,
-                        ),
-                      if (dataTableItem is FileDataTableItem)
-                        ArNSNameChip(
-                          dataTxId: dataTableItem.dataTxId,
-                          hints: dataTableItem.assignedNames ?? const [],
-                          isOwner: dataTableItem.isOwner,
-                        ),
-                    ],
-                  ),
                 )),
             dimIfHidden(
                 isHidden,
@@ -123,6 +118,20 @@ class DriveExplorerItemTile extends TableRowWidget {
           ],
         );
 }
+
+TextStyle _titleStyle(ArdriveTypographyNew typography) =>
+    typography.paragraphNormal(fontWeight: ArFontWeight.semiBold);
+
+Widget _title(String name, ArdriveTypographyNew typography) => ArDriveTooltip(
+      message: name,
+      child: Text(
+        name,
+        style: _titleStyle(typography),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+        softWrap: false,
+      ),
+    );
 
 TextStyle _driveExplorerItemTileTextStyle(bool isHidden,
         ArdriveTypographyNew typography, ArDriveColorTokens colorTokens) =>
