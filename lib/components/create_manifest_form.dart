@@ -521,6 +521,9 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
 
     return ArDriveStandardModalNew(
       width: kMediumDialogWidth,
+      // The name step makes this taller than a laptop screen: without a
+      // scroll, Create deployment was pushed below the window.
+      scrollableContent: true,
       title: hasPendingFiles
           ? appLocalizationsOf(context).filesPending
           : appLocalizationsOf(context).createManifestEmphasized,
