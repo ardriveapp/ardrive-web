@@ -755,6 +755,42 @@ void main() {
     );
   });
 
+  /// The nav as the app draws it: Your drives, the drive sections, and On
+  /// the web under them, so the match is visible.
+  Widget fakeNav(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    Widget section(IconData icon, String label, {required bool open}) =>
+        DriveNavRow(
+          icon: icon,
+          label: label,
+          onTap: () {},
+          isExpanded: open,
+          trailing: RotatedBox(
+            quarterTurns: open ? 2 : 0,
+            child: ArDriveIcons.chevronDown(size: 16, color: colors.textMid),
+          ),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DriveNavRow(
+          icon: Icons.home_outlined,
+          label: 'Your drives',
+          onTap: () {},
+        ),
+        const SizedBox(height: 6),
+        Divider(height: 1, color: colors.strokeLow),
+        const SizedBox(height: 6),
+        section(Icons.public_outlined, 'Public', open: true),
+        DriveNavRow(
+            icon: null, dense: true, label: 'Acme website', onTap: () {}),
+        DriveNavRow(icon: null, dense: true, label: 'Photos', onTap: () {}),
+        section(Icons.lock_outline, 'Private', open: false),
+        const OnTheWebNavGroup(showLabel: true),
+      ],
+    );
+  }
+
   Widget namesPage(
     BuildContext context, {
     required bool phone,
@@ -798,42 +834,7 @@ void main() {
                           right: BorderSide(color: colors.strokeLow),
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          DriveNavRow(
-                            icon: Icons.home_outlined,
-                            label: 'Your drives',
-                            onTap: () {},
-                          ),
-                          const SizedBox(height: 6),
-                          Divider(height: 1, color: colors.strokeLow),
-                          const SizedBox(height: 6),
-                          DriveNavRow(
-                            icon: Icons.public_outlined,
-                            label: 'Public',
-                            onTap: () {},
-                          ),
-                          DriveNavRow(
-                            icon: null,
-                            dense: true,
-                            label: 'Acme website',
-                            onTap: () {},
-                          ),
-                          DriveNavRow(
-                            icon: null,
-                            dense: true,
-                            label: 'Photos',
-                            onTap: () {},
-                          ),
-                          DriveNavRow(
-                            icon: Icons.lock_outline,
-                            label: 'Private',
-                            onTap: () {},
-                          ),
-                          const OnTheWebNavGroup(showLabel: true),
-                        ],
-                      ),
+                      child: fakeNav(context),
                     ),
                     const Expanded(
                       child: Padding(
@@ -1020,5 +1021,197 @@ void main() {
         );
       }
     }
+  });
+
+  testWidgets('nav: On the web beside the drive sections', (tester) async {
+    for (final phone in [false, true]) {
+      for (final dark in [true, false]) {
+        await capture(
+          tester,
+          '23-nav',
+          (context) {
+            final colors = ArDriveTheme.of(context).themeData.colorTokens;
+            final delegate = AppRouterDelegate()..showingNames = true;
+            return MultiProvider(
+              providers: [
+                RepositoryProvider<ConfigService>.value(value: config),
+                ChangeNotifierProvider<AppRouterDelegate>.value(
+                    value: delegate),
+              ],
+              child: Scaffold(
+                backgroundColor: phone
+                    ? colors.primitives.transparent900_64
+                    : colors.containerL0,
+                body: Align(
+                  alignment: Alignment.topLeft,
+                  child: Container(
+                    width: phone ? 390 * 0.75 + 32 : 240,
+                    height: double.infinity,
+                    color: colors.containerL0,
+                    padding: EdgeInsets.fromLTRB(16, phone ? 72 : 120, 16, 0),
+                    child: Builder(builder: fakeNav),
+                  ),
+                ),
+              ),
+            );
+          },
+          phone: phone,
+          dark: dark,
+          height: phone ? 844 : 600,
+        );
+      }
+    }
+  });
+
+  testWidgets('change name moves the name', (tester) async {
+    await dialogShot(
+      tester,
+      '24-change-move',
+      walletStatus: ArNSWalletStatus.connected,
+      item: const ArNSNameableItem(
+        fileId: 'f1',
+        driveId: 'd1',
+        name: 'Portfolio site',
+        dataTxId: _blogTx,
+        isManifest: true,
+      ),
+      names: _names().take(1).toList(),
+      drive: (cubit) async {
+        cubit.startNewUndername('acme');
+        cubit.editNewUndername('portfolio');
+        await Future.delayed(const Duration(milliseconds: 50));
+      },
+    );
+  });
+
+  Future<void> flowShot(
+    WidgetTester tester,
+    String name, {
+    required String title,
+    List<ArNSNameRecord> following = const [],
+    bool open = false,
+    ArNSWalletStatus walletStatus = ArNSWalletStatus.connected,
+    Future<void> Function(ArNSFlowNameCubit cubit)? drive,
+    ArNSFlowOutcome? result,
+  }) async {
+    when(() => repository.cached(any()))
+        .thenAnswer((_) async => _names().take(2).toList());
+    when(() => repository.refresh(any()))
+        .thenAnswer((_) async => _names().take(2).toList());
+    for (final phone in [false, true]) {
+      for (final dark in [true, false]) {
+        final wallet = walletCubit(_wallet(walletStatus));
+        final namesCubit =
+            ArNSNamesCubit(repository: repository, walletCubit: wallet);
+        late ArNSFlowNameCubit cubit;
+        await tester.runAsync(() async {
+          cubit = ArNSFlowNameCubit(
+            namesCubit: namesCubit,
+            walletCubit: wallet,
+            actionClient: client,
+            executor: executor,
+            arioSDK: sdk,
+            metadataWriter: metadata,
+            paymentSource: payments,
+            following: following,
+            placeholderTxId: _placeholder,
+          );
+          await cubit.load();
+          await Future.delayed(const Duration(milliseconds: 50));
+          if (drive != null) await drive(cubit);
+          await Future.delayed(const Duration(milliseconds: 50));
+        });
+        await capture(
+          tester,
+          name,
+          (context) {
+            final typography = ArDriveTypographyNew.of(context);
+            final colors = ArDriveTheme.of(context).themeData.colorTokens;
+            final body = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Spring launch',
+                    style: typography.paragraphLarge(
+                        fontWeight: ArFontWeight.bold)),
+                Text('1.2 KB',
+                    style: typography.paragraphNormal(color: colors.textLow)),
+                const SizedBox(height: 24),
+                if (result != null)
+                  ArNSFlowNameResult(outcome: result)
+                else
+                  ArNSFlowNameSection(cubit: cubit, initiallyOpen: open),
+              ],
+            );
+            final actions = [
+              ModalAction.dismiss(title: 'Cancel', action: () {}),
+              ModalAction(
+                title: title,
+                isEnable: cubit.ready,
+                action: () {},
+              ),
+            ];
+            return overlay(
+              context,
+              MultiBlocProvider(
+                providers: [
+                  BlocProvider<ArNSWalletCubit>.value(value: wallet),
+                  BlocProvider<ArNSNamesCubit>.value(value: namesCubit),
+                ],
+                child: phone
+                    ? ArDriveBottomSheet(
+                        title: title, content: body, actions: actions)
+                    : ArDriveStandardModalNew(
+                        title: title,
+                        width: 520,
+                        scrollableContent: true,
+                        content: body,
+                        actions: actions,
+                      ),
+              ),
+              phone: phone,
+            );
+          },
+          phone: phone,
+          dark: dark,
+        );
+      }
+    }
+  }
+
+  testWidgets('flows: the name step', (tester) async {
+    await flowShot(tester, '25-flow-step-folded', title: 'Create deployment');
+    await flowShot(
+      tester,
+      '26-flow-step-open',
+      title: 'Create deployment',
+      open: true,
+      drive: (cubit) async {
+        cubit.choose('acme', 'docs');
+        await Future.delayed(const Duration(milliseconds: 50));
+      },
+    );
+    await flowShot(
+      tester,
+      '27-flow-new-version',
+      title: 'Upload 1 file',
+      following: [_names().first.records[1]],
+    );
+    await flowShot(
+      tester,
+      '28-flow-wallet',
+      title: 'Publish',
+      walletStatus: ArNSWalletStatus.disconnected,
+      following: [_names().first.records[1]],
+    );
+    await flowShot(
+      tester,
+      '29-flow-result',
+      title: 'Deployment created',
+      result: const ArNSFlowOutcome(
+        live: ['spring_acme'],
+        failed: ['blog_acme'],
+      ),
+    );
   });
 }

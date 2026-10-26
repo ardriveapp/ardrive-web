@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex">
+<title>Nothing published here</title>
+<style>
+  :root { --bg: #ffffff; --fg: #121212; --muted: #6b6b6b; --line: #e5e5e5; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0d0d0d; --fg: #f2f2f2; --muted: #9a9a9a; --line: #2a2a2a; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 24px; padding: 24px; background: var(--bg); color: var(--fg);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    text-align: center;
+  }
+  h1 { margin: 0; font-size: clamp(22px, 4vw, 32px); font-weight: 600; letter-spacing: -0.01em; }
+  a { color: var(--muted); font-size: 13px; text-decoration: none; border-bottom: 1px solid var(--line); }
+  a:hover, a:focus-visible { color: var(--fg); border-color: currentColor; }
+</style>
+</head>
+<body>
+  <h1>Nothing published here</h1>
+  <a href="https://ardrive.io" rel="noopener">Made with ArDrive</a>
+</body>
+</html>

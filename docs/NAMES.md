@@ -151,10 +151,29 @@ This follows the ar.io console.
    minutes".
 6. ArDrive writes the name into the item's metadata as a public hint (Q6).
 
+**Change name moves the name.** When the item already has a name, Change
+name points the chosen name at it and removes the old one in the same flow
+("Also remove blog_acme.ar.io", checked by default). The removal is its own
+change with its own nonce, and its cost is in the cost line: about 0.001
+credits for an undername; a main name goes to the "Nothing published here"
+page at the set-record price, and when no page is configured the box isn't
+offered and the old main name stays. If the removal fails, the new name is
+live, the old one is unchanged, and nothing is tried again.
+
 **Undername rules.** Letters, digits, `-` and `_`; starts with a letter or
 digit; 1 to 61 characters (`^[a-zA-Z0-9][a-zA-Z0-9_-]{0,60}$`, the console's
 and Turbo's rule). The whole `undername_name` label must fit DNS, at most 63
 characters. `@` is the name itself.
+
+### In flows
+
+Publish, Create deployment and uploading exactly one file to a public drive
+have an optional name step, folded away, with the dialog's picker and cost
+line. The flow's button waits until the step is priced and the ArNS wallet
+is connected. The record change runs once the item's transaction exists;
+the flow's success screen shows the name, or says plainly which name wasn't
+changed (the upload stands). Files get the metadata hint in a small
+revision afterwards; a publication carries its names in `publication.json`.
 
 ### New versions
 
@@ -165,6 +184,12 @@ characters. `@` is the name itself.
   another app leaves the name on the old one, and the Names page shows it
   pointing at an older version.
 
+Updating a deployment, uploading a new version of a named file (same file
+ID, one file to a public drive) and republishing a named publication each
+say "acme.ar.io moves to the new version" in the confirm step, with the
+cost and a box to leave it. If the upload succeeds and the name change
+fails, the flow says so; the upload stands.
+
 ### Removing
 
 - **Remove an undername:** its record is deleted (Q13).
@@ -174,6 +199,18 @@ characters. `@` is the name itself.
   config as `arnsPlaceholderTxId`.
 - **Hide a named file:** ArDrive offers to remove its name. Files can't move
   between drives, so hiding is the only way an item leaves public view.
+
+### What stays as built
+
+- The metadata part of the cost line is an upper bound: one revision is
+  priced as a 4 KiB upload, so the line never undersells it.
+- Repointing a name away from another item leaves that item's
+  `assignedNames` stale. Harmless: hints are checked against the gateway
+  before anyone else sees them.
+- Remove name in an item's menu acts on its first name when it has several;
+  the details panel's Name section offers Remove on each.
+- The desktop details panel has no menu: its Name section carries Change
+  and Remove. The phone details menu has the menu items.
 
 ### The Names page
 
@@ -199,7 +236,10 @@ lease ends, changes are blocked (the chain rejects them) and the page says
   when there is one.
 - A private publication's name opens its unlock screen (Q27). "Copy link"
   gives the name plus the key after the `#`, with the usual private-link
-  warning.
+  warning. Private publications aren't built yet (docs/PUBLICATIONS.md,
+  phase 3: the publisher writes public pages only), so this lands with them.
+- Publications are nameable from the Names page: its picker lists the
+  owner's publications (latest version) beside files and deployments.
 - The social image stays on its own transaction, as built today (Q26): no
   `social_` undername.
 
@@ -208,6 +248,28 @@ lease ends, changes are blocked (the chain rejects them) and the page says
 Someone viewing a public drive, a shared drive or a publication sees a file's
 name only after the gateway confirms the name still points at it, with one
 request per named item, cached for the session.
+
+The check is a `HEAD` to `https://<undername>_<name>.<gateway host>/`: ar.io
+gateways return the transaction the name resolved to in
+`X-ArNS-Resolved-Id` (ar-io-node `src/constants.ts`), and expose every
+header to browsers (`exposedHeaders: '*'` in `src/app.ts`). A name is shown
+when that ID is the file's data transaction. A failed or slow request means
+no chip; the listing never waits for it (`lib/arns/data/arns_name_verifier.dart`).
+
+### The "Nothing published here" page
+
+`assets/arns/nothing_published.html` (about 1 KiB, no external requests,
+light and dark) is what a removed main name points at. It is not bundled
+into the app. To set it up, once per network:
+
+1. Upload the file as a public file, `Content-Type: text/html`, from an
+   ArDrive team wallet (any public drive, or `ardrive upload-file` with the
+   CLI). It is under Turbo's free size.
+2. Put its data transaction ID in `arnsPlaceholderTxId` in
+   `assets/config/prod.json`, `staging.json` and `dev.json` (a devnet
+   upload for dev if names run on devnet there), and bump `configVersion`
+   so stored configs pick it up.
+3. Until it is set, removing a main name is disabled with a short reason.
 
 ## Where names are recorded
 

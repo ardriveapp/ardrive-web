@@ -128,6 +128,7 @@ point at it later.
                "definitionTxId": "<licence definition tx id>" },
   "images": { "icon": "icon-512.png", "social": "social.jpg", "cover": "cover.jpg" },
   "publishedAt": "2026-10-21T18:02:11Z",
+  "names": ["docs_acme"],
   "viewer": { "release": "2.91.0", "manifest": "<release manifest tx id>" }
 }
 ```
@@ -136,6 +137,10 @@ point at it later.
 - `generatedSocialCard: true` marks `social.jpg` as the card ArDrive drew.
   An update keeps an owner's own card, and keeps a generated one while
   nothing it shows (title, description, icon, cover, file count) changes.
+- `names` is optional: the literal ArNS names (`docs_acme`, `acme` for a
+  main name) ArDrive pointed at this version when it published it,
+  including names that moved from the previous version. A hint, checked
+  against a gateway before a visitor sees one (`docs/NAMES.md`).
 - `fileCount`, `keywords` and `license` are optional. `fileCount` is what the
   publisher counted, for the owner's published view; `license` covers
   everything in the publication and is shown in its byline (a UDL adds its
