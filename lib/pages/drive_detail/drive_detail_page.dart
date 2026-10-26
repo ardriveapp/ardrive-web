@@ -1534,6 +1534,10 @@ class ArDriveItemListTile extends StatelessWidget {
                           if (item is FileDataTableItem)
                             ArNSNameChip(
                               dataTxId: (item as FileDataTableItem).dataTxId,
+                              hints:
+                                  (item as FileDataTableItem).assignedNames ??
+                                      const [],
+                              isOwner: item.isOwner,
                             ),
                         ],
                       ),

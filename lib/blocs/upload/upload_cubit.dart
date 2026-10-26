@@ -1203,7 +1203,11 @@ class UploadCubit extends Cubit<UploadState> {
           await prepareManifestUpload();
         }
 
-        emit(UploadComplete());
+        emit(UploadComplete(dataTxIds: [
+          for (final task in tasks)
+            for (final item in task.content ?? const [])
+              if (item is ARFSFileUploadMetadata) item.dataTxId!,
+        ]));
 
         PlausibleEventTracker.trackUploadSuccess();
       },

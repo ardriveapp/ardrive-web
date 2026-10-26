@@ -16,6 +16,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 part 'arns_name_dialog_state.dart';
+part 'arns_flow_name_cubit.dart';
 
 /// Searches the items a record can point at, for the Names page.
 typedef ArNSNameableItemSearch = Future<List<ArNSNameableItem>> Function(
@@ -41,6 +42,7 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
     ArNSRecordChoice? choice,
     ArNSNameableItemSearch? searchItems,
     DateTime Function()? clock,
+    List<ArNSNameRecord> following = const [],
   })  : _namesCubit = namesCubit,
         _walletCubit = walletCubit,
         _actionClient = actionClient,
@@ -56,6 +58,7 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
           choice: choice,
           placeholderTxId: placeholderTxId,
           now: (clock ?? DateTime.now)(),
+          following: following,
         ));
 
   final ArNSNamesCubit _namesCubit;
@@ -138,6 +141,7 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
           name: current.first.name,
           undername: current.first.undername,
         );
+        emit(state.copyWith(previousRecord: () => current.first));
       }
     }
     if (choice == null) return;
@@ -188,6 +192,38 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
           ArNSRecordChoice(name: name, undername: text.trim(), isNew: true),
     ));
     if (repriceNeeded || state.cost == null) unawaited(_reprice());
+  }
+
+  /// Change name: whether the old name is removed too (on by default).
+  void setRemovePrevious(bool remove) {
+    emit(state.copyWith(removePrevious: remove));
+    unawaited(_reprice());
+  }
+
+  /// The old name's removal, when a Change moves the name: an undername is
+  /// deleted, a main name points at "Nothing published here".
+  ArNSRecordChange? get previousRemoval {
+    if (!state.removesPrevious) return null;
+    final previous = state.movesFrom!;
+    final name = _nameOf(previous.name);
+    if (name == null) return null;
+    if (!previous.isApex) {
+      return ArNSRemoveRecord(
+          antId: name.processId, undername: previous.undername);
+    }
+    return ArNSSetRecord(
+      antId: name.processId,
+      undername: arnsApex,
+      transactionId: state.placeholderTxId!,
+      ttlSeconds: previous.ttlSeconds,
+    );
+  }
+
+  ArNSManagedName? _nameOf(String name) {
+    for (final n in state.names) {
+      if (n.name == name) return n;
+    }
+    return null;
   }
 
   void setCacheTime(ArNSCacheTime cacheTime) {
@@ -266,7 +302,8 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
 
   int get _metadataWrites => switch (state.mode) {
         ArNSNameDialogMode.cacheTime => 0,
-        _ => state.item == null ? 0 : 1,
+        // A publication's names go in publication.json on its next publish.
+        _ => state.item == null || state.item!.isPublication ? 0 : 1,
       };
 
   Future<void> _reprice() async {
@@ -285,22 +322,36 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
           ? BigInt.zero
           : (await _metadataPrice()) * BigInt.from(writes);
 
-      ArNSCost cost;
+      var credits = metadata;
+      int? lamports;
+      Future<void> add(ArNSManagedName of, ArNSRecordChange c,
+          {required bool exists}) async {
+        if (of.role == ArNSRole.owner) {
+          credits += await _price(c.action);
+        } else {
+          final estimate = await _arioSDK.estimateControllerFee(
+            processId: of.processId,
+            write: _controllerWrite(c, exists: exists),
+            undername: c.undername,
+          );
+          lamports = (lamports ?? 0) + estimate.totalLamports;
+        }
+      }
+
+      await add(name, change, exists: state.selectedRecord != null);
+      final removal = previousRemoval;
+      final previousName =
+          state.movesFrom == null ? null : _nameOf(state.movesFrom!.name);
+      if (removal != null && previousName != null) {
+        await add(previousName, removal, exists: true);
+      }
+      final cost = ArNSCost(
+        credits: credits,
+        metadataWrites: writes,
+        solLamports: lamports,
+      );
       int? solBalance;
-      if (name.role == ArNSRole.owner) {
-        final price = await _price(change.action);
-        cost = ArNSCost(credits: price + metadata, metadataWrites: writes);
-      } else {
-        final estimate = await _arioSDK.estimateControllerFee(
-          processId: name.processId,
-          write: _controllerWrite(change),
-          undername: change.undername,
-        );
-        cost = ArNSCost(
-          credits: metadata,
-          metadataWrites: writes,
-          solLamports: estimate.totalLamports,
-        );
+      if (lamports != null) {
         final address = _walletCubit.state.linked?.address;
         if (address != null) {
           solBalance = await _arioSDK.getSolBalanceLamports(address).then(
@@ -333,11 +384,12 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
   /// Prices again after a failed read.
   void retryPrice() => unawaited(_reprice());
 
-  ControllerWrite _controllerWrite(ArNSRecordChange change) {
+  static ControllerWrite _controllerWrite(
+    ArNSRecordChange change, {
+    required bool exists,
+  }) {
     if (change is ArNSRemoveRecord) return ControllerWrite.removeRecord;
-    return state.selectedRecord == null
-        ? ControllerWrite.createRecord
-        : ControllerWrite.editRecord;
+    return exists ? ControllerWrite.editRecord : ControllerWrite.createRecord;
   }
 
   Future<BigInt> _price(ArNSRecordAction action) async =>
@@ -435,6 +487,41 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
 
     await _namesCubit.refreshName(name.name);
 
+    // Change name moves the name: the old one goes in a change of its own,
+    // with its own nonce. If it fails the new name stands, and nothing is
+    // tried again.
+    final removal = previousRemoval;
+    final previous = state.movesFrom;
+    var previousRemoved = false;
+    var previousRemovalFailed = false;
+    if (removal != null && previous != null) {
+      final previousName = _nameOf(previous.name);
+      if (previousName != null) {
+        try {
+          await _executor.execute(
+            name: previousName,
+            change: removal,
+            owner: owner,
+            payer: _paymentSource.payer(),
+            paidBy: _paidBy,
+            onStep: (step) {
+              if (!isClosed) emit(state.copyWith(step: () => step));
+            },
+          );
+          previousRemoved = true;
+        } on ArNSChangeFailure catch (failure) {
+          logger.w('The old name was not removed: ${failure.kind}');
+          previousRemovalFailed = true;
+          if (failure.kind == ArNSFailureKind.lostAfterCreate) {
+            unawaited(_namesCubit.refresh());
+          }
+        }
+        if (previousName.name != name.name) {
+          await _namesCubit.refreshName(previousName.name);
+        }
+      }
+    }
+
     var metadataFailed = false;
     final item = state.item;
     if (item != null && _metadataWrites > 0) {
@@ -452,6 +539,7 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
         } else if (!names.contains(literal)) {
           names.add(literal);
         }
+        if (previousRemoved) names.remove(previous!.literalName);
         await _metadataWriter.writeAssignedNames(
           driveId: item.driveId,
           fileId: item.fileId,
@@ -468,6 +556,7 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
         stage: ArNSDialogStage.done,
         step: () => null,
         metadataFailed: metadataFailed,
+        previousRemovalFailed: previousRemovalFailed,
       ));
     }
   }

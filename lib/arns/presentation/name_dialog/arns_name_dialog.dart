@@ -13,6 +13,8 @@ import 'package:ardrive/arns/presentation/widgets/arns_widgets.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/publication/data/publication_repository.dart';
+import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -39,6 +41,8 @@ Future<void> showArNSNameDialog(
 }) {
   final config = context.read<ConfigService>().config;
   final driveDao = context.read<DriveDao>();
+  final publications = context.read<PublicationRepository>();
+  final arnsDao = context.read<Database>().aRNSDao;
   final auth = context.read<ArDriveAuth>();
   final arioSDK = ArioSDKFactory().create();
   final paymentService = context.read<PaymentService>();
@@ -69,11 +73,19 @@ Future<void> showArNSNameDialog(
           paymentService: paymentService,
         ),
         placeholderTxId: config.arnsPlaceholderTxId,
-        searchItems: (query) => searchNameableItems(
-          context.read<Database>().aRNSDao,
-          owner: auth.currentUser.walletAddress,
-          query: query,
-        ),
+        searchItems: (query) async => [
+          ...await searchNameablePublications(
+            driveDao,
+            publications,
+            owner: auth.currentUser.walletAddress,
+            query: query,
+          ),
+          ...await searchNameableItems(
+            arnsDao,
+            owner: auth.currentUser.walletAddress,
+            query: query,
+          ),
+        ],
       )..load();
 
   Widget body(bool inSheet) => MultiBlocProvider(
@@ -98,6 +110,48 @@ Future<void> showArNSNameDialog(
     barrierDismissible: false,
     content: body(false),
   );
+}
+
+/// The owner's publications, latest versions, to point a record at: named
+/// by the drive or folder they show (docs/NAMES.md, Q5).
+Future<List<ArNSNameableItem>> searchNameablePublications(
+  DriveDao driveDao,
+  PublicationRepository repository, {
+  required String owner,
+  required String query,
+}) async {
+  final Map<String, List<Publication>> byDrive;
+  try {
+    byDrive = await repository.publicationsOfOwner(owner);
+  } catch (e) {
+    return const [];
+  }
+  final needle = query.trim().toLowerCase();
+  final items = <ArNSNameableItem>[];
+  for (final publications in byDrive.values) {
+    for (final publication in publications) {
+      final latest = publication.latest;
+      final folderId = latest.folderId;
+      final String? scopeName = folderId == null
+          ? (await driveDao
+                  .driveById(driveId: latest.driveId)
+                  .getSingleOrNull())
+              ?.name
+          : (await driveDao.folderById(folderId: folderId).getSingleOrNull())
+              ?.name;
+      if (scopeName == null) continue;
+      if (needle.isNotEmpty && !scopeName.toLowerCase().contains(needle)) {
+        continue;
+      }
+      items.add(ArNSNameableItem.publication(
+        publicationId: latest.publicationId,
+        driveId: latest.driveId,
+        name: scopeName,
+        dataTxId: latest.txId,
+      ));
+    }
+  }
+  return items;
 }
 
 /// Public files and deployments in the owner's drives, to point a record at.
@@ -372,6 +426,10 @@ class _ChooseContent extends StatelessWidget {
           ArNSBodyText(strings.arnsChooseNameFor(item.name)),
           const SizedBox(height: ArDriveSpacing.md),
           _NamePicker(state: state),
+          if (state.movesFrom != null) ...[
+            const SizedBox(height: ArDriveSpacing.sm),
+            ArNSRemovePreviousBox(state: state),
+          ],
           const SizedBox(height: ArDriveSpacing.sm),
           _CacheTimeSection(state: state, folded: true),
         ]);
@@ -759,10 +817,16 @@ class _ItemPicker extends StatelessWidget {
                   ArNSChoiceRow(
                     selected: state.item == item,
                     title: item.name,
-                    subtitle: item.isManifest ? strings.arnsDeployment : null,
-                    leadingIcon: item.isManifest
-                        ? Icons.web_outlined
-                        : Icons.insert_drive_file_outlined,
+                    subtitle: item.isPublication
+                        ? strings.arnsPublication
+                        : item.isManifest
+                            ? strings.arnsDeployment
+                            : null,
+                    leadingIcon: item.isPublication
+                        ? Icons.public_outlined
+                        : item.isManifest
+                            ? Icons.web_outlined
+                            : Icons.insert_drive_file_outlined,
                     onTap: () => cubit.pickItem(item),
                   ),
               ],
@@ -850,10 +914,18 @@ class _CacheTimeSectionState extends State<_CacheTimeSection> {
 }
 
 class _CostLine extends StatelessWidget {
-  const _CostLine({required this.state, required this.isController});
+  const _CostLine({
+    required this.state,
+    required this.isController,
+    this.inFlow = false,
+  });
 
   final ArNSNameDialogState state;
   final bool isController;
+
+  /// Inside a flow's own dialog: top-up opens over it rather than closing
+  /// it.
+  final bool inFlow;
 
   @override
   Widget build(BuildContext context) {
@@ -892,7 +964,9 @@ class _CostLine extends StatelessWidget {
         note: cost.metadataWrites > 0
             ? (cost.paidInSol
                 ? strings.arnsCostNoteDetailsOnly
-                : strings.arnsCostNote)
+                : state.removesPrevious
+                    ? strings.arnsCostNoteMove
+                    : strings.arnsCostNote)
             : null,
       ));
       if (state.insufficientCredits) {
@@ -905,7 +979,7 @@ class _CostLine extends StatelessWidget {
             ),
             actionLabel: strings.arnsTopUp,
             onAction: () {
-              Navigator.of(context).pop();
+              if (!inFlow) Navigator.of(context).pop();
               showTurboTopupModal(context);
             },
           ),
@@ -1058,6 +1132,15 @@ class _Done extends StatelessWidget {
             copyFailedLabel: strings.couldNotCopy,
           ),
         ],
+        if (state.previousRemovalFailed && state.previousRecord != null) ...[
+          const SizedBox(height: ArDriveSpacing.md),
+          ArDriveNotice(
+            type: ArDriveNoticeType.warning,
+            message: strings.arnsOldNameNotRemoved(
+              arnsHostFor(state.previousRecord!.literalName),
+            ),
+          ),
+        ],
         if (state.metadataFailed) ...[
           const SizedBox(height: ArDriveSpacing.md),
           ArDriveNotice(
@@ -1094,5 +1177,367 @@ class _Failed extends StatelessWidget {
       return ArNSSwitchAccountText(address: address ?? '');
     }
     return ArNSBodyText(text);
+  }
+}
+
+/// Change name moves the name: "Also remove blog_acme.ar.io", on by default.
+class ArNSRemovePreviousBox extends StatelessWidget {
+  const ArNSRemovePreviousBox({super.key, required this.state});
+
+  final ArNSNameDialogState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final previous = state.movesFrom!;
+    return ArDriveCheckBox(
+      key: ValueKey('remove-${previous.literalName}'),
+      checked: state.removePrevious,
+      title: appLocalizationsOf(context)
+          .arnsAlsoRemove(arnsHostFor(previous.literalName)),
+      titleStyle: ArDriveTypographyNew.of(context).paragraphNormal(
+        color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
+      ),
+      onChange: (value) =>
+          context.read<ArNSNameDialogCubit>().setRemovePrevious(value),
+    );
+  }
+}
+
+/// Whether a flow offers names: the flag, outside a publication, with the
+/// names cubit provided. Returns the flow's name cubit, or null.
+ArNSFlowNameCubit? createArNSFlowNameCubit(
+  BuildContext context, {
+  List<ArNSNameRecord> following = const [],
+  bool writesHint = true,
+}) {
+  if (!arnsFlowNamesOn(context)) return null;
+  final auth = context.read<ArDriveAuth>();
+  final paymentService = context.read<PaymentService>();
+  final arioSDK = ArioSDKFactory().create();
+  final driveDao = context.read<DriveDao>();
+  final arnsDao = context.read<Database>().aRNSDao;
+  return ArNSFlowNameCubit(
+    namesCubit: context.read<ArNSNamesCubit>(),
+    walletCubit: context.read<ArNSWalletCubit>(),
+    actionClient: context.read<TurboArNSActionClient>(),
+    executor: ArNSChangeExecutor(
+      client: context.read<TurboArNSActionClient>(),
+      arioSDK: arioSDK,
+    ),
+    arioSDK: arioSDK,
+    metadataWriter: DriveDaoArNSFileMetadataWriter(
+      driveDao: driveDao,
+      arweave: context.read<ArweaveService>(),
+      turboUploadService: context.read<TurboUploadService>(),
+      paymentService: paymentService,
+      auth: auth,
+    ),
+    paymentSource: ArDriveArNSPaymentSource(
+      auth: auth,
+      paymentService: paymentService,
+    ),
+    following: following,
+    writesHint: writesHint,
+    placeholderTxId: context.read<ConfigService>().config.arnsPlaceholderTxId,
+    resolveItem: (dataTxId) async {
+      final rows =
+          await arnsDao.fileRevisionsForDataTxIds(txIds: [dataTxId]).get();
+      for (final row in rows) {
+        if (row.dataTxId == row.latestDataTxId) {
+          return ArNSNameableItem(
+            fileId: row.fileId,
+            driveId: row.driveId,
+            name: row.name,
+            dataTxId: dataTxId,
+            isManifest: row.dataContentType == ContentType.manifest,
+          );
+        }
+      }
+      return null;
+    },
+  )..load();
+}
+
+/// Names on, outside a publication, with the names cubit provided.
+bool arnsFlowNamesOn(BuildContext context) {
+  if (PublicationMode.isOn) return false;
+  try {
+    if (!context.read<ConfigService>().config.enableArNS) return false;
+    context.read<ArNSNamesCubit>();
+    context.read<ArNSWalletCubit>();
+    return true;
+  } on ProviderNotFoundException {
+    return false;
+  }
+}
+
+/// The names on the item a new version replaces, from the owner's names.
+List<ArNSNameRecord> arnsNamesOnVersion(BuildContext context, String? txId) {
+  if (txId == null || !arnsFlowNamesOn(context)) return const [];
+  return context.read<ArNSNamesCubit>().state.recordsFor(txId);
+}
+
+/// The name step inside a flow: the names moving to the new version, with a
+/// box to leave them, and an optional new name, folded away (docs/NAMES.md,
+/// "Name an item", "New versions").
+class ArNSFlowNameSection extends StatefulWidget {
+  const ArNSFlowNameSection({
+    super.key,
+    required this.cubit,
+    this.initiallyOpen = false,
+  });
+
+  final ArNSFlowNameCubit cubit;
+
+  /// Folded by default: most flows add no name.
+  final bool initiallyOpen;
+
+  @override
+  State<ArNSFlowNameSection> createState() => _ArNSFlowNameSectionState();
+}
+
+class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
+  late bool _open = widget.initiallyOpen;
+  bool _choosingWallet = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<ArNSNameDialogCubit>.value(
+      value: widget.cubit,
+      child: BlocBuilder<ArNSWalletCubit, ArNSWalletState>(
+        builder: (context, wallet) =>
+            BlocBuilder<ArNSNameDialogCubit, ArNSNameDialogState>(
+          builder: (context, state) => _build(context, state, wallet),
+        ),
+      ),
+    );
+  }
+
+  Widget _build(
+    BuildContext context,
+    ArNSNameDialogState state,
+    ArNSWalletState wallet,
+  ) {
+    final strings = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+    final cubit = widget.cubit;
+    final children = <Widget>[];
+
+    if (state.following.isNotEmpty) {
+      for (final record in state.following) {
+        children.add(Padding(
+          padding: const EdgeInsets.only(bottom: ArDriveSpacing.xxs),
+          child: Row(
+            children: [
+              Icon(arnsNameIcon, size: 16, color: colors.iconMid),
+              const SizedBox(width: ArDriveSpacing.xs),
+              Expanded(
+                child: ArNSBodyText(state.leaveOnOld
+                    ? strings
+                        .arnsStaysOnOldVersion(arnsHostFor(record.literalName))
+                    : strings.arnsMovesToNewVersion(
+                        arnsHostFor(record.literalName))),
+              ),
+            ],
+          ),
+        ));
+      }
+      children.add(ArDriveCheckBox(
+        checked: state.leaveOnOld,
+        title: strings.arnsLeaveOnOldVersion,
+        titleStyle: typography.paragraphNormal(color: colors.textHigh),
+        onChange: cubit.setLeaveOnOld,
+      ));
+      children.add(const SizedBox(height: ArDriveSpacing.sm));
+    }
+
+    children.add(Semantics(
+      button: true,
+      expanded: _open,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(ArDriveRadius.sm),
+        onTap: () => setState(() => _open = !_open),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.xs),
+          child: Row(
+            children: [
+              Icon(arnsNameIcon, size: 18, color: colors.iconMid),
+              const SizedBox(width: ArDriveSpacing.xs),
+              Text(
+                strings.arnsAddName,
+                style: typography.paragraphNormal(
+                  color: colors.textHigh,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+              const SizedBox(width: ArDriveSpacing.xs),
+              Expanded(
+                child: ArNSCaption(state.choice?.undername.isNotEmpty == true
+                    ? arnsHostFor(state.choice!.literalName)
+                    : strings.arnsOptional),
+              ),
+              Icon(
+                _open ? Icons.expand_less : Icons.expand_more,
+                size: 20,
+                color: colors.iconMid,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ));
+
+    if (_open) {
+      children.add(const SizedBox(height: ArDriveSpacing.xs));
+      switch (state.stage) {
+        case ArNSDialogStage.loading:
+          children.add(ArNSWaitingLine(text: strings.arnsReadingNames));
+        case ArNSDialogStage.needsWallet:
+          children.addAll([
+            ArNSCaption(strings.arnsLinkWalletExplainer),
+            const SizedBox(height: ArDriveSpacing.sm),
+            const ArNSWalletChooser(),
+          ]);
+        case ArNSDialogStage.noNames:
+          children.add(Wrap(
+            spacing: ArDriveSpacing.xs,
+            children: [
+              ArNSCaption(strings.arnsNoNamesTitle),
+              ArDriveLink(
+                text: strings.arnsGetANameInConsole,
+                external: true,
+                onTap: () => openUrl(url: arnsConsoleUrl),
+              ),
+            ],
+          ));
+        case ArNSDialogStage.loadFailed:
+          children.add(ArNSCaption(strings.arnsNamesCouldNotBeRead));
+        default:
+          children.addAll([
+            _NamePicker(state: state),
+            if (state.choice != null) ...[
+              const SizedBox(height: ArDriveSpacing.xs),
+              ArDriveLink(
+                text: strings.arnsNoNameThisTime,
+                isAction: true,
+                onTap: cubit.clearChoice,
+              ),
+            ],
+            const SizedBox(height: ArDriveSpacing.sm),
+            _CacheTimeSection(state: state, folded: true),
+          ]);
+      }
+    }
+
+    if (cubit.hasWork) {
+      children.addAll([
+        const SizedBox(height: ArDriveSpacing.sm),
+        _CostLine(
+          state: state,
+          isController: state.selectedName?.role == ArNSRole.controller,
+          inFlow: true,
+        ),
+      ]);
+      if (wallet.status != ArNSWalletStatus.connected) {
+        children.addAll([
+          const SizedBox(height: ArDriveSpacing.sm),
+          if (wallet.status == ArNSWalletStatus.wrongAccount)
+            ArNSSwitchAccountText(address: wallet.linked!.address)
+          else
+            ArNSCaption(wallet.linked == null
+                ? strings.arnsLinkWalletExplainer
+                : strings.arnsReconnectExplainer),
+          const SizedBox(height: ArDriveSpacing.xs),
+          if (_choosingWallet || wallet.noWalletInstalled)
+            ArNSWalletChooser(
+              onLinked: () => setState(() => _choosingWallet = false),
+            )
+          else
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ArDriveButtonNew(
+                text: wallet.linked == null
+                    ? strings.arnsLinkSolanaWallet
+                    : strings.arnsReconnectSolanaWallet,
+                typography: typography,
+                size: ArDriveButtonSize.compact,
+                variant: ButtonVariant.secondary,
+                onPressed: () async {
+                  final walletName = wallet.linked?.walletName;
+                  if (walletName == null) {
+                    setState(() => _choosingWallet = true);
+                    return;
+                  }
+                  try {
+                    await context.read<ArNSWalletCubit>().reconnect();
+                  } catch (_) {
+                    // Rejected: the button stays.
+                  }
+                },
+              ),
+            ),
+        ]);
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(ArDriveSpacing.sm),
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.strokeLow),
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: children,
+      ),
+    );
+  }
+}
+
+/// A flow's names afterwards, on its success screen.
+class ArNSFlowNameResult extends StatelessWidget {
+  const ArNSFlowNameResult({super.key, required this.outcome});
+
+  final ArNSFlowOutcome outcome;
+
+  @override
+  Widget build(BuildContext context) {
+    if (outcome.isEmpty) return const SizedBox.shrink();
+    final strings = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final literal in outcome.live)
+          Padding(
+            padding: const EdgeInsets.only(bottom: ArDriveSpacing.xxs),
+            child: Row(
+              children: [
+                Icon(arnsNameIcon, size: 16, color: colors.iconMid),
+                const SizedBox(width: ArDriveSpacing.xs),
+                ArDriveLink(
+                  text: arnsHostFor(literal),
+                  external: true,
+                  onTap: () => openUrl(url: arnsUrlFor(literal)),
+                ),
+                const SizedBox(width: ArDriveSpacing.xs),
+                Flexible(child: ArNSCaption(strings.arnsLiveWithinFiveMinutes)),
+              ],
+            ),
+          ),
+        if (outcome.failed.isNotEmpty) ...[
+          const SizedBox(height: ArDriveSpacing.xs),
+          ArDriveNotice(
+            type: ArDriveNoticeType.warning,
+            message: strings.arnsFlowNameNotSet(
+              outcome.failed.map(arnsHostFor).join(', '),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }

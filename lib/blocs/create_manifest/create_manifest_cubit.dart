@@ -345,7 +345,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
         logger.d(
             'Uploading manifest file with existing manifest file id: ${createManifestUploadReview.existingManifestFileId}');
 
-        await _manifestRepository.uploadManifest(
+        final dataTxId = await _manifestRepository.uploadManifest(
           params: ManifestUploadParams(
             manifestFile: createManifestUploadReview.manifestFile,
             driveId: _drive.id,
@@ -365,6 +365,7 @@ class CreateManifestCubit extends Cubit<CreateManifestState> {
 
         emit(CreateManifestSuccess(
           parentFolder: createManifestUploadReview.parentFolder,
+          dataTxId: dataTxId,
         ));
       } catch (e) {
         logger.e('An error occured uploading the manifest.', e);

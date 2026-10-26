@@ -1,3 +1,6 @@
+import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
 import 'package:ardrive/components/turbo_payment_required_dialog.dart';
@@ -98,6 +101,37 @@ class CreateManifestForm extends StatefulWidget {
 class _CreateManifestFormState extends State<CreateManifestForm> {
   final _manifestNameController = TextEditingController();
 
+  /// The name step (docs/NAMES.md): null while names are off.
+  ArNSFlowNameCubit? _names;
+  bool _namesStarted = false;
+  Future<ArNSFlowOutcome>? _namesApplied;
+
+  /// Builds the name step once, with the names on the deployment it
+  /// updates, which move to the new version.
+  ArNSFlowNameCubit? _nameStep(CreateManifestUploadReview state) {
+    if (_namesStarted) return _names;
+    _namesStarted = true;
+    final names = _names = createArNSFlowNameCubit(context);
+    final existing = state.existingManifestFileId;
+    if (names != null && existing != null) {
+      context
+          .read<DriveDao>()
+          .fileById(fileId: existing)
+          .getSingleOrNull()
+          .then((file) {
+        if (!mounted || file == null) return;
+        names.setFollowing(arnsNamesOnVersion(context, file.dataTxId));
+      });
+    }
+    return names;
+  }
+
+  @override
+  void dispose() {
+    _names?.close();
+    super.dispose();
+  }
+
   bool _isFormValid = false;
 
   ArDriveTextFieldNew manifestNameForm() {
@@ -162,6 +196,19 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
             ],
           );
       if (state is CreateManifestSuccess) {
+        final names = _names;
+        final dataTxId = state.dataTxId;
+        if (names != null && names.hasWork && dataTxId != null) {
+          _namesApplied ??= names.applyTo(dataTxId);
+          return FutureBuilder<ArNSFlowOutcome>(
+            future: _namesApplied,
+            builder: (context, outcome) => outcome.hasData
+                ? _createManifestSuccess(context, state, names: outcome.data)
+                : ProgressDialog(
+                    title: appLocalizationsOf(context).arnsSettingTheName,
+                  ),
+          );
+        }
         return _createManifestSuccess(context, state);
       }
 
@@ -231,7 +278,10 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
   }
 
   Widget _createManifestSuccess(
-      BuildContext context, CreateManifestSuccess state) {
+    BuildContext context,
+    CreateManifestSuccess state, {
+    ArNSFlowOutcome? names,
+  }) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ArDriveStandardModalNew(
@@ -263,6 +313,10 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                 color: colorTokens.textMid,
               ),
             ),
+            if (names != null && !names.isEmpty) ...[
+              const SizedBox(height: 16),
+              ArNSFlowNameResult(outcome: names),
+            ],
           ],
         ),
       ),
@@ -437,10 +491,32 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
     required BuildContext context,
     required TextStyle textStyle,
   }) {
+    final names = _nameStep(state);
+    if (names != null) {
+      return BlocBuilder<ArNSNameDialogCubit, ArNSNameDialogState>(
+        bloc: names,
+        builder: (context, _) => BlocBuilder<ArNSWalletCubit, ArNSWalletState>(
+          builder: (context, __) => _reviewModal(
+            state: state,
+            context: context,
+            textStyle: textStyle,
+            names: names,
+          ),
+        ),
+      );
+    }
+    return _reviewModal(state: state, context: context, textStyle: textStyle);
+  }
+
+  Widget _reviewModal({
+    required CreateManifestUploadReview state,
+    required BuildContext context,
+    required TextStyle textStyle,
+    ArNSFlowNameCubit? names,
+  }) {
     final readCubitContext = context.read<CreateManifestCubit>();
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
     final hasPendingFiles = state.folderHasPendingFiles;
 
     return ArDriveStandardModalNew(
@@ -520,6 +596,10 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
                 child: _paymentOptions(state, context),
               ),
             ],
+            if (names != null) ...[
+              ArNSFlowNameSection(cubit: names),
+              const SizedBox(height: 24),
+            ],
             Text(
               appLocalizationsOf(context).filesWillBePermanentlyPublicWarning,
               style: textStyle,
@@ -533,7 +613,7 @@ class _CreateManifestFormState extends State<CreateManifestForm> {
           title: appLocalizationsOf(context).cancelEmphasized,
         ),
         ModalAction(
-          isEnable: state.canUpload,
+          isEnable: state.canUpload && (names?.ready ?? true),
           action: () => readCubitContext.uploadManifest(),
           title: appLocalizationsOf(context).createManifestEmphasized,
         ),

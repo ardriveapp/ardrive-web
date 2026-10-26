@@ -1,3 +1,6 @@
+import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/turbo/services/credit_sharing_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/components/turbo_free_status_message.dart';
@@ -186,6 +189,78 @@ class UploadForm extends StatefulWidget {
 class _UploadFormState extends State<UploadForm> {
   bool _isShowingCancelDialog = false;
 
+  /// The name step for one public file (docs/NAMES.md): null while names
+  /// are off or for any other upload.
+  ArNSFlowNameCubit? _names;
+  bool _namesStarted = false;
+
+  ArNSFlowNameCubit? _nameStep(UploadReady state) {
+    if (_namesStarted) return _names;
+    if (!state.uploadIsPublic || state.numberOfFiles != 1) return null;
+    _namesStarted = true;
+    final names = _names = createArNSFlowNameCubit(context);
+    // A new version of a named file: its names move with it.
+    final existing = state.params.conflictingFiles.values.firstOrNull;
+    if (names != null && existing != null) {
+      context
+          .read<DriveDao>()
+          .fileById(fileId: existing)
+          .getSingleOrNull()
+          .then((file) {
+        if (!mounted || file == null) return;
+        names.setFollowing(arnsNamesOnVersion(context, file.dataTxId));
+      });
+    }
+    return names;
+  }
+
+  /// Runs the name step once the file exists, after the upload dialog has
+  /// closed, and says how it went. The upload stands either way.
+  void _applyNames(BuildContext navigatorContext, UploadComplete state) {
+    final names = _names;
+    _names = null;
+    if (names == null) return;
+    if (!names.hasWork || state.dataTxIds.length != 1) {
+      names.close();
+      return;
+    }
+    final outcome = names.applyTo(state.dataTxIds.single);
+    showArDriveDialog(
+      navigatorContext,
+      barrierDismissible: false,
+      content: FutureBuilder<ArNSFlowOutcome>(
+        future: outcome.whenComplete(names.close),
+        builder: (context, result) {
+          final strings = appLocalizationsOf(context);
+          if (!result.hasData) {
+            return ArDriveStandardModalNew(
+              title: strings.arnsSettingTheName,
+              content: const ArDriveLinearProgress(),
+            );
+          }
+          return ArDriveStandardModalNew(
+            title: result.data!.failed.isEmpty
+                ? strings.arnsNameSaved
+                : strings.arnsChangeNotMade,
+            content: ArNSFlowNameResult(outcome: result.data!),
+            actions: [
+              ModalAction(
+                title: strings.doneEmphasized,
+                action: () => Navigator.of(context).pop(),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _names?.close();
+    super.dispose();
+  }
+
   @override
   initState() {
     super.initState();
@@ -215,7 +290,11 @@ class _UploadFormState extends State<UploadForm> {
 
             if (state is UploadComplete || state is UploadWalletMismatch) {
               if (!_isShowingCancelDialog) {
+                final navigatorContext = Navigator.of(context).context;
                 Navigator.pop(context);
+                if (state is UploadComplete) {
+                  _applyNames(navigatorContext, state);
+                }
                 context.read<ActivityTracker>().setUploading(false);
 
                 // The file is already in the local database, so nothing needs
@@ -298,6 +377,7 @@ class _UploadFormState extends State<UploadForm> {
                   child: _UploadReadyWidget(
                     state: state,
                     driveDetailCubit: widget.driveDetailCubit,
+                    names: _nameStep(state),
                   ),
                 ),
               );
@@ -1752,12 +1832,27 @@ class _UploadReadyWidget extends StatelessWidget {
   const _UploadReadyWidget({
     required this.state,
     required this.driveDetailCubit,
+    this.names,
   });
 
   final UploadReady state;
   final DriveDetailCubit driveDetailCubit;
+  final ArNSFlowNameCubit? names;
+
   @override
   Widget build(BuildContext context) {
+    final names = this.names;
+    if (names == null) return _build(context);
+    // The upload button waits for the name step: priced, wallet ready.
+    return BlocBuilder<ArNSNameDialogCubit, ArNSNameDialogState>(
+      bloc: names,
+      builder: (context, _) => BlocBuilder<ArNSWalletCubit, ArNSWalletState>(
+        builder: (context, __) => _build(context),
+      ),
+    );
+  }
+
+  Widget _build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     return ReactiveForm(
@@ -1779,7 +1874,12 @@ class _UploadReadyWidget extends StatelessWidget {
                 maxWidth: 100,
                 variant: ButtonVariant.secondary,
               ),
-              ...getModalActions(context, state, licenseCategory),
+              ...getModalActions(
+                context,
+                state,
+                licenseCategory,
+                namesReady: names?.ready ?? true,
+              ),
             ],
             children: [
               // What it costs and how to pay: the one choice every upload
@@ -1806,6 +1906,10 @@ class _UploadReadyWidget extends StatelessWidget {
                     },
                   ),
                 ),
+              if (names != null) ...[
+                const SizedBox(height: 16),
+                ArNSFlowNameSection(cubit: names!),
+              ],
               const Divider(height: 32),
               // Everything else is optional, and most uploads leave it as it
               // is: one line saying what is set, opened on request.
@@ -2936,13 +3040,18 @@ class _UploadLoadingFilesSuccessWidget extends StatelessWidget {
 }
 
 List<ArDriveButtonNew> getModalActions(
-    BuildContext context, UploadReady state, LicenseCategory? licenseCategory) {
+  BuildContext context,
+  UploadReady state,
+  LicenseCategory? licenseCategory, {
+  bool namesReady = true,
+}) {
   final typography = ArDriveTypographyNew.of(context);
+  final enabled = state.isNextButtonEnabled && namesReady;
 
   if (licenseCategory != null) {
     return [
       ArDriveButtonNew(
-        isDisabled: !state.isNextButtonEnabled,
+        isDisabled: !enabled,
         onPressed: () {
           context.read<UploadCubit>().initialScreenNext(
                 licenseCategory: licenseCategory,
@@ -2957,7 +3066,7 @@ List<ArDriveButtonNew> getModalActions(
   } else if (state.selectedManifestSelections.isNotEmpty) {
     return [
       ArDriveButtonNew(
-        isDisabled: !state.isNextButtonEnabled,
+        isDisabled: !enabled,
         onPressed: () {
           context.read<UploadCubit>().initialScreenUpload();
         },
@@ -2971,7 +3080,7 @@ List<ArDriveButtonNew> getModalActions(
 
   return [
     ArDriveButtonNew(
-      isDisabled: !state.isNextButtonEnabled,
+      isDisabled: !enabled,
       onPressed: () {
         context.read<UploadCubit>().initialScreenUpload();
       },

@@ -679,4 +679,282 @@ void main() {
 
     expect((executedChange() as ArNSSetRecord).transactionId, _itemTx);
   });
+
+  group('Change name moves the name', () {
+    setUp(() {
+      chain = [
+        _name(records: const [
+          ArNSNameRecord(
+            name: 'acme',
+            undername: 'www',
+            transactionId: _itemTx,
+            ttlSeconds: 300,
+          ),
+          ArNSNameRecord(
+            name: 'acme',
+            undername: 'blog',
+            transactionId: _otherTx,
+            ttlSeconds: 300,
+          ),
+        ]),
+      ];
+    });
+
+    test('offers to remove the old name, on by default, priced in', () async {
+      final cubit = await open();
+      expect(cubit.state.previousRecord?.undername, 'www');
+      expect(cubit.state.movesFrom, isNull, reason: 'nothing chosen yet');
+
+      cubit.startNewUndername('acme');
+      cubit.editNewUndername('docs');
+      await pumpEventQueue();
+
+      expect(cubit.state.movesFrom?.undername, 'www');
+      expect(cubit.state.removesPrevious, isTrue);
+      expect(
+        cubit.previousRemoval,
+        const ArNSRemoveRecord(antId: _antId, undername: 'www'),
+      );
+      expect(cubit.state.cost?.credits,
+          _price + BigInt.from(1000000000) + _metadata);
+
+      cubit.setRemovePrevious(false);
+      await pumpEventQueue();
+      expect(cubit.previousRemoval, isNull);
+      expect(cubit.state.cost?.credits, _price + _metadata);
+    });
+
+    test('runs two changes and drops the old name from the hint', () async {
+      final cubit = await open();
+      cubit.startNewUndername('acme');
+      cubit.editNewUndername('docs');
+      await pumpEventQueue();
+      await cubit.commit();
+
+      final changes = verify(() => executor.execute(
+            name: any(named: 'name'),
+            change: captureAny(named: 'change'),
+            owner: any(named: 'owner'),
+            payer: any(named: 'payer'),
+            paidBy: any(named: 'paidBy'),
+            onStep: any(named: 'onStep'),
+            onNonce: any(named: 'onNonce'),
+          )).captured;
+      expect(changes, [
+        const ArNSSetRecord(
+          antId: _antId,
+          undername: 'docs',
+          transactionId: _itemTx,
+          ttlSeconds: 300,
+        ),
+        const ArNSRemoveRecord(antId: _antId, undername: 'www'),
+      ]);
+      expect(cubit.state.stage, ArNSDialogStage.done);
+      verify(() => metadata.writeAssignedNames(
+            driveId: 'drive-1',
+            fileId: 'file-1',
+            names: ['docs_acme'],
+          )).called(1);
+    });
+
+    test('a failed removal leaves the new name live and is not retried',
+        () async {
+      var calls = 0;
+      when(() => executor.execute(
+            name: any(named: 'name'),
+            change: any(named: 'change'),
+            owner: any(named: 'owner'),
+            payer: any(named: 'payer'),
+            paidBy: any(named: 'paidBy'),
+            onStep: any(named: 'onStep'),
+            onNonce: any(named: 'onNonce'),
+          )).thenAnswer((_) async {
+        if (++calls == 2) {
+          throw const ArNSChangeFailure(ArNSFailureKind.rejected);
+        }
+      });
+      final cubit = await open();
+      cubit.startNewUndername('acme');
+      cubit.editNewUndername('docs');
+      await pumpEventQueue();
+      await cubit.commit();
+
+      expect(calls, 2);
+      expect(cubit.state.stage, ArNSDialogStage.done);
+      expect(cubit.state.previousRemovalFailed, isTrue);
+      verify(() => metadata.writeAssignedNames(
+            driveId: 'drive-1',
+            fileId: 'file-1',
+            names: ['www_acme', 'docs_acme'],
+          )).called(1);
+    });
+
+    test('an old main name stays when no placeholder page is set', () async {
+      chain = [
+        _name(records: const [
+          ArNSNameRecord(
+            name: 'acme',
+            undername: '@',
+            transactionId: _itemTx,
+            ttlSeconds: 300,
+          ),
+        ]),
+      ];
+      final cubit = await open(placeholder: null);
+      cubit.startNewUndername('acme');
+      cubit.editNewUndername('docs');
+      await pumpEventQueue();
+
+      expect(cubit.state.movesFrom, isNull);
+      expect(cubit.previousRemoval, isNull);
+    });
+  });
+
+  group('the name step in a flow', () {
+    ArNSFlowNameCubit flow({List<ArNSNameRecord> following = const []}) {
+      names = ArNSNamesCubit(repository: repository, walletCubit: wallet);
+      return ArNSFlowNameCubit(
+        namesCubit: names,
+        walletCubit: wallet,
+        actionClient: client,
+        executor: executor,
+        arioSDK: sdk,
+        metadataWriter: metadata,
+        paymentSource: payments,
+        following: following,
+        clock: () => now,
+        resolveItem: (tx) async => tx == _itemTx ? _item : null,
+      );
+    }
+
+    const blog = ArNSNameRecord(
+      name: 'acme',
+      undername: 'blog',
+      transactionId: _otherTx,
+      ttlSeconds: 900,
+    );
+
+    test('has no work and is ready with nothing chosen', () async {
+      final cubit = flow()..load();
+      await pumpEventQueue();
+
+      expect(cubit.hasWork, isFalse);
+      expect(cubit.ready, isTrue);
+      expect(await cubit.applyTo(_itemTx), const ArNSFlowOutcome());
+    });
+
+    test('names on the old version move, priced, unless left', () async {
+      final cubit = flow(following: [blog])..load();
+      await pumpEventQueue();
+
+      expect(cubit.plannedNames, ['blog_acme']);
+      expect(cubit.state.cost?.credits, _price + _metadata);
+      expect(cubit.ready, isTrue);
+
+      cubit.setLeaveOnOld(true);
+      await pumpEventQueue();
+      expect(cubit.hasWork, isFalse);
+      expect(cubit.plannedNames, isEmpty);
+    });
+
+    test('points the moving names and the new one at the new item', () async {
+      final cubit = flow(following: [blog])..load();
+      await pumpEventQueue();
+      cubit.startNewUndername('acme');
+      cubit.editNewUndername('docs');
+      await pumpEventQueue();
+      expect(cubit.plannedNames, ['blog_acme', 'docs_acme']);
+
+      final outcome = await cubit.applyTo(_itemTx);
+
+      expect(outcome.live, ['blog_acme', 'docs_acme']);
+      final changes = verify(() => executor.execute(
+            name: any(named: 'name'),
+            change: captureAny(named: 'change'),
+            owner: any(named: 'owner'),
+            payer: any(named: 'payer'),
+            paidBy: any(named: 'paidBy'),
+            onStep: any(named: 'onStep'),
+            onNonce: any(named: 'onNonce'),
+          )).captured;
+      expect(changes, [
+        const ArNSSetRecord(
+          antId: _antId,
+          undername: 'blog',
+          transactionId: _itemTx,
+          ttlSeconds: 900,
+        ),
+        const ArNSSetRecord(
+          antId: _antId,
+          undername: 'docs',
+          transactionId: _itemTx,
+          ttlSeconds: 300,
+        ),
+      ]);
+      verify(() => metadata.writeAssignedNames(
+            driveId: 'drive-1',
+            fileId: 'file-1',
+            names: any(named: 'names'),
+          )).called(1);
+    });
+
+    test('a failure after the upload is reported, not retried', () async {
+      when(() => executor.execute(
+                name: any(named: 'name'),
+                change: any(named: 'change'),
+                owner: any(named: 'owner'),
+                payer: any(named: 'payer'),
+                paidBy: any(named: 'paidBy'),
+                onStep: any(named: 'onStep'),
+                onNonce: any(named: 'onNonce'),
+              ))
+          .thenThrow(const ArNSChangeFailure(ArNSFailureKind.lostAfterCreate));
+      final cubit = flow(following: [blog])..load();
+      await pumpEventQueue();
+
+      final outcome = await cubit.applyTo(_itemTx);
+
+      expect(outcome.failed, ['blog_acme']);
+      expect(outcome.live, isEmpty);
+      verifyNever(() => metadata.writeAssignedNames(
+            driveId: any(named: 'driveId'),
+            fileId: any(named: 'fileId'),
+            names: any(named: 'names'),
+          ));
+    });
+
+    test('waits for the ArNS wallet before the flow can start', () async {
+      setUpWallet(_wallet(connected: false));
+      final cubit = flow(following: [blog])..load();
+      await pumpEventQueue();
+
+      expect(cubit.hasWork, isTrue);
+      expect(cubit.ready, isFalse);
+    });
+
+    test('a publication writes no file metadata', () async {
+      names = ArNSNamesCubit(repository: repository, walletCubit: wallet);
+      final cubit = ArNSFlowNameCubit(
+        namesCubit: names,
+        walletCubit: wallet,
+        actionClient: client,
+        executor: executor,
+        arioSDK: sdk,
+        metadataWriter: metadata,
+        paymentSource: payments,
+        following: const [blog],
+        writesHint: false,
+        clock: () => now,
+      )..load();
+      await pumpEventQueue();
+
+      expect(cubit.state.cost?.credits, _price);
+      await cubit.applyTo(_itemTx);
+      verifyNever(() => metadata.writeAssignedNames(
+            driveId: any(named: 'driveId'),
+            fileId: any(named: 'fileId'),
+            names: any(named: 'names'),
+          ));
+    });
+  });
 }

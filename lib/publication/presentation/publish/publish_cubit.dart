@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/arns/domain/arns_nameable_item.dart';
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
@@ -78,6 +80,7 @@ class PublishCubit extends Cubit<PublishState> {
     required this.folder,
     required PublishDependencies dependencies,
     this.previous,
+    this.names,
   })  : _deps = dependencies,
         super(const PublishState(stage: PublishStage.loading));
 
@@ -88,6 +91,10 @@ class PublishCubit extends Cubit<PublishState> {
 
   /// The publication this updates, if any.
   final Publication? previous;
+
+  /// The name step (docs/NAMES.md): null while names are off. Its names go
+  /// into publication.json, and point at the new version once it exists.
+  final ArNSFlowNameCubit? names;
 
   final PublishDependencies _deps;
 
@@ -633,6 +640,7 @@ class PublishCubit extends Cubit<PublishState> {
         ? job
         : (_job = job.withMethod(state.method));
     _lastJob = run;
+    run.names = names?.plannedNames ?? const [];
     emit(state.copyWith(stage: PublishStage.publishing, failure: ''));
     try {
       final version = await _deps.publisher.publish(
@@ -643,10 +651,21 @@ class PublishCubit extends Cubit<PublishState> {
         },
       );
       await _rememberOwnerName(state.ownerName.trim());
+      // The page stands whatever happens to its names.
+      final named = names;
+      ArNSFlowOutcome? outcome;
+      if (named != null && named.hasWork) {
+        outcome = await named.applyTo(version.txId);
+      }
       if (isClosed) return;
+      final live = outcome?.live ?? const <String>[];
       emit(state.copyWith(
         stage: PublishStage.done,
-        link: '${_deps.publisher.gatewayUrl}/${version.txId}/',
+        // The page and its link use the name when there is one.
+        link: live.isNotEmpty
+            ? arnsUrlFor(live.last)
+            : '${_deps.publisher.gatewayUrl}/${version.txId}/',
+        names: outcome,
       ));
     } on PublicationFailure catch (e) {
       if (isClosed) return;
@@ -706,6 +725,12 @@ class PublishCubit extends Cubit<PublishState> {
         await prefs.setString(_ownerNameKey, name);
       }
     } catch (_) {}
+  }
+
+  @override
+  Future<void> close() async {
+    await names?.close();
+    return super.close();
   }
 }
 

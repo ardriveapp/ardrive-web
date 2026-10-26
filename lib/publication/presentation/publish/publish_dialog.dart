@@ -1,3 +1,6 @@
+import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
 
@@ -152,6 +155,13 @@ Future<void> showPublishDialog(
         folder: folder,
         previous: previous,
         dependencies: dependencies,
+        // The name step; a republish carries the names on the version it
+        // replaces (docs/NAMES.md, Q12, Q29).
+        names: createArNSFlowNameCubit(
+          context,
+          following: arnsNamesOnVersion(context, previous?.latest.txId),
+          writesHint: false,
+        ),
       )..load(),
       child: const PublishDialog(),
     ),
@@ -224,19 +234,39 @@ class PublishDialog extends StatelessWidget {
               ],
             );
           case PublishStage.review:
-            return _modal(
-              context,
-              title: title,
-              step: strings.publishStepOf(3, 3),
-              content: _Review(state: state, scopeName: cubit.scopeName),
-              actions: [
-                ModalAction(title: strings.back, action: cubit.back),
-                ModalAction(
-                  title: strings.publishButton,
-                  isEnable: state.canPublish,
-                  action: cubit.publish,
-                ),
-              ],
+            final names = cubit.names;
+            Widget review(BuildContext context) => _modal(
+                  context,
+                  title: title,
+                  step: strings.publishStepOf(3, 3),
+                  content: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _Review(state: state, scopeName: cubit.scopeName),
+                      if (names != null) ...[
+                        const SizedBox(height: 16),
+                        ArNSFlowNameSection(cubit: names),
+                      ],
+                    ],
+                  ),
+                  actions: [
+                    ModalAction(title: strings.back, action: cubit.back),
+                    ModalAction(
+                      title: strings.publishButton,
+                      isEnable: state.canPublish && (names?.ready ?? true),
+                      action: cubit.publish,
+                    ),
+                  ],
+                );
+            if (names == null) return review(context);
+            // The button waits for the name step: priced, wallet ready.
+            return BlocBuilder<ArNSNameDialogCubit, ArNSNameDialogState>(
+              bloc: names,
+              builder: (context, _) =>
+                  BlocBuilder<ArNSWalletCubit, ArNSWalletState>(
+                builder: (context, __) => review(context),
+              ),
             );
           case PublishStage.publishing:
             return _modal(
@@ -265,11 +295,21 @@ class PublishDialog extends StatelessWidget {
               title: state.method == UploadMethod.ar
                   ? strings.publishDoneArTitle
                   : strings.publishDoneTitle,
-              content: PublishedLink(
-                link: state.link!,
-                note: state.method == UploadMethod.ar
-                    ? strings.publishDoneArNote
-                    : strings.publishDoneNote,
+              content: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PublishedLink(
+                    link: state.link!,
+                    note: state.method == UploadMethod.ar
+                        ? strings.publishDoneArNote
+                        : strings.publishDoneNote,
+                  ),
+                  if (state.names != null && !state.names!.isEmpty) ...[
+                    const SizedBox(height: 16),
+                    ArNSFlowNameResult(outcome: state.names!),
+                  ],
+                ],
               ),
               actions: [
                 ModalAction(

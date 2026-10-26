@@ -107,6 +107,11 @@ class ArNSNameDialogState extends Equatable {
     this.itemQuery = '',
     this.now,
     this.placeholderTxId,
+    this.previousRecord,
+    this.removePrevious = true,
+    this.previousRemovalFailed = false,
+    this.following = const [],
+    this.leaveOnOld = false,
   });
 
   final ArNSNameDialogMode mode;
@@ -151,6 +156,45 @@ class ArNSNameDialogState extends Equatable {
   /// The "Nothing published here" page a removed main name points at: not
   /// "somewhere else" worth confirming.
   final String? placeholderTxId;
+
+  /// Change name: the item's name when the dialog opened. Choosing another
+  /// moves the name, removing this one too unless [removePrevious] is off.
+  final ArNSNameRecord? previousRecord;
+  final bool removePrevious;
+
+  /// The new name is live but the old one couldn't be removed.
+  final bool previousRemovalFailed;
+
+  /// In a flow: the names on the old version, which move to the new one
+  /// unless [leaveOnOld] (Q12, Q29).
+  final List<ArNSNameRecord> following;
+  final bool leaveOnOld;
+
+  /// The names that move with a new version.
+  List<ArNSNameRecord> get moving => leaveOnOld ? const [] : following;
+
+  /// The name a Change moves away from, when it can be removed: an
+  /// undername, or a main name once the "Nothing published here" page is
+  /// configured.
+  ArNSNameRecord? get movesFrom {
+    final previous = previousRecord;
+    final choice = this.choice;
+    if (mode != ArNSNameDialogMode.nameItem ||
+        previous == null ||
+        choice == null) {
+      return null;
+    }
+    if (!choice.isNew &&
+        choice.name == previous.name &&
+        choice.undername == previous.undername) {
+      return null;
+    }
+    if (previous.isApex && placeholderTxId == null) return null;
+    return previous;
+  }
+
+  /// The old name is removed in the same flow.
+  bool get removesPrevious => movesFrom != null && removePrevious;
 
   ArNSManagedName? get selectedName {
     final choice = this.choice;
@@ -273,6 +317,11 @@ class ArNSNameDialogState extends Equatable {
     List<ArNSNameableItem>? items,
     String? itemQuery,
     DateTime? now,
+    bool? removePrevious,
+    bool? previousRemovalFailed,
+    ArNSNameRecord? Function()? previousRecord,
+    bool? leaveOnOld,
+    List<ArNSNameRecord>? following,
   }) =>
       ArNSNameDialogState(
         mode: mode,
@@ -297,6 +346,13 @@ class ArNSNameDialogState extends Equatable {
         itemQuery: itemQuery ?? this.itemQuery,
         now: now ?? this.now,
         placeholderTxId: placeholderTxId,
+        previousRecord:
+            previousRecord != null ? previousRecord() : this.previousRecord,
+        removePrevious: removePrevious ?? this.removePrevious,
+        previousRemovalFailed:
+            previousRemovalFailed ?? this.previousRemovalFailed,
+        following: following ?? this.following,
+        leaveOnOld: leaveOnOld ?? this.leaveOnOld,
       );
 
   @override
@@ -320,5 +376,10 @@ class ArNSNameDialogState extends Equatable {
         items,
         itemQuery,
         now,
+        previousRecord,
+        removePrevious,
+        previousRemovalFailed,
+        following,
+        leaveOnOld,
       ];
 }

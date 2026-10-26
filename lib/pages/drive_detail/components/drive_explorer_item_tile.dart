@@ -78,7 +78,11 @@ class DriveExplorerItemTile extends TableRowWidget {
                           folderId: dataTableItem.id,
                         ),
                       if (dataTableItem is FileDataTableItem)
-                        ArNSNameChip(dataTxId: dataTableItem.dataTxId),
+                        ArNSNameChip(
+                          dataTxId: dataTableItem.dataTxId,
+                          hints: dataTableItem.assignedNames ?? const [],
+                          isOwner: dataTableItem.isOwner,
+                        ),
                     ],
                   ),
                 )),

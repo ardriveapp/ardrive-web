@@ -22,7 +22,19 @@ class ArNSNameableItem extends Equatable {
     required this.name,
     required this.dataTxId,
     required this.isManifest,
+    this.isPublication = false,
   });
+
+  /// A publication, which keeps its names in `publication.json` rather than
+  /// in file metadata. [fileId] is its publication ID.
+  const ArNSNameableItem.publication({
+    required String publicationId,
+    required this.driveId,
+    required this.name,
+    required this.dataTxId,
+  })  : fileId = publicationId,
+        isManifest = true,
+        isPublication = true;
 
   final String fileId;
   final String driveId;
@@ -31,9 +43,11 @@ class ArNSNameableItem extends Equatable {
   /// What a name pointing here opens.
   final String dataTxId;
   final bool isManifest;
+  final bool isPublication;
 
   @override
-  List<Object?> get props => [fileId, driveId, name, dataTxId, isManifest];
+  List<Object?> get props =>
+      [fileId, driveId, name, dataTxId, isManifest, isPublication];
 }
 
 /// Whether a file can be named here: the owner's file in a public drive.

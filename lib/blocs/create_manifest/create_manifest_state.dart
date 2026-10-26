@@ -220,8 +220,12 @@ class CreateManifestFailure extends CreateManifestState {
 class CreateManifestSuccess extends CreateManifestState {
   final FolderEntry parentFolder;
 
+  /// The deployment's data transaction, for a name to point at.
+  final String? dataTxId;
+
   CreateManifestSuccess({
     required this.parentFolder,
+    this.dataTxId,
   });
 }
 
