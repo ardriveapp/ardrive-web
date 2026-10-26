@@ -13,6 +13,8 @@
   "stripePublishableKey": "pk_test_51JUAtwC8apPOWkDLh2FPZkQkiKZEkTo6wqgLCtQoClL6S4l2jlbbc5MgOdwOUdU9Tn93NNvqAGbu115lkJChMikG00XUfTmo2z",
   "enableSyncFromDriveState": false,
   "publicationViewer": "ardrive",
+  "publicationGatewayUrl": "https://ardrive.net",
+  "officialPublisherAddresses": [],
   "enableDriveStatePublishing": false,
   "uploadThumbnails": true,
   "autoSync": false

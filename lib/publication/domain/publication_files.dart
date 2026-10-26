@@ -123,6 +123,10 @@ final _replaced = [
   RegExp(r'^[ \t]*<meta name="theme-color"[^>]*>[ \t]*\r?\n', multiLine: true),
   RegExp(r'^[ \t]*<meta property="og:[^>]*>[ \t]*\r?\n', multiLine: true),
   RegExp(r'^[ \t]*<meta name="twitter:[^>]*>[ \t]*\r?\n', multiLine: true),
+  // The release's own stops a visitor zooming (`user-scalable=no`); a page
+  // lets them.
+  RegExp(r'^[ \t]*<meta [^>]*name="viewport"[^>]*>[ \t]*\r?\n',
+      multiLine: true),
 ];
 final _iconLinks = [
   RegExp(r'^[ \t]*<link rel="(?:shortcut )?icon"[^>]*>[ \t]*\r?\n',
@@ -157,6 +161,7 @@ String buildPublicationIndexHtml(
   const e = escapePublicationHtml;
   final head = [
     '<meta name="ardrive-publication" content="publication.json">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
     '<title>${e(title)}</title>',
     '<meta name="description" content="${e(description)}">',
     '<meta name="theme-color" content="#F7F7F7" media="(prefers-color-scheme: light)">',

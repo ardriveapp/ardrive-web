@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="ardrive-publication" content="publication.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Phil’s &lt;Archive&gt; &amp; &quot;more&quot;</title>
     <meta name="description" content="Tabs	andbells, a line separator, 日本語 and &#39;\\&#39; too.">
     <meta name="theme-color" content="#F7F7F7" media="(prefers-color-scheme: light)">
@@ -12,7 +13,7 @@
     <meta property="og:title" content="Phil’s &lt;Archive&gt; &amp; &quot;more&quot;">
     <meta property="og:description" content="Tabs	andbells, a line separator, 日本語 and &#39;\\&#39; too.">
     <meta property="og:type" content="website">
-    <meta property="og:image" content="https://turbo-gateway.com/social-image-id-aaaaaaaaaaaaaaaaaaaaaaaaa">
+    <meta property="og:image" content="https://ardrive.net/social-image-id-aaaaaaaaaaaaaaaaaaaaaaaaa">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="sitemap" type="application/xml" href="sitemap.xml">
     <!-- <meta property="og:title" content="in a comment"> -->

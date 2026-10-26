@@ -1,5 +1,5 @@
 {
-  "releaseIndexHtml": "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"description\" content=\"ArDrive is a permanent home.\" />\n    <!-- <meta property=\"og:title\" content=\"in a comment\"> -->\n    <meta property=\"og:title\" content=\"ArDrive\">\n    <meta property=\"og:image\" content=\"https://arweave.net/raw/card\">\n    <meta name=\"twitter:card\" content=\"summary_large_image\">\n    <meta name=\"theme-color\" content=\"#000\">\n    <link rel=\"shortcut icon\" type=\"image/png\" href=\"favicon.png\" />\n    <link rel=\"apple-touch-icon\" href=\"icons/Icon-192.png\">\n    <title>ArDrive</title>\n  </head>\n  <body>\n    <script src=\"main.dart.js\"></script>\n  </body>\n</html>\n",
+  "releaseIndexHtml": "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\" name=\"viewport\">\n    <meta name=\"description\" content=\"ArDrive is a permanent home.\" />\n    <!-- <meta property=\"og:title\" content=\"in a comment\"> -->\n    <meta property=\"og:title\" content=\"ArDrive\">\n    <meta property=\"og:image\" content=\"https://arweave.net/raw/card\">\n    <meta name=\"twitter:card\" content=\"summary_large_image\">\n    <meta name=\"theme-color\" content=\"#000\">\n    <link rel=\"shortcut icon\" type=\"image/png\" href=\"favicon.png\" />\n    <link rel=\"apple-touch-icon\" href=\"icons/Icon-192.png\">\n    <title>ArDrive</title>\n  </head>\n  <body>\n    <script src=\"main.dart.js\"></script>\n  </body>\n</html>\n",
   "releaseManifest": {
     "manifest": "arweave/paths",
     "version": "0.2.0",
@@ -70,8 +70,8 @@
     }
   },
   "publicationId": "5f0c8b5e-7f53-4c31-9a3e-2f1d4c8b6a90",
-  "socialImageUrl": "https://turbo-gateway.com/social-image-id-aaaaaaaaaaaaaaaaaaaaaaaaa",
-  "gateway": "https://turbo-gateway.com",
+  "socialImageUrl": "https://ardrive.net/social-image-id-aaaaaaaaaaaaaaaaaaaaaaaaa",
+  "gateway": "https://ardrive.net",
   "labels": {
     "filesPage": "All files",
     "open": "Open the page",

@@ -590,11 +590,12 @@ class AppState extends State<App> {
           ),
         ),
         // One for the app, so what a publish adds is known everywhere at once.
+        // Publications read through their own gateway, whatever the data
+        // gateway setting is.
         RepositoryProvider(
           create: (context) => PublicationRepository(
             graphQLRetry: arweave.graphQLRetry,
-            gatewayUrl: () =>
-                configService.config.arweaveGatewayForDataRequest.url,
+            gatewayUrl: () => configService.config.publicationGatewayUrl,
           ),
         ),
       ];
