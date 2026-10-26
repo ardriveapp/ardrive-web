@@ -996,6 +996,26 @@ void main() {
           )).called(1);
     });
 
+    test('a publication is remembered before the names are read again',
+        () async {
+      const published = ArNSPublicationItem(
+        publicationId: 'publication-1',
+        driveId: 'drive-1',
+        folderId: null,
+        isLatestVersion: true,
+      );
+      final cubit = flow(following: [blog])..load();
+      await pumpEventQueue();
+      clearInteractions(repository);
+
+      await cubit.applyTo(_itemTx, publication: published);
+
+      verifyInOrder([
+        () => repository.rememberPublication(_itemTx, published),
+        () => repository.refresh(_sol),
+      ]);
+    });
+
     test('a repointed name is live within its old cache time', () async {
       final cubit = flow()..load();
       await pumpEventQueue();

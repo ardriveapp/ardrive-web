@@ -157,6 +157,10 @@ class ArNSNamesCubit extends Cubit<ArNSNamesState> {
     }
   }
 
+  /// A publication version just published, known before GraphQL has it.
+  void rememberPublication(String txId, ArNSPublicationItem publication) =>
+      _repository.rememberPublication(txId, publication);
+
   /// One name read again after [made], the changes just made to it.
   Future<ArNSManagedName?> refreshName(
     String name, {

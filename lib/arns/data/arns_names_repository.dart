@@ -72,6 +72,13 @@ class ArNSNamesRepository {
   /// transaction ID. A transaction never stops being the publication it was.
   final _knownPublications = <String, ArNSPublicationItem>{};
 
+  /// Tells the lookup about a publication version just published, so a
+  /// name pointing at it reads "Points to a publication" before GraphQL
+  /// indexes it.
+  void rememberPublication(String txId, ArNSPublicationItem publication) {
+    _knownPublications[txId] = publication;
+  }
+
   /// ANT record reads in flight at once: each is a program scan on the RPC.
   static const _recordReadConcurrency = 4;
 

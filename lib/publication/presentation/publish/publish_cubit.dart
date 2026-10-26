@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
+import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
@@ -655,7 +656,16 @@ class PublishCubit extends Cubit<PublishState> {
       final named = names;
       ArNSFlowOutcome? outcome;
       if (named != null && named.hasWork) {
-        outcome = await named.applyTo(version.txId);
+        outcome = await named.applyTo(
+          version.txId,
+          // GraphQL lags a new version: its names read as a publication now.
+          publication: ArNSPublicationItem(
+            publicationId: version.publicationId,
+            driveId: version.driveId,
+            folderId: version.folderId,
+            isLatestVersion: true,
+          ),
+        );
       }
       if (isClosed) return;
       final live = outcome?.live ?? const <String>[];

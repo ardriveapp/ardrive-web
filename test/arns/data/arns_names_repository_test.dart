@@ -346,6 +346,29 @@ void main() {
     });
   });
 
+  // Right after Publish, GraphQL hasn't indexed the new version: the name
+  // pointed at it read "Points elsewhere".
+  test('a publication just published is known before any lookup finds it',
+      () async {
+    repository = ArNSNamesRepository(
+      arioSDK: sdk,
+      dao: db.aRNSDao,
+      publications: _FlakyPublications({}),
+    );
+    const published = ArNSPublicationItem(
+      publicationId: 'publication-1',
+      driveId: 'drive-1',
+      folderId: null,
+      isLatestVersion: true,
+    );
+
+    repository.rememberPublication('pub-latest', published);
+
+    final acme = (await repository.refresh(_wallet)).first;
+    expect(acme.records.firstWhere((r) => r.undername == 'news').target,
+        published);
+  });
+
   test('a publication lookup that fails leaves those records unmapped',
       () async {
     repository = ArNSNamesRepository(

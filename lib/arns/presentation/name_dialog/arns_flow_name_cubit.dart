@@ -218,7 +218,16 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
   /// from the old version first, then the new one. Each is its own change
   /// with its own nonce; a failure is reported, never retried, and the
   /// flow's upload stands.
-  Future<ArNSFlowOutcome> applyTo(String dataTxId) async {
+  ///
+  /// [publication] is the publication version [dataTxId] is, from Publish:
+  /// remembered first, so the names read as pointing to it at once.
+  Future<ArNSFlowOutcome> applyTo(
+    String dataTxId, {
+    ArNSPublicationItem? publication,
+  }) async {
+    if (publication != null) {
+      _namesCubit.rememberPublication(dataTxId, publication);
+    }
     if (!hasWork) return const ArNSFlowOutcome();
     final owner = _walletCubit.ownerSigner;
     // Each with its record's cache time before the change, if it had one.

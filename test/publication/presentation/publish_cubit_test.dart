@@ -1,5 +1,7 @@
 import 'dart:ui' as ui;
 
+import 'package:ardrive/arns/domain/arns_names.dart';
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/core/upload/cost_calculator.dart';
@@ -34,6 +36,8 @@ const _release = 'RELEASE_MANIFEST_00000000000000000000000000';
 class _Repository extends Mock implements PublicationRepository {}
 
 class _Publisher extends Mock implements PublicationPublisher {}
+
+class _Names extends Mock implements ArNSFlowNameCubit {}
 
 class _Creation extends Mock implements DriveStateCreationService {}
 
@@ -165,11 +169,16 @@ void main() {
 
   tearDown(() => db.close());
 
-  PublishCubit cubit({FolderEntry? folderEntry, Publication? previous}) =>
+  PublishCubit cubit({
+    FolderEntry? folderEntry,
+    Publication? previous,
+    ArNSFlowNameCubit? names,
+  }) =>
       PublishCubit(
         drive: drive,
         folder: folderEntry,
         previous: previous,
+        names: names,
         dependencies: PublishDependencies(
           driveDao: db.driveDao,
           profileCubit: profile,
@@ -286,6 +295,42 @@ void main() {
     expect(c.state.keywords, ['a', 'b', 'c', 'd', 'e']);
     c.removeKeyword('b');
     expect(c.state.keywords, ['a', 'c', 'd', 'e']);
+  });
+
+  // GraphQL lags a new version: the name just pointed at it read "Points
+  // elsewhere" until it caught up.
+  test('the name step is told the new version is a publication', () async {
+    discovery.candidates = [freshSnapshot()];
+    when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+        .thenAnswer((_) async => PublishedVersion(
+              txId: 'MANIFEST',
+              publicationId: 'p',
+              driveId: _drive,
+              folderId: 'folder-1',
+              publishedAt: DateTime.utc(2026),
+            ));
+    final names = _Names();
+    when(() => names.plannedNames).thenReturn(['news_acme']);
+    when(() => names.hasWork).thenReturn(true);
+    when(() => names.applyTo(any(), publication: any(named: 'publication')))
+        .thenAnswer((_) async => const ArNSFlowOutcome(live: ['news_acme']));
+    when(() => names.close()).thenAnswer((_) async {});
+
+    final c = cubit(names: names);
+    await c.load();
+    await c.review();
+    await c.publish();
+
+    expect(c.state.stage, PublishStage.done);
+    verify(() => names.applyTo(
+          'MANIFEST',
+          publication: const ArNSPublicationItem(
+            publicationId: 'p',
+            driveId: _drive,
+            folderId: 'folder-1',
+            isLatestVersion: true,
+          ),
+        )).called(1);
   });
 
   test('an unchanged drive reuses its newest snapshot', () async {
