@@ -38,15 +38,51 @@ void main() {
       statuses.forEach((status, colors) {
         final (fg, container) = colors;
 
-        // WCAG AA: 4.5:1 for text, 3:1 for icons and other graphics.
+        // WCAG AA: 4.5:1 for text.
         test('$status body text is readable on its container', () {
           expect(
               _contrast(tokens.textHigh, container), greaterThanOrEqualTo(4.5));
         });
 
-        test('$status icon stands out from its container', () {
-          expect(_contrast(fg, container), greaterThanOrEqualTo(3));
+        // Fg also colours error and success text, such as a field's error
+        // message, so it is held to the text ratio.
+        test('$status colour reads as text on its container', () {
+          expect(_contrast(fg, container), greaterThanOrEqualTo(4.5));
         });
+      });
+
+      // The brand palette has no warning colour: a warning is neutral and
+      // its icon carries the meaning.
+      test('warning is neutral', () {
+        for (final c in [
+          tokens.statusWarningFg,
+          tokens.statusWarningContainer,
+          tokens.statusWarningStroke,
+        ]) {
+          expect(c.red == c.green && c.green == c.blue, isTrue,
+              reason: '$c is not a grey');
+        }
+      });
+
+      // Nor an error colour of its own: errors use the brand reds.
+      test('error comes from the brand reds', () {
+        final p = tokens.primitives;
+        final reds = [
+          p.solidRed100,
+          p.solidRed200,
+          p.solidRed300,
+          p.solidRed400,
+          p.solidRed500,
+          p.solidRed600,
+          p.solidRed700,
+          p.solidRed800,
+          p.solidRed900,
+          p.solidRed1000,
+          p.solidRed1100,
+        ];
+        expect(reds, contains(tokens.statusErrorFg));
+        expect(reds, contains(tokens.statusErrorContainer));
+        expect(reds, contains(tokens.statusErrorStroke));
       });
     });
   }

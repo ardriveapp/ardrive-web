@@ -83,10 +83,12 @@ class ArDriveNotice extends StatelessWidget {
         ),
     };
     final icon = switch (type) {
+      // Each type has its own icon, so the meaning doesn't rest on colour
+      // alone: a warning is neutral and an error is red, but a reader who
+      // can't tell them apart by colour can by shape.
       ArDriveNoticeType.info => ArDriveIcons.info(size: 20, color: fg),
-      ArDriveNoticeType.warning ||
-      ArDriveNoticeType.error =>
-        ArDriveIcons.triangle(size: 20, color: fg),
+      ArDriveNoticeType.warning => ArDriveIcons.triangle(size: 20, color: fg),
+      ArDriveNoticeType.error => ArDriveIcons.closeCircle(size: 20, color: fg),
       ArDriveNoticeType.success => ArDriveIcons.checkCirle(size: 20, color: fg),
     };
     final isBanner = layout == ArDriveNoticeLayout.banner;
