@@ -428,16 +428,16 @@ String arnsPointsToLabel(
   String? placeholder,
 }) {
   final strings = appLocalizationsOf(context);
-  final target = record.target;
-  if (placeholder != null && record.transactionId == placeholder) {
-    return strings.arnsNothingPublished;
-  }
-  return switch (target) {
-    ArNSFileItem(:final name, :final isLatestVersion) => isLatestVersion
-        ? strings.arnsPointsToItem(name)
-        : strings.arnsPointsToOlderVersion(name),
-    ArNSPublicationItem() => strings.arnsPointsToPublication,
-    null => strings.arnsPointsElsewhere,
+  final name = switch (record.target) {
+    ArNSFileItem(:final name) => name,
+    _ => '',
+  };
+  return switch (arnsPointsToKind(record, placeholder: placeholder)) {
+    ArNSPointsToKind.nothingPublished => strings.arnsNothingPublished,
+    ArNSPointsToKind.file => strings.arnsPointsToItem(name),
+    ArNSPointsToKind.olderVersion => strings.arnsPointsToOlderVersion(name),
+    ArNSPointsToKind.publication => strings.arnsPointsToPublication,
+    ArNSPointsToKind.elsewhere => strings.arnsPointsElsewhere,
   };
 }
 
@@ -454,9 +454,8 @@ class ArNSPointsTo extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
     final label = arnsPointsToLabel(context, record, placeholder: placeholder);
-    final elsewhere = record.target == null &&
-        (placeholder == null || record.transactionId != placeholder);
-    if (!elsewhere) {
+    final kind = arnsPointsToKind(record, placeholder: placeholder);
+    if (kind != ArNSPointsToKind.elsewhere) {
       return Text(
         label,
         overflow: TextOverflow.ellipsis,

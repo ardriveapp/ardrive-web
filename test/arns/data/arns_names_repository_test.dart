@@ -292,6 +292,60 @@ void main() {
     });
   });
 
+  group('a publication found once stays a publication', () {
+    // The Names page said "Points to a publication" while the Add name
+    // picker, read again moments later, said "Points elsewhere": the second
+    // lookup failed or had not caught up.
+    late _FlakyPublications flaky;
+
+    setUp(() {
+      flaky = _FlakyPublications({
+        'pub-latest': const ArNSPublicationItem(
+          publicationId: 'publication-1',
+          driveId: 'drive-1',
+          folderId: null,
+          isLatestVersion: true,
+        ),
+      });
+      repository = ArNSNamesRepository(
+        arioSDK: sdk,
+        dao: db.aRNSDao,
+        publications: flaky,
+      );
+    });
+
+    ArNSPointsToKind newsKind(List<ArNSManagedName> names) => arnsPointsToKind(
+        names.first.records.firstWhere((r) => r.undername == 'news'));
+
+    test('when a later lookup fails', () async {
+      expect(newsKind(await repository.refresh(_wallet)),
+          ArNSPointsToKind.publication);
+
+      flaky.fails = true;
+
+      expect(newsKind(await repository.refresh(_wallet)),
+          ArNSPointsToKind.publication);
+      expect(newsKind(await repository.cached(_wallet)),
+          ArNSPointsToKind.publication);
+    });
+
+    test('when a later lookup misses it', () async {
+      await repository.refresh(_wallet);
+
+      flaky.found.clear();
+
+      expect(newsKind(await repository.refresh(_wallet)),
+          ArNSPointsToKind.publication);
+      expect(
+        arnsPointsToKind((await repository.refresh(_wallet))
+            .first
+            .records
+            .firstWhere((r) => r.undername == 'old')),
+        ArNSPointsToKind.elsewhere,
+      );
+    });
+  });
+
   test('a publication lookup that fails leaves those records unmapped',
       () async {
     repository = ArNSNamesRepository(
@@ -327,6 +381,24 @@ void main() {
       expect(name.isExpired(end.add(const Duration(days: 14))), isTrue);
     });
   });
+}
+
+class _FlakyPublications implements ArNSPublicationLookup {
+  _FlakyPublications(this.found);
+
+  final Map<String, ArNSPublicationItem> found;
+  bool fails = false;
+
+  @override
+  Future<Map<String, ArNSPublicationItem>> publicationsFor(
+    Set<String> txIds,
+  ) async {
+    if (fails) throw Exception('GraphQL failed');
+    return {
+      for (final e in found.entries)
+        if (txIds.contains(e.key)) e.key: e.value,
+    };
+  }
 }
 
 class _ThrowingPublications implements ArNSPublicationLookup {

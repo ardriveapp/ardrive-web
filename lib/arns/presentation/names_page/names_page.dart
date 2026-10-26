@@ -581,8 +581,10 @@ class _PointsToCell extends StatelessWidget {
     final target = record.target;
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final strings = appLocalizationsOf(context);
+    final kind = arnsPointsToKind(record, placeholder: placeholder);
     if (target is ArNSFileItem &&
-        (placeholder == null || record.transactionId != placeholder)) {
+        (kind == ArNSPointsToKind.file ||
+            kind == ArNSPointsToKind.olderVersion)) {
       return Row(
         children: [
           Icon(

@@ -107,6 +107,40 @@ class ArNSNameRecord extends Equatable {
       [name, undername, transactionId, ttlSeconds, target];
 }
 
+/// What a record points to, as every screen that shows it says it: the Names
+/// page, the name picker and the details panel.
+enum ArNSPointsToKind {
+  /// The placeholder: "Nothing published here".
+  nothingPublished,
+
+  /// The latest version of a file or deployment.
+  file,
+
+  /// An older version of a file or deployment.
+  olderVersion,
+
+  publication,
+
+  /// Outside ArDrive, or nothing ArDrive knows here: "Points elsewhere".
+  elsewhere,
+}
+
+/// The one classification of [record], so no two screens disagree.
+ArNSPointsToKind arnsPointsToKind(
+  ArNSNameRecord record, {
+  String? placeholder,
+}) {
+  if (placeholder != null && record.transactionId == placeholder) {
+    return ArNSPointsToKind.nothingPublished;
+  }
+  return switch (record.target) {
+    ArNSFileItem(:final isLatestVersion) =>
+      isLatestVersion ? ArNSPointsToKind.file : ArNSPointsToKind.olderVersion,
+    ArNSPublicationItem() => ArNSPointsToKind.publication,
+    null => ArNSPointsToKind.elsewhere,
+  };
+}
+
 /// A name the ArNS wallet owns or manages, with its records.
 class ArNSManagedName extends Equatable {
   const ArNSManagedName({

@@ -68,6 +68,10 @@ class ArNSNamesRepository {
   final ARNSDao _dao;
   final ArNSPublicationLookup? _publications;
 
+  /// Every publication version a lookup has found this session, by
+  /// transaction ID. A transaction never stops being the publication it was.
+  final _knownPublications = <String, ArNSPublicationItem>{};
+
   /// ANT record reads in flight at once: each is a program scan on the RPC.
   static const _recordReadConcurrency = 4;
 
@@ -221,10 +225,19 @@ class ArNSNamesRepository {
     final rest = txIds.difference(targets.keys.toSet());
     final publications = _publications;
     if (rest.isNotEmpty && publications != null) {
+      var found = <String, ArNSPublicationItem>{};
       try {
-        targets.addAll(await publications.publicationsFor(rest));
+        found = await publications.publicationsFor(rest);
+        _knownPublications.addAll(found);
       } catch (e) {
         logger.w('Could not check names against publications: $e');
+      }
+      // A transaction that was a publication stays one: a failed or lagging
+      // lookup must not turn it into "Points elsewhere" on one screen while
+      // another, read earlier, still says publication.
+      for (final txId in rest) {
+        final publication = found[txId] ?? _knownPublications[txId];
+        if (publication != null) targets[txId] = publication;
       }
     }
     return targets;
