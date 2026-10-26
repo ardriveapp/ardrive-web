@@ -13,10 +13,10 @@ void main() {
       (tester) async {
     await tester.pumpWidget(
       ArDriveApp(
-        builder: (context) => MaterialApp(
+        builder: (context) => const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
+          home: Scaffold(
             body: Center(
               child: SizedBox(
                 width: 300,
