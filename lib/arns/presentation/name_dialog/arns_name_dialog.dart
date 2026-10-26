@@ -1505,23 +1505,31 @@ class ArNSFlowNameResult extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Each name wraps in its own line, and the caption follows them:
+        // beside a real name it had no room left and stood a letter wide.
         for (final literal in outcome.live)
           Padding(
             padding: const EdgeInsets.only(bottom: ArDriveSpacing.xxs),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(arnsNameIcon, size: 16, color: colors.iconMid),
-                const SizedBox(width: ArDriveSpacing.xs),
-                ArDriveLink(
-                  text: arnsHostFor(literal),
-                  external: true,
-                  onTap: () => openUrl(url: arnsUrlFor(literal)),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Icon(arnsNameIcon, size: 16, color: colors.iconMid),
                 ),
                 const SizedBox(width: ArDriveSpacing.xs),
-                Flexible(child: ArNSCaption(strings.arnsLiveWithinFiveMinutes)),
+                Flexible(
+                  child: ArDriveLink(
+                    text: arnsHostFor(literal),
+                    external: true,
+                    onTap: () => openUrl(url: arnsUrlFor(literal)),
+                  ),
+                ),
               ],
             ),
           ),
+        if (outcome.live.isNotEmpty)
+          ArNSCaption(strings.arnsLiveWithinFiveMinutes),
         if (outcome.failed.isNotEmpty) ...[
           const SizedBox(height: ArDriveSpacing.xs),
           ArDriveNotice(
