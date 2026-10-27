@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:ardrive/arns/data/turbo_arns_action_client.dart';
 import 'package:ardrive/dev_tools/drives_health_check.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/main.dart';
@@ -347,6 +348,17 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.bool,
     );
 
+    final ArDriveDevToolOption enableArNSOption = ArDriveDevToolOption(
+      name: 'enableArNS',
+      value: config.enableArNS,
+      onChange: (value) {
+        setState(() {
+          configService.updateAppConfig(config.copyWith(enableArNS: value));
+        });
+      },
+      type: ArDriveDevToolOptionType.bool,
+    );
+
     // --- Solana / AR.IO SDK options ---
 
     void reinitArioSdk(AppConfig cfg) {
@@ -424,18 +436,24 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       type: ArDriveDevToolOptionType.text,
     );
 
-    // @ar.io/sdk v4.0.2 devnet program IDs
+    // Devnet program IDs and RPC come from the SDK. Turbo's sandbox runs
+    // ArNS on devnet, so name changes are paid there too (docs/NAMES.md,
+    // "Devnet").
     final switchArioToDevnet = ArDriveDevToolOption(
       name: 'Switch ARIO to Devnet',
       value: '',
-      onChange: (value) {
+      onChange: (value) async {
+        final network = await ArioSDKFactory().create().getNetworkConfig();
+        final ids = network.devnetProgramIds;
+        if (!mounted) return;
         setState(() {
           final c = config.copyWith(
-            solanaRpcUrl: 'https://api.devnet.solana.com',
-            solanaCoreProgramId: '8Njx9wPkXiNzDCgjwVsJFRjpAEV34gGW3n8DzX3V23m1',
-            solanaGarProgramId: '7WsDTrtZBsfKtnP33XkjuqXCY69JE7n4QVYpynqJCFxz',
-            solanaArnsProgramId: '6EZNezcg4rc5hnh8HG34vGquT3WpW5xXypzPb24uyEpp',
-            solanaAntProgramId: 'DbHbRwUD1oAn1mrDSqtWtvwGcNrmhWdD2g8L4xmeQ7NX',
+            solanaRpcUrl: network.devnetRpcUrl,
+            solanaCoreProgramId: ids.core,
+            solanaGarProgramId: ids.gar,
+            solanaArnsProgramId: ids.arns,
+            solanaAntProgramId: ids.ant,
+            defaultTurboPaymentUrl: turboSandboxPaymentUrl,
           );
           configService.updateAppConfig(c);
           reinitArioSdk(c);
@@ -451,6 +469,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
       enableSyncFromSnapshotOption,
       enableSyncFromDriveStateOption,
       enableDriveStatePublishingOption,
+      enableArNSOption,
       stripePublishableKey,
       allowedDataItemSizeForTurboOption,
       arweaveGatewayUrlOption,
@@ -831,7 +850,11 @@ typedef OnChange<T> = void Function(T value);
 class ArDriveDevToolOption<T> {
   final String name;
   T value;
-  final OnChange<T> onChange;
+
+  /// Typed for any value, not [T]: options are called through the raw type,
+  /// and a callback inferred as `(String) => void` from a declaration without
+  /// a type isn't a `(dynamic) => void`, so calling it threw.
+  final OnChange<dynamic> onChange;
   final ArDriveDevToolOptionType type;
   final Function? onInteraction;
 

@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:ardrive/arns/domain/arns_nameable_item.dart';
+import 'package:ardrive/arns/domain/arns_names.dart';
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/blocs/upload/upload_cubit.dart' show UploadMethod;
 import 'package:ardrive/drive_state/data/drive_state_discovery.dart';
@@ -80,6 +83,7 @@ class PublishCubit extends Cubit<PublishState> {
     required this.folder,
     required PublishDependencies dependencies,
     this.previous,
+    this.names,
     this.onSettledAfterClose,
     @visibleForTesting void Function(Object holder)? holdGuard,
     @visibleForTesting void Function(Object holder)? releaseGuard,
@@ -98,6 +102,10 @@ class PublishCubit extends Cubit<PublishState> {
 
   /// The publication this updates, if any.
   final Publication? previous;
+
+  /// The name step (docs/NAMES.md): null while names are off. Its names go
+  /// into publication.json, and point at the new version once it exists.
+  final ArNSFlowNameCubit? names;
 
   /// Told how a publish ended when the dialog was closed while it ran: the
   /// page's link, or null when it stopped. Closing hides the dialog but not
@@ -657,6 +665,7 @@ class PublishCubit extends Cubit<PublishState> {
         ? job
         : (_job = job.withMethod(state.method));
     _lastJob = run;
+    run.names = names?.plannedNames ?? const [];
     _publishing = true;
     emit(state.copyWith(stage: PublishStage.publishing, failure: ''));
     try {
@@ -668,12 +677,32 @@ class PublishCubit extends Cubit<PublishState> {
         },
       );
       await _rememberOwnerName(state.ownerName.trim());
-      final link = '${_deps.publisher.gatewayUrl}/${version.txId}/';
+      // The page stands whatever happens to its names.
+      final named = names;
+      ArNSFlowOutcome? outcome;
+      if (named != null && named.hasWork) {
+        outcome = await named.applyTo(
+          version.txId,
+          // GraphQL lags a new version: its names read as a publication now.
+          publication: ArNSPublicationItem(
+            publicationId: version.publicationId,
+            driveId: version.driveId,
+            folderId: version.folderId,
+            isLatestVersion: true,
+          ),
+        );
+      }
+      final live = outcome?.live ?? const <String>[];
+      // The page and its link use the name when there is one.
+      final link = live.isNotEmpty
+          ? arnsUrlFor(live.last)
+          : '${_deps.publisher.gatewayUrl}/${version.txId}/';
       if (isClosed) {
         onSettledAfterClose?.call(link);
         return;
       }
-      emit(state.copyWith(stage: PublishStage.done, link: link));
+      emit(
+          state.copyWith(stage: PublishStage.done, link: link, names: outcome));
     } on PublicationFailure catch (e) {
       if (isClosed) {
         onSettledAfterClose?.call(null);
@@ -701,8 +730,12 @@ class PublishCubit extends Cubit<PublishState> {
       ));
     } finally {
       _publishing = false;
-      // A dialog closed mid-publish left the guard held for this upload.
-      if (isClosed) _releaseGuard(this);
+      // A dialog closed mid-publish left the guard and the name step held
+      // for this upload.
+      if (isClosed) {
+        _releaseGuard(this);
+        await names?.close();
+      }
     }
   }
 
@@ -724,9 +757,13 @@ class PublishCubit extends Cubit<PublishState> {
   }
 
   @override
-  Future<void> close() {
-    // While an upload runs, the guard is its to release (see [publish]).
-    if (!_publishing) _releaseGuard(this);
+  Future<void> close() async {
+    // While an upload runs, the guard and the name step are its to release
+    // (see [publish]): the names are applied after the page is up.
+    if (!_publishing) {
+      _releaseGuard(this);
+      await names?.close();
+    }
     return super.close();
   }
 

@@ -273,7 +273,12 @@ class UploadFailure extends UploadState {
   List<Object?> get props => [error, failedTasks];
 }
 
-class UploadComplete extends UploadState {}
+class UploadComplete extends UploadState {
+  UploadComplete({this.dataTxIds = const []});
+
+  /// The data transactions of the files uploaded, for a name to point at.
+  final List<String> dataTxIds;
+}
 
 class UploadingManifests extends UploadState {
   final List<UploadManifestModel> manifestFiles;

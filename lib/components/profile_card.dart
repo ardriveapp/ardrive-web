@@ -1,3 +1,4 @@
+import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_profile_row.dart';
 import 'dart:async';
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -899,6 +900,10 @@ class _ProfileCardState extends State<ProfileCard> {
           address: arweaveAddress,
           explorerUrl: 'https://viewblock.io/arweave/address/$arweaveAddress',
         ),
+      ),
+      // The ArNS wallet, under the wallet (docs/NAMES.md, "Profile card").
+      ArNSWalletProfileRow(
+        onNavigate: () => setState(() => _showProfileCard = false),
       ),
       if (state.user.profileType != ProfileType.arConnect &&
           state.user.sourceWalletAddress == null) ...[

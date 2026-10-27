@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/blocs/drive_detail/drive_detail_cubit.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/components.dart';
@@ -55,29 +56,30 @@ class DriveExplorerItemTile extends TableRowWidget {
                 isHidden,
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
-                  child: Row(
-                    children: [
-                      Flexible(
-                        child: ArDriveTooltip(
-                          message: name,
-                          child: Text(
-                            name,
-                            style: typography.paragraphNormal(
-                              fontWeight: ArFontWeight.semiBold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            softWrap: false,
+                  child: dataTableItem is FileDataTableItem
+                      // The file name first: the name chip takes the room
+                      // it leaves.
+                      ? ArNSRowTitle(
+                          text: name,
+                          style: _titleStyle(typography),
+                          title: _title(name, typography),
+                          chip: (iconOnly) => ArNSNameChip(
+                            dataTxId: dataTableItem.dataTxId,
+                            hints: dataTableItem.assignedNames ?? const [],
+                            isOwner: dataTableItem.isOwner,
+                            iconOnly: iconOnly,
                           ),
+                        )
+                      : Row(
+                          children: [
+                            Flexible(child: _title(name, typography)),
+                            if (dataTableItem is FolderDataTableItem)
+                              PublishedToWebMark(
+                                driveId: dataTableItem.driveId,
+                                folderId: dataTableItem.id,
+                              ),
+                          ],
                         ),
-                      ),
-                      if (dataTableItem is FolderDataTableItem)
-                        PublishedToWebMark(
-                          driveId: dataTableItem.driveId,
-                          folderId: dataTableItem.id,
-                        ),
-                    ],
-                  ),
                 )),
             dimIfHidden(
                 isHidden,
@@ -116,6 +118,20 @@ class DriveExplorerItemTile extends TableRowWidget {
           ],
         );
 }
+
+TextStyle _titleStyle(ArdriveTypographyNew typography) =>
+    typography.paragraphNormal(fontWeight: ArFontWeight.semiBold);
+
+Widget _title(String name, ArdriveTypographyNew typography) => ArDriveTooltip(
+      message: name,
+      child: Text(
+        name,
+        style: _titleStyle(typography),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+        softWrap: false,
+      ),
+    );
 
 TextStyle _driveExplorerItemTileTextStyle(bool isHidden,
         ArdriveTypographyNew typography, ArDriveColorTokens colorTokens) =>
@@ -772,6 +788,12 @@ class _DriveExplorerItemTileTrailingState
               height: height,
             ),
           ),
+        ...arnsItemMenuItems(
+          context,
+          item: item,
+          drive: widget.drive,
+          height: height,
+        ),
         hideFileDropdownItem(context, item),
       ],
       ArDriveDropdownItem(
@@ -1390,6 +1412,7 @@ class EntityActionsMenu extends StatelessWidget {
             ),
           ),
         ),
+        ...arnsItemMenuItems(context, item: item, drive: drive),
         hideFileDropdownItem(context, item),
       ],
       if (withInfo) _buildInfoOption(context),

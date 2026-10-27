@@ -318,6 +318,7 @@ class _AppSideBarState extends State<AppSideBar> {
           ),
           const SizedBox(height: 6),
           DriveScopeRail(showLabels: showLabels),
+          if (canGoToDrivesList) OnTheWebNavGroup(showLabel: showLabels),
         ],
       );
     }
@@ -357,6 +358,7 @@ class _AppSideBarState extends State<AppSideBar> {
             return const SizedBox();
           },
         ),
+        if (canGoToDrivesList) OnTheWebNavGroup(showLabel: showLabels),
       ],
     );
   }
@@ -1064,7 +1066,9 @@ class _DriveSectionsState extends State<_DriveSections> {
               hasAlert: state.drivesWithAlerts.contains(drive.id),
               drive: drive,
               onTap: () => _openDrive(context, drive),
-              isSelected: state.selectedDriveId == drive.id,
+              // Not lit on the Names page: the page is where the reader is.
+              isSelected: state.selectedDriveId == drive.id &&
+                  !context.watch<AppRouterDelegate>().showingNames,
               // Hiding is something a reader does to their own drives, so a
               // drive shared with them is never drawn as hidden.
               isHidden: scope != DriveScope.sharedWithMe && drive.isHidden,
@@ -1152,6 +1156,89 @@ class _AllDrivesRow extends StatelessWidget {
 
         context.read<AppRouterDelegate>().showDrivesList();
       },
+    );
+  }
+}
+
+/// "On the web" below the drives: what the reader has put on the web, with
+/// one row, Names, for now (docs/NAMES.md, "Where it lives", Q15).
+///
+/// Drawn like the drive sections above it: a section row with its icon and
+/// chevron, and Names under it the way a drive sits under Public. Its own
+/// row type: [DriveScope] filters drives and doesn't grow a value for it.
+class OnTheWebNavGroup extends StatefulWidget {
+  const OnTheWebNavGroup({super.key, required this.showLabel});
+
+  final bool showLabel;
+
+  /// The section's icon: ArNS's own, not the globe Public already uses.
+  static const icon = ArDriveIconsData.arns_name;
+
+  @override
+  State<OnTheWebNavGroup> createState() => _OnTheWebNavGroupState();
+}
+
+class _OnTheWebNavGroupState extends State<OnTheWebNavGroup> {
+  bool _isExpanded = true;
+
+  void _showNames(BuildContext context) {
+    if (Scaffold.maybeOf(context) != null) {
+      Scaffold.of(context).closeDrawer();
+    }
+    context.read<AppRouterDelegate>().showNames();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!AppRouterDelegate.namesPageIsOn(context)) {
+      return const SizedBox.shrink();
+    }
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final strings = appLocalizationsOf(context);
+    final isCurrent = context.watch<AppRouterDelegate>().showingNames;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 6),
+        Divider(height: 1, color: colorTokens.strokeLow),
+        const SizedBox(height: 6),
+        // The collapsed rail has no room for a child row: the section's
+        // icon goes straight to Names.
+        if (!widget.showLabel)
+          DriveNavRow(
+            icon: OnTheWebNavGroup.icon,
+            label: strings.arnsNames,
+            showLabel: false,
+            isCurrent: isCurrent,
+            onTap: () => _showNames(context),
+          )
+        else ...[
+          DriveNavRow(
+            icon: OnTheWebNavGroup.icon,
+            label: strings.arnsOnTheWeb,
+            isExpanded: _isExpanded,
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            trailing: AnimatedRotation(
+              turns: _isExpanded ? 0.5 : 0,
+              duration: const Duration(milliseconds: 150),
+              child: ArDriveIcons.chevronDown(
+                size: 16,
+                color: colorTokens.textMid,
+              ),
+            ),
+          ),
+          if (_isExpanded)
+            DriveNavRow(
+              icon: null,
+              dense: true,
+              label: strings.arnsNames,
+              isCurrent: isCurrent,
+              onTap: () => _showNames(context),
+            ),
+        ],
+      ],
     );
   }
 }

@@ -74,6 +74,7 @@ String buildPublicationJson({
   bool generatedCard = false,
   required String publishedAt,
   ({String release, String manifest})? viewer,
+  List<String> names = const [],
 }) {
   return _json({
     'version': publicationVersion,
@@ -98,6 +99,9 @@ String buildPublicationJson({
     if (images.isNotEmpty) 'images': images,
     if (generatedCard) 'generatedSocialCard': true,
     'publishedAt': publishedAt,
+    // The names pointing at this version, as ArDrive set them: a hint,
+    // checked against the gateway before a visitor sees one (docs/NAMES.md).
+    if (names.isNotEmpty) 'names': names,
     if (viewer != null)
       'viewer': {'release': viewer.release, 'manifest': viewer.manifest},
   });

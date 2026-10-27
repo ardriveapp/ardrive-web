@@ -35,6 +35,7 @@ class PublicationConfig extends Equatable {
     required this.images,
     required this.publishedAt,
     required this.viewer,
+    this.names = const [],
   });
 
   /// The newest `publication.json` version this build reads. A page written for a
@@ -69,6 +70,10 @@ class PublicationConfig extends Equatable {
   final PublicationImages images;
   final DateTime? publishedAt;
   final PublicationViewer? viewer;
+
+  /// The literal names pointing at this version when it was published
+  /// (`blog_acme`): a hint, checked before it is shown (docs/NAMES.md).
+  final List<String> names;
 
   bool get isPrivate => privacy == DrivePrivacyTag.private;
 
@@ -154,6 +159,11 @@ class PublicationConfig extends Equatable {
       images: PublicationImages._fromJson(json['images']),
       publishedAt: _optionalDate(json, 'publishedAt'),
       viewer: PublicationViewer._fromJson(json['viewer']),
+      names: [
+        if (json['names'] is List)
+          for (final name in json['names'] as List)
+            if (name is String && name.isNotEmpty) name,
+      ],
     );
   }
 
@@ -174,6 +184,7 @@ class PublicationConfig extends Equatable {
         images,
         publishedAt,
         viewer,
+        names,
       ];
 }
 

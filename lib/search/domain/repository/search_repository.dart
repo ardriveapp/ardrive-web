@@ -1,3 +1,4 @@
+import 'package:ardrive/arns/data/arns_dao.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
 import 'package:ardrive/search/domain/search_coverage.dart';
@@ -28,7 +29,12 @@ abstract class SearchRepository {
 class ArDriveSearchRepository implements SearchRepository {
   final DriveDao _driveDao;
 
-  ArDriveSearchRepository(this._driveDao);
+  /// The cache of the ArNS wallet's names, to find files by name; null while
+  /// names are off (docs/NAMES.md, Q14).
+  final ARNSDao? _arnsDao;
+
+  ArDriveSearchRepository(this._driveDao, {ARNSDao? arnsDao})
+      : _arnsDao = arnsDao;
 
   @override
   Future<List<SearchResult>> search(String query) async {
@@ -37,8 +43,12 @@ class ArDriveSearchRepository implements SearchRepository {
 
     if (query.isEmpty) return Future.value([]);
 
-    final List<SearchResult> allResults =
-        await _driveDao.search(query: query, type: SearchQueryType.all);
+    final List<SearchResult> allResults = [
+      // First, so a file found by its name keeps the name's mark when it is
+      // also found by its file name.
+      ...await _searchByArNSName(query),
+      ...await _driveDao.search(query: query, type: SearchQueryType.all),
+    ];
 
     final Map<String, SearchResult> uniqueResults = {};
     final List<SearchResult> duplicates = [];
@@ -63,6 +73,49 @@ class ArDriveSearchRepository implements SearchRepository {
     logger.d('Search completed in ${duration.inMilliseconds}ms');
 
     return combinedResults;
+  }
+
+  /// Files a cached name points to, matched on the name as typed in a
+  /// browser (`blog_ardrive`), with or without `.ar.io`.
+  Future<List<SearchResult>> _searchByArNSName(String query) async {
+    final dao = _arnsDao;
+    final needle = query.trim().toLowerCase().replaceFirst(
+          RegExp(r'\.ar\.io$'),
+          '',
+        );
+    if (dao == null || needle.isEmpty) return [];
+    try {
+      final escaped = needle
+          .replaceAll(r'\', r'\\')
+          .replaceAll('%', r'\%')
+          .replaceAll('_', r'\_');
+      final rows = await dao.filesNamedLike(pattern: '%$escaped%').get();
+      final results = <SearchResult>[];
+      final seen = <String>{};
+      for (final row in rows) {
+        if (!seen.add('${row.driveId}_${row.fileId}')) continue;
+        final file =
+            await _driveDao.fileById(fileId: row.fileId).getSingleOrNull();
+        final drive =
+            await _driveDao.driveById(driveId: row.driveId).getSingleOrNull();
+        if (file == null || drive == null) continue;
+        final parent = file.parentFolderId == drive.rootFolderId
+            ? null
+            : await _driveDao
+                .folderById(folderId: file.parentFolderId)
+                .getSingleOrNull();
+        results.add(SearchResult<FileEntry>(
+          result: file,
+          drive: drive,
+          parentFolder: parent,
+          hasArNSName: true,
+        ));
+      }
+      return results;
+    } catch (e) {
+      logger.w('Could not search names: $e');
+      return [];
+    }
   }
 
   @override

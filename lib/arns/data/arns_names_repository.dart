@@ -16,15 +16,53 @@ abstract class ArNSPublicationLookup {
 }
 
 /// The signed-in owner's publications, through [PublicationRepository].
+///
+/// The owner's publications are read once and kept for [_cacheDuration]:
+/// every names read asks, and a read is a GraphQL scan of the owner's
+/// history. A version published since is told to the names repository with
+/// [ArNSNamesRepository.rememberPublication].
 class OwnerPublicationLookup implements ArNSPublicationLookup {
   OwnerPublicationLookup({
     required PublicationRepository repository,
     required String? Function() ownerAddress,
+    DateTime Function()? clock,
   })  : _repository = repository,
-        _ownerAddress = ownerAddress;
+        _ownerAddress = ownerAddress,
+        _clock = clock ?? DateTime.now;
 
   final PublicationRepository _repository;
   final String? Function() _ownerAddress;
+  final DateTime Function() _clock;
+
+  static const _cacheDuration = Duration(minutes: 5);
+
+  String? _cachedOwner;
+  DateTime? _fetchedAt;
+  Future<Map<String, List<Publication>>>? _cached;
+
+  /// The owner's publications, read again once [_cacheDuration] has passed.
+  /// Reads at the same time share one; a failed read is not kept.
+  Future<Map<String, List<Publication>>> _publicationsOf(String owner) {
+    final cached = _cached;
+    final fetchedAt = _fetchedAt;
+    if (cached != null &&
+        _cachedOwner == owner &&
+        (fetchedAt == null ||
+            _clock().difference(fetchedAt) <= _cacheDuration)) {
+      return cached;
+    }
+    late final Future<Map<String, List<Publication>>> read;
+    read = _repository.publicationsOfOwner(owner).then((byDrive) {
+      if (identical(_cached, read)) _fetchedAt = _clock();
+      return byDrive;
+    }, onError: (Object e, StackTrace st) {
+      if (identical(_cached, read)) _cached = null;
+      return Future<Map<String, List<Publication>>>.error(e, st);
+    });
+    _cachedOwner = owner;
+    _fetchedAt = null;
+    return _cached = read;
+  }
 
   @override
   Future<Map<String, ArNSPublicationItem>> publicationsFor(
@@ -34,7 +72,7 @@ class OwnerPublicationLookup implements ArNSPublicationLookup {
     if (owner == null || txIds.isEmpty) return {};
 
     final found = <String, ArNSPublicationItem>{};
-    final byDrive = await _repository.publicationsOfOwner(owner);
+    final byDrive = await _publicationsOf(owner);
     for (final publications in byDrive.values) {
       for (final publication in publications) {
         for (final version in publication.versions) {
@@ -60,13 +98,16 @@ class ArNSNamesRepository {
     required ArioSDK arioSDK,
     required ARNSDao dao,
     ArNSPublicationLookup? publications,
+    DateTime Function()? clock,
   })  : _arioSDK = arioSDK,
         _dao = dao,
-        _publications = publications;
+        _publications = publications,
+        _clock = clock ?? DateTime.now;
 
   final ArioSDK _arioSDK;
   final ARNSDao _dao;
   final ArNSPublicationLookup? _publications;
+  final DateTime Function() _clock;
 
   /// Every publication version a lookup has found this session, by
   /// transaction ID. A transaction never stops being the publication it was.
@@ -77,6 +118,50 @@ class ArNSNamesRepository {
   /// indexes it.
   void rememberPublication(String txId, ArNSPublicationItem publication) {
     _knownPublications[txId] = publication;
+  }
+
+  /// Record changes made this session, by ANT and undername, with when.
+  /// Solana RPC nodes can answer a read with the state from before a write
+  /// Turbo has already reported done, so every read applies them over what
+  /// it got until [_madeLifetime] has passed.
+  final _made = <(String, String), (ArNSRecordChange, DateTime)>{};
+
+  static const _madeLifetime = Duration(minutes: 2);
+
+  /// Tells every later read about a change just made, so a read that
+  /// lags it doesn't show or cache the old record.
+  void rememberChange(ArNSRecordChange change) {
+    _made[(change.antId, change.undername)] = (change, _clock());
+  }
+
+  /// Forgets what this session learned: called when the ArNS wallet goes.
+  void forgetSession() {
+    _made.clear();
+    _knownPublications.clear();
+  }
+
+  /// [read] with the changes made this session applied over its records.
+  ArNSManagedName _withMade(ArNSManagedName read) {
+    final now = _clock();
+    _made.removeWhere((_, made) => now.difference(made.$2) > _madeLifetime);
+    var records = read.records;
+    for (final (change, _) in _made.values) {
+      if (change.antId != read.processId) continue;
+      records = [
+        for (final r in records)
+          if (r.undername != change.undername) r,
+        if (change case ArNSSetRecord(:final transactionId, :final ttlSeconds))
+          ArNSNameRecord(
+            name: read.name,
+            undername: change.undername,
+            transactionId: transactionId,
+            ttlSeconds: ttlSeconds,
+          ),
+      ];
+    }
+    return identical(records, read.records)
+        ? read
+        : read.withRecords(_sorted(records));
   }
 
   /// ANT record reads in flight at once: each is a program scan on the RPC.
@@ -117,6 +202,7 @@ class ArNSNamesRepository {
       final chunk = names.skip(i).take(_recordReadConcurrency);
       withRecords.addAll(await Future.wait(chunk.map(_withRecords)));
     }
+    withRecords.setAll(0, withRecords.map(_withMade).toList());
 
     await _dao.replaceNamesForAddress(
       arnsAddress: arnsAddress,
@@ -172,30 +258,14 @@ class ArNSNamesRepository {
 
   /// Re-reads one name's records after a change and caches them.
   ///
-  /// [made] are the changes just made to it. Solana RPC nodes can answer a
-  /// read with the state from before a write Turbo has already reported
-  /// done, so each is applied over what was read.
+  /// [made] are the changes just made to it, remembered as with
+  /// [rememberChange] and applied over what was read.
   Future<ArNSManagedName> refreshRecords(
     ArNSManagedName name, {
     List<ArNSRecordChange> made = const [],
   }) async {
-    final read = await _withRecords(name);
-    var records = read.records;
-    for (final change in made) {
-      if (change.antId != name.processId) continue;
-      records = [
-        for (final r in records)
-          if (r.undername != change.undername) r,
-        if (change case ArNSSetRecord(:final transactionId, :final ttlSeconds))
-          ArNSNameRecord(
-            name: name.name,
-            undername: change.undername,
-            transactionId: transactionId,
-            ttlSeconds: ttlSeconds,
-          ),
-      ];
-    }
-    final updated = read.withRecords(_sorted(records));
+    made.forEach(rememberChange);
+    final updated = _withMade(await _withRecords(name));
     await _dao.replaceRecordsForDomain(
       name.name,
       [for (final r in updated.records) _recordToRow(r)],

@@ -18,6 +18,10 @@ class AppRoutePath {
   /// is on screen, and only this says which of them the address bar means.
   final bool drivesList;
 
+  /// Whether the app is showing the Names page - `/names` (docs/NAMES.md,
+  /// "The Names page"). Like [drivesList], a drive can stay selected under it.
+  final bool names;
+
   final String? driveId;
   final String? driveName;
   final String? driveFolderId;
@@ -79,6 +83,7 @@ class AppRoutePath {
     this.signingIn = false,
     this.getStarted = false,
     this.drivesList = false,
+    this.names = false,
     this.driveId,
     this.driveName,
     this.driveFolderId,
@@ -103,6 +108,9 @@ class AppRoutePath {
 
   /// Creates a route that points at the list of the user's drives.
   factory AppRoutePath.drivesList() => const AppRoutePath(drivesList: true);
+
+  /// The Names page.
+  factory AppRoutePath.names() => const AppRoutePath(names: true);
 
   /// Creates a route that points to a particular drive.
   factory AppRoutePath.driveDetail({

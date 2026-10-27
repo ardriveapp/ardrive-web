@@ -5,6 +5,7 @@ import 'package:ardrive/publication/presentation/publication_loader/publication_
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/search/domain/bloc/search_bloc.dart';
 import 'package:ardrive/search/domain/repository/search_repository.dart';
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -94,8 +95,12 @@ class _SearchScopeState extends State<SearchScope> {
     );
   }
 
-  SearchRepository _appSearch() =>
-      ArDriveSearchRepository(context.read<DriveDao>());
+  SearchRepository _appSearch() => ArDriveSearchRepository(
+        context.read<DriveDao>(),
+        arnsDao: context.read<ConfigService>().config.enableArNS
+            ? context.read<Database>().aRNSDao
+            : null,
+      );
 
   /// A publication searches only its publication, once it is open.
   SearchRepository _publicationSearch() {

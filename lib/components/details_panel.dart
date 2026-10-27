@@ -1,3 +1,4 @@
+import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/fs_entry_preview/fs_entry_preview_cubit.dart';
 import 'package:ardrive/components/snapshots_tab/snapshots_tab.dart';
@@ -637,13 +638,38 @@ class _DetailsPanelState extends State<DetailsPanel> {
       item.isOwner &&
       context.read<ProfileCubit>().state is ProfileLoggedIn;
 
+  /// The explorer's drive, when the panel is the explorer's.
+  static Drive? _explorerDrive(BuildContext context) {
+    try {
+      final state = context.read<DriveDetailCubit>().state;
+      return state is DriveDetailLoadSuccess ? state.currentDrive : null;
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
   List<Widget> _fileDetails(FsEntryInfoState state) {
     final item = widget.item as FileDataTableItem;
     String? pinnedDataOwnerAddress = item.pinnedDataOwnerAddress;
 
     final typography = ArDriveTypographyNew.of(context);
+    final nameable = arnsNamesOn(context)
+        ? arnsNameableItem(
+            context,
+            item: item,
+            drive: widget.currentDrive ?? _explorerDrive(context),
+          )
+        : null;
 
     return [
+      if (nameable != null) ...[
+        ArNSNameSection(item: nameable),
+        sizedBoxHeight16px,
+      ] else if (!item.isOwner)
+        ArNSVisitorNameSection(
+          dataTxId: item.dataTxId,
+          hints: item.assignedNames ?? const [],
+        ),
       DetailsPanelItem(
         leading: _IdValue(id: item.id),
         itemTitle: appLocalizationsOf(context).fileID,
@@ -988,8 +1014,21 @@ class _DetailsPanelState extends State<DetailsPanel> {
 
         break;
       case RevisionAction.assignName:
-        title = 'File had name assigned ${file.assignedNames?.last}';
-        break;
+        final current = widget.item;
+        return ArNSNameActivity(
+          names: file.assignedNames ?? const [],
+          dataTxIds: {
+            if (file.dataTxId != null) file.dataTxId!,
+            if (current is FileDataTableItem) current.dataTxId,
+          },
+          isOwner: current.isOwner,
+          builder: (context, title) => DetailsPanelItem(
+            leading: leading ?? const SizedBox(),
+            itemTitle: title,
+            itemSubtitle: formatDateTime(file.unixTime),
+            expandLeading: false,
+          ),
+        );
       case RevisionAction.assertLicense:
         if (licenseState == null) {
           title = 'File had license updated';

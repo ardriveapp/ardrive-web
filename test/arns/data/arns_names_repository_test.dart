@@ -3,6 +3,7 @@ import 'package:ardrive/arns/domain/arns_action.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,9 @@ import 'package:mocktail/mocktail.dart';
 import '../../test_utils/utils.dart';
 
 class _MockArioSDK extends Mock implements ArioSDK {}
+
+class _MockPublicationRepository extends Mock
+    implements PublicationRepository {}
 
 class _FakePublications implements ArNSPublicationLookup {
   _FakePublications(this.found);
@@ -289,6 +293,121 @@ void main() {
       ]);
 
       expect(updated.records, acme.records);
+    });
+  });
+
+  group('a change just made', () {
+    // The flow's refresh after a change read the RPC with nothing applied
+    // over it, and a refresh begun before the change finished after it: the
+    // old target came back on screen and in the cache.
+    late DateTime now;
+
+    setUp(() {
+      now = DateTime(2026, 10, 27, 12);
+      repository = ArNSNamesRepository(
+        arioSDK: sdk,
+        dao: db.aRNSDao,
+        publications: publications,
+        clock: () => now,
+      );
+    });
+
+    const pointed = ArNSSetRecord(
+      antId: _antOwned,
+      undername: 'blog',
+      transactionId: 'manifest-v2',
+      ttlSeconds: 300,
+    );
+
+    test('shows and is cached by a refresh that lags it', () async {
+      repository.rememberChange(pointed);
+      repository.rememberChange(
+          const ArNSRemoveRecord(antId: _antOwned, undername: 'old'));
+
+      final acme = (await repository.refresh(_wallet)).first;
+
+      final byUndername = {for (final r in acme.records) r.undername: r};
+      expect(byUndername['blog']!.transactionId, 'manifest-v2');
+      expect(byUndername.containsKey('old'), isFalse);
+      final cached = (await repository.cached(_wallet)).first;
+      expect(
+        cached.records.firstWhere((r) => r.undername == 'blog').transactionId,
+        'manifest-v2',
+      );
+    });
+
+    test('is left to the RPC after two minutes', () async {
+      repository.rememberChange(pointed);
+      now = now.add(const Duration(minutes: 2, seconds: 1));
+
+      final acme = (await repository.refresh(_wallet)).first;
+
+      expect(
+        acme.records.firstWhere((r) => r.undername == 'blog').transactionId,
+        'manifest-v1',
+      );
+    });
+
+    test('is forgotten with the session', () async {
+      repository.rememberChange(pointed);
+      repository.forgetSession();
+
+      final acme = (await repository.refresh(_wallet)).first;
+
+      expect(
+        acme.records.firstWhere((r) => r.undername == 'blog').transactionId,
+        'manifest-v1',
+      );
+    });
+  });
+
+  group('the owner\'s publications', () {
+    // Every names read scanned the owner's whole publication history in
+    // GraphQL: on each load, each refresh and after each change.
+    late _MockPublicationRepository publicationRepository;
+    late DateTime now;
+    late OwnerPublicationLookup lookup;
+
+    setUp(() {
+      publicationRepository = _MockPublicationRepository();
+      now = DateTime(2026, 10, 27, 12);
+      lookup = OwnerPublicationLookup(
+        repository: publicationRepository,
+        ownerAddress: () => 'owner',
+        clock: () => now,
+      );
+    });
+
+    test('are read once for five minutes, and reads at once share one',
+        () async {
+      when(() => publicationRepository.publicationsOfOwner('owner'))
+          .thenAnswer((_) async => {});
+
+      await Future.wait([
+        lookup.publicationsFor({'a'}),
+        lookup.publicationsFor({'b'}),
+      ]);
+      now = now.add(const Duration(minutes: 5));
+      await lookup.publicationsFor({'c'});
+      verify(() => publicationRepository.publicationsOfOwner('owner'))
+          .called(1);
+
+      now = now.add(const Duration(seconds: 1));
+      await lookup.publicationsFor({'d'});
+      verify(() => publicationRepository.publicationsOfOwner('owner'))
+          .called(1);
+    });
+
+    test('are read again after a failed read', () async {
+      when(() => publicationRepository.publicationsOfOwner('owner'))
+          .thenAnswer((_) async => throw Exception('GraphQL failed'));
+      await expectLater(lookup.publicationsFor({'a'}), throwsException);
+
+      when(() => publicationRepository.publicationsOfOwner('owner'))
+          .thenAnswer((_) async => {});
+      expect(await lookup.publicationsFor({'a'}), isEmpty);
+      verify(() => publicationRepository.publicationsOfOwner('owner'))
+          .called(2);
     });
   });
 

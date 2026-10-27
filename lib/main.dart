@@ -1,5 +1,11 @@
 import 'dart:async';
 
+import 'package:ardrive/arns/data/arns_names_repository.dart';
+import 'package:ardrive/arns/data/arns_pending_action_store.dart';
+import 'package:ardrive/arns/data/arns_wallet_store.dart';
+import 'package:ardrive/arns/data/turbo_arns_action_client.dart';
+import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
+import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
@@ -411,6 +417,24 @@ class AppState extends State<App> {
             profileCubit: context.read<ProfileCubit>(),
           ),
         ),
+        // Lazy, and inert while names are off.
+        BlocProvider(
+          create: (context) => ArNSWalletCubit(
+            arioSDK: ArioSDKFactory().create(),
+            store: context.read<ArNSWalletStore>(),
+            auth: context.read<ArDriveAuth>(),
+            isEnabled: () =>
+                configService.config.enableArNS && !PublicationMode.isOn,
+          ),
+        ),
+        // The linked ArNS wallet's names, for rows, the details panel, the
+        // name dialog and the Names page. Lazy: only read while names are on.
+        BlocProvider(
+          create: (context) => ArNSNamesCubit(
+            repository: context.read<ArNSNamesRepository>(),
+            walletCubit: context.read<ArNSWalletCubit>(),
+          ),
+        ),
         BlocProvider(
           create: (context) => ProfileNameBloc(
             context.read<ProfileLogoRepository>(),
@@ -483,6 +507,8 @@ class AppState extends State<App> {
             create: (context) => context.read<Database>().profileDao),
         RepositoryProvider<DriveDao>(
             create: (context) => context.read<Database>().driveDao),
+        RepositoryProvider(create: (_) => ArNSWalletStore()),
+        RepositoryProvider(create: (_) => ArNSPendingActionStore()),
         RepositoryProvider<UserRepository>(
           create: (context) => UserRepository(
             context.read<ProfileDao>(),
@@ -503,6 +529,8 @@ class AppState extends State<App> {
             crypto: ArDriveCrypto(),
             arweave: arweave,
             userRepository: context.read<UserRepository>(),
+            arnsWalletStore: context.read<ArNSWalletStore>(),
+            arnsPendingActionStore: context.read<ArNSPendingActionStore>(),
           ),
         ),
         RepositoryProvider(
@@ -596,6 +624,30 @@ class AppState extends State<App> {
           create: (context) => PublicationRepository(
             graphQLRetry: arweave.graphQLRetry,
             gatewayUrl: () => configService.config.publicationGatewayUrl,
+          ),
+        ),
+        // Names (docs/NAMES.md). Built on first read, which nothing does
+        // while `enableArNS` is off.
+        RepositoryProvider(
+          create: (_) => TurboArNSActionClient(
+            paymentUrl: () => configService.config.defaultTurboPaymentUrl!,
+          ),
+        ),
+        RepositoryProvider(
+          create: (context) => ArNSNamesRepository(
+            arioSDK: ArioSDKFactory().create(),
+            dao: context.read<Database>().aRNSDao,
+            publications: OwnerPublicationLookup(
+              repository: context.read<PublicationRepository>(),
+              ownerAddress: () {
+                final auth = context.read<ArDriveAuth>();
+                try {
+                  return auth.currentUser.walletAddress;
+                } catch (_) {
+                  return null;
+                }
+              },
+            ),
           ),
         ),
       ];

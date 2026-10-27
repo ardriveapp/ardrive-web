@@ -126,6 +126,10 @@ class PublicationJob {
   bool _bundleDone = false;
   String? _publishedAt;
 
+  /// The literal names that will point at this version, written into
+  /// `publication.json` (docs/NAMES.md, Q25). Set before publishing.
+  List<String> names = const [];
+
   /// This job paid with [method] instead, keeping everything already done:
   /// the snapshot, the signed files, what was posted. Signed items are the
   /// same for either transport.
@@ -156,7 +160,8 @@ class PublicationJob {
       .._snapshotTags = _snapshotTags
       .._resumeSnapshot = _resumeSnapshot
       .._signed = _signed
-      .._publishedAt = _publishedAt;
+      .._publishedAt = _publishedAt
+      ..names = names;
     job._posted.addAll(_posted);
     // A bundle already sent stands; what remains goes by the new transport.
     if (_bundleDone) job._posted.addAll(_signed?.map((s) => s.name) ?? []);
@@ -537,6 +542,7 @@ class PublicationPublisher {
         if (job.cover != null) 'cover': 'cover.jpg',
       },
       publishedAt: publishedAt,
+      names: job.names,
       viewer: (
         release: job.release.version ?? 'unknown',
         manifest: job.release.manifestId,

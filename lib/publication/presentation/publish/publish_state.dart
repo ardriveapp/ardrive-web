@@ -95,9 +95,13 @@ class PublishState extends Equatable {
     this.link,
     this.isUpdate = false,
     this.imageError,
+    this.names,
   });
 
   final PublishStage stage;
+
+  /// The names after publishing, when the name step had work.
+  final ArNSFlowOutcome? names;
   final PublishBlock? blocked;
   final String blockedReason;
   final PublicationSummary? summary;
@@ -168,6 +172,7 @@ class PublishState extends Equatable {
     bool? isUpdate,
     ({PublicationImageSlot slot, PublicationImageProblem problem})? Function()?
         imageError,
+    ArNSFlowOutcome? names,
   }) =>
       PublishState(
         stage: stage ?? this.stage,
@@ -193,6 +198,7 @@ class PublishState extends Equatable {
         link: link ?? this.link,
         isUpdate: isUpdate ?? this.isUpdate,
         imageError: imageError != null ? imageError() : this.imageError,
+        names: names ?? this.names,
       );
 
   @override
@@ -220,6 +226,7 @@ class PublishState extends Equatable {
         link,
         isUpdate,
         imageError,
+        names,
       ];
 }
 

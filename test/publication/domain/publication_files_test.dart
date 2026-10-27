@@ -61,6 +61,28 @@ void main() {
     });
   });
 
+  test('names go into publication.json and are read back', () {
+    final viewer = publication['viewer'] as Map;
+    final text = buildPublicationJson(
+      driveId: publication['driveId'],
+      rootFolderId: publication['rootFolderId'],
+      privacy: publication['privacy'],
+      owner: publication['owner'],
+      snapshotTxId: publication['snapshotTxId'],
+      snapshotTags: (publication['snapshotTags'] as Map).cast<String, String>(),
+      title: publication['title'],
+      description: publication['description'],
+      publishedAt: publication['publishedAt'],
+      viewer: (release: viewer['release'], manifest: viewer['manifest']),
+      names: ['docs_acme', 'acme'],
+    );
+
+    expect(json.decode(text)['names'], ['docs_acme', 'acme']);
+    expect(PublicationConfig.parse(text).names, ['docs_acme', 'acme']);
+    expect(PublicationConfig.parse(publicationJson()).names, isEmpty,
+        reason: 'absent without names');
+  });
+
   test('index.html matches the tool', () {
     expect(
       buildPublicationIndexHtml(

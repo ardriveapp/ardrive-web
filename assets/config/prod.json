@@ -1,5 +1,5 @@
 {
-  "configVersion": 4,
+  "configVersion": 6,
   "defaultArweaveGatewayUrl": "https://turbo-gateway.com",
   "defaultArweaveGatewayForDataRequest": {
     "label": "Turbo Gateway",
@@ -15,6 +15,8 @@
   "publicationViewer": "ardrive",
   "publicationGatewayUrl": "https://ardrive.net",
   "enableDriveStatePublishing": true,
+  "enableArNS": true,
+  "arnsPlaceholderTxId": "hAs_l8a7vXqD2LTZ8MtM09-HpwYo21ynvZwoJtbYaTk",
   "uploadThumbnails": true,
   "autoSync": false
 }
