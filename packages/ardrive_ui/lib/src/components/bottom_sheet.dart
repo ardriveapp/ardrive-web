@@ -117,7 +117,7 @@ class ArDriveBottomSheet extends StatelessWidget {
             )
           else
             Flexible(
-              child: SingleChildScrollView(
+              child: ArDriveScrollArea(
                 padding: contentPadding,
                 child: content,
               ),

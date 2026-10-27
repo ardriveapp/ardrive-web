@@ -50,7 +50,9 @@ class PublishLookStep extends StatelessWidget {
       }
       // The form scrolls on its own and the previews stay in view, so a
       // picture shows on the page the moment it is picked. The height leaves
-      // the dialog's title, step and actions room on the screen.
+      // the dialog's title, step and actions room on the screen. Each side
+      // shows that it scrolls (a scrollbar, and a divider while more is
+      // below).
       final height =
           (MediaQuery.sizeOf(context).height * 0.8 - 250).clamp(320.0, 620.0);
       return Column(
@@ -65,15 +67,18 @@ class PublishLookStep extends StatelessWidget {
               children: [
                 Expanded(
                   flex: 11,
-                  child: SingleChildScrollView(
-                    padding: EdgeInsetsDirectional.only(end: 12),
+                  child: ArDriveScrollArea(
+                    padding: EdgeInsetsDirectional.only(end: 16),
                     child: _Form(),
                   ),
                 ),
                 SizedBox(width: 12),
                 Expanded(
                   flex: 9,
-                  child: SingleChildScrollView(child: _Previews()),
+                  child: ArDriveScrollArea(
+                    padding: EdgeInsetsDirectional.only(end: 16),
+                    child: _Previews(),
+                  ),
                 ),
               ],
             ),
@@ -122,8 +127,6 @@ class _Form extends StatelessWidget {
         _Hint(strings.publishDisplayNameHint),
         const SizedBox(height: 16),
         const _Keywords(),
-        const SizedBox(height: 16),
-        const _Licence(),
         const SizedBox(height: 24),
         _ImageField(
           slot: PublicationImageSlot.icon,
@@ -145,6 +148,9 @@ class _Form extends StatelessWidget {
           hint: strings.publishSocialHint,
           aspect: 1200 / 630,
         ),
+        // Last: the page comes first, then the terms it is shared under.
+        const SizedBox(height: 24),
+        const _Licence(),
       ],
     );
   }

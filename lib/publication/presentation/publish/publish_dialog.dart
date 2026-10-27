@@ -37,6 +37,7 @@ import 'package:ardrive_utils/ardrive_utils.dart' show TabVisibilitySingleton;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:pst/pst.dart';
 
 /// "Publish to web" on a drive ([folder] null) or a folder: the published
@@ -145,6 +146,9 @@ Future<void> showPublishDialog(
     cardMark: () => loadAssetImage(Resources.images.brand.logo1),
     fileCountLabel: strings.publishFileCount,
   );
+  // The app's messenger outlives the dialog, which may be closed while the
+  // publish runs.
+  final messenger = ScaffoldMessenger.maybeOf(context);
   return showArDriveDialog(
     context,
     // Closed only by its own buttons: a click outside must not hide a
@@ -156,8 +160,47 @@ Future<void> showPublishDialog(
         folder: folder,
         previous: previous,
         dependencies: dependencies,
+        onSettledAfterClose: (link) {
+          if (messenger != null && messenger.mounted) {
+            showPublishSettledNotice(messenger, strings, link);
+          }
+        },
       )..load(),
       child: const PublishDialog(),
+    ),
+  );
+}
+
+/// Tells the owner how a publish ended after its dialog was closed, in the
+/// app's own snackbar: the page and a link to open it, or how to try again.
+void showPublishSettledNotice(
+  ScaffoldMessengerState messenger,
+  AppLocalizations strings,
+  String? link,
+) {
+  final colors = ArDriveTheme.of(messenger.context).themeData.colorTokens;
+  messenger.showSnackBar(
+    SnackBar(
+      // Typography reads the screen width, known where the snackbar shows.
+      content: Builder(
+        builder: (context) => Text(
+          link != null
+              ? strings.publishDoneTitle
+              : strings.publishStoppedNotice,
+          style: ArDriveTypographyNew.of(context)
+              .paragraphNormal(color: colors.textHigh),
+        ),
+      ),
+      backgroundColor: colors.containerL3,
+      duration: const Duration(seconds: 10),
+      action: link == null
+          ? null
+          : SnackBarAction(
+              label: strings.publishOpen,
+              backgroundColor: colors.containerL3,
+              textColor: colors.textHigh,
+              onPressed: () => openUrl(url: link),
+            ),
     ),
   );
 }
@@ -174,8 +217,8 @@ class PublishDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Back does not close a publish in progress: the dialog is the only way
-    // to see it finish or try it again.
+    // Back does not close a publish in progress; only its Close button
+    // does, on purpose, and the app then says how it ended.
     return BlocSelector<PublishCubit, PublishState, bool>(
       selector: (state) => state.stage == PublishStage.publishing,
       builder: (context, publishing) => PopScope(
@@ -255,11 +298,16 @@ class PublishDialog extends StatelessWidget {
               ],
             );
           case PublishStage.publishing:
+            // Close hides the dialog and the publish carries on; the app
+            // says how it ended (see [showPublishSettledNotice]). There is no
+            // Cancel: what was sent is paid for.
             return _modal(
               context,
               title: title,
               content: _Progress(state: state),
-              actions: const [],
+              actions: [
+                ModalAction.dismiss(title: strings.close, action: close)
+              ],
             );
           case PublishStage.failed:
             return _modal(
@@ -534,12 +582,6 @@ class _Review extends StatelessWidget {
           SummaryRow(strings.publishReviewWhat,
               '$scopeName • ${strings.publishFileCount(state.summary!.fileCount)}'),
           SummaryRow(strings.publishTitleLabel, state.title.trim()),
-          SummaryRow(
-            strings.publishReviewSnapshot,
-            state.reusesSnapshot
-                ? strings.publishSnapshotReused
-                : strings.publishSnapshotNew,
-          ),
           SummaryRow(
             strings.publishReviewLink,
             state.isUpdate

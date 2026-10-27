@@ -361,15 +361,16 @@ Users see **Publish to web**, **Published to web** and **Update**; the word
 
 ### Entry points
 
-**Publish to web**, with a globe, beside Share in: a drive's menu (the drive
+**Publish to web**, with its icon (`ArDriveIcons.publishToWeb`, a browser
+window with an upward arrow; the globe is for public drives), beside Share in: a drive's menu (the drive
 page on desktop and phone, and the drives list), a folder row's menus, and
 the details panel's toolbar for a drive or folder. Offered on the web, in the
 app (never in a publication), to the owner of a public drive, where snapshots
 can be published (`enableDriveStatePublishing`). Hidden on private drives
 until phase 3.
 
-Once published it reads **Published to web** and opens the published view. A
-globe ("Published to web" on hover) marks published drives in the drives list
+Once published it reads **Published to web** and opens the published view.
+The same icon ("Published to web" on hover) marks published drives in the drives list
 and published folders in the explorer. One GraphQL query when the wallet
 signs in finds every publication it made, so the marks are there on any
 device before anything is synced; a publish this session is counted at once,
@@ -414,10 +415,10 @@ On a wide screen the form scrolls on its own and the previews stay in view.
 | Description | text, 160 characters | Optional |
 | Display name | text, 40 characters | Optional. "Shown after "By", beside your wallet address." Prefilled from the owner's last publication in this browser, or from the version an update starts from; no ENS or SNS lookups. Free text, self-declared: the page always shows the verified wallet address beside it |
 | Keywords | chips, up to 5 | Optional. `Keyword` tags on the manifest and `keywords` in `publication.json`; not written into the page |
-| License | menu: none, the Creative Commons licences, UDL (with its terms form) | Optional. For everything in the publication; shown in its byline, linked to its definition |
 | Icon | Upload or From this drive | Square, at least 512 pixels wide. Makes 32, 180 and 512 px PNGs |
 | Cover | Upload or From this drive | At least 1600 × 400; cropped to 4:1 from the middle; JPEG aiming under 100 KiB |
 | Social card | Upload or From this drive | At least 1200 × 630. Until the owner picks one, the card is drawn from the other fields: the cover (or a background tinted from the icon's colour), the icon, title, description, an exact "N files", and ArDrive's mark; Remove goes back to it |
+| License | menu: none, the Creative Commons licences, UDL (with its terms form) | Optional. For everything in the publication; shown in its byline, linked to its definition |
 
 Pictures are decoded by the browser (PNG, JPEG, WebP, GIF, up to 20 MB) and
 cropped to the middle. A picture smaller than it is shown says "This image is
@@ -425,16 +426,20 @@ small, so it may look soft."; one that is not a picture says what to use.
 **From this drive** lists the drive's images (by type, or by name when the
 type was never recorded), newest first.
 
-**Step 3 · Review and publish.** What (name • N files), title, snapshot (the
-newest one in a block, when nothing in the drive is newer, it counts what
-this device holds, and ardrive.net serves it (a `HEAD` of `/raw/<id>`
-answering 200 with a non-empty body): "The latest snapshot. Nothing changed since." or "A new snapshot of the drive,
-included in the cost."), link ("A new link of its own." or, for an update,
+The license comes last, after the pictures: the page first, then the terms
+it is shared under.
+
+**Step 3 · Review and publish.** What (name • N files), title, link ("A new link of its own." or, for an update,
 "A new link. The current one keeps working."), the Turbo free-tier message,
 the app's payment cards (each way to pay with its cost and balance), and with AR:
 "With AR, the page opens 15 to 30 minutes after it's published, once the
 network confirms it." Then, in the step: "Publishing is permanent. It can't be undone
 or deleted." The button is **Publish**.
+
+The review does not mention the snapshot; its cost is in the total. The
+newest snapshot in a block is reused when nothing in the drive is newer, it
+counts what this device holds, and ardrive.net serves it (a `HEAD` of
+`/raw/<id>` answering 200 with a non-empty body); otherwise a new one is made.
 
 The free upload allowance is checked item by item, as the upload flow does:
 the publish is free when every data item (each image, page, the manifest and
@@ -443,8 +448,11 @@ a new snapshot) is within Turbo's per-item limit (`/v1/info`, else
 Otherwise it is priced as a whole.
 
 **Progress.** Saving a snapshot of the drive (when new), signing the page's
-files, uploading, getting the page ready (Turbo). "Keep this window open until
-it's done." From Publish until it is done or has failed, the browser asks
+files, uploading, getting the page ready (Turbo). "Keep this tab open until
+it's done." **Close** hides the dialog and the publish carries on (there is
+no Cancel: what was sent is paid for); when it settles the app shows "Your
+page is published" with **Open**, or "Publishing stopped. Open Publish to web
+to try again." Back does not close it. From Publish until it is done or has failed, the browser asks
 before the tab is closed or reloaded (the leave-page guard). Each Turbo post
 of the page's files gives up after two minutes, ending on Failed with Try
 again, rather than showing "uploading" for ever.

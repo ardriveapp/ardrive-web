@@ -809,9 +809,16 @@ class ArDriveStandardModalNew extends StatelessWidget {
           const SizedBox(
             height: 16,
           ),
-        Align(
-          alignment: Alignment.bottomRight,
-          child: ArDriveModalActions(actions: actions!),
+        Padding(
+          // Scrolling, the modal has no side padding of its own, so the
+          // scroll area's divider runs edge to edge.
+          padding: scrollableContent
+              ? const EdgeInsets.symmetric(horizontal: 24)
+              : EdgeInsets.zero,
+          child: Align(
+            alignment: Alignment.bottomRight,
+            child: ArDriveModalActions(actions: actions!),
+          ),
         )
       ]
     ];
@@ -822,7 +829,9 @@ class ArDriveStandardModalNew extends StatelessWidget {
         maxWidth: width ?? maxWidth,
         minWidth: 250,
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      contentPadding: scrollableContent
+          ? const EdgeInsets.symmetric(vertical: 16)
+          : const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       content: scrollableContent
           ? ConstrainedBox(
               // Bound the modal to most of the viewport and keep the actions
@@ -839,8 +848,11 @@ class ArDriveStandardModalNew extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Shows that it scrolls: a scrollbar in the right margin
+                  // and a divider above the actions while more is below.
                   Flexible(
-                    child: SingleChildScrollView(
+                    child: ArDriveScrollArea(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
