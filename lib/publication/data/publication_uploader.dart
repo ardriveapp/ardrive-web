@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:ardrive/entities/entity.dart' show TransactionUtils;
@@ -8,6 +9,12 @@ import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive_utils/ardrive_utils.dart' show EntityTag;
 import 'package:arweave/arweave.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+
+/// How long one publication item may take to post to Turbo. Items are small
+/// (the largest, `files.html`, under a megabyte at the 5,000-file cap), so
+/// this is generous for a slow connection and short enough to give up on a
+/// call that hangs.
+const publicationTurboTimeout = Duration(minutes: 2);
 
 /// A file a publication adds, before it is signed.
 class PublicationItem {
@@ -37,11 +44,17 @@ class PublicationUploader {
   PublicationUploader({
     required ArweaveService arweave,
     required TurboUploadService turboUploadService,
+    this.turboTimeout = publicationTurboTimeout,
   })  : _arweave = arweave,
         _turbo = turboUploadService;
 
   final ArweaveService _arweave;
   final TurboUploadService _turbo;
+
+  /// How long one item may take to post to Turbo before the publish stops
+  /// with Try again, rather than showing "uploading" for ever: the service's
+  /// own receive timeout is a year.
+  final Duration turboTimeout;
 
   Future<DataItem> sign(PublicationItem item, Wallet wallet) async {
     final version = (await PackageInfo.fromPlatform()).version;
@@ -59,9 +72,14 @@ class PublicationUploader {
 
   /// Posts one item to Turbo. Throws what [TurboUploadService] throws, among
   /// them `TurboPaymentRequiredException`.
+  ///
+  /// Throws [TimeoutException] after [turboTimeout]. Posting the same signed
+  /// item again is safe: Turbo keys an item by its ID.
   Future<void> postToTurbo(DataItem item, Wallet wallet) async {
     logger.i('[publication] posting ${item.id} to Turbo');
-    await _turbo.postDataItem(dataItem: item, wallet: wallet);
+    await _turbo
+        .postDataItem(dataItem: item, wallet: wallet)
+        .timeout(turboTimeout);
   }
 
   /// [items] as one signed bundle transaction, to post with [uploadBundle].

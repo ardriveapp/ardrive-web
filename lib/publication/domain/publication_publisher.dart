@@ -267,7 +267,14 @@ class PublicationPublisher {
 
   /// The size in bytes of everything [job] would upload, its snapshot
   /// included when new: for the cost, before anything is signed.
-  int sizeOf(PublicationJob job) {
+  int sizeOf(PublicationJob job) =>
+      itemSizesOf(job).fold(0, (sum, size) => sum + size);
+
+  /// The size in bytes of each data item [job] would upload, header
+  /// included, its snapshot among them when new. Turbo's free allowance
+  /// applies item by item, so the cost checks each against it rather than
+  /// the total.
+  List<int> itemSizesOf(PublicationJob job) {
     const placeholderId = 'PLACEHOLDER_TRANSACTION_ID_0000000000000000';
     final items = _items(
       job,
@@ -280,14 +287,30 @@ class PublicationPublisher {
       idOf: (_) => placeholderId,
       publishedAt: publicationTimestamp(_now()),
     );
-    var size = items.fold<int>(0, (sum, item) => sum + item.data.length);
-    // A snapshot an earlier attempt sent is already paid for.
-    if (job.snapshot case NewSnapshot(:final artifact)
-        when job._snapshotTxId == null && job._resumeSnapshot == null) {
-      size += artifact.sizeInBytes;
-    }
     // Each data item's header: its signature, owner and tags.
-    return size + items.length * 1100;
+    const header = 1100;
+    return [
+      for (final item in items) item.data.length + header,
+      // A snapshot an earlier attempt sent is already paid for.
+      if (job.snapshot case NewSnapshot(:final artifact)
+          when job._snapshotTxId == null && job._resumeSnapshot == null)
+        artifact.sizeInBytes + header,
+    ];
+  }
+
+  /// Whether the gateway publications are on serves snapshot [txId]: a
+  /// mined snapshot it cannot hand over would leave a page that never opens.
+  Future<bool> snapshotServes(String txId) async {
+    final uri = Uri.parse('${_gatewayUrl()}/raw/$txId');
+    try {
+      final response =
+          await _client.head(uri).timeout(const Duration(seconds: 20));
+      final length = int.tryParse(response.headers['content-length'] ?? '');
+      return response.statusCode == 200 && (length == null || length > 0);
+    } catch (e) {
+      logger.w('[publication] could not check snapshot $txId: $e');
+      return false;
+    }
   }
 
   /// Runs [job], or resumes it, telling [onStep] what is under way.
@@ -582,14 +605,16 @@ class PublicationPublisher {
 
   Future<void> _warmUp(String manifestTxId) async {
     final base = _gatewayUrl();
-    for (final path in ['', 'publication.json']) {
-      try {
-        await _client
+    // The snapshot too: it is the largest file a first visitor waits for.
+    // Side by side, so a slow gateway costs the owner one wait, not three.
+    await Future.wait([
+      for (final path in ['', 'publication.json', 'snapshot'])
+        _client
             .get(Uri.parse('$base/$manifestTxId/$path'))
-            .timeout(const Duration(seconds: 20));
-      } catch (e) {
-        logger.w('[publication] warming $path failed: $e');
-      }
-    }
+            .timeout(const Duration(seconds: 20))
+            .then<void>((_) {}, onError: (Object e) {
+          logger.w('[publication] warming $path failed: $e');
+        }),
+    ]);
   }
 }

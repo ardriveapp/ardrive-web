@@ -112,6 +112,9 @@ const REPLACED = [
   /^[ \t]*<meta name="theme-color"[^>]*>[ \t]*\r?\n/gm,
   /^[ \t]*<meta property="og:[^>]*>[ \t]*\r?\n/gm,
   /^[ \t]*<meta name="twitter:[^>]*>[ \t]*\r?\n/gm,
+  // The release's own stops a visitor zooming (`user-scalable=no`); a page
+  // lets them.
+  /^[ \t]*<meta [^>]*name="viewport"[^>]*>[ \t]*\r?\n/gm,
 ];
 const ICON_LINKS = [
   /^[ \t]*<link rel="(?:shortcut )?icon"[^>]*>[ \t]*\r?\n/gm,
@@ -139,6 +142,7 @@ export function buildIndexHtml(
   const e = escapeHtml;
   const head = [
     '<meta name="ardrive-publication" content="publication.json">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
     `<title>${e(title)}</title>`,
     `<meta name="description" content="${e(description)}">`,
     '<meta name="theme-color" content="#F7F7F7" media="(prefers-color-scheme: light)">',

@@ -69,7 +69,7 @@ class _PublishedViewState extends State<PublishedView> {
   bool _showEarlier = false;
 
   String _link(String txId) =>
-      '${context.read<ConfigService>().config.arweaveGatewayForDataRequest.url}/$txId/';
+      '${context.read<ConfigService>().config.publicationGatewayUrl}/$txId/';
 
   @override
   Widget build(BuildContext context) {

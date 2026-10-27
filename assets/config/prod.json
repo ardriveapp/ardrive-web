@@ -13,6 +13,7 @@
   "stripePublishableKey": "pk_live_51JUAtwC8apPOWkDLMQqNF9sPpfneNSPnwX8YZ8y1FNDl6v94hZIwzgFSYl27bWE4Oos8CLquunUswKrKcaDhDO6m002Yj9AeKj",
   "enableSyncFromDriveState": true,
   "publicationViewer": "ardrive",
+  "publicationGatewayUrl": "https://ardrive.net",
   "enableDriveStatePublishing": true,
   "enableArNS": false,
   "arnsPlaceholderTxId": "hAs_l8a7vXqD2LTZ8MtM09-HpwYo21ynvZwoJtbYaTk",

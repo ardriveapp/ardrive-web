@@ -62,6 +62,25 @@ class _Frame extends StatelessWidget {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final config = _configOf(state);
 
+    // A refused page is not trusted for anything it says about itself, the
+    // window's name included: the publisher wrote it into <title>.
+    if (state
+        case PublicationFailed(failure: PublicationFailure.snapshotRejected)) {
+      return Title(
+        title: 'ArDrive',
+        color: const Color(0xFF000000),
+        child: _column(context, null, typography, colors),
+      );
+    }
+    return _column(context, config, typography, colors);
+  }
+
+  Widget _column(
+    BuildContext context,
+    PublicationConfig? config,
+    ArdriveTypographyNew typography,
+    ArDriveColorTokens colors,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

@@ -30,6 +30,8 @@ AppConfig _$AppConfigFromJson(Map<String, dynamic> json) => AppConfig(
       enableArNS: json['enableArNS'] as bool? ?? false,
       arnsPlaceholderTxId: json['arnsPlaceholderTxId'] as String?,
       publicationViewer: json['publicationViewer'] as String? ?? 'ardrive',
+      publicationGatewayUrl:
+          json['publicationGatewayUrl'] as String? ?? 'https://ardrive.net',
       stripePublishableKey: json['stripePublishableKey'] as String,
       autoSync: json['autoSync'] as bool? ?? true,
       uploadThumbnails: json['uploadThumbnails'] as bool? ?? true,
@@ -58,6 +60,7 @@ Map<String, dynamic> _$AppConfigToJson(AppConfig instance) => <String, dynamic>{
       'enableArNS': instance.enableArNS,
       'arnsPlaceholderTxId': instance.arnsPlaceholderTxId,
       'publicationViewer': instance.publicationViewer,
+      'publicationGatewayUrl': instance.publicationGatewayUrl,
       'stripePublishableKey': instance.stripePublishableKey,
       'autoSync': instance.autoSync,
       'uploadThumbnails': instance.uploadThumbnails,

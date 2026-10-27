@@ -117,6 +117,78 @@ void main() {
         walletBalance: BigInt.from(1000000),
       );
 
+  group('several items: the free allowance is per item', () {
+    // Production's per-item limit, and a publication's items: each under it,
+    // their total over it.
+    setUp(() {
+      when(() => configService.config).thenReturn(AppConfig(
+        useTurboUpload: true,
+        useTurboPayment: true,
+        allowedDataItemSizeForTurbo: 107520,
+        stripePublishableKey: '',
+      ));
+    });
+
+    DriveStatePublishCostEstimator limited({int Function()? reported}) =>
+        DriveStatePublishCostEstimator(
+          arweave: arweave,
+          paymentService: paymentService,
+          pst: pst,
+          turboBalanceRetriever: turboBalanceRetriever,
+          configService: configService,
+          maxFreeItemBytes: reported,
+        );
+    const items = [83552, 20000, 5000, 3000, 2000];
+    final total = items.reduce((a, b) => a + b);
+
+    test('items each within the limit are free, though the total is not',
+        () async {
+      when(() => turboBalanceRetriever.getFreeAllowance(any()))
+          .thenAnswer((_) async => TurboFreeAllowance.bytes(10 * 1024 * 1024));
+      final cost = await limited().estimate(
+        sizeInBytes: total,
+        itemSizes: items,
+        wallet: wallet,
+        walletBalance: BigInt.zero,
+      );
+      expect(total, greaterThan(107520));
+      expect(cost.freeStatus, FreeUploadStatus.free);
+      expect(cost.isUnaffordable, isFalse);
+    });
+
+    test('one item over the limit is paid for', () async {
+      final cost = await limited().estimate(
+        sizeInBytes: total + 200000,
+        itemSizes: [...items, 200000],
+        wallet: wallet,
+        walletBalance: BigInt.zero,
+      );
+      expect(cost.freeStatus, FreeUploadStatus.notEligible);
+    });
+
+    test('the allowance still has to cover them all', () async {
+      when(() => turboBalanceRetriever.getFreeAllowance(any()))
+          .thenAnswer((_) async => TurboFreeAllowance.bytes(50000));
+      final cost = await limited().estimate(
+        sizeInBytes: total,
+        itemSizes: items,
+        wallet: wallet,
+        walletBalance: BigInt.zero,
+      );
+      expect(cost.freeStatus, FreeUploadStatus.exceedsAllowance);
+    });
+
+    test("Turbo's own limit wins over the config's", () async {
+      final cost = await limited(reported: () => 1000).estimate(
+        sizeInBytes: total,
+        itemSizes: items,
+        wallet: wallet,
+        walletBalance: BigInt.zero,
+      );
+      expect(cost.freeStatus, FreeUploadStatus.notEligible);
+    });
+  });
+
   /// A call that neither returns nor throws, which is the case a `try`/`catch`
   /// cannot see.
   Future<T> neverAnswers<T>() => Completer<T>().future;

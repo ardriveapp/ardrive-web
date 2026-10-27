@@ -20,6 +20,7 @@ import 'package:ardrive/drive_explorer/dock/ardrive_dock.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_modal.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/entities/constants.dart';
+import 'package:ardrive/publication/data/publication_owner_lookup.dart';
 import 'package:ardrive/publication/data/publication_source.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
@@ -363,6 +364,14 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         settingsPath: PublicationMode.settingsPath!,
         driveDao: context.read<DriveDao>(),
         importer: DriveStateImporter(context.read<DriveDao>()),
+        // The gateway it detected, which the host rule allows.
+        ownerOf: PublicationOwnerLookup(
+          gateway: Uri.parse(context
+              .read<ConfigService>()
+              .config
+              .arweaveGatewayForDataRequest
+              .url),
+        ).ownerOf,
       )..load(),
       child: BlocListener<PublicationLoaderCubit, PublicationLoaderState>(
         listener: (context, state) {

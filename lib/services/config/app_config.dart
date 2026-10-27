@@ -4,6 +4,9 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'app_config.g.dart';
 
+/// Where publications live unless a config says otherwise.
+const defaultPublicationGatewayUrl = 'https://ardrive.net';
+
 @JsonSerializable()
 class AppConfig {
   @JsonKey(name: 'defaultArweaveGatewayUrl')
@@ -63,6 +66,16 @@ class AppConfig {
   /// flavour uses `ardrive`, the production release, so a publication made
   /// anywhere opens the way it will for everyone.
   final String publicationViewer;
+
+  /// The one gateway every publication is on, whatever the data gateway
+  /// setting says (docs/PUBLICATIONS.md, "The canonical gateway"): the link
+  /// the app shows and copies, every absolute URL written into a page, the
+  /// `publicationViewer` name's resolution, and the warm-up after a publish.
+  /// A code default, so a stored config written before the key existed gets
+  /// it too.
+  @JsonKey(defaultValue: defaultPublicationGatewayUrl)
+  final String publicationGatewayUrl;
+
   final String stripePublishableKey;
   final bool autoSync;
   final bool uploadThumbnails;
@@ -92,6 +105,7 @@ class AppConfig {
     this.enableArNS = false,
     this.arnsPlaceholderTxId,
     this.publicationViewer = 'ardrive',
+    this.publicationGatewayUrl = defaultPublicationGatewayUrl,
     required this.stripePublishableKey,
     this.autoSync = true,
     this.uploadThumbnails = true,
@@ -119,6 +133,7 @@ class AppConfig {
     bool? enableArNS,
     String? arnsPlaceholderTxId,
     String? publicationViewer,
+    String? publicationGatewayUrl,
     String? stripePublishableKey,
     bool? autoSync,
     bool? uploadThumbnails,
@@ -153,6 +168,8 @@ class AppConfig {
       enableArNS: enableArNS ?? this.enableArNS,
       arnsPlaceholderTxId: arnsPlaceholderTxId ?? this.arnsPlaceholderTxId,
       publicationViewer: publicationViewer ?? this.publicationViewer,
+      publicationGatewayUrl:
+          publicationGatewayUrl ?? this.publicationGatewayUrl,
       stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
       autoSync: autoSync ?? this.autoSync,
       uploadThumbnails: uploadThumbnails ?? this.uploadThumbnails,

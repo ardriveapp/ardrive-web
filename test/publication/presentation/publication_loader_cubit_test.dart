@@ -107,6 +107,7 @@ void main() {
     Map<String, Object> files, {
     DriveStateImporter? importer,
     List<Uri>? requests,
+    Future<String?> Function(String txId)? ownerOf,
   }) =>
       PublicationLoaderCubit(
         source: PublicationSource(
@@ -116,6 +117,8 @@ void main() {
         settingsPath: 'publication.json',
         driveDao: db.driveDao,
         importer: importer ?? DriveStateImporter(db.driveDao),
+        // The gateway confirms the owner publication.json names.
+        ownerOf: ownerOf ?? (_) async => fixture.owner,
       );
 
   group('settings', () {
@@ -228,8 +231,8 @@ void main() {
       expect: () => [
         isA<PublicationLoadingSnapshot>(),
         isA<PublicationImporting>(),
-        isA<PublicationFailed>().having(
-            (s) => s.failure, 'failure', PublicationFailure.snapshotRejected),
+        // A refused page shows nothing of its own settings.
+        const PublicationFailed(PublicationFailure.snapshotRejected),
       ],
     );
 
@@ -307,6 +310,102 @@ void main() {
       expect(candidate.tags, fixture.tags);
       expect(call.captured[1], fixture.body);
       expect(call.captured[2], fixture.owner);
+      await cubit.close();
+    });
+  });
+
+  group('the owner', () {
+    const stranger = 'STRANGER_ADDRESS_000000000000000000000000000';
+
+    Map<String, Object> page(Map<String, dynamic> config) => {
+          'publication.json': json.encode(config),
+          'snapshot': fixture.body,
+        };
+
+    test('a snapshot signed by someone else is refused before it is fetched',
+        () async {
+      final requests = <Uri>[];
+      final asked = <String>[];
+      final cubit = loader(
+        page(fixture.publicationJson()
+          ..['title'] = 'Official ArDrive downloads'
+          ..['ownerName'] = 'ArDrive'),
+        requests: requests,
+        ownerOf: (txId) async {
+          asked.add(txId);
+          return stranger;
+        },
+      );
+      final states = <PublicationLoaderState>[];
+      final seen = cubit.stream.listen(states.add);
+      await cubit.load();
+      await pumpEventQueue();
+      await seen.cancel();
+      // The generic refusal: nothing the refused page says about itself, so
+      // no title, icon or display name reaches the screen.
+      expect(cubit.state,
+          const PublicationFailed(PublicationFailure.snapshotRejected));
+      expect(states, [
+        const PublicationLoadingSettings(),
+        const PublicationFailed(PublicationFailure.snapshotRejected),
+      ]);
+      expect(asked, [fixture.sidecar['transaction']['id']],
+          reason: 'one lookup, of the snapshot');
+      expect(
+          requests.map((u) => u.path), isNot(contains(endsWith('snapshot'))));
+      await cubit.close();
+    });
+
+    test('a confirmed owner is named', () async {
+      final cubit =
+          loader(page(fixture.publicationJson()..['ownerName'] = 'Phil'));
+      await cubit.load();
+      final ready = cubit.state as PublicationReady;
+      expect(ready.ownerVerified, isTrue);
+      expect(ready.config.ownerName, 'Phil');
+      await cubit.close();
+    });
+
+    test('an owner the gateway cannot confirm opens the page as declared',
+        () async {
+      // A new snapshot is not indexed until its bundle is mined, which is
+      // when its owner first opens the page.
+      for (final ownerOf in <Future<String?> Function(String)>[
+        (_) async => null,
+        (_) async => throw Exception('GraphQL is down'),
+      ]) {
+        final cubit = loader(
+            page(fixture.publicationJson()..['ownerName'] = 'Phil'),
+            ownerOf: ownerOf);
+        await cubit.load();
+        final ready = cubit.state as PublicationReady;
+        expect(ready.ownerVerified, isFalse);
+        expect(ready.config.ownerName, 'Phil');
+        expect(ready.config.owner, fixture.owner);
+        await cubit.close();
+      }
+    });
+
+    test('a display name is shown as the owner wrote it', () async {
+      // Self-declared: the verified address beside it is the identity.
+      final cubit = loader(
+          page(fixture.publicationJson()..['ownerName'] = 'ArDrive Support'));
+      await cubit.load();
+      final ready = cubit.state as PublicationReady;
+      expect(ready.ownerVerified, isTrue);
+      expect(ready.config.ownerName, 'ArDrive Support');
+      expect(ready.config.owner, fixture.owner);
+      await cubit.close();
+    });
+
+    test('a title may say ArDrive', () async {
+      final cubit = loader(page(fixture.publicationJson()
+        ..['title'] = 'ArDrive Photos Drive'
+        ..['ownerName'] = 'Phil'));
+      await cubit.load();
+      final ready = cubit.state as PublicationReady;
+      expect(ready.config.title, 'ArDrive Photos Drive');
+      expect(ready.config.ownerName, 'Phil');
       await cubit.close();
     });
   });

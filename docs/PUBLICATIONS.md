@@ -100,8 +100,19 @@ A page manifest (`arweave/paths` 0.2.0) whose paths are:
 A page manifest is about 82 KB (616 paths, 144 of them the fallback fonts),
 under 105 KiB. That was Turbo's free size; with free uploads restricted, a
 page's three files cost about 0.0014 credits (October 2026). Its link is
-`https://<gateway>/<manifest-id>/` (the trailing slash matters), and a name can
+`https://ardrive.net/<manifest-id>/` (the trailing slash matters), and a name can
 point at it later.
+
+### The canonical gateway
+
+Every publication is on one gateway, `https://ardrive.net`
+(`AppConfig.publicationGatewayUrl`, a code default so stored configs that
+predate the key get it too), whatever the owner's data gateway setting is:
+the link the app shows and copies, `og:image` and every other absolute URL
+written into `index.html`, `files.html` and `sitemap.xml`, the resolution of
+the `publicationViewer` name, the check that a reused snapshot serves, and the
+warm-up after a publish. A page still opens on any gateway; ardrive.net is
+the one ArDrive hands out.
 
 ### `publication.json`
 
@@ -165,10 +176,9 @@ HTML-escaped):
   `twitter:card=summary_large_image`. `og:image` must be an absolute URL known
   before `index.html` is uploaded, so it cannot use the page manifest's ID:
   the manifest lists `index.html`, so it is built after it. The publish uploads
-  the social image first and points `og:image` at that transaction on the
-  gateway the owner's app is set to (`turbo-gateway.com` by default), the
-  same gateway as the publication's link (a reused image keeps its existing
-  transaction). A path inside the page (`https://<gateway>/<manifest-id>/social.jpg`)
+  the social image first and points `og:image` at that transaction on
+  ardrive.net, the same gateway as the publication's link (a reused image
+  keeps its existing transaction). A path inside the page (`https://<gateway>/<manifest-id>/social.jpg`)
   cannot work: the manifest's ID exists only after `index.html` is uploaded.
   A page published under a name keeps `og:image` on the image's transaction:
   every republish rebuilds the page and its image together, so an undername
@@ -179,20 +189,31 @@ HTML-escaped):
 - `<link rel="sitemap" href="sitemap.xml">`, and as the first thing in
   `<body>` a `<noscript>` link to `files.html`: the page itself is a script,
   so these are what a crawler that runs none finds.
+- `<meta name="viewport" content="width=device-width, initial-scale=1.0">`
+  in place of the release's own, which has `user-scalable=no`: a visitor can
+  zoom a page.
 
 ### How a page opens
 
 1. The gateway serves the manifest's `index.html`.
 2. ArDrive starts, finds the meta tag, and enters publication mode before any
    service starts: no stored config, no login, no analytics, no Turbo, no
-   GraphQL, no ArNS, no HTML auto-reload, an in-memory database.
+   ArNS, no HTML auto-reload, an in-memory database.
 3. It reads `./publication.json`.
 4. File data comes from the gateway serving the page (the existing
    `/ar-io/info` detection on the page's host).
 5. A private publication shows the unlock screen.
-6. It fetches `./snapshot`, seeds the drive row from `publication.json`, and
+6. It asks that gateway, with one GraphQL lookup
+   (`transactions(ids: [<snapshot>]) { owner { address } }`), who signed the
+   snapshot: anyone can write a `publication.json` naming anyone as `owner`.
+   Only a confirmed different signer refuses the page: "This page can't be
+   opened" (the snapshot rejected). No answer (not indexed yet, which a new
+   snapshot uploaded through Turbo is for its first 15 to 60 minutes, or
+   GraphQL failing) opens the page as declared, with the byline's display
+   name and short address. Its only GraphQL request.
+7. It fetches `./snapshot`, seeds the drive row from `publication.json`, and
    imports with the existing `DriveStateImporter`.
-7. The explorer opens at the scope's root. No sync ever runs.
+8. The explorer opens at the scope's root. No sync ever runs.
 
 **Rule, enforced by a test:** a publication makes requests only to the host
 serving it and the gateway it detected, nothing else.
@@ -205,8 +226,8 @@ serving it and the gateway it detected, nothing else.
 - The app knows which release a new page pins through a config value,
   `publicationViewerManifestSource`. A 43-character value is a manifest ID, used
   as is. Anything else is an ArNS name, which the publisher resolves to the
-  manifest ID (`x-arns-resolved-id`) with a plain HTTP read through the
-  gateway. That needs no wallet, so it works before names do in the app (see
+  manifest ID (`x-arns-resolved-id`) with a plain HTTP read through
+  ardrive.net. That needs no wallet, so it works before names do in the app (see
   [Names](#names)).
 - Production sets `ardrive`, the name the production deploy moves. Staging has
   no name and pushes to `dev` never upload to Arweave, so the staging and
@@ -277,8 +298,11 @@ One frame, a heading, one sentence, one action:
 |---|---|---|---|
 | `publication.json` missing or unreadable | This page can't be opened | Its settings are missing or damaged. | Open ArDrive |
 | Snapshot can't be fetched | This page can't load right now | The gateway didn't return its files. Try again in a minute. | Try again |
-| Snapshot rejected by the importer | This page can't be opened | Its data didn't pass ArDrive's checks. | Open ArDrive |
+| Snapshot rejected: signed by someone else than `publication.json`'s owner, or refused by the importer | This page can't be opened | Its data didn't pass ArDrive's checks. | Open ArDrive |
 | Viewer older than `publication.json`'s version | This page needs a newer ArDrive | Ask its owner to republish it. | Open ArDrive |
+
+A rejected page shows ArDrive's icon and the generic sentence only: no title,
+icon or display name from its `publication.json`, which is not trusted.
 
 ### The publication frame (desktop)
 
@@ -298,9 +322,13 @@ folder on Google Drive or Dropbox, nothing said twice.
   published <date>" (bullets, as the file rows use: Wavehaus draws "·" on
   the baseline), then the description. **Download** and **Copy link** sit
   beside the title. Download takes the whole publication, or the rows selected in
-  the list, when its label says "Download selected". The owner is the name
-  they chose (`ownerName`), else their address shortened; the whole address
-  is the tooltip, and a click copies it.
+  the list, when its label says "Download selected". The owner is their
+  address shortened, in monospace, after the name they chose (`ownerName`)
+  when there is one; the whole address is the tooltip, and a click copies it.
+  The display name is self-declared and proves nothing; the verified address
+  is the identity. The byline is the same whether or not the gateway could
+  confirm the owner yet (see "How a page opens"); a page it confirmed was
+  signed by someone else never opens.
 - **The header folds** as the list beneath it scrolls: the cover and the
   lines under the title fold away, the title and actions stay, and the list
   has the window. Scrolling back to the list's top unfolds it; the wheel over
@@ -383,9 +411,9 @@ the same drive or folder):
 **Step 1 · What's included.** "The whole drive • <name>" or "This folder and
 everything in it • <name>"; files, folders and size; **Left out**, one line
 each: hidden items, files in hidden folders, files in folders whose details
-are missing (ghost folders), failed uploads. "Anyone with the link can
-browse, preview and download these files. Nothing else in your drive is
-shown."
+are missing (ghost folders), failed uploads; when hidden items are among them,
+once: "Hidden items in a public drive can still be found." Then: "Anyone can
+find this page, and search engines can list its files."
 
 **Step 2 · How it looks.** The form on the left, live previews on the right
 (below on a phone): the page header as it will look (cover, icon, title, "By
@@ -396,7 +424,7 @@ On a wide screen the form scrolls on its own and the previews stay in view.
 |---|---|---|
 | Title | text, 60 characters | Required. Prefilled with the drive or folder name |
 | Description | text, 160 characters | Optional |
-| Display name | text, 40 characters | Optional. "Shown after "By" under the title. Empty shows your wallet address." Prefilled from the owner's last publication in this browser, or from the version an update starts from; no ENS or SNS lookups |
+| Display name | text, 40 characters | Optional. "Shown after "By", beside your wallet address." Prefilled from the owner's last publication in this browser, or from the version an update starts from; no ENS or SNS lookups. Free text, self-declared: the page always shows the verified wallet address beside it |
 | Keywords | chips, up to 5 | Optional. `Keyword` tags on the manifest and `keywords` in `publication.json`; not written into the page |
 | License | menu: none, the Creative Commons licences, UDL (with its terms form) | Optional. For everything in the publication; shown in its byline, linked to its definition |
 | Icon | Upload or From this drive | Square, at least 512 pixels wide. Makes 32, 180 and 512 px PNGs |
@@ -410,18 +438,28 @@ small, so it may look soft."; one that is not a picture says what to use.
 type was never recorded), newest first.
 
 **Step 3 · Review and publish.** What (name • N files), title, snapshot (the
-newest one in a block, when nothing in the drive is newer and it counts what
-this device holds: "The latest snapshot. Nothing changed since." or "A new snapshot of the drive,
+newest one in a block, when nothing in the drive is newer, it counts what
+this device holds, and ardrive.net serves it (a `HEAD` of `/raw/<id>`
+answering 200 with a non-empty body): "The latest snapshot. Nothing changed since." or "A new snapshot of the drive,
 included in the cost."), link ("A new link of its own." or, for an update,
 "A new link. The current one keeps working."), the Turbo free-tier message,
 the app's payment cards (each way to pay with its cost and balance), and with AR:
-"With AR, the page opens a few minutes after it's published, once the network
-confirms it." Then, in the step: "Publishing is permanent. It can't be undone
+"With AR, the page opens 15 to 30 minutes after it's published, once the
+network confirms it." Then, in the step: "Publishing is permanent. It can't be undone
 or deleted." The button is **Publish**.
+
+The free upload allowance is checked item by item, as the upload flow does:
+the publish is free when every data item (each image, page, the manifest and
+a new snapshot) is within Turbo's per-item limit (`/v1/info`, else
+`allowedDataItemSizeForTurbo`) and the wallet's allowance covers them all.
+Otherwise it is priced as a whole.
 
 **Progress.** Saving a snapshot of the drive (when new), signing the page's
 files, uploading, getting the page ready (Turbo). "Keep this window open until
-it's done."
+it's done." From Publish until it is done or has failed, the browser asks
+before the tab is closed or reloaded (the leave-page guard). Each Turbo post
+of the page's files gives up after two minutes, ending on Failed with Try
+again, rather than showing "uploading" for ever.
 
 **Failed.** "Publishing didn't finish", why, **Close**, **Back to review**
 and **Try again**. Try
@@ -436,8 +474,11 @@ publishes a look the owner has since changed.
 
 **Done.** "Your page is published" (AR: "Your page is on its way"), the link
 in the field and Copy link that sharing uses, and "A new page can take a
-minute to load the first time." (AR: "It opens in a few minutes, once the
-network confirms it."). Actions: **Open page** and **Done**.
+minute to load the first time." (AR: "It opens in 15 to 30 minutes, once the
+network confirms it."). Actions: **Open page** and **Done**. Before Done
+shows, the publish reads the page, its `publication.json` and its snapshot
+once through ardrive.net, so the first visitor does not wait for the gateway
+to fetch them (Turbo only).
 
 ### Published view
 
@@ -471,6 +512,13 @@ owner's transactions with `Entity-Type: publication`, grouped by
   manifest file paths, no names in `publication.json` or tags.
 - The review step states the three facts above.
 
+**Risk to solve before phase 3 is built:** a private publication opens with
+the drive key, and a drive key opens the whole drive. A private *folder*
+publication must not hand out the key to everything else in the drive. The
+design has to solve that first (a key scoped to the folder, or a snapshot
+encrypted under a key of its own), or private publications ship for whole
+drives only.
+
 ## Phases
 
 | Phase | Ships | Done when |
@@ -485,6 +533,13 @@ Phase 1 must reach a production release before any real page works, because a
 page runs the release it pins.
 
 ## Risks
+
+- **`sitemap.xml` lists URLs crawlers ignore.** The protocol accepts only URLs
+  on the sitemap's own host and under its path, and every file link is
+  `https://ardrive.net/<data tx>`, outside the page's sandbox host and
+  manifest path. Pointing them inside the page needs per-file manifest paths
+  (decision 9) or the manifest's own ID, which does not exist yet when the
+  sitemap is built. `files.html` is unaffected: crawlers follow its links.
 
 - **A gateway serving gzip bytes bare** breaks a page on that gateway. Load
   each deploy through every gateway that matters before switching production.
