@@ -60,6 +60,18 @@ void main() {
     expect(await reloaded.pending('profile-c'), isEmpty);
   });
 
+  test('overlapping adds and removes keep each other', () async {
+    await store.add('profile', _action('a0'));
+    await Future.wait([
+      store.add('profile', _action('a1')),
+      store.add('profile', _action('a2')),
+      store.remove('profile', 'a0'),
+    ]);
+
+    expect((await store.pending('profile')).map((a) => a.nonce),
+        unorderedEquals(['a1', 'a2']));
+  });
+
   test('the same nonce twice is one action', () async {
     await store.add('profile', _action('a1'));
     await store.add('profile', _action('a1'));

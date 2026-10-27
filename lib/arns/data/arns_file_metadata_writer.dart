@@ -7,6 +7,7 @@ import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/arweave/arweave_service.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
+import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:collection/collection.dart';
 import 'package:drift/drift.dart';
 
@@ -96,6 +97,10 @@ class DriveDaoArNSFileMetadataWriter implements ArNSFileMetadataWriter {
     required String fileId,
     required List<String> names,
   }) async {
+    // Names go on public files only (docs/NAMES.md, Q5).
+    final drive = await _driveDao.driveById(driveId: driveId).getSingle();
+    if (drive.privacy != DrivePrivacyTag.public) return false;
+
     final wallet = _auth.currentUser.wallet;
     var wrote = false;
     await _driveDao.transaction(() async {
