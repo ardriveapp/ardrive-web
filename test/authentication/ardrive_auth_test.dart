@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:ardrive/arns/data/arns_pending_action_store.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/core/crypto/crypto.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
@@ -674,6 +675,38 @@ void main() {
           biometricAuthentication: mockBiometricAuthentication,
           secureKeyValueStore: mockSecureKeyValueStore,
           permanenceCache: permanenceCache,
+        );
+        when(() => mockUserRepository.deleteUser())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.deleteAllTables())
+            .thenAnswer((invocation) async {});
+        when(() => mockDatabaseHelpers.clearSessionMemory())
+            .thenAnswer((invocation) async {});
+
+        await auth.logout();
+
+        expect(kept.keys, ['somethingElse']);
+      });
+
+      test('forgets the unfinished name changes of every profile', () async {
+        final kept = <String, String>{
+          '${arnsPendingActionsStoragePrefix}walletAddress': '[]',
+          'somethingElse': 'stays',
+        };
+        final auth = ArDriveAuthImpl(
+          arweave: mockArweaveService,
+          userRepository: mockUserRepository,
+          crypto: mockArDriveCrypto,
+          databaseHelpers: mockDatabaseHelpers,
+          arConnectService: mockArConnectService,
+          biometricAuthentication: mockBiometricAuthentication,
+          secureKeyValueStore: mockSecureKeyValueStore,
+          permanenceCache: PermanenceCache(
+            openStore: () async => _KeptValues({}),
+          ),
+          arnsPendingActionStore: ArNSPendingActionStore(
+            openStore: () async => _KeptValues(kept),
+          ),
         );
         when(() => mockUserRepository.deleteUser())
             .thenAnswer((invocation) async {});

@@ -27,6 +27,8 @@ AppConfig _$AppConfigFromJson(Map<String, dynamic> json) => AppConfig(
           json['enableSyncFromDriveState'] as bool? ?? false,
       enableDriveStatePublishing:
           json['enableDriveStatePublishing'] as bool? ?? false,
+      enableArNS: json['enableArNS'] as bool? ?? false,
+      arnsPlaceholderTxId: json['arnsPlaceholderTxId'] as String?,
       publicationViewer: json['publicationViewer'] as String? ?? 'ardrive',
       publicationGatewayUrl:
           json['publicationGatewayUrl'] as String? ?? 'https://ardrive.net',
@@ -55,6 +57,8 @@ Map<String, dynamic> _$AppConfigToJson(AppConfig instance) => <String, dynamic>{
       'enableSyncFromSnapshot': instance.enableSyncFromSnapshot,
       'enableSyncFromDriveState': instance.enableSyncFromDriveState,
       'enableDriveStatePublishing': instance.enableDriveStatePublishing,
+      'enableArNS': instance.enableArNS,
+      'arnsPlaceholderTxId': instance.arnsPlaceholderTxId,
       'publicationViewer': instance.publicationViewer,
       'publicationGatewayUrl': instance.publicationGatewayUrl,
       'stripePublishableKey': instance.stripePublishableKey,

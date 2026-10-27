@@ -51,6 +51,15 @@ class AppConfig {
   /// offered, and nothing turns it on but a person.
   final bool enableDriveStatePublishing;
 
+  /// Whether the app offers ArNS names (docs/NAMES.md): linking a Solana
+  /// wallet, naming items and the Names page. Off in every flavour until
+  /// phase 1 ships; with it off nothing about names is visible.
+  final bool enableArNS;
+
+  /// The "Nothing published here" page a main name points at once its item
+  /// loses the name (docs/NAMES.md, "Removing"). Null until it is uploaded.
+  final String? arnsPlaceholderTxId;
+
   /// The ArDrive release a new publication runs (docs/PUBLICATIONS.md, "The
   /// viewer bundle"): a release manifest's transaction ID as it is, or an
   /// ArNS name, read through the gateway for the release it points at.
@@ -95,6 +104,8 @@ class AppConfig {
     this.enableSyncFromSnapshot = true,
     this.enableSyncFromDriveState = false,
     this.enableDriveStatePublishing = false,
+    this.enableArNS = false,
+    this.arnsPlaceholderTxId,
     this.publicationViewer = 'ardrive',
     this.publicationGatewayUrl = defaultPublicationGatewayUrl,
     required this.stripePublishableKey,
@@ -121,6 +132,8 @@ class AppConfig {
     bool? enableSyncFromSnapshot,
     bool? enableSyncFromDriveState,
     bool? enableDriveStatePublishing,
+    bool? enableArNS,
+    String? arnsPlaceholderTxId,
     String? publicationViewer,
     String? publicationGatewayUrl,
     String? stripePublishableKey,
@@ -154,6 +167,8 @@ class AppConfig {
           enableSyncFromDriveState ?? this.enableSyncFromDriveState,
       enableDriveStatePublishing:
           enableDriveStatePublishing ?? this.enableDriveStatePublishing,
+      enableArNS: enableArNS ?? this.enableArNS,
+      arnsPlaceholderTxId: arnsPlaceholderTxId ?? this.arnsPlaceholderTxId,
       publicationViewer: publicationViewer ?? this.publicationViewer,
       publicationGatewayUrl:
           publicationGatewayUrl ?? this.publicationGatewayUrl,

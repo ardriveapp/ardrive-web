@@ -33,7 +33,7 @@ class Database extends _$Database {
   Database.forPublication() : this(openPublicationConnection());
 
   @override
-  int get schemaVersion => 30;
+  int get schemaVersion => 31;
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (Migrator m) {
@@ -209,6 +209,17 @@ class Database extends _$Database {
               logger.d('Migrating schema from v29 to v30');
 
               await m.addColumn(drives, drives.importedArtifactTxId);
+            }
+
+            if (from < 31) {
+              logger.d('Migrating schema from v30 to v31');
+
+              // A cache of ArNS with nothing reading it until now: rebuilt in
+              // its new shape rather than migrated.
+              await m.deleteTable('arns_records');
+              await m.deleteTable('ant_records');
+              await m.createTable(arnsRecords);
+              await m.createTable(antRecords);
             }
           } catch (e, stacktrace) {
             logger.e(
