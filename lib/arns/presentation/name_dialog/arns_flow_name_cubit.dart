@@ -311,6 +311,7 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
             if (!isClosed) emit(state.copyWith(step: () => step));
           },
         );
+        _namesCubit.rememberChange(setRecord);
         live.add(literal);
         final within = arnsLiveWithinSeconds(
           ttlSeconds: setRecord.ttlSeconds,

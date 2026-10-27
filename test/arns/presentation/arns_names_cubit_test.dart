@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:ardrive/arns/data/arns_names_repository.dart';
 import 'package:ardrive/arns/data/arns_wallet_store.dart';
+import 'package:ardrive/arns/domain/arns_action.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
@@ -127,6 +128,31 @@ void main() {
     await Future.wait([a, b]);
 
     verify(() => repository.refresh(_sol)).called(1);
+  });
+
+  // A refresh begun when the name dialog opened finished after the change
+  // the user then made, and put the old records back.
+  test('a read that began before a change is made again', () async {
+    when(() => repository.cached(_sol)).thenAnswer((_) async => [_acme]);
+    final before = Completer<List<ArNSManagedName>>();
+    var reads = 0;
+    when(() => repository.refresh(_sol)).thenAnswer((_) {
+      reads++;
+      return reads == 1 ? before.future : Future.value(const []);
+    });
+
+    final cubit = build(_linked());
+    await pumpEventQueue();
+    final running = cubit.refresh();
+    cubit.rememberChange(
+        const ArNSRemoveRecord(antId: 'ant', undername: 'blog'));
+    // The flow's own refresh shares the running one, which reads again.
+    final after = cubit.refresh();
+    before.complete([_acme]);
+    await Future.wait([running, after]);
+
+    expect(reads, 2);
+    expect(cubit.state.names, isEmpty);
   });
 
   // A refresh still running for the old wallet was shared with the new one,

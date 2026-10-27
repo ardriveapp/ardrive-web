@@ -97,10 +97,15 @@ class ArNSNamesCubit extends Cubit<ArNSNamesState> {
   Future<void>? _refreshing;
   String? _refreshingFor;
 
+  /// Counts the changes made this session: a read that began before one
+  /// may not show it, and is made again.
+  int _changesMade = 0;
+
   void _onWallet(ArNSWalletState wallet) {
     final address = wallet.enabled ? wallet.linked?.address : null;
     if (address == state.address) return;
     if (address == null) {
+      _repository.forgetSession();
       emit(const ArNSNamesState());
       return;
     }
@@ -146,8 +151,13 @@ class ArNSNamesCubit extends Cubit<ArNSNamesState> {
   Future<void> _refresh(String address) async {
     emit(state.copyWith(refreshing: true, refreshFailed: false));
     try {
-      final names = await _repository.refresh(address);
-      if (isClosed || state.address != address) return;
+      List<ArNSManagedName> names;
+      int changesSeen;
+      do {
+        changesSeen = _changesMade;
+        names = await _repository.refresh(address);
+        if (isClosed || state.address != address) return;
+      } while (changesSeen != _changesMade);
       emit(state.copyWith(
         status: ArNSNamesStatus.loaded,
         names: names,
@@ -170,15 +180,22 @@ class ArNSNamesCubit extends Cubit<ArNSNamesState> {
   void rememberPublication(String txId, ArNSPublicationItem publication) =>
       _repository.rememberPublication(txId, publication);
 
+  /// A record change Turbo just reported done, before every RPC node has it.
+  void rememberChange(ArNSRecordChange change) {
+    _repository.rememberChange(change);
+    _changesMade++;
+  }
+
   /// One name read again after [made], the changes just made to it.
   Future<ArNSManagedName?> refreshName(
     String name, {
     List<ArNSRecordChange> made = const [],
   }) async {
+    made.forEach(rememberChange);
     final current = state.nameOf(name);
     if (current == null) return null;
     try {
-      final updated = await _repository.refreshRecords(current, made: made);
+      final updated = await _repository.refreshRecords(current);
       if (isClosed) return updated;
       emit(state.copyWith(names: [
         for (final n in state.names) n.name == name ? updated : n,
