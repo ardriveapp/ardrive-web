@@ -201,10 +201,11 @@ HTML-escaped):
 6. It asks that gateway, with one GraphQL lookup
    (`transactions(ids: [<snapshot>]) { owner { address } }`), who signed the
    snapshot: anyone can write a `publication.json` naming anyone as `owner`.
-   A different signer ends on "This page can't be opened" (the snapshot
-   rejected). No answer (not indexed yet, which a new snapshot uploaded
-   through Turbo is until its bundle is mined, or GraphQL failing) opens the
-   page with no owner in the byline. Its only GraphQL request.
+   Only a confirmed different signer refuses the page: "This page can't be
+   opened" (the snapshot rejected). No answer (not indexed yet, which a new
+   snapshot uploaded through Turbo is for its first 15 to 60 minutes, or
+   GraphQL failing) opens the page as declared, with the byline's display
+   name and short address. Its only GraphQL request.
 7. It fetches `./snapshot`, seeds the drive row from `publication.json`, and
    imports with the existing `DriveStateImporter`.
 8. The explorer opens at the scope's root. No sync ever runs.
@@ -285,8 +286,11 @@ One frame, a heading, one sentence, one action:
 |---|---|---|---|
 | `publication.json` missing or unreadable | This page can't be opened | Its settings are missing or damaged. | Open ArDrive |
 | Snapshot can't be fetched | This page can't load right now | The gateway didn't return its files. Try again in a minute. | Try again |
-| Snapshot rejected by the importer | This page can't be opened | Its data didn't pass ArDrive's checks. | Open ArDrive |
+| Snapshot rejected: signed by someone else than `publication.json`'s owner, or refused by the importer | This page can't be opened | Its data didn't pass ArDrive's checks. | Open ArDrive |
 | Viewer older than `publication.json`'s version | This page needs a newer ArDrive | Ask its owner to republish it. | Open ArDrive |
+
+A rejected page shows ArDrive's icon and the generic sentence only: no title,
+icon or display name from its `publication.json`, which is not trusted.
 
 ### The publication frame (desktop)
 
@@ -310,8 +314,9 @@ folder on Google Drive or Dropbox, nothing said twice.
   address shortened, in monospace, after the name they chose (`ownerName`)
   when there is one; the whole address is the tooltip, and a click copies it.
   The display name is self-declared and proves nothing; the verified address
-  is the identity. With the owner unconfirmed (see "How a page opens"),
-  "By …" is left out.
+  is the identity. The byline is the same whether or not the gateway could
+  confirm the owner yet (see "How a page opens"); a page it confirmed was
+  signed by someone else never opens.
 - **The header folds** as the list beneath it scrolls: the cover and the
   lines under the title fold away, the title and actions stay, and the list
   has the window. Scrolling back to the list's top unfolds it; the wheel over

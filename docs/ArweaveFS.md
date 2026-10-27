@@ -213,9 +213,9 @@ Every file the manifest adds is a plain, public data item carrying `Publication-
 
 **Trust.** A client counts a Publication only when its owner is the drive's owner, as it does for Drive States, and only when the `snapshot` it names was published by that owner too. Anyone else's Publication of the same `Drive-Id` is ignored.
 
-A viewer opening a page cannot take `publication.json`'s `owner` on trust, since anyone can write one naming anyone. It asks the gateway serving the page who signed the `snapshot` transaction (one GraphQL `transactions(ids: [...]) { owner { address } }` lookup). A different signer means the page is refused. No answer (the snapshot not indexed yet, or the gateway unable to say) opens the page without naming any owner.
+A viewer opening a page cannot take `publication.json`'s `owner` on trust, since anyone can write one naming anyone. It asks the gateway serving the page who signed the `snapshot` transaction (one GraphQL `transactions(ids: [...]) { owner { address } }` lookup). A confirmed different signer means the page is refused, with a generic message and nothing from its `publication.json`. No answer (the snapshot not indexed yet, or the gateway unable to say) opens the page as declared.
 
-**Display name.** `publication.json`'s optional `ownerName` is self-declared free text, like the title, and proves nothing. The identity is the verified address: a viewer shows the owner's shortened address beside the display name, never the name alone, and names no owner at all when it could not verify the snapshot's signer.
+**Display name.** `publication.json`'s optional `ownerName` is self-declared free text, like the title, and proves nothing. The identity is the verified address: a viewer shows the owner's shortened address beside the display name, never the name alone.
 
 Clients that sync a drive's history skip `publication` entities (and `drive-state` and `snapshot` ones) without fetching their data: they share the drive's `Drive-Id`, and their readers find them by GraphQL.
 

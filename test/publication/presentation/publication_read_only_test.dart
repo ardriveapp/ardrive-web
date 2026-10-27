@@ -110,6 +110,19 @@ void main() {
           PublicationLoadingSnapshot(_config, received: received, total: total),
         );
 
+    testWidgets('a refused page shows nothing of its own, its name included',
+        (tester) async {
+      // Even handed the page's settings, the screen leaves them out.
+      await showing(
+          tester,
+          const PublicationFailed(PublicationFailure.snapshotRejected,
+              config: _config));
+
+      expect(find.text("This page can't be opened"), findsOneWidget);
+      expect(find.text(_config.title), findsNothing);
+      expect(tester.widget<Title>(find.byType(Title).last).title, 'ArDrive');
+    });
+
     testWidgets('shows only the background until publication.json is read',
         (tester) async {
       await showing(tester, const PublicationLoadingSettings());
@@ -208,16 +221,16 @@ void main() {
       expect(find.byTooltip(_config.owner), findsOneWidget);
     });
 
-    testWidgets('names no owner the gateway did not confirm', (tester) async {
+    testWidgets('names the declared owner when the gateway could not confirm',
+        (tester) async {
       await header(tester,
           config: withOwnerName('Phil', title: 'ArDrive Photos Drive'),
           ownerVerified: false);
 
-      expect(find.textContaining('By ', findRichText: true), findsNothing);
-      expect(find.byType(ArDriveIdText), findsNothing);
-      // The rest of the line stands, without a bullet to lead it.
+      expect(find.textContaining('By Phil ', findRichText: true), findsWidgets);
+      final address = tester.widget<ArDriveIdText>(find.byType(ArDriveIdText));
+      expect(address.text, startsWith('iKryOe'));
       expect(find.textContaining('79 files'), findsOneWidget);
-      expect(find.textContaining('• 79 files'), findsNothing);
       // A title may say ArDrive.
       expect(find.text('ArDrive Photos Drive'), findsOneWidget);
     });

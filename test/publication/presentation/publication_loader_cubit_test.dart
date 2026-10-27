@@ -231,8 +231,8 @@ void main() {
       expect: () => [
         isA<PublicationLoadingSnapshot>(),
         isA<PublicationImporting>(),
-        isA<PublicationFailed>().having(
-            (s) => s.failure, 'failure', PublicationFailure.snapshotRejected),
+        // A refused page shows nothing of its own settings.
+        const PublicationFailed(PublicationFailure.snapshotRejected),
       ],
     );
 
@@ -327,19 +327,28 @@ void main() {
       final requests = <Uri>[];
       final asked = <String>[];
       final cubit = loader(
-        page(fixture.publicationJson()),
+        page(fixture.publicationJson()
+          ..['title'] = 'Official ArDrive downloads'
+          ..['ownerName'] = 'ArDrive'),
         requests: requests,
         ownerOf: (txId) async {
           asked.add(txId);
           return stranger;
         },
       );
+      final states = <PublicationLoaderState>[];
+      final seen = cubit.stream.listen(states.add);
       await cubit.load();
-      expect(
-        cubit.state,
-        isA<PublicationFailed>().having(
-            (s) => s.failure, 'failure', PublicationFailure.snapshotRejected),
-      );
+      await pumpEventQueue();
+      await seen.cancel();
+      // The generic refusal: nothing the refused page says about itself, so
+      // no title, icon or display name reaches the screen.
+      expect(cubit.state,
+          const PublicationFailed(PublicationFailure.snapshotRejected));
+      expect(states, [
+        const PublicationLoadingSettings(),
+        const PublicationFailed(PublicationFailure.snapshotRejected),
+      ]);
       expect(asked, [fixture.sidecar['transaction']['id']],
           reason: 'one lookup, of the snapshot');
       expect(
@@ -357,16 +366,22 @@ void main() {
       await cubit.close();
     });
 
-    test('an owner the gateway cannot confirm opens the page unnamed',
+    test('an owner the gateway cannot confirm opens the page as declared',
         () async {
+      // A new snapshot is not indexed until its bundle is mined, which is
+      // when its owner first opens the page.
       for (final ownerOf in <Future<String?> Function(String)>[
         (_) async => null,
         (_) async => throw Exception('GraphQL is down'),
       ]) {
-        final cubit = loader(page(fixture.publicationJson()), ownerOf: ownerOf);
+        final cubit = loader(
+            page(fixture.publicationJson()..['ownerName'] = 'Phil'),
+            ownerOf: ownerOf);
         await cubit.load();
-        expect(cubit.state, isA<PublicationReady>());
-        expect((cubit.state as PublicationReady).ownerVerified, isFalse);
+        final ready = cubit.state as PublicationReady;
+        expect(ready.ownerVerified, isFalse);
+        expect(ready.config.ownerName, 'Phil');
+        expect(ready.config.owner, fixture.owner);
         await cubit.close();
       }
     });

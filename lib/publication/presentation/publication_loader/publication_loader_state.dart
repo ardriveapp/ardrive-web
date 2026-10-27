@@ -58,7 +58,8 @@ class PublicationReady extends PublicationLoaderState {
   final PublicationConfig config;
 
   /// Whether the serving gateway confirmed the snapshot was signed by
-  /// [PublicationConfig.owner]. The byline names an owner only then.
+  /// [PublicationConfig.owner]; false when it could not say (a mismatch
+  /// never gets this far). The byline shows the owner either way.
   final bool ownerVerified;
 
   /// For the header's byline. Null if it could not be counted, which the

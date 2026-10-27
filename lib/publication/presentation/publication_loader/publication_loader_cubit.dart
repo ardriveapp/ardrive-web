@@ -25,9 +25,9 @@ part 'publication_loader_state.dart';
 ///
 /// `publication.json` names its owner, and anyone can write one naming
 /// anyone. So one GraphQL lookup on the serving gateway asks who really
-/// signed the snapshot ([ownerOf]): someone else refuses the page, and an
-/// answer of nobody (a snapshot not indexed yet) opens it without naming an
-/// owner at all, since the claim could not be checked.
+/// signed the snapshot ([ownerOf]): someone else refuses the page. An answer
+/// of nobody (a snapshot not indexed yet) opens it as declared: the byline
+/// always shows the owner's address beside any display name.
 ///
 /// No sync runs here or afterwards. The publication is exactly the snapshot.
 class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
@@ -107,6 +107,11 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     }
   }
 
+  /// A page refused for what it holds shows nothing it says about itself:
+  /// no title, no icon, no display name. Its settings are not trusted.
+  static const _refused =
+      PublicationFailed(PublicationFailure.snapshotRejected);
+
   /// Whether the snapshot's real signer is [config]'s owner: true, false, or
   /// null when the gateway cannot say.
   Future<bool?> _ownerMatches(PublicationConfig config) async {
@@ -126,12 +131,12 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     if (ownerMatches == false) {
       logger.w('Publication refused: its snapshot was signed by someone else '
           'than the owner it names');
-      emit(PublicationFailed(PublicationFailure.snapshotRejected,
-          config: config));
+      emit(_refused);
       return;
     }
-    // The verified address is the identity; a display name is what the
-    // owner says of themselves, and is shown beside it.
+    // Only a confirmed mismatch refuses. No answer (a new snapshot is not
+    // indexed until its bundle is mined) opens the page as declared, with
+    // the address the byline always shows beside any display name.
     final ownerVerified = ownerMatches == true;
 
     await _driveDao.writePublicationDrive(
@@ -168,8 +173,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     final resolved = protection.protection;
     if (resolved == null) {
       logger.w('Publication snapshot not opened: ${protection.refusal}');
-      emit(PublicationFailed(PublicationFailure.snapshotRejected,
-          config: config));
+      emit(_refused);
       return;
     }
 
@@ -185,8 +189,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     );
     if (!result.isImported) {
       logger.w('Publication snapshot rejected: $result');
-      emit(PublicationFailed(PublicationFailure.snapshotRejected,
-          config: config));
+      emit(_refused);
       return;
     }
 
@@ -197,8 +200,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
           await _driveDao.folderById(folderId: folderId).getSingleOrNull();
       if (folder == null || folder.driveId != config.driveId) {
         logger.w('Publication snapshot has no folder $folderId');
-        emit(PublicationFailed(PublicationFailure.snapshotRejected,
-            config: config));
+        emit(_refused);
         return;
       }
     }
