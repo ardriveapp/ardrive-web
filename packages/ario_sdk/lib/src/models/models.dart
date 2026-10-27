@@ -1,7 +1,10 @@
 export 'ant_record.dart';
+export 'ant_summary.dart';
+export 'arns_name_data.dart';
 export 'arns_name_model.dart';
 export 'arns_record.dart';
 export 'gateway.dart';
 export 'response_object.dart';
+export 'solana_wallet.dart';
 export 'undername.dart';
 export 'primary_name_details.dart';

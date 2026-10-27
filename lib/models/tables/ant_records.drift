@@ -1,4 +1,15 @@
+-- The names the linked ArNS wallet owns or manages: a cache of ArNS, refreshed
+-- when the Names page opens and after every change (docs/NAMES.md).
 CREATE TABLE ant_records (
     domain TEXT NOT NULL PRIMARY KEY,
-    process_id TEXT NOT NULL
+    process_id TEXT NOT NULL,
+    -- The ArNS wallet these were read for.
+    arns_address TEXT NOT NULL,
+    -- 'owner' or 'controller'.
+    role TEXT NOT NULL,
+    -- 'lease' or 'permabuy'.
+    name_type TEXT NOT NULL,
+    -- Milliseconds; NULL for a permanent name.
+    end_timestamp INTEGER,
+    undername_limit INTEGER NOT NULL
 );

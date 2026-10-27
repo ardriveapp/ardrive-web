@@ -1,9 +1,10 @@
+-- The records of the names in ant_records, as ArNS has them.
 CREATE TABLE arns_records (
-    transaction_id TEXT NOT NULL,
-    file_id TEXT NOT NULL,
-    ttl INTEGER NOT NULL,
-    name TEXT NOT NULL,
-    domain TEXT NOT NULL,
+    -- The literal name, e.g. blog_ardrive, or ardrive for '@'.
     id TEXT NOT NULL PRIMARY KEY,
-    is_active BOOLEAN
+    domain TEXT NOT NULL,
+    -- The undername, '@' for the name itself.
+    name TEXT NOT NULL,
+    transaction_id TEXT NOT NULL,
+    ttl INTEGER NOT NULL
 );

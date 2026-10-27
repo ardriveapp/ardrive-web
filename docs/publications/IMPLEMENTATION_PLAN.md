@@ -272,12 +272,12 @@ clean browser and checked for their head tags, `files.html`, `sitemap.xml`,
 
 ## Phase 4: names
 
-Blocked on ArNS-on-Solana support in the app (Solana wallet connection,
-listing names a wallet owns or controls, setting and removing undername and
-base-name records with `@ar.io/sdk` 4.x). When that exists: step 4's picker,
-unpublish (remove an undername; point a main name at a shared "no longer
-published" page deployed with each release), republish moving the name,
-and TTL 300 s. `og:image` keeps pointing at the social image's transaction.
+Built with ArNS-on-Solana support in the app, specified in `docs/NAMES.md`
+(phase 1, step 4): step 4's picker, `names` in `publication.json`, unpublish
+(remove an undername; point a main name at the shared empty page,
+`arnsPlaceholderTxId` in config), republish moving the name, and
+a cache time of 300 s. `og:image` keeps pointing at the social image's
+transaction.
 
 ## Updating the docs as you go
 

@@ -54,9 +54,9 @@ costs nothing. Publish writes permanent objects to Arweave.
     An update is a new manifest with the same `Publication-Id`, so a new link;
     the earlier links keep working.
 11. **Names:** the owner picks the main name or an undername. Unpublishing an
-    undername removes its record; unpublishing a main name points it at a
-    shared "no longer published" page. See [Names](#names): this whole part
-    waits on ArNS-on-Solana support in the app.
+    undername removes its record; unpublishing a main name points it at the
+    shared empty page (visitors see "Nothing here right now"). See
+    [Names](#names) and `docs/NAMES.md`, the spec for names across ArDrive.
 12. **A publication is an ArFS entity** (`Entity-Type: publication`), as a
     drive state is: owner only, never encrypted, never a file in the drive,
     found by GraphQL. Called "publication" because "page" collides with
@@ -139,6 +139,7 @@ the one ArDrive hands out.
                "definitionTxId": "<licence definition tx id>" },
   "images": { "icon": "icon-512.png", "social": "social.jpg", "cover": "cover.jpg" },
   "publishedAt": "2026-10-21T18:02:11Z",
+  "names": ["docs_acme"],
   "viewer": { "release": "2.91.0", "manifest": "<release manifest tx id>" }
 }
 ```
@@ -147,6 +148,10 @@ the one ArDrive hands out.
 - `generatedSocialCard: true` marks `social.jpg` as the card ArDrive drew.
   An update keeps an owner's own card, and keeps a generated one while
   nothing it shows (title, description, icon, cover, file count) changes.
+- `names` is optional: the literal ArNS names (`docs_acme`, `acme` for a
+  main name) ArDrive pointed at this version when it published it,
+  including names that moved from the previous version. A hint, checked
+  against a gateway before a visitor sees one (`docs/NAMES.md`).
 - `fileCount`, `keywords` and `license` are optional. `fileCount` is what the
   publisher counted, for the owner's published view; `license` covers
   everything in the publication and is shown in its byline (a UDL adds its
@@ -175,10 +180,10 @@ HTML-escaped):
   ardrive.net, the same gateway as the publication's link (a reused image
   keeps its existing transaction). A path inside the page (`https://<gateway>/<manifest-id>/social.jpg`)
   cannot work: the manifest's ID exists only after `index.html` is uploaded.
-  Once names arrive (phase 4), a page published under a name can point
-  `og:image` at an undername of its own, `https://social_<name>.<gateway>`,
-  whose record points at the card; it can be moved later, so the card can
-  change without republishing. Every page has a social image: the owner's
+  A page published under a name keeps `og:image` on the image's transaction:
+  every republish rebuilds the page and its image together, so an undername
+  for the image would cost a slot and a fee and buy nothing
+  (`docs/NAMES.md`, Q26). Every page has a social image: the owner's
   own, or the card the publish generates (see the look), so `og:image` and
   `twitter:card` are always there.
 - `<link rel="sitemap" href="sitemap.xml">`, and as the first thing in
@@ -253,9 +258,16 @@ So publications ship in two halves:
 - **Without names (phases 1 to 3):** a page is its manifest link. The owner
   copies it, or points a name at the manifest ID by hand with any ArNS tool.
 - **With names (phase 4):** the name step, unpublish, and the main-name
-  placeholder arrive with ArNS-on-Solana support in the app (a Solana wallet
-  connection, listing names the wallet owns or controls, setting and removing
-  records). That is its own project, and publications consume it.
+  placeholder arrive with ArNS-on-Solana support in the app, specified in
+  `docs/NAMES.md`. Publications consume it:
+  - `publication.json` carries the names that point at the publication
+    (`"names": ["docs_acme"]`), written each time it's published. Naming an
+    existing publication changes the name only; the page shows it after the
+    next republish.
+  - Republishing moves the name to the new version, said in the confirm step
+    with its cost, with a box to leave it where it is.
+  - A private publication's name opens its unlock screen. "Copy link" gives
+    the name plus the key after the `#`.
 
 ## UX: the visitor
 
