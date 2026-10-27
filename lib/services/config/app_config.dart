@@ -62,9 +62,11 @@ class AppConfig {
 
   /// The ArDrive release a new publication runs (docs/PUBLICATIONS.md, "The
   /// viewer bundle"): a release manifest's transaction ID as it is, or an
-  /// ArNS name, read through the gateway for the release it points at. Every
-  /// flavour uses `ardrive`, the production release, so a publication made
-  /// anywhere opens the way it will for everyone.
+  /// ArNS name, read through the gateway for the release it points at.
+  /// Production and development use `ardrive`, the production release.
+  /// Staging pins a fixed manifest ID of a dev build uploaded by *Staging
+  /// build to Arweave*, so pages published from staging open with the viewer
+  /// being tested.
   final String publicationViewer;
 
   /// The one gateway every publication is on, whatever the data gateway

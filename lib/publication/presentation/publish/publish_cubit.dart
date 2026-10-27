@@ -84,6 +84,7 @@ class PublishCubit extends Cubit<PublishState> {
     required PublishDependencies dependencies,
     this.previous,
     this.names,
+    this.onSettledAfterClose,
     @visibleForTesting void Function(Object holder)? holdGuard,
     @visibleForTesting void Function(Object holder)? releaseGuard,
   })  : _deps = dependencies,
@@ -105,6 +106,12 @@ class PublishCubit extends Cubit<PublishState> {
   /// The name step (docs/NAMES.md): null while names are off. Its names go
   /// into publication.json, and point at the new version once it exists.
   final ArNSFlowNameCubit? names;
+
+  /// Told how a publish ended when the dialog was closed while it ran: the
+  /// page's link, or null when it stopped. Closing hides the dialog but not
+  /// the upload, and a closed cubit shows nothing, so this is how the owner
+  /// hears of it.
+  final void Function(String? link)? onSettledAfterClose;
 
   final PublishDependencies _deps;
 
@@ -685,18 +692,22 @@ class PublishCubit extends Cubit<PublishState> {
           ),
         );
       }
-      if (isClosed) return;
       final live = outcome?.live ?? const <String>[];
-      emit(state.copyWith(
-        stage: PublishStage.done,
-        // The page and its link use the name when there is one.
-        link: live.isNotEmpty
-            ? arnsUrlFor(live.last)
-            : '${_deps.publisher.gatewayUrl}/${version.txId}/',
-        names: outcome,
-      ));
+      // The page and its link use the name when there is one.
+      final link = live.isNotEmpty
+          ? arnsUrlFor(live.last)
+          : '${_deps.publisher.gatewayUrl}/${version.txId}/';
+      if (isClosed) {
+        onSettledAfterClose?.call(link);
+        return;
+      }
+      emit(
+          state.copyWith(stage: PublishStage.done, link: link, names: outcome));
     } on PublicationFailure catch (e) {
-      if (isClosed) return;
+      if (isClosed) {
+        onSettledAfterClose?.call(null);
+        return;
+      }
       emit(state.copyWith(
         stage: PublishStage.failed,
         failure: e.message,
@@ -706,7 +717,10 @@ class PublishCubit extends Cubit<PublishState> {
     } catch (e, stackTrace) {
       // Never leave the owner on a progress screen with no way out.
       logger.e('[publication] publishing failed', e, stackTrace);
-      if (isClosed) return;
+      if (isClosed) {
+        onSettledAfterClose?.call(null);
+        return;
+      }
       emit(state.copyWith(
         stage: PublishStage.failed,
         failure: 'Publishing stopped unexpectedly. Try again to finish it. '

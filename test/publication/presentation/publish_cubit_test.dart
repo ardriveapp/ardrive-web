@@ -179,12 +179,14 @@ void main() {
     FolderEntry? folderEntry,
     Publication? previous,
     ArNSFlowNameCubit? names,
+    void Function(String? link)? onSettledAfterClose,
   }) =>
       PublishCubit(
         drive: drive,
         folder: folderEntry,
         previous: previous,
         names: names,
+        onSettledAfterClose: onSettledAfterClose,
         holdGuard: (_) => guard.add('hold'),
         releaseGuard: (_) => guard.add('release'),
         dependencies: PublishDependencies(
@@ -711,6 +713,72 @@ void main() {
       await c.close();
       expect(guard.where((g) => g == 'hold'), isEmpty);
       expect(guard.last, 'release');
+    });
+  });
+
+  group('closed while publishing', () {
+    late Completer<PublishedVersion> gate;
+    late List<String?> told;
+
+    Future<PublishCubit> closedMidPublish() async {
+      discovery.candidates = [freshSnapshot()];
+      gate = Completer<PublishedVersion>();
+      told = [];
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) => gate.future);
+      final c = cubit(onSettledAfterClose: told.add);
+      await c.load();
+      await c.review();
+      unawaited(c.publish());
+      await pumpEventQueue();
+      expect(c.state.stage, PublishStage.publishing);
+      await c.close();
+      expect(told, isEmpty, reason: 'nothing has settled yet');
+      expect(guard.last, 'hold', reason: 'the upload is still running');
+      return c;
+    }
+
+    test('says the page is published, with its link', () async {
+      await closedMidPublish();
+      gate.complete(PublishedVersion(
+        txId: 'MANIFEST',
+        publicationId: 'p',
+        driveId: _drive,
+        folderId: null,
+        publishedAt: DateTime.utc(2026),
+      ));
+      await pumpEventQueue();
+      expect(told, ['https://turbo-gateway.com/MANIFEST/']);
+      expect(guard.last, 'release');
+    });
+
+    test('says it stopped when it fails', () async {
+      await closedMidPublish();
+      gate.completeError(
+          const PublicationFailure(PublicationStep.publication, 'Nope.'));
+      await pumpEventQueue();
+      expect(told, [null]);
+      expect(guard.last, 'release');
+    });
+
+    test('says it stopped when it fails unexpectedly', () async {
+      await closedMidPublish();
+      gate.completeError(StateError('boom'));
+      await pumpEventQueue();
+      expect(told, [null]);
+      expect(guard.last, 'release');
+    });
+
+    test('says nothing when the dialog is still open', () async {
+      discovery.candidates = [freshSnapshot()];
+      publishes();
+      final told = <String?>[];
+      final c = cubit(onSettledAfterClose: told.add);
+      await c.load();
+      await c.review();
+      await c.publish();
+      expect(c.state.stage, PublishStage.done);
+      expect(told, isEmpty, reason: 'the dialog shows it');
     });
   });
 

@@ -277,7 +277,10 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
   void initState() {
     textFieldState = TextFieldStateNew.unfocused;
     _isObscureText = widget.obscureText;
-    if (widget.maxLines != null && widget.maxLines! > 1) {
+    // Only an obscured field needs the multiline controller: Flutter's own
+    // obscured field is one line. A plain multiline field, such as a
+    // description, failed this in debug builds.
+    if (widget.obscureText && widget.maxLines != null && widget.maxLines! > 1) {
       assert(widget.controller is ArDriveMultilineObscureTextControllerNew);
     }
     super.initState();

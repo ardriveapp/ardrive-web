@@ -838,7 +838,7 @@ class _ItemPicker extends StatelessWidget {
                             ? strings.arnsDeployment
                             : null,
                     leadingIcon: item.isPublication
-                        ? Icons.public_outlined
+                        ? ArDriveIconsData.publish_to_web
                         : item.isManifest
                             ? Icons.web_outlined
                             : Icons.insert_drive_file_outlined,

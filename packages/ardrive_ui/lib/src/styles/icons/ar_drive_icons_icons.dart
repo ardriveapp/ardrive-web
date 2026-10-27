@@ -209,6 +209,8 @@ class ArDriveIconsData {
       IconData(0xe85b, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData refresh1 =
       IconData(0xe85c, fontFamily: _kFontFam, fontPackage: _kFontPkg);
+  static const IconData publish_to_web =
+      IconData(0xe85d, fontFamily: _kFontFam, fontPackage: _kFontPkg);
   static const IconData arrow_download =
       IconData(0xe880, fontFamily: _kFontFam, fontPackage: _kFontPkg);
 }
