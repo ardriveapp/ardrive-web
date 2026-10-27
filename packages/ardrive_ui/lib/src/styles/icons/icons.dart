@@ -485,6 +485,13 @@ class ArDriveIcons {
         color: color,
       );
 
+  /// A browser window with an upward arrow: put this on the web as a page.
+  static ArDriveIcon publishToWeb({double? size, Color? color}) => ArDriveIcon(
+        icon: ArDriveIconsData.publish_to_web,
+        size: size,
+        color: color,
+      );
+
   static ArDriveIcon turboCoin({double? size, Color? color}) => ArDriveIcon(
         icon: ArDriveIconsData.turbo_coin,
         size: size,
