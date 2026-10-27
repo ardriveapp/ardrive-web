@@ -1,57 +1,100 @@
 import {
   ARIO,
-  MAINNET_RPC_URL,
-  DEVNET_RPC_URL,
   MAINNET_PROGRAM_IDS,
   DEVNET_PROGRAM_IDS,
   createCircuitBreakerRpc,
-  defaultFallbackUrl,
   mARIOToken,
 } from '@ar.io/sdk';
 
+import * as arns from './arns.js';
+import * as wallet from './wallet.js';
+
 // Public Solana RPC (api.mainnet-beta.solana.com) returns 403 from browsers.
 // Use ArDrive's managed QuickNode RPC (same as turbo/crypto_network_config.dart).
+// No public fallback: a degraded primary fails rather than moving ArDrive's
+// traffic onto shared infrastructure.
 const ARDRIVE_MAINNET_RPC = 'https://damp-stylish-sheet.solana-mainnet.quiknode.pro/b3dd2ce1c4f1a06d5fb6c42b80d6848796dd6408/';
 const ARDRIVE_DEVNET_RPC = 'https://api.devnet.solana.com';
 
 let ario;
+let rpc;
+let rpcUrl = ARDRIVE_MAINNET_RPC;
+let antProgramId = null;
+
+function init(config) {
+  rpc = createCircuitBreakerRpc({ primaryUrl: rpcUrl });
+  ario = ARIO.init({ rpc, ...config });
+}
+
 try {
-  const rpc = createCircuitBreakerRpc({
-    primaryUrl: ARDRIVE_MAINNET_RPC,
-    fallbackUrl: defaultFallbackUrl(ARDRIVE_MAINNET_RPC),
-  });
-  ario = ARIO.init({ rpc });
+  init({});
 } catch (e) {
   console.error('[ario_sdk] Failed to initialize ARIO SDK:', e);
 }
 
+function isDevnet() {
+  return /devnet/i.test(rpcUrl) || antProgramId === DEVNET_PROGRAM_IDS.ant;
+}
+
+const ctx = {
+  ario: () => {
+    if (!ario) throw new Error('ARIO SDK not initialized');
+    return ario;
+  },
+  rpc: () => rpc,
+  rpcUrl: () => rpcUrl,
+  antProgramId: () => antProgramId,
+  antProgramIdOrDefault: () => antProgramId ?? MAINNET_PROGRAM_IDS.ant,
+  chain: () => (isDevnet() ? 'solana:devnet' : 'solana:mainnet'),
+};
+
 window.ario = {
   getGateways,
   getARIOTokens,
-  setARNS,
-  setAnt,
-  getUndernames,
-  getARNSRecordsForWallet,
   getPrimaryNameAndLogo,
   reinitArioSDK,
   getArioConfig,
+
+  listSolanaWallets: wallet.listSolanaWallets,
+  connectSolanaWallet: wallet.connectSolanaWallet,
+  disconnectSolanaWallet: wallet.disconnectSolanaWallet,
+  connectedSolanaAddress: wallet.connectedSolanaAddress,
+  connectedSolanaWalletName: wallet.connectedSolanaWalletName,
+  setSolanaAccountListener: wallet.setSolanaAccountListener,
+  setSolanaWalletsListener: wallet.setSolanaWalletsListener,
+  solanaSignMessage: wallet.solanaSignMessage,
+  solanaSignTransaction: (tx) => wallet.solanaSignTransaction(tx, ctx.chain()),
+
+  getArNSNamesForAddress: (owner) => arns.getArNSNamesForAddress(ctx, owner),
+  getANTSummaries: (ids) => arns.getANTSummaries(ctx, ids),
+  getANTRecords: (processId) => arns.getANTRecords(ctx, processId),
+  setRecordAsController: (processId, undername, transactionId, ttlSeconds) =>
+    arns.setRecordAsController(
+      ctx,
+      processId,
+      undername,
+      transactionId,
+      ttlSeconds,
+    ),
+  removeRecordAsController: (processId, undername) =>
+    arns.removeRecordAsController(ctx, processId, undername),
+  getSolBalanceLamports: (owner) => arns.getSolBalanceLamports(ctx, owner),
+  estimateControllerFee: (processId, workflow, undername) =>
+    arns.estimateControllerFee(ctx, processId, workflow, undername),
 };
 
-async function reinitArioSDK(rpcUrl, coreProgramId, garProgramId, arnsProgramId, antProgramId) {
-  const url = rpcUrl || ARDRIVE_MAINNET_RPC;
-  const rpc = createCircuitBreakerRpc({
-    primaryUrl: url,
-    fallbackUrl: defaultFallbackUrl(url),
-  });
+async function reinitArioSDK(newRpcUrl, coreProgramId, garProgramId, arnsProgramId, newAntProgramId) {
+  rpcUrl = newRpcUrl || ARDRIVE_MAINNET_RPC;
+  antProgramId = newAntProgramId || null;
 
-  const config = { rpc };
+  const config = {};
   if (coreProgramId) config.coreProgramId = coreProgramId;
   if (garProgramId) config.garProgramId = garProgramId;
   if (arnsProgramId) config.arnsProgramId = arnsProgramId;
-  if (antProgramId) config.antProgramId = antProgramId;
+  if (newAntProgramId) config.antProgramId = newAntProgramId;
 
-  ario = ARIO.init(config);
-  console.log('[ario_sdk] Reinitialized with RPC:', url);
+  init(config);
+  console.log('[ario_sdk] Reinitialized with RPC:', rpcUrl);
   return true;
 }
 
@@ -61,6 +104,7 @@ function getArioConfig() {
     devnetRpcUrl: ARDRIVE_DEVNET_RPC,
     mainnetProgramIds: MAINNET_PROGRAM_IDS,
     devnetProgramIds: DEVNET_PROGRAM_IDS,
+    isDevnet: isDevnet(),
   });
 }
 
@@ -110,23 +154,6 @@ async function getARIOTokens(address) {
   } catch (e) {
     console.error(e);
   }
-}
-
-// Stub functions - ArNS write operations require Solana signers (future PR)
-async function setAnt() {
-  throw new Error('ANT operations not yet implemented for Solana');
-}
-
-async function setARNS() {
-  throw new Error('ArNS operations not yet implemented for Solana');
-}
-
-async function getUndernames() {
-  throw new Error('Undername operations not yet implemented for Solana');
-}
-
-async function getARNSRecordsForWallet() {
-  throw new Error('ArNS records not yet implemented for Solana');
 }
 
 async function getPrimaryNameAndLogo(address, getLogo = true) {

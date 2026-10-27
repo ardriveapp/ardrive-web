@@ -5,7 +5,8 @@ part 'arns_record.g.dart';
 
 @JsonSerializable()
 class ARNSRecord extends Equatable {
-  static const defaultTtlSeconds = 900; // 15 minutes
+  /// docs/NAMES.md: 5 minutes, always sent (Turbo would default to 3600).
+  static const defaultTtlSeconds = 300;
 
   final String transactionId;
   final int ttlSeconds;

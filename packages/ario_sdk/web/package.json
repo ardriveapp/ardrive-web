@@ -13,7 +13,9 @@
     "process": "^0.11.10"
   },
   "dependencies": {
-    "@ar.io/sdk": "4.0.2",
+    "@ar.io/sdk": "4.5.2",
+    "@solana/kit": "6.9.0",
+    "@wallet-standard/app": "1.1.1",
     "buffer": "^6.0.3",
     "events": "^3.3.0"
   }
