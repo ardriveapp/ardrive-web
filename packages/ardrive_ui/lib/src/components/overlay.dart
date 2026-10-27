@@ -94,8 +94,15 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
 
     final top = renderBox.localToGlobal(Offset.zero).dy;
     final screenHeight = MediaQuery.sizeOf(context).height;
-    final roomBelow = screenHeight - top - _screenMargin;
-    final roomAbove = top - _screenMargin;
+    // The menu's near edge sits at the anchor's target point, not at the
+    // button's top: a menu hanging from the button's bottom has that much
+    // less room below.
+    final base = widget.anchor;
+    final anchorY = base is Aligned
+        ? top + renderBox.size.height * (base.target.y + 1) / 2 + base.offset.dy
+        : top + renderBox.size.height;
+    final roomBelow = screenHeight - anchorY - _screenMargin;
+    final roomAbove = anchorY - _screenMargin;
     final menuHeight = dropdownHeight;
 
     final opensUp = top > screenHeight / 2 ||
@@ -111,8 +118,6 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
     // back inside the screen, got neither - it was re-anchored to
     // bottom-left with no shifting, and on a 320px phone it opened 51px
     // off the left edge with every item's icon outside the viewport.
-    final base = widget.anchor;
-
     _anchor = base is Aligned
         ? Aligned(
             follower: alignment,

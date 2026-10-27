@@ -11,6 +11,10 @@ void main() {
     WidgetTester tester, {
     required double top,
     required int items,
+    Aligned anchor = const Aligned(
+      follower: Alignment.topRight,
+      target: Alignment.topLeft,
+    ),
   }) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;
@@ -29,10 +33,7 @@ void main() {
                     calculateVerticalAlignment: (opensUp) =>
                         opensUp ? Alignment.bottomRight : Alignment.topRight,
                     height: 48,
-                    anchor: const Aligned(
-                      follower: Alignment.topRight,
-                      target: Alignment.topLeft,
-                    ),
+                    anchor: anchor,
                     items: [
                       for (var i = 0; i < items; i++)
                         ArDriveDropdownItem(
@@ -90,5 +91,27 @@ void main() {
 
     final rect = menuRect(tester);
     expect(rect.bottom, lessThanOrEqualTo(700));
+  });
+
+  testWidgets(
+      'a fitted menu hanging from its button\'s bottom stays on the screen',
+      (tester) async {
+    // The Names page and drive actions menus hang from the bottom of a 24px
+    // button, 4px below it. Room measured from the button's top let this
+    // menu run 28px past the bottom of the screen.
+    await openMenuAt(
+      tester,
+      top: 300,
+      items: 14,
+      anchor: const Aligned(
+        follower: Alignment.topRight,
+        target: Alignment.bottomRight,
+        offset: Offset(0, 4),
+      ),
+    );
+
+    final rect = menuRect(tester);
+    expect(rect.top, greaterThanOrEqualTo(328));
+    expect(rect.bottom, lessThanOrEqualTo(900));
   });
 }
