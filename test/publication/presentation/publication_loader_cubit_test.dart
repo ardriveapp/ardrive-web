@@ -108,7 +108,6 @@ void main() {
     DriveStateImporter? importer,
     List<Uri>? requests,
     Future<String?> Function(String txId)? ownerOf,
-    List<String> officialPublishers = const [],
   }) =>
       PublicationLoaderCubit(
         source: PublicationSource(
@@ -120,7 +119,6 @@ void main() {
         importer: importer ?? DriveStateImporter(db.driveDao),
         // The gateway confirms the owner publication.json names.
         ownerOf: ownerOf ?? (_) async => fixture.owner,
-        officialPublishers: officialPublishers,
       );
 
   group('settings', () {
@@ -373,31 +371,15 @@ void main() {
       }
     });
 
-    test("a display name that passes for ArDrive's shows the address only",
-        () async {
+    test('a display name is shown as the owner wrote it', () async {
+      // Self-declared: the verified address beside it is the identity.
       final cubit = loader(
           page(fixture.publicationJson()..['ownerName'] = 'ArDrive Support'));
       await cubit.load();
       final ready = cubit.state as PublicationReady;
-      expect(ready.config.ownerName, isNull);
+      expect(ready.ownerVerified, isTrue);
+      expect(ready.config.ownerName, 'ArDrive Support');
       expect(ready.config.owner, fixture.owner);
-      await cubit.close();
-    });
-
-    test("ArDrive's own wallets keep the name, once confirmed", () async {
-      final named = fixture.publicationJson()..['ownerName'] = 'ArDrive';
-      var cubit = loader(page(named), officialPublishers: [fixture.owner]);
-      await cubit.load();
-      expect((cubit.state as PublicationReady).config.ownerName, 'ArDrive');
-      await cubit.close();
-
-      // The same claim the gateway could not confirm is not trusted.
-      await db.close();
-      db = getTestDb();
-      cubit = loader(page(named),
-          officialPublishers: [fixture.owner], ownerOf: (_) async => null);
-      await cubit.load();
-      expect((cubit.state as PublicationReady).config.ownerName, isNull);
       await cubit.close();
     });
 

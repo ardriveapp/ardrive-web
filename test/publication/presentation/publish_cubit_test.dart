@@ -174,7 +174,6 @@ void main() {
   PublishCubit cubit({
     FolderEntry? folderEntry,
     Publication? previous,
-    List<String> officialPublishers = const [],
   }) =>
       PublishCubit(
         drive: drive,
@@ -200,7 +199,6 @@ void main() {
             return recorder.endRecording().toImage(4, 4);
           },
           fileCountLabel: (n) => '$n files',
-          officialPublishers: officialPublishers,
         ),
       );
 
@@ -707,52 +705,13 @@ void main() {
   });
 
   group('the display name', () {
-    test("refuses one that passes for ArDrive's", () async {
-      discovery.candidates = [freshSnapshot()];
-      final c = cubit();
-      await c.load();
-      c.next();
-      c.setOwnerName('ArDrive Support');
-      expect(c.state.ownerNameReserved, isTrue);
-      expect(c.state.lookIsValid, isFalse);
-      c.next();
-      expect(c.state.stage, PublishStage.look);
-      await c.review();
-      expect(c.state.stage, PublishStage.look);
-      verifyNever(() => estimator.estimate(
-            sizeInBytes: any(named: 'sizeInBytes'),
-            itemSizes: any(named: 'itemSizes'),
-            wallet: any(named: 'wallet'),
-            walletBalance: any(named: 'walletBalance'),
-          ));
-      c.setOwnerName('Phil');
-      expect(c.state.lookIsValid, isTrue);
-    });
-
-    test("allows it for ArDrive's own wallets", () async {
-      final c = cubit(officialPublishers: [fakeUserJson.walletAddress]);
-      await c.load();
-      c.setOwnerName('ArDrive');
-      expect(c.state.ownerNameReserved, isFalse);
-    });
-
-    test('a remembered reserved name is flagged when the dialog opens',
-        () async {
-      SharedPreferences.setMockInitialValues({
-        'publicationOwnerName_${fakeUserJson.walletAddress}': 'ArDrive Team',
-      });
-      final c = cubit();
-      await c.load();
-      expect(c.state.ownerNameReserved, isTrue);
-    });
-
-    test('never touches the title: "ArDrive Photos Drive" publishes', () async {
+    test('is free text, and a title may say ArDrive', () async {
       discovery.candidates = [freshSnapshot()];
       publishes();
       final c = cubit();
       await c.load();
       c.setTitle('ArDrive Photos Drive');
-      c.setOwnerName('Phil');
+      c.setOwnerName('ArDrive Support');
       c.next();
       await c.review();
       expect(c.state.stage, PublishStage.review);
@@ -761,7 +720,7 @@ void main() {
       final job = verify(() => publisher.publish(captureAny(), any(),
           onStep: any(named: 'onStep'))).captured.single as PublicationJob;
       expect(job.title, 'ArDrive Photos Drive');
-      expect(job.ownerName, 'Phil');
+      expect(job.ownerName, 'ArDrive Support');
     });
   });
 }

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,20 +19,5 @@ void main() {
     expect(
         config.arweaveGatewayForDataRequest.url, 'https://my.gateway.example');
     expect(config.publicationGatewayUrl, 'https://ardrive.net');
-  });
-
-  test('no wallet is an official publisher unless a config names it', () {
-    expect(
-        AppConfig.fromJson(Map.of(storedBeforeTheKeys))
-            .officialPublisherAddresses,
-        isEmpty);
-    final named = AppConfig.fromJson({
-      ...storedBeforeTheKeys,
-      'officialPublisherAddresses': ['ADDRESS'],
-    });
-    expect(named.officialPublisherAddresses, ['ADDRESS']);
-    // As it is stored: encoded, then read back.
-    final stored = json.decode(json.encode(named.toJson()));
-    expect(AppConfig.fromJson(stored).officialPublisherAddresses, ['ADDRESS']);
   });
 }

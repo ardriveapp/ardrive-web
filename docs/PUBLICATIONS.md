@@ -309,10 +309,9 @@ folder on Google Drive or Dropbox, nothing said twice.
   the list, when its label says "Download selected". The owner is their
   address shortened, in monospace, after the name they chose (`ownerName`)
   when there is one; the whole address is the tooltip, and a click copies it.
-  A name that passes for ArDrive, ar.io or Turbo is dropped, unless the owner
-  is one of ArDrive's own wallets (`officialPublisherAddresses`) and the
-  gateway confirmed them. With the owner unconfirmed (see "How a page
-  opens"), "By …" is left out.
+  The display name is self-declared and proves nothing; the verified address
+  is the identity. With the owner unconfirmed (see "How a page opens"),
+  "By …" is left out.
 - **The header folds** as the list beneath it scrolls: the cover and the
   lines under the title fold away, the title and actions stay, and the list
   has the window. Scrolling back to the list's top unfolds it; the wheel over
@@ -408,7 +407,7 @@ On a wide screen the form scrolls on its own and the previews stay in view.
 |---|---|---|
 | Title | text, 60 characters | Required. Prefilled with the drive or folder name |
 | Description | text, 160 characters | Optional |
-| Display name | text, 40 characters | Optional. "Shown after "By", beside your wallet address." Prefilled from the owner's last publication in this browser, or from the version an update starts from; no ENS or SNS lookups. A name that passes for ArDrive, ar.io or Turbo ("ArDrive Support", "Official ArDrive", "AR.IO", "Turbo Team") shows "Choose a name that isn't ArDrive's." and holds Next, except for ArDrive's own wallets (`officialPublisherAddresses`). Only this field is checked: a title such as "ArDrive Photos Drive" is fine |
+| Display name | text, 40 characters | Optional. "Shown after "By", beside your wallet address." Prefilled from the owner's last publication in this browser, or from the version an update starts from; no ENS or SNS lookups. Free text, self-declared: the page always shows the verified wallet address beside it |
 | Keywords | chips, up to 5 | Optional. `Keyword` tags on the manifest and `keywords` in `publication.json`; not written into the page |
 | License | menu: none, the Creative Commons licences, UDL (with its terms form) | Optional. For everything in the publication; shown in its byline, linked to its definition |
 | Icon | Upload or From this drive | Square, at least 512 pixels wide. Makes 32, 180 and 512 px PNGs |

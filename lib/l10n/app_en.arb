@@ -4661,8 +4661,6 @@
   "@publishDisplayNameLabel": {"description": "Field label: the name the page says it is by."},
   "publishDisplayNameHint": "Shown after \"By\", beside your wallet address.",
   "@publishDisplayNameHint": {"description": "Hint under the display name field."},
-  "publishDisplayNameReserved": "Choose a name that isn't ArDrive's.",
-  "@publishDisplayNameReserved": {"description": "Error under the display name field when the name passes for ArDrive, ar.io or Turbo."},
   "publishKeywordsLabel": "Keywords",
   "@publishKeywordsLabel": {"description": "Field label."},
   "publishKeywordsHint": "Up to 5. Press Enter after each.",

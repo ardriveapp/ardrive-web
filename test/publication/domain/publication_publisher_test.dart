@@ -537,11 +537,13 @@ void main() {
           contains('href="https://ardrive.net/A_DATA"'));
       expect(_text(posted[paths['sitemap.xml']]!),
           contains('<loc>https://ardrive.net/A_DATA</loc>'));
-      expect(warmed, [
-        'https://ardrive.net/${version.txId}/',
-        'https://ardrive.net/${version.txId}/publication.json',
-        'https://ardrive.net/${version.txId}/snapshot',
-      ]);
+      expect(
+          warmed,
+          unorderedEquals([
+            'https://ardrive.net/${version.txId}/',
+            'https://ardrive.net/${version.txId}/publication.json',
+            'https://ardrive.net/${version.txId}/snapshot',
+          ]));
     });
   });
 

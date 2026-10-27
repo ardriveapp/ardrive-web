@@ -113,15 +113,11 @@ class _Form extends StatelessWidget {
           onChanged: cubit.setDescription,
         ),
         const SizedBox(height: 16),
-        BlocSelector<PublishCubit, PublishState, bool>(
-          selector: (s) => s.ownerNameReserved,
-          builder: (context, reserved) => ArDriveTextFieldNew(
-            label: strings.publishDisplayNameLabel,
-            initialValue: state.ownerName,
-            maxLength: publicationOwnerNameMax,
-            onChanged: cubit.setOwnerName,
-            errorMessage: reserved ? strings.publishDisplayNameReserved : null,
-          ),
+        ArDriveTextFieldNew(
+          label: strings.publishDisplayNameLabel,
+          initialValue: state.ownerName,
+          maxLength: publicationOwnerNameMax,
+          onChanged: cubit.setOwnerName,
         ),
         _Hint(strings.publishDisplayNameHint),
         const SizedBox(height: 16),
@@ -642,8 +638,7 @@ class _HeaderPreview extends StatelessWidget {
         context.read<PublishCubit>().drive.ownerAddress,
         offsetStart: 6,
         offsetEnd: 4);
-    final hasName =
-        state.ownerName.trim().isNotEmpty && !state.ownerNameReserved;
+    final hasName = state.ownerName.trim().isNotEmpty;
     final owner = hasName ? '${state.ownerName.trim()} $address' : address;
     final bylineStyle = typography.paragraphSmall(color: colors.textMid);
     final byline = [

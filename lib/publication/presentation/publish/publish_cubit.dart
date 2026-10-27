@@ -16,7 +16,6 @@ import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/domain/publication_social_card.dart';
 import 'package:ardrive/services/license/license.dart';
-import 'package:ardrive/publication/domain/publication_owner_name.dart';
 import 'package:ardrive/utils/leave_page_guard/leave_page_guard.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
@@ -51,7 +50,6 @@ class PublishDependencies {
     required this.labels,
     required this.cardMark,
     required this.fileCountLabel,
-    this.officialPublishers = const [],
   });
 
   final DriveDao driveDao;
@@ -72,10 +70,6 @@ class PublishDependencies {
 
   /// "N files", worded.
   final String Function(int count) fileCountLabel;
-
-  /// Wallets that may use ArDrive's names as a display name
-  /// (`AppConfig.officialPublisherAddresses`).
-  final List<String> officialPublishers;
 }
 
 /// The publish dialog (docs/PUBLICATIONS.md, "The publish dialog"): what is
@@ -155,7 +149,7 @@ class PublishCubit extends Cubit<PublishState> {
       );
       if (previous != null) next = await _prefillFrom(previous!, next);
       if (isClosed) return;
-      emit(next.copyWith(ownerNameReserved: _isReserved(next.ownerName)));
+      emit(next);
 
       // An update opens on the look, filled in from the published page: Next
       // keeps it, and anything to change is changed on the way.
@@ -335,7 +329,7 @@ class PublishCubit extends Cubit<PublishState> {
       case PublishStage.included:
         emit(state.copyWith(stage: PublishStage.look));
       case PublishStage.look:
-        if (state.lookIsValid) review();
+        if (state.titleIsValid) review();
       default:
     }
   }
@@ -364,23 +358,8 @@ class PublishCubit extends Cubit<PublishState> {
   void setDescription(String value) => emit(
       state.copyWith(description: _clip(value, publicationDescriptionMax)));
 
-  void setOwnerName(String value) {
-    final name = _clip(value, publicationOwnerNameMax);
-    emit(state.copyWith(
-      ownerName: name,
-      ownerNameReserved: _isReserved(name),
-    ));
-  }
-
-  /// Whether [name] is ArDrive's, and this wallet is not one of ArDrive's
-  /// own. Only the display name is checked: a title or a drive's name may
-  /// say ArDrive.
-  bool _isReserved(String name) {
-    if (!isReservedPublicationOwnerName(name)) return false;
-    final profile = _deps.profileCubit.state;
-    return profile is! ProfileLoggedIn ||
-        !_deps.officialPublishers.contains(profile.user.walletAddress);
-  }
+  void setOwnerName(String value) =>
+      emit(state.copyWith(ownerName: _clip(value, publicationOwnerNameMax)));
 
   void addKeyword(String value) {
     final keyword = value.trim();
@@ -461,7 +440,7 @@ class PublishCubit extends Cubit<PublishState> {
   // Review.
 
   Future<void> review() async {
-    if (!state.lookIsValid) {
+    if (!state.titleIsValid) {
       emit(state.copyWith(stage: PublishStage.look));
       return;
     }

@@ -365,8 +365,6 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               .arweaveGatewayForDataRequest
               .url),
         ).ownerOf,
-        officialPublishers:
-            context.read<ConfigService>().config.officialPublisherAddresses,
       )..load(),
       child: BlocListener<PublicationLoaderCubit, PublicationLoaderState>(
         listener: (context, state) {

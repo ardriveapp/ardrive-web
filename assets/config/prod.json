@@ -14,7 +14,6 @@
   "enableSyncFromDriveState": true,
   "publicationViewer": "ardrive",
   "publicationGatewayUrl": "https://ardrive.net",
-  "officialPublisherAddresses": [],
   "enableDriveStatePublishing": true,
   "uploadThumbnails": true,
   "autoSync": false

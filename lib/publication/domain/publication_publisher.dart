@@ -600,14 +600,15 @@ class PublicationPublisher {
   Future<void> _warmUp(String manifestTxId) async {
     final base = _gatewayUrl();
     // The snapshot too: it is the largest file a first visitor waits for.
-    for (final path in ['', 'publication.json', 'snapshot']) {
-      try {
-        await _client
+    // Side by side, so a slow gateway costs the owner one wait, not three.
+    await Future.wait([
+      for (final path in ['', 'publication.json', 'snapshot'])
+        _client
             .get(Uri.parse('$base/$manifestTxId/$path'))
-            .timeout(const Duration(seconds: 20));
-      } catch (e) {
-        logger.w('[publication] warming $path failed: $e');
-      }
-    }
+            .timeout(const Duration(seconds: 20))
+            .then<void>((_) {}, onError: (Object e) {
+          logger.w('[publication] warming $path failed: $e');
+        }),
+    ]);
   }
 }

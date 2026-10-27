@@ -3,7 +3,6 @@ import 'package:ardrive/drive_state/data/drive_state_import.dart';
 import 'package:ardrive/drive_state/domain/drive_state_protection.dart';
 import 'package:ardrive/publication/data/publication_source.dart';
 import 'package:ardrive/publication/domain/publication_config.dart';
-import 'package:ardrive/publication/domain/publication_owner_name.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/domain/publication_stats.dart';
 import 'package:ardrive/models/models.dart';
@@ -38,13 +37,11 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     required DriveDao driveDao,
     required DriveStateImporter importer,
     required Future<String?> Function(String txId) ownerOf,
-    List<String> officialPublishers = const [],
   })  : _source = source,
         _settingsPath = settingsPath,
         _driveDao = driveDao,
         _importer = importer,
         _ownerOf = ownerOf,
-        _officialPublishers = officialPublishers,
         super(const PublicationLoadingSettings());
 
   final PublicationSource _source;
@@ -55,9 +52,6 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
   /// Who signed a transaction, by the serving gateway; null when it does not
   /// know (`PublicationOwnerLookup.ownerOf`).
   final Future<String?> Function(String txId) _ownerOf;
-
-  /// Wallets that may use ArDrive's names as a display name.
-  final List<String> _officialPublishers;
 
   PublicationConfig? _config;
   SecretKey? _driveKey;
@@ -127,23 +121,18 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     return signer == config.owner;
   }
 
-  Future<void> _openSnapshotOrThrow(PublicationConfig loaded) async {
-    final ownerMatches = await _ownerMatches(loaded);
+  Future<void> _openSnapshotOrThrow(PublicationConfig config) async {
+    final ownerMatches = await _ownerMatches(config);
     if (ownerMatches == false) {
       logger.w('Publication refused: its snapshot was signed by someone else '
           'than the owner it names');
       emit(PublicationFailed(PublicationFailure.snapshotRejected,
-          config: loaded));
+          config: config));
       return;
     }
+    // The verified address is the identity; a display name is what the
+    // owner says of themselves, and is shown beside it.
     final ownerVerified = ownerMatches == true;
-    // A display name that passes for ArDrive is shown only for ArDrive's own
-    // wallets; anyone else's page shows the address alone.
-    final config = loaded.ownerName != null &&
-            isReservedPublicationOwnerName(loaded.ownerName!) &&
-            !(ownerVerified && _officialPublishers.contains(loaded.owner))
-        ? loaded.withoutOwnerName()
-        : loaded;
 
     await _driveDao.writePublicationDrive(
       driveId: config.driveId,

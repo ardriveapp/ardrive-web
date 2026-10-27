@@ -137,7 +137,6 @@ Future<void> showPublishDialog(
       maxFreeItemBytes: () => turboUploadService.maxFreeItemSizeBytes,
     ),
     viewer: configService.config.publicationViewer,
-    officialPublishers: configService.config.officialPublisherAddresses,
     labels: PublicationLabels(
       filesPage: strings.publicationFilesPageLink,
       openPage: strings.publicationFilesOpen,
@@ -223,7 +222,7 @@ class PublishDialog extends StatelessWidget {
                 ModalAction(title: strings.back, action: cubit.back),
                 ModalAction(
                   title: strings.next,
-                  isEnable: state.lookIsValid,
+                  isEnable: state.titleIsValid,
                   action: cubit.next,
                 ),
               ],

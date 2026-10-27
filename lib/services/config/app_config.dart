@@ -67,11 +67,6 @@ class AppConfig {
   @JsonKey(defaultValue: defaultPublicationGatewayUrl)
   final String publicationGatewayUrl;
 
-  /// Wallets that publish for ArDrive itself, which may use ArDrive, ar.io and
-  /// Turbo as a page's display name. Empty unless set: everyone else is
-  /// refused those names, in the publish dialog and in the viewer.
-  @JsonKey(defaultValue: <String>[])
-  final List<String> officialPublisherAddresses;
   final String stripePublishableKey;
   final bool autoSync;
   final bool uploadThumbnails;
@@ -100,7 +95,6 @@ class AppConfig {
     this.enableDriveStatePublishing = false,
     this.publicationViewer = 'ardrive',
     this.publicationGatewayUrl = defaultPublicationGatewayUrl,
-    this.officialPublisherAddresses = const [],
     required this.stripePublishableKey,
     this.autoSync = true,
     this.uploadThumbnails = true,
@@ -127,7 +121,6 @@ class AppConfig {
     bool? enableDriveStatePublishing,
     String? publicationViewer,
     String? publicationGatewayUrl,
-    List<String>? officialPublisherAddresses,
     String? stripePublishableKey,
     bool? autoSync,
     bool? uploadThumbnails,
@@ -162,8 +155,6 @@ class AppConfig {
       publicationViewer: publicationViewer ?? this.publicationViewer,
       publicationGatewayUrl:
           publicationGatewayUrl ?? this.publicationGatewayUrl,
-      officialPublisherAddresses:
-          officialPublisherAddresses ?? this.officialPublisherAddresses,
       stripePublishableKey: stripePublishableKey ?? this.stripePublishableKey,
       autoSync: autoSync ?? this.autoSync,
       uploadThumbnails: uploadThumbnails ?? this.uploadThumbnails,
