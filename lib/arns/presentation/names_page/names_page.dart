@@ -149,6 +149,8 @@ class ArNSNamesView extends StatelessWidget {
           message: strings.arnsLinkWalletPageBody,
           actionLabel: strings.arnsLinkSolanaWallet,
           onAction: () => showArNSWalletDialog(context),
+          secondaryActionLabel: strings.arnsWhatIsArNS,
+          onSecondaryAction: () => openUrl(url: arnsDocsUrl),
         ),
       ];
     }
@@ -239,7 +241,7 @@ class _Header extends StatelessWidget {
             text: strings.arnsGetAName,
             typography: typography,
             variant: ButtonVariant.secondary,
-            onPressed: () => openUrl(url: arnsConsoleUrl),
+            onPressed: () => openUrl(url: arnsGetNameUrl),
           ),
       ],
     );
@@ -261,7 +263,10 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _NameCard extends StatelessWidget {
+/// A name's records a page at a time: some names have dozens.
+const arnsRecordsPerPage = 10;
+
+class _NameCard extends StatefulWidget {
   const _NameCard({
     required this.name,
     required this.now,
@@ -273,6 +278,17 @@ class _NameCard extends StatelessWidget {
   final bool isPhone;
 
   @override
+  State<_NameCard> createState() => _NameCardState();
+}
+
+class _NameCardState extends State<_NameCard> {
+  int _page = 0;
+
+  ArNSManagedName get name => widget.name;
+  DateTime get now => widget.now;
+  bool get isPhone => widget.isPhone;
+
+  @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
@@ -281,6 +297,12 @@ class _NameCard extends StatelessWidget {
     final end = name.endTimestamp;
     final placeholder =
         context.read<ConfigService>().config.arnsPlaceholderTxId;
+    final records = name.records;
+    final pages = (records.length / arnsRecordsPerPage).ceil();
+    // A removed record can leave the page past the end.
+    final page = _page.clamp(0, pages == 0 ? 0 : pages - 1);
+    final start = page * arnsRecordsPerPage;
+    final shown = records.skip(start).take(arnsRecordsPerPage).toList();
 
     Widget? lease;
     if (grace) {
@@ -289,8 +311,8 @@ class _NameCard extends StatelessWidget {
       final left = end.difference(now);
       if (left <= arnsRenewalNoticeWindow) {
         lease = ArNSTag(
-          text: strings.arnsRenewsInDays(left.inDays.clamp(0, 30)),
-          warning: true,
+          text: strings.arnsLeaseEndsInDays(left.inDays.clamp(0, 30)),
+          urgent: true,
         );
       } else {
         lease = ArNSCaption(
@@ -315,11 +337,20 @@ class _NameCard extends StatelessWidget {
           ArNSTag(text: strings.arnsManagedForOwner),
         if (lease != null) lease,
         if (end != null && !grace)
-          ArDriveLink(
-            text: strings.arnsRenew,
-            external: true,
-            onTap: () => openUrl(url: arnsConsoleUrl),
-          ),
+          if (end.difference(now) <= arnsRenewalNoticeWindow)
+            ArDriveButtonNew(
+              text: strings.arnsRenew,
+              typography: typography,
+              variant: ButtonVariant.primary,
+              size: ArDriveButtonSize.compact,
+              onPressed: () => openUrl(url: arnsRenewUrlFor(name.name)),
+            )
+          else
+            ArDriveLink(
+              text: strings.arnsRenew,
+              external: true,
+              onTap: () => openUrl(url: arnsRenewUrlFor(name.name)),
+            ),
       ],
     );
 
@@ -347,22 +378,77 @@ class _NameCard extends StatelessWidget {
             ArDriveNotice(
               type: ArDriveNoticeType.warning,
               message: strings.arnsRenewInConsole,
-              actionLabel: strings.arnsOpenConsole,
-              onAction: () => openUrl(url: arnsConsoleUrl),
+              actionLabel: strings.arnsRenew,
+              onAction: () => openUrl(url: arnsRenewUrlFor(name.name)),
             ),
           ],
           const SizedBox(height: ArDriveSpacing.md),
           if (!isPhone) const _RecordHeadings(),
-          for (final record in name.records)
+          for (final record in shown)
             _RecordRow(
-              isLast: identical(record, name.records.last),
+              isLast: identical(record, shown.last),
               record: record,
               placeholder: placeholder,
               blocked: grace,
               isPhone: isPhone,
             ),
+          if (pages > 1) ...[
+            const SizedBox(height: ArDriveSpacing.sm),
+            _Pager(
+              from: start + 1,
+              to: start + shown.length,
+              total: records.length,
+              onPrevious: page > 0 ? () => setState(() => _page--) : null,
+              onNext: page < pages - 1 ? () => setState(() => _page++) : null,
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _Pager extends StatelessWidget {
+  const _Pager({
+    required this.from,
+    required this.to,
+    required this.total,
+    required this.onPrevious,
+    required this.onNext,
+  });
+
+  final int from;
+  final int to;
+  final int total;
+  final VoidCallback? onPrevious;
+  final VoidCallback? onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+    Widget arrow(IconData icon, String tooltip, VoidCallback? onPressed) =>
+        ArDriveIconButton(
+          icon: ArDriveIcon(
+            icon: icon,
+            size: 20,
+            color: onPressed == null ? colors.iconLow : colors.iconMid,
+          ),
+          tooltip: tooltip,
+          onPressed: onPressed,
+        );
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Text(
+          strings.arnsRecordsShown(from, to, total),
+          style: typography.paragraphSmall(color: colors.textMid),
+        ),
+        const SizedBox(width: ArDriveSpacing.sm),
+        arrow(Icons.chevron_left, strings.arnsPreviousPage, onPrevious),
+        arrow(Icons.chevron_right, strings.arnsNextPage, onNext),
+      ],
     );
   }
 }
@@ -625,6 +711,15 @@ Future<void> showArNSWalletDialog(
           mainAxisSize: MainAxisSize.min,
           children: [
             ArNSBodyText(strings.arnsLinkWalletPageBody),
+            const SizedBox(height: ArDriveSpacing.xs),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: ArDriveLink(
+                text: strings.arnsWhatIsArNS,
+                external: true,
+                onTap: () => openUrl(url: arnsDocsUrl),
+              ),
+            ),
             const SizedBox(height: ArDriveSpacing.md),
             ArNSWalletChooser(
               changing: changing,
@@ -656,6 +751,15 @@ Future<void> showArNSWalletDialog(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ArNSBodyText(strings.arnsLinkWalletPageBody),
+                const SizedBox(height: ArDriveSpacing.xs),
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: ArDriveLink(
+                    text: strings.arnsWhatIsArNS,
+                    external: true,
+                    onTap: () => openUrl(url: arnsDocsUrl),
+                  ),
+                ),
                 const SizedBox(height: ArDriveSpacing.md),
                 ArNSWalletChooser(
                   changing: changing,
