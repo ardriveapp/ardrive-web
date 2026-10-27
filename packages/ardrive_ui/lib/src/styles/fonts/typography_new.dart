@@ -7,6 +7,9 @@ const String _package = 'ardrive_ui';
 const String fontFamily = 'Wavehaus';
 
 enum ArFontWeight {
+  /// Wavehaus 42 Light. For large figures only (display and heading sizes),
+  /// where its contrast with the bold labels around it carries the hierarchy.
+  light(FontWeight.w400),
   book(FontWeight.w500),
   semiBold(FontWeight.w600),
   bold(FontWeight.w700);

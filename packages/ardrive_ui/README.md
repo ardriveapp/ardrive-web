@@ -17,10 +17,26 @@ The package has two generations. Build with the new one, whose names end in
 | Status colour | `statusInfo…`, `statusWarning…`, `statusError…`, `statusSuccess…` | Each has `Fg` (icon, emphasis), `Container` (fill) and `Stroke` (edge). Body text on a status container stays `textHigh` |
 | Spacing | `ArDriveSpacing` | `xxs` 4, `xs` 8, `sm` 12, `md` 16, `lg` 24, `xl` 32, `xxl` 48 |
 | Radius | `ArDriveRadius` | `sm` 4 for small controls, `md` 8 for cards and notices, `lg` 12 for dialogs and sheets |
-| Type | `ArDriveTypographyNew.of(context)` | Wavehaus. `heading1`–`6`, `paragraphXXLarge`–`paragraphSmall`, `caption`, each with a weight of `book`, `semiBold` or `bold`. Phone sizes apply under 834 px |
+| Type | `ArDriveTypographyNew.of(context)` | Wavehaus. `heading1`–`6`, `paragraphXXLarge`–`paragraphSmall`, `caption`, each with a weight of `book`, `semiBold` or `bold`, or `light` for a figure (below). Phone sizes apply under 834 px |
 
-Secondary buttons are a translucent tint (8% white in dark, 8% black in light),
-so they read as a step up from whatever surface they sit on.
+Secondary buttons are a translucent tint (8% white in dark, 8% of a warm
+near-black in light), so they read as a step up from whatever surface they sit
+on.
+
+The light theme's greys are warm. The surface greys (`solidGrey50`–`300`, so
+every container, input and disabled fill), the table and menu backgrounds, and
+the translucent fills and edges over them lean slightly toward the brand red,
+the tint of the 2021 styleguide's Gallery `#F1EFF0`. Text and icon greys stay
+neutral, so text never reads pink, and so do the scrims. White
+(`containerRaised`) and the dark theme are unchanged. A new light grey follows
+the same rule.
+
+A figure that is the point of its block, such as the size on the permanence
+panel, is set in `ArFontWeight.light` (Wavehaus 42 Light) at `heading3` size
+or larger, with its label in a heavier weight beside or above it. The contrast
+between the two carries the hierarchy. Light is for figures only: never for
+running text, labels or anything under `heading3`, where it is too thin to
+read.
 
 Every colour comes from a token, in both themes. A literal colour, or a
 Material one such as `Colors.green`, looks right in one theme only.

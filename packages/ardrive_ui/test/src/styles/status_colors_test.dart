@@ -52,15 +52,18 @@ void main() {
       });
 
       // The brand palette has no warning colour: a warning is neutral and
-      // its icon carries the meaning.
+      // its icon carries the meaning. Neutral means the theme's own greys,
+      // which lean faintly warm in light (no channel more than 8 apart),
+      // never a yellow or orange.
       test('warning is neutral', () {
         for (final c in [
           tokens.statusWarningFg,
           tokens.statusWarningContainer,
           tokens.statusWarningStroke,
         ]) {
-          expect(c.red == c.green && c.green == c.blue, isTrue,
-              reason: '$c is not a grey');
+          final channels = [c.red, c.green, c.blue];
+          final spread = channels.reduce(math.max) - channels.reduce(math.min);
+          expect(spread <= 8, isTrue, reason: '$c is not a grey');
         }
       });
 

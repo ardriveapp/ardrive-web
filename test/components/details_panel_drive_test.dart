@@ -7,6 +7,7 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/sync/domain/cubit/sync_cubit.dart';
+import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -252,6 +253,24 @@ void main() {
       ),
       findsOneWidget,
     );
+
+    await takeDown(tester);
+  });
+
+  /// A drive this device has read leads its details with its size, the
+  /// panel's figure: large and in Light, with what it holds under it, in
+  /// place of the Size and Contains rows it had.
+  testWidgets('a read drive leads with its size as a figure', (tester) async {
+    await tester.runAsync(markDriveRead);
+    await pumpPanel(tester);
+
+    final figure = find.text(filesize(0));
+    expect(figure, findsOneWidget);
+    final style = tester.widget<Text>(figure).style!;
+    expect(style.fontWeight, ArFontWeight.light.weight);
+    expect(style.fontSize, greaterThanOrEqualTo(25));
+    expect(find.text('Size'), findsNothing);
+    expect(find.text('Contains'), findsNothing);
 
     await takeDown(tester);
   });
