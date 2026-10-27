@@ -147,6 +147,7 @@ void main() {
   setUp(() {
     requests = [];
     sdk = _MockArioSDK();
+    when(() => sdk.connectedSolanaAddress).thenReturn(_owner);
     steps = [];
     final memory = _MemoryStore();
     pending = ArNSPendingActionStore(openStore: () async => memory);
@@ -306,6 +307,22 @@ void main() {
           transactionId: _txId,
           ttlSeconds: 300,
         )).called(1);
+  });
+
+  test('a controller on another account is refused before any prompt',
+      () async {
+    when(() => sdk.connectedSolanaAddress).thenReturn('someone-else');
+
+    final failure =
+        await run(executor((r) async => _json({})), role: ArNSRole.controller);
+
+    expect(failure?.kind, ArNSFailureKind.wrongAccount);
+    verifyNever(() => sdk.setRecordAsController(
+          processId: any(named: 'processId'),
+          undername: any(named: 'undername'),
+          transactionId: any(named: 'transactionId'),
+          ttlSeconds: any(named: 'ttlSeconds'),
+        ));
   });
 
   test('a controller rejecting its own transaction is a rejection', () async {

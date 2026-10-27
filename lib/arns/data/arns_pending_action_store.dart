@@ -4,6 +4,7 @@ import 'package:ardrive/utils/key_value_store.dart';
 import 'package:ardrive/utils/local_key_value_store.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:equatable/equatable.dart';
+import 'package:synchronized/synchronized.dart';
 
 /// Where Turbo ArNS actions not yet finished are kept, one key per ArDrive
 /// profile.
@@ -92,26 +93,32 @@ class ArNSPendingActionStore {
     }
   }
 
+  /// One read-modify-write at a time, so an add and a remove that overlap
+  /// can't undo each other.
+  final _lock = Lock();
+
   /// Remembers [action], replacing one with the same nonce.
-  Future<void> add(String profileAddress, ArNSPendingAction action) async {
-    final actions = [
-      for (final a in await pending(profileAddress))
-        if (a.nonce != action.nonce) a,
-      action,
-    ];
-    await _write(profileAddress, actions);
-  }
+  Future<void> add(String profileAddress, ArNSPendingAction action) =>
+      _lock.synchronized(() async {
+        final actions = [
+          for (final a in await pending(profileAddress))
+            if (a.nonce != action.nonce) a,
+          action,
+        ];
+        await _write(profileAddress, actions);
+      });
 
   /// Forgets the action with [nonce], once it reached an end.
-  Future<void> remove(String profileAddress, String nonce) async {
-    final before = await pending(profileAddress);
-    final actions = [
-      for (final a in before)
-        if (a.nonce != nonce) a,
-    ];
-    if (actions.length == before.length) return;
-    await _write(profileAddress, actions);
-  }
+  Future<void> remove(String profileAddress, String nonce) =>
+      _lock.synchronized(() async {
+        final before = await pending(profileAddress);
+        final actions = [
+          for (final a in before)
+            if (a.nonce != nonce) a,
+        ];
+        if (actions.length == before.length) return;
+        await _write(profileAddress, actions);
+      });
 
   Future<void> _write(
     String profileAddress,

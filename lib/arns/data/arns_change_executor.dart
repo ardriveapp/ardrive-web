@@ -115,6 +115,15 @@ class ArNSChangeExecutor {
     void Function(String nonce)? onNonce,
   }) async {
     if (name.role == ArNSRole.controller) {
+      // The connected wallet signs a controller's change itself, so a wallet
+      // on another account is refused before it is asked anything.
+      final connected = _arioSDK.connectedSolanaAddress;
+      if (connected != owner.address) {
+        throw ArNSChangeFailure(
+          ArNSFailureKind.wrongAccount,
+          cause: 'expected ${owner.address}, connected $connected',
+        );
+      }
       return _asController(change, onStep);
     }
 
