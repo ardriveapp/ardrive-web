@@ -114,4 +114,17 @@ void main() {
     expect(rect.top, greaterThanOrEqualTo(328));
     expect(rect.bottom, lessThanOrEqualTo(900));
   });
+
+  // Placed again when the window changed, the menu was drawn with its old
+  // placement and height until something else rebuilt it.
+  testWidgets('an open menu is placed again when the window shrinks',
+      (tester) async {
+    await openMenuAt(tester, top: 100, items: 14);
+    expect(menuRect(tester).bottom, greaterThan(600));
+
+    tester.view.physicalSize = const Size(1440, 600);
+    await tester.pumpAndSettle();
+
+    expect(menuRect(tester).bottom, lessThanOrEqualTo(600));
+  });
 }

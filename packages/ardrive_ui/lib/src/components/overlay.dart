@@ -74,7 +74,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
   @override
   void didChangeDependencies() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _placeMenu();
+      if (mounted && visible) setState(_placeMenu);
     });
 
     super.didChangeDependencies();
@@ -147,6 +147,10 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
             MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
 
     final dropdownTheme = ArDriveTheme.of(context).themeData.dropdownTheme;
+
+    // An open menu is placed again when the window changes size. Only an
+    // open one depends on it, so closed rows don't rebuild on a resize.
+    if (visible) MediaQuery.sizeOf(context);
 
     return ArDriveOverlay(
       onVisibleChange: (value) {
@@ -279,6 +283,16 @@ class _ArDriveDropdownContentState extends State<_ArDriveDropdownContent>
     _animation = Tween<double>(begin: 0, end: widget.height)
         .animate(_animationController);
     _animationController.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ArDriveDropdownContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Fitted again to a resized window: the open menu takes the new height.
+    if (widget.height != oldWidget.height) {
+      _animation = Tween<double>(begin: 0, end: widget.height)
+          .animate(_animationController);
+    }
   }
 
   @override
