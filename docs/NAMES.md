@@ -1,7 +1,8 @@
 # Names
 
-> **Status: phase 1 in progress** on the `arns-names` branch, behind the
-> `enableArNS` config flag (off in every flavour). The design was agreed with
+> **Status: phase 1 built** on the `arns-names` branch, behind the
+> `enableArNS` config flag: on in development and staging, off in production
+> until it is turned on there with a `configVersion` bump. The design was agreed with
 > Phil on 2026-10-25 and 2026-10-26 (decisions Q1 to Q29 below). This is the
 > standard for names, deployments and publishing across every ArDrive app:
 > web, desktop, CLI and core-js.
