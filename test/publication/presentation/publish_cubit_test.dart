@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -80,6 +81,7 @@ void main() {
   late _Skip skip;
   late _Discovery discovery;
   late MockProfileCubit profile;
+  final guard = <String>[];
 
   setUpAll(() {
     registerFallbackValue(getTestWallet());
@@ -120,6 +122,7 @@ void main() {
           ));
 
   setUp(() async {
+    guard.clear();
     SharedPreferences.setMockInitialValues({});
     db = getTestDb();
     await db.into(db.drives).insert(DrivesCompanion.insert(
@@ -155,9 +158,12 @@ void main() {
             indexHtml: '',
             version: '2.91.0'));
     when(() => publisher.sizeOf(any())).thenReturn(5000);
+    when(() => publisher.itemSizesOf(any())).thenReturn([2000, 3000]);
+    when(() => publisher.snapshotServes(any())).thenAnswer((_) async => true);
     when(() => publisher.gatewayUrl).thenReturn('https://turbo-gateway.com');
     when(() => estimator.estimate(
           sizeInBytes: any(named: 'sizeInBytes'),
+          itemSizes: any(named: 'itemSizes'),
           wallet: any(named: 'wallet'),
           walletBalance: any(named: 'walletBalance'),
         )).thenAnswer((_) async => _cost());
@@ -165,11 +171,16 @@ void main() {
 
   tearDown(() => db.close());
 
-  PublishCubit cubit({FolderEntry? folderEntry, Publication? previous}) =>
+  PublishCubit cubit({
+    FolderEntry? folderEntry,
+    Publication? previous,
+  }) =>
       PublishCubit(
         drive: drive,
         folder: folderEntry,
         previous: previous,
+        holdGuard: (_) => guard.add('hold'),
+        releaseGuard: (_) => guard.add('release'),
         dependencies: PublishDependencies(
           driveDao: db.driveDao,
           profileCubit: profile,
@@ -507,6 +518,7 @@ void main() {
     c.setTitle('A new title');
     when(() => estimator.estimate(
           sizeInBytes: any(named: 'sizeInBytes'),
+          itemSizes: any(named: 'itemSizes'),
           wallet: any(named: 'wallet'),
           walletBalance: any(named: 'walletBalance'),
         )).thenThrow(Exception('timeout'));
@@ -514,6 +526,7 @@ void main() {
     expect(c.state.stage, PublishStage.failed);
     when(() => estimator.estimate(
           sizeInBytes: any(named: 'sizeInBytes'),
+          itemSizes: any(named: 'itemSizes'),
           wallet: any(named: 'wallet'),
           walletBalance: any(named: 'walletBalance'),
         )).thenAnswer((_) async => _cost());
@@ -589,5 +602,138 @@ void main() {
     job = verify(() => publisher.publish(captureAny(), any(),
         onStep: any(named: 'onStep'))).captured.single as PublicationJob;
     expect(job.social, isA<NewPublicationImage>(), reason: 'redrawn');
+  });
+
+  void publishes() =>
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async => latest());
+
+  group('the leave-page guard', () {
+    test('is held while publishing and released when done', () async {
+      discovery.candidates = [freshSnapshot()];
+      final during = <String>[];
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) async {
+        during.addAll(guard);
+        return latest();
+      });
+      final c = cubit();
+      await c.load();
+      await c.review();
+      expect(guard.where((g) => g == 'hold'), isEmpty,
+          reason: 'nothing is at risk before Publish');
+      await c.publish();
+      expect(during.last, 'hold');
+      expect(c.state.stage, PublishStage.done);
+      expect(guard.last, 'release');
+    });
+
+    test('is released when publishing fails', () async {
+      discovery.candidates = [freshSnapshot()];
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenThrow(
+              const PublicationFailure(PublicationStep.publication, 'Nope.'));
+      final c = cubit();
+      await c.load();
+      await c.review();
+      await c.publish();
+      expect(c.state.stage, PublishStage.failed);
+      expect(guard, contains('hold'));
+      expect(guard.last, 'release');
+    });
+
+    test('outlives a dialog closed mid-publish until the upload settles',
+        () async {
+      discovery.candidates = [freshSnapshot()];
+      final gate = Completer<PublishedVersion>();
+      when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
+          .thenAnswer((_) => gate.future);
+      final c = cubit();
+      await c.load();
+      await c.review();
+      unawaited(c.publish());
+      await pumpEventQueue();
+      expect(guard.last, 'hold');
+      await c.close();
+      expect(guard.last, 'hold', reason: 'the upload is still running');
+      gate.complete(latest());
+      await pumpEventQueue();
+      expect(guard.last, 'release');
+    });
+
+    test('is released when the dialog closes with nothing running', () async {
+      discovery.candidates = [freshSnapshot()];
+      final c = cubit();
+      await c.load();
+      await c.review();
+      await c.close();
+      expect(guard.where((g) => g == 'hold'), isEmpty);
+      expect(guard.last, 'release');
+    });
+  });
+
+  test('a snapshot the gateway does not serve is not reused', () async {
+    discovery.candidates = [freshSnapshot()];
+    when(() => publisher.snapshotServes('NEWEST'))
+        .thenAnswer((_) async => false);
+    when(() => creation.prepare(
+          driveId: any(named: 'driveId'),
+          driveKey: any(named: 'driveKey'),
+          wallet: any(named: 'wallet'),
+          isCancelled: any(named: 'isCancelled'),
+        )).thenAnswer((_) async => DriveStateCreationResult.prepared(
+          PreparedDriveStateArtifact(
+            entity: DriveStateEntity(
+                id: 'x',
+                driveId: _drive,
+                blockEnd: 1,
+                dataStart: 0,
+                dataEnd: 1,
+                entityCount: 3),
+            driveId: _drive,
+            driveName: 'My drive',
+            entityCount: 3,
+            sizeInBytes: 900,
+          ),
+        ));
+    final c = cubit();
+    await c.load();
+    await c.review();
+    expect(c.state.stage, PublishStage.review);
+    expect(c.state.reusesSnapshot, isFalse);
+    verify(() => publisher.snapshotServes('NEWEST')).called(1);
+  });
+
+  test('the cost is checked item by item', () async {
+    discovery.candidates = [freshSnapshot()];
+    final c = cubit();
+    await c.load();
+    await c.review();
+    verify(() => estimator.estimate(
+          sizeInBytes: 5000,
+          itemSizes: [2000, 3000],
+          wallet: any(named: 'wallet'),
+          walletBalance: any(named: 'walletBalance'),
+        )).called(1);
+  });
+
+  group('the display name', () {
+    test('is free text, and a title may say ArDrive', () async {
+      discovery.candidates = [freshSnapshot()];
+      publishes();
+      final c = cubit();
+      await c.load();
+      c.setTitle('ArDrive Photos Drive');
+      c.setOwnerName('ArDrive Support');
+      c.next();
+      await c.review();
+      expect(c.state.stage, PublishStage.review);
+      await c.publish();
+      expect(c.state.stage, PublishStage.done);
+      final job = verify(() => publisher.publish(captureAny(), any(),
+          onStep: any(named: 'onStep'))).captured.single as PublicationJob;
+      expect(job.title, 'ArDrive Photos Drive');
+      expect(job.ownerName, 'ArDrive Support');
+    });
   });
 }

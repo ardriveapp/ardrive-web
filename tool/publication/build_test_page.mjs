@@ -8,7 +8,7 @@
 //     --release <release manifest id> --snapshot <artifact tx id> \
 //     --root <root folder id> [--folder <folder id>] \
 //     --title 'A title' [--description 'A sentence.'] [--owner-name 'Name'] \
-//     [--images <dir>] [--publication-id <uuid>] [--gateway turbo-gateway.com]
+//     [--images <dir>] [--publication-id <uuid>] [--gateway ardrive.net]
 //     [--out <dir>] [--upload]
 //
 // The drive, its owner and privacy come from the artifact's tags, read once
@@ -63,7 +63,7 @@ const { values: args } = parseArgs({
     'owner-name': { type: 'string' },
     images: { type: 'string' },
     'publication-id': { type: 'string' },
-    gateway: { type: 'string', default: 'turbo-gateway.com' },
+    gateway: { type: 'string', default: 'ardrive.net' },
     out: { type: 'string', default: 'publication-out' },
     upload: { type: 'boolean', default: false },
   },

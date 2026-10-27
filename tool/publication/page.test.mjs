@@ -7,6 +7,7 @@ const release = `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
     <meta name="description" content="ArDrive is a permanent home." />
     <!-- <meta property="og:title" content="in a comment"> -->
     <meta property="og:title" content="ArDrive">
@@ -35,6 +36,13 @@ test("index.html replaces the release's head with the page's", () => {
   // has none.
   assert.match(html, /<!-- <meta property="og:title" content="in a comment"> -->/);
   assert.match(html, /favicon\.png/);
+});
+
+test('a visitor can zoom a page', () => {
+  const html = buildIndexHtml(release, { title: 't', description: 'd' });
+  assert.doesNotMatch(html, /user-scalable|maximum-scale/);
+  assert.equal(html.match(/name="viewport"/g).length, 1);
+  assert.match(html, /<meta name="viewport" content="width=device-width, initial-scale=1.0">/);
 });
 
 test('index.html names a social image by its own transaction', () => {

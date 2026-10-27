@@ -93,11 +93,13 @@ Future<void> showPublishDialog(
   final driveDao = context.read<DriveDao>();
   final profileCubit = context.read<ProfileCubit>();
   final repository = context.read<PublicationRepository>();
-  String gatewayUrl() => configService.config.arweaveGatewayForDataRequest.url;
+  final turboUploadService = context.read<TurboUploadService>();
+  // Every publication is on one gateway, whatever the data gateway setting.
+  String gatewayUrl() => configService.config.publicationGatewayUrl;
   final publisher = PublicationPublisher(
     uploader: PublicationUploader(
       arweave: arweave,
-      turboUploadService: context.read<TurboUploadService>(),
+      turboUploadService: turboUploadService,
     ),
     // A publication may need a snapshot, and makes one only where snapshots
     // can be published at all.
@@ -105,7 +107,7 @@ Future<void> showPublishDialog(
       publishingEnabled: configService.config.enableDriveStatePublishing,
       whenEnabled: () => ArweaveDriveStateUploader(
         arweave: arweave,
-        turboUploadService: context.read<TurboUploadService>(),
+        turboUploadService: turboUploadService,
         profileCubit: profileCubit,
         tabVisibility: TabVisibilitySingleton(),
       ),
@@ -131,6 +133,8 @@ Future<void> showPublishDialog(
       turboBalanceRetriever:
           TurboBalanceRetriever(paymentService: paymentService),
       configService: configService,
+      // Turbo's own limit, as the upload flow reads it.
+      maxFreeItemBytes: () => turboUploadService.maxFreeItemSizeBytes,
     ),
     viewer: configService.config.publicationViewer,
     labels: PublicationLabels(
@@ -170,6 +174,18 @@ class PublishDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Back does not close a publish in progress: the dialog is the only way
+    // to see it finish or try it again.
+    return BlocSelector<PublishCubit, PublishState, bool>(
+      selector: (state) => state.stage == PublishStage.publishing,
+      builder: (context, publishing) => PopScope(
+        canPop: !publishing,
+        child: _content(),
+      ),
+    );
+  }
+
+  Widget _content() {
     return BlocBuilder<PublishCubit, PublishState>(
       builder: (context, state) {
         final strings = appLocalizationsOf(context);
@@ -480,6 +496,12 @@ class _Included extends StatelessWidget {
               child: Text('• $line',
                   style: typography.paragraphNormal(color: colors.textMid)),
             ),
+          // Hiding is not privacy: a public drive's data stays readable.
+          if (summary.hiddenItems > 0 || summary.inHiddenFolders > 0) ...[
+            const SizedBox(height: 8),
+            Text(strings.publishHiddenFindable,
+                style: typography.paragraphSmall(color: colors.textMid)),
+          ],
         ],
         const SizedBox(height: 16),
         Text(strings.publishIncludedNote,

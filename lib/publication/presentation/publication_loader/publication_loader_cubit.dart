@@ -23,9 +23,11 @@ part 'publication_loader_state.dart';
 /// 4. downloads the snapshot, reporting progress;
 /// 5. imports it with the same `DriveStateImporter` a sync uses.
 ///
-/// The importer checks the snapshot was uploaded by the owner `publication.json`
-/// names, which is as trustworthy as the page itself, and nothing more is
-/// asked of anyone: there is no GraphQL owner lookup on a publication.
+/// `publication.json` names its owner, and anyone can write one naming
+/// anyone. So one GraphQL lookup on the serving gateway asks who really
+/// signed the snapshot ([ownerOf]): someone else refuses the page. An answer
+/// of nobody (a snapshot not indexed yet) opens it as declared: the byline
+/// always shows the owner's address beside any display name.
 ///
 /// No sync runs here or afterwards. The publication is exactly the snapshot.
 class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
@@ -34,16 +36,22 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     required String settingsPath,
     required DriveDao driveDao,
     required DriveStateImporter importer,
+    required Future<String?> Function(String txId) ownerOf,
   })  : _source = source,
         _settingsPath = settingsPath,
         _driveDao = driveDao,
         _importer = importer,
+        _ownerOf = ownerOf,
         super(const PublicationLoadingSettings());
 
   final PublicationSource _source;
   final String _settingsPath;
   final DriveDao _driveDao;
   final DriveStateImporter _importer;
+
+  /// Who signed a transaction, by the serving gateway; null when it does not
+  /// know (`PublicationOwnerLookup.ownerOf`).
+  final Future<String?> Function(String txId) _ownerOf;
 
   PublicationConfig? _config;
   SecretKey? _driveKey;
@@ -99,7 +107,38 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     }
   }
 
+  /// A page refused for what it holds shows nothing it says about itself:
+  /// no title, no icon, no display name. Its settings are not trusted.
+  static const _refused =
+      PublicationFailed(PublicationFailure.snapshotRejected);
+
+  /// Whether the snapshot's real signer is [config]'s owner: true, false, or
+  /// null when the gateway cannot say.
+  Future<bool?> _ownerMatches(PublicationConfig config) async {
+    final String? signer;
+    try {
+      signer = await _ownerOf(config.snapshot.txId);
+    } catch (e) {
+      logger.w('Publication owner not checked: $e');
+      return null;
+    }
+    if (signer == null) return null;
+    return signer == config.owner;
+  }
+
   Future<void> _openSnapshotOrThrow(PublicationConfig config) async {
+    final ownerMatches = await _ownerMatches(config);
+    if (ownerMatches == false) {
+      logger.w('Publication refused: its snapshot was signed by someone else '
+          'than the owner it names');
+      emit(_refused);
+      return;
+    }
+    // Only a confirmed mismatch refuses. No answer (a new snapshot is not
+    // indexed until its bundle is mined) opens the page as declared, with
+    // the address the byline always shows beside any display name.
+    final ownerVerified = ownerMatches == true;
+
     await _driveDao.writePublicationDrive(
       driveId: config.driveId,
       rootFolderId: config.rootFolderId,
@@ -134,8 +173,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     final resolved = protection.protection;
     if (resolved == null) {
       logger.w('Publication snapshot not opened: ${protection.refusal}');
-      emit(PublicationFailed(PublicationFailure.snapshotRejected,
-          config: config));
+      emit(_refused);
       return;
     }
 
@@ -151,8 +189,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     );
     if (!result.isImported) {
       logger.w('Publication snapshot rejected: $result');
-      emit(PublicationFailed(PublicationFailure.snapshotRejected,
-          config: config));
+      emit(_refused);
       return;
     }
 
@@ -163,8 +200,7 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
           await _driveDao.folderById(folderId: folderId).getSingleOrNull();
       if (folder == null || folder.driveId != config.driveId) {
         logger.w('Publication snapshot has no folder $folderId');
-        emit(PublicationFailed(PublicationFailure.snapshotRejected,
-            config: config));
+        emit(_refused);
         return;
       }
     }
@@ -174,6 +210,10 @@ class PublicationLoaderCubit extends Cubit<PublicationLoaderState> {
     // the drive's folder trees with it (see [PublicationContents.open]).
     final contents = await PublicationContents.load(_driveDao, config);
     PublicationContents.open = contents;
-    emit(PublicationReady(config, stats: PublicationStats.of(contents)));
+    emit(PublicationReady(
+      config,
+      stats: PublicationStats.of(contents),
+      ownerVerified: ownerVerified,
+    ));
   }
 }

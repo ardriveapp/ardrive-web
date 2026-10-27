@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -470,5 +471,116 @@ void main() {
           .having(
               (f) => f.message, 'message', isNot(contains('Turbo declined')))),
     );
+  });
+
+  test('each item is sized on its own, the new snapshot among them', () {
+    final sizes = publisher.itemSizesOf(job());
+    // Four images, four pages, the manifest and the snapshot.
+    expect(sizes, hasLength(10));
+    expect(sizes.last, 5000 + 1100);
+    expect(sizes.reduce((a, b) => a + b), publisher.sizeOf(job()));
+    final reused = publisher.itemSizesOf(
+        job(snapshot: const ReusedSnapshot(txId: 'OLD', tags: {})));
+    expect(reused, hasLength(9));
+    expect(reused.every((size) => size < 100000), isTrue);
+  });
+
+  group('the gateway', () {
+    PublicationPublisher on(MockClient client) => PublicationPublisher(
+          uploader: uploader,
+          driveStateUploader: snapshots,
+          repository: PublicationRepository(
+            graphQLRetry: MockGraphQLRetry(),
+            gatewayUrl: () => 'https://ardrive.net',
+          ),
+          gatewayUrl: () => 'https://ardrive.net',
+          client: client,
+          now: () => DateTime.utc(2026, 10, 24, 12),
+        );
+
+    test('a snapshot serves when the gateway hands it over', () async {
+      final asked = <String>[];
+      final serving = on(MockClient((request) async {
+        asked.add('${request.method} ${request.url}');
+        return switch (request.url.path) {
+          '/raw/GOOD' => http.Response('', 200, headers: {
+              'content-length': '17714',
+            }),
+          '/raw/EMPTY' => http.Response('', 200, headers: {
+              'content-length': '0',
+            }),
+          _ => http.Response('', 404),
+        };
+      }));
+      expect(await serving.snapshotServes('GOOD'), isTrue);
+      expect(await serving.snapshotServes('MISSING'), isFalse);
+      expect(await serving.snapshotServes('EMPTY'), isFalse);
+      expect(asked.first, 'HEAD https://ardrive.net/raw/GOOD');
+      expect(
+          await on(MockClient((_) async => throw Exception('offline')))
+              .snapshotServes('GOOD'),
+          isFalse);
+    });
+
+    test('every link written into the page, and the warm-up, use it', () async {
+      final warmed = <String>[];
+      final version = await on(MockClient((request) async {
+        warmed.add(request.url.toString());
+        return http.Response('', 200);
+      })).publish(job(), wallet);
+      final posted = {for (final item in uploader.turbo) item.id: item};
+      final paths = (json.decode(_text(uploader.turbo.last))['paths'] as Map)
+          .map((k, v) => MapEntry(k as String, (v as Map)['id'] as String));
+      expect(_text(posted[paths['index.html']]!),
+          contains('content="https://ardrive.net/${paths['social.jpg']}"'));
+      expect(_text(posted[paths['files.html']]!),
+          contains('href="https://ardrive.net/A_DATA"'));
+      expect(_text(posted[paths['sitemap.xml']]!),
+          contains('<loc>https://ardrive.net/A_DATA</loc>'));
+      expect(
+          warmed,
+          unorderedEquals([
+            'https://ardrive.net/${version.txId}/',
+            'https://ardrive.net/${version.txId}/publication.json',
+            'https://ardrive.net/${version.txId}/snapshot',
+          ]));
+    });
+  });
+
+  test('a Turbo post that hangs stops, and Try again finishes the job',
+      () async {
+    registerFallbackValue(DataItem.withBlobData(data: Uint8List(0)));
+    registerFallbackValue(wallet);
+    final turbo = MockTurboUploadService();
+    var calls = 0;
+    when(() => turbo.postDataItem(
+          dataItem: any(named: 'dataItem'),
+          wallet: any(named: 'wallet'),
+        )).thenAnswer((_) {
+      // The first post never answers.
+      return calls++ == 0 ? Completer<void>().future : Future.value();
+    });
+    final hanging = PublicationPublisher(
+      uploader: PublicationUploader(
+        arweave: MockArweaveService(),
+        turboUploadService: turbo,
+        turboTimeout: const Duration(milliseconds: 50),
+      ),
+      driveStateUploader: snapshots,
+      repository: PublicationRepository(
+        graphQLRetry: MockGraphQLRetry(),
+        gatewayUrl: () => _gateway,
+      ),
+      gatewayUrl: () => _gateway,
+      client: MockClient((_) async => http.Response('', 200)),
+    );
+    final theJob = job(snapshot: const ReusedSnapshot(txId: 'S', tags: {}));
+    await expectLater(
+      hanging.publish(theJob, wallet),
+      throwsA(isA<PublicationFailure>()
+          .having((f) => f.canRetry, 'canRetry', isTrue)),
+    );
+    final version = await hanging.publish(theJob, wallet);
+    expect(version.txId, theJob.manifestTxId);
   });
 }

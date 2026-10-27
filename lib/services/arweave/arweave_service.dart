@@ -65,6 +65,31 @@ const kMaxNumberOfTransactionsPerPage = 100;
 /// four requests rather than one.
 const int maxGraphQLIdsPerQuery = 9;
 
+/// Entity types a drive's history carries that sync never parses, so never
+/// fetches. They share the drive's `Drive-Id`, so the unfiltered history
+/// query returns them, and each body would otherwise be downloaded and kept
+/// in the metadata cache (local storage on the web) on every first sync: a
+/// snapshot or drive state runs to megabytes, a publication's manifest to
+/// about 82 KB. Their own readers find them by GraphQL and fetch them
+/// themselves (drive-state discovery, `PublicationRepository`).
+const _entityTypesSyncNeverReads = {
+  EntityTypeTag.snapshot,
+  EntityTypeTag.driveState,
+  EntityTypeTag.publication,
+};
+
+/// Whether sync downloads the body of the entity with [tags], before any
+/// request is made: never for an entity type it does not parse, nor for a
+/// private drive's entity with no `Cipher-IV` (broken, unreadable).
+@visibleForTesting
+bool syncFetchesEntityData(
+  Map<Object?, Object?> tags, {
+  required bool isPrivateDrive,
+}) {
+  if (isPrivateDrive && tags[EntityTag.cipherIv] == null) return false;
+  return !_entityTypesSyncNeverReads.contains(tags[EntityTag.entityType]);
+}
+
 class ArweaveService {
   Arweave client;
   final ArDriveCrypto _crypto;
@@ -814,10 +839,7 @@ class ArweaveService {
 
         // Entities we never fetch. Leave entityDatas[i] at its empty default
         // and release the slot immediately.
-        if (driveKey != null && tags[EntityTag.cipherIv] == null) {
-          return;
-        }
-        if (tags[EntityTag.entityType] == EntityTypeTag.snapshot) {
+        if (!syncFetchesEntityData(tags, isPrivateDrive: driveKey != null)) {
           return;
         }
 

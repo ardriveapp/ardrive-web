@@ -16,7 +16,9 @@ import 'package:ardrive/publication/domain/publication_publisher.dart';
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/domain/publication_social_card.dart';
 import 'package:ardrive/services/license/license.dart';
+import 'package:ardrive/utils/leave_page_guard/leave_page_guard.dart';
 import 'package:ardrive/utils/logger.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/widgets.dart' show StringCharacters;
 import 'package:drift/drift.dart' show Variable;
 import 'package:equatable/equatable.dart';
@@ -78,8 +80,15 @@ class PublishCubit extends Cubit<PublishState> {
     required this.folder,
     required PublishDependencies dependencies,
     this.previous,
+    @visibleForTesting void Function(Object holder)? holdGuard,
+    @visibleForTesting void Function(Object holder)? releaseGuard,
   })  : _deps = dependencies,
+        _holdGuard = holdGuard ?? holdLeavePageGuard,
+        _releaseGuard = releaseGuard ?? releaseLeavePageGuard,
         super(const PublishState(stage: PublishStage.loading));
+
+  final void Function(Object holder) _holdGuard;
+  final void Function(Object holder) _releaseGuard;
 
   final Drive drive;
 
@@ -451,6 +460,7 @@ class PublishCubit extends Cubit<PublishState> {
       final cost = await _deps.costEstimator
           .estimate(
             sizeInBytes: _deps.publisher.sizeOf(job),
+            itemSizes: _deps.publisher.itemSizesOf(job),
             wallet: profile.user.wallet,
             walletBalance: profile.user.walletBalance,
           )
@@ -500,7 +510,13 @@ class PublishCubit extends Cubit<PublishState> {
     if (newest != null &&
         newest.entityCount == await _localEntityCount() &&
         await _unchangedSince(newest.unixTime!)) {
-      return ReusedSnapshot(txId: newest.txId, tags: newest.tags);
+      // Mined is not the same as served: a page whose snapshot the gateway
+      // cannot hand over never opens. One that does not serve is replaced.
+      if (await _deps.publisher.snapshotServes(newest.txId)) {
+        return ReusedSnapshot(txId: newest.txId, tags: newest.tags);
+      }
+      logger.w('[publication] snapshot ${newest.txId} does not serve; '
+          'making a new one');
     }
 
     final prepared = await _deps.creationService.prepare(
@@ -612,6 +628,7 @@ class PublishCubit extends Cubit<PublishState> {
     try {
       final cost = await _deps.costEstimator.estimate(
         sizeInBytes: _deps.publisher.sizeOf(job),
+        itemSizes: _deps.publisher.itemSizesOf(job),
         wallet: profile.user.wallet,
         walletBalance: profile.user.walletBalance,
       );
@@ -633,6 +650,7 @@ class PublishCubit extends Cubit<PublishState> {
         ? job
         : (_job = job.withMethod(state.method));
     _lastJob = run;
+    _publishing = true;
     emit(state.copyWith(stage: PublishStage.publishing, failure: ''));
     try {
       final version = await _deps.publisher.publish(
@@ -667,7 +685,35 @@ class PublishCubit extends Cubit<PublishState> {
         paidTxId: () => null,
         canRetry: true,
       ));
+    } finally {
+      _publishing = false;
+      // A dialog closed mid-publish left the guard held for this upload.
+      if (isClosed) _releaseGuard(this);
     }
+  }
+
+  /// Whether [publish] is still running, which can outlast the dialog: a
+  /// route pop closes the cubit but not the upload.
+  bool _publishing = false;
+
+  /// Keeps the browser asking before the tab is closed while a publish runs:
+  /// closing it midway leaves what was paid for half sent, and only this tab
+  /// holds the signed files that finish it.
+  @override
+  void onChange(Change<PublishState> change) {
+    super.onChange(change);
+    if (change.nextState.stage == PublishStage.publishing) {
+      _holdGuard(this);
+    } else {
+      _releaseGuard(this);
+    }
+  }
+
+  @override
+  Future<void> close() {
+    // While an upload runs, the guard is its to release (see [publish]).
+    if (!_publishing) _releaseGuard(this);
+    return super.close();
   }
 
   /// Tries a failed publish again, reusing what it already sent.

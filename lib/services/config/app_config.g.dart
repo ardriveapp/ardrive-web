@@ -28,6 +28,8 @@ AppConfig _$AppConfigFromJson(Map<String, dynamic> json) => AppConfig(
       enableDriveStatePublishing:
           json['enableDriveStatePublishing'] as bool? ?? false,
       publicationViewer: json['publicationViewer'] as String? ?? 'ardrive',
+      publicationGatewayUrl:
+          json['publicationGatewayUrl'] as String? ?? 'https://ardrive.net',
       stripePublishableKey: json['stripePublishableKey'] as String,
       autoSync: json['autoSync'] as bool? ?? true,
       uploadThumbnails: json['uploadThumbnails'] as bool? ?? true,
@@ -54,6 +56,7 @@ Map<String, dynamic> _$AppConfigToJson(AppConfig instance) => <String, dynamic>{
       'enableSyncFromDriveState': instance.enableSyncFromDriveState,
       'enableDriveStatePublishing': instance.enableDriveStatePublishing,
       'publicationViewer': instance.publicationViewer,
+      'publicationGatewayUrl': instance.publicationGatewayUrl,
       'stripePublishableKey': instance.stripePublishableKey,
       'autoSync': instance.autoSync,
       'uploadThumbnails': instance.uploadThumbnails,

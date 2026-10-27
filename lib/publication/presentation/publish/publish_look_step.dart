@@ -633,11 +633,13 @@ class _HeaderPreview extends StatelessWidget {
     final strings = appLocalizationsOf(context);
     final state = context.watch<PublishCubit>().state;
     final summary = state.summary;
+    // The page always shows the address, beside a name when there is one.
+    final address = truncateString(
+        context.read<PublishCubit>().drive.ownerAddress,
+        offsetStart: 6,
+        offsetEnd: 4);
     final hasName = state.ownerName.trim().isNotEmpty;
-    final owner = hasName
-        ? state.ownerName.trim()
-        : truncateString(context.read<PublishCubit>().drive.ownerAddress,
-            offsetStart: 6, offsetEnd: 4);
+    final owner = hasName ? '${state.ownerName.trim()} $address' : address;
     final bylineStyle = typography.paragraphSmall(color: colors.textMid);
     final byline = [
       strings.publicationBy(owner),
