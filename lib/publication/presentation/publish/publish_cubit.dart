@@ -650,6 +650,7 @@ class PublishCubit extends Cubit<PublishState> {
         ? job
         : (_job = job.withMethod(state.method));
     _lastJob = run;
+    _publishing = true;
     emit(state.copyWith(stage: PublishStage.publishing, failure: ''));
     try {
       final version = await _deps.publisher.publish(
@@ -684,8 +685,16 @@ class PublishCubit extends Cubit<PublishState> {
         paidTxId: () => null,
         canRetry: true,
       ));
+    } finally {
+      _publishing = false;
+      // A dialog closed mid-publish left the guard held for this upload.
+      if (isClosed) _releaseGuard(this);
     }
   }
+
+  /// Whether [publish] is still running, which can outlast the dialog: a
+  /// route pop closes the cubit but not the upload.
+  bool _publishing = false;
 
   /// Keeps the browser asking before the tab is closed while a publish runs:
   /// closing it midway leaves what was paid for half sent, and only this tab
@@ -702,7 +711,8 @@ class PublishCubit extends Cubit<PublishState> {
 
   @override
   Future<void> close() {
-    _releaseGuard(this);
+    // While an upload runs, the guard is its to release (see [publish]).
+    if (!_publishing) _releaseGuard(this);
     return super.close();
   }
 

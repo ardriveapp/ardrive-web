@@ -174,6 +174,18 @@ class PublishDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Back does not close a publish in progress: the dialog is the only way
+    // to see it finish or try it again.
+    return BlocSelector<PublishCubit, PublishState, bool>(
+      selector: (state) => state.stage == PublishStage.publishing,
+      builder: (context, publishing) => PopScope(
+        canPop: !publishing,
+        child: _content(),
+      ),
+    );
+  }
+
+  Widget _content() {
     return BlocBuilder<PublishCubit, PublishState>(
       builder: (context, state) {
         final strings = appLocalizationsOf(context);

@@ -642,7 +642,8 @@ void main() {
       expect(guard.last, 'release');
     });
 
-    test('is released when the dialog closes', () async {
+    test('outlives a dialog closed mid-publish until the upload settles',
+        () async {
       discovery.candidates = [freshSnapshot()];
       final gate = Completer<PublishedVersion>();
       when(() => publisher.publish(any(), any(), onStep: any(named: 'onStep')))
@@ -654,8 +655,20 @@ void main() {
       await pumpEventQueue();
       expect(guard.last, 'hold');
       await c.close();
-      expect(guard.last, 'release');
+      expect(guard.last, 'hold', reason: 'the upload is still running');
       gate.complete(latest());
+      await pumpEventQueue();
+      expect(guard.last, 'release');
+    });
+
+    test('is released when the dialog closes with nothing running', () async {
+      discovery.candidates = [freshSnapshot()];
+      final c = cubit();
+      await c.load();
+      await c.review();
+      await c.close();
+      expect(guard.where((g) => g == 'hold'), isEmpty);
+      expect(guard.last, 'release');
     });
   });
 
