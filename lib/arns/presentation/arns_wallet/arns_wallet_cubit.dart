@@ -60,10 +60,14 @@ class ArNSWalletCubit extends Cubit<ArNSWalletState> {
 
   Future<void> _onUser(User? user) async {
     if (user == null) {
+      final wasSignedIn = state.profileAddress != null;
       emit(ArNSWalletState(
         enabled: _isEnabled(),
         installedWallets: state.installedWallets,
       ));
+      // Left connected, the wallet would hand the next profile on this
+      // browser the same account when it links, often without a prompt.
+      if (wasSignedIn) await _disconnect();
       return;
     }
     if (user.walletAddress == state.profileAddress) return;
@@ -124,17 +128,21 @@ class ArNSWalletCubit extends Cubit<ArNSWalletState> {
     }
   }
 
+  Future<void> _disconnect() async {
+    try {
+      await _arioSDK.disconnectSolanaWallet();
+    } catch (e) {
+      logger.w('Could not disconnect the Solana wallet: $e');
+    }
+  }
+
   /// Forgets this profile's ArNS wallet and disconnects it.
   Future<void> unlink() async {
     final profile = state.profileAddress;
     if (profile == null) return;
 
     await _store.unlink(profile);
-    try {
-      await _arioSDK.disconnectSolanaWallet();
-    } catch (e) {
-      logger.w('Could not disconnect the Solana wallet: $e');
-    }
+    await _disconnect();
     if (!isClosed) {
       emit(state.copyWith(
         linked: () => null,

@@ -179,9 +179,11 @@ void main() {
     ArNSNameableItem? item = _item,
     ArNSRecordChoice? choice,
     String? placeholder = _placeholder,
+    Future<bool> Function()? walletMismatch,
   }) async {
     names = ArNSNamesCubit(repository: repository, walletCubit: wallet);
     final cubit = ArNSNameDialogCubit(
+      walletMismatch: walletMismatch,
       mode: mode,
       item: item,
       choice: choice,
@@ -591,6 +593,58 @@ void main() {
       });
     }
 
+    // Upload and Publish check this before paying; the name dialog let
+    // Turbo charge whichever account the browser wallet had moved to.
+    test('a wallet moved to another account stops before any prompt', () async {
+      var checked = 0;
+      final cubit = await open(walletMismatch: () async {
+        checked++;
+        return true;
+      });
+      cubit.startNewUndername('acme');
+      cubit.editNewUndername('docs');
+      await pumpEventQueue();
+      await cubit.commit();
+      await cubit.commit();
+
+      expect(checked, 1, reason: 'a second click finds nothing to commit');
+      verifyNever(() => executor.execute(
+            name: any(named: 'name'),
+            change: any(named: 'change'),
+            owner: any(named: 'owner'),
+            payer: any(named: 'payer'),
+            paidBy: any(named: 'paidBy'),
+            onStep: any(named: 'onStep'),
+            onNonce: any(named: 'onNonce'),
+          ));
+    });
+
+    test('the same account goes on to the change', () async {
+      final cubit = await open(walletMismatch: () async => false);
+      cubit.startNewUndername('acme');
+      cubit.editNewUndername('docs');
+      await pumpEventQueue();
+      await cubit.commit();
+
+      expect(cubit.state.stage, ArNSDialogStage.done);
+      expect(executedChange(), isA<ArNSSetRecord>());
+    });
+
+    // With nobody signed in, finding the payer threw past the dialog's
+    // failure handling and left it on "committing", which can't be closed.
+    test('no wallet to pay with fails, charged nothing', () async {
+      when(() => payments.payer()).thenThrow(Exception('nobody signed in'));
+      final cubit = await open();
+      cubit.startNewUndername('acme');
+      cubit.editNewUndername('docs');
+      await pumpEventQueue();
+      await cubit.commit();
+
+      expect(cubit.state.stage, ArNSDialogStage.failed);
+      expect(cubit.state.failure?.kind, ArNSFailureKind.failed);
+      expect(cubit.canTryAgain, isTrue);
+    });
+
     test('a lost response is never retried: the names are read again',
         () async {
       when(() => executor.execute(
@@ -885,6 +939,30 @@ void main() {
           )).called(1);
     });
 
+    test('an old name in its grace period is not removed', () async {
+      chain = [
+        _name(
+          end: now.subtract(const Duration(days: 2)),
+          records: chain.first.records,
+        ),
+        const ArNSManagedName(
+          name: 'other',
+          processId: 'OtherAntOtherAntOtherAntOtherAntOtherAnt1',
+          role: ArNSRole.owner,
+          type: ArNSNameType.permabuy,
+          endTimestamp: null,
+          undernameLimit: 10,
+          records: [],
+        ),
+      ];
+      final cubit = await open();
+      cubit.choose('other', '@');
+      await pumpEventQueue();
+
+      expect(cubit.state.movesFrom, isNull);
+      expect(cubit.previousRemoval, isNull);
+    });
+
     test('an old main name stays when no placeholder page is set', () async {
       chain = [
         _name(records: const [
@@ -929,6 +1007,29 @@ void main() {
       transactionId: _otherTx,
       ttlSeconds: 900,
     );
+
+    // The chain rejects a change to a name in its grace period, after Turbo
+    // has charged for it.
+    test('a name in its grace period stays on the old version, unpaid',
+        () async {
+      chain = [_name(end: now.subtract(const Duration(days: 2)))];
+      final cubit = flow(following: [blog])..load();
+      await pumpEventQueue();
+
+      expect(cubit.state.moving, isEmpty);
+      expect(cubit.hasWork, isFalse);
+      expect(cubit.plannedNames, isEmpty);
+      await cubit.applyTo(_itemTx);
+      verifyNever(() => executor.execute(
+            name: any(named: 'name'),
+            change: any(named: 'change'),
+            owner: any(named: 'owner'),
+            payer: any(named: 'payer'),
+            paidBy: any(named: 'paidBy'),
+            onStep: any(named: 'onStep'),
+            onNonce: any(named: 'onNonce'),
+          ));
+    });
 
     test('has no work and is ready with nothing chosen', () async {
       final cubit = flow()..load();

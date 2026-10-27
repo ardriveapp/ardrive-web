@@ -181,7 +181,23 @@ class ArNSNameDialogState extends Equatable {
   final ArNSRecordChoice? repointConfirmed;
 
   /// The names that move with a new version.
-  List<ArNSNameRecord> get moving => leaveOnOld ? const [] : following;
+  List<ArNSNameRecord> get moving => leaveOnOld
+      ? const []
+      : [
+          for (final record in following)
+            if (_canChange(record.name)) record,
+        ];
+
+  /// Whether [name]'s records can change now. In the grace period after its
+  /// lease ends the chain rejects every change, which Turbo would still
+  /// charge for, so a name there stays where it is.
+  bool _canChange(String name) {
+    final at = now ?? DateTime.now();
+    for (final n in names) {
+      if (n.name == name) return !n.isInGracePeriod(at) && !n.isExpired(at);
+    }
+    return true;
+  }
 
   /// The name a Change moves away from, when it can be removed: an
   /// undername, or a main name once the "Nothing published here" page is
@@ -200,6 +216,7 @@ class ArNSNameDialogState extends Equatable {
       return null;
     }
     if (previous.isApex && placeholderTxId == null) return null;
+    if (!_canChange(previous.name)) return null;
     return previous;
   }
 

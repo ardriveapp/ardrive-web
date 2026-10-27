@@ -305,7 +305,7 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
           name: of,
           change: setRecord,
           owner: owner,
-          payer: _paymentSource.payer(),
+          payer: _payer(),
           paidBy: _paidBy,
           onStep: (step) {
             if (!isClosed) emit(state.copyWith(step: () => step));

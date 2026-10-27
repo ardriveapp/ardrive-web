@@ -99,7 +99,11 @@ void main() {
   late Set<String> stalled;
   late _Owner owner;
 
-  ArNSResumeCubit build({ArNSWalletState? state, Duration? statusTimeout}) {
+  ArNSResumeCubit build({
+    ArNSWalletState? state,
+    Duration? statusTimeout,
+    Duration? signingWindow,
+  }) {
     whenListen(
       wallet,
       const Stream<ArNSWalletState>.empty(),
@@ -124,6 +128,7 @@ void main() {
       namesCubit: names,
       clock: () => _now,
       statusTimeout: statusTimeout ?? const Duration(seconds: 20),
+      signingWindow: signingWindow ?? const Duration(minutes: 2),
     );
   }
 
@@ -201,7 +206,7 @@ void main() {
     // Turbo's status read never carries the transaction, so nothing here
     // can sign it: it is handled as expired, and only read.
     test('is handled as expired and cleared', () async {
-      await store.add(_profile, _action('a1'));
+      await store.add(_profile, _action('a1', age: const Duration(minutes: 3)));
       status('a1', {
         'nonce': 'a1',
         'status': 'awaiting-signature',
@@ -229,7 +234,7 @@ void main() {
 
     test('is handled as expired even with a transaction in the answer',
         () async {
-      await store.add(_profile, _action('a1'));
+      await store.add(_profile, _action('a1', age: const Duration(minutes: 3)));
       status('a1', {
         'nonce': 'a1',
         'status': 'awaiting-signature',
@@ -244,6 +249,45 @@ void main() {
       expect(await store.pending(_profile), isEmpty);
       expect(requests.map((r) => r.method), ['GET']);
       expect(owner.signed, isEmpty);
+    });
+
+    // Tab B loaded while tab A's prompt was open, called the change
+    // expired, and tab A then signed it.
+    group('within the signing window', () {
+      const window = Duration(milliseconds: 50);
+
+      test('is read again after it, not called expired now', () async {
+        await store.add(_profile, _action('a1'));
+        status('a1', {'nonce': 'a1', 'status': 'awaiting-signature'});
+
+        final cubit = build(signingWindow: window);
+        await settle();
+        expect(cubit.state.notice, isNull);
+        expect(await store.pending(_profile), hasLength(1));
+
+        // Signed in the other tab meanwhile.
+        status('a1', {'nonce': 'a1', 'status': 'completed'});
+        await Future<void>.delayed(window * 2);
+        await settle();
+
+        expect(cubit.state.notice?.outcome, ArNSResumeOutcome.saved);
+        expect(await store.pending(_profile), isEmpty);
+        expect(requests, hasLength(2));
+      });
+
+      test('is expired once the window passes still unsigned', () async {
+        await store.add(_profile, _action('a1'));
+        status('a1', {'nonce': 'a1', 'status': 'awaiting-signature'});
+
+        final cubit = build(signingWindow: window);
+        await settle();
+        await Future<void>.delayed(window * 2);
+        await settle();
+
+        expect(cubit.state.notice?.outcome, ArNSResumeOutcome.expired);
+        expect(await store.pending(_profile), isEmpty);
+        expect(requests, hasLength(2), reason: 'read twice, never again');
+      });
     });
   });
 

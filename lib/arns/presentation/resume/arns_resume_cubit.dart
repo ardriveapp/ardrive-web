@@ -64,6 +64,7 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
     required ArNSNamesCubit namesCubit,
     DateTime Function()? clock,
     this.statusTimeout = const Duration(seconds: 20),
+    this.signingWindow = const Duration(minutes: 2),
   })  : _store = store,
         _client = client,
         _namesCubit = namesCubit,
@@ -85,6 +86,11 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
   /// Past this, an action still unresolved is dropped: Turbo refunds an
   /// abandoned one within 15 minutes, so it has long been settled.
   static const staleAfter = Duration(days: 1);
+
+  /// An action this young awaiting signature may be another tab's, whose
+  /// prompt is still open: read again once the window has passed rather
+  /// than called expired now, which it may not be.
+  final Duration signingWindow;
 
   /// How long one status read may take. One that stalls is asked again on
   /// the next load, and the actions after it are still read.
@@ -111,7 +117,11 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
     }
   }
 
-  Future<void> _resolve(String profile, ArNSPendingAction action) async {
+  Future<void> _resolve(
+    String profile,
+    ArNSPendingAction action, {
+    bool readAgain = true,
+  }) async {
     final ArNSActionResult result;
     try {
       result = await _client
@@ -143,6 +153,10 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
         await _forget(profile, action);
         _notify(ArNSResumeOutcome.refunding, action);
       case ArNSActionAwaitingSignature():
+        if (readAgain && _mayBeSigning(action)) {
+          _readAgainLater(profile, action);
+          return;
+        }
         // Its prompt went with the page and nothing here can sign it: it
         // expires and is refunded, as below.
         await _forget(profile, action);
@@ -150,6 +164,12 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
       case ArNSActionInProgress(:final status):
         // Turbo's status read leaves out the transaction of an action
         // awaiting signature: it can only expire and be refunded.
+        if (readAgain &&
+            status == 'awaiting-signature' &&
+            _mayBeSigning(action)) {
+          _readAgainLater(profile, action);
+          return;
+        }
         if (status == 'awaiting-signature' || status.contains('expired')) {
           await _forget(profile, action);
           _notify(ArNSResumeOutcome.expired, action);
@@ -158,6 +178,18 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
           await _forget(profile, action);
         }
     }
+  }
+
+  bool _mayBeSigning(ArNSPendingAction action) =>
+      _clock().difference(action.createdAt) < signingWindow;
+
+  /// Once the window has passed: signed by then, it reads as done; still
+  /// unsigned, as expired.
+  void _readAgainLater(String profile, ArNSPendingAction action) {
+    final wait = signingWindow - _clock().difference(action.createdAt);
+    unawaited(Future<void>.delayed(wait, () async {
+      if (!isClosed) await _resolve(profile, action, readAgain: false);
+    }));
   }
 
   bool _isStale(ArNSPendingAction action) =>

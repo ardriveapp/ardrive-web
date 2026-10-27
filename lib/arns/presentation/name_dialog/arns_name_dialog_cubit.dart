@@ -43,7 +43,9 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
     ArNSNameableItemSearch? searchItems,
     DateTime Function()? clock,
     List<ArNSNameRecord> following = const [],
+    Future<bool> Function()? walletMismatch,
   })  : _namesCubit = namesCubit,
+        _walletMismatch = walletMismatch,
         _walletCubit = walletCubit,
         _actionClient = actionClient,
         _executor = executor,
@@ -70,6 +72,11 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
   final ArNSPaymentSource _paymentSource;
   final ArNSNameableItemSearch? _searchItems;
   final DateTime Function() _clock;
+
+  /// Whether the browser wallet moved to another account than the signed-in
+  /// profile's, as Upload and Publish check before paying. True when it did
+  /// and the profile was signed out.
+  final Future<bool> Function()? _walletMismatch;
 
   StreamSubscription<ArNSNamesState>? _namesSubscription;
   final _prices = <ArNSRecordAction, BigInt>{};
@@ -427,6 +434,17 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
     unawaited(_reprice());
   }
 
+  /// The wallet that pays. With nobody signed in there is none, and nothing
+  /// was asked or charged yet: a failure the dialog shows, not one that
+  /// leaves it on "committing".
+  ArNSPayerSigner _payer() {
+    try {
+      return _paymentSource.payer();
+    } catch (e) {
+      throw ArNSChangeFailure(ArNSFailureKind.failed, cause: e);
+    }
+  }
+
   /// Whether a failure leaves nothing charged, so trying again is safe.
   static bool _canTryAgain(ArNSFailureKind kind) => switch (kind) {
         ArNSFailureKind.rejected ||
@@ -468,12 +486,15 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
       liveWithinSeconds: () => liveWithin,
     ));
 
+    // After the stage moves on, so a second click finds nothing to commit.
+    if (await _walletMismatch?.call() ?? false) return;
+
     try {
       await _executor.execute(
         name: name,
         change: change,
         owner: owner,
-        payer: _paymentSource.payer(),
+        payer: _payer(),
         paidBy: _paidBy,
         onStep: (step) {
           if (!isClosed) emit(state.copyWith(step: () => step));
@@ -511,7 +532,7 @@ class ArNSNameDialogCubit extends Cubit<ArNSNameDialogState> {
             name: previousName,
             change: removal,
             owner: owner,
-            payer: _paymentSource.payer(),
+            payer: _payer(),
             paidBy: _paidBy,
             onStep: (step) {
               if (!isClosed) emit(state.copyWith(step: () => step));

@@ -12,6 +12,7 @@ import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dar
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/arns/presentation/widgets/arns_widgets.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/entities/constants.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/publication/data/publication_repository.dart';
@@ -49,8 +50,27 @@ Future<void> showArNSNameDialog(
   final paymentService = context.read<PaymentService>();
   final namesCubit = context.read<ArNSNamesCubit>();
   final walletCubit = context.read<ArNSWalletCubit>();
+  ProfileCubit? profileCubit;
+  try {
+    profileCubit = context.read<ProfileCubit>();
+  } on ProviderNotFoundException {
+    // Only in tests that open the dialog on its own.
+  }
 
-  ArNSNameDialogCubit create(BuildContext _) => ArNSNameDialogCubit(
+  // As Upload does: close, then sign out.
+  Future<bool> Function()? walletMismatch(BuildContext dialogContext) {
+    final profile = profileCubit;
+    if (profile == null) return null;
+    return () async {
+      if (!await profile.checkIfWalletMismatch()) return false;
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+      await profile.logoutProfile();
+      return true;
+    };
+  }
+
+  ArNSNameDialogCubit create(BuildContext dialogContext) => ArNSNameDialogCubit(
+        walletMismatch: walletMismatch(dialogContext),
         mode: mode,
         item: item,
         choice: choice,
@@ -1346,7 +1366,7 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
               Icon(arnsNameIcon, size: 16, color: colors.iconMid),
               const SizedBox(width: ArDriveSpacing.xs),
               Expanded(
-                child: ArNSBodyText(state.leaveOnOld
+                child: ArNSBodyText(!state.moving.contains(record)
                     ? strings
                         .arnsStaysOnOldVersion(arnsHostFor(record.literalName))
                     : strings.arnsMovesToNewVersion(

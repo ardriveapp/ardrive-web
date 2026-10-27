@@ -261,6 +261,31 @@ void main() {
     await cubit.close();
   });
 
+  // Left connected, the wallet handed the next profile on the browser the
+  // same account when it linked, often without a prompt.
+  test('signing out disconnects the wallet', () async {
+    final cubit = build();
+    users.add(_user());
+    await settle();
+    await cubit.link('Phantom');
+
+    users.add(null);
+    await settle();
+
+    verify(() => sdk.disconnectSolanaWallet()).called(1);
+    expect(connected, isNull);
+    await cubit.close();
+  });
+
+  test('nobody signed in disconnects nothing', () async {
+    final cubit = build();
+    users.add(null);
+    await settle();
+
+    verifyNever(() => sdk.disconnectSolanaWallet());
+    await cubit.close();
+  });
+
   test('wallets that register late are listed', () async {
     when(() => sdk.listSolanaWallets()).thenReturn([]);
     final cubit = build();
