@@ -7,8 +7,9 @@ import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
-/// The icon that stands for a name: a globe, beside the name as text.
-const arnsNameIcon = Icons.language;
+/// The icon that stands for a name, beside the name as text: ArNS's own, as
+/// in the left nav's Names entry. The globe is for public drives.
+const arnsNameIcon = ArDriveIconsData.arns_name;
 
 class ArNSBodyText extends StatelessWidget {
   const ArNSBodyText(this.text, {super.key});

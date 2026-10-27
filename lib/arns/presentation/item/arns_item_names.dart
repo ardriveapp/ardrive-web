@@ -131,7 +131,7 @@ Future<void> promptToRemoveArNSName(
       choice: ArNSRecordChoice(name: record.name, undername: record.undername),
     );
 
-/// A small globe with the item's name, on explorer rows (Q14). The owner's
+/// A small name icon with the item's name, on explorer rows (Q14). The owner's
 /// own names come from ArNS; anyone else's from the file's metadata, shown
 /// only once the gateway confirms them ([ArNSNameVerifier]).
 class ArNSNameChip extends StatelessWidget {
@@ -149,7 +149,7 @@ class ArNSNameChip extends StatelessWidget {
   final List<String> hints;
   final bool isOwner;
 
-  /// Just the globe, the names in its tooltip: where a row has no room for
+  /// Just the icon, the names in its tooltip: where a row has no room for
   /// the name beside its title ([ArNSRowTitle]).
   final bool iconOnly;
 
@@ -335,7 +335,7 @@ class ArNSTitleWithChip extends StatelessWidget {
 
 /// A row's title with its name chip beside it, the title first: the chip
 /// takes only the room the whole title leaves, ellipsized down to
-/// [minWidth], then just the globe, then nothing. With the details panel
+/// [minWidth], then just the icon, then nothing. With the details panel
 /// open, the chip kept its width and the file name was cut to "e2e-name-1.t…".
 class ArNSRowTitle extends StatelessWidget {
   const ArNSRowTitle({
@@ -357,7 +357,7 @@ class ArNSRowTitle extends StatelessWidget {
   /// The narrowest chip that still shows a few letters of the name.
   static const minWidth = 72.0;
 
-  /// The globe alone, with its start padding.
+  /// The icon alone, with its start padding.
   static const iconOnlyWidth = 36.0;
 
   /// The widest the chip gets.
@@ -530,7 +530,7 @@ class ArNSNameSection extends StatelessWidget {
   }
 }
 
-/// A name as a link that opens it, with the globe.
+/// A name as a link that opens it, with the name icon.
 class _NameLink extends StatelessWidget {
   const _NameLink({required this.literal});
 

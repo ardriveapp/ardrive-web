@@ -71,7 +71,7 @@ Names appear at three levels, each with one job.
 
 | Level | Where | Job |
 |---|---|---|
-| Item | The item's menu (Add name, Change name, Remove name), the details panel's **Name** section, and a globe chip on explorer rows | Name this thing, see its name, copy its link |
+| Item | The item's menu (Add name, Change name, Remove name), the details panel's **Name** section, and a name chip (the ArNS name icon) on explorer rows | Name this thing, see its name, copy its link |
 | Flow | An optional step in Publish, Create deployment and uploading a single public file | Name it while making it |
 | Account | **On the web › Names** in the left nav; the ArNS wallet row in the profile card | See every name and undername, what each points to and its cache time; link the wallet |
 
