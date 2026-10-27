@@ -129,6 +129,39 @@ void main() {
     verify(() => repository.refresh(_sol)).called(1);
   });
 
+  // A refresh still running for the old wallet was shared with the new one,
+  // which then stayed loading for ever.
+  test('a new wallet reads its own names while the old read runs', () async {
+    const other = 'BxSiKZJzFYCdKLmTjnrJwMJuZ8u3CPbZRWB7Gw5VtW6c';
+    when(() => repository.cached(any())).thenAnswer((_) async => []);
+    final oldRead = Completer<List<ArNSManagedName>>();
+    final newRead = Completer<List<ArNSManagedName>>();
+    when(() => repository.refresh(_sol)).thenAnswer((_) => oldRead.future);
+    when(() => repository.refresh(other)).thenAnswer((_) => newRead.future);
+
+    final cubit = build(_linked());
+    await pumpEventQueue();
+    walletStates.add(const ArNSWalletState(
+      enabled: true,
+      profileAddress: 'profile',
+      linked: LinkedArNSWallet(address: other),
+    ));
+    await pumpEventQueue();
+    verify(() => repository.refresh(other)).called(1);
+
+    // The old read finishing leaves the new one shared.
+    oldRead.complete([_acme]);
+    await pumpEventQueue();
+    final again = cubit.refresh();
+    verifyNever(() => repository.refresh(other));
+
+    newRead.complete([_acme]);
+    await again;
+    expect(cubit.state.address, other);
+    expect(cubit.state.status, ArNSNamesStatus.loaded);
+    expect(cubit.state.names, [_acme]);
+  });
+
   test('unlinking clears the names', () async {
     when(() => repository.cached(_sol)).thenAnswer((_) async => [_acme]);
 

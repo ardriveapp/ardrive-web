@@ -1079,6 +1079,19 @@ void main() {
       cubit.choose('acme', 'blog');
       await pumpEventQueue();
       expect(cubit.ready, isTrue);
+      // The moving name is changed and paid for once, not again as chosen.
+      expect(cubit.plannedNames, ['blog_acme']);
+      expect(cubit.state.cost?.credits, _price + _metadata);
+      await cubit.applyTo(_itemTx);
+      verify(() => executor.execute(
+            name: any(named: 'name'),
+            change: any(named: 'change'),
+            owner: any(named: 'owner'),
+            payer: any(named: 'payer'),
+            paidBy: any(named: 'paidBy'),
+            onStep: any(named: 'onStep'),
+            onNonce: any(named: 'onNonce'),
+          )).called(1);
 
       cubit.startNewUndername('acme');
       cubit.editNewUndername('docs');

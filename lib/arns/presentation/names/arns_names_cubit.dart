@@ -95,6 +95,7 @@ class ArNSNamesCubit extends Cubit<ArNSNamesState> {
   final ArNSNamesRepository _repository;
   late final StreamSubscription<ArNSWalletState> _subscription;
   Future<void>? _refreshing;
+  String? _refreshingFor;
 
   void _onWallet(ArNSWalletState wallet) {
     final address = wallet.enabled ? wallet.linked?.address : null;
@@ -123,15 +124,23 @@ class ArNSNamesCubit extends Cubit<ArNSNamesState> {
     await refresh();
   }
 
-  /// Reads the names from ArNS again. Calls while one is running share it.
+  /// Reads the names from ArNS again. Calls while one is running for the
+  /// same address share it; a refresh for another wallet starts its own.
   Future<void> refresh() {
-    final running = _refreshing;
-    if (running != null) return running;
     final address = state.address;
     if (address == null) return Future.value();
-    return _refreshing = _refresh(address).whenComplete(() {
-      _refreshing = null;
+    final running = _refreshing;
+    if (running != null && _refreshingFor == address) return running;
+    late final Future<void> started;
+    started = _refresh(address).whenComplete(() {
+      // An older refresh finishing leaves a newer one in place.
+      if (identical(_refreshing, started)) {
+        _refreshing = null;
+        _refreshingFor = null;
+      }
     });
+    _refreshingFor = address;
+    return _refreshing = started;
   }
 
   Future<void> _refresh(String address) async {

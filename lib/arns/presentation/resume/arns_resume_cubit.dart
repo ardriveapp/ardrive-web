@@ -63,6 +63,7 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
     required ArNSWalletCubit walletCubit,
     required ArNSNamesCubit namesCubit,
     DateTime Function()? clock,
+    this.statusTimeout = const Duration(seconds: 20),
   })  : _store = store,
         _client = client,
         _namesCubit = namesCubit,
@@ -84,6 +85,10 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
   /// Past this, an action still unresolved is dropped: Turbo refunds an
   /// abandoned one within 15 minutes, so it has long been settled.
   static const staleAfter = Duration(days: 1);
+
+  /// How long one status read may take. One that stalls is asked again on
+  /// the next load, and the actions after it are still read.
+  final Duration statusTimeout;
 
   void _onWallet(ArNSWalletState wallet) {
     final profile = wallet.profileAddress;
@@ -109,10 +114,12 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
   Future<void> _resolve(String profile, ArNSPendingAction action) async {
     final ArNSActionResult result;
     try {
-      result = await _client.status(
-        action.nonce,
-        paymentUrl: action.paymentUrl,
-      );
+      result = await _client
+          .status(
+            action.nonce,
+            paymentUrl: action.paymentUrl,
+          )
+          .timeout(statusTimeout);
     } on ArNSActionRequestException catch (e) {
       logger.w('Could not read ArNS action ${action.nonce}: $e');
       // Turbo doesn't know it: nothing was charged for it.
@@ -121,7 +128,7 @@ class ArNSResumeCubit extends Cubit<ArNSResumeState> {
       }
       return;
     } catch (e) {
-      // Offline, most likely: asked again on the next load.
+      // Offline or timed out, most likely: asked again on the next load.
       logger.w('Could not read ArNS action ${action.nonce}: $e');
       if (_isStale(action)) await _forget(profile, action);
       return;

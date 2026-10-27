@@ -20,6 +20,12 @@ String solflareBrowseUrl(String url) =>
     'https://solflare.com/ul/v1/browse/${Uri.encodeComponent(url)}'
     '?ref=${Uri.encodeComponent(Uri.parse(url).origin)}';
 
+/// The page a wallet's browser opens: only the app's origin on the web.
+/// The address bar can hold a private drive's key, which must not reach a
+/// wallet's server.
+String walletBrowseTarget(Uri base, {required bool isWeb}) =>
+    isWeb ? base.origin : 'https://app.ardrive.io';
+
 const phantomDownloadUrl = 'https://phantom.com/download';
 const solflareDownloadUrl = 'https://solflare.com/download';
 
@@ -188,7 +194,7 @@ class ArNSNoWalletFound extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
-    final here = kIsWeb ? Uri.base.toString() : 'https://app.ardrive.io';
+    final here = walletBrowseTarget(Uri.base, isWeb: kIsWeb);
     return ArDriveNotice(
       type: ArDriveNoticeType.info,
       title: strings.arnsNoWalletFound,

@@ -126,13 +126,13 @@ class PublicationJob {
   bool _bundleDone = false;
   String? _publishedAt;
 
-  /// This job paid with [method] instead, keeping everything already done:
-  /// the snapshot, the signed files, what was posted. Signed items are the
-  /// same for either transport.
   /// The literal names that will point at this version, written into
   /// `publication.json` (docs/NAMES.md, Q25). Set before publishing.
   List<String> names = const [];
 
+  /// This job paid with [method] instead, keeping everything already done:
+  /// the snapshot, the signed files, what was posted. Signed items are the
+  /// same for either transport.
   PublicationJob withMethod(UploadMethod method) {
     final job = PublicationJob(
       publicationId: publicationId,

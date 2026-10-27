@@ -93,7 +93,7 @@ class _ArDriveDropdownState extends State<ArDriveDropdown> {
     if (renderBox == null || !renderBox.hasSize) return;
 
     final top = renderBox.localToGlobal(Offset.zero).dy;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final screenHeight = MediaQuery.sizeOf(context).height;
     final roomBelow = screenHeight - top - _screenMargin;
     final roomAbove = top - _screenMargin;
     final menuHeight = dropdownHeight;

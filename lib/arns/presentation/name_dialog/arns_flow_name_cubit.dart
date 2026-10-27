@@ -62,7 +62,7 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
   /// `publication.json` and the confirm step.
   List<String> get plannedNames => [
         for (final record in state.moving) record.literalName,
-        if (_chosen != null) _chosen!.literalName,
+        if (_chosenToAdd != null) _chosenToAdd!.literalName,
       ];
 
   /// The chosen name's record, while it points at something else and the
@@ -110,6 +110,17 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
     final choice = state.choice;
     if (choice == null || choice.undername.isEmpty) return null;
     return choice;
+  }
+
+  /// The chosen name, unless it is already one of the names moving to the
+  /// new version: that one is changed once, as it moves.
+  ArNSRecordChoice? get _chosenToAdd {
+    final choice = _chosen;
+    if (choice == null) return null;
+    final moving = state.moving.any(
+      (r) => r.name == choice.name && r.undername == choice.undername,
+    );
+    return moving ? null : choice;
   }
 
   /// No new name after all.
@@ -189,7 +200,7 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
         if (of == null) continue;
         await add(of, _moveChange(of, record, _pricingTxId), exists: true);
       }
-      final chosen = change;
+      final chosen = _chosenToAdd == null ? null : change;
       final name = state.selectedName;
       if (chosen != null && name != null) {
         await add(name, chosen, exists: state.selectedRecord != null);
@@ -265,7 +276,7 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
         record.ttlSeconds,
       ));
     }
-    final chosen = _chosen;
+    final chosen = _chosenToAdd;
     final name = state.selectedName;
     if (chosen != null && name != null) {
       planned.add((

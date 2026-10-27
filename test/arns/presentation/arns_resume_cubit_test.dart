@@ -96,9 +96,10 @@ void main() {
   late ArNSPendingActionStore store;
   late List<http.Request> requests;
   late Map<String, http.Response Function(http.Request)> routes;
+  late Set<String> stalled;
   late _Owner owner;
 
-  ArNSResumeCubit build({ArNSWalletState? state}) {
+  ArNSResumeCubit build({ArNSWalletState? state, Duration? statusTimeout}) {
     whenListen(
       wallet,
       const Stream<ArNSWalletState>.empty(),
@@ -110,6 +111,9 @@ void main() {
         paymentUrl: () => 'https://payment.example',
         client: MockClient((request) async {
           requests.add(request);
+          if (stalled.contains('${request.url}')) {
+            return Completer<http.Response>().future;
+          }
           final route = routes['${request.method} ${request.url}'];
           if (route == null) return http.Response('not found', 404);
           return route(request);
@@ -119,6 +123,7 @@ void main() {
       walletCubit: wallet,
       namesCubit: names,
       clock: () => _now,
+      statusTimeout: statusTimeout ?? const Duration(seconds: 20),
     );
   }
 
@@ -139,6 +144,7 @@ void main() {
     store = ArNSPendingActionStore(openStore: () async => memory);
     requests = [];
     routes = {};
+    stalled = {};
   });
 
   test('a change that went through says Name saved and reads the names',
@@ -251,6 +257,23 @@ void main() {
 
     expect(cubit.state.notice, isNull);
     expect(await store.pending(_profile), hasLength(1));
+  });
+
+  // One stalled status read held every later action unread.
+  test('a status read that stalls is kept and the next one is still read',
+      () async {
+    await store.add(_profile, _action('a1'));
+    await store.add(_profile, _action('a2'));
+    stalled.add('$_sandbox/v1/arns/actions/a1');
+    status('a2', {'nonce': 'a2', 'status': 'completed', 'messageId': 'm'});
+
+    final cubit = build(statusTimeout: const Duration(milliseconds: 20));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    await settle();
+
+    expect(cubit.state.notice?.nonce, 'a2');
+    expect(cubit.state.notice?.outcome, ArNSResumeOutcome.saved);
+    expect((await store.pending(_profile)).map((a) => a.nonce), ['a1']);
   });
 
   test('an unresolved action a day old is dropped quietly', () async {
