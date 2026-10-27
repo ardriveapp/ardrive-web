@@ -158,7 +158,7 @@ Don't draw a one-off version of something the design system has; if it falls sho
 
 ### Database (Drift ORM)
 
-- Main database: `lib/models/database/database.dart` (currently `schemaVersion => 30`)
+- Main database: `lib/models/database/database.dart` (currently `schemaVersion => 31`)
 - Table definitions: `lib/models/tables/*.drift`
 - DAOs: `DriveDao`, `ProfileDao`, `ARNSDao`
 - Drift codegen options live in `build.yaml` (`named_parameters: true`); the same file
@@ -313,6 +313,8 @@ The `docs/` directory contains internal design documents, including `ArweaveFS.m
 The drive state artifact (a published SQLite file of a drive's parsed state, imported in bulk instead of replaying history; additive to snapshots) is specified in `docs/DRIVE_STATE_ARTIFACT.md`, with bound decisions in `docs/drive-state/DECISIONS.md`, cross-repo status in `docs/drive-state/DELIVERY_PLAN.md`, and the SQLite-format proposal and measurements in `docs/drive-state/SQLITE_ARTIFACT.md`. Users see the word "snapshot" for both the old JSON snapshots and drive state artifacts.
 
 Users see "deployment" for an Arweave manifest the app creates or updates (New deployment, Update deployments, the file type), while code, docs and the ArFS spec keep saying manifest. The word "manifest" stays in front of users only where it means any manifest: Import from manifest, and the one-line explanation that a deployment is stored as an Arweave manifest.
+
+ArNS names (naming deployments, public files and publications; the Names page; record changes paid in Turbo credits and approved by a linked Solana wallet) are specified in `docs/NAMES.md`, which is also the terminology standard for names across ArDrive apps. The feature is behind the `enableArNS` config flag.
 
 ## Deployment
 

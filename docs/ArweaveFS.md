@@ -202,7 +202,7 @@ The manifest's paths are the web app release's own files, each by transaction ID
 | Path | Points at |
 |---|---|
 | `index.html` (also the index and the fallback) | The release's `index.html` with the publication's title, description, icons and social card written into its head, and `<meta name="ardrive-publication" content="publication.json">` |
-| `publication.json` | The publication's settings: drive, scope, owner, title, description, and the Drive State it shows with that entity's tags |
+| `publication.json` | The publication's settings: drive, scope, owner, title, description, the Drive State it shows with that entity's tags, and optionally `names`, the ArNS names the owner pointed at it (a hint, checked against a gateway before it's shown) |
 | `snapshot` | A Drive State entity of the drive, by the same owner |
 | `icon-32.png`, `icon-180.png`, `icon-512.png`, `cover.jpg`, `social.jpg` | The publication's images, when it has them |
 | `files.html`, `sitemap.xml` | Every file of the publication as a gateway link, for clients that run no script |
