@@ -41,7 +41,7 @@ class PublicationsState extends Equatable {
 }
 
 /// Which of the signed-in owner's drives and folders are published to the
-/// web, for the globe beside them and for "Publish to web" to open the
+/// web, for the mark beside them and for "Publish to web" to open the
 /// published view instead (docs/PUBLICATIONS.md, "Entry points").
 ///
 /// One GraphQL query when a wallet signs in finds every publication it

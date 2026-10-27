@@ -33,9 +33,9 @@ String publishToWebLabel(BuildContext context, Drive drive, String? folderId) {
       : strings.publishToWeb;
 }
 
-/// The globe that stands for publishing to the web.
+/// The web page with an upward arrow that stands for publishing to the web.
 ArDriveIcon publishToWebIcon({double? size, Color? color}) =>
-    ArDriveIcon(icon: Icons.public, size: size ?? 24, color: color);
+    ArDriveIcons.publishToWeb(size: size ?? 24, color: color);
 
 /// Opens publishing for [drive], or for its folder [folderId].
 Future<void> openPublishToWeb(
@@ -55,7 +55,7 @@ Future<void> openPublishToWeb(
   await promptToPublish(context, drive: drive, folder: folder);
 }
 
-/// A small globe beside a published drive or folder, "Published to web" on
+/// A small web page mark beside a published drive or folder, "Published to web" on
 /// hover. Nothing when it is not published.
 class PublishedToWebMark extends StatelessWidget {
   const PublishedToWebMark({

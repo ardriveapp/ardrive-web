@@ -22,6 +22,7 @@ export 'components/overlay.dart';
 export 'components/pagination_dots.dart';
 export 'components/progress_bar.dart';
 export 'components/radio_button.dart';
+export 'components/scroll_area.dart';
 export 'components/scroll_bar.dart';
 export 'components/spinner.dart';
 export 'components/submenu.dart';

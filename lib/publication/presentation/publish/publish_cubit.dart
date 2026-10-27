@@ -80,6 +80,7 @@ class PublishCubit extends Cubit<PublishState> {
     required this.folder,
     required PublishDependencies dependencies,
     this.previous,
+    this.onSettledAfterClose,
     @visibleForTesting void Function(Object holder)? holdGuard,
     @visibleForTesting void Function(Object holder)? releaseGuard,
   })  : _deps = dependencies,
@@ -97,6 +98,12 @@ class PublishCubit extends Cubit<PublishState> {
 
   /// The publication this updates, if any.
   final Publication? previous;
+
+  /// Told how a publish ended when the dialog was closed while it ran: the
+  /// page's link, or null when it stopped. Closing hides the dialog but not
+  /// the upload, and a closed cubit shows nothing, so this is how the owner
+  /// hears of it.
+  final void Function(String? link)? onSettledAfterClose;
 
   final PublishDependencies _deps;
 
@@ -661,13 +668,17 @@ class PublishCubit extends Cubit<PublishState> {
         },
       );
       await _rememberOwnerName(state.ownerName.trim());
-      if (isClosed) return;
-      emit(state.copyWith(
-        stage: PublishStage.done,
-        link: '${_deps.publisher.gatewayUrl}/${version.txId}/',
-      ));
+      final link = '${_deps.publisher.gatewayUrl}/${version.txId}/';
+      if (isClosed) {
+        onSettledAfterClose?.call(link);
+        return;
+      }
+      emit(state.copyWith(stage: PublishStage.done, link: link));
     } on PublicationFailure catch (e) {
-      if (isClosed) return;
+      if (isClosed) {
+        onSettledAfterClose?.call(null);
+        return;
+      }
       emit(state.copyWith(
         stage: PublishStage.failed,
         failure: e.message,
@@ -677,7 +688,10 @@ class PublishCubit extends Cubit<PublishState> {
     } catch (e, stackTrace) {
       // Never leave the owner on a progress screen with no way out.
       logger.e('[publication] publishing failed', e, stackTrace);
-      if (isClosed) return;
+      if (isClosed) {
+        onSettledAfterClose?.call(null);
+        return;
+      }
       emit(state.copyWith(
         stage: PublishStage.failed,
         failure: 'Publishing stopped unexpectedly. Try again to finish it. '
