@@ -224,13 +224,18 @@ serving it and the gateway it detected, nothing else.
   manifest ID (`x-arns-resolved-id`) with a plain HTTP read through
   ardrive.net. That needs no wallet, so it works before names do in the app (see
   [Names](#names)).
-- Production sets `ardrive`, the name the production deploy moves. Staging has
-  no name and pushes to `dev` never upload to Arweave, so the staging and
-  development configs also use `ardrive`: a page published from staging pins
-  the current production release. To try a viewer built from a branch, run
-  *Staging build to Arweave* (`staging-arweave.yaml`) and put the manifest ID
-  from its job summary in the stored config (`flutter.config` in local
-  storage). The phase 1 test-page tool takes a manifest ID directly.
+- Production sets `ardrive`, the name the production deploy moves, and the
+  development config uses it too.
+- Staging has no name, and pushes to `dev` never upload to Arweave. So
+  `staging.json` pins a fixed manifest ID: a build of `dev` uploaded by
+  *Staging build to Arweave* (`staging-arweave.yaml`). Pages published from
+  staging open with that viewer. To move staging to a newer build, run the
+  workflow again and put the new ID in `staging.json` with a `configVersion`
+  bump.
+- To try a viewer built from a branch, run the same workflow on that branch
+  and put the manifest ID from its job summary in your stored config
+  (`flutter.config` in local storage). The phase 1 test-page tool takes a
+  manifest ID directly.
 - CI warms the bundle after each deploy by reading every file once through
   turbo-gateway.com and ardrive.net.
 
