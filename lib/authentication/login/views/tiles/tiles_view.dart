@@ -138,7 +138,7 @@ class _TwoColumns extends StatelessWidget {
         // The price tile is the tallest of these; the page is never shorter
         // than 832, so at least 816 is shared out.
         Expanded(
-          flex: 9,
+          flex: 10,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [

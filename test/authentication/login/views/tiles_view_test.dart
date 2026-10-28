@@ -152,7 +152,7 @@ void main() {
     );
     expect(find.byKey(const Key('bentoPrice')), findsNothing);
     expect(find.byKey(const Key('bentoPriceLoading')), findsNothing);
-    expect(find.text('Paid once. No subscription.'), findsOneWidget);
+    expect(find.text('Free to try. Paid once, no subscription.'), findsOneWidget);
     await done(tester);
   });
 }
