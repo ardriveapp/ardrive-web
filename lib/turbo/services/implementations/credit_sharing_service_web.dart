@@ -1,5 +1,4 @@
 import 'package:ardrive/services/config/config_service.dart';
-import 'package:ardrive/utils/constants.dart';
 import 'package:ardrive/turbo/config/crypto_network_config.dart';
 import 'package:ardrive/turbo/services/solana_wallet_service.dart';
 import 'package:ardrive/turbo/services/turbo_sdk_interop.dart';
@@ -35,12 +34,7 @@ class CreditSharingService {
   /// `crypto_payment_option.dart`, which assembles its services the same way.
   factory CreditSharingService.fromConfig(ConfigService configService) {
     final config = configService.config;
-    final networkConfig = CryptoNetworkConfig.fromEnvironment(
-      config.useTurboUpload ? 'production' : 'development',
-      arweaveGatewayUrl: config.arweaveGatewayUrl ?? defaultGraphqlGateway,
-      turboUploadUrl: config.defaultTurboUploadUrl,
-      turboPaymentUrl: config.defaultTurboPaymentUrl,
-    );
+    final networkConfig = CryptoNetworkConfig.forApp(configService);
 
     return CreditSharingService(
       solanaWalletService: SolanaWalletService(networkConfig: networkConfig),

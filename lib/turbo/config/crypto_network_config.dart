@@ -1,3 +1,4 @@
+import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/utils/constants.dart';
 
@@ -27,25 +28,17 @@ class CryptoNetworkConfig {
         _turboUploadUrlOverride = turboUploadUrl,
         _turboPaymentUrlOverride = turboPaymentUrl;
 
-  /// Factory for creating config based on environment
-  ///
-  /// - Development: testnet by default (can toggle via debug menu)
-  /// - Staging/Production: mainnet
-  ///
-  /// [arweaveGatewayUrl] must be from config (e.g. [ConfigService.config.arweaveGatewayUrl]
-  /// with a fallback like [defaultGraphqlGateway] at the call site).
-  factory CryptoNetworkConfig.fromEnvironment(
-    String environment, {
-    required String arweaveGatewayUrl,
-    String? turboUploadUrl,
-    String? turboPaymentUrl,
-  }) {
-    final isTestnet = environment == 'development';
+  /// The networks for the app's flavor. Development pays into ar.io's testnet
+  /// Turbo payment service, so it uses the testnets (Base Sepolia, Sepolia,
+  /// Solana devnet); staging and production pay into the live service on
+  /// mainnet. URLs come from the app config.
+  factory CryptoNetworkConfig.forApp(ConfigService configService) {
+    final config = configService.config;
     return CryptoNetworkConfig(
-      isTestnet: isTestnet,
-      arweaveGatewayUrl: arweaveGatewayUrl,
-      turboUploadUrl: turboUploadUrl,
-      turboPaymentUrl: turboPaymentUrl,
+      isTestnet: configService.flavor == Flavor.development,
+      arweaveGatewayUrl: config.arweaveGatewayUrl ?? defaultGraphqlGateway,
+      turboUploadUrl: config.defaultTurboUploadUrl,
+      turboPaymentUrl: config.defaultTurboPaymentUrl,
     );
   }
 
@@ -153,7 +146,9 @@ class CryptoNetworkConfig {
   /// Turbo payment service URL (uses config override if set)
   String get turboPaymentUrl =>
       _turboPaymentUrlOverride ??
-      (isTestnet ? 'https://payment.ardrive.dev' : 'https://payment.ardrive.io');
+      (isTestnet
+          ? 'https://payment.ardrive.dev'
+          : 'https://payment.ardrive.io');
 
   /// Turbo upload service URL (uses config override if set)
   String get turboUploadUrl =>

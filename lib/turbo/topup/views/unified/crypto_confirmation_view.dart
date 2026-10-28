@@ -114,7 +114,8 @@ class CryptoConfirmationView extends StatelessWidget {
                   networkState: state.networkState,
                   token: state.token,
                   onSwitchNetwork: () {
-                    final chainId = state.token.chainId;
+                    final chainId =
+                        bloc.networkConfig.getChainIdForToken(state.token);
                     if (chainId != null) {
                       bloc.add(CryptoTopupSwitchNetwork(chainId));
                     }
