@@ -122,6 +122,8 @@ class ArDriveNotice extends StatelessWidget {
             typography: typography,
             variant: ButtonVariant.outline,
             size: ArDriveButtonSize.compact,
+            // A withdrawn action looks disabled as well as doing nothing.
+            isDisabled: onAction == null,
             onPressed: onAction,
           );
 
