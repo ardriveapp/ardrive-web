@@ -833,9 +833,17 @@ void main() {
               .themeData
               .colorTokens;
 
+      // ardrive_ui's error status text: red, with the error icon.
       expect(
         tester.widget<Text>(find.text('Wallet changed')).style?.color,
-        colorTokens.textRed,
+        colorTokens.statusErrorFg,
+      );
+      expect(
+        find.ancestor(
+          of: find.text('Wallet changed'),
+          matching: find.byType(ArDriveStatusText),
+        ),
+        findsOneWidget,
       );
 
       await tester.pumpWidget(const SizedBox());

@@ -310,9 +310,11 @@ class _NameCardState extends State<_NameCard> {
     } else if (end != null) {
       final left = end.difference(now);
       if (left <= arnsRenewalNoticeWindow) {
-        lease = ArNSTag(
+        // About to be lost: said in red, not boxed (ardrive_ui's status
+        // text).
+        lease = ArDriveStatusText(
           text: strings.arnsLeaseEndsInDays(left.inDays.clamp(0, 30)),
-          urgent: true,
+          type: ArDriveStatusType.error,
         );
       } else {
         lease = ArNSCaption(
@@ -334,7 +336,7 @@ class _NameCardState extends State<_NameCard> {
           ),
         ),
         if (name.role == ArNSRole.controller)
-          ArNSTag(text: strings.arnsManagedForOwner),
+          ArDriveTag(text: strings.arnsManagedForOwner),
         if (lease != null) lease,
         if (end != null && !grace)
           if (end.difference(now) <= arnsRenewalNoticeWindow)
