@@ -699,6 +699,7 @@ class ArDriveStandardModalNew extends StatelessWidget {
     this.width,
     this.hasCloseButton = false,
     this.close,
+    this.closeLabel = 'Close',
     this.scrollableContent = false,
   });
 
@@ -713,6 +714,17 @@ class ArDriveStandardModalNew extends StatelessWidget {
   final double? width;
   final bool hasCloseButton;
   final Function()? close;
+
+  /// What a screen reader calls the close button.
+  final String closeLabel;
+
+  VoidCallback _close(BuildContext context) => () {
+        if (close != null) {
+          close?.call();
+        } else {
+          Navigator.pop(context);
+        }
+      };
 
   /// When true, the modal is bounded to the viewport height and its title
   /// and content scroll above fixed actions, so the actions can never be
@@ -751,20 +763,22 @@ class ArDriveStandardModalNew extends StatelessWidget {
                   ),
             ),
             if (hasCloseButton)
-              ArDriveClickArea(
-                child: GestureDetector(
-                  onTap: () {
-                    if (close != null) {
-                      close?.call();
-                    } else {
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: const Align(
-                    alignment: Alignment.centerRight,
-                    child: ArDriveIcon(
-                      icon: ArDriveIconsData.x,
-                      size: 24,
+              // Named, so a screen reader says what it does; it was an
+              // unlabelled icon.
+              Semantics(
+                button: true,
+                label: closeLabel,
+                excludeSemantics: true,
+                onTap: _close(context),
+                child: ArDriveClickArea(
+                  child: GestureDetector(
+                    onTap: _close(context),
+                    child: const Align(
+                      alignment: Alignment.centerRight,
+                      child: ArDriveIcon(
+                        icon: ArDriveIconsData.x,
+                        size: 24,
+                      ),
                     ),
                   ),
                 ),

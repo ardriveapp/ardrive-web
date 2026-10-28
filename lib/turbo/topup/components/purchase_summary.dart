@@ -51,7 +51,7 @@ class PurchaseSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     // Don't show if no amount selected
@@ -62,9 +62,9 @@ class PurchaseSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,7 +73,7 @@ class PurchaseSummary extends StatelessWidget {
             'Purchase summary',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.bold,
-              color: colors.themeFgDefault,
+              color: colors.textHigh,
             ),
           ),
           const SizedBox(height: 16),
@@ -105,7 +105,7 @@ class PurchaseSummary extends StatelessWidget {
             _SummaryRow(
               label: 'Discount',
               value: '$discountPercent% off',
-              valueColor: colors.themeSuccessDefault,
+              valueColor: colors.statusSuccessFg,
             ),
           ],
         ],
@@ -145,7 +145,7 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Row(
@@ -155,7 +155,7 @@ class _SummaryRow extends StatelessWidget {
         Text(
           label,
           style: typography.paragraphNormal(
-            color: colors.themeFgMuted,
+            color: colors.textMid,
           ),
         ),
         Column(
@@ -165,14 +165,14 @@ class _SummaryRow extends StatelessWidget {
               value,
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.semiBold,
-                color: valueColor ?? colors.themeFgDefault,
+                color: valueColor ?? colors.textHigh,
               ),
             ),
             if (subValue != null)
               Text(
                 subValue!,
                 style: typography.paragraphSmall(
-                  color: colors.themeFgMuted,
+                  color: colors.textMid,
                 ),
               ),
           ],
@@ -188,19 +188,19 @@ class PurchaseSummaryLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: CircularProgressIndicator(),
+          child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
         ),
       ),
     );
@@ -292,15 +292,15 @@ class CheckoutSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,7 +314,7 @@ class CheckoutSummary extends StatelessWidget {
             colors: colors,
           ),
           const SizedBox(height: 12),
-          Divider(color: colors.themeBorderDefault, height: 1),
+          Divider(color: colors.strokeMid, height: 1),
           const SizedBox(height: 12),
 
           // Section 2: Payment details
@@ -337,7 +337,7 @@ class CheckoutSummary extends StatelessWidget {
               value: promoCode!,
               typography: typography,
               colors: colors,
-              valueColor: colors.themeSuccessDefault,
+              valueColor: colors.statusSuccessFg,
             ),
             const SizedBox(height: 6),
           ],
@@ -349,7 +349,7 @@ class CheckoutSummary extends StatelessWidget {
               value: '-$discountPercent%',
               typography: typography,
               colors: colors,
-              valueColor: colors.themeSuccessDefault,
+              valueColor: colors.statusSuccessFg,
             ),
             const SizedBox(height: 6),
           ],
@@ -380,7 +380,7 @@ class CheckoutSummary extends StatelessWidget {
 
           // Divider after "You Pay" section
           const SizedBox(height: 12),
-          Divider(color: colors.themeBorderDefault, height: 1),
+          Divider(color: colors.strokeMid, height: 1),
           const SizedBox(height: 12),
 
           // Token balance (for crypto payments)
@@ -402,7 +402,7 @@ class CheckoutSummary extends StatelessWidget {
               colors: colors,
             ),
             const SizedBox(height: 12),
-            Divider(color: colors.themeBorderDefault, height: 1),
+            Divider(color: colors.strokeMid, height: 1),
             const SizedBox(height: 12),
           ],
 
@@ -422,7 +422,7 @@ class CheckoutSummary extends StatelessWidget {
             typography: typography,
             colors: colors,
             isBold: true,
-            valueColor: colors.themeSuccessDefault,
+            valueColor: colors.statusSuccessFg,
           ),
         ],
       ),
@@ -461,7 +461,7 @@ class _CompactRow extends StatelessWidget {
   final String value;
   final String? subValue;
   final ArdriveTypographyNew typography;
-  final ArDriveColors colors;
+  final ArDriveColorTokens colors;
   final bool isBold;
   final bool isMuted;
   final Color? valueColor;
@@ -487,7 +487,7 @@ class _CompactRow extends StatelessWidget {
           label,
           style: typography.paragraphSmall(
             fontWeight: isBold ? ArFontWeight.semiBold : ArFontWeight.book,
-            color: isMuted ? colors.themeFgMuted : colors.themeFgDefault,
+            color: isMuted ? colors.textMid : colors.textHigh,
           ),
         ),
         Flexible(
@@ -500,7 +500,7 @@ class _CompactRow extends StatelessWidget {
                   fontWeight:
                       isBold ? ArFontWeight.bold : ArFontWeight.semiBold,
                   color: valueColor ??
-                      (isMuted ? colors.themeFgMuted : colors.themeFgDefault),
+                      (isMuted ? colors.textMid : colors.textHigh),
                 ),
                 textAlign: TextAlign.end,
               ),
@@ -508,7 +508,7 @@ class _CompactRow extends StatelessWidget {
                 Text(
                   subValue!,
                   style: typography.paragraphSmall(
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                   textAlign: TextAlign.end,
                 ),

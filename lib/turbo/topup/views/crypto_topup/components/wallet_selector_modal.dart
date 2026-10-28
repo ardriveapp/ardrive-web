@@ -1,3 +1,4 @@
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -27,53 +28,18 @@ class WalletSelectorModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colors.themeBgSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colors.themeBorderDefault),
-      ),
+    return TurboTopupScaffold(
+      title: 'Connect wallet',
+      description: _getSubtitle(),
+      canClose: onClose != null,
+      onClose: onClose,
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Connect wallet',
-                style: typography.heading5(
-                  fontWeight: ArFontWeight.bold,
-                  color: colors.themeFgDefault,
-                ),
-              ),
-              if (onClose != null)
-                IconButton(
-                  onPressed: onClose,
-                  icon: Icon(
-                    Icons.close,
-                    color: colors.themeFgMuted,
-                    size: 20,
-                  ),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _getSubtitle(),
-            style: typography.paragraphSmall(
-              color: colors.themeFgMuted,
-            ),
-          ),
-          const SizedBox(height: 20),
-
           // Wallet grid
           if (detectedWallets.isEmpty)
             _buildNoWalletsMessage(context, colors, typography)
@@ -86,7 +52,7 @@ class WalletSelectorModal extends StatelessWidget {
             child: Text(
               _getHelpText(),
               style: typography.caption(
-                color: colors.themeFgMuted,
+                color: colors.textMid,
               ),
               textAlign: TextAlign.center,
             ),
@@ -114,40 +80,13 @@ class WalletSelectorModal extends StatelessWidget {
 
   Widget _buildNoWalletsMessage(
     BuildContext context,
-    ArDriveColors colors,
+    ArDriveColorTokens colors,
     ArdriveTypographyNew typography,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: colors.themeWarningSubtle,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.warning_amber_rounded,
-            color: colors.themeWarningFg,
-            size: 32,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'No wallets detected',
-            style: typography.paragraphNormal(
-              fontWeight: ArFontWeight.semiBold,
-              color: colors.themeWarningFg,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _getInstallMessage(),
-            style: typography.paragraphSmall(
-              color: colors.themeFgMuted,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return ArDriveNotice(
+      type: ArDriveNoticeType.warning,
+      title: 'No wallets detected',
+      message: _getInstallMessage(),
     );
   }
 
@@ -162,7 +101,7 @@ class WalletSelectorModal extends StatelessWidget {
 
   Widget _buildWalletGrid(
     BuildContext context,
-    ArDriveColors colors,
+    ArDriveColorTokens colors,
     ArdriveTypographyNew typography,
   ) {
     return GridView.builder(
@@ -207,7 +146,7 @@ class _WalletCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Material(
@@ -220,13 +159,11 @@ class _WalletCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isDisabled
-                ? colors.themeBgSubtle.withOpacity(0.5)
-                : colors.themeBgSubtle,
+                ? colors.containerRaised.withOpacity(0.5)
+                : colors.containerRaised,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isConnecting
-                  ? colors.themeFgDefault
-                  : colors.themeBorderDefault,
+              color: isConnecting ? colors.textHigh : colors.strokeMid,
               width: isConnecting ? 2 : 1,
             ),
           ),
@@ -235,13 +172,9 @@ class _WalletCard extends StatelessWidget {
             children: [
               // Wallet icon
               if (isConnecting)
-                SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colors.themeFgDefault,
-                  ),
+                ArDriveSpinner(
+                  size: ArDriveSpinnerSize.large,
+                  color: colors.textHigh,
                 )
               else
                 _WalletIcon(
@@ -255,8 +188,7 @@ class _WalletCard extends StatelessWidget {
                 wallet.displayName,
                 style: typography.paragraphSmall(
                   fontWeight: ArFontWeight.semiBold,
-                  color:
-                      isDisabled ? colors.themeFgMuted : colors.themeFgDefault,
+                  color: isDisabled ? colors.textMid : colors.textHigh,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
@@ -267,14 +199,14 @@ class _WalletCard extends StatelessWidget {
                 Text(
                   'Connecting...',
                   style: typography.caption(
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 )
               else if (wallet.isInstalled)
                 Text(
                   'Detected',
                   style: typography.caption(
-                    color: colors.themeSuccessDefault,
+                    color: colors.statusSuccessFg,
                   ),
                 ),
             ],
@@ -289,7 +221,7 @@ class _WalletCard extends StatelessWidget {
 class _WalletIcon extends StatelessWidget {
   final DetectedWallet wallet;
   final double size;
-  final ArDriveColors colors;
+  final ArDriveColorTokens colors;
 
   const _WalletIcon({
     required this.wallet,
@@ -311,8 +243,9 @@ class _WalletIcon extends StatelessWidget {
       child: Center(
         child: Text(
           wallet.displayName.substring(0, 1).toUpperCase(),
+          // White on the wallet's own brand colour, below.
           style: TextStyle(
-            color: Colors.white,
+            color: const Color(0xFFFFFFFF),
             fontSize: size * 0.5,
             fontWeight: FontWeight.bold,
           ),
@@ -342,7 +275,7 @@ class _WalletIcon extends StatelessWidget {
       case 'walletconnect':
         return const Color(0xFF3B99FC); // WalletConnect blue
       default:
-        return colors.themeFgMuted;
+        return colors.textMid;
     }
   }
 }
@@ -500,6 +433,8 @@ Future<DetectedWallet?> showWalletSelectorModal(
     barrierDismissible: true,
     builder: (context) => Dialog(
       backgroundColor: Colors.transparent,
+      // The standard dialog inside draws its own shadow.
+      elevation: 0,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 400),
         child: WalletSelectorModal(

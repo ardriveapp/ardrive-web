@@ -353,6 +353,39 @@ void main() {
     expect(buttons.map((b) => b.size), everyElement(ArDriveButtonSize.regular),
         reason: 'dialog actions are the regular height');
   });
+
+  /// The close button was an unlabelled icon: a screen reader said nothing
+  /// about what it does.
+  testWidgets('ArDriveStandardModalNew names its close button', (tester) async {
+    final handle = tester.ensureSemantics();
+    var closed = 0;
+
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: Scaffold(
+            body: ArDriveStandardModalNew(
+              title: 'Buy Turbo Credits',
+              hasCloseButton: true,
+              close: () => closed++,
+              content: const Text('Content'),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final close = find.bySemanticsLabel('Close');
+    expect(close, findsOneWidget);
+    expect(
+      tester.getSemantics(close),
+      matchesSemantics(isButton: true, hasTapAction: true, label: 'Close'),
+    );
+
+    await tester.tap(close);
+    expect(closed, 1);
+    handle.dispose();
+  });
 }
 
 class _TestWidget extends StatelessWidget {

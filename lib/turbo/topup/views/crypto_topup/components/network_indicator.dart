@@ -53,9 +53,7 @@ class NetworkIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = ArDriveTheme.of(context).themeData;
-    final colorTokens = themeData.colorTokens;
-    final colors = themeData.colors;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Container(
@@ -63,12 +61,12 @@ class NetworkIndicator extends StatelessWidget {
       decoration: BoxDecoration(
         color: isCorrectNetwork
             ? colorTokens.containerL1
-            : colors.themeWarningSubtle,
-        borderRadius: BorderRadius.circular(8),
+            : colorTokens.statusWarningContainer,
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
         border: Border.all(
           color: isCorrectNetwork
               ? colorTokens.strokeLow
-              : colors.themeWarningMuted,
+              : colorTokens.statusWarningStroke,
         ),
       ),
       child: Row(
@@ -97,25 +95,18 @@ class NetworkIndicator extends StatelessWidget {
           // Switch button if wrong network
           if (!isCorrectNetwork && onSwitchNetwork != null) ...[
             const SizedBox(width: 8),
-            GestureDetector(
-              onTap: isSwitching ? null : onSwitchNetwork,
-              child: isSwitching
-                  ? SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colorTokens.textMid,
-                      ),
-                    )
-                  : Text(
-                      'Switch',
-                      style: typography.paragraphSmall(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colorTokens.textHigh,
-                      ),
-                    ),
-            ),
+            if (isSwitching)
+              const ArDriveSpinner()
+            else
+              // An action, so announced as a button.
+              ArDriveLink(
+                text: 'Switch',
+                isAction: true,
+                style: typography.paragraphSmall(
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+                onTap: onSwitchNetwork!,
+              ),
           ],
         ],
       ),
@@ -142,66 +133,42 @@ class NetworkWarningBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorTokens.containerL1,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorTokens.strokeLow),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: colorTokens.textMid,
-                size: 20,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ArDriveNotice(
+          type: ArDriveNoticeType.warning,
+          title: 'Wrong network',
+          message:
+              'Your wallet is connected to ${getNetworkName(currentChainId)}. '
+              'Please switch to ${getNetworkName(requiredChainId)} to continue.',
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: ArDriveButtonNew(
+                typography: ArDriveTypographyNew.of(context),
+                variant: ButtonVariant.primary,
+                maxWidth: double.infinity,
+                text: isSwitching ? 'Switching...' : 'Switch network',
+                onPressed: isSwitching ? () {} : onSwitchNetwork,
+                isDisabled: isSwitching,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Wrong network',
-                style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colorTokens.textHigh,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your wallet is connected to ${getNetworkName(currentChainId)}. '
-            'Please switch to ${getNetworkName(requiredChainId)} to continue.',
-            style: typography.paragraphSmall(
-              color: colorTokens.textMid,
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ArDriveButton(
-                  text: isSwitching ? 'Switching...' : 'Switch network',
-                  onPressed: isSwitching ? () {} : onSwitchNetwork,
-                  isDisabled: isSwitching,
-                ),
+            if (onShowManualInstructions != null) ...[
+              const SizedBox(width: 8),
+              ArDriveButtonNew(
+                typography: ArDriveTypographyNew.of(context),
+                variant: ButtonVariant.secondary,
+                text: 'Manual',
+                onPressed: onShowManualInstructions,
               ),
-              if (onShowManualInstructions != null) ...[
-                const SizedBox(width: 8),
-                ArDriveButton(
-                  text: 'Manual',
-                  style: ArDriveButtonStyle.secondary,
-                  onPressed: onShowManualInstructions,
-                ),
-              ],
             ],
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -227,7 +194,7 @@ class ManualNetworkSwitchInstructions extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorTokens.containerL1,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(ArDriveRadius.lg),
         border: Border.all(color: colorTokens.strokeLow),
       ),
       child: Column(
@@ -342,7 +309,7 @@ class _NetworkDetails extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colorTokens.containerL2,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(ArDriveRadius.md),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

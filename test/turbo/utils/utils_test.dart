@@ -37,4 +37,16 @@ void main() {
       expect(convertWinstonToAr(BigInt.from(0)), 0.0);
     });
   });
+
+  /// Credits read the same everywhere in the top-up: 4 decimal places and a
+  /// lowercase unit. Balances of 1 or more showed 2 places, and tiny ones 6.
+  group('formatCreditsFromWinc', () {
+    test('always shows 4 decimal places', () {
+      expect(formatCreditsFromWinc(BigInt.from(13451500000000)),
+          '13.4515 credits');
+      expect(
+          formatCreditsFromWinc(BigInt.from(942400000000)), '0.9424 credits');
+      expect(formatCreditsFromWinc(BigInt.zero), '0.0000 credits');
+    });
+  });
 }
