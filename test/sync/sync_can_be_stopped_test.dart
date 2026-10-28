@@ -64,15 +64,15 @@ void main() {
             BlocProvider<SyncCubit>.value(value: syncCubit),
             BlocProvider<DrivesCubit>.value(value: drivesCubit),
           ],
-          child: MaterialApp(
-            localizationsDelegates: const [
+          child: const MaterialApp(
+            localizationsDelegates: [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            supportedLocales: const [Locale('en', '')],
-            home: const Portal(
+            supportedLocales: [Locale('en', '')],
+            home: Portal(
               child: Scaffold(body: Center(child: SyncButton())),
             ),
           ),
