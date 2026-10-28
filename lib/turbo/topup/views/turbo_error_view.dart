@@ -16,26 +16,8 @@ class TurboErrorView extends StatelessWidget {
   final Function onTryAgain;
   final Function onDismiss;
 
-  String _getErrorMessageForErrorType(BuildContext context) {
-    switch (errorType) {
-      case TurboErrorType.sessionExpired:
-        return appLocalizationsOf(context).turboErrorMessageSessionExpired;
-      case TurboErrorType.unknown:
-        return appLocalizationsOf(context).turboErrorMessageUnknown;
-      case TurboErrorType.server:
-        return appLocalizationsOf(context).turboErrorMessageServer;
-      case TurboErrorType.fetchPaymentIntentFailed:
-        return appLocalizationsOf(context)
-            .turboErrorMessageEstimationInformationFailed;
-      case TurboErrorType.fetchEstimationInformationFailed:
-        return appLocalizationsOf(context)
-            .turboErrorMessageEstimationInformationFailed;
-      case TurboErrorType.network:
-        return appLocalizationsOf(context).turboErrorMessageNetwork;
-      default:
-        return appLocalizationsOf(context).turboErrorMessageUnknown;
-    }
-  }
+  String _getErrorMessageForErrorType(BuildContext context) =>
+      turboErrorMessage(context, errorType);
 
   String _getErrorTitleForErrorType(BuildContext context) {
     switch (errorType) {
@@ -135,5 +117,27 @@ class ErrorView extends StatelessWidget {
         message: errorMessage,
       ),
     );
+  }
+}
+
+/// What to tell someone about a top-up error of [errorType].
+String turboErrorMessage(BuildContext context, TurboErrorType errorType) {
+  switch (errorType) {
+    case TurboErrorType.sessionExpired:
+      return appLocalizationsOf(context).turboErrorMessageSessionExpired;
+    case TurboErrorType.unknown:
+      return appLocalizationsOf(context).turboErrorMessageUnknown;
+    case TurboErrorType.server:
+      return appLocalizationsOf(context).turboErrorMessageServer;
+    case TurboErrorType.fetchPaymentIntentFailed:
+      return appLocalizationsOf(context)
+          .turboErrorMessageEstimationInformationFailed;
+    case TurboErrorType.fetchEstimationInformationFailed:
+      return appLocalizationsOf(context)
+          .turboErrorMessageEstimationInformationFailed;
+    case TurboErrorType.network:
+      return appLocalizationsOf(context).turboErrorMessageNetwork;
+    default:
+      return appLocalizationsOf(context).turboErrorMessageUnknown;
   }
 }

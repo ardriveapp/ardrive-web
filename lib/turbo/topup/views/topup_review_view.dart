@@ -1,13 +1,12 @@
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/topup/components/quote_timer.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/views/turbo_error_view.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
-import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -67,53 +66,45 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                 newBalanceCredits: state.newBalanceCredits,
                 newBalanceStorage: state.newBalanceStorage,
               ));
-        } else if (state is PaymentReviewPaymentError) {
-          showArDriveDialog(
-            context,
-            content: TurboErrorView(
-              errorType: state.errorType,
-              onDismiss: () {
-                context
-                    .read<TurboTopupFlowBloc>()
-                    .add(const TurboTopUpShowPaymentFormView(2));
-              },
-              onTryAgain: () {
-                Navigator.pop(context);
-                context
-                    .read<TurboTopupFlowBloc>()
-                    .add(const TurboTopUpShowPaymentFormView(2));
-              },
-            ),
-            barrierDismissible: false,
-          );
-        } else if (state is PaymentReviewErrorLoadingPaymentModel) {
-          showArDriveDialog(
-            context,
-            content: TurboErrorView(
-              errorType: TurboErrorType.fetchPaymentIntentFailed,
-              onDismiss: () {
-                context
-                    .read<TurboTopupFlowBloc>()
-                    .add(const TurboTopUpShowPaymentFormView(2));
-              },
-              onTryAgain: () {
-                Navigator.pop(context);
-                context.read<PaymentReviewBloc>().add(
-                      PaymentReviewLoadPaymentModel(),
-                    );
-              },
-            ),
-            barrierDismissible: false,
-          );
         }
+        // Errors are shown in the review itself: a dialog over this dialog
+        // took the person out of the screen they were on.
       },
       child: BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
         buildWhen: (previous, current) {
           return current is PaymentReviewPaymentModelLoaded ||
               current is PaymentReviewLoadingPaymentModel ||
+              current is PaymentReviewErrorLoadingPaymentModel ||
               current is PaymentReviewInitial;
         },
         builder: (context, state) {
+          if (state is PaymentReviewErrorLoadingPaymentModel) {
+            return TurboTopupScaffold(
+              title: 'Confirm payment',
+              actions: [
+                ModalAction.dismiss(
+                  title: appLocalizationsOf(context).back,
+                  action: () => context
+                      .read<TurboTopupFlowBloc>()
+                      .add(const TurboTopUpShowPaymentFormView(2)),
+                ),
+                ModalAction(
+                  title: appLocalizationsOf(context).tryAgain,
+                  action: () => context
+                      .read<PaymentReviewBloc>()
+                      .add(PaymentReviewLoadPaymentModel()),
+                ),
+              ],
+              child: ArDriveNotice(
+                type: ArDriveNoticeType.error,
+                message: turboErrorMessage(
+                  context,
+                  TurboErrorType.fetchPaymentIntentFailed,
+                ),
+              ),
+            );
+          }
+
           if (state is PaymentReviewLoadingPaymentModel ||
               state is PaymentReviewInitial) {
             return const TurboTopupScaffold(
@@ -142,8 +133,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                   // The quote's timer, with its refresh.
                   Align(
                     alignment: Alignment.centerRight,
-                    child: _QuoteTimerBar(
-                      expirationDate: loadedState.quoteExpirationDate,
+                    child: QuoteTimer(
+                      expiresAt: loadedState.quoteExpirationDate,
                       isLoading: payState is PaymentReviewLoadingQuote,
                       onRefresh: () {
                         context
@@ -153,6 +144,20 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     ),
                   ),
                   const SizedBox(height: 12),
+
+                  // A payment that failed: what happened, and the way back
+                  // to the card details.
+                  if (payState is PaymentReviewPaymentError) ...[
+                    ArDriveNotice(
+                      type: ArDriveNoticeType.error,
+                      message: turboErrorMessage(context, payState.errorType),
+                      actionLabel: 'Edit card details',
+                      onAction: () => context
+                          .read<TurboTopupFlowBloc>()
+                          .add(const TurboTopUpShowPaymentFormView(2)),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
                   // Section 1: Paying With
                   _PayingWithSection(
@@ -243,6 +248,8 @@ class _TurboReviewViewState extends State<TurboReviewView> {
         title: isPaying ? 'Processing...' : 'Confirm & Pay',
         isEnable: !isPaying &&
             state is! PaymentReviewLoadingQuote &&
+            // After a failure the card details go back to the form.
+            state is! PaymentReviewPaymentError &&
             _emailIsValid &&
             !quoteExpired,
         action: () => _handlePay(context, state),
@@ -346,27 +353,28 @@ class _PayingWithSection extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        '\$${NumberFormat('#,##0.00').format(double.tryParse(total) ?? 0)}',
-                        // The amount paid is this card's figure.
-                        style: typography.heading2(
-                          fontWeight: ArFontWeight.light,
-                          color: colors.textHigh,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'USD',
-                        style: typography.paragraphSmall(
-                          fontWeight: ArFontWeight.semiBold,
-                          color: colors.textMid,
-                        ),
-                      ),
-                    ],
+                  // The amount paid is this card's figure.
+                  // One text, so the unit wraps under the figure rather than
+                  // overflowing a narrow column.
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                            text:
+                                '\$${NumberFormat('#,##0.00').format(double.tryParse(total) ?? 0)}',
+                            style: typography.heading2(
+                              fontWeight: ArFontWeight.light,
+                              color: colors.textHigh,
+                            )),
+                        const TextSpan(text: ' '),
+                        TextSpan(
+                            text: 'USD',
+                            style: typography.paragraphSmall(
+                              fontWeight: ArFontWeight.semiBold,
+                              color: colors.textMid,
+                            )),
+                      ],
+                    ),
                   ),
                   if (subTotal != null && discountPercent != null)
                     Text(
@@ -462,27 +470,27 @@ class _YoullReceiveSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      convertWinstonToLiteralString(creditsToReceive),
-                      // The credits bought are this card's figure.
-                      style: typography.heading2(
-                        fontWeight: ArFontWeight.light,
-                        color: colors.textHigh,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'credits',
-                      style: typography.paragraphSmall(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colors.textMid,
-                      ),
-                    ),
-                  ],
+                // The credits bought are this card's figure.
+                // One text, so the unit wraps under the figure rather than
+                // overflowing a narrow column.
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                          text: convertWinstonToLiteralString(creditsToReceive),
+                          style: typography.heading2(
+                            fontWeight: ArFontWeight.light,
+                            color: colors.textHigh,
+                          )),
+                      const TextSpan(text: ' '),
+                      TextSpan(
+                          text: 'credits',
+                          style: typography.paragraphSmall(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colors.textMid,
+                          )),
+                    ],
+                  ),
                 ),
                 Text(
                   storageEstimate,
@@ -613,146 +621,6 @@ class _EmailSection extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ============================================
-// Quote Timer Bar
-// ============================================
-
-class _QuoteTimerBar extends StatelessWidget {
-  final DateTime expirationDate;
-  final bool isLoading;
-  final VoidCallback onRefresh;
-
-  const _QuoteTimerBar({
-    required this.expirationDate,
-    required this.isLoading,
-    required this.onRefresh,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.schedule,
-          size: 14,
-          color: colors.textMid,
-        ),
-        const SizedBox(width: 6),
-        StreamBuilder(
-          stream: Stream.periodic(const Duration(seconds: 1)),
-          builder: (context, snapshot) {
-            final remaining = expirationDate.difference(DateTime.now());
-            final isExpired = remaining.isNegative;
-            final minutes = remaining.inMinutes.abs();
-            final seconds = (remaining.inSeconds % 60).abs();
-
-            return Text(
-              isExpired
-                  ? 'Quote expired'
-                  : 'Price valid for ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-              style: typography.paragraphSmall(
-                color: isExpired ? colors.statusErrorFg : colors.textMid,
-              ),
-            );
-          },
-        ),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: isLoading ? null : onRefresh,
-          child: isLoading
-              ? ArDriveSpinner(color: colors.textMid)
-              : Icon(
-                  Icons.refresh,
-                  size: 16,
-                  color: colors.textMid,
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-// ============================================
-// Helpers
-// ============================================
-
-class RefreshButton extends StatefulWidget {
-  final void Function() onPressed;
-
-  const RefreshButton({super.key, required this.onPressed});
-
-  @override
-  RefreshButtonState createState() => RefreshButtonState();
-}
-
-class RefreshButtonState extends State<RefreshButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<Offset> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-
-    _animation = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(1, 0),
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
-
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        _controller.reverse();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SlideTransition(
-          position: _animation,
-          child: ArDriveIconButton(
-            onPressed: () {
-              widget.onPressed();
-              _controller.forward();
-            },
-            size: 14,
-            icon: ArDriveIcons.refresh(
-              color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
-            ),
-          ),
-        ),
-        FadeTransition(
-          opacity: _controller,
-          child: Text(
-            'Refresh',
-            style: ArDriveTypographyNew.of(context).paragraphNormal(
-              fontWeight: ArFontWeight.bold,
-              color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
+import 'package:ardrive/turbo/topup/components/quote_timer.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
@@ -72,7 +73,7 @@ class CryptoConfirmationView extends StatelessWidget {
             children: [
               Align(
                 alignment: Alignment.centerRight,
-                child: _QuoteTimerBar(
+                child: QuoteTimer(
                   expiresAt: state.quote.expiresAt,
                   isLoading: state.isRefreshingQuote,
                   onRefresh: () {
@@ -251,27 +252,27 @@ class _PayingWithSection extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  // The amount paid is this card's figure.
-                  Text(
-                    _formatAmount(amount),
-                    style: typography.heading2(
-                      color: colors.textHigh,
-                      fontWeight: ArFontWeight.light,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    token.symbol,
-                    style: typography.paragraphNormal(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colors.textMid,
-                    ),
-                  ),
-                ],
+              // The amount paid is this card's figure.
+              // One text, so the unit wraps under the figure rather than
+              // overflowing a narrow column.
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                        text: _formatAmount(amount),
+                        style: typography.heading2(
+                          color: colors.textHigh,
+                          fontWeight: ArFontWeight.light,
+                        )),
+                    const TextSpan(text: ' '),
+                    TextSpan(
+                        text: token.symbol,
+                        style: typography.paragraphNormal(
+                          fontWeight: ArFontWeight.semiBold,
+                          color: colors.textMid,
+                        )),
+                  ],
+                ),
               ),
               if (usdEquivalent != null) ...[
                 const SizedBox(height: 2),
@@ -425,27 +426,27 @@ class _YoullReceiveSection extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    // The credits bought are this card's figure.
-                    Text(
-                      convertWinstonToLiteralString(creditsToReceive),
-                      style: typography.heading2(
-                        color: colors.textHigh,
-                        fontWeight: ArFontWeight.light,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'credits',
-                      style: typography.paragraphSmall(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colors.textMid,
-                      ),
-                    ),
-                  ],
+                // The credits bought are this card's figure.
+                // One text, so the unit wraps under the figure rather than
+                // overflowing a narrow column.
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                          text: convertWinstonToLiteralString(creditsToReceive),
+                          style: typography.heading2(
+                            color: colors.textHigh,
+                            fontWeight: ArFontWeight.light,
+                          )),
+                      const TextSpan(text: ' '),
+                      TextSpan(
+                          text: 'credits',
+                          style: typography.paragraphSmall(
+                            fontWeight: ArFontWeight.semiBold,
+                            color: colors.textMid,
+                          )),
+                    ],
+                  ),
                 ),
                 Text(
                   storageEstimate,
@@ -634,75 +635,6 @@ class _NetworkStatusBanner extends StatelessWidget {
       message: 'Switch to ${token.networkDisplayName}',
       actionLabel: 'Switch',
       onAction: onSwitchNetwork,
-    );
-  }
-}
-
-// ============================================
-// Quote Timer Bar
-// ============================================
-
-class _QuoteTimerBar extends StatelessWidget {
-  final DateTime? expiresAt;
-  final bool isLoading;
-  final VoidCallback onRefresh;
-
-  const _QuoteTimerBar({
-    required this.expiresAt,
-    required this.isLoading,
-    required this.onRefresh,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
-    if (expiresAt == null) return const SizedBox.shrink();
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.schedule,
-          size: 14,
-          color: colors.textMid,
-        ),
-        const SizedBox(width: 6),
-        StreamBuilder(
-          stream: Stream.periodic(const Duration(seconds: 1)),
-          builder: (context, snapshot) {
-            final remaining = expiresAt!.difference(DateTime.now());
-            final isExpired = remaining.isNegative;
-            final minutes = remaining.inMinutes.abs();
-            final seconds = (remaining.inSeconds % 60).abs();
-
-            return Text(
-              isExpired
-                  ? 'Quote expired'
-                  : 'Price valid for ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-              style: typography.paragraphSmall(
-                color: isExpired ? colors.statusErrorFg : colors.textMid,
-              ),
-            );
-          },
-        ),
-        const SizedBox(width: 8),
-        Semantics(
-          button: true,
-          label: 'Refresh quote',
-          child: GestureDetector(
-            onTap: isLoading ? null : onRefresh,
-            child: isLoading
-                ? ArDriveSpinner(color: colors.textMid)
-                : Icon(
-                    Icons.refresh,
-                    size: 16,
-                    color: colors.textMid,
-                  ),
-          ),
-        ),
-      ],
     );
   }
 }

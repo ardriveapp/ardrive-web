@@ -13,6 +13,7 @@ import 'package:ardrive/turbo/topup/blocs/payment_review/payment_review_bloc.dar
 import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/unified_topup/unified_topup_bloc.dart';
+import 'package:ardrive/turbo/topup/components/cover_stack.dart';
 import 'package:ardrive/turbo/topup/components/payment_method_selector.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
@@ -200,9 +201,6 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             newBalanceCredits: state.newBalanceCredits,
             newBalanceStorage: state.newBalanceStorage,
           );
-        } else if (state is TurboTopupFlowShowingErrorView) {
-          _showErrorDialog(state.errorType,
-              parentContext: widget.parentContext);
         }
       },
       // Each screen is a standard dialog (TurboTopupScaffold); the shell only
@@ -265,7 +263,7 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
           // rebuilt the form and Stripe had no card to charge.
           view = ClipRRect(
             borderRadius: BorderRadius.circular(modalBorderRadius),
-            child: Stack(
+            child: CoverStack(
               children: [
                 BlocProvider<PaymentFormBloc>.value(
                   key: const ValueKey('payment_form'),
@@ -296,10 +294,11 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
 
           // The review covers the card form, which stays mounted so Stripe
           // keeps the card details. The cover is opaque so the card field's
-          // iframe can't show through, and clipped to the dialog's corners.
+          // iframe can't show through, as tall as the form where the form is
+          // taller, and clipped to the dialog's corners.
           view = ClipRRect(
             borderRadius: BorderRadius.circular(modalBorderRadius),
-            child: Stack(
+            child: CoverStack(
               children: [
                 BlocProvider<PaymentFormBloc>.value(
                   key: const ValueKey('payment_form'),
@@ -367,6 +366,16 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
               context
                   .read<TurboTopupFlowBloc>()
                   .add(const TurboTopUpShowEstimationView());
+            },
+          );
+        } else if (state is TurboTopupFlowShowingErrorView) {
+          // In place of the screen that failed, not a second dialog over it.
+          view = TurboErrorView(
+            errorType: state.errorType,
+            onDismiss: () => Navigator.of(context).pop(),
+            onTryAgain: () {
+              Navigator.of(context).pop();
+              showTurboTopupModal(widget.parentContext);
             },
           );
         } else {
@@ -516,30 +525,6 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
           newBalanceCredits: newBalanceCredits,
           newBalanceStorage: newBalanceStorage,
         ),
-      ),
-      barrierDismissible: false,
-    );
-  }
-
-  void _showErrorDialog(
-    TurboErrorType type, {
-    required BuildContext parentContext,
-  }) {
-    showAnimatedDialogWithBuilder(
-      context,
-      builder: (modalContext) => TurboErrorView(
-        errorType: type,
-        onDismiss: () {
-          logger.d('clicked dismiss on error modal');
-          Navigator.of(modalContext).pop();
-        },
-        onTryAgain: () {
-          logger.d('clicked try again on error modal');
-          Navigator.of(modalContext).pop();
-          Navigator.of(context).pop();
-
-          showTurboTopupModal(parentContext);
-        },
       ),
       barrierDismissible: false,
     );

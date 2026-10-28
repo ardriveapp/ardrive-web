@@ -4435,7 +4435,7 @@
   "@yourChoice": {
     "description": "User can choose whether or not to make the content public"
   },
-  "yourCreditsWillBeAddedToYourAccount": "Your credits will be added to your account soon. You can close this window.",
+  "yourCreditsWillBeAddedToYourAccount": "Your credits will be added to your account soon.",
   "@yourCreditsWillBeAddedToYourAccount": {},
   "yourPasswordCannotBeCahngedOrRetrivied": "Your password cannot be changed or retrieved, so please keep this safe.",
   "@yourPasswordCannotBeCahngedOrRetrivied": {},

@@ -288,7 +288,9 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
 
           // Format the data for the success dialog
           final amountPaid = _formatAmountPaid(state);
-          final creditsReceived = _formatCredits(state.creditsAdded);
+          // The number alone: the success screen adds "credits added".
+          final creditsReceived =
+              convertWinstonToLiteralString(state.creditsAdded);
           final newBalanceCredits = state.newBalance != null
               ? _formatCredits(state.newBalance!)
               : null;

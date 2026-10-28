@@ -24,6 +24,7 @@ export 'components/progress_bar.dart';
 export 'components/radio_button.dart';
 export 'components/scroll_area.dart';
 export 'components/scroll_bar.dart';
+export 'components/segmented_control.dart';
 export 'components/spinner.dart';
 export 'components/submenu.dart';
 export 'components/tab_view.dart';

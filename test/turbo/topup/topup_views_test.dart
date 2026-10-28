@@ -1,4 +1,3 @@
-import 'package:ardrive/turbo/topup/blocs/unified_topup/unified_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/components/amount_mode_toggle.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/views/topup_success_view.dart';
@@ -99,7 +98,7 @@ void main() {
         amountPaid: '\$25.00',
         creditsReceived: '4.5970',
         storageEstimate: '311.1 MB',
-        newBalanceCredits: '8.84 Credits',
+        newBalanceCredits: '8.8400 credits',
         newBalanceStorage: '598.7 MB',
       )));
       // Lets the confetti run out.
@@ -126,7 +125,7 @@ void main() {
     testWidgets('writes credits in lowercase after an amount', (tester) async {
       await pump(tester);
 
-      expect(find.text('8.84 credits'), findsOneWidget);
+      expect(find.text('8.8400 credits'), findsOneWidget);
       expect(find.textContaining('Credits'), findsNothing);
     });
   });

@@ -41,89 +41,26 @@ class AmountModeToggle extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: colors.containerRaised,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          padding: const EdgeInsets.all(4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _ToggleButton(
-                icon: Icons.cloud_outlined,
-                label: 'Storage',
-                isSelected: selectedMode == AmountMode.storage,
-                onTap: () => onModeChanged(AmountMode.storage),
-              ),
-              const SizedBox(width: 4),
-              _ToggleButton(
-                // A dollar sign for USD only: SOL or ETH was shown with one.
-                icon: currencyLabel == 'USD'
-                    ? Icons.attach_money
-                    : Icons.toll_outlined,
-                label: currencyLabel,
-                isSelected: selectedMode == AmountMode.currency,
-                onTap: () => onModeChanged(AmountMode.currency),
-              ),
-            ],
-          ),
+        ArDriveSegmentedControl<AmountMode>(
+          selected: selectedMode,
+          onSelected: onModeChanged,
+          segments: [
+            const ArDriveSegment(
+              value: AmountMode.storage,
+              label: 'Storage',
+              icon: Icons.cloud_outlined,
+            ),
+            ArDriveSegment(
+              value: AmountMode.currency,
+              label: currencyLabel,
+              // A dollar sign for USD only: SOL or ETH was shown with one.
+              icon: currencyLabel == 'USD'
+                  ? Icons.attach_money
+                  : Icons.toll_outlined,
+            ),
+          ],
         ),
       ],
-    );
-  }
-}
-
-class _ToggleButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ToggleButton({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      child: Material(
-        color: isSelected ? colors.textMid : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 16,
-                  color: isSelected ? colors.containerRaised : colors.textMid,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: typography.paragraphSmall(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: isSelected ? colors.containerRaised : colors.textMid,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -202,11 +202,6 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
     widget.onCustomAmountChanged(numValue);
   }
 
-  bool get _isCustomSelected =>
-      widget.selectedPreset == null &&
-      widget.customValue != null &&
-      widget.customValue! > 0;
-
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
@@ -233,32 +228,15 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
   }
 
   Widget _buildPresetGrid(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
-    final presetsList = widget.presets.toList();
-    return Row(
-      children: List.generate(presetsList.length, (index) {
-        final preset = presetsList[index];
-        final isSelected = widget.selectedPreset == preset;
-        final isFirst = index == 0;
-        final isLast = index == presetsList.length - 1;
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: isFirst ? 0 : 4,
-              right: isLast ? 0 : 4,
-            ),
-            child: _PresetButton(
-              label: _formatDisplayValue(preset),
-              isSelected: isSelected,
-              onTap: () => _onPresetSelected(preset),
-              colors: colors,
-              typography: typography,
-            ),
-          ),
-        );
-      }),
+    // None is chosen while a custom amount is in use.
+    return ArDriveSegmentedControl<double>(
+      expand: true,
+      selected: widget.selectedPreset,
+      onSelected: _onPresetSelected,
+      segments: [
+        for (final preset in widget.presets)
+          ArDriveSegment(value: preset, label: _formatDisplayValue(preset)),
+      ],
     );
   }
 
@@ -286,7 +264,6 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
           child: _CustomAmountTextField(
             controller: _customAmountController,
             focusNode: _customAmountFocus,
-            isSelected: _isCustomSelected,
             prefix: widget.isTokenAmount ? null : widget.currencySymbol,
             suffix: widget.isTokenAmount ? widget.currencySymbol : null,
             onChanged: _onCustomAmountChanged,
@@ -307,43 +284,10 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
   }
 }
 
-class _PresetButton extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final ArDriveColorTokens colors;
-  final ArdriveTypographyNew typography;
-
-  const _PresetButton({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    required this.colors,
-    required this.typography,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ArDriveButtonNew(
-      typography: ArDriveTypographyNew.of(context),
-      variant: ButtonVariant.primary,
-      // Unselected chips are raised tiles, like the payment methods above;
-      // the chosen one is filled.
-      backgroundColor: isSelected ? colors.textMid : colors.containerRaised,
-      fontStyle: typography.paragraphSmall(
-        fontWeight: ArFontWeight.bold,
-        color: isSelected ? colors.containerRaised : colors.textHigh,
-      ),
-      text: label,
-      onPressed: onTap,
-    );
-  }
-}
-
+/// The custom amount, on the standard text field.
 class _CustomAmountTextField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
-  final bool isSelected;
   final String? prefix;
   final String? suffix;
   final ValueChanged<String> onChanged;
@@ -352,7 +296,6 @@ class _CustomAmountTextField extends StatelessWidget {
   const _CustomAmountTextField({
     required this.controller,
     required this.focusNode,
-    required this.isSelected,
     this.prefix,
     this.suffix,
     required this.onChanged,
@@ -363,53 +306,45 @@ class _CustomAmountTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
+    final prefix = this.prefix;
+    final suffix = this.suffix;
 
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: isSelected ? colors.textMid : colors.strokeMid,
-          width: isSelected ? 2 : 1,
-        ),
-        borderRadius: BorderRadius.circular(8),
-        color: colors.inputDefault,
-      ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        keyboardType: TextInputType.numberWithOptions(decimal: allowDecimals),
-        inputFormatters: [
-          if (allowDecimals)
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
-          else
-            FilteringTextInputFormatter.digitsOnly,
-        ],
-        style: typography.paragraphNormal(
-          fontWeight: ArFontWeight.semiBold,
-          color: colors.textHigh,
-        ),
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 10,
-          ),
-          border: InputBorder.none,
-          hintText: '0',
-          hintStyle: typography.paragraphNormal(
-            color: colors.textXLow,
-          ),
-          prefixText: prefix != null ? '$prefix ' : null,
-          prefixStyle: typography.paragraphNormal(
-            fontWeight: ArFontWeight.bold,
-            color: colors.textHigh,
-          ),
-          suffixText: suffix,
-          suffixStyle: typography.paragraphNormal(
-            fontWeight: ArFontWeight.semiBold,
-            color: colors.textMid,
-          ),
-        ),
-        onChanged: onChanged,
-      ),
+    return ArDriveTextFieldNew(
+      controller: controller,
+      focusNode: focusNode,
+      hintText: '0',
+      keyboardType: TextInputType.numberWithOptions(decimal: allowDecimals),
+      inputFormatters: [
+        if (allowDecimals)
+          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))
+        else
+          FilteringTextInputFormatter.digitsOnly,
+      ],
+      prefix: prefix == null
+          ? null
+          : Text(
+              '$prefix ',
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.semiBold,
+                color: colors.textHigh,
+              ),
+            ),
+      suffixIcon: suffix == null
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(
+                widthFactor: 1,
+                child: Text(
+                  suffix,
+                  style: typography.paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colors.textMid,
+                  ),
+                ),
+              ),
+            ),
+      onChanged: onChanged,
     );
   }
 }

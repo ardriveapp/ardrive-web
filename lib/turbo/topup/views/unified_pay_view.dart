@@ -321,7 +321,6 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     // If promo code is applied, show it
@@ -334,85 +333,42 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
       );
     }
 
-    // Collapsible promo code input
+    void submit() {
+      if (_controller.text.trim().isNotEmpty) {
+        widget.bloc
+            .add(UnifiedTopupPromoCodeSubmitted(_controller.text.trim()));
+      }
+    }
+
+    // A link that opens the promo code field: announced as a button, and
+    // reachable with the keyboard.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        InkWell(
-          onTap: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-          borderRadius: BorderRadius.circular(4),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Icon(
-                  _isExpanded
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_right,
-                  size: 18,
-                  color: colors.textMid,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Have a promo code?',
-                  style: typography.paragraphSmall(
-                    color: colors.textMid,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        ArDriveLink(
+          text: 'Have a promo code?',
+          isAction: true,
+          style: typography.paragraphSmall(fontWeight: ArFontWeight.semiBold),
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
         ),
         if (_isExpanded) ...[
           const SizedBox(height: 8),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(color: colors.strokeMid),
-                    borderRadius: BorderRadius.circular(8),
-                    color: colors.inputDefault,
-                  ),
-                  child: TextField(
-                    controller: _controller,
-                    style: typography.paragraphNormal(
-                      color: colors.textHigh,
-                    ),
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      border: InputBorder.none,
-                      hintText: 'Enter promo code',
-                      hintStyle: typography.paragraphNormal(
-                        color: colors.textXLow,
-                      ),
-                    ),
-                  ),
+                child: ArDriveTextFieldNew(
+                  controller: _controller,
+                  hintText: 'Enter promo code',
+                  onFieldSubmitted: (_) => submit(),
                 ),
               ),
               const SizedBox(width: 8),
-              SizedBox(
-                height: 44,
-                child: ArDriveButtonNew(
-                  typography: ArDriveTypographyNew.of(context),
-                  variant: ButtonVariant.secondary,
-                  text: 'Apply',
-                  onPressed: () {
-                    if (_controller.text.isNotEmpty) {
-                      widget.bloc.add(
-                        UnifiedTopupPromoCodeSubmitted(_controller.text.trim()),
-                      );
-                    }
-                  },
-                ),
+              ArDriveButtonNew(
+                typography: ArDriveTypographyNew.of(context),
+                variant: ButtonVariant.secondary,
+                text: 'Apply',
+                onPressed: submit,
               ),
             ],
           ),

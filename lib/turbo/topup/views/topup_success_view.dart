@@ -42,8 +42,7 @@ class TurboSuccessView extends StatelessWidget {
       amountPaid: amountPaid,
       creditsReceived: creditsReceived,
       storageEstimate: storageEstimate,
-      // The glossary's lowercase "credits" after an amount.
-      newBalanceCredits: newBalanceCredits?.replaceAll(' Credits', ' credits'),
+      newBalanceCredits: newBalanceCredits,
       newBalanceStorage: newBalanceStorage,
     );
   }

@@ -4,6 +4,7 @@ import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
@@ -233,19 +234,9 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
     }
   }
 
-  String _formatCredits(BigInt credits) {
-    // Credits are stored in winc (winston credits), convert to display
-    // 1 Credit = 10^12 winc
-    final creditValue = credits.toDouble() / 1e12;
-    if (creditValue >= 1) {
-      return creditValue.toStringAsFixed(2);
-    } else if (creditValue >= 0.01) {
-      return creditValue.toStringAsFixed(4);
-    } else {
-      // For very small amounts, show more decimal places
-      return creditValue.toStringAsFixed(6);
-    }
-  }
+  /// Credits to 4 decimal places, as everywhere else in the app.
+  String _formatCredits(BigInt credits) =>
+      convertWinstonToLiteralString(credits);
 
   /// A storage estimate, marked as approximate once.
   String _approximately(String storage) =>
@@ -370,11 +361,10 @@ class CryptoErrorView extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 16),
-              // No funds charged notice
-              const ArDriveNotice(
-                type: ArDriveNoticeType.info,
-                message: 'Your funds have not been charged.',
-              ),
+              // What happened to the money, as far as we can tell. "Your
+              // funds have not been charged" showed even when a transaction
+              // had reached the network, where it may have cost a fee.
+              _ChargeNotice(state: state),
             ],
           ),
         );
@@ -404,4 +394,46 @@ class CryptoErrorView extends StatelessWidget {
         return 'An unexpected error occurred.';
     }
   }
+}
+
+/// What a failed crypto payment cost, as far as the app can tell.
+class _ChargeNotice extends StatelessWidget {
+  const _ChargeNotice({required this.state});
+
+  final CryptoTopupState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = this.state;
+    final txId = state is CryptoTopupError ? state.txId : null;
+
+    // Declined in the wallet: nothing was sent.
+    if (state is CryptoTopupError &&
+        state.errorType == CryptoTopupErrorType.transactionRejected) {
+      return const ArDriveNotice(
+        type: ArDriveNoticeType.info,
+        message: 'No payment was made.',
+      );
+    }
+
+    // A transaction reached the network and failed there.
+    if (txId != null && txId.isNotEmpty) {
+      return ArDriveNotice(
+        type: ArDriveNoticeType.warning,
+        message: 'The payment was not completed. Your wallet may have paid a '
+            'network fee for transaction ${_short(txId)}.',
+      );
+    }
+
+    // It may or may not have been sent.
+    return const ArDriveNotice(
+      type: ArDriveNoticeType.warning,
+      message: 'Check your wallet before trying again, so you don\'t pay '
+          'twice.',
+    );
+  }
+
+  static String _short(String txId) => txId.length < 20
+      ? txId
+      : '${txId.substring(0, 8)}...${txId.substring(txId.length - 8)}';
 }
