@@ -220,6 +220,23 @@ class _WebPagesViewState extends State<WebPagesView> {
                 listMenuGutter >=
             webPagesColumnsFrom * MediaQuery.textScalerOf(context).scale(1);
 
+        Widget failedNotice() => SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  listPagePadding,
+                  0,
+                  listPagePadding,
+                  listPageBlockGap,
+                ),
+                child: ArDriveNotice(
+                  type: ArDriveNoticeType.error,
+                  message: strings.webPagesCouldNotBeRead,
+                  actionLabel: strings.tryAgain,
+                  onAction: () => context.read<WebPagesCubit>().retry(),
+                ),
+              ),
+            );
+
         final List<Widget> body;
         if (!state.loaded) {
           body = const [
@@ -229,6 +246,8 @@ class _WebPagesViewState extends State<WebPagesView> {
               ),
             ),
           ];
+        } else if (state.failed && state.pages.isEmpty) {
+          body = [failedNotice()];
         } else if (state.pages.isEmpty) {
           body = [
             SliverToBoxAdapter(
@@ -266,6 +285,8 @@ class _WebPagesViewState extends State<WebPagesView> {
             ),
           );
           body = [
+            // Deployments are local; publications are not, and are missing.
+            if (state.failed) failedNotice(),
             if (showsColumns)
               ListTablePanel(
                 header: ListTableHeader<WebPagesSort>(
@@ -398,7 +419,22 @@ class _WebPageActions {
 
   void open() => openUrl(url: link.url);
 
-  void copyLink() => Clipboard.setData(ClipboardData(text: link.url));
+  Future<void> copyLink() async {
+    await Clipboard.setData(ClipboardData(text: link.url));
+    if (!context.mounted) return;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        content: Text(
+          appLocalizationsOf(context).webPagesLinkCopied,
+          style: ArDriveTypographyNew.of(context)
+              .paragraphNormal(color: colors.textHigh),
+        ),
+        backgroundColor: colors.containerL3,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
 
   bool get canUpdate => page.publication != null;
 

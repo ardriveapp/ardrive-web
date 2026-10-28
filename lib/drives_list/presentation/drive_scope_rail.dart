@@ -269,18 +269,26 @@ class _Chevron extends StatelessWidget {
           ? strings.navCollapseSection(section)
           : strings.navExpandSection(section),
       excludeSemantics: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onToggle,
-        // Wider than the arrow: the row's padding is all that is around it,
-        // and a 16px target is easy to miss for the label beside it.
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-          child: AnimatedRotation(
-            turns: isExpanded ? 0.5 : 0,
-            duration: const Duration(milliseconds: 150),
-            child:
-                ArDriveIcons.chevronDown(size: 16, color: colorTokens.textMid),
+      // A button of its own: Tab reaches it and Enter or Space folds the
+      // section, now that tapping the heading opens its page. Twice the
+      // arrow's width and the label's line height, so it is easy to hit
+      // without making the row taller.
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onToggle,
+          borderRadius: BorderRadius.circular(4),
+          child: SizedBox(
+            width: 32,
+            height: 24,
+            child: Center(
+              child: AnimatedRotation(
+                turns: isExpanded ? 0.5 : 0,
+                duration: const Duration(milliseconds: 150),
+                child: ArDriveIcons.chevronDown(
+                    size: 16, color: colorTokens.textMid),
+              ),
+            ),
           ),
         ),
       ),

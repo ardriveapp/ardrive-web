@@ -734,6 +734,7 @@ class _ArNSNameViewState extends State<ArNSNameView> {
           if (name == null || name.isExpired(now)) {
             final settled = names.status == ArNSNamesStatus.loaded ||
                 names.status == ArNSNamesStatus.none;
+            final failed = names.status == ArNSNamesStatus.failed;
             body = [
               SliverToBoxAdapter(
                 child: ListPageTitleRow(
@@ -744,11 +745,26 @@ class _ArNSNameViewState extends State<ArNSNameView> {
                 ),
               ),
               SliverToBoxAdapter(
-                child: ListPageMessage(
-                  child: settled
-                      ? ArNSBodyText(strings.arnsNameNotFound)
-                      : const ArDriveSpinner(size: ArDriveSpinnerSize.large),
-                ),
+                // A read that failed says so, as the Names list does, rather
+                // than spinning with nothing on the way.
+                child: failed
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: listPagePadding),
+                        child: ArDriveNotice(
+                          type: ArDriveNoticeType.error,
+                          message: strings.arnsNamesCouldNotBeRead,
+                          actionLabel: strings.tryAgain,
+                          onAction: () =>
+                              context.read<ArNSNamesCubit>().refresh(),
+                        ),
+                      )
+                    : ListPageMessage(
+                        child: settled
+                            ? ArNSBodyText(strings.arnsNameNotFound)
+                            : const ArDriveSpinner(
+                                size: ArDriveSpinnerSize.large),
+                      ),
               ),
             ];
           } else {

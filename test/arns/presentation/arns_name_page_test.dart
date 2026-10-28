@@ -144,6 +144,21 @@ void main() {
     expect(find.text("This name isn't in your linked wallet."), findsOneWidget);
   });
 
+  testWidgets('a failed read says so and can try again', (tester) async {
+    whenListen(
+      names,
+      const Stream<ArNSNamesState>.empty(),
+      initialState: const ArNSNamesState(status: ArNSNamesStatus.failed),
+    );
+    when(() => names.refresh()).thenAnswer((_) async {});
+    await pump(tester, 'studio');
+
+    expect(find.byType(ArDriveSpinner), findsNothing,
+        reason: 'nothing is on the way');
+    await tester.tap(find.text('Try again'));
+    verify(() => names.refresh()).called(1);
+  });
+
   test('arnsRecordsMatching filters by literal name', () {
     final found = arnsRecordsMatching(_studio.records, ' PROJECT-1 ');
     expect(

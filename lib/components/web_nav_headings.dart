@@ -218,10 +218,14 @@ class NamesNavHeading extends StatelessWidget {
     }
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final days = end.difference(now).inDays.clamp(0, 30);
+    // In its grace period the lease has ended, as the Names table says.
+    final text = name.isInGracePeriod(now)
+        ? appLocalizationsOf(context).arnsLeaseHasEnded
+        : appLocalizationsOf(context).arnsLeaseEndsInDays(days);
     return ArDriveTooltip(
-      message: appLocalizationsOf(context).arnsLeaseEndsInDays(days),
+      message: text,
       child: Semantics(
-        label: appLocalizationsOf(context).arnsLeaseEndsInDays(days),
+        label: text,
         child: Container(
           key: const ValueKey('arns-renewal-dot'),
           width: 8,

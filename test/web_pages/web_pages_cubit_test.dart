@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/models/models.dart';
@@ -10,6 +12,7 @@ import 'package:ario_sdk/ario_sdk.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../test_utils/fake_user.dart';
 import '../test_utils/utils.dart';
@@ -179,6 +182,60 @@ void main() {
     addTearDown(cubit.close);
 
     expect((await loaded(cubit)).pages.map((p) => p.id), ['shown']);
+  });
+
+  test('waits for publications before it says what is published', () async {
+    await drive('site');
+    await file('app', 'site', at: DateTime(2026, 1));
+    final reading = StreamController<PublicationsState>();
+    addTearDown(reading.close);
+    whenListen(
+      publications,
+      reading.stream,
+      initialState: const PublicationsState({}, PublicationsStatus.loading),
+    );
+
+    final cubit = WebPagesCubit(
+      driveDao: db.driveDao,
+      publicationsCubit: publications,
+      profileCubit: profileCubit,
+    );
+    addTearDown(cubit.close);
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    expect(cubit.state.loaded, isFalse,
+        reason: '"nothing published" would be wrong while reading');
+
+    reading.add(PublicationsState({
+      'site': DrivePublications(publications: [
+        _publication('p-site', driveId: 'site', at: DateTime(2026, 2)),
+      ]),
+    }, PublicationsStatus.loaded));
+    expect((await loaded(cubit)).pages.map((p) => p.id), ['p-site', 'app']);
+  });
+
+  test('says when publications could not be read, and asks again', () async {
+    await drive('site');
+    await file('app', 'site', at: DateTime(2026, 1));
+    whenListen(
+      publications,
+      const Stream<PublicationsState>.empty(),
+      initialState: const PublicationsState({}, PublicationsStatus.failed),
+    );
+    when(() => publications.retry()).thenAnswer((_) async {});
+
+    final cubit = WebPagesCubit(
+      driveDao: db.driveDao,
+      publicationsCubit: publications,
+      profileCubit: profileCubit,
+    );
+    addTearDown(cubit.close);
+    final state = await loaded(cubit);
+
+    expect(state.failed, isTrue);
+    expect(state.pages.map((p) => p.id), ['app'],
+        reason: 'deployments are local and still listed');
+    await cubit.retry();
+    verify(() => publications.retry()).called(1);
   });
 
   test('nothing while signed out', () async {

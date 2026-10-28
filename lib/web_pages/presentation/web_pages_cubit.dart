@@ -10,17 +10,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rxdart/rxdart.dart';
 
 class WebPagesState extends Equatable {
-  const WebPagesState({this.loaded = false, this.pages = const []});
+  const WebPagesState({
+    this.loaded = false,
+    this.pages = const [],
+    this.failed = false,
+  });
 
-  /// False until the first list is in, so the page can tell "reading" from
-  /// "nothing published".
+  /// False until the first list is in, publications included, so the page
+  /// can tell "reading" from "nothing published".
   final bool loaded;
 
   /// Most recently updated first.
   final List<WebPage> pages;
 
+  /// The publications could not be read: [pages] holds deployments only.
+  final bool failed;
+
   @override
-  List<Object?> get props => [loaded, pages];
+  List<Object?> get props => [loaded, pages, failed];
 }
 
 /// Everything the signed-in owner has put on the web, for the Web pages
@@ -63,8 +70,12 @@ class WebPagesCubit extends Cubit<WebPagesState> {
               List<FileEntry> deployments) =>
           (publications, drives, deployments),
     )
-        .asyncMap(
-            (sources) => _compose(owner, sources.$1, sources.$2, sources.$3))
+        // A sync writes in batches, and each write would compose the list
+        // again: wait for a pause, and drop a composition that a newer one
+        // has made stale.
+        .debounceTime(const Duration(milliseconds: 200))
+        .switchMap((sources) => Stream.fromFuture(
+            _compose(owner, sources.$1, sources.$2, sources.$3)))
         .listen(
           emit,
           onError: (Object e) =>
@@ -94,7 +105,9 @@ class WebPagesCubit extends Cubit<WebPagesState> {
         ? const <FolderEntry>[]
         : await _driveDao.foldersByIds(folderIds: folderIds.toList()).get();
     return WebPagesState(
-      loaded: true,
+      // Publications still being read would show as "nothing published".
+      loaded: publications.status != PublicationsStatus.loading,
+      failed: publications.status == PublicationsStatus.failed,
       pages: composeWebPages(
         publications: all,
         deployments: deployments,
@@ -103,6 +116,9 @@ class WebPagesCubit extends Cubit<WebPagesState> {
       ),
     );
   }
+
+  /// Reads the publications again after a failure.
+  Future<void> retry() => _publications.retry();
 
   @override
   void emit(WebPagesState state) {

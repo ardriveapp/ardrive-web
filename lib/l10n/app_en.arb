@@ -5234,6 +5234,8 @@
   "@webPagesOpenFolder": {"description": "Web pages menu: show the page's folder in the drive."},
   "webPagesLinkCopied": "Link copied",
   "@webPagesLinkCopied": {"description": "Shown after copying a web page's link."},
+  "webPagesCouldNotBeRead": "Your web pages couldn't be read. Check your connection and try again.",
+  "@webPagesCouldNotBeRead": {"description": "Notice on the Web pages page when the published pages could not be read; deployments may still be listed."},
   "webPagesNothingYet": "Nothing published yet",
   "@webPagesNothingYet": {"description": "Web pages empty state title."},
   "webPagesNothingYetBody": "Publish a public drive or folder to make a web page. Anyone with the link can view it.",
@@ -5266,6 +5268,8 @@
   "@arnsLeaseNeverEnds": {"description": "Names table: a name bought for good has no lease end."},
   "arnsLeaseEnded": "Ended",
   "@arnsLeaseEnded": {"description": "Names table: the lease ended and the name is in its grace period."},
+  "arnsLeaseHasEnded": "Lease ended",
+  "@arnsLeaseHasEnded": {"description": "Tooltip on the nav's renewal dot for a name whose lease has ended and is in its grace period."},
   "arnsEndsInDays": "{days, plural, =0{Ends today} =1{Ends in 1 day} other{Ends in {days} days}}",
   "@arnsEndsInDays": {"description": "Names table, under the Lease ends heading: the lease ends soon.", "placeholders": {"days": {"type": "int"}}}
 }

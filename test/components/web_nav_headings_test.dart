@@ -329,6 +329,13 @@ void main() {
       );
     });
 
+    test('/names/<name> is read in lowercase, as ArNS names are', () async {
+      final path = await parser.parseRouteInformation(
+        RouteInformation(uri: Uri.parse('/names/Studio')),
+      );
+      expect(path.arnsName, 'studio');
+    });
+
     test('/web-pages parses, and is written back over a selected drive',
         () async {
       final path = await parser.parseRouteInformation(

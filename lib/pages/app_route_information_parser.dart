@@ -87,7 +87,8 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
         }
         // '/names/<name>' - one name's page.
         if (uri.pathSegments.length == 2 && uri.pathSegments[1].isNotEmpty) {
-          return AppRoutePath.names(name: uri.pathSegments[1]);
+          // ArNS names are lowercase; a typed or shared link may not be.
+          return AppRoutePath.names(name: uri.pathSegments[1].toLowerCase());
         }
         return AppRoutePath.unknown();
       case 'web-pages':
