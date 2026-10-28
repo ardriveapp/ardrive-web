@@ -50,7 +50,6 @@ class _PromptWalletViewState extends State<PromptWalletView> {
   @override
   Widget build(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final colors = ArDriveTheme.of(context).themeData.colors;
     final typography = ArDriveTypographyNew.of(context);
     final existingUserFlow = widget.existingUserFlow;
 
@@ -261,7 +260,7 @@ class _PromptWalletViewState extends State<PromptWalletView> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: colors.shadow,
+                  color: colorTokens.shadow,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(8),
                     bottomRight: Radius.circular(8),

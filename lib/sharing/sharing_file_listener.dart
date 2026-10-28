@@ -66,10 +66,10 @@ class _SharingFileListenerState extends State<SharingFileListener> {
 
           showAnimatedDialogWithBuilder(
             widget.context,
-            builder: (context) => ArDriveStandardModal(
+            builder: (context) => ArDriveStandardModalNew(
               title: appLocalizationsOf(context).shareFile,
               actions: [
-                ModalAction(
+                ModalAction.dismiss(
                   action: () {
                     Navigator.of(context).pop();
                     sharingFileBloc.add(SharingFileCleared());
@@ -119,11 +119,12 @@ class _SharingFileListenerState extends State<SharingFileListener> {
                       ),
                       title: Text(
                         state.files[index].name,
-                        style: ArDriveTypography.body.buttonLargeBold(
+                        style: ArDriveTypographyNew.of(context).paragraphLarge(
+                          fontWeight: ArFontWeight.semiBold,
                           color: ArDriveTheme.of(context)
                               .themeData
-                              .colors
-                              .themeFgDefault,
+                              .colorTokens
+                              .textHigh,
                         ),
                       ),
                     );

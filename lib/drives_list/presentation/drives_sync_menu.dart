@@ -38,7 +38,7 @@ class DrivesSyncMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = ArDriveTheme.of(context).themeData.colors.themeFgDefault;
+    final iconColor = ArDriveTheme.of(context).themeData.colorTokens.textHigh;
 
     return BlocBuilder<SyncCubit, SyncState>(
       builder: (context, syncState) {

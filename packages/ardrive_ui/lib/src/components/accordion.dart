@@ -79,17 +79,17 @@ class _ArDriveAccordionState extends State<ArDriveAccordion> {
           return ExpansionTileTheme(
             data: ExpansionTileThemeData(
               backgroundColor: widget.backgroundColor ??
-                  ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                  ArDriveTheme.of(context).themeData.colorTokens.containerL3,
               collapsedBackgroundColor: widget.backgroundColor ??
-                  ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                  ArDriveTheme.of(context).themeData.colorTokens.containerL3,
               collapsedIconColor:
-                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                  ArDriveTheme.of(context).themeData.colorTokens.iconHigh,
               textColor:
-                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                  ArDriveTheme.of(context).themeData.colorTokens.textHigh,
               collapsedTextColor:
-                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                  ArDriveTheme.of(context).themeData.colorTokens.textHigh,
               iconColor:
-                  ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                  ArDriveTheme.of(context).themeData.colorTokens.iconHigh,
             ),
             child: ExpansionTile(
               title: tile.title,

@@ -76,8 +76,8 @@ class ListPageChrome extends StatelessWidget {
       mobile: (context) => Scaffold(
         drawerScrimColor: ArDriveTheme.of(context)
             .themeData
-            .colors
-            .themeBgSurface
+            .colorTokens
+            .containerRaised
             .withOpacity(0.5),
         drawer: const AppSideBar(),
         appBar: MobileAppBar(

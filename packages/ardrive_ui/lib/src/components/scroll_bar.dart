@@ -17,13 +17,11 @@ class ArDriveScrollBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final thumbColor = isVisible
-        ? colors.themeBorderDefault.withOpacity(0.9)
-        : Colors.transparent;
-    final trackColor = isVisible
-        ? colors.themeBorderDefault.withOpacity(0.5)
-        : Colors.transparent;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    // The stroke tokens as they are: strokeMid is already translucent, so a
+    // withOpacity on it would replace its alpha, not soften it.
+    final thumbColor = isVisible ? colors.strokeHigh : Colors.transparent;
+    final trackColor = isVisible ? colors.strokeMid : Colors.transparent;
 
     return Theme(
       data: ArDriveTheme.of(context).themeData.materialThemeData.copyWith(

@@ -18,7 +18,7 @@ class ArDriveIcon extends StatelessWidget {
     return Icon(
       icon,
       size: size,
-      color: color ?? ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+      color: color ?? ArDriveTheme.of(context).themeData.colorTokens.iconHigh,
     );
   }
 

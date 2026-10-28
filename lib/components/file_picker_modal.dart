@@ -71,8 +71,8 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
   bool _isLoading = false;
   @override
   Widget build(BuildContext context) {
-    final textStyle = ArDriveTypography.body.buttonLargeRegular(
-      color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+    final textStyle = ArDriveTypographyNew.of(context).paragraphLarge(
+      color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
     );
     return Container(
       color: ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
@@ -82,7 +82,7 @@ class __FilePickerContentState<T> extends State<_FilePickerContent<T>> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
+                  ArDriveSpinner(size: ArDriveSpinnerSize.large),
                   Padding(
                     padding: EdgeInsets.only(top: 16.0),
                     child: Text('Preparing your file(s)...'),
@@ -231,11 +231,11 @@ Future<void> showStoragePermissionModal(BuildContext context) async {
   return showDialog(
       context: context,
       builder: (context) {
-        return ArDriveStandardModal(
+        return ArDriveStandardModalNew(
           title: appLocalizationsOf(context).enableStorageAccessTitle,
           description: appLocalizationsOf(context).enableStorageAccess,
           actions: [
-            ModalAction(
+            ModalAction.dismiss(
               action: () {
                 Navigator.pop(context);
               },

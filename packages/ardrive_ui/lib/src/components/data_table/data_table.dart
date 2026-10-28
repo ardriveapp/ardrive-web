@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:ardrive_ui/src/styles/colors/global_colors.dart';
 import 'package:ardrive_utils/ardrive_utils.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/gestures.dart';
@@ -835,8 +834,10 @@ class _ArDriveDataTableState<T extends IndexedItem>
                                     isDisabled: !_columns[i].canHide,
                                     title: _columns[i].title,
                                     checked: _columns[i].isVisible,
-                                    titleStyle: ArDriveTypography.body
-                                        .buttonLargeBold(),
+                                    titleStyle: ArDriveTypographyNew.of(context)
+                                        .paragraphLarge(
+                                      fontWeight: ArFontWeight.bold,
+                                    ),
                                     onChange: (value) {
                                       _toggleColumnVisibility(i);
                                     },
@@ -940,7 +941,9 @@ class _ArDriveDataTableState<T extends IndexedItem>
                     child: Text(
                       column.title,
                       style: column.textStyle ??
-                          ArDriveTypography.body.buttonNormalBold(),
+                          ArDriveTypographyNew.of(context).paragraphNormal(
+                            fontWeight: ArFontWeight.bold,
+                          ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -950,13 +953,13 @@ class _ArDriveDataTableState<T extends IndexedItem>
                       ? ArDriveIcons.carretUp(
                           color: ArDriveTheme.of(context)
                               .themeData
-                              .colors
-                              .themeFgDefault)
+                              .colorTokens
+                              .textHigh)
                       : ArDriveIcons.carretDown(
                           color: ArDriveTheme.of(context)
                               .themeData
-                              .colors
-                              .themeFgDefault,
+                              .colorTokens
+                              .textHigh,
                         ),
               ],
             ),
@@ -1159,8 +1162,8 @@ class _ArDriveDataTableState<T extends IndexedItem>
                       .selectedItemColor
                   : ArDriveTheme.of(context)
                       .themeData
-                      .colors
-                      .themeBorderDefault
+                      .colorTokens
+                      .strokeMid
                       .withOpacity(0.25),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
@@ -1675,7 +1678,7 @@ class _ArrowFace extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: icon(
-        color: enabled ? theme.colors.themeFgDefault : grey,
+        color: enabled ? theme.colorTokens.textHigh : theme.colorTokens.textLow,
       ),
     );
   }
@@ -1705,22 +1708,23 @@ class _PageFace extends StatelessWidget {
         border: Border.all(
           width: 2,
           color: selected
-              ? theme.colors.themeFgDefault
-              : theme.colors.themeGbMuted,
+              ? theme.colorTokens.textHigh
+              : theme.colorTokens.strokeMid,
         ),
         borderRadius: BorderRadius.circular(4),
         color: selected
-            ? theme.colors.themeFgDefault
+            ? theme.colorTokens.textHigh
             : hovered
                 ? theme.colorTokens.containerL1
                 : null,
       ),
       child: Text(
         '$number',
-        style: ArDriveTypography.body.buttonNormalBold(
+        style: ArDriveTypographyNew.of(context).paragraphNormal(
+          fontWeight: ArFontWeight.bold,
           color: selected
               ? theme.tableTheme.backgroundColor
-              : theme.colors.themeFgDefault,
+              : theme.colorTokens.textHigh,
         ),
       ),
     );
@@ -1882,14 +1886,15 @@ class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
                   child: option == widget.rowsPerPage
                       ? ArDriveIcons.checkmark(
                           size: 16,
-                          color: theme.colors.themeFgDefault,
+                          color: theme.colorTokens.textHigh,
                         )
                       : null,
                 ),
                 child: Text(
                   '$option',
-                  style: ArDriveTypography.body.buttonNormalBold(
-                    color: theme.colors.themeFgDefault,
+                  style: ArDriveTypographyNew.of(context).paragraphNormal(
+                    fontWeight: ArFontWeight.bold,
+                    color: theme.colorTokens.textHigh,
                   ),
                 ),
               ),
@@ -1903,7 +1908,8 @@ class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
               height: 32,
               padding: const EdgeInsets.only(left: 10, right: 6),
               decoration: BoxDecoration(
-                border: Border.all(width: 2, color: theme.colors.themeGbMuted),
+                border:
+                    Border.all(width: 2, color: theme.colorTokens.strokeMid),
                 borderRadius: BorderRadius.circular(4),
                 color: hovered ? theme.colorTokens.containerL1 : null,
               ),
@@ -1912,14 +1918,15 @@ class _RowsPerPagePickerState extends State<_RowsPerPagePicker> {
                 children: [
                   Text(
                     '${widget.rowsPerPage}',
-                    style: ArDriveTypography.body.buttonNormalBold(
-                      color: theme.colors.themeFgDefault,
+                    style: ArDriveTypographyNew.of(context).paragraphNormal(
+                      fontWeight: ArFontWeight.bold,
+                      color: theme.colorTokens.textHigh,
                     ),
                   ),
                   const SizedBox(width: 2),
                   ArDriveIcons.carretDown(
                     size: 20,
-                    color: theme.colors.themeFgDefault,
+                    color: theme.colorTokens.textHigh,
                   ),
                 ],
               ),

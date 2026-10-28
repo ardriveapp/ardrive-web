@@ -91,8 +91,8 @@ class AppBottomBar extends StatelessWidget {
             BoxShadow(
               color: ArDriveTheme.of(context)
                   .themeData
-                  .colors
-                  .themeFgDefault
+                  .colorTokens
+                  .textHigh
                   .withOpacity(0.2),
               spreadRadius: 1,
               blurRadius: 10,

@@ -332,7 +332,7 @@ class _MobileSearchButton extends StatelessWidget {
       icon: ArDriveIcon(
         icon: Icons.search,
         size: _mobileAppBarIconSize,
-        color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+        color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
       ),
       tooltip: appLocalizationsOf(context).searchFiles,
       onPressed: () {
@@ -362,7 +362,7 @@ class MobileDrawerButton extends StatelessWidget {
         // sync indicator and the way home all take ArDriveIcon's default, and
         // this was the only one at 20.
         size: mobileAppBarIconSize,
-        color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+        color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
       ),
       tooltip: appLocalizationsOf(context).showMenu,
       onPressed: () => Scaffold.of(context).openDrawer(),

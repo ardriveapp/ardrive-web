@@ -941,7 +941,7 @@ class _SyncButtonMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = this.status;
-    final iconColor = ArDriveTheme.of(context).themeData.colors.themeFgDefault;
+    final iconColor = ArDriveTheme.of(context).themeData.colorTokens.textHigh;
 
     // Status, then the one way to act on it. The sync actions live on the
     // drives list now - Sync all, Deep resync and the record are all
@@ -1159,6 +1159,8 @@ class _SyncProgressRingState extends State<_SyncProgressRing>
           child: RotationTransition(
             key: syncIndicatorMotionKey,
             turns: _rotation,
+            // A progress ring around the refresh glyph, not a loading
+            // spinner, so it is drawn here rather than with ArDriveSpinner.
             child: CircularProgressIndicator(
               value: progress != null && progress > 0 ? progress : null,
               strokeWidth: 2,

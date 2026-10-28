@@ -36,7 +36,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
         duration: const Duration(milliseconds: 200),
         width: _isExpanded ? 360 : 56,
         child: ArDriveCard(
-          backgroundColor: themeData.colors.themeBgCanvas,
+          backgroundColor: themeData.colorTokens.containerL0,
           contentPadding: EdgeInsets.zero,
           content: _isExpanded
               ? _buildExpandedPanel(context)
@@ -56,8 +56,8 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
           icon: Icon(
             Icons.bug_report,
             color: _simulator.isEnabled
-                ? themeData.colors.themeErrorDefault
-                : themeData.colors.themeFgDefault,
+                ? themeData.colorTokens.statusErrorFg
+                : themeData.colorTokens.textHigh,
             size: 24,
           ),
           onPressed: () => setState(() => _isExpanded = true),
@@ -80,8 +80,8 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
           height: 4,
           decoration: BoxDecoration(
             color: _simulator.isEnabled
-                ? themeData.colors.themeErrorDefault
-                : themeData.colors.themeFgMuted,
+                ? themeData.colorTokens.statusErrorFg
+                : themeData.colorTokens.textMid,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
           ),
         ),
@@ -90,10 +90,10 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: themeData.colors.themeBgSurface,
+            color: themeData.colorTokens.containerL1,
             border: Border(
               bottom: BorderSide(
-                color: themeData.colors.themeBorderDefault,
+                color: themeData.colorTokens.strokeMid,
                 width: 1,
               ),
             ),
@@ -103,8 +103,8 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
               Icon(
                 Icons.bug_report,
                 color: _simulator.isEnabled
-                    ? themeData.colors.themeErrorDefault
-                    : themeData.colors.themeFgDefault,
+                    ? themeData.colorTokens.statusErrorFg
+                    : themeData.colorTokens.textHigh,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -113,14 +113,14 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                   'Sync Failure Simulator',
                   style: typography.heading6(
                     fontWeight: ArFontWeight.semiBold,
-                    color: themeData.colors.themeFgDefault,
+                    color: themeData.colorTokens.textHigh,
                   ),
                 ),
               ),
               IconButton(
                 icon: ArDriveIcons.x(
                   size: 16,
-                  color: themeData.colors.themeFgMuted,
+                  color: themeData.colorTokens.textMid,
                 ),
                 onPressed: () => setState(() => _isExpanded = false),
                 padding: EdgeInsets.zero,
@@ -140,10 +140,10 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: themeData.colors.themeBgSubtle,
+                  color: themeData.colorTokens.containerL2,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: themeData.colors.themeBorderDefault,
+                    color: themeData.colorTokens.strokeMid,
                     width: 1,
                   ),
                 ),
@@ -154,7 +154,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                         'Simulator Status',
                         style: typography.paragraphNormal(
                           fontWeight: ArFontWeight.semiBold,
-                          color: themeData.colors.themeFgDefault,
+                          color: themeData.colorTokens.textHigh,
                         ),
                       ),
                     ),
@@ -178,13 +178,13 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: _simulator.isEnabled
-                            ? themeData.colors.themeErrorSubtle
-                            : themeData.colors.themeBgSubtle,
+                            ? themeData.colorTokens.statusErrorContainer
+                            : themeData.colorTokens.containerL2,
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
                           color: _simulator.isEnabled
-                              ? themeData.colors.themeErrorDefault
-                              : themeData.colors.themeBorderDefault,
+                              ? themeData.colorTokens.statusErrorFg
+                              : themeData.colorTokens.strokeMid,
                           width: 1,
                         ),
                       ),
@@ -192,8 +192,8 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                         _simulator.isEnabled ? 'ON' : 'OFF',
                         style: typography.paragraphSmall(
                           color: _simulator.isEnabled
-                              ? themeData.colors.themeErrorDefault
-                              : themeData.colors.themeFgMuted,
+                              ? themeData.colorTokens.statusErrorFg
+                              : themeData.colorTokens.textMid,
                           fontWeight: ArFontWeight.bold,
                         ),
                       ),
@@ -209,17 +209,17 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                 'Failure Mode',
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
-                  color: themeData.colors.themeFgDefault,
+                  color: themeData.colorTokens.textHigh,
                 ),
               ),
               const SizedBox(height: 8),
 
               Container(
                 decoration: BoxDecoration(
-                  color: themeData.colors.themeBgSubtle,
+                  color: themeData.colorTokens.containerL2,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: themeData.colors.themeBorderDefault,
+                    color: themeData.colorTokens.strokeMid,
                     width: 1,
                   ),
                 ),
@@ -242,7 +242,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                             horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? themeData.colors.themeAccentSubtle
+                              ? themeData.colorTokens.buttonSecondaryHover
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(6),
                         ),
@@ -255,8 +255,9 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: isSelected
-                                      ? themeData.colors.themeAccentDefault
-                                      : themeData.colors.themeBorderDefault,
+                                      ? themeData
+                                          .colorTokens.buttonPrimaryDefault
+                                      : themeData.colorTokens.strokeMid,
                                   width: 2,
                                 ),
                               ),
@@ -268,7 +269,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           color: themeData
-                                              .colors.themeAccentDefault,
+                                              .colorTokens.buttonPrimaryDefault,
                                         ),
                                       ),
                                     )
@@ -278,7 +279,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                             Text(
                               _getModeLabel(mode),
                               style: typography.paragraphSmall(
-                                color: themeData.colors.themeFgDefault,
+                                color: themeData.colorTokens.textHigh,
                                 fontWeight: isSelected
                                     ? ArFontWeight.semiBold
                                     : ArFontWeight.book,
@@ -298,10 +299,10 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: themeData.colors.themeBgSubtle,
+                    color: themeData.colorTokens.containerL2,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: themeData.colors.themeBorderDefault,
+                      color: themeData.colorTokens.strokeMid,
                       width: 1,
                     ),
                   ),
@@ -315,17 +316,17 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                             'Failure Rate',
                             style: typography.paragraphNormal(
                               fontWeight: ArFontWeight.semiBold,
-                              color: themeData.colors.themeFgDefault,
+                              color: themeData.colorTokens.textHigh,
                             ),
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: themeData.colors.themeBgCanvas,
+                              color: themeData.colorTokens.containerL0,
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: themeData.colors.themeBorderDefault,
+                                color: themeData.colorTokens.strokeMid,
                                 width: 1,
                               ),
                             ),
@@ -333,7 +334,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                               '${(_failureRate * 100).toInt()}%',
                               style: typography.paragraphSmall(
                                 fontWeight: ArFontWeight.bold,
-                                color: themeData.colors.themeFgDefault,
+                                color: themeData.colorTokens.textHigh,
                               ),
                             ),
                           ),
@@ -342,11 +343,13 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                       const SizedBox(height: 8),
                       SliderTheme(
                         data: SliderThemeData(
-                          activeTrackColor: themeData.colors.themeAccentDefault,
-                          inactiveTrackColor:
-                              themeData.colors.themeBorderDefault,
-                          thumbColor: themeData.colors.themeAccentDefault,
-                          overlayColor: themeData.colors.themeAccentDefault
+                          activeTrackColor:
+                              themeData.colorTokens.buttonPrimaryDefault,
+                          inactiveTrackColor: themeData.colorTokens.strokeMid,
+                          thumbColor:
+                              themeData.colorTokens.buttonPrimaryDefault,
+                          overlayColor: themeData
+                              .colorTokens.buttonPrimaryDefault
                               .withOpacity(0.2),
                         ),
                         child: Slider(
@@ -377,7 +380,7 @@ class _SyncFailureTestPanelState extends State<SyncFailureTestPanel> {
                 'Quick Actions',
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
-                  color: themeData.colors.themeFgDefault,
+                  color: themeData.colorTokens.textHigh,
                 ),
               ),
               const SizedBox(height: 8),

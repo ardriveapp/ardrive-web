@@ -55,7 +55,8 @@ Future<void> showCongestionDependentModalDialog(
                                 text: appLocalizationsOf(context)
                                     .congestionWarning),
                           ],
-                          style: ArDriveTypography.body.buttonNormalRegular(),
+                          style: ArDriveTypographyNew.of(context)
+                              .paragraphNormal(),
                         ),
                       ),
                     ),

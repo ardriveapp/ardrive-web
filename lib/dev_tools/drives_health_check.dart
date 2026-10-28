@@ -86,7 +86,7 @@ class _DrivesHealthCheckModalState extends State<DrivesHealthCheckModal> {
 
     if (driveStatuses.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(),
+        child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
       );
     }
 
@@ -412,8 +412,8 @@ class _DriveHealthCheckTielState extends State<DriveHealthCheckTile> {
                     ? colorTokens.strokeRed
                     : ArDriveTheme.of(context)
                         .themeData
-                        .colors
-                        .themeSuccessDefault
+                        .colorTokens
+                        .statusSuccessFg
                 : colorTokens.textHigh,
             backgroundColor: colorTokens.textLow,
           ),

@@ -37,15 +37,10 @@ class DownloadWalletModal extends StatelessWidget {
             context,
             content: ArDriveStandardModalNew(
               title: appLocalizationsOf(context).error,
-              content: Text(
-                appLocalizationsOf(context)
+              content: ArDriveNotice(
+                type: ArDriveNoticeType.error,
+                message: appLocalizationsOf(context)
                     .anErrorOccuredWhileDownloadingYourKeyfile,
-                style: ArDriveTypography.body.buttonLargeBold(
-                  color: ArDriveTheme.of(context)
-                      .themeData
-                      .colors
-                      .themeErrorDefault,
-                ),
               ),
               actions: [
                 ModalAction(
@@ -71,8 +66,8 @@ class DownloadWalletModal extends StatelessWidget {
                   style: typography.paragraphLarge(
                     color: ArDriveTheme.of(context)
                         .themeData
-                        .colors
-                        .themeErrorDefault,
+                        .colorTokens
+                        .statusErrorFg,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -90,18 +85,9 @@ class DownloadWalletModal extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 16),
-              ArDriveClickArea(
-                child: GestureDetector(
-                  onTap: () {
-                    showKeyfileInfoModal(context: context);
-                  },
-                  child: Text(
-                    appLocalizationsOf(context).whatIsAKeyFile,
-                    style: ArDriveTypography.body
-                        .buttonNormalRegular()
-                        .copyWith(decoration: TextDecoration.underline),
-                  ),
-                ),
+              ArDriveLink(
+                text: appLocalizationsOf(context).whatIsAKeyFile,
+                onTap: () => showKeyfileInfoModal(context: context),
               )
             ],
           ),

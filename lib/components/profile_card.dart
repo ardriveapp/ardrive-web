@@ -825,7 +825,10 @@ class _ProfileCardState extends State<ProfileCard> {
             child: WalletGradientAvatar(
               address: state.user.displayAddress,
               size: 48,
-              ringColor: getWalletIndicatorColor(state.user),
+              ringColor: getWalletIndicatorColor(
+                state.user,
+                ArDriveTheme.of(context).themeData.colorTokens,
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -1118,8 +1121,8 @@ class _ProfileCardState extends State<ProfileCard> {
                             fontWeight: ArFontWeight.semiBold,
                             color: ArDriveTheme.of(context)
                                 .themeData
-                                .colors
-                                .themeErrorDefault,
+                                .colorTokens
+                                .statusErrorFg,
                           ),
                         ),
                         ArDriveIconButton(
@@ -1208,7 +1211,10 @@ class _ProfileCardState extends State<ProfileCard> {
       BuildContext context, String walletAddress, User user) {
     return ProfileCardHeader(
       walletAddress: walletAddress,
-      walletIndicatorColor: getWalletIndicatorColor(user),
+      walletIndicatorColor: getWalletIndicatorColor(
+        user,
+        ArDriveTheme.of(context).themeData.colorTokens,
+      ),
       onPressed: () {
         setState(() {
           _showProfileCard = !_showProfileCard;
@@ -1836,8 +1842,10 @@ class _WalletAddressLine extends StatelessWidget {
 }
 
 /// Returns the wallet indicator color based on the user's profile.
-/// Purple for Solana, blue for Ethereum, white for Arweave.
-Color getWalletIndicatorColor(User user) {
+/// Purple for Solana and blue for Ethereum, their brand colours; an Arweave
+/// wallet takes the text colour, which shows in both themes (white vanished
+/// on the light theme's surfaces).
+Color getWalletIndicatorColor(User user, ArDriveColorTokens colorTokens) {
   final source = user.sourceWalletAddress;
   if (source != null) {
     if (source.startsWith('0x')) {
@@ -1848,7 +1856,7 @@ Color getWalletIndicatorColor(User user) {
     return const Color(0xFF9945FF);
   }
   // Arweave (ArConnect, JSON file)
-  return const Color(0xFFFFFFFF);
+  return colorTokens.textHigh;
 }
 
 class _AccountStats {

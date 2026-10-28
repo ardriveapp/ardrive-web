@@ -154,15 +154,7 @@ class _Progress extends StatelessWidget {
       children: [
         SizedBox(
           width: 240,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(2),
-            child: LinearProgressIndicator(
-              value: value,
-              minHeight: 3,
-              backgroundColor: colors.containerL2,
-              color: colors.textHigh,
-            ),
-          ),
+          child: ArDriveLinearProgress(value: value, color: colors.textHigh),
         ),
         const SizedBox(height: 16),
         Text(
