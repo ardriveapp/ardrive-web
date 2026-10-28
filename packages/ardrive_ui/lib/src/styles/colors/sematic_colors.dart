@@ -110,8 +110,9 @@ class ArDriveColors {
         themeFgOnDisabled: grey.shade600,
         themeFgDisabled: grey.shade400,
         themeBgSurface: white,
-        themeGbMuted: grey.shade300,
-        themeBgSubtle: grey.shade200,
+        // Warm greys, as in the new set's light theme (colors_new.dart).
+        themeGbMuted: const Color(0xffe2dee0),
+        themeBgSubtle: const Color(0xfff0edee),
         themeBgCanvas: grey.shade50,
         themeWarningFg: yellow.shade600,
         themeWarningEmphasis: yellow.shade500,

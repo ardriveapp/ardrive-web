@@ -233,13 +233,15 @@ ArDriveThemeData lightTheme() {
   return ArDriveThemeData(
       backgroundColor: colors.themeBgSurface,
       colors: colors,
+      // Warm light greys, like the surface tokens: the 2021 styleguide's
+      // Gallery (#F1EFF0), and a page-level grey at the same tint.
       tableTheme: ArDriveTableTheme(
-        backgroundColor: const Color(0xffFAFAFA),
+        backgroundColor: const Color(0xffFBF9FA),
         cellColor: const Color(0xffF1EFF0),
         selectedItemColor: const Color(0xffF1EFF0),
       ),
       dropdownTheme: ArDriveDropdownTheme(
-        backgroundColor: const Color(0xffFAFAFA),
+        backgroundColor: const Color(0xffFBF9FA),
         hoverColor: const Color(0xffF1EFF0),
       ),
       materialThemeData: lightMaterialTheme(),

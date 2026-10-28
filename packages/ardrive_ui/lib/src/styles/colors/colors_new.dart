@@ -91,10 +91,13 @@ class Primitives {
         solidRed900: const Color(0xffc0151e),
         solidRed1000: const Color(0xff4d080c),
         solidRed1100: const Color(0xff150203),
-        solidGrey50: const Color(0xFFF7F7F7),
-        solidGrey100: const Color(0xFFEBEBEB),
-        solidGrey200: const Color(0xFFDEDEDE),
-        solidGrey300: const Color(0xFFCECECE),
+        // 50 to 300 are surface greys (containers, inputs, disabled fills),
+        // warmed toward the brand red as in the 2021 styleguide's Gallery
+        // (#F1EFF0). The text and icon greys, 400 and up, stay neutral.
+        solidGrey50: const Color(0xFFF8F6F7),
+        solidGrey100: const Color(0xFFEDEAEB),
+        solidGrey200: const Color(0xFFE0DCDE),
+        solidGrey300: const Color(0xFFD1CBCE),
         solidGrey400: const Color(0xFFBABABA),
         solidGrey500: const Color(0xFF8A8A8A),
         solidGrey600: const Color(0xFF666666),
@@ -111,10 +114,13 @@ class Primitives {
         transparent100_4: const Color(0x0abababa),
         transparent900_64: const Color(0xa3080808),
         transparent900_32: const Color(0x51080808),
-        transparent900_16: const Color(0x28080808),
-        transparent900_12: const Color(0x1e080808),
-        transparent900_8: const Color(0x14080808),
-        transparent900_4: const Color(0x0a080808));
+        // Fills and edges laid over light surfaces (secondary buttons,
+        // strokes) share that warmth through a warm base. The scrims, 32 and
+        // 64, stay neutral.
+        transparent900_16: const Color(0x281e000a),
+        transparent900_12: const Color(0x1e1e000a),
+        transparent900_8: const Color(0x141e000a),
+        transparent900_4: const Color(0x0a1e000a));
   }
 
   final Color solidRed100;
