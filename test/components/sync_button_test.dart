@@ -81,22 +81,22 @@ void main() {
     return Portal(
       child: ArDriveTheme(
         themeData: theme ?? lightTheme(),
-        child: MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+        // Above the navigator, where the app provides them: a menu opens in
+        // the navigator's overlay and reads them from there.
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<SyncCubit>.value(value: syncCubit),
+            BlocProvider<DrivesCubit>.value(value: drivesCubit),
           ],
-          supportedLocales: const [Locale('en', '')],
-          home: Scaffold(
-            body: MultiBlocProvider(
-              providers: [
-                BlocProvider<SyncCubit>.value(value: syncCubit),
-                BlocProvider<DrivesCubit>.value(value: drivesCubit),
-              ],
-              child: body,
-            ),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', '')],
+            home: Scaffold(body: body),
           ),
         ),
       ),
@@ -128,10 +128,14 @@ void main() {
   }) async {
     stateController.add(SyncInProgress(trigger: SyncTrigger.background));
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     if (reporting != null) {
       progressController.add(reporting);
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
     }
   }
 
@@ -214,6 +218,8 @@ void main() {
 
     progressController.add(SyncProgress.initial().copyWith(progress: 0.5));
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     expect(ring().value, 0.5);
   });
@@ -232,6 +238,8 @@ void main() {
 
     progressController.add(SyncProgress.initial().copyWith(progress: 0.97));
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
     expect(ring().value, 0.97);
 
     // The gateway phase cannot know its own length, so the ring stops
@@ -242,6 +250,8 @@ void main() {
       statusMessage: 'Updating transaction statuses...',
     ));
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     expect(ring().value, isNull);
 
@@ -316,6 +326,8 @@ void main() {
 
     stateController.add(SyncIdle());
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(tester.getSize(find.byType(SyncButton)), idleSize);
@@ -328,6 +340,8 @@ void main() {
     await startSyncing(tester);
     stateController.add(finished(entitiesSynced: 12));
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     // Beside the indicator that was turning for it - no hover, no click.
     expect(find.text('12 items changed'), findsOneWidget);
@@ -345,6 +359,8 @@ void main() {
 
     stateController.add(finished());
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     expect(find.text('Up to date, nothing new'), findsOneWidget);
 
@@ -357,11 +373,15 @@ void main() {
 
     stateController.add(finished());
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     expect(find.text('Up to date, nothing new'), findsOneWidget);
 
     await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
+    // The overlay lets go of it on the frame after.
+    await tester.pump();
     expect(find.text('Up to date, nothing new'), findsNothing);
   });
 
@@ -371,6 +391,8 @@ void main() {
 
     stateController.add(finished());
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     // While the result is showing, the glyph it hangs off is there too.
     expect(find.byType(ArDriveIcon), findsOneWidget);
@@ -380,6 +402,8 @@ void main() {
     // to stay until something unrelated rebuilt the top bar.
     await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
+    // The overlay lets go of it on the frame after.
+    await tester.pump();
     expect(find.byType(ArDriveIcon), findsNothing);
     expect(find.byType(Tooltip), findsNothing);
 
@@ -393,8 +417,12 @@ void main() {
 
     stateController.add(finished());
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
     await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
+    // The overlay lets go of it on the frame after.
+    await tester.pump();
     expect(find.text('Up to date, nothing new'), findsNothing);
 
     // Two zero-change syncs read identically, and land in the same
@@ -403,6 +431,8 @@ void main() {
     // up - so they are told apart by sequence, not by a timestamp.
     stateController.add(finished());
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     expect(find.text('Up to date, nothing new'), findsOneWidget);
 
@@ -415,8 +445,12 @@ void main() {
 
     stateController.add(finished());
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
     stateController.add(finished());
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     expect(find.text('Up to date, nothing new'), findsOneWidget);
 
@@ -431,6 +465,8 @@ void main() {
 
     stateController.add(finished(entitiesSynced: 12));
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     expect(find.text('12 items changed'), findsOneWidget);
     expect(tester.getSize(find.byType(SyncButton)), idleSize);
@@ -462,6 +498,8 @@ void main() {
       driveName: 'Family Photos And Videos Nineteen Ninety Nine To Today',
     ));
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     const unreadable = '3 updates could not be read';
     expect(find.text(unreadable), findsOneWidget);
@@ -493,6 +531,8 @@ void main() {
       completedAt: clock.now().subtract(const Duration(hours: 1)),
     ));
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     expect(find.text('12 items changed'), findsNothing);
     // And nothing is drawn at all: a result this old is not worth reporting,
@@ -515,11 +555,15 @@ void main() {
       ),
     );
     await tester.pump(const Duration(milliseconds: 10));
+    // The overlay shows what changed on the frame after.
+    await tester.pump();
 
     expect(find.text('12 items changed'), findsOneWidget);
 
     // And it sees itself out, like every other announcement here.
     await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
+    // The overlay lets go of it on the frame after.
+    await tester.pump();
     expect(find.text('12 items changed'), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
@@ -531,6 +575,8 @@ void main() {
 
       stateController.add(finished());
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       final pill = tester.widget<Container>(
         find
@@ -588,6 +634,8 @@ void main() {
   /// Opens the resync menu and waits for it to finish expanding.
   Future<void> openMenu(WidgetTester tester) async {
     await tester.tap(find.byType(SyncButton));
+    // The menu enters the navigator's overlay on the frame after the tap.
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
   }
 
@@ -605,6 +653,8 @@ void main() {
       await startSyncing(tester);
       stateController.add(failed());
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       // Beside the indicator that was turning for it - the same surface a
       // successful background sync reports at, and clearly not a success.
@@ -620,6 +670,8 @@ void main() {
 
       stateController.add(failed());
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       final colorTokens = lightTheme().colorTokens;
 
@@ -649,8 +701,12 @@ void main() {
 
       stateController.add(failed());
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
       await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
+      // The overlay lets go of it on the frame after.
+      await tester.pump();
       expect(find.text('Sync incomplete: errors detected'), findsNothing,
           reason: 'precondition: the announcement has had its few seconds');
 
@@ -677,6 +733,8 @@ void main() {
 
       stateController.add(failed(trigger: SyncTrigger.userInitiated));
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       expect(find.text('Sync incomplete: errors detected'), findsOneWidget);
       expect(find.text('2 of 5 drives could not be synced'), findsOneWidget);
@@ -705,6 +763,8 @@ void main() {
 
       stateController.add(SyncFailure(error: Exception('the gateway said no')));
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       expect(find.text('Drives could not be loaded'), findsOneWidget);
       expect(
@@ -722,8 +782,12 @@ void main() {
 
       stateController.add(SyncFailure(error: Exception('the gateway said no')));
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
       await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
+      // The overlay lets go of it on the frame after.
+      await tester.pump();
       expect(find.text('Drives could not be loaded'), findsNothing,
           reason: 'precondition: the announcement has had its few seconds');
 
@@ -742,14 +806,20 @@ void main() {
 
       stateController.add(SyncFailure(error: Exception('the gateway said no')));
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
       expect(find.text('Drives could not be loaded'), findsOneWidget,
           reason: 'precondition: the failure is on screen');
 
       // The retry runs and this time the drive list arrives.
       stateController.add(SyncLoadingDrives());
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
       stateController.add(SyncIdle());
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       expect(find.text('Drives could not be loaded'), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -774,6 +844,8 @@ void main() {
         failedAt: clock.now().subtract(const Duration(minutes: 5)),
       ));
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       // Gone from the announcement, still in the menu: the indicator is what
       // carries a failure that is no longer news.
@@ -800,6 +872,8 @@ void main() {
 
       stateController.add(SyncWalletMismatch());
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       expect(find.text('Wallet changed'), findsOneWidget);
       expect(
@@ -827,6 +901,8 @@ void main() {
 
       stateController.add(SyncWalletMismatch());
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       final colorTokens =
           ArDriveTheme.of(tester.element(find.byType(SyncButton)))
@@ -861,6 +937,8 @@ void main() {
         ),
       );
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       expect(find.text('Sync cancelled'), findsOneWidget);
       expect(find.text('Completed 1 of 3 drives'), findsOneWidget);
@@ -889,12 +967,16 @@ void main() {
         ),
       );
       await tester.pump(const Duration(milliseconds: 10));
+      // The overlay shows what changed on the frame after.
+      await tester.pump();
 
       verifyNever(() => syncCubit.clearCancelledState());
 
       await tester.pump(syncSummaryDuration + const Duration(seconds: 1));
 
       verify(() => syncCubit.clearCancelledState()).called(1);
+      // The overlay lets go of it on the frame after.
+      await tester.pump();
       expect(find.text('Sync cancelled'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());

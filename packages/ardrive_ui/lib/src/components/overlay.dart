@@ -390,8 +390,11 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
       _visible = widget.visible ?? false;
     }
     // The entry is built in another part of the tree, which can't be marked
-    // dirty while this one builds: it catches up after the frame.
-    _afterFrame(_visible ? _show : _hide);
+    // dirty while this one builds: it catches up after the frame. A closed
+    // menu with no entry has nothing to catch up.
+    if (_visible || _entry != null) {
+      _afterFrame(_visible ? _show : _hide);
+    }
   }
 
   @override
@@ -483,7 +486,18 @@ class _ArDriveOverlayState extends State<ArDriveOverlay> {
             // size can't be read. A resize or a new text scale rebuilds the
             // entry, and the link above follows a scroll.
             target: _targetRect(),
-            child: widget.content,
+            // Built in the overlay, the content would lose the text style,
+            // icon theme and Material it had under its button: the themes
+            // between the button and the overlay come with it, over a
+            // transparent Material for ink and expansion tiles.
+            child: Material(
+              type: MaterialType.transparency,
+              child: InheritedTheme.captureAll(
+                context,
+                widget.content,
+                to: Overlay.of(context).context,
+              ),
+            ),
           ),
         ),
       ],

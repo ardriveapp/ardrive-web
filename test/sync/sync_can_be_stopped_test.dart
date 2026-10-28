@@ -54,23 +54,25 @@ void main() {
     await tester.pumpWidget(
       ArDriveTheme(
         themeData: lightTheme(),
-        child: MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
+        // Above the navigator, where the app provides them: the menu opens in
+        // the navigator's overlay and reads them from there.
+        child: MultiProvider(
+          providers: [
+            ListenableProvider<AppRouterDelegate>.value(
+              value: AppRouterDelegate(),
+            ),
+            BlocProvider<SyncCubit>.value(value: syncCubit),
+            BlocProvider<DrivesCubit>.value(value: drivesCubit),
           ],
-          supportedLocales: const [Locale('en', '')],
-          home: MultiProvider(
-            providers: [
-              ListenableProvider<AppRouterDelegate>.value(
-                value: AppRouterDelegate(),
-              ),
-              BlocProvider<SyncCubit>.value(value: syncCubit),
-              BlocProvider<DrivesCubit>.value(value: drivesCubit),
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
             ],
-            child: const Portal(
+            supportedLocales: const [Locale('en', '')],
+            home: const Portal(
               child: Scaffold(body: Center(child: SyncButton())),
             ),
           ),
