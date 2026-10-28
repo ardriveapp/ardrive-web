@@ -303,9 +303,9 @@ class PermanencePanel extends StatelessWidget {
             children: [
               TextSpan(
                 text: _formatSize(summary.totalBytes),
-                style: typography.heading1(
+                style: typography.display(
                   color: colors.textHigh,
-                  fontWeight: ArFontWeight.bold,
+                  fontWeight: ArFontWeight.light,
                 ),
               ),
               TextSpan(
@@ -443,9 +443,9 @@ class _Tile extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: typography.heading3(
+            style: typography.heading2(
               color: colors.textHigh,
-              fontWeight: ArFontWeight.bold,
+              fontWeight: ArFontWeight.light,
             ),
           ),
           const SizedBox(height: 4),
@@ -1166,7 +1166,7 @@ class PermanenceShareCard extends StatelessWidget {
                 Text(
                   _formatSize(summary.totalBytes),
                   style: typography
-                      .display(fontWeight: ArFontWeight.bold)
+                      .display(fontWeight: ArFontWeight.light)
                       .copyWith(color: _text, fontSize: 56, height: 1),
                 ),
                 const SizedBox(height: 10),
