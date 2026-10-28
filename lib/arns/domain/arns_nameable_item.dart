@@ -7,6 +7,16 @@ const arnsLinkHost = 'ar.io';
 /// The console, for buying, renewing and ownership (docs/NAMES.md, Q1).
 const arnsConsoleUrl = 'https://console.ar.io';
 
+/// The console's page for one name, where it is renewed.
+String arnsRenewUrlFor(String name) =>
+    '$arnsConsoleUrl/domains/${Uri.encodeComponent(name)}';
+
+/// The console's ArNS page, where names are searched and bought.
+const arnsGetNameUrl = '$arnsConsoleUrl/arns';
+
+/// What a name is, for people new to ArNS.
+const arnsDocsUrl = 'https://docs.ar.io/learn/arns';
+
 /// `blog_ardrive.ar.io` for a literal name.
 String arnsHostFor(String literalName) => '$literalName.$arnsLinkHost';
 

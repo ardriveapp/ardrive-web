@@ -471,8 +471,8 @@ class _ChooseContent extends StatelessWidget {
         ArDriveNotice(
           type: ArDriveNoticeType.warning,
           message: strings.arnsRenewInConsole,
-          actionLabel: strings.arnsOpenConsole,
-          onAction: () => openUrl(url: arnsConsoleUrl),
+          actionLabel: strings.arnsRenew,
+          onAction: () => openUrl(url: arnsRenewUrlFor(name.name)),
         ),
       ]);
     } else if (cubit.change != null || state.pricing || state.costFailed) {
@@ -531,7 +531,66 @@ class _ChooseContent extends StatelessWidget {
 }
 
 /// The names, each with its undernames, in the console's simple style.
-class _NamePicker extends StatelessWidget {
+/// More records than this across all names, and the picker gets a search
+/// box.
+const arnsPickerSearchFrom = 6;
+
+/// Undernames a name shows before "Show all", with no search typed.
+const arnsPickerUndernamesShown = 5;
+
+/// A name in the picker, with the undernames it lists and how many it
+/// leaves out until "Show all".
+typedef ArNSPickerGroup = ({
+  ArNSManagedName name,
+  List<ArNSNameRecord> undernames,
+  int hidden,
+});
+
+/// The picker's names for [query]: a match on a name keeps all of it,
+/// otherwise only its matching undernames, and a name with none is left
+/// out. With no query, a name not in [expanded] lists its first few
+/// undernames and the chosen one.
+List<ArNSPickerGroup> arnsPickerGroups(
+  List<ArNSManagedName> names, {
+  required String query,
+  required Set<String> expanded,
+  ArNSRecordChoice? choice,
+}) {
+  final groups = <ArNSPickerGroup>[];
+  for (final name in names) {
+    final all = name.records.where((r) => !r.isApex).toList();
+    if (query.isNotEmpty) {
+      if (arnsHostFor(name.name).contains(query)) {
+        groups.add((name: name, undernames: all, hidden: 0));
+        continue;
+      }
+      final matches =
+          all.where((r) => arnsHostFor(r.literalName).contains(query));
+      if (matches.isNotEmpty) {
+        groups.add((name: name, undernames: matches.toList(), hidden: 0));
+      }
+      continue;
+    }
+    if (expanded.contains(name.name) ||
+        all.length <= arnsPickerUndernamesShown) {
+      groups.add((name: name, undernames: all, hidden: 0));
+      continue;
+    }
+    final shown = [
+      for (final (i, r) in all.indexed)
+        if (i < arnsPickerUndernamesShown ||
+            (choice != null &&
+                choice.name == name.name &&
+                choice.undername == r.undername))
+          r,
+    ];
+    groups.add(
+        (name: name, undernames: shown, hidden: all.length - shown.length));
+  }
+  return groups;
+}
+
+class _NamePicker extends StatefulWidget {
   const _NamePicker({required this.state, this.belowChoice});
 
   final ArNSNameDialogState state;
@@ -540,18 +599,71 @@ class _NamePicker extends StatelessWidget {
   final Widget? belowChoice;
 
   @override
+  State<_NamePicker> createState() => _NamePickerState();
+}
+
+class _NamePickerState extends State<_NamePicker> {
+  String _query = '';
+
+  /// Names showing all their undernames.
+  final _expanded = <String>{};
+
+  @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
+    final state = widget.state;
+    final records =
+        state.names.fold<int>(0, (sum, name) => sum + name.records.length);
+    final query = _query.trim().toLowerCase();
+
+    final groups = <Widget>[];
+    for (final group in arnsPickerGroups(
+      state.names,
+      query: query,
+      expanded: _expanded,
+      choice: state.choice,
+    )) {
+      final name = group.name;
+      groups.addAll([
+        _NameGroup(
+          name: name,
+          undernames: group.undernames,
+          showAll: group.hidden == 0
+              ? null
+              : ArDriveLink(
+                  text: strings.arnsShowAllUndernames(
+                      group.undernames.length + group.hidden),
+                  isAction: true,
+                  onTap: () => setState(() => _expanded.add(name.name)),
+                ),
+          state: state,
+          belowChoice: widget.belowChoice,
+        ),
+        const SizedBox(height: ArDriveSpacing.xs),
+      ]);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         ArNSCaption(strings.arnsUndernameExplainer),
         const SizedBox(height: ArDriveSpacing.sm),
-        for (final name in state.names) ...[
-          _NameGroup(name: name, state: state, belowChoice: belowChoice),
-          const SizedBox(height: ArDriveSpacing.xs),
+        if (records > arnsPickerSearchFrom) ...[
+          ArDriveTextFieldNew(
+            hintText: strings.arnsFindAName,
+            prefixIcon: const Icon(Icons.search, size: 20),
+            onChanged: (value) => setState(() => _query = value),
+          ),
+          const SizedBox(height: ArDriveSpacing.sm),
         ],
+        if (groups.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.sm),
+            child: ArNSCaption(strings.arnsNoNamesMatch),
+          )
+        else
+          ...groups,
       ],
     );
   }
@@ -560,11 +672,20 @@ class _NamePicker extends StatelessWidget {
 class _NameGroup extends StatelessWidget {
   const _NameGroup({
     required this.name,
+    required this.undernames,
     required this.state,
+    this.showAll,
     this.belowChoice,
   });
 
   final ArNSManagedName name;
+
+  /// The undernames to list: all of them, the first few, or a search's.
+  final List<ArNSNameRecord> undernames;
+
+  /// "Show all", when some undernames are left out.
+  final Widget? showAll;
+
   final ArNSNameDialogState state;
   final Widget? belowChoice;
 
@@ -575,7 +696,6 @@ class _NameGroup extends StatelessWidget {
     final cubit = context.read<ArNSNameDialogCubit>();
     final choice = state.choice;
     final apex = name.apex;
-    final undernames = name.records.where((r) => !r.isApex).toList();
     final creating = state.newUndernameFor == name.name;
     final blocked = name.isInGracePeriod(state.now ?? DateTime.now());
 
@@ -621,6 +741,19 @@ class _NameGroup extends StatelessWidget {
             ),
             if (isChosen(record.undername)) ..._below(),
           ],
+          if (showAll != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                ArDriveSpacing.md + 28,
+                ArDriveSpacing.xs,
+                ArDriveSpacing.md,
+                0,
+              ),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: showAll,
+              ),
+            ),
           if (creating)
             _NewUndernameField(name: name, state: state)
           else
@@ -652,7 +785,7 @@ class _NameGroup extends StatelessWidget {
                     ArDriveLink(
                       text: strings.arnsGetMoreInConsole,
                       external: true,
-                      onTap: () => openUrl(url: arnsConsoleUrl),
+                      onTap: () => openUrl(url: arnsGetNameUrl),
                     ),
                 ],
               ),
@@ -1458,7 +1591,7 @@ class _ArNSFlowNameSectionState extends State<ArNSFlowNameSection> {
               ArDriveLink(
                 text: strings.arnsGetANameInConsole,
                 external: true,
-                onTap: () => openUrl(url: arnsConsoleUrl),
+                onTap: () => openUrl(url: arnsGetNameUrl),
               ),
             ],
           ));
