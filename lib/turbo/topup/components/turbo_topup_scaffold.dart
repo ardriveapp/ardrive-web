@@ -1,74 +1,68 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 
+/// One screen of the Turbo top-up, on the design system's standard dialog:
+/// its red band, title, close button, spacing and action row.
+///
+/// Every top-up screen is built on this. They used to draw that chrome
+/// themselves, each a copy with its own spacing and title size.
 class TurboTopupScaffold extends StatelessWidget {
-  final Widget child;
-  final String? title;
-
   const TurboTopupScaffold({
     super.key,
     required this.child,
     this.title,
+    this.description,
+    this.actions,
+    this.onClose,
+    this.canClose = true,
   });
+
+  final Widget child;
+  final String? title;
+
+  /// A line under the title saying what this screen is for.
+  final String? description;
+
+  /// The dialog's action row: Back, and the screen's main action where it has
+  /// one there.
+  final List<ModalAction>? actions;
+
+  /// What the close button does. Without one, it closes the dialog.
+  final VoidCallback? onClose;
+
+  /// Whether the screen offers a close button at all. Off while a payment is
+  /// being processed.
+  final bool canClose;
+
+  static const double width = 575;
 
   @override
   Widget build(BuildContext context) {
-    final themeData = ArDriveTheme.of(context).themeData;
-    final colors = themeData.colors;
-    final colorTokens = themeData.colorTokens;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
+    final description = this.description;
 
-    return Stack(
-      children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Red top line (ArDrive modal pattern)
-            Container(
-              height: 6,
-              decoration: BoxDecoration(
-                color: colorTokens.containerRed,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
-                ),
-              ),
+    return ArDriveStandardModalNew(
+      title: title,
+      width: width,
+      hasCloseButton: canClose,
+      close: onClose,
+      scrollableContent: true,
+      actions: actions,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (description != null) ...[
+            Text(
+              description,
+              style: typography.paragraphNormal(color: colorTokens.textMid),
             ),
-            // Main content
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-              color: colors.themeBgCanvas,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (title != null) ...[
-                    Text(
-                      title!,
-                      style: typography.heading5(
-                        fontWeight: ArFontWeight.bold,
-                        color: colors.themeFgDefault,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  child,
-                ],
-              ),
-            ),
+            const SizedBox(height: 24),
           ],
-        ),
-        Positioned(
-          right: 20,
-          top: 20,
-          child: ArDriveClickArea(
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: ArDriveIcons.x(),
-            ),
-          ),
-        ),
-      ],
+          child,
+        ],
+      ),
     );
   }
 }

@@ -77,7 +77,7 @@ class _LoadingView extends StatelessWidget {
       child: SizedBox(
         height: 400,
         child: Center(
-          child: CircularProgressIndicator(),
+          child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
         ),
       ),
     );
@@ -93,88 +93,80 @@ class _LoadedView extends StatelessWidget {
   Widget build(BuildContext context) {
     final bloc = context.read<UnifiedTopupBloc>();
 
-    return SingleChildScrollView(
-      child: TurboTopupScaffold(
-        title: 'Buy Turbo Credits',
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Payment method selector at top
-            PaymentMethodSelector(
-              selectedMethod: state.paymentMethod,
-              selectedToken: state.selectedToken,
-              onMethodChanged: (method) {
-                bloc.add(UnifiedTopupPaymentMethodChanged(method: method));
-              },
-              onTokenSelected: (token) {
-                bloc.add(UnifiedTopupPaymentMethodChanged(
-                  method: PaymentMethod.crypto,
-                  token: token,
-                ));
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Amount mode toggle (Storage / Currency)
-            AmountModeToggle(
-              selectedMode: state.amountMode,
-              currencyLabel: state.amountModeLabel,
-              onModeChanged: (mode) {
-                bloc.add(UnifiedTopupAmountModeChanged(mode));
-              },
-            ),
-            const SizedBox(height: 16),
-
-            // Amount selector (varies by mode)
-            if (state.amountMode == AmountMode.storage)
-              _StorageAmountSection(state: state, bloc: bloc)
-            else
-              _CurrencyAmountSection(state: state, bloc: bloc),
-
-            const SizedBox(height: 16),
-
-            // Promo code section
-            _PromoCodeSection(state: state, bloc: bloc),
-
-            const SizedBox(height: 16),
-
-            // Purchase summary (simplified - balance shown on final checkout)
-            if (state.fiatAmount > 0)
-              PurchaseSummary(
-                creditsToReceive: state.creditsToReceive,
-                // estimatedStorage already includes the unit from formatStorageWithDynamicUnit
-                storageEstimate: state.estimatedStorage,
-                // Don't pass storageUnit since estimatedStorage already contains it
-                priceAmount: state.fiatAmount,
-                priceSymbol: state.priceSymbol,
-                isPriceInToken: state.paymentMethod == PaymentMethod.crypto,
-                usdEquivalent: state.usdEquivalent,
-                hasPromoDiscount: state.discountPercent != null,
-                discountPercent: state.discountPercent,
-              )
-            else
-              const _EmptySummaryPlaceholder(),
-
-            const SizedBox(height: 16),
-
-            // Error message
-            if (state.errorMessage != null)
-              _ErrorMessage(message: state.errorMessage!),
-
-            // Continue button
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: ArDriveButton(
-                isDisabled: !state.canContinue || state.isLoadingQuote,
-                text: state.isLoadingQuote ? 'Loading...' : 'Continue',
-                onPressed: () {
-                  bloc.add(const UnifiedTopupContinuePressed());
-                },
-              ),
-            ),
-          ],
+    return TurboTopupScaffold(
+      title: 'Buy Turbo Credits',
+      actions: [
+        ModalAction(
+          title: state.isLoadingQuote ? 'Loading...' : 'Continue',
+          isEnable: state.canContinue && !state.isLoadingQuote,
+          action: () => bloc.add(const UnifiedTopupContinuePressed()),
         ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Payment method selector at top
+          PaymentMethodSelector(
+            selectedMethod: state.paymentMethod,
+            selectedToken: state.selectedToken,
+            onMethodChanged: (method) {
+              bloc.add(UnifiedTopupPaymentMethodChanged(method: method));
+            },
+            onTokenSelected: (token) {
+              bloc.add(UnifiedTopupPaymentMethodChanged(
+                method: PaymentMethod.crypto,
+                token: token,
+              ));
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Amount mode toggle (Storage / Currency)
+          AmountModeToggle(
+            selectedMode: state.amountMode,
+            currencyLabel: state.amountModeLabel,
+            onModeChanged: (mode) {
+              bloc.add(UnifiedTopupAmountModeChanged(mode));
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Amount selector (varies by mode)
+          if (state.amountMode == AmountMode.storage)
+            _StorageAmountSection(state: state, bloc: bloc)
+          else
+            _CurrencyAmountSection(state: state, bloc: bloc),
+
+          const SizedBox(height: 16),
+
+          // Promo code section
+          _PromoCodeSection(state: state, bloc: bloc),
+
+          const SizedBox(height: 16),
+
+          // Purchase summary (simplified - balance shown on final checkout)
+          if (state.fiatAmount > 0)
+            PurchaseSummary(
+              creditsToReceive: state.creditsToReceive,
+              // estimatedStorage already includes the unit from formatStorageWithDynamicUnit
+              storageEstimate: state.estimatedStorage,
+              // Don't pass storageUnit since estimatedStorage already contains it
+              priceAmount: state.fiatAmount,
+              priceSymbol: state.priceSymbol,
+              isPriceInToken: state.paymentMethod == PaymentMethod.crypto,
+              usdEquivalent: state.usdEquivalent,
+              hasPromoDiscount: state.discountPercent != null,
+              discountPercent: state.discountPercent,
+            )
+          else
+            const _EmptySummaryPlaceholder(),
+
+          // Error message
+          if (state.errorMessage != null) ...[
+            const SizedBox(height: 16),
+            _ErrorMessage(message: state.errorMessage!),
+          ],
+        ],
       ),
     );
   }
@@ -296,28 +288,10 @@ class _CurrencyAmountSection extends StatelessWidget {
 class _SelectTokenMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.themeBorderDefault),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline, color: colors.themeFgMuted, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Select a cryptocurrency from the dropdown above to see amounts.',
-              style: typography.paragraphSmall(color: colors.themeFgMuted),
-            ),
-          ),
-        ],
-      ),
+    return const ArDriveNotice(
+      type: ArDriveNoticeType.info,
+      message:
+          'Select a cryptocurrency from the dropdown above to see amounts.',
     );
   }
 }
@@ -347,40 +321,16 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     // If promo code is applied, show it
     if (widget.state.promoCode != null) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: colors.themeSuccessSubtle,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.check_circle,
-                color: colors.themeSuccessDefault, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Promo code applied: ${widget.state.promoCode}',
-                style: typography.paragraphSmall(
-                  color: colors.themeSuccessDefault,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
-              ),
-            ),
-            IconButton(
-              icon: Icon(Icons.close,
-                  color: colors.themeSuccessDefault, size: 18),
-              onPressed: () {
-                widget.bloc.add(const UnifiedTopupPromoCodeRemoved());
-              },
-            ),
-          ],
-        ),
+      return ArDriveNotice(
+        type: ArDriveNoticeType.success,
+        message: 'Promo code applied: ${widget.state.promoCode}',
+        dismissLabel: 'Remove promo code',
+        onDismiss: () => widget.bloc.add(const UnifiedTopupPromoCodeRemoved()),
       );
     }
 
@@ -404,13 +354,13 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
                       ? Icons.keyboard_arrow_down
                       : Icons.keyboard_arrow_right,
                   size: 18,
-                  color: colors.themeFgMuted,
+                  color: colors.textMid,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   'Have a promo code?',
                   style: typography.paragraphSmall(
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                     fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
@@ -425,14 +375,14 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border.all(color: colors.themeBorderDefault),
+                    border: Border.all(color: colors.strokeMid),
                     borderRadius: BorderRadius.circular(8),
-                    color: colors.themeBgCanvas,
+                    color: colors.inputDefault,
                   ),
                   child: TextField(
                     controller: _controller,
                     style: typography.paragraphNormal(
-                      color: colors.themeFgDefault,
+                      color: colors.textHigh,
                     ),
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
@@ -442,7 +392,7 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
                       border: InputBorder.none,
                       hintText: 'Enter promo code',
                       hintStyle: typography.paragraphNormal(
-                        color: colors.themeFgDisabled,
+                        color: colors.textXLow,
                       ),
                     ),
                   ),
@@ -451,17 +401,10 @@ class _PromoCodeSectionState extends State<_PromoCodeSection> {
               const SizedBox(width: 8),
               SizedBox(
                 height: 44,
-                child: ArDriveButton(
-                  style: ArDriveButtonStyle.secondary,
+                child: ArDriveButtonNew(
+                  typography: ArDriveTypographyNew.of(context),
+                  variant: ButtonVariant.secondary,
                   text: 'Apply',
-                  maxHeight: 44,
-                  fontStyle: ArDriveTypographyNew.of(context).paragraphSmall(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colors
-                        .themeFgDefault,
-                  ),
                   onPressed: () {
                     if (_controller.text.isNotEmpty) {
                       widget.bloc.add(
@@ -484,21 +427,21 @@ class _EmptySummaryPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: Center(
         child: Text(
           'Select an amount to see purchase summary',
           style: typography.paragraphNormal(
-            color: colors.themeFgMuted,
+            color: colors.textMid,
           ),
         ),
       ),
@@ -513,30 +456,6 @@ class _ErrorMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.themeErrorSubtle,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, color: colors.themeErrorDefault, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: typography.paragraphSmall(
-                color: colors.themeErrorDefault,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return ArDriveNotice(type: ArDriveNoticeType.error, message: message);
   }
 }

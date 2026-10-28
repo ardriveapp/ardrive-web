@@ -1,5 +1,6 @@
 import 'package:ardrive/services/arconnect/arconnect.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
 import 'package:ardrive/turbo/services/ethereum_wallet_service.dart';
@@ -68,188 +69,93 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
+    final onBack = widget.onBack;
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
-        return Stack(
-          children: [
-            Column(
-              children: [
-                // Red top line (ArDrive modal pattern)
-                Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: colorTokens.containerRed,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      topRight: Radius.circular(8),
-                    ),
-                  ),
+        return TurboTopupScaffold(
+          title: 'Connect wallet',
+          description:
+              'Connect your ${widget.token.walletType.displayName} to complete the purchase.',
+          canClose: widget.onCancel != null,
+          onClose: widget.onCancel,
+          actions: onBack == null
+              ? null
+              : [ModalAction.dismiss(title: 'Back', action: onBack)],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Payment summary card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colors.containerRaised,
+                  borderRadius: BorderRadius.circular(ArDriveRadius.lg),
+                  border: Border.all(color: colors.strokeMid),
                 ),
-                // Main content
-                Flexible(
-                  child: Container(
-                    color: colors.themeBgCanvas,
-                    child: SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(
-                                height: 24), // Space for close button
-                            // Title
-                            Text(
-                              'Connect wallet',
-                              style: typography.heading5(
-                                fontWeight: ArFontWeight.bold,
-                                color: colors.themeFgDefault,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Connect your ${widget.token.walletType.displayName} to complete the purchase.',
-                              style: typography.paragraphNormal(
-                                color: colors.themeFgMuted,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Payment summary card
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: colors.themeBgSubtle,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: colors.themeBorderDefault),
-                              ),
-                              child: Row(
-                                children: [
-                                  _TokenIcon(token: widget.token),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Paying with ${widget.token.displayName}',
-                                          style: typography.paragraphNormal(
-                                            fontWeight: ArFontWeight.semiBold,
-                                            color: colors.themeFgDefault,
-                                          ),
-                                        ),
-                                        Text(
-                                          widget.token.networkDisplayName,
-                                          style: typography.paragraphSmall(
-                                            color: colors.themeFgMuted,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Connection status and action
-                            _buildConnectionContent(context, state),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                // Footer with back button
-                Container(
-                  color: colors.themeBgCanvas,
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (widget.onBack != null)
-                        ArDriveClickArea(
-                          child: GestureDetector(
-                            onTap: widget.onBack,
-                            child: Text(
-                              'Back',
-                              style: typography.paragraphLarge(
-                                fontWeight: ArFontWeight.bold,
-                                color: colors.themeFgMuted,
-                              ),
+                child: Row(
+                  children: [
+                    _TokenIcon(token: widget.token),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Paying with ${widget.token.displayName}',
+                            style: typography.paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                              color: colors.textHigh,
                             ),
                           ),
-                        )
-                      else
-                        const SizedBox.shrink(),
-                      const Spacer(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            // Close button in top right
-            if (widget.onCancel != null)
-              Positioned(
-                right: 20,
-                top: 20,
-                child: ArDriveClickArea(
-                  child: GestureDetector(
-                    onTap: widget.onCancel,
-                    child: ArDriveIcons.x(),
-                  ),
+                          Text(
+                            widget.token.networkDisplayName,
+                            style: typography.paragraphSmall(
+                              color: colors.textMid,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-          ],
+              const SizedBox(height: 24),
+
+              // Connection status and action
+              _buildConnectionContent(context, state),
+            ],
+          ),
         );
       },
     );
   }
 
   Widget _buildConnectionContent(BuildContext context, CryptoTopupState state) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
     final bloc = context.read<CryptoTopupBloc>();
 
     // Wallet not installed
     if (state is CryptoTopupWalletNotInstalled) {
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colors.themeErrorSubtle,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.warning_amber, color: colors.themeErrorDefault),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    '${widget.token.walletType.displayName} not detected. Please install it to continue.',
-                    style: typography.paragraphNormal(
-                      color: colors.themeErrorDefault,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          ArDriveNotice(
+            type: ArDriveNoticeType.warning,
+            message:
+                '${widget.token.walletType.displayName} not detected. Please install it to continue.',
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ArDriveButton(
-              text: 'Install ${_getWalletAppName()}',
-              onPressed: () => _openInstallUrl(widget.token.walletType),
-            ),
+          ArDriveButtonNew(
+            typography: ArDriveTypographyNew.of(context),
+            variant: ButtonVariant.primary,
+            size: ArDriveButtonSize.large,
+            maxWidth: double.infinity,
+            text: 'Install ${_getWalletAppName()}',
+            onPressed: () => _openInstallUrl(widget.token.walletType),
           ),
         ],
       );
@@ -260,23 +166,19 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: colors.themeBgSubtle,
+          color: colors.containerRaised,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colors.themeBorderDefault),
+          border: Border.all(color: colors.strokeMid),
         ),
         child: Row(
           children: [
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            const ArDriveSpinner(),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'Please sign the message in your Ethereum wallet to continue.',
                 style: typography.paragraphNormal(
-                  color: colors.themeFgDefault,
+                  color: colors.textHigh,
                 ),
               ),
             ),
@@ -288,43 +190,26 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
     // Network switch needed
     if (state is CryptoTopupNetworkSwitch) {
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colors.themeBgSubtle,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: colors.themeBorderDefault),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.swap_horiz, color: colors.themeFgMuted),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Please switch to ${widget.token.networkDisplayName} in your wallet.',
-                    style: typography.paragraphNormal(
-                      color: colors.themeFgDefault,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          ArDriveNotice(
+            type: ArDriveNoticeType.info,
+            message:
+                'Please switch to ${widget.token.networkDisplayName} in your wallet.',
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ArDriveButton(
-              text: 'Switch network',
-              onPressed: () {
-                final chainId = widget.token.chainId;
-                if (chainId != null) {
-                  bloc.add(CryptoTopupSwitchNetwork(chainId));
-                }
-              },
-            ),
+          ArDriveButtonNew(
+            typography: ArDriveTypographyNew.of(context),
+            variant: ButtonVariant.primary,
+            size: ArDriveButtonSize.large,
+            maxWidth: double.infinity,
+            text: 'Switch network',
+            onPressed: () {
+              final chainId = widget.token.chainId;
+              if (chainId != null) {
+                bloc.add(CryptoTopupSwitchNetwork(chainId));
+              }
+            },
           ),
         ],
       );
@@ -335,23 +220,19 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: colors.themeBgSubtle,
+          color: colors.containerRaised,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colors.themeBorderDefault),
+          border: Border.all(color: colors.strokeMid),
         ),
         child: Row(
           children: [
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            const ArDriveSpinner(),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 'Connecting to ${widget.token.walletType.displayName}...',
                 style: typography.paragraphNormal(
-                  color: colors.themeFgDefault,
+                  color: colors.textHigh,
                 ),
               ),
             ),
@@ -366,7 +247,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
 
   /// Build wallet options based on detected wallets
   Widget _buildWalletOptions(BuildContext context, CryptoTopupBloc bloc) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     // For Arweave wallet (ArConnect), show single connect button
@@ -381,7 +262,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
             'Select wallet',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
-              color: colors.themeFgDefault,
+              color: colors.textHigh,
             ),
           ),
           const SizedBox(height: 12),
@@ -460,7 +341,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
             'Select wallet',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
-              color: colors.themeFgDefault,
+              color: colors.textHigh,
             ),
           ),
           const SizedBox(height: 12),
@@ -508,7 +389,7 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
             'Select wallet',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
-              color: colors.themeFgDefault,
+              color: colors.textHigh,
             ),
           ),
           const SizedBox(height: 12),
@@ -518,67 +399,38 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
     }
 
     // Fallback: generic connect button
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: ArDriveButton(
-        text: 'Connect ${_getWalletAppName()}',
-        onPressed: () => bloc.add(const CryptoTopupConnectWallet()),
-      ),
+    return ArDriveButtonNew(
+      typography: ArDriveTypographyNew.of(context),
+      variant: ButtonVariant.primary,
+      size: ArDriveButtonSize.large,
+      maxWidth: double.infinity,
+      text: 'Connect ${_getWalletAppName()}',
+      onPressed: () => bloc.add(const CryptoTopupConnectWallet()),
     );
   }
 
   /// Build message when no wallets are detected
   Widget _buildNoWalletsDetected(
     BuildContext context,
-    ArDriveColors colors,
+    ArDriveColorTokens colors,
     ArdriveTypographyNew typography,
   ) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colors.themeWarningSubtle,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.warning_amber_rounded,
-                      color: colors.themeWarningFg),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'No wallets detected',
-                      style: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colors.themeWarningFg,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _getInstallInstructions(),
-                style: typography.paragraphSmall(
-                  color: colors.themeFgMuted,
-                ),
-              ),
-            ],
-          ),
+        ArDriveNotice(
+          type: ArDriveNoticeType.warning,
+          title: 'No wallets detected',
+          message: _getInstallInstructions(),
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ArDriveButton(
-            text: 'Install ${_getWalletAppName()}',
-            onPressed: () => _openInstallUrl(widget.token.walletType),
-          ),
+        ArDriveButtonNew(
+          typography: ArDriveTypographyNew.of(context),
+          variant: ButtonVariant.primary,
+          size: ArDriveButtonSize.large,
+          maxWidth: double.infinity,
+          text: 'Install ${_getWalletAppName()}',
+          onPressed: () => _openInstallUrl(widget.token.walletType),
         ),
       ],
     );
@@ -630,7 +482,7 @@ class _WalletOptionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return InkWell(
@@ -640,9 +492,9 @@ class _WalletOptionButton extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: colors.themeBgSubtle,
+          color: colors.containerRaised,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: colors.themeBorderDefault),
+          border: Border.all(color: colors.strokeMid),
         ),
         child: Row(
           children: [
@@ -656,13 +508,13 @@ class _WalletOptionButton extends StatelessWidget {
                 name,
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
-                  color: colors.themeFgDefault,
+                  color: colors.textHigh,
                 ),
               ),
             ),
             Icon(
               Icons.chevron_right,
-              color: colors.themeFgMuted,
+              color: colors.textMid,
             ),
           ],
         ),
@@ -732,10 +584,11 @@ class _TokenIcon extends StatelessWidget {
     return Center(
       child: Text(
         _getTokenAbbreviation(token),
+        // White on the token's own brand colour, below.
         style: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.bold,
-          color: Colors.white,
+          color: Color(0xFFFFFFFF),
         ),
       ),
     );
@@ -753,6 +606,7 @@ class _TokenIcon extends StatelessWidget {
     };
   }
 
+  // The tokens' own brand colours.
   Color _getTokenColor(CryptoToken token) {
     switch (token) {
       case CryptoToken.arioAO:

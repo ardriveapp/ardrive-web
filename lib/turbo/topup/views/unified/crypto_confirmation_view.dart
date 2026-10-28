@@ -1,10 +1,10 @@
 import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/utils/utils.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -27,211 +27,120 @@ class CryptoConfirmationView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = ArDriveTheme.of(context).themeData;
-    final colors = themeData.colors;
-    final colorTokens = themeData.colorTokens;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
+    final onBack = this.onBack;
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
         if (state is! CryptoTopupConfirmation) {
-          return const Center(child: CircularProgressIndicator());
+          return TurboTopupScaffold(
+            title: 'Confirm payment',
+            onClose: onClose,
+            canClose: onClose != null,
+            child: const SizedBox(
+              height: 200,
+              child: Center(
+                child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+              ),
+            ),
+          );
         }
 
         final bloc = context.read<CryptoTopupBloc>();
 
-        return Stack(
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Red top line (ArDrive modal pattern)
-                Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: colorTokens.containerRed,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      topRight: Radius.circular(8),
-                    ),
-                  ),
-                ),
-                // Main content
-                Flexible(
-                  child: Container(
-                    color: colors.themeBgCanvas,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 24),
-                          // Header with timer
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Confirm payment',
-                                style: typography.heading5(
-                                  fontWeight: ArFontWeight.bold,
-                                  color: colors.themeFgDefault,
-                                ),
-                              ),
-                              _QuoteTimerBar(
-                                expiresAt: state.quote.expiresAt,
-                                isLoading: state.isRefreshingQuote,
-                                onRefresh: () {
-                                  bloc.add(
-                                      const CryptoTopupQuoteRefreshRequested());
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Section 1: Paying With
-                          _PayingWithSection(
-                            token: state.token,
-                            walletAddress: state.fromAddress,
-                            amount: state.quote.tokenAmountDisplay,
-                            usdEquivalent: state.quote.usdValue,
-                            promoCode: state.promoCode,
-                            discountPercent: state.quote.hasDiscount
-                                ? state.quote.discountPercentage.round()
-                                : null,
-                            tokenBalance: state.tokenBalance,
-                            tokenBalanceAfter: state.tokenBalanceAfter,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Section 2: You'll Receive
-                          _YoullReceiveSection(
-                            creditsToReceive: state.quote.wincAmount,
-                            storageEstimate: state.quote.formattedStorage,
-                            newBalance: state.newTurboBalance,
-                            newBalanceStorage: state.newBalanceStorage,
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Network status (for EVM tokens, only when not correct)
-                          if (state.token.requiresGasEstimation &&
-                              state.networkState != NetworkState.correct) ...[
-                            const SizedBox(height: 12),
-                            _NetworkStatusBanner(
-                              networkState: state.networkState,
-                              token: state.token,
-                              onSwitchNetwork: () {
-                                final chainId = state.token.chainId;
-                                if (chainId != null) {
-                                  bloc.add(CryptoTopupSwitchNetwork(chainId));
-                                }
-                              },
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // Footer with terms and buttons
-                Container(
-                  color: colors.themeBgCanvas,
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Divider
-                      Divider(color: colors.themeBorderDefault, height: 1),
-                      const SizedBox(height: 16),
-                      // Terms notice
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'By continuing, you agree to the ',
-                              style: typography.paragraphSmall(
-                                color: colors.themeFgMuted,
-                              ),
-                            ),
-                            TextSpan(
-                              text: 'Terms of Service',
-                              style: typography
-                                  .paragraphSmall(
-                                    color: colors.themeFgMuted,
-                                  )
-                                  .copyWith(
-                                    decoration: TextDecoration.underline,
-                                  ),
-                              recognizer: TapGestureRecognizer()
-                                ..onTap = () => openUrl(
-                                      url: Resources.agreementLink,
-                                    ),
-                            ),
-                            TextSpan(
-                              text: '.',
-                              style: typography.paragraphSmall(
-                                color: colors.themeFgMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Buttons
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          if (onBack != null)
-                            ArDriveClickArea(
-                              child: GestureDetector(
-                                onTap: onBack,
-                                child: Text(
-                                  'Back',
-                                  style: typography.paragraphLarge(
-                                    fontWeight: ArFontWeight.bold,
-                                    color: colors.themeFgMuted,
-                                  ),
-                                ),
-                              ),
-                            )
-                          else
-                            const SizedBox.shrink(),
-                          SizedBox(
-                            height: 48,
-                            child: ArDriveButton(
-                              isDisabled: !state.canConfirm ||
-                                  state.quote.isExpired ||
-                                  state.networkState == NetworkState.checking ||
-                                  state.networkState ==
-                                      NetworkState.switching ||
-                                  state.isRefreshingQuote,
-                              text: _getButtonText(state),
-                              onPressed: () {
-                                bloc.add(const CryptoTopupConfirmPayment());
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+        return TurboTopupScaffold(
+          title: 'Confirm payment',
+          onClose: onClose,
+          canClose: onClose != null,
+          actions: [
+            if (onBack != null)
+              ModalAction.dismiss(title: 'Back', action: onBack),
+            ModalAction(
+              title: _getButtonText(state),
+              isEnable: state.canConfirm &&
+                  !state.quote.isExpired &&
+                  state.networkState != NetworkState.checking &&
+                  state.networkState != NetworkState.switching &&
+                  !state.isRefreshingQuote,
+              action: () => bloc.add(const CryptoTopupConfirmPayment()),
             ),
-            // Close button in top right
-            if (onClose != null)
-              Positioned(
-                right: 20,
-                top: 20,
-                child: ArDriveClickArea(
-                  child: GestureDetector(
-                    onTap: onClose,
-                    child: ArDriveIcons.x(),
-                  ),
+          ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: _QuoteTimerBar(
+                  expiresAt: state.quote.expiresAt,
+                  isLoading: state.isRefreshingQuote,
+                  onRefresh: () {
+                    bloc.add(const CryptoTopupQuoteRefreshRequested());
+                  },
                 ),
               ),
-          ],
+              const SizedBox(height: 16),
+
+              // Section 1: Paying With
+              _PayingWithSection(
+                token: state.token,
+                walletAddress: state.fromAddress,
+                amount: state.quote.tokenAmountDisplay,
+                usdEquivalent: state.quote.usdValue,
+                promoCode: state.promoCode,
+                discountPercent: state.quote.hasDiscount
+                    ? state.quote.discountPercentage.round()
+                    : null,
+                tokenBalance: state.tokenBalance,
+                tokenBalanceAfter: state.tokenBalanceAfter,
+              ),
+              const SizedBox(height: 16),
+
+              // Section 2: You'll Receive
+              _YoullReceiveSection(
+                creditsToReceive: state.quote.wincAmount,
+                storageEstimate: state.quote.formattedStorage,
+                newBalance: state.newTurboBalance,
+                newBalanceStorage: state.newBalanceStorage,
+              ),
+
+              // Network status (for EVM tokens, only when not correct)
+              if (state.token.requiresGasEstimation &&
+                  state.networkState != NetworkState.correct) ...[
+                const SizedBox(height: 16),
+                _NetworkStatusBanner(
+                  networkState: state.networkState,
+                  token: state.token,
+                  onSwitchNetwork: () {
+                    final chainId = state.token.chainId;
+                    if (chainId != null) {
+                      bloc.add(CryptoTopupSwitchNetwork(chainId));
+                    }
+                  },
+                ),
+              ],
+              const SizedBox(height: 16),
+
+              // Terms notice
+              Text.rich(
+                TextSpan(
+                  style: typography.paragraphSmall(color: colors.textMid),
+                  children: [
+                    const TextSpan(text: 'By continuing, you agree to the '),
+                    ArDriveLink.span(
+                      text: 'Terms of Service',
+                      style: typography.paragraphSmall(),
+                      color: colors.textMid,
+                      external: true,
+                      onTap: () => openUrl(url: Resources.agreementLink),
+                    ),
+                    const TextSpan(text: '.'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -281,15 +190,15 @@ class _PayingWithSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,7 +208,7 @@ class _PayingWithSection extends StatelessWidget {
             'PAYING WITH',
             style: typography.paragraphSmall(
               fontWeight: ArFontWeight.semiBold,
-              color: colors.themeFgMuted,
+              color: colors.textMid,
             ),
           ),
           const SizedBox(height: 12),
@@ -319,15 +228,13 @@ class _PayingWithSection extends StatelessWidget {
                       token.displayName,
                       style: typography.paragraphNormal(
                         fontWeight: ArFontWeight.semiBold,
-                        color: colors.themeFgDefault,
+                        color: colors.textHigh,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       _truncateAddress(walletAddress),
-                      style: typography.paragraphSmall(
-                        color: colors.themeFgMuted,
-                      ),
+                      style: typography.code(color: colors.textMid),
                     ),
                   ],
                 ),
@@ -337,7 +244,7 @@ class _PayingWithSection extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Divider
-          Divider(color: colors.themeBorderDefault, height: 1),
+          Divider(color: colors.strokeMid, height: 1),
           const SizedBox(height: 16),
 
           // Amount (big and prominent)
@@ -348,11 +255,12 @@ class _PayingWithSection extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
+                  // The amount paid is this card's figure.
                   Text(
                     _formatAmount(amount),
-                    style: typography.heading4(
-                      fontWeight: ArFontWeight.bold,
-                      color: colors.themeFgDefault,
+                    style: typography.heading2(
+                      color: colors.textHigh,
+                      fontWeight: ArFontWeight.light,
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -360,7 +268,7 @@ class _PayingWithSection extends StatelessWidget {
                     token.symbol,
                     style: typography.paragraphNormal(
                       fontWeight: ArFontWeight.semiBold,
-                      color: colors.themeFgMuted,
+                      color: colors.textMid,
                     ),
                   ),
                 ],
@@ -370,7 +278,7 @@ class _PayingWithSection extends StatelessWidget {
                 Text(
                   '~\$${NumberFormat('#,##0.00').format(usdEquivalent)}',
                   style: typography.paragraphSmall(
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 ),
               ],
@@ -383,7 +291,7 @@ class _PayingWithSection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: colors.themeSuccessSubtle,
+                color: colors.statusSuccessContainer,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
@@ -392,7 +300,7 @@ class _PayingWithSection extends StatelessWidget {
                   Icon(
                     Icons.local_offer,
                     size: 14,
-                    color: colors.themeSuccessDefault,
+                    color: colors.statusSuccessFg,
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -401,7 +309,7 @@ class _PayingWithSection extends StatelessWidget {
                         : promoCode!,
                     style: typography.paragraphSmall(
                       fontWeight: ArFontWeight.semiBold,
-                      color: colors.themeSuccessDefault,
+                      color: colors.statusSuccessFg,
                     ),
                   ),
                 ],
@@ -412,7 +320,7 @@ class _PayingWithSection extends StatelessWidget {
           // Wallet balance (before → after)
           if (tokenBalance != null) ...[
             const SizedBox(height: 16),
-            Divider(color: colors.themeBorderDefault, height: 1),
+            Divider(color: colors.strokeMid, height: 1),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -420,7 +328,7 @@ class _PayingWithSection extends StatelessWidget {
                 Text(
                   'Wallet balance',
                   style: typography.paragraphSmall(
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 ),
                 Row(
@@ -428,7 +336,7 @@ class _PayingWithSection extends StatelessWidget {
                     Text(
                       '${_formatAmount(tokenBalance!)} ${token.symbol}',
                       style: typography.paragraphSmall(
-                        color: colors.themeFgMuted,
+                        color: colors.textMid,
                       ),
                     ),
                     Padding(
@@ -436,14 +344,14 @@ class _PayingWithSection extends StatelessWidget {
                       child: Icon(
                         Icons.arrow_forward,
                         size: 12,
-                        color: colors.themeFgMuted,
+                        color: colors.textMid,
                       ),
                     ),
                     Text(
                       '${_formatAmount(tokenBalanceAfter ?? 0)} ${token.symbol}',
                       style: typography.paragraphSmall(
                         fontWeight: ArFontWeight.semiBold,
-                        color: colors.themeFgDefault,
+                        color: colors.textHigh,
                       ),
                     ),
                   ],
@@ -491,17 +399,18 @@ class _YoullReceiveSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Credits to receive (left side)
           Expanded(
@@ -512,7 +421,7 @@ class _YoullReceiveSection extends StatelessWidget {
                   "YOU'LL RECEIVE",
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -520,11 +429,12 @@ class _YoullReceiveSection extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
+                    // The credits bought are this card's figure.
                     Text(
                       convertWinstonToLiteralString(creditsToReceive),
-                      style: typography.heading5(
-                        fontWeight: ArFontWeight.bold,
-                        color: colors.themeSuccessDefault,
+                      style: typography.heading2(
+                        color: colors.textHigh,
+                        fontWeight: ArFontWeight.light,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -532,7 +442,7 @@ class _YoullReceiveSection extends StatelessWidget {
                       'credits',
                       style: typography.paragraphSmall(
                         fontWeight: ArFontWeight.semiBold,
-                        color: colors.themeFgMuted,
+                        color: colors.textMid,
                       ),
                     ),
                   ],
@@ -540,7 +450,7 @@ class _YoullReceiveSection extends StatelessWidget {
                 Text(
                   storageEstimate,
                   style: typography.paragraphSmall(
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 ),
               ],
@@ -550,7 +460,7 @@ class _YoullReceiveSection extends StatelessWidget {
           Container(
             width: 1,
             height: 50,
-            color: colors.themeBorderDefault,
+            color: colors.strokeMid,
             margin: const EdgeInsets.symmetric(horizontal: 12),
           ),
           // New balance (right side)
@@ -562,7 +472,7 @@ class _YoullReceiveSection extends StatelessWidget {
                   'NEW BALANCE',
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -570,13 +480,13 @@ class _YoullReceiveSection extends StatelessWidget {
                   '${convertWinstonToLiteralString(newBalance)} credits',
                   style: typography.paragraphNormal(
                     fontWeight: ArFontWeight.semiBold,
-                    color: colors.themeFgDefault,
+                    color: colors.textHigh,
                   ),
                 ),
                 Text(
                   newBalanceStorage,
                   style: typography.paragraphSmall(
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 ),
               ],
@@ -641,12 +551,14 @@ class _TokenIcon extends StatelessWidget {
         style: TextStyle(
           fontSize: size * 0.35,
           fontWeight: FontWeight.bold,
+          // On the token's brand colour, below.
           color: Colors.white,
         ),
       ),
     );
   }
 
+  // The tokens' own brand colours, not ArDrive's.
   Color _getTokenColor(CryptoToken token) {
     return switch (token) {
       CryptoToken.arioAO ||
@@ -677,7 +589,7 @@ class _NetworkStatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     // Only show banner for non-correct states (checking, switching, needsSwitch)
@@ -689,19 +601,12 @@ class _NetworkStatusBanner extends StatelessWidget {
     if (networkState == NetworkState.checking) {
       return Row(
         children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: colors.themeFgMuted,
-            ),
-          ),
+          ArDriveSpinner(color: colors.textMid),
           const SizedBox(width: 6),
           Text(
             'Checking network...',
             style: typography.paragraphSmall(
-              color: colors.themeFgMuted,
+              color: colors.textMid,
             ),
           ),
         ],
@@ -711,19 +616,12 @@ class _NetworkStatusBanner extends StatelessWidget {
     if (networkState == NetworkState.switching) {
       return Row(
         children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: colors.themeFgMuted,
-            ),
-          ),
+          ArDriveSpinner(color: colors.textMid),
           const SizedBox(width: 6),
           Text(
             'Switching to ${token.networkDisplayName}...',
             style: typography.paragraphSmall(
-              color: colors.themeFgMuted,
+              color: colors.textMid,
             ),
           ),
         ],
@@ -731,44 +629,11 @@ class _NetworkStatusBanner extends StatelessWidget {
     }
 
     // Needs switch - show warning banner
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.themeWarningSubtle,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.warning_amber, color: colors.themeWarningFg, size: 18),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Switch to ${token.networkDisplayName}',
-              style: typography.paragraphSmall(
-                color: colors.themeWarningFg,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: onSwitchNetwork,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: colors.themeWarningFg,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'Switch',
-                style: typography.paragraphSmall(
-                  fontWeight: ArFontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return ArDriveNotice(
+      type: ArDriveNoticeType.warning,
+      message: 'Switch to ${token.networkDisplayName}',
+      actionLabel: 'Switch',
+      onAction: onSwitchNetwork,
     );
   }
 }
@@ -790,18 +655,18 @@ class _QuoteTimerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     if (expiresAt == null) return const SizedBox.shrink();
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           Icons.schedule,
           size: 14,
-          color: colors.themeFgMuted,
+          color: colors.textMid,
         ),
         const SizedBox(width: 6),
         StreamBuilder(
@@ -817,29 +682,25 @@ class _QuoteTimerBar extends StatelessWidget {
                   ? 'Quote expired'
                   : 'Price valid for ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
               style: typography.paragraphSmall(
-                color:
-                    isExpired ? colors.themeErrorDefault : colors.themeFgMuted,
+                color: isExpired ? colors.statusErrorFg : colors.textMid,
               ),
             );
           },
         ),
         const SizedBox(width: 8),
-        GestureDetector(
-          onTap: isLoading ? null : onRefresh,
-          child: isLoading
-              ? SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colors.themeFgMuted,
+        Semantics(
+          button: true,
+          label: 'Refresh quote',
+          child: GestureDetector(
+            onTap: isLoading ? null : onRefresh,
+            child: isLoading
+                ? ArDriveSpinner(color: colors.textMid)
+                : Icon(
+                    Icons.refresh,
+                    size: 16,
+                    color: colors.textMid,
                   ),
-                )
-              : Icon(
-                  Icons.refresh,
-                  size: 16,
-                  color: colors.themeFgMuted,
-                ),
+          ),
         ),
       ],
     );

@@ -10,6 +10,7 @@ import 'package:ardrive/turbo/services/ethereum_wallet_service.dart';
 import 'package:ardrive/turbo/services/solana_wallet_service.dart';
 import 'package:ardrive/turbo/services/wallet_signer_cache.dart';
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/views/unified/crypto_confirmation_view.dart';
 import 'package:ardrive/turbo/topup/views/unified/crypto_processing_view.dart';
@@ -184,7 +185,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _bloc == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const _Loading();
     }
 
     return BlocProvider.value(
@@ -233,7 +234,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _bloc!.add(const CryptoTopupProceedToConfirmation());
         });
-        return const Center(child: CircularProgressIndicator());
+        return const _Loading();
       }
     } else {
       // No preselected token - show full inline crypto payment flow
@@ -305,7 +306,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
         }
 
         // Show a brief loading indicator while transitioning
-        return const Center(child: CircularProgressIndicator());
+        return const _Loading();
       }
 
       // Fallback: render CryptoSuccessView inline (old behavior)
@@ -328,7 +329,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
     }
 
     // Default loading
-    return const Center(child: CircularProgressIndicator());
+    return const _Loading();
   }
 
   /// Format amount paid for display (e.g., "100 ARIO ($25.00)")
@@ -377,14 +378,15 @@ class UnifiedCryptoModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveModal(
-      constraints: const BoxConstraints(
-        maxWidth: 480,
-        maxHeight: 640,
+    // Each screen of the flow is a standard dialog (TurboTopupScaffold); this
+    // only sizes them, like the top-up's own shell.
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxWidth: TurboTopupScaffold.width,
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
-      content: SizedBox(
-        width: 480,
-        height: 560,
+      child: Material(
+        type: MaterialType.transparency,
         child: UnifiedCryptoFlow(
           fiatAmount: fiatAmount,
           preselectedToken: preselectedToken,
@@ -419,12 +421,9 @@ Future<void> showUnifiedCryptoModal(
   VoidCallback? onClose,
   VoidCallback? onBackToPaymentMethods,
 }) async {
-  final themeColors = ArDriveTheme.of(context).themeData.colors;
-
   await showAnimatedDialog(
     context,
     barrierDismissible: false,
-    barrierColor: themeColors.shadow.withOpacity(0.9),
     content: MultiRepositoryProvider(
       providers: [
         RepositoryProvider.value(value: context.read<ArDriveAuth>()),
@@ -438,4 +437,23 @@ Future<void> showUnifiedCryptoModal(
       ),
     ),
   );
+}
+
+/// Between screens: the standard dialog with a spinner, so the flow never
+/// shows a bare spinner over the page.
+class _Loading extends StatelessWidget {
+  const _Loading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const TurboTopupScaffold(
+      canClose: false,
+      child: SizedBox(
+        height: 200,
+        child: Center(
+          child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+        ),
+      ),
+    );
+  }
 }

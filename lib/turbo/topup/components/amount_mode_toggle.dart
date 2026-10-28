@@ -27,7 +27,7 @@ class AmountModeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Column(
@@ -37,13 +37,13 @@ class AmountModeToggle extends StatelessWidget {
           'Select by',
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
-            color: colors.themeFgDefault,
+            color: colors.textHigh,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: colors.themeBgSubtle,
+            color: colors.containerRaised,
             borderRadius: BorderRadius.circular(8),
           ),
           padding: const EdgeInsets.all(4),
@@ -58,7 +58,10 @@ class AmountModeToggle extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               _ToggleButton(
-                icon: Icons.attach_money,
+                // A dollar sign for USD only: SOL or ETH was shown with one.
+                icon: currencyLabel == 'USD'
+                    ? Icons.attach_money
+                    : Icons.toll_outlined,
                 label: currencyLabel,
                 isSelected: selectedMode == AmountMode.currency,
                 onTap: () => onModeChanged(AmountMode.currency),
@@ -86,35 +89,38 @@ class _ToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    return Material(
-      color: isSelected ? colors.themeFgMuted : Colors.transparent,
-      borderRadius: BorderRadius.circular(6),
-      child: InkWell(
-        onTap: onTap,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: Material(
+        color: isSelected ? colors.textMid : Colors.transparent,
         borderRadius: BorderRadius.circular(6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 16,
-                color: isSelected ? colors.themeBgSurface : colors.themeFgMuted,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: typography.paragraphSmall(
-                  fontWeight: ArFontWeight.semiBold,
-                  color:
-                      isSelected ? colors.themeBgSurface : colors.themeFgMuted,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 16,
+                  color: isSelected ? colors.containerRaised : colors.textMid,
                 ),
-              ),
-            ],
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: typography.paragraphSmall(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: isSelected ? colors.containerRaised : colors.textMid,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
@@ -77,99 +78,22 @@ class SessionExpiredView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = ArDriveTheme.of(context).themeData;
-    final colors = themeData.colors;
-    final colorTokens = themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return ArDriveCard(
-      contentPadding: EdgeInsets.zero,
-      content: Stack(
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Red top line (ArDrive modal pattern)
-              Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: colorTokens.containerRed,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
-                  ),
-                ),
-              ),
-              // Content
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title - left aligned
-                    Text(
-                      appLocalizationsOf(context).turboSessionExpiredTitle,
-                      style: typography.heading5(
-                        fontWeight: ArFontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Icon and message
-                    Row(
-                      children: [
-                        ArDriveIcons.refresh(
-                          size: 32,
-                          color: colors.themeFgMuted,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            appLocalizationsOf(context)
-                                .turboErrorMessageSessionExpired,
-                            style: typography.paragraphNormal(
-                              color: colors.themeFgMuted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Action button
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: ArDriveButton(
-                        maxHeight: 44,
-                        maxWidth: 160,
-                        text: appLocalizationsOf(context).refresh,
-                        fontStyle: typography.paragraphLarge(
-                          fontWeight: ArFontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        onPressed: onRefresh,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          // Close button in top right
-          Positioned(
-            right: 20,
-            top: 20,
-            child: ArDriveClickArea(
-              child: GestureDetector(
-                onTap: () {
-                  onDismiss();
-                  Navigator.pop(context);
-                },
-                child: ArDriveIcons.x(),
-              ),
-            ),
-          ),
-        ],
+    // Not an error, just a state: an info notice, and Refresh.
+    return TurboTopupScaffold(
+      title: appLocalizationsOf(context).turboSessionExpiredTitle,
+      onClose: () {
+        onDismiss();
+        Navigator.pop(context);
+      },
+      actions: [
+        ModalAction(
+          title: appLocalizationsOf(context).refresh,
+          action: onRefresh,
+        ),
+      ],
+      child: ArDriveNotice(
+        type: ArDriveNoticeType.info,
+        message: appLocalizationsOf(context).turboErrorMessageSessionExpired,
       ),
     );
   }
@@ -191,99 +115,24 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = ArDriveTheme.of(context).themeData;
-    final colors = themeData.colors;
-    final colorTokens = themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
+    final onTryAgain = this.onTryAgain;
 
-    return ArDriveCard(
-      contentPadding: EdgeInsets.zero,
-      content: Stack(
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Red top line (ArDrive modal pattern)
-              Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: colorTokens.containerRed,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
-                  ),
-                ),
-              ),
-              // Content
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title - left aligned
-                    Text(
-                      errorTitle,
-                      style: typography.heading5(
-                        fontWeight: ArFontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Icon and message
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ArDriveIcons.triangle(
-                          size: 32,
-                          color: colors.themeErrorDefault,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            errorMessage,
-                            style: typography.paragraphNormal(
-                              color: colors.themeFgMuted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Action button
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: ArDriveButton(
-                        maxHeight: 44,
-                        maxWidth: 143,
-                        text: appLocalizationsOf(context).tryAgain,
-                        fontStyle: typography.paragraphLarge(
-                          fontWeight: ArFontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        onPressed: onTryAgain,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+    return TurboTopupScaffold(
+      title: errorTitle,
+      onClose: () {
+        onDismiss();
+        Navigator.pop(context);
+      },
+      actions: [
+        if (onTryAgain != null)
+          ModalAction(
+            title: appLocalizationsOf(context).tryAgain,
+            action: onTryAgain,
           ),
-          // Close button in top right
-          Positioned(
-            right: 20,
-            top: 20,
-            child: ArDriveClickArea(
-              child: GestureDetector(
-                onTap: () {
-                  onDismiss();
-                  Navigator.pop(context);
-                },
-                child: ArDriveIcons.x(),
-              ),
-            ),
-          ),
-        ],
+      ],
+      child: ArDriveNotice(
+        type: ArDriveNoticeType.error,
+        message: errorMessage,
       ),
     );
   }

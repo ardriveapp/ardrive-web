@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
@@ -41,7 +42,8 @@ class TurboSuccessView extends StatelessWidget {
       amountPaid: amountPaid,
       creditsReceived: creditsReceived,
       storageEstimate: storageEstimate,
-      newBalanceCredits: newBalanceCredits,
+      // The glossary's lowercase "credits" after an amount.
+      newBalanceCredits: newBalanceCredits?.replaceAll(' Credits', ' credits'),
       newBalanceStorage: newBalanceStorage,
     );
   }
@@ -103,11 +105,6 @@ class _SuccessViewState extends State<SuccessView> {
     }
   }
 
-  bool get _hasPaymentDetails =>
-      widget.amountPaid != null ||
-      widget.storageEstimate != null ||
-      widget.newBalanceStorage != null;
-
   /// Formats storage value for display, adding ~ prefix only if not already present
   String _formatStorageSubvalue(String storage) {
     if (storage.startsWith('~')) {
@@ -120,7 +117,7 @@ class _SuccessViewState extends State<SuccessView> {
     BuildContext context,
     String label,
     String value,
-    ArDriveColors colors, {
+    ArDriveColorTokens colors, {
     bool isBold = false,
   }) {
     return Row(
@@ -129,14 +126,14 @@ class _SuccessViewState extends State<SuccessView> {
         Text(
           label,
           style: ArDriveTypographyNew.of(context).paragraphSmall(
-            color: colors.themeFgMuted,
+            color: colors.textMid,
           ),
         ),
         Text(
           value,
           style: ArDriveTypographyNew.of(context).paragraphSmall(
             fontWeight: isBold ? ArFontWeight.bold : ArFontWeight.semiBold,
-            color: colors.themeFgDefault,
+            color: colors.textHigh,
           ),
         ),
       ],
@@ -148,7 +145,7 @@ class _SuccessViewState extends State<SuccessView> {
     String label,
     String value,
     String? subvalue,
-    ArDriveColors colors, {
+    ArDriveColorTokens colors, {
     bool isHighlighted = false,
   }) {
     return Row(
@@ -157,7 +154,7 @@ class _SuccessViewState extends State<SuccessView> {
         Text(
           label,
           style: ArDriveTypographyNew.of(context).paragraphSmall(
-            color: colors.themeFgMuted,
+            color: colors.textMid,
           ),
         ),
         Column(
@@ -167,16 +164,14 @@ class _SuccessViewState extends State<SuccessView> {
               value,
               style: ArDriveTypographyNew.of(context).paragraphSmall(
                 fontWeight: ArFontWeight.semiBold,
-                color: isHighlighted
-                    ? colors.themeSuccessDefault
-                    : colors.themeFgDefault,
+                color: isHighlighted ? colors.statusSuccessFg : colors.textHigh,
               ),
             ),
             if (subvalue != null)
               Text(
                 subvalue,
                 style: ArDriveTypographyNew.of(context).paragraphSmall(
-                  color: colors.themeFgMuted,
+                  color: colors.textMid,
                 ),
               ),
           ],
@@ -187,181 +182,131 @@ class _SuccessViewState extends State<SuccessView> {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = ArDriveTheme.of(context).themeData;
-    final colors = themeData.colors;
-    final colorTokens = themeData.colorTokens;
-
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
+    final creditsReceived = widget.creditsReceived;
 
     return Stack(
       children: [
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Red top line (ArDrive modal pattern)
-            Container(
-              height: 6,
-              decoration: BoxDecoration(
-                color: colorTokens.containerRed,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  topRight: Radius.circular(8),
-                ),
-              ),
+        TurboTopupScaffold(
+          title: widget.successMessage,
+          actions: [
+            ModalAction.dismiss(
+              title: widget.closeButtonLabel,
+              action: () => Navigator.pop(context),
             ),
-            // Confetti (positioned at top)
-            if (widget.showConfetti)
-              Row(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ConfettiWidget(
-                    numberOfParticles: 10,
-                    blastDirection: -pi / 2,
-                    blastDirectionality: BlastDirectionality.explosive,
-                    confettiController: confettiController1!,
-                    maxBlastForce: 40,
-                    child: const SizedBox(height: 0, width: 0),
-                  ),
-                  ConfettiWidget(
-                    numberOfParticles: 10,
-                    blastDirection: pi / 2,
-                    blastDirectionality: BlastDirectionality.explosive,
-                    confettiController: confettiController2!,
-                    maxBlastForce: 40,
-                    child: const SizedBox(height: 0, width: 0),
-                  ),
-                ],
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ArDriveNotice(
+                type: ArDriveNoticeType.success,
+                message: widget.detailMessage,
               ),
-            // Main content
-            Container(
-              color: colors.themeBgCanvas,
-              padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title - left aligned
-                  Row(
+              // The credits added are the screen's figure.
+              if (creditsReceived != null && creditsReceived.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                Text.rich(
+                  TextSpan(
                     children: [
-                      ArDriveIcons.checkCirle(
-                        size: 28,
-                        color: colors.themeSuccessDefault,
+                      TextSpan(
+                        text: creditsReceived,
+                        style: typography.heading2(
+                          color: colors.textHigh,
+                          fontWeight: ArFontWeight.light,
+                        ),
                       ),
-                      const SizedBox(width: 12),
-                      Text(
-                        widget.successMessage,
-                        style: typography.heading5(
-                          fontWeight: ArFontWeight.bold,
+                      TextSpan(
+                        text: ' credits added',
+                        style: typography.paragraphLarge(
+                          color: colors.textMid,
+                          fontWeight: ArFontWeight.semiBold,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                ),
+                if (widget.storageEstimate != null)
                   Text(
-                    widget.detailMessage,
-                    style: typography.paragraphNormal(
-                      color: colors.themeFgMuted,
-                    ),
+                    _formatStorageSubvalue(widget.storageEstimate!),
+                    style: typography.paragraphNormal(color: colors.textMid),
                   ),
-                  // Purchase details
-                  if (_hasPaymentDetails) ...[
-                    const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: colors.themeBgSubtle,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        children: [
-                          // Amount paid
-                          if (widget.amountPaid != null)
-                            _buildDetailRow(
-                              context,
-                              appLocalizationsOf(context).paymentSummaryPaid,
-                              widget.amountPaid!,
-                              colors,
-                            ),
-                          // Credits added (with storage estimate)
-                          if (widget.creditsReceived != null ||
-                              widget.storageEstimate != null) ...[
-                            const SizedBox(height: 12),
-                            Divider(
-                                color: colors.themeBorderDefault, height: 1),
-                            const SizedBox(height: 12),
-                            _buildDetailRowWithSubvalue(
-                              context,
-                              appLocalizationsOf(context)
-                                  .paymentSummaryCreditsAdded,
-                              widget.creditsReceived ?? '',
-                              widget.storageEstimate != null
-                                  ? _formatStorageSubvalue(
-                                      widget.storageEstimate!)
-                                  : null,
-                              colors,
-                            ),
-                          ],
-                          // New balance (credits with storage as subvalue)
-                          if (widget.newBalanceCredits != null ||
-                              widget.newBalanceStorage != null) ...[
-                            const SizedBox(height: 12),
-                            Divider(
-                                color: colors.themeBorderDefault, height: 1),
-                            const SizedBox(height: 12),
-                            _buildDetailRowWithSubvalue(
-                              context,
-                              appLocalizationsOf(context)
-                                  .paymentSummaryNewBalance,
-                              widget.newBalanceCredits ??
-                                  widget.newBalanceStorage!,
-                              widget.newBalanceCredits != null &&
-                                      widget.newBalanceStorage != null
-                                  ? _formatStorageSubvalue(
-                                      widget.newBalanceStorage!)
-                                  : null,
-                              colors,
-                              isHighlighted: true,
-                            ),
-                          ],
+              ],
+              if (widget.amountPaid != null ||
+                  widget.newBalanceCredits != null ||
+                  widget.newBalanceStorage != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colors.containerRaised,
+                    borderRadius: BorderRadius.circular(ArDriveRadius.md),
+                  ),
+                  child: Column(
+                    children: [
+                      if (widget.amountPaid != null)
+                        _buildDetailRow(
+                          context,
+                          appLocalizationsOf(context).paymentSummaryPaid,
+                          widget.amountPaid!,
+                          colors,
+                        ),
+                      if (widget.newBalanceCredits != null ||
+                          widget.newBalanceStorage != null) ...[
+                        if (widget.amountPaid != null) ...[
+                          const SizedBox(height: 12),
+                          Divider(color: colors.strokeMid, height: 1),
+                          const SizedBox(height: 12),
                         ],
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-                  // Close button - right aligned
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ArDriveButton(
-                      maxHeight: 44,
-                      maxWidth: 143,
-                      text: widget.closeButtonLabel,
-                      fontStyle: typography.paragraphLarge(
-                        fontWeight: ArFontWeight.bold,
-                        color: Colors.white,
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
+                        _buildDetailRowWithSubvalue(
+                          context,
+                          appLocalizationsOf(context).paymentSummaryNewBalance,
+                          widget.newBalanceCredits ?? widget.newBalanceStorage!,
+                          widget.newBalanceCredits != null &&
+                                  widget.newBalanceStorage != null
+                              ? _formatStorageSubvalue(
+                                  widget.newBalanceStorage!)
+                              : null,
+                          colors,
+                          isHighlighted: true,
+                        ),
+                      ],
+                    ],
                   ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        // Close button in top right
-        Positioned(
-          right: 20,
-          top: 20,
-          child: ArDriveClickArea(
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: ArDriveIcons.x(),
-            ),
+                ),
+              ],
+            ],
           ),
         ),
+        // Confetti, from the top corners.
+        if (widget.showConfetti)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ConfettiWidget(
+                  numberOfParticles: 10,
+                  blastDirection: -pi / 2,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  confettiController: confettiController1!,
+                  maxBlastForce: 40,
+                  child: const SizedBox(height: 0, width: 0),
+                ),
+                ConfettiWidget(
+                  numberOfParticles: 10,
+                  blastDirection: pi / 2,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  confettiController: confettiController2!,
+                  maxBlastForce: 40,
+                  child: const SizedBox(height: 0, width: 0),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }

@@ -210,7 +210,7 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,7 +219,7 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
           widget.isTokenAmount ? 'Token amount' : 'Amount',
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
-            color: colors.themeFgDefault,
+            color: colors.textHigh,
           ),
         ),
         const SizedBox(height: 12),
@@ -233,7 +233,7 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
   }
 
   Widget _buildPresetGrid(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     final presetsList = widget.presets.toList();
@@ -263,7 +263,7 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
   }
 
   Widget _buildCustomAmountSection(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     final labelText = widget.isTokenAmount
@@ -277,7 +277,7 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
           labelText,
           style: typography.paragraphSmall(
             fontWeight: ArFontWeight.semiBold,
-            color: colors.themeFgMuted,
+            color: colors.textMid,
           ),
         ),
         const SizedBox(height: 8),
@@ -298,7 +298,7 @@ class _FiatPresetSelectorState extends State<FiatPresetSelector> {
           Text(
             _validationMessage!,
             style: typography.paragraphSmall(
-              color: colors.themeErrorDefault,
+              color: colors.statusErrorFg,
             ),
           ),
         ],
@@ -311,7 +311,7 @@ class _PresetButton extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
-  final ArDriveColors colors;
+  final ArDriveColorTokens colors;
   final ArdriveTypographyNew typography;
 
   const _PresetButton({
@@ -324,14 +324,15 @@ class _PresetButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ArDriveButton(
-      backgroundColor:
-          isSelected ? colors.themeFgMuted : colors.themeBorderDefault,
-      style: ArDriveButtonStyle.primary,
-      maxHeight: 44,
+    return ArDriveButtonNew(
+      typography: ArDriveTypographyNew.of(context),
+      variant: ButtonVariant.primary,
+      // Unselected chips are raised tiles, like the payment methods above;
+      // the chosen one is filled.
+      backgroundColor: isSelected ? colors.textMid : colors.containerRaised,
       fontStyle: typography.paragraphSmall(
         fontWeight: ArFontWeight.bold,
-        color: isSelected ? colors.themeBgSurface : colors.themeFgMuted,
+        color: isSelected ? colors.containerRaised : colors.textHigh,
       ),
       text: label,
       onPressed: onTap,
@@ -360,17 +361,17 @@ class _CustomAmountTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: isSelected ? colors.themeFgMuted : colors.themeBorderDefault,
+          color: isSelected ? colors.textMid : colors.strokeMid,
           width: isSelected ? 2 : 1,
         ),
         borderRadius: BorderRadius.circular(8),
-        color: colors.themeBgCanvas,
+        color: colors.inputDefault,
       ),
       child: TextField(
         controller: controller,
@@ -384,7 +385,7 @@ class _CustomAmountTextField extends StatelessWidget {
         ],
         style: typography.paragraphNormal(
           fontWeight: ArFontWeight.semiBold,
-          color: colors.themeFgDefault,
+          color: colors.textHigh,
         ),
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(
@@ -394,17 +395,17 @@ class _CustomAmountTextField extends StatelessWidget {
           border: InputBorder.none,
           hintText: '0',
           hintStyle: typography.paragraphNormal(
-            color: colors.themeFgDisabled,
+            color: colors.textXLow,
           ),
           prefixText: prefix != null ? '$prefix ' : null,
           prefixStyle: typography.paragraphNormal(
             fontWeight: ArFontWeight.bold,
-            color: colors.themeFgDefault,
+            color: colors.textHigh,
           ),
           suffixText: suffix,
           suffixStyle: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
-            color: colors.themeFgMuted,
+            color: colors.textMid,
           ),
         ),
         onChanged: onChanged,

@@ -1,7 +1,9 @@
 import 'dart:math';
 
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
@@ -46,10 +48,9 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = ArDriveTheme.of(context).themeData;
-    final colors = themeData.colors;
-    final colorTokens = themeData.colorTokens;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
+    final onDone = widget.onDone;
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
@@ -63,130 +64,105 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
         return Stack(
           clipBehavior: Clip.none,
           children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Red top line (ArDrive modal pattern)
-                Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: colorTokens.containerRed,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      topRight: Radius.circular(8),
+            // The same layout as the card payment's success screen.
+            TurboTopupScaffold(
+              title: appLocalizationsOf(context).paymentSuccessful,
+              canClose: onDone != null,
+              onClose: onDone,
+              actions: [
+                if (onDone != null)
+                  ModalAction.dismiss(
+                    title: appLocalizationsOf(context).close,
+                    action: onDone,
+                  ),
+              ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ArDriveNotice(
+                    type: ArDriveNoticeType.success,
+                    message: appLocalizationsOf(context)
+                        .yourCreditsWillBeAddedToYourAccount,
+                  ),
+                  // The credits added are the screen's figure.
+                  const SizedBox(height: 24),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: _formatCredits(state.creditsAdded),
+                          style: typography.heading2(
+                            color: colors.textHigh,
+                            fontWeight: ArFontWeight.light,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' credits added',
+                          style: typography.paragraphLarge(
+                            color: colors.textMid,
+                            fontWeight: ArFontWeight.semiBold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                // Confetti (positioned at top, blasting downward into content)
-                Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ConfettiWidget(
-                      numberOfParticles: 15,
-                      blastDirection: pi / 4, // Down and to the right
-                      blastDirectionality: BlastDirectionality.explosive,
-                      confettiController: _confettiController1,
-                      maxBlastForce: 30,
-                      minBlastForce: 10,
-                      gravity: 0.2,
-                      emissionFrequency: 0.05,
-                      child: const SizedBox(height: 0, width: 0),
+                  if (state.storageEstimate != null)
+                    Text(
+                      _approximately(state.storageEstimate!),
+                      style: typography.paragraphNormal(color: colors.textMid),
                     ),
-                    ConfettiWidget(
-                      numberOfParticles: 15,
-                      blastDirection: 3 * pi / 4, // Down and to the left
-                      blastDirectionality: BlastDirectionality.explosive,
-                      confettiController: _confettiController2,
-                      maxBlastForce: 30,
-                      minBlastForce: 10,
-                      gravity: 0.2,
-                      emissionFrequency: 0.05,
-                      child: const SizedBox(height: 0, width: 0),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colors.containerRaised,
+                      borderRadius: BorderRadius.circular(ArDriveRadius.md),
                     ),
-                  ],
-                ),
-                // Main content
-                Container(
-                  color: colors.themeBgCanvas,
-                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title - left aligned with icon
-                      Row(
-                        children: [
-                          ArDriveIcons.checkCirle(
-                            size: 28,
-                            color: colors.themeSuccessDefault,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Payment successful',
-                            style: typography.heading5(
-                              fontWeight: ArFontWeight.bold,
-                            ),
+                    child: Column(
+                      children: [
+                        _SummaryRow(
+                          label: 'Paid',
+                          value: _formatTokenAmount(
+                              state.tokenAmountSpent, token.symbol),
+                          subValue: state.usdValue != null
+                              ? '\$${state.usdValue!.toStringAsFixed(2)}'
+                              : null,
+                        ),
+                        if (state.newBalance != null) ...[
+                          const SizedBox(height: 12),
+                          Divider(color: colors.strokeMid, height: 1),
+                          const SizedBox(height: 12),
+                          _SummaryRow(
+                            label: 'New balance',
+                            value:
+                                '${_formatCredits(state.newBalance!)} credits',
+                            subValue: state.newBalanceStorage != null
+                                ? _approximately(state.newBalanceStorage!)
+                                : null,
+                            isHighlighted: true,
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
 
-                      // Summary card
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: colors.themeBgSubtle,
-                          borderRadius: BorderRadius.circular(8),
+                  // Transaction ID as a link to the explorer, in monospace
+                  if (txId.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Text(
+                          'Transaction: ',
+                          style: typography.paragraphSmall(
+                            color: colors.textMid,
+                          ),
                         ),
-                        child: Column(
-                          children: [
-                            // Amount paid
-                            _SummaryRow(
-                              label: 'Paid',
-                              value: _formatTokenAmount(
-                                  state.tokenAmountSpent, token.symbol),
-                              subValue: state.usdValue != null
-                                  ? '\$${state.usdValue!.toStringAsFixed(2)}'
-                                  : null,
-                            ),
-                            const SizedBox(height: 12),
-                            Divider(
-                                color: colors.themeBorderDefault, height: 1),
-                            const SizedBox(height: 12),
-                            // Credits added (with storage estimate)
-                            _SummaryRow(
-                              label: 'Credits added',
-                              value: _formatCredits(state.creditsAdded),
-                              subValue: state.storageEstimate,
-                            ),
-                            // New balance (if available)
-                            if (state.newBalance != null) ...[
-                              const SizedBox(height: 12),
-                              Divider(
-                                  color: colors.themeBorderDefault, height: 1),
-                              const SizedBox(height: 12),
-                              _SummaryRow(
-                                label: 'New balance',
-                                value: _formatCredits(state.newBalance!),
-                                subValue: state.newBalanceStorage != null
-                                    ? '~${state.newBalanceStorage}'
-                                    : null,
-                                isHighlighted: true,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-
-                      // Transaction ID as clickable link
-                      if (txId.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: GestureDetector(
+                        Flexible(
+                          child: ArDriveLink(
+                            text: _truncateTxId(txId),
+                            style: typography.code(fontSize: 12),
+                            external: true,
                             onTap: () async {
                               final url = Uri.parse(token.getExplorerUrl(txId));
                               if (await canLaunchUrl(url)) {
@@ -194,62 +170,46 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                                     mode: LaunchMode.externalApplication);
                               }
                             },
-                            child: Row(
-                              children: [
-                                Text(
-                                  'Transaction: ',
-                                  style: typography.paragraphSmall(
-                                    color: colors.themeFgMuted,
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    _truncateTxId(txId),
-                                    style: typography.paragraphSmall(
-                                      fontWeight: ArFontWeight.semiBold,
-                                      color: colors.themeAccentDefault,
-                                    ),
-                                  ),
-                                ),
-                                ArDriveIcons.newWindow(
-                                  size: 14,
-                                  color: colors.themeAccentDefault,
-                                ),
-                              ],
-                            ),
                           ),
                         ),
                       ],
-
-                      const SizedBox(height: 24),
-                      // Done button - right aligned
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: ArDriveButton(
-                          maxHeight: 44,
-                          maxWidth: 143,
-                          text: 'Done',
-                          fontStyle: typography.paragraphLarge(
-                            fontWeight: ArFontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          onPressed: widget.onDone,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                    ),
+                  ],
+                ],
+              ),
             ),
-            // Close button in top right
+            // Confetti (at the top, blasting downward into the content)
             Positioned(
-              right: 20,
-              top: 20,
-              child: ArDriveClickArea(
-                child: GestureDetector(
-                  onTap: widget.onDone,
-                  child: ArDriveIcons.x(),
-                ),
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ConfettiWidget(
+                    numberOfParticles: 15,
+                    blastDirection: pi / 4, // Down and to the right
+                    blastDirectionality: BlastDirectionality.explosive,
+                    confettiController: _confettiController1,
+                    maxBlastForce: 30,
+                    minBlastForce: 10,
+                    gravity: 0.2,
+                    emissionFrequency: 0.05,
+                    child: const SizedBox(height: 0, width: 0),
+                  ),
+                  ConfettiWidget(
+                    numberOfParticles: 15,
+                    blastDirection: 3 * pi / 4, // Down and to the left
+                    blastDirectionality: BlastDirectionality.explosive,
+                    confettiController: _confettiController2,
+                    maxBlastForce: 30,
+                    minBlastForce: 10,
+                    gravity: 0.2,
+                    emissionFrequency: 0.05,
+                    child: const SizedBox(height: 0, width: 0),
+                  ),
+                ],
               ),
             ),
           ],
@@ -273,14 +233,18 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
     // 1 Credit = 10^12 winc
     final creditValue = credits.toDouble() / 1e12;
     if (creditValue >= 1) {
-      return '${creditValue.toStringAsFixed(2)} Credits';
+      return creditValue.toStringAsFixed(2);
     } else if (creditValue >= 0.01) {
-      return '${creditValue.toStringAsFixed(4)} Credits';
+      return creditValue.toStringAsFixed(4);
     } else {
       // For very small amounts, show more decimal places
-      return '${creditValue.toStringAsFixed(6)} Credits';
+      return creditValue.toStringAsFixed(6);
     }
   }
+
+  /// A storage estimate, marked as approximate once.
+  String _approximately(String storage) =>
+      storage.startsWith('~') ? storage : '~$storage';
 
   String _truncateTxId(String txId) {
     if (txId.length < 20) return txId;
@@ -304,7 +268,7 @@ class _SummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Row(
@@ -313,7 +277,7 @@ class _SummaryRow extends StatelessWidget {
         Text(
           label,
           style: typography.paragraphNormal(
-            color: colors.themeFgMuted,
+            color: colors.textMid,
           ),
         ),
         Column(
@@ -324,16 +288,14 @@ class _SummaryRow extends StatelessWidget {
               style: typography.paragraphNormal(
                 fontWeight:
                     isHighlighted ? ArFontWeight.bold : ArFontWeight.semiBold,
-                color: isHighlighted
-                    ? colors.themeSuccessDefault
-                    : colors.themeFgDefault,
+                color: isHighlighted ? colors.statusSuccessFg : colors.textHigh,
               ),
             ),
             if (subValue != null)
               Text(
                 subValue!,
                 style: typography.paragraphSmall(
-                  color: colors.themeFgMuted,
+                  color: colors.textMid,
                 ),
               ),
           ],
@@ -356,9 +318,7 @@ class CryptoErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = ArDriveTheme.of(context).themeData;
-    final colors = themeData.colors;
-    final colorTokens = themeData.colorTokens;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
@@ -374,132 +334,44 @@ class CryptoErrorView extends StatelessWidget {
           canRetry = state.canRetry;
         }
 
-        return Stack(
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Red top line (ArDrive modal pattern)
-                Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: colorTokens.containerRed,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      topRight: Radius.circular(8),
-                    ),
-                  ),
-                ),
-                // Main content
-                Container(
-                  color: colors.themeBgCanvas,
-                  padding: const EdgeInsets.fromLTRB(24, 40, 24, 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title - left aligned
-                      Text(
-                        'Payment failed',
-                        style: typography.heading5(
-                          fontWeight: ArFontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Icon and message
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ArDriveIcons.triangle(
-                            size: 32,
-                            color: colors.themeErrorDefault,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  errorMessage,
-                                  style: typography.paragraphNormal(
-                                    color: colors.themeFgMuted,
-                                  ),
-                                ),
-                                if (errorDetails != null &&
-                                    errorDetails.isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    errorDetails,
-                                    style: typography.paragraphSmall(
-                                      color: colors.themeFgMuted,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // No funds charged notice
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: colors.themeBgSubtle,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: colors.themeBorderDefault),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              color: colors.themeFgMuted,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Your funds have not been charged.',
-                              style: typography.paragraphSmall(
-                                color: colors.themeFgDefault,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // Action button - right aligned
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: ArDriveButton(
-                          maxHeight: 44,
-                          maxWidth: 143,
-                          text: canRetry ? 'Try again' : 'Close',
-                          fontStyle: typography.paragraphLarge(
-                            fontWeight: ArFontWeight.bold,
-                            color: Colors.white,
-                          ),
-                          onPressed: canRetry ? onRetry : onClose,
-                        ),
-                      ),
-                    ],
+        final action = canRetry ? onRetry : onClose;
+
+        return TurboTopupScaffold(
+          title: 'Payment failed',
+          canClose: onClose != null,
+          onClose: onClose,
+          actions: [
+            ModalAction(
+              title: canRetry ? 'Try again' : 'Close',
+              isEnable: action != null,
+              action: action ?? () {},
+            ),
+          ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ArDriveNotice(
+                type: ArDriveNoticeType.error,
+                message: errorMessage,
+              ),
+              if (errorDetails != null && errorDetails.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  errorDetails,
+                  style: typography.paragraphSmall(
+                    color: colors.textMid,
                   ),
                 ),
               ],
-            ),
-            // Close button in top right
-            Positioned(
-              right: 20,
-              top: 20,
-              child: ArDriveClickArea(
-                child: GestureDetector(
-                  onTap: onClose,
-                  child: ArDriveIcons.x(),
-                ),
+              const SizedBox(height: 16),
+              // No funds charged notice
+              const ArDriveNotice(
+                type: ArDriveNoticeType.info,
+                message: 'Your funds have not been charged.',
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );

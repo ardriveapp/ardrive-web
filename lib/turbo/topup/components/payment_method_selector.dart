@@ -25,7 +25,7 @@ class PaymentMethodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Column(
@@ -35,13 +35,13 @@ class PaymentMethodSelector extends StatelessWidget {
           appLocalizationsOf(context).paymentMethod,
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
-            color: colors.themeFgDefault,
+            color: colors.textHigh,
           ),
         ),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: colors.themeBorderDefault),
+            border: Border.all(color: colors.strokeMid),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -96,11 +96,11 @@ class _PaymentTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Material(
-      color: isSelected ? colors.themeFgMuted : colors.themeBgSurface,
+      color: isSelected ? colors.textMid : colors.containerRaised,
       borderRadius: BorderRadius.only(
         topLeft: isFirst ? const Radius.circular(7) : Radius.zero,
         bottomLeft: isFirst ? const Radius.circular(7) : Radius.zero,
@@ -119,7 +119,7 @@ class _PaymentTab extends StatelessWidget {
               Icon(
                 icon,
                 size: 18,
-                color: isSelected ? colors.themeBgSurface : colors.themeFgMuted,
+                color: isSelected ? colors.containerRaised : colors.textMid,
               ),
               const SizedBox(width: 8),
               Flexible(
@@ -127,9 +127,7 @@ class _PaymentTab extends StatelessWidget {
                   label,
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
-                    color: isSelected
-                        ? colors.themeBgSurface
-                        : colors.themeFgMuted,
+                    color: isSelected ? colors.containerRaised : colors.textMid,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -158,11 +156,11 @@ class _CryptoPaymentTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Material(
-      color: isSelected ? colors.themeFgMuted : colors.themeBgSurface,
+      color: isSelected ? colors.textMid : colors.containerRaised,
       borderRadius: const BorderRadius.only(
         topRight: Radius.circular(7),
         bottomRight: Radius.circular(7),
@@ -188,7 +186,7 @@ class _CryptoPaymentTab extends StatelessWidget {
               Icon(
                 Icons.account_balance_wallet,
                 size: 18,
-                color: isSelected ? colors.themeBgSurface : colors.themeFgMuted,
+                color: isSelected ? colors.containerRaised : colors.textMid,
               ),
               const SizedBox(width: 8),
               Flexible(
@@ -197,9 +195,7 @@ class _CryptoPaymentTab extends StatelessWidget {
                       appLocalizationsOf(context).paymentMethodCrypto,
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
-                    color: isSelected
-                        ? colors.themeBgSurface
-                        : colors.themeFgMuted,
+                    color: isSelected ? colors.containerRaised : colors.textMid,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -208,7 +204,7 @@ class _CryptoPaymentTab extends StatelessWidget {
               Icon(
                 Icons.keyboard_arrow_down,
                 size: 16,
-                color: isSelected ? colors.themeBgSurface : colors.themeFgMuted,
+                color: isSelected ? colors.containerRaised : colors.textMid,
               ),
             ],
           ),
@@ -218,12 +214,11 @@ class _CryptoPaymentTab extends StatelessWidget {
   }
 
   List<PopupMenuItem<CryptoToken>> _buildTokenMenuItems(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    final availableTokens = TokenGroup.allGroups
-        .expand((group) => group.tokens)
-        .toList();
+    final availableTokens =
+        TokenGroup.allGroups.expand((group) => group.tokens).toList();
 
     return availableTokens.map((token) {
       return PopupMenuItem<CryptoToken>(
@@ -240,7 +235,7 @@ class _CryptoPaymentTab extends StatelessWidget {
                       token.displayName,
                       style: typography.paragraphNormal(
                         fontWeight: ArFontWeight.semiBold,
-                        color: colors.themeFgDefault,
+                        color: colors.textHigh,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -267,14 +262,14 @@ class _TokenIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final isSvg = token.logoAsset.endsWith('.svg');
 
     return Container(
       width: _size,
       height: _size,
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(_size / 2),
       ),
       child: ClipRRect(

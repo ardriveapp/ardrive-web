@@ -2656,7 +2656,7 @@
   "@paymentMethodCrypto": {
     "description": "Cryptocurrency payment option label"
   },
-  "paymentSuccessful": "Payment successful!",
+  "paymentSuccessful": "Payment successful",
   "@paymentSuccessful": {},
   "paymentSummaryPaid": "Paid",
   "@paymentSummaryPaid": {

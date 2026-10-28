@@ -9,11 +9,9 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 class TurboReviewView extends StatefulWidget {
   const TurboReviewView({super.key});
@@ -31,17 +29,17 @@ class _TurboReviewViewState extends State<TurboReviewView> {
   @override
   Widget build(BuildContext context) {
     final theme = ArDriveTheme.of(context).themeData;
-    final colors = theme.colors;
+    final colors = theme.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     // custom theme for the text fields on the top-up form
     final textTheme = theme.copyWith(
       textFieldTheme: theme.textFieldTheme.copyWith(
-        inputBackgroundColor: theme.colors.themeBgCanvas,
-        labelColor: theme.colors.themeFgDefault,
-        requiredLabelColor: theme.colors.themeFgDefault,
+        inputBackgroundColor: theme.colorTokens.containerL3,
+        labelColor: theme.colorTokens.textHigh,
+        requiredLabelColor: theme.colorTokens.textHigh,
         inputTextStyle: theme.textFieldTheme.inputTextStyle.copyWith(
-          color: theme.colors.themeFgMuted,
+          color: theme.colorTokens.textMid,
           fontWeight: FontWeight.w600,
           height: 1.5,
           fontSize: 16,
@@ -51,7 +49,7 @@ class _TurboReviewViewState extends State<TurboReviewView> {
           vertical: 8,
         ),
         labelStyle: TextStyle(
-          color: theme.colors.themeFgDefault,
+          color: theme.colorTokens.textHigh,
           fontWeight: FontWeight.w600,
           height: 1.5,
           fontSize: 16,
@@ -72,56 +70,40 @@ class _TurboReviewViewState extends State<TurboReviewView> {
         } else if (state is PaymentReviewPaymentError) {
           showArDriveDialog(
             context,
-            content: ArDriveStandardModal(
-              width: 575,
-              content: TurboErrorView(
-                errorType: state.errorType,
-                onDismiss: () {
-                  context
-                      .read<TurboTopupFlowBloc>()
-                      .add(const TurboTopUpShowPaymentFormView(2));
-                },
-                onTryAgain: () {
-                  Navigator.pop(context);
-                  context
-                      .read<TurboTopupFlowBloc>()
-                      .add(const TurboTopUpShowPaymentFormView(2));
-                },
-              ),
+            content: TurboErrorView(
+              errorType: state.errorType,
+              onDismiss: () {
+                context
+                    .read<TurboTopupFlowBloc>()
+                    .add(const TurboTopUpShowPaymentFormView(2));
+              },
+              onTryAgain: () {
+                Navigator.pop(context);
+                context
+                    .read<TurboTopupFlowBloc>()
+                    .add(const TurboTopUpShowPaymentFormView(2));
+              },
             ),
             barrierDismissible: false,
-            barrierColor: ArDriveTheme.of(context)
-                .themeData
-                .colors
-                .shadow
-                .withOpacity(0.9),
           );
         } else if (state is PaymentReviewErrorLoadingPaymentModel) {
           showArDriveDialog(
             context,
-            content: ArDriveStandardModal(
-              width: 575,
-              content: TurboErrorView(
-                errorType: TurboErrorType.fetchPaymentIntentFailed,
-                onDismiss: () {
-                  context
-                      .read<TurboTopupFlowBloc>()
-                      .add(const TurboTopUpShowPaymentFormView(2));
-                },
-                onTryAgain: () {
-                  Navigator.pop(context);
-                  context.read<PaymentReviewBloc>().add(
-                        PaymentReviewLoadPaymentModel(),
-                      );
-                },
-              ),
+            content: TurboErrorView(
+              errorType: TurboErrorType.fetchPaymentIntentFailed,
+              onDismiss: () {
+                context
+                    .read<TurboTopupFlowBloc>()
+                    .add(const TurboTopUpShowPaymentFormView(2));
+              },
+              onTryAgain: () {
+                Navigator.pop(context);
+                context.read<PaymentReviewBloc>().add(
+                      PaymentReviewLoadPaymentModel(),
+                    );
+              },
             ),
             barrierDismissible: false,
-            barrierColor: ArDriveTheme.of(context)
-                .themeData
-                .colors
-                .shadow
-                .withOpacity(0.9),
           );
         }
       },
@@ -135,10 +117,11 @@ class _TurboReviewViewState extends State<TurboReviewView> {
           if (state is PaymentReviewLoadingPaymentModel ||
               state is PaymentReviewInitial) {
             return const TurboTopupScaffold(
+              title: 'Confirm payment',
               child: SizedBox(
-                height: 575,
+                height: 400,
                 child: Center(
-                  child: CircularProgressIndicator(),
+                  child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
                 ),
               ),
             );
@@ -146,129 +129,95 @@ class _TurboReviewViewState extends State<TurboReviewView> {
 
           final loadedState = state as PaymentReviewPaymentModelLoaded;
 
-          return TurboTopupScaffold(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header with timer
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Confirm payment',
-                      style: typography.heading5(
-                        fontWeight: ArFontWeight.bold,
-                        color: colors.themeFgDefault,
-                      ),
-                    ),
-                    BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
-                      builder: (context, state) {
-                        if (state is PaymentReviewPaymentModelLoaded) {
-                          return _QuoteTimerBar(
-                            expirationDate: state.quoteExpirationDate,
-                            isLoading: state is PaymentReviewLoadingQuote,
-                            onRefresh: () {
-                              context
-                                  .read<PaymentReviewBloc>()
-                                  .add(PaymentReviewRefreshQuote());
-                            },
-                          );
-                        }
-                        return const SizedBox.shrink();
+          // Rebuilt on every payment state, so the action row follows the
+          // quote and the payment while the sections keep the loaded model.
+          return BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
+            builder: (context, payState) => TurboTopupScaffold(
+              title: 'Confirm payment',
+              actions: _actions(context, payState),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // The quote's timer, with its refresh.
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: _QuoteTimerBar(
+                      expirationDate: loadedState.quoteExpirationDate,
+                      isLoading: payState is PaymentReviewLoadingQuote,
+                      onRefresh: () {
+                        context
+                            .read<PaymentReviewBloc>()
+                            .add(PaymentReviewRefreshQuote());
                       },
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                  ),
+                  const SizedBox(height: 12),
 
-                // Section 1: Paying With
-                _PayingWithSection(
-                  total: loadedState.total,
-                  subTotal: loadedState.subTotal,
-                  promoDiscount: loadedState.promoDiscount,
-                ),
-                const SizedBox(height: 12),
+                  // Section 1: Paying With
+                  _PayingWithSection(
+                    total: loadedState.total,
+                    subTotal: loadedState.subTotal,
+                    promoDiscount: loadedState.promoDiscount,
+                  ),
+                  const SizedBox(height: 12),
 
-                // Section 2: You'll Receive
-                _YoullReceiveSection(
-                  creditsToReceive: loadedState.creditsWinc,
-                  storageEstimate: loadedState.storageEstimate,
-                  newBalance: loadedState.newBalance,
-                  newBalanceStorage: loadedState.newBalanceStorage,
-                ),
-                const SizedBox(height: 12),
+                  // Section 2: You'll Receive
+                  _YoullReceiveSection(
+                    creditsToReceive: loadedState.creditsWinc,
+                    storageEstimate: loadedState.storageEstimate,
+                    newBalance: loadedState.newBalance,
+                    newBalanceStorage: loadedState.newBalanceStorage,
+                  ),
+                  const SizedBox(height: 12),
 
-                // Email section
-                _EmailSection(
-                  textTheme: textTheme,
-                  emailController: _emailController,
-                  emailIsValid: _emailIsValid,
-                  emailChecked: _emailChecked,
-                  onEmailValidChanged: (valid) {
-                    setState(() {
-                      _emailIsValid = valid;
-                      if (!valid) _emailChecked = false;
-                    });
-                  },
-                  onEmailChanged: () {
-                    if (!_hasAutomaticChecked && _emailIsValid) {
+                  // Email section
+                  _EmailSection(
+                    textTheme: textTheme,
+                    emailController: _emailController,
+                    emailIsValid: _emailIsValid,
+                    emailChecked: _emailChecked,
+                    onEmailValidChanged: (valid) {
                       setState(() {
-                        _emailChecked = true;
-                        _hasAutomaticChecked = true;
+                        _emailIsValid = valid;
+                        if (!valid) _emailChecked = false;
                       });
-                    }
-                  },
-                  onCheckChanged: (checked) {
-                    setState(() {
-                      _emailChecked = checked;
-                    });
-                  },
-                ),
-                const SizedBox(height: 12),
+                    },
+                    onEmailChanged: () {
+                      if (!_hasAutomaticChecked && _emailIsValid) {
+                        setState(() {
+                          _emailChecked = true;
+                          _hasAutomaticChecked = true;
+                        });
+                      }
+                    },
+                    onCheckChanged: (checked) {
+                      setState(() {
+                        _emailChecked = checked;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
 
-                // Terms notice (left aligned)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text.rich(
+                  // Terms notice
+                  Text.rich(
                     TextSpan(
+                      style: typography.paragraphSmall(color: colors.textMid),
                       children: [
-                        TextSpan(
-                          text: 'By continuing, you agree to the ',
-                          style: typography.paragraphSmall(
-                            color: colors.themeFgMuted,
-                          ),
-                        ),
-                        TextSpan(
+                        const TextSpan(
+                            text: 'By continuing, you agree to the '),
+                        ArDriveLink.span(
                           text: 'Terms of Service',
-                          style: typography
-                              .paragraphSmall(
-                                color: colors.themeFgMuted,
-                              )
-                              .copyWith(
-                                decoration: TextDecoration.underline,
-                              ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () => openUrl(
-                                  url: Resources.agreementLink,
-                                ),
+                          external: true,
+                          style: typography.paragraphSmall(),
+                          onTap: () => openUrl(url: Resources.agreementLink),
                         ),
-                        TextSpan(
-                          text: '.',
-                          style: typography.paragraphSmall(
-                            color: colors.themeFgMuted,
-                          ),
-                        ),
+                        const TextSpan(text: '.'),
                       ],
                     ),
-                    textAlign: TextAlign.left,
                   ),
-                ),
-                const SizedBox(height: 16),
-
-                // Buttons (fixed at bottom)
-                _buildFooterButtons(context),
-              ],
+                ],
+              ),
             ),
           );
         },
@@ -276,111 +225,29 @@ class _TurboReviewViewState extends State<TurboReviewView> {
     );
   }
 
-  Widget _buildFooterButtons(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colors;
+  /// Back, and Confirm & Pay: disabled while the quote refreshes, without a
+  /// valid email or once the quote has expired, and saying so while paying.
+  List<ModalAction> _actions(BuildContext context, PaymentReviewState state) {
+    final isPaying = state is PaymentReviewLoading;
+    final quoteExpired = state is PaymentReviewPaymentModelLoaded &&
+        DateTime.now().isAfter(state.quoteExpirationDate);
 
-    return ScreenTypeLayout.builder(
-      mobile: (context) => Column(
-        children: [
-          SizedBox(
-            width: double.maxFinite,
-            child: BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
-              builder: (context, state) {
-                return ArDriveButton(
-                  maxHeight: 48,
-                  text: 'Confirm & Pay',
-                  fontStyle: typography.paragraphLarge(
-                    fontWeight: ArFontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  isDisabled: state is PaymentReviewLoadingQuote ||
-                      !_emailIsValid ||
-                      (state is PaymentReviewPaymentModelLoaded &&
-                          DateTime.now().isAfter(state.quoteExpirationDate)),
-                  customContent: state is PaymentReviewLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : null,
-                  onPressed: () => _handlePay(context, state),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          ArDriveClickArea(
-            child: GestureDetector(
-              onTap: () {
-                context
-                    .read<TurboTopupFlowBloc>()
-                    .add(const TurboTopUpShowPaymentFormView(2));
-              },
-              child: Text(
-                appLocalizationsOf(context).back,
-                style: typography.paragraphLarge(
-                  fontWeight: ArFontWeight.bold,
-                  color: colors.themeFgMuted,
-                ),
-              ),
-            ),
-          ),
-        ],
+    return [
+      ModalAction.dismiss(
+        title: appLocalizationsOf(context).back,
+        action: () => context
+            .read<TurboTopupFlowBloc>()
+            .add(const TurboTopUpShowPaymentFormView(2)),
       ),
-      desktop: (context) => Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          ArDriveClickArea(
-            child: GestureDetector(
-              onTap: () {
-                context
-                    .read<TurboTopupFlowBloc>()
-                    .add(const TurboTopUpShowPaymentFormView(2));
-              },
-              child: Text(
-                appLocalizationsOf(context).back,
-                style: typography.paragraphLarge(
-                  fontWeight: ArFontWeight.bold,
-                  color: colors.themeFgMuted,
-                ),
-              ),
-            ),
-          ),
-          BlocBuilder<PaymentReviewBloc, PaymentReviewState>(
-            builder: (context, state) {
-              return ArDriveButton(
-                maxHeight: 48,
-                text: 'Confirm & Pay',
-                fontStyle: typography.paragraphLarge(
-                  fontWeight: ArFontWeight.bold,
-                  color: Colors.white,
-                ),
-                isDisabled: state is PaymentReviewLoadingQuote ||
-                    !_emailIsValid ||
-                    (state is PaymentReviewPaymentModelLoaded &&
-                        DateTime.now().isAfter(state.quoteExpirationDate)),
-                customContent: state is PaymentReviewLoading
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : null,
-                onPressed: () => _handlePay(context, state),
-              );
-            },
-          ),
-        ],
+      ModalAction(
+        title: isPaying ? 'Processing...' : 'Confirm & Pay',
+        isEnable: !isPaying &&
+            state is! PaymentReviewLoadingQuote &&
+            _emailIsValid &&
+            !quoteExpired,
+        action: () => _handlePay(context, state),
       ),
-    );
+    ];
   }
 
   void _handlePay(BuildContext context, PaymentReviewState state) {
@@ -412,7 +279,7 @@ class _PayingWithSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     // Calculate discount percentage
@@ -428,9 +295,9 @@ class _PayingWithSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,13 +310,13 @@ class _PayingWithSection extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: colors.themeBgSurface,
+                  color: colors.containerRaised,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: colors.themeBorderDefault),
+                  border: Border.all(color: colors.strokeMid),
                 ),
                 child: Icon(
                   Icons.credit_card,
-                  color: colors.themeFgDefault,
+                  color: colors.textHigh,
                   size: 20,
                 ),
               ),
@@ -463,13 +330,13 @@ class _PayingWithSection extends StatelessWidget {
                       'Credit card',
                       style: typography.paragraphNormal(
                         fontWeight: ArFontWeight.semiBold,
-                        color: colors.themeFgDefault,
+                        color: colors.textHigh,
                       ),
                     ),
                     Text(
                       'Secure payment via Stripe',
                       style: typography.paragraphSmall(
-                        color: colors.themeFgMuted,
+                        color: colors.textMid,
                       ),
                     ),
                   ],
@@ -485,9 +352,10 @@ class _PayingWithSection extends StatelessWidget {
                     children: [
                       Text(
                         '\$${NumberFormat('#,##0.00').format(double.tryParse(total) ?? 0)}',
-                        style: typography.heading5(
-                          fontWeight: ArFontWeight.bold,
-                          color: colors.themeFgDefault,
+                        // The amount paid is this card's figure.
+                        style: typography.heading2(
+                          fontWeight: ArFontWeight.light,
+                          color: colors.textHigh,
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -495,7 +363,7 @@ class _PayingWithSection extends StatelessWidget {
                         'USD',
                         style: typography.paragraphSmall(
                           fontWeight: ArFontWeight.semiBold,
-                          color: colors.themeFgMuted,
+                          color: colors.textMid,
                         ),
                       ),
                     ],
@@ -505,7 +373,7 @@ class _PayingWithSection extends StatelessWidget {
                       'was \$${NumberFormat('#,##0.00').format(double.tryParse(subTotal!) ?? 0)}',
                       style: typography
                           .paragraphSmall(
-                            color: colors.themeFgMuted,
+                            color: colors.textMid,
                           )
                           .copyWith(decoration: TextDecoration.lineThrough),
                     ),
@@ -520,7 +388,7 @@ class _PayingWithSection extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: colors.themeSuccessSubtle,
+                color: colors.statusSuccessContainer,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
@@ -529,14 +397,14 @@ class _PayingWithSection extends StatelessWidget {
                   Icon(
                     Icons.local_offer,
                     size: 14,
-                    color: colors.themeSuccessDefault,
+                    color: colors.statusSuccessFg,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '$discountPercent% off applied',
                     style: typography.paragraphSmall(
                       fontWeight: ArFontWeight.semiBold,
-                      color: colors.themeSuccessDefault,
+                      color: colors.statusSuccessFg,
                     ),
                   ),
                 ],
@@ -568,17 +436,18 @@ class _YoullReceiveSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Credits to receive (left side)
           Expanded(
@@ -589,7 +458,7 @@ class _YoullReceiveSection extends StatelessWidget {
                   "YOU'LL RECEIVE",
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -599,9 +468,10 @@ class _YoullReceiveSection extends StatelessWidget {
                   children: [
                     Text(
                       convertWinstonToLiteralString(creditsToReceive),
-                      style: typography.heading5(
-                        fontWeight: ArFontWeight.bold,
-                        color: colors.themeSuccessDefault,
+                      // The credits bought are this card's figure.
+                      style: typography.heading2(
+                        fontWeight: ArFontWeight.light,
+                        color: colors.textHigh,
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -609,7 +479,7 @@ class _YoullReceiveSection extends StatelessWidget {
                       'credits',
                       style: typography.paragraphSmall(
                         fontWeight: ArFontWeight.semiBold,
-                        color: colors.themeFgMuted,
+                        color: colors.textMid,
                       ),
                     ),
                   ],
@@ -617,7 +487,7 @@ class _YoullReceiveSection extends StatelessWidget {
                 Text(
                   storageEstimate,
                   style: typography.paragraphSmall(
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 ),
               ],
@@ -627,7 +497,7 @@ class _YoullReceiveSection extends StatelessWidget {
           Container(
             width: 1,
             height: 50,
-            color: colors.themeBorderDefault,
+            color: colors.strokeMid,
             margin: const EdgeInsets.symmetric(horizontal: 12),
           ),
           // New balance (right side)
@@ -639,7 +509,7 @@ class _YoullReceiveSection extends StatelessWidget {
                   'NEW BALANCE',
                   style: typography.paragraphSmall(
                     fontWeight: ArFontWeight.semiBold,
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -647,13 +517,13 @@ class _YoullReceiveSection extends StatelessWidget {
                   '${convertWinstonToLiteralString(newBalance)} credits',
                   style: typography.paragraphNormal(
                     fontWeight: ArFontWeight.semiBold,
-                    color: colors.themeFgDefault,
+                    color: colors.textHigh,
                   ),
                 ),
                 Text(
                   newBalanceStorage,
                   style: typography.paragraphSmall(
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 ),
               ],
@@ -690,15 +560,15 @@ class _EmailSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -707,14 +577,14 @@ class _EmailSection extends StatelessWidget {
             appLocalizationsOf(context).leaveAnEmailToReceiveAReceipt,
             style: typography.paragraphSmall(
               fontWeight: ArFontWeight.semiBold,
-              color: colors.themeFgDefault,
+              color: colors.textHigh,
             ),
           ),
           const SizedBox(height: 12),
           ArDriveTheme(
             key: const ValueKey('turbo_payment_form'),
             themeData: textTheme,
-            child: ArDriveTextField(
+            child: ArDriveTextFieldNew(
               validator: (s) {
                 if (s == null || s.isEmpty || isEmailValid(s)) {
                   onEmailValidChanged(true);
@@ -735,7 +605,7 @@ class _EmailSection extends StatelessWidget {
             title:
                 appLocalizationsOf(context).keepMeUpToDateOnNewsAndPromotions,
             titleStyle: typography.paragraphSmall(
-              color: colors.themeFgDefault,
+              color: colors.textHigh,
             ),
             onChange: onCheckChanged,
             checked:
@@ -764,16 +634,16 @@ class _QuoteTimerBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           Icons.schedule,
           size: 14,
-          color: colors.themeFgMuted,
+          color: colors.textMid,
         ),
         const SizedBox(width: 6),
         StreamBuilder(
@@ -789,8 +659,7 @@ class _QuoteTimerBar extends StatelessWidget {
                   ? 'Quote expired'
                   : 'Price valid for ${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
               style: typography.paragraphSmall(
-                color:
-                    isExpired ? colors.themeErrorDefault : colors.themeFgMuted,
+                color: isExpired ? colors.statusErrorFg : colors.textMid,
               ),
             );
           },
@@ -799,18 +668,11 @@ class _QuoteTimerBar extends StatelessWidget {
         GestureDetector(
           onTap: isLoading ? null : onRefresh,
           child: isLoading
-              ? SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: colors.themeFgMuted,
-                  ),
-                )
+              ? ArDriveSpinner(color: colors.textMid)
               : Icon(
                   Icons.refresh,
                   size: 16,
-                  color: colors.themeFgMuted,
+                  color: colors.textMid,
                 ),
         ),
       ],
@@ -876,7 +738,7 @@ class RefreshButtonState extends State<RefreshButton>
             },
             size: 14,
             icon: ArDriveIcons.refresh(
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
             ),
           ),
         ),
@@ -886,7 +748,7 @@ class RefreshButtonState extends State<RefreshButton>
             'Refresh',
             style: ArDriveTypographyNew.of(context).paragraphNormal(
               fontWeight: ArFontWeight.bold,
-              color: ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+              color: ArDriveTheme.of(context).themeData.colorTokens.textHigh,
             ),
           ),
         ),
@@ -942,22 +804,15 @@ class RefreshQuoteButtonState extends State<RefreshQuoteButton>
             },
             child: Row(
               children: [
-                if (state is PaymentReviewLoadingQuote)
-                  const SizedBox(
-                    height: 14,
-                    width: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  ),
+                if (state is PaymentReviewLoadingQuote) const ArDriveSpinner(),
                 if (state is! PaymentReviewLoadingQuote)
                   Padding(
                     padding: const EdgeInsets.only(top: 2.0),
                     child: ArDriveIcons.refresh(
                       color: ArDriveTheme.of(context)
                           .themeData
-                          .colors
-                          .themeFgDefault,
+                          .colorTokens
+                          .textHigh,
                       size: 16,
                     ),
                   ),
@@ -974,8 +829,8 @@ class RefreshQuoteButtonState extends State<RefreshQuoteButton>
                         fontWeight: ArFontWeight.bold,
                         color: ArDriveTheme.of(context)
                             .themeData
-                            .colors
-                            .themeFgDefault,
+                            .colorTokens
+                            .textHigh,
                       ),
                     ),
                   ),

@@ -14,6 +14,7 @@ import 'package:ardrive/turbo/topup/blocs/topup_estimation_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/turbo_topup_flow_bloc.dart';
 import 'package:ardrive/turbo/topup/blocs/unified_topup/unified_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/components/payment_method_selector.dart';
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/views/topup_payment_form.dart';
 import 'package:ardrive/turbo/topup/views/topup_review_view.dart';
@@ -102,8 +103,8 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
             final environment = configService.config.useTurboUpload
                 ? 'production'
                 : 'development';
-            final gatewayUrl = configService.config.arweaveGatewayUrl ??
-                defaultGraphqlGateway;
+            final gatewayUrl =
+                configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
             final networkConfig = CryptoNetworkConfig.fromEnvironment(
               environment,
               arweaveGatewayUrl: gatewayUrl,
@@ -129,8 +130,6 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
       child: TurboModal(parentContext: modalContext),
     ),
     barrierDismissible: false,
-    barrierColor:
-        ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
   ).then((value) {
     logger.d('Turbo modal closed with value: ${turbo.paymentStatus}');
 
@@ -206,13 +205,14 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
               parentContext: widget.parentContext);
         }
       },
-      child: ArDriveModal(
-        contentPadding: EdgeInsets.zero,
-        content: _content(),
+      // Each screen is a standard dialog (TurboTopupScaffold); the shell only
+      // sizes them and animates between them.
+      child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 575,
+          maxWidth: TurboTopupScaffold.width,
           maxHeight: MediaQuery.of(context).size.height * 0.9,
         ),
+        child: _content(),
       ),
     );
   }
@@ -259,22 +259,29 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             state.priceEstimate,
           )..add(PaymentFormLoadSupportedCountries());
 
-          view = Stack(
-            children: [
-              BlocProvider<PaymentFormBloc>.value(
-                key: const ValueKey('payment_form'),
-                value: _paymentFormBloc!,
-                child: Container(
+          // The same shape as the review's tree below (a clip, then a stack),
+          // so moving to the review keeps this form, and the Stripe card
+          // field in it, mounted with the card details. A different shape
+          // rebuilt the form and Stripe had no card to charge.
+          view = ClipRRect(
+            borderRadius: BorderRadius.circular(modalBorderRadius),
+            child: Stack(
+              children: [
+                BlocProvider<PaymentFormBloc>.value(
                   key: const ValueKey('payment_form'),
-                  color: Colors.transparent,
-                  child: const Opacity(
-                    key: ValueKey('payment_form'),
-                    opacity: 1,
-                    child: TurboPaymentFormView(),
+                  value: _paymentFormBloc!,
+                  child: Container(
+                    key: const ValueKey('payment_form'),
+                    color: Colors.transparent,
+                    child: const Opacity(
+                      key: ValueKey('payment_form'),
+                      opacity: 1,
+                      child: TurboPaymentFormView(),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         } else if (state is TurboTopupFlowShowingPaymentReviewView) {
           PlausibleEventTracker.trackPageview(
@@ -287,34 +294,44 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             state.priceEstimate,
           )..add(PaymentFormLoadSupportedCountries());
 
-          view = Stack(
-            children: [
-              BlocProvider<PaymentFormBloc>.value(
-                key: const ValueKey('payment_form'),
-                value: _paymentFormBloc!,
-                child: Container(
+          // The review covers the card form, which stays mounted so Stripe
+          // keeps the card details. The cover is opaque so the card field's
+          // iframe can't show through, and clipped to the dialog's corners.
+          view = ClipRRect(
+            borderRadius: BorderRadius.circular(modalBorderRadius),
+            child: Stack(
+              children: [
+                BlocProvider<PaymentFormBloc>.value(
                   key: const ValueKey('payment_form'),
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-                  child: const Opacity(
-                    key: ValueKey('payment_form'),
-                    opacity: 0,
-                    child: TurboPaymentFormView(),
+                  value: _paymentFormBloc!,
+                  child: Container(
+                    key: const ValueKey('payment_form'),
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colorTokens
+                        .containerL3,
+                    child: const Opacity(
+                      key: ValueKey('payment_form'),
+                      opacity: 0,
+                      child: TurboPaymentFormView(),
+                    ),
                   ),
                 ),
-              ),
-              BlocProvider<PaymentReviewBloc>(
-                create: (context) => PaymentReviewBloc(
-                  context.read<Turbo>(),
-                  state.priceEstimate,
-                )..add(PaymentReviewLoadPaymentModel()),
-                child: Container(
-                  color:
-                      ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-                  child: const TurboReviewView(),
+                BlocProvider<PaymentReviewBloc>(
+                  create: (context) => PaymentReviewBloc(
+                    context.read<Turbo>(),
+                    state.priceEstimate,
+                  )..add(PaymentReviewLoadPaymentModel()),
+                  child: Container(
+                    color: ArDriveTheme.of(context)
+                        .themeData
+                        .colorTokens
+                        .containerL3,
+                    child: const TurboReviewView(),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         } else if (state is TurboTopupFlowShowingCryptoView) {
           // Crypto payment flow - embedded in the same modal
@@ -353,11 +370,13 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
             },
           );
         } else {
-          view = Container(
-            height: 575,
-            color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
-            child: const Center(
-              child: CircularProgressIndicator(),
+          view = const TurboTopupScaffold(
+            title: 'Buy Turbo Credits',
+            child: SizedBox(
+              height: 400,
+              child: Center(
+                child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+              ),
             ),
           );
         }
@@ -383,8 +402,8 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
           CurvedAnimation(parent: _opacityController, curve: Curves.easeInOut),
         );
 
-        return Container(
-          color: ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+        return Material(
+          type: MaterialType.transparency,
           child: AnimatedSize(
             duration: const Duration(milliseconds: 300),
             child: AnimatedBuilder(
@@ -499,11 +518,6 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
         ),
       ),
       barrierDismissible: false,
-      barrierColor: ArDriveTheme.of(widget.parentContext)
-          .themeData
-          .colors
-          .shadow
-          .withOpacity(0.9),
     );
   }
 
@@ -513,26 +527,21 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
   }) {
     showAnimatedDialogWithBuilder(
       context,
-      builder: (modalContext) => ArDriveStandardModal(
-        width: 575,
-        content: TurboErrorView(
-          errorType: type,
-          onDismiss: () {
-            logger.d('clicked dismiss on error modal');
-            Navigator.of(modalContext).pop();
-          },
-          onTryAgain: () {
-            logger.d('clicked try again on error modal');
-            Navigator.of(modalContext).pop();
-            Navigator.of(context).pop();
+      builder: (modalContext) => TurboErrorView(
+        errorType: type,
+        onDismiss: () {
+          logger.d('clicked dismiss on error modal');
+          Navigator.of(modalContext).pop();
+        },
+        onTryAgain: () {
+          logger.d('clicked try again on error modal');
+          Navigator.of(modalContext).pop();
+          Navigator.of(context).pop();
 
-            showTurboTopupModal(parentContext);
-          },
-        ),
+          showTurboTopupModal(parentContext);
+        },
       ),
       barrierDismissible: false,
-      barrierColor:
-          ArDriveTheme.of(context).themeData.colors.shadow.withOpacity(0.9),
     );
   }
 }
