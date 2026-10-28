@@ -4,6 +4,15 @@ The ArDrive design system: the components, tokens and type every screen in
 ArDrive web is built from. Use these pieces instead of drawing your own, and
 when one falls short, fix it here so every screen gets the fix.
 
+This package is the web app's implementation of the
+[ArDrive design system](https://ardrive.io/brand-kit/design-system.md), the
+standard every ArDrive app follows, written in values rather than Flutter
+(machine summary: [agents.json](https://ardrive.io/brand-kit/agents.json)).
+A change to a token, the type scale, a component's look or a copy rule here
+needs the same change there, in the
+[public site](https://github.com/ardriveapp/public-site) repo at
+`public/brand-kit/design-system.md`.
+
 The package has two generations. Build with the new one, whose names end in
 `New` or have no old counterpart. The old one (`ArDriveButton`,
 `ArDriveTypography`, `ArDriveStandardModal`, `ArDriveTextField` and
