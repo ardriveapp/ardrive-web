@@ -740,7 +740,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
       _controller?.value ?? const VideoPlayerValue.uninitialized();
   bool _isVolumeSliderVisible = false;
   bool _wasPlaying = false;
-  final _menuController = MenuController();
+  final _menuController = ArDriveMenuController();
   final Lock _lock = Lock();
   String? _errorMessage;
 
@@ -766,6 +766,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
   @override
   void dispose() {
     _stop();
+    _menuController.dispose();
     super.dispose();
   }
 
@@ -1170,7 +1171,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget>
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             ScreenTypeLayout.builder(
-                              desktop: (context) => MenuAnchor(
+                              desktop: (context) => ArDriveMenuAnchor(
                                 menuChildren: _speedMenuItems(
                                   context,
                                   current: _value.playbackSpeed,
@@ -1275,7 +1276,7 @@ class _FullScreenVideoPlayerWidgetState
   VideoPlayer? _videoPlayer;
   bool _wasPlaying = false;
   bool _isVolumeSliderVisible = false;
-  final _menuController = MenuController();
+  final _menuController = ArDriveMenuController();
   bool _controlsVisible = true;
   bool _controlsDisabled = false;
   Timer? _hideControlsTimer;
@@ -1381,6 +1382,7 @@ class _FullScreenVideoPlayerWidgetState
     logger.d('Disposing video player');
     _videoPlayerController.removeListener(_listener);
     _videoPlayerController.dispose();
+    _menuController.dispose();
     super.dispose();
   }
 
@@ -1704,7 +1706,7 @@ class _FullScreenVideoPlayerWidgetState
                                               children: [
                                                 ScreenTypeLayout.builder(
                                                   desktop: (context) =>
-                                                      MenuAnchor(
+                                                      ArDriveMenuAnchor(
                                                     menuChildren:
                                                         _speedMenuItems(
                                                       context,
@@ -2303,7 +2305,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
   _AudioLoadState _loadState = _AudioLoadState.loading;
   bool _isVolumeSliderVisible = false;
   bool _wasPlaying = false;
-  final _menuController = MenuController();
+  final _menuController = ArDriveMenuController();
   StreamSubscription<Duration>? _positionListener;
   StreamSubscription<PlayerState>? _playStateListener;
 
@@ -2338,6 +2340,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
   @override
   void dispose() {
     _stop();
+    _menuController.dispose();
     super.dispose();
   }
 
@@ -2546,7 +2549,7 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget>
                             child: Align(
                                 alignment: Alignment.centerRight,
                                 child: ScreenTypeLayout.builder(
-                                    desktop: (context) => MenuAnchor(
+                                    desktop: (context) => ArDriveMenuAnchor(
                                           menuChildren: _speedMenuItems(
                                             context,
                                             current: _player?.speed ?? 1,

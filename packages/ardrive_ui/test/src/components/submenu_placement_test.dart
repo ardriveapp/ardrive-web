@@ -173,4 +173,82 @@ void main() {
 
     expect(tester.getRect(find.text('Create manifest')), before);
   });
+
+  group('ArDriveMenuAnchor, as the media players use it', () {
+    const speeds = ['0.5x', 'Normal', '1.5x', '2x'];
+
+    // The players' rows: a fixed width, and ListTiles, which need Material.
+    List<Widget> rows() => [
+          for (final speed in speeds)
+            SizedBox(
+              width: 168,
+              child: ListTile(title: Text(speed), onTap: () {}),
+            ),
+        ];
+
+    Widget settingsButton(VoidCallback open) => GestureDetector(
+          onTap: open,
+          child: SizedBox.fromSize(
+            size: const Size(40, 40),
+            child: const Center(child: Text('Speed')),
+          ),
+        );
+
+    Future<List<Rect>> openAt(WidgetTester tester, Widget menu) async {
+      await tester
+          .pumpWidget(app(buttonAt: const Offset(700, 540), menu: menu));
+      await tester.tap(find.text('Speed'));
+      await tester.pumpAndSettle();
+      return [for (final speed in speeds) tester.getRect(find.text(speed))];
+    }
+
+    testWidgets(
+        'above the controls at the bottom right, where MenuAnchor '
+        'opened it', (tester) async {
+      tester.view.physicalSize = const Size(800, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final material = MenuController();
+      final before = await openAt(
+        tester,
+        MenuAnchor(
+          controller: material,
+          menuChildren: rows(),
+          child: settingsButton(material.open),
+        ),
+      );
+
+      final ours = ArDriveMenuController();
+      addTearDown(ours.dispose);
+      final after = await openAt(
+        tester,
+        ArDriveMenuAnchor(
+          controller: ours,
+          menuChildren: rows(),
+          child: settingsButton(ours.open),
+        ),
+      );
+
+      expect(after, before);
+    });
+
+    testWidgets('closes when its controller closes it', (tester) async {
+      final controller = ArDriveMenuController();
+      addTearDown(controller.dispose);
+      await openAt(
+        tester,
+        ArDriveMenuAnchor(
+          controller: controller,
+          menuChildren: rows(),
+          child: settingsButton(controller.open),
+        ),
+      );
+      expect(find.text('Normal'), findsOneWidget);
+
+      controller.close();
+      await tester.pumpAndSettle();
+      expect(find.text('Normal'), findsNothing);
+    });
+  });
 }
