@@ -251,8 +251,9 @@ The app supports multiple languages via ARB files in `lib/l10n/`: English, Spani
 UI is built from `packages/ardrive_ui`; its README says which components and
 tokens to use (the `New` generation; the old one is being removed). The
 cross-platform standard behind it, in values, is published at
-`https://ardrive.io/brand-kit/design-system.md` from the public-site repo. A
-change to a token, the type scale or a component's look updates both.
+`https://ardrive.io/brand-kit/design-system.md` from the public-site repo, with
+a machine summary at `https://ardrive.io/brand-kit/agents.json`. A change to a
+token, the type scale or a component's look updates both.
 
 ## Key Patterns
 
