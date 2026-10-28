@@ -2,7 +2,6 @@ import 'package:ardrive/utils/file_size_units.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 /// Preset storage amounts with their display values
 class StoragePreset {
@@ -157,15 +156,10 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
     widget.onCustomAmountChanged(numValue, widget.customUnit);
   }
 
-  bool get _isCustomSelected =>
-      widget.selectedPreset == null &&
-      widget.customValue != null &&
-      widget.customValue! > 0;
-
   @override
   Widget build(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,7 +168,7 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
           'Storage amount',
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
-            color: colors.themeFgDefault,
+            color: colors.textHigh,
           ),
         ),
         const SizedBox(height: 12),
@@ -188,55 +182,22 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
   }
 
   Widget _buildPresetGrid(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return ScreenTypeLayout.builder(
-      mobile: (context) => Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: widget.presets.map((preset) {
-          final isSelected = widget.selectedPreset == preset;
-          return _PresetButton(
-            label: preset.displayString,
-            isSelected: isSelected,
-            onTap: () => _onPresetSelected(preset),
-            colors: colors,
-            typography: typography,
-          );
-        }).toList(),
-      ),
-      desktop: (context) {
-        final presetsList = widget.presets.toList();
-        return Row(
-          children: List.generate(presetsList.length, (index) {
-            final preset = presetsList[index];
-            final isSelected = widget.selectedPreset == preset;
-            final isFirst = index == 0;
-            final isLast = index == presetsList.length - 1;
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: isFirst ? 0 : 4,
-                  right: isLast ? 0 : 4,
-                ),
-                child: _PresetButton(
-                  label: preset.displayString,
-                  isSelected: isSelected,
-                  onTap: () => _onPresetSelected(preset),
-                  colors: colors,
-                  typography: typography,
-                ),
-              ),
-            );
-          }),
-        );
-      },
+    // One row at every width: a label shrinks a little on a phone rather than
+    // wrapping onto a second row. None is chosen while a custom amount is in
+    // use.
+    return ArDriveSegmentedControl<StoragePreset>(
+      expand: true,
+      selected: widget.selectedPreset,
+      onSelected: _onPresetSelected,
+      segments: [
+        for (final preset in widget.presets)
+          ArDriveSegment(value: preset, label: preset.displayString),
+      ],
     );
   }
 
   Widget _buildCustomAmountSection(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Column(
@@ -246,7 +207,7 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
           'Or enter custom amount',
           style: typography.paragraphSmall(
             fontWeight: ArFontWeight.semiBold,
-            color: colors.themeFgMuted,
+            color: colors.textMid,
           ),
         ),
         const SizedBox(height: 8),
@@ -258,7 +219,6 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
               child: _CustomAmountTextField(
                 controller: _customAmountController,
                 focusNode: _customAmountFocus,
-                isSelected: _isCustomSelected,
                 onChanged: _onCustomAmountChanged,
               ),
             ),
@@ -290,7 +250,7 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
           Text(
             _validationMessage!,
             style: typography.paragraphSmall(
-              color: colors.themeErrorDefault,
+              color: colors.statusErrorFg,
             ),
           ),
         ],
@@ -299,89 +259,29 @@ class _StoragePresetSelectorState extends State<StoragePresetSelector> {
   }
 }
 
-class _PresetButton extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final ArDriveColors colors;
-  final ArdriveTypographyNew typography;
-
-  const _PresetButton({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    required this.colors,
-    required this.typography,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ArDriveButton(
-      backgroundColor:
-          isSelected ? colors.themeFgMuted : colors.themeBorderDefault,
-      style: ArDriveButtonStyle.primary,
-      maxHeight: 44,
-      fontStyle: typography.paragraphSmall(
-        fontWeight: ArFontWeight.bold,
-        color: isSelected ? colors.themeBgSurface : colors.themeFgMuted,
-      ),
-      text: label,
-      onPressed: onTap,
-    );
-  }
-}
-
+/// The custom amount, on the standard text field.
 class _CustomAmountTextField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
-  final bool isSelected;
   final ValueChanged<String> onChanged;
 
   const _CustomAmountTextField({
     required this.controller,
     required this.focusNode,
-    required this.isSelected,
     required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: isSelected ? colors.themeFgMuted : colors.themeBorderDefault,
-          width: isSelected ? 2 : 1,
-        ),
-        borderRadius: BorderRadius.circular(8),
-        color: colors.themeBgCanvas,
-      ),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        inputFormatters: [
-          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-        ],
-        style: typography.paragraphNormal(
-          fontWeight: ArFontWeight.semiBold,
-          color: colors.themeFgDefault,
-        ),
-        decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 10,
-          ),
-          border: InputBorder.none,
-          hintText: '0',
-          hintStyle: typography.paragraphNormal(
-            color: colors.themeFgDisabled,
-          ),
-        ),
-        onChanged: onChanged,
-      ),
+    return ArDriveTextFieldNew(
+      controller: controller,
+      focusNode: focusNode,
+      hintText: '0',
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: [
+        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+      ],
+      onChanged: onChanged,
     );
   }
 }
@@ -397,14 +297,16 @@ class _UnitDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
+    // Drawn like the standard text field beside it: its fill, edge and
+    // radius, and the same height.
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: colors.themeBorderDefault),
-        borderRadius: BorderRadius.circular(8),
-        color: colors.themeBgCanvas,
+        border: Border.all(color: colors.strokeMid),
+        borderRadius: BorderRadius.circular(6),
+        color: colors.inputDefault,
       ),
       child: PopupMenuButton<FileSizeUnit>(
         initialValue: selectedUnit,
@@ -419,13 +321,13 @@ class _UnitDropdown extends StatelessWidget {
               unit.abbreviation,
               style: typography.paragraphNormal(
                 fontWeight: ArFontWeight.semiBold,
-                color: colors.themeFgDefault,
+                color: colors.textHigh,
               ),
             ),
           );
         }).toList(),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -433,14 +335,14 @@ class _UnitDropdown extends StatelessWidget {
                 selectedUnit.abbreviation,
                 style: typography.paragraphNormal(
                   fontWeight: ArFontWeight.semiBold,
-                  color: colors.themeFgDefault,
+                  color: colors.textHigh,
                 ),
               ),
               const SizedBox(width: 4),
               Icon(
                 Icons.keyboard_arrow_down,
                 size: 18,
-                color: colors.themeFgMuted,
+                color: colors.textMid,
               ),
             ],
           ),

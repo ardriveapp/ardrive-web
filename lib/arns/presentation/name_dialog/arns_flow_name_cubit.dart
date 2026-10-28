@@ -263,6 +263,9 @@ class ArNSFlowNameCubit extends ArNSNameDialogCubit {
       _namesCubit.rememberPublication(dataTxId, publication);
     }
     if (!hasWork) return const ArNSFlowOutcome();
+    // A step left by an earlier attempt that threw is not this one's: it
+    // would say the wallet is asked before it is.
+    if (!isClosed) emit(state.copyWith(step: () => null));
     final owner = _walletCubit.ownerSigner;
     // Each with its record's cache time before the change, if it had one.
     final planned = <(ArNSManagedName, ArNSSetRecord, String, int?)>[];

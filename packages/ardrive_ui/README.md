@@ -4,6 +4,15 @@ The ArDrive design system: the components, tokens and type every screen in
 ArDrive web is built from. Use these pieces instead of drawing your own, and
 when one falls short, fix it here so every screen gets the fix.
 
+This package is the web app's implementation of the
+[ArDrive design system](https://ardrive.io/brand-kit/design-system.md), the
+standard every ArDrive app follows, written in values rather than Flutter
+(machine summary: [agents.json](https://ardrive.io/brand-kit/agents.json)).
+A change to a token, the type scale, a component's look or a copy rule here
+needs the same change there, in the
+[public site](https://github.com/ardriveapp/public-site) repo at
+`public/brand-kit/design-system.md`.
+
 The package has two generations. Build with the new one, whose names end in
 `New` or have no old counterpart. The old one (`ArDriveButton`,
 `ArDriveTypography`, `ArDriveStandardModal`, `ArDriveTextField` and
@@ -103,6 +112,7 @@ it arrives. The licence is `assets/fonts/mono/OFL.txt`.
 | Progress | `ArDriveLinearProgress` | A 4 px bar; leave `value` null when progress isn't known. `color` marks progress that has stalled or finished without moving the bar |
 | A value to copy | `ArDriveCopyField` | Read-only field with a Copy link; `isSecret` masks it behind a reveal toggle |
 | A text field | `ArDriveTextFieldNew` | |
+| Pick one of a few | `ArDriveSegmentedControl` with `ArDriveSegment`s | 40 high; the chosen segment is filled. `expand` shares the width equally (a row of amounts); otherwise it hugs its labels (a two-way switch). `wrap` puts a segment in a menu that opens from it |
 | Content on a surface that is dark in both themes, such as a video | `ArDriveOnDark` | Its child takes the dark theme's tokens, so text, spinners and buttons need no literal colours |
 
 ### Button sizes

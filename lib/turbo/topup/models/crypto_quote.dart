@@ -78,7 +78,7 @@ class CryptoQuote extends Equatable {
   String get formattedUsdValue => '\$${usdValue.toStringAsFixed(2)}';
 
   /// Format the credits for display
-  String get formattedCredits => '${creditsDisplay.toStringAsFixed(3)} Credits';
+  String get formattedCredits => '${creditsDisplay.toStringAsFixed(4)} credits';
 
   /// Format the storage estimate for display with dynamic units
   String get formattedStorage =>

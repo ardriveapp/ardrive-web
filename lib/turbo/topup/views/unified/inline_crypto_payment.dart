@@ -1,4 +1,5 @@
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
+import 'package:ardrive/turbo/topup/components/turbo_topup_scaffold.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
 import 'package:ardrive/turbo/topup/views/crypto_topup/components/network_indicator.dart';
 import 'package:ardrive/turbo/topup/views/crypto_topup/components/wallet_selector_modal.dart';
@@ -30,124 +31,57 @@ class InlineCryptoPayment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeData = ArDriveTheme.of(context).themeData;
-    final colors = themeData.colors;
-    final colorTokens = themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
     return BlocBuilder<CryptoTopupBloc, CryptoTopupState>(
       builder: (context, state) {
         final showInternalBackButton = _canGoBackInFlow(state);
         final showBackButton =
             showInternalBackButton || onBackToPaymentMethods != null;
 
-        return Stack(
-          children: [
-            Column(
-              children: [
-                // Red top line (ArDrive modal pattern)
-                Container(
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: colorTokens.containerRed,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(8),
-                      topRight: Radius.circular(8),
-                    ),
-                  ),
-                ),
-                // Main content
-                Expanded(
-                  child: Container(
-                    color: colors.themeBgCanvas,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 24), // Space for close button
-
-                          // Token selector
-                          _TokenSelector(
-                            selectedToken: _getSelectedToken(state),
-                            onTokenSelected: (token) {
-                              context
-                                  .read<CryptoTopupBloc>()
-                                  .add(CryptoTopupSelectToken(token));
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Wallet connection status
-                          _WalletConnectionSection(
-                            state: state,
-                            fiatAmount: fiatAmount,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                // Footer with back button and continue button
-                Container(
-                  color: colors.themeBgCanvas,
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (showBackButton)
-                        ArDriveClickArea(
-                          child: GestureDetector(
-                            onTap: () {
-                              if (showInternalBackButton) {
-                                // Go back within crypto flow
-                                context
-                                    .read<CryptoTopupBloc>()
-                                    .add(const CryptoTopupGoBack());
-                              } else if (onBackToPaymentMethods != null) {
-                                // Go back to payment method selection
-                                onBackToPaymentMethods!();
-                              }
-                            },
-                            child: Text(
-                              'Back',
-                              style: typography.paragraphLarge(
-                                fontWeight: ArFontWeight.bold,
-                                color: colors.themeAccentDisabled,
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        const SizedBox.shrink(),
-                      if (_isReadyToContinue(state))
-                        SizedBox(
-                          height: 48,
-                          child: ArDriveButton(
-                            text: 'Continue',
-                            onPressed: onContinue,
-                          ),
-                        )
-                      else
-                        const SizedBox.shrink(),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            // Close button in top right
-            if (onCancel != null)
-              Positioned(
-                right: 20,
-                top: 20,
-                child: ArDriveClickArea(
-                  child: GestureDetector(
-                    onTap: onCancel,
-                    child: ArDriveIcons.x(),
-                  ),
-                ),
+        return TurboTopupScaffold(
+          title: 'Buy Turbo Credits',
+          onClose: onCancel,
+          canClose: onCancel != null,
+          actions: [
+            if (showBackButton)
+              ModalAction.dismiss(
+                title: 'Back',
+                action: () {
+                  if (showInternalBackButton) {
+                    // Go back within crypto flow
+                    context
+                        .read<CryptoTopupBloc>()
+                        .add(const CryptoTopupGoBack());
+                  } else if (onBackToPaymentMethods != null) {
+                    // Go back to payment method selection
+                    onBackToPaymentMethods!();
+                  }
+                },
               ),
+            if (_isReadyToContinue(state) && onContinue != null)
+              ModalAction(title: 'Continue', action: onContinue!),
           ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Token selector
+              _TokenSelector(
+                selectedToken: _getSelectedToken(state),
+                onTokenSelected: (token) {
+                  context
+                      .read<CryptoTopupBloc>()
+                      .add(CryptoTopupSelectToken(token));
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Wallet connection status
+              _WalletConnectionSection(
+                state: state,
+                fiatAmount: fiatAmount,
+              ),
+            ],
+          ),
         );
       },
     );
@@ -200,7 +134,7 @@ class _TokenSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Column(
@@ -210,13 +144,13 @@ class _TokenSelector extends StatelessWidget {
           'Pay with',
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
-            color: colors.themeFgDefault,
+            color: colors.textHigh,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            border: Border.all(color: colors.themeBorderDefault),
+            border: Border.all(color: colors.strokeMid),
             borderRadius: BorderRadius.circular(8),
           ),
           child: PopupMenuButton<CryptoToken>(
@@ -255,15 +189,15 @@ class _TokenSelector extends StatelessWidget {
                           style: typography.paragraphNormal(
                             fontWeight: ArFontWeight.semiBold,
                             color: selectedToken != null
-                                ? colors.themeFgDefault
-                                : colors.themeFgMuted,
+                                ? colors.textHigh
+                                : colors.textMid,
                           ),
                         ),
                         if (selectedToken != null)
                           Text(
                             selectedToken!.networkDisplayName,
                             style: typography.paragraphSmall(
-                              color: colors.themeFgMuted,
+                              color: colors.textMid,
                             ),
                           ),
                       ],
@@ -271,7 +205,7 @@ class _TokenSelector extends StatelessWidget {
                   ),
                   Icon(
                     Icons.keyboard_arrow_down,
-                    color: colors.themeFgMuted,
+                    color: colors.textMid,
                   ),
                 ],
               ),
@@ -286,7 +220,7 @@ class _TokenSelector extends StatelessWidget {
     BuildContext context,
     CryptoToken token,
   ) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     // ARIO tokens have no fees
@@ -307,7 +241,7 @@ class _TokenSelector extends StatelessWidget {
                   token.displayName,
                   style: typography.paragraphNormal(
                     fontWeight: ArFontWeight.semiBold,
-                    color: colors.themeFgDefault,
+                    color: colors.textHigh,
                   ),
                 ),
                 if (isNoFees) ...[
@@ -335,7 +269,7 @@ class _WalletConnectionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     // Token selection state - need to select token first
@@ -394,39 +328,27 @@ class _WalletConnectionSection extends StatelessWidget {
     }
 
     // Loading state
-    return const Center(child: CircularProgressIndicator());
+    return const Padding(
+      padding: EdgeInsets.all(16),
+      child: Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.large)),
+    );
   }
 
   Widget _buildSelectTokenPrompt(
     BuildContext context,
-    ArDriveColors colors,
+    ArDriveColorTokens colors,
     ArdriveTypographyNew typography,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.info_outline, color: colors.themeFgMuted, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Select a token above to see pricing and connect your wallet.',
-              style: typography.paragraphSmall(color: colors.themeFgMuted),
-            ),
-          ),
-        ],
-      ),
+    return const ArDriveNotice(
+      type: ArDriveNoticeType.info,
+      message: 'Select a token above to see pricing and connect your wallet.',
     );
   }
 
   Widget _buildWalletConnectSection(
     BuildContext context,
     CryptoTopupWalletConnection walletState,
-    ArDriveColors colors,
+    ArDriveColorTokens colors,
     ArdriveTypographyNew typography,
   ) {
     final bloc = context.read<CryptoTopupBloc>();
@@ -438,9 +360,9 @@ class _WalletConnectionSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,44 +371,28 @@ class _WalletConnectionSection extends StatelessWidget {
             'Connect wallet',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
-              color: colors.themeFgDefault,
+              color: colors.textHigh,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             _getWalletSubtitle(walletType),
             style: typography.paragraphSmall(
-              color: colors.themeFgMuted,
+              color: colors.textMid,
             ),
           ),
           const SizedBox(height: 16),
 
           // Show network switching message if applicable
           if (walletState.isSwitchingNetwork) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.themeInfoSubtle,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
+            ArDriveNotice(
+              type: ArDriveNoticeType.info,
+              content: Row(
                 children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: colors.themeInfoFb,
-                    ),
-                  ),
+                  ArDriveSpinner(color: colors.statusInfoFg),
                   const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Switching network in your wallet...',
-                      style: typography.paragraphSmall(
-                        color: colors.themeInfoFb,
-                      ),
-                    ),
+                  const Expanded(
+                    child: Text('Switching network in your wallet...'),
                   ),
                 ],
               ),
@@ -496,38 +402,20 @@ class _WalletConnectionSection extends StatelessWidget {
 
           // Arweave uses existing ArConnect
           if (walletType == WalletType.arweave) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.themeBgSubtle,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: colors.themeBorderDefault),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.check_circle,
-                      color: colors.themeFgMuted, size: 20),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Using your connected ArConnect wallet',
-                      style: typography.paragraphSmall(
-                        color: colors.themeFgDefault,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            const ArDriveNotice(
+              type: ArDriveNoticeType.success,
+              message: 'Using your connected ArConnect wallet',
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ArDriveButton(
-                text: 'Continue with ArConnect',
-                onPressed: () {
-                  bloc.add(const CryptoTopupConnectWallet());
-                },
-              ),
+            ArDriveButtonNew(
+              typography: ArDriveTypographyNew.of(context),
+              variant: ButtonVariant.primary,
+              size: ArDriveButtonSize.large,
+              maxWidth: double.infinity,
+              text: 'Continue with ArConnect',
+              onPressed: () {
+                bloc.add(const CryptoTopupConnectWallet());
+              },
             ),
           ] else ...[
             // Show wallet grid for Ethereum/Solana
@@ -546,27 +434,9 @@ class _WalletConnectionSection extends StatelessWidget {
           // Error message
           if (walletState.error != null && !walletState.isSwitchingNetwork) ...[
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.themeErrorSubtle,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline,
-                      color: colors.themeErrorDefault, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      walletState.error!,
-                      style: typography.paragraphSmall(
-                        color: colors.themeErrorDefault,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            ArDriveNotice(
+              type: ArDriveNoticeType.error,
+              message: walletState.error!,
             ),
           ],
         ],
@@ -613,7 +483,7 @@ class _WalletConnectionSection extends StatelessWidget {
   Widget _buildQuoteSection(
     BuildContext context,
     CryptoTopupAmountEntry amountState,
-    ArDriveColors colors,
+    ArDriveColorTokens colors,
     ArdriveTypographyNew typography,
   ) {
     final quote = amountState.quote;
@@ -621,9 +491,9 @@ class _WalletConnectionSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -631,21 +501,19 @@ class _WalletConnectionSection extends StatelessWidget {
           // Connected wallet
           Row(
             children: [
-              Icon(Icons.check_circle, color: colors.themeFgMuted, size: 16),
+              Icon(Icons.check_circle, color: colors.textMid, size: 16),
               const SizedBox(width: 8),
               Text(
                 'Wallet connected',
                 style: typography.paragraphSmall(
-                  color: colors.themeFgDefault,
+                  color: colors.textHigh,
                   fontWeight: ArFontWeight.semiBold,
                 ),
               ),
               const Spacer(),
               Text(
                 _truncateAddress(amountState.walletAddress),
-                style: typography.paragraphSmall(
-                  color: colors.themeFgMuted,
-                ),
+                style: typography.code(color: colors.textMid),
               ),
             ],
           ),
@@ -683,7 +551,7 @@ class _WalletConnectionSection extends StatelessWidget {
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(16),
-                child: CircularProgressIndicator(),
+                child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
               ),
             ),
           ],
@@ -691,27 +559,10 @@ class _WalletConnectionSection extends StatelessWidget {
           // Balance warning
           if (!amountState.hasSufficientBalance && quote != null) ...[
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.themeWarningSubtle,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.warning_amber,
-                      color: colors.themeWarningFg, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Insufficient balance. You have ${amountState.balance.displayBalance}',
-                      style: typography.paragraphSmall(
-                        color: colors.themeWarningFg,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            ArDriveNotice(
+              type: ArDriveNoticeType.warning,
+              message:
+                  'Insufficient balance. You have ${amountState.balance.displayBalance}',
             ),
           ],
         ],
@@ -722,7 +573,7 @@ class _WalletConnectionSection extends StatelessWidget {
   Widget _buildWalletNotInstalledSection(
     BuildContext context,
     CryptoTopupWalletNotInstalled walletState,
-    ArDriveColors colors,
+    ArDriveColorTokens colors,
     ArdriveTypographyNew typography,
   ) {
     final walletName = walletState.walletType == WalletType.ethereum
@@ -731,47 +582,14 @@ class _WalletConnectionSection extends StatelessWidget {
             ? 'Phantom'
             : 'Wallet';
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.themeWarningMuted),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.warning_amber, color: colors.themeWarningFg, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                '$walletName not detected',
-                style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colors.themeWarningFg,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Please install $walletName browser extension to continue.',
-            style: typography.paragraphSmall(color: colors.themeFgMuted),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ArDriveButton(
-              style: ArDriveButtonStyle.secondary,
-              text: 'Install $walletName',
-              onPressed: () {
-                _openInstallUrl(walletState.walletType);
-              },
-            ),
-          ),
-        ],
-      ),
+    return ArDriveNotice(
+      type: ArDriveNoticeType.warning,
+      title: '$walletName not detected',
+      message: 'Please install $walletName browser extension to continue.',
+      actionLabel: 'Install $walletName',
+      onAction: () {
+        _openInstallUrl(walletState.walletType);
+      },
     );
   }
 
@@ -790,7 +608,7 @@ class _WalletConnectionSection extends StatelessWidget {
   Widget _buildAOConnectSignatureSection(
     BuildContext context,
     CryptoTopupAOConnectSignature signatureState,
-    ArDriveColors colors,
+    ArDriveColorTokens colors,
     ArdriveTypographyNew typography,
   ) {
     final bloc = context.read<CryptoTopupBloc>();
@@ -798,9 +616,9 @@ class _WalletConnectionSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -809,52 +627,34 @@ class _WalletConnectionSection extends StatelessWidget {
             'Sign message',
             style: typography.paragraphNormal(
               fontWeight: ArFontWeight.semiBold,
-              color: colors.themeFgDefault,
+              color: colors.textHigh,
             ),
           ),
           const SizedBox(height: 12),
           Text(
             'To use ARIO tokens from your Ethereum wallet, please sign a message to verify your identity.',
-            style: typography.paragraphSmall(color: colors.themeFgMuted),
+            style: typography.paragraphSmall(color: colors.textMid),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ArDriveButton(
-              text: signatureState.isSigningMessage
-                  ? 'Signing...'
-                  : 'Sign message',
-              isDisabled: signatureState.isSigningMessage,
-              onPressed: () {
-                bloc.add(const CryptoTopupAOConnectSignatureRequested());
-              },
-            ),
+          ArDriveButtonNew(
+            typography: ArDriveTypographyNew.of(context),
+            variant: ButtonVariant.primary,
+            size: ArDriveButtonSize.large,
+            maxWidth: double.infinity,
+            text:
+                signatureState.isSigningMessage ? 'Signing...' : 'Sign message',
+            isDisabled: signatureState.isSigningMessage,
+            onPressed: () {
+              bloc.add(const CryptoTopupAOConnectSignatureRequested());
+            },
           ),
           if (signatureState.error != null) ...[
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.themeErrorSubtle,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline,
-                      color: colors.themeErrorDefault, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      signatureState.isUserRejected
-                          ? 'Signature rejected. Please try again.'
-                          : signatureState.error!,
-                      style: typography.paragraphSmall(
-                        color: colors.themeErrorDefault,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            ArDriveNotice(
+              type: ArDriveNoticeType.error,
+              message: signatureState.isUserRejected
+                  ? 'Signature rejected. Please try again.'
+                  : signatureState.error!,
             ),
           ],
         ],
@@ -865,82 +665,46 @@ class _WalletConnectionSection extends StatelessWidget {
   Widget _buildNetworkSwitchSection(
     BuildContext context,
     CryptoTopupNetworkSwitch networkState,
-    ArDriveColors colors,
+    ArDriveColorTokens colors,
     ArdriveTypographyNew typography,
   ) {
     final bloc = context.read<CryptoTopupBloc>();
     final requiredNetworkName = getNetworkName(networkState.requiredChainId);
     final currentNetworkName = getNetworkName(networkState.currentChainId);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colors.themeWarningMuted),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.swap_horiz, color: colors.themeWarningFg, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Switch network',
-                style: typography.paragraphNormal(
-                  fontWeight: ArFontWeight.semiBold,
-                  color: colors.themeWarningFg,
-                ),
-              ),
-            ],
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ArDriveNotice(
+          type: ArDriveNoticeType.warning,
+          title: 'Switch network',
+          message:
+              'Please switch from $currentNetworkName to $requiredNetworkName to continue.',
+        ),
+        const SizedBox(height: 16),
+        ArDriveButtonNew(
+          typography: ArDriveTypographyNew.of(context),
+          variant: ButtonVariant.primary,
+          size: ArDriveButtonSize.large,
+          maxWidth: double.infinity,
+          text: networkState.isSwitching
+              ? 'Switching...'
+              : 'Switch to $requiredNetworkName',
+          isDisabled: networkState.isSwitching,
+          onPressed: () {
+            bloc.add(CryptoTopupNetworkSwitchRequested(
+                networkState.requiredChainId));
+          },
+        ),
+        if (networkState.error != null) ...[
           const SizedBox(height: 12),
-          Text(
-            'Please switch from $currentNetworkName to $requiredNetworkName to continue.',
-            style: typography.paragraphSmall(color: colors.themeFgMuted),
+          ArDriveNotice(
+            type: ArDriveNoticeType.error,
+            message: networkState.error!,
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ArDriveButton(
-              text: networkState.isSwitching
-                  ? 'Switching...'
-                  : 'Switch to $requiredNetworkName',
-              isDisabled: networkState.isSwitching,
-              onPressed: () {
-                bloc.add(CryptoTopupNetworkSwitchRequested(
-                    networkState.requiredChainId));
-              },
-            ),
-          ),
-          if (networkState.error != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colors.themeErrorSubtle,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline,
-                      color: colors.themeErrorDefault, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      networkState.error!,
-                      style: typography.paragraphSmall(
-                        color: colors.themeErrorDefault,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
-      ),
+      ],
     );
   }
 
@@ -953,7 +717,7 @@ class _WalletConnectionSection extends StatelessWidget {
 class _QuoteRow extends StatelessWidget {
   final String label;
   final String value;
-  final ArDriveColors colors;
+  final ArDriveColorTokens colors;
   final ArdriveTypographyNew typography;
   final bool isMuted;
 
@@ -973,14 +737,14 @@ class _QuoteRow extends StatelessWidget {
         Text(
           label,
           style: typography.paragraphNormal(
-            color: isMuted ? colors.themeFgMuted : colors.themeFgDefault,
+            color: isMuted ? colors.textMid : colors.textHigh,
           ),
         ),
         Text(
           value,
           style: typography.paragraphNormal(
             fontWeight: isMuted ? ArFontWeight.book : ArFontWeight.semiBold,
-            color: isMuted ? colors.themeFgMuted : colors.themeFgDefault,
+            color: isMuted ? colors.textMid : colors.textHigh,
           ),
         ),
       ],
@@ -1002,7 +766,7 @@ class _WalletGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Wrap(
@@ -1026,7 +790,7 @@ class _WalletGridItem extends StatelessWidget {
   final DetectedWallet wallet;
   final bool isConnecting;
   final VoidCallback onTap;
-  final ArDriveColors colors;
+  final ArDriveColorTokens colors;
   final ArdriveTypographyNew typography;
 
   const _WalletGridItem({
@@ -1048,9 +812,9 @@ class _WalletGridItem extends StatelessWidget {
           width: 100,
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
-            color: colors.themeBgSurface,
+            color: colors.containerRaised,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: colors.themeBorderDefault),
+            border: Border.all(color: colors.strokeMid),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1065,14 +829,8 @@ class _WalletGridItem extends StatelessWidget {
                 ),
                 child: Center(
                   child: isConnecting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
+                      // White on the wallet's brand colour, below.
+                      ? const ArDriveSpinner(color: Colors.white)
                       : Text(
                           wallet.displayName.substring(0, 1).toUpperCase(),
                           style: const TextStyle(
@@ -1089,7 +847,7 @@ class _WalletGridItem extends StatelessWidget {
                 wallet.displayName,
                 style: typography.paragraphSmall(
                   fontWeight: ArFontWeight.semiBold,
-                  color: colors.themeFgDefault,
+                  color: colors.textHigh,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
@@ -1101,7 +859,7 @@ class _WalletGridItem extends StatelessWidget {
                 Text(
                   'Detected',
                   style: typography.caption(
-                    color: colors.themeSuccessDefault,
+                    color: colors.statusSuccessFg,
                   ),
                 ),
               ],
@@ -1112,6 +870,7 @@ class _WalletGridItem extends StatelessWidget {
     );
   }
 
+  // The wallets' own brand colours, not ArDrive's.
   Color _getWalletColor() {
     switch (wallet.id) {
       case 'metamask':
@@ -1131,7 +890,7 @@ class _WalletGridItem extends StatelessWidget {
       case 'walletconnect':
         return const Color(0xFF3B99FC); // WalletConnect blue
       default:
-        return colors.themeFgMuted;
+        return colors.textMid;
     }
   }
 }
@@ -1184,6 +943,7 @@ class _TokenIcon extends StatelessWidget {
         style: TextStyle(
           fontSize: size * 0.35,
           fontWeight: FontWeight.bold,
+          // On the token's brand colour, below.
           color: Colors.white,
         ),
       ),
@@ -1202,6 +962,7 @@ class _TokenIcon extends StatelessWidget {
     };
   }
 
+  // The tokens' own brand colours, not ArDrive's.
   Color _getTokenColor(CryptoToken token) {
     return switch (token) {
       CryptoToken.arioAO ||

@@ -396,8 +396,16 @@ class CryptoTopupConfirmation extends CryptoTopupState {
   double? get tokenBalanceAfter =>
       tokenBalance != null ? tokenBalance! - quote.tokenAmountDisplay : null;
 
+  /// Whether the wallet holds less than the payment. An unknown balance
+  /// doesn't count: the wallet still refuses a payment it can't cover.
+  bool get hasInsufficientBalance =>
+      tokenBalanceAfter != null && tokenBalanceAfter! < 0;
+
   /// Whether the confirm button should be enabled
-  bool get canConfirm => networkState == NetworkState.correct && !isProcessing;
+  bool get canConfirm =>
+      networkState == NetworkState.correct &&
+      !isProcessing &&
+      !hasInsufficientBalance;
 
   CryptoTopupConfirmation copyWith({
     CryptoQuote? quote,

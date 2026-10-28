@@ -15,13 +15,31 @@ import 'package:flutter_test/flutter_test.dart';
 /// surfaces are different widget trees behind a `ScreenTypeLayout`. A widget
 /// test proves whichever branch it rendered, which is exactly the half that was
 /// never the problem.
+///
+/// The chrome is shared by every list page now (Your drives, Web pages, Names
+/// and one name's page), so it is read where it lives, and each page is
+/// checked to wear it.
 void main() {
   final page = File(
-    'lib/drives_list/presentation/drives_list_page.dart',
+    'lib/components/list_page/list_page_layout.dart',
   ).readAsStringSync();
 
   test('the desktop chrome carries a search field', () {
-    expect(page.contains('_DrivesListSearchField()'), isTrue);
+    expect(page.contains('ListPageSearchField()'), isTrue);
+  });
+
+  test('every list page wears that chrome', () {
+    for (final path in [
+      'lib/drives_list/presentation/drives_list_page.dart',
+      'lib/web_pages/presentation/web_pages_page.dart',
+      'lib/arns/presentation/names_page/names_page.dart',
+    ]) {
+      expect(
+        File(path).readAsStringSync().contains('ListPageChrome('),
+        isTrue,
+        reason: '$path builds its own chrome',
+      );
+    }
   });
 
   test('the mobile bar opts into search', () {

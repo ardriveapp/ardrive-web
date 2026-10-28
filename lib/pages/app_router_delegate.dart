@@ -16,6 +16,8 @@ import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/arns/presentation/names_page/names_page.dart';
 import 'package:ardrive/arns/presentation/resume/arns_resume_scope.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
+import 'package:ardrive/drives_list/domain/drive_scope.dart';
+import 'package:ardrive/web_pages/presentation/web_pages_page.dart';
 import 'package:ardrive/drive_explorer/dock/ardrive_dock.dart';
 import 'package:ardrive/drive_explorer/multi_thumbnail_creation/multi_thumbnail_creation_modal.dart';
 import 'package:ardrive/drive_state/data/drive_state_import.dart';
@@ -68,6 +70,18 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// Whether the Names page is what is on screen (docs/NAMES.md). Like the
   /// drives list, a drive stays selected under it for the sidebar.
   bool showingNames = false;
+
+  /// With [showingNames], the one name whose page is on screen; null for
+  /// every name.
+  String? shownName;
+
+  /// Whether the Web pages page is what is on screen: what the user has
+  /// published. Like the Names page, a drive stays selected under it.
+  bool showingWebPages = false;
+
+  /// The scope the drives list opens on, from a drive heading in the nav or
+  /// the Web pages page's way to public drives.
+  DriveScope drivesListScope = DriveScope.all;
 
   String? driveId;
   String? driveName;
@@ -327,6 +341,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
         getStarted: gettingStarted,
         drivesList: showingDrivesList,
         names: showingNames,
+        arnsName: showingNames ? shownName : null,
+        webPages: showingWebPages,
         driveId: driveId,
         driveName: driveName,
         sharedDriveKey: sharedDriveKey,
@@ -497,7 +513,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                 // to honour: a deep link - a drive, a folder, a shared file, a
                 // raw transaction - has already set its target in
                 // `setNewRoutePath`, and is left exactly as it was.
-                if (!hasARouteToHonour && !showingNames) {
+                if (!hasARouteToHonour && !showingNames && !showingWebPages) {
                   showingDrivesList = true;
                 }
 
@@ -558,15 +574,33 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
               } else if (showingNames &&
                   canShowDrivesList(state) &&
                   namesPageIsOn(context)) {
-                shellKey = 'names';
                 // The drives list's shape: the sidebar reads an explorer
                 // cubit, and a drive chosen in it opens that drive.
+                final name = shownName;
+                shellKey = name == null ? 'names' : 'name:$name';
                 shell = BlocProvider(
                   create: (context) => _driveDetailCubit(context, rootPath),
-                  child: ArNSNamesShell(onOpenDrive: openDriveFromList),
+                  child: ArNSNamesShell(
+                    onOpenDrive: openDriveFromList,
+                    child: AppShell(
+                      page: name == null
+                          ? const ArNSNamesPage()
+                          : ArNSNamePage(name: name),
+                    ),
+                  ),
+                );
+              } else if (showingWebPages &&
+                  canShowDrivesList(state) &&
+                  webPagesAreOn(context)) {
+                shellKey = 'webPages';
+                // The Names page's shape, for the same reasons.
+                shell = BlocProvider(
+                  create: (context) => _driveDetailCubit(context, rootPath),
+                  child: WebPagesShell(onOpenDrive: openDriveFromList),
                 );
               } else if ((showingDrivesList ||
-                      (showingNames && !namesPageIsOn(context))) &&
+                      (showingNames && !namesPageIsOn(context)) ||
+                      (showingWebPages && !webPagesAreOn(context))) &&
                   canShowDrivesList(state)) {
                 shellKey = 'drivesList';
                 // A separate subtree from the explorer's, deliberately. The
@@ -586,6 +620,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                   // table shows them, and they sit on opposite sides of this
                   // boundary.
                   child: DrivesListPage.provide(
+                    initialScope: drivesListScope,
                     child: AppShell(
                       page: DrivesListPage(onOpenDrive: openDriveFromList),
                     ),
@@ -1038,6 +1073,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   void openDriveFromList(String driveId) {
     showingDrivesList = false;
     showingNames = false;
+    showingWebPages = false;
     this.driveId = driveId;
 
     // A row tap has no folder in view and opens the drive at its root. A search
@@ -1094,7 +1130,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
   /// A no-op when the list is already what is on screen, so a second tap does
   /// not push a second identical history entry for the browser's back button
   /// to have to walk back through.
-  void showDrivesList() {
+  void showDrivesList({DriveScope scope = DriveScope.all}) {
     // No early return. There is no condition this method can test that proves
     // the drives list is what the user is looking at, and every version of
     // that guess has ended the same way: the flag reads true, the request is
@@ -1112,7 +1148,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
 
     // Asked for, so nothing outranks it.
     showingDrivesList = true;
+    drivesListScope = scope;
     showingNames = false;
+    showingWebPages = false;
     signingIn = false;
     gettingStarted = false;
     // Going back to the list abandons whatever a search asked for - all of it,
@@ -1143,10 +1181,25 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     notifyListeners();
   }
 
-  /// The Names page, from the nav's On the web group. Like
-  /// [showDrivesList], the drive in the sidebar stays selected underneath.
-  void showNames() {
+  /// The Names page, or [name]'s own page, from the nav's Names heading.
+  /// Like [showDrivesList], the drive in the sidebar stays selected
+  /// underneath.
+  void showNames({String? name}) {
     showingNames = true;
+    shownName = name;
+    showingWebPages = false;
+    _leaveForAPage();
+  }
+
+  /// The Web pages page, from the nav's Web pages heading.
+  void showWebPages() {
+    showingWebPages = true;
+    showingNames = false;
+    _leaveForAPage();
+  }
+
+  /// What the Names and Web pages pages leave behind: every other screen.
+  void _leaveForAPage() {
     showingDrivesList = false;
     signingIn = false;
     gettingStarted = false;
@@ -1164,6 +1217,18 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     rawTransactionName = null;
     rawTransactionContentType = null;
     notifyListeners();
+  }
+
+  /// Whether the Web pages page can be shown: where Publish to web is
+  /// (`offersPublishToWeb`), outside a publication with publishing on. Not
+  /// web-only: deployments are on the web from any platform.
+  static bool webPagesAreOn(BuildContext context) {
+    if (PublicationMode.isOn) return false;
+    try {
+      return context.read<ConfigService>().config.enableDriveStatePublishing;
+    } on ProviderNotFoundException {
+      return false;
+    }
   }
 
   /// Whether the Names page can be shown: names on, outside a publication.
@@ -1228,6 +1293,9 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     gettingStarted = configuration.getStarted;
     showingDrivesList = configuration.drivesList;
     showingNames = configuration.names;
+    shownName = configuration.names ? configuration.arnsName : null;
+    showingWebPages = configuration.webPages;
+    drivesListScope = DriveScope.all;
     driveId = configuration.driveId;
     driveName = configuration.driveName;
     driveFolderId = configuration.driveFolderId;
@@ -1236,7 +1304,8 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     _pendingFolderId = configuration.driveFolderId;
     _routeLink = configuration.driveId == null ||
             configuration.drivesList ||
-            configuration.names
+            configuration.names ||
+            configuration.webPages
         ? null
         : RouteLink(
             driveId: configuration.driveId!,
@@ -1317,6 +1386,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     gettingStarted = false;
     showingDrivesList = false;
     showingNames = false;
+    showingWebPages = false;
 
     this.driveId = driveId;
     driveName = null;
@@ -1350,6 +1420,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     gettingStarted = false;
     showingDrivesList = false;
     showingNames = false;
+    showingWebPages = false;
     notifyListeners();
   }
 
@@ -1446,6 +1517,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
     gettingStarted = false;
     showingDrivesList = false;
     showingNames = false;
+    showingWebPages = false;
     driveId = null;
     driveName = null;
     driveFolderId = null;

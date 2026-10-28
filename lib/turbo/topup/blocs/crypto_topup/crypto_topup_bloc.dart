@@ -806,7 +806,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           currentTurboBalance: currentTurboBalance,
           currentBalanceStorage: storageValues.currentStorage,
           newBalanceStorage: storageValues.newStorage,
-          tokenBalance: balance.balanceDisplay,
+          tokenBalance: balance.knownBalanceDisplay,
         ));
       } catch (e) {
         logger.e('Error refreshing quote: $e');
@@ -881,7 +881,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     double? tokenBalance;
     final currentState = state;
     if (currentState is CryptoTopupAmountEntry) {
-      tokenBalance = currentState.balance.balanceDisplay;
+      tokenBalance = currentState.balance.knownBalanceDisplay;
     }
 
     // Calculate storage values dynamically based on the quote
@@ -1008,7 +1008,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           currentTurboBalance: currentTurboBalance,
           currentBalanceStorage: storageValues.currentStorage,
           newBalanceStorage: storageValues.newStorage,
-          tokenBalance: balance.balanceDisplay,
+          tokenBalance: balance.knownBalanceDisplay,
         ));
       }
     } else if (currentState is CryptoTopupWalletConnection &&
@@ -1117,7 +1117,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
           currentTurboBalance: currentTurboBalance,
           currentBalanceStorage: storageValues.currentStorage,
           newBalanceStorage: storageValues.newStorage,
-          tokenBalance: balance.balanceDisplay,
+          tokenBalance: balance.knownBalanceDisplay,
         ));
       } else {
         // Still wrong network

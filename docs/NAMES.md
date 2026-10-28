@@ -46,7 +46,7 @@ These words are used in every ArDrive app, help article and release note.
 | Wallet | Your ArDrive wallet: your account, and what pays in credits. | primary wallet (in the app) |
 | Deployment | A manifest: a folder served as a website or app. | manifest |
 | Publication | A published drive or folder page. | library page |
-| On the web | The left-nav group for what you've put on the web: Names now, Published later. | Permaweb, Publishing |
+| Web pages | What you've put on the web: publications and deployments. A left-nav heading and a page. | Permaweb, Publishing, On the web |
 | Credits | Turbo credits, the only way to pay for name changes. | winc |
 
 ## Principles
@@ -73,17 +73,22 @@ Names appear at three levels, each with one job.
 |---|---|---|
 | Item | The item's menu (Add name, Change name, Remove name), the details panel's **Name** section, and a name chip (the ArNS name icon) on explorer rows | Name this thing, see its name, copy its link |
 | Flow | An optional step in Publish, Create deployment and uploading a single public file | Name it while making it |
-| Account | **On the web › Names** in the left nav; the ArNS wallet row in the profile card | See every name and undername, what each points to and its cache time; link the wallet |
+| Account | **Names** in the left nav, each name with its own page; the ArNS wallet row in the profile card | See every name and undername, what each points to and its cache time; link the wallet |
 
 Settings is not a level: names aren't preferences. Buying, renewing,
 ownership, controllers and primary names stay in the ar.io console
 (`https://console.ar.io`), linked from the Names page.
 
 The left nav today has drive rows only (`lib/components/side_bar.dart`,
-`lib/drives_list/presentation/drive_scope_rail.dart`). "On the web" is a new
-group below the drives, shown both on the drives list and inside a drive,
-with one row, **Names**. It needs its own row type: `DriveScope` filters
-drives and must not grow a non-drive value.
+`lib/drives_list/presentation/drive_scope_rail.dart`). Below the drives and
+a divider are two headings of their own, **Web pages** and **Names**
+(`lib/components/web_nav_headings.dart`), shown both on the drives list and
+inside a drive. Each heading's words open its page and its chevron folds the
+items under it: the first 8 web pages or names (a name bare, `maya`, with a
+red dot when its lease ends within 30 days), then "Show all N". A name opens
+its own page (`/names/<name>`). The drive headings follow the same rule: the
+words open Your drives at that scope. They need their own row type:
+`DriveScope` filters drives and must not grow a non-drive value.
 
 Nameable items (Q5): deployments, public files, and publications (public or
 private). Never a private file.
@@ -466,7 +471,7 @@ undername slots.
 | Q12 | New versions move the name automatically, said in the confirm step with its cost. |
 | Q13 | Undernames are deleted on removal; main names point at the empty page; offer removal when a file is hidden. |
 | Q14 | Names show as a row chip, a details Name section, in search, and on publications. |
-| Q15 | An "On the web" group in the left nav: Names now, Published later. |
+| Q15 | An "On the web" group in the left nav: Names now, Published later. Superseded: Web pages and Names are headings of their own, with no group. |
 | Q16 | Cache time in the dialog's Advanced section and on the Names page. |
 | Q17 | No primary-name work for now. |
 | Q19 | The word is "Name"; "ArNS name" on first mention; not "domain". |

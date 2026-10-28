@@ -85,6 +85,18 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
         if (uri.pathSegments.length == 1) {
           return AppRoutePath.names();
         }
+        // '/names/<name>' - one name's page.
+        if (uri.pathSegments.length == 2 && uri.pathSegments[1].isNotEmpty) {
+          // ArNS names are lowercase; a typed or shared link may not be.
+          return AppRoutePath.names(name: uri.pathSegments[1].toLowerCase());
+        }
+        return AppRoutePath.unknown();
+      case 'web-pages':
+        // Handle '/web-pages' - what the user has published. New, like
+        // '/names'.
+        if (uri.pathSegments.length == 1) {
+          return AppRoutePath.webPages();
+        }
         return AppRoutePath.unknown();
       case 'drives':
         // Handle '/drives' - the list of the user's drives. Only the bare
@@ -253,7 +265,14 @@ class AppRouteInformationParser extends RouteInformationParser<AppRoutePath> {
       );
     } else if (configuration.names) {
       // Before [driveId], for the reason [drivesList] is.
-      return RouteInformation(uri: Uri.parse('/names'));
+      final name = configuration.arnsName;
+      return RouteInformation(
+        uri: Uri.parse(
+          name == null ? '/names' : '/names/${Uri.encodeComponent(name)}',
+        ),
+      );
+    } else if (configuration.webPages) {
+      return RouteInformation(uri: Uri.parse('/web-pages'));
     } else if (configuration.driveId != null) {
       final path = configuration.driveFolderId == null
           ? '/drives/${configuration.driveId}'

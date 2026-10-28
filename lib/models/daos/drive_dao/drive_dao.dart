@@ -896,6 +896,20 @@ class DriveDao extends DatabaseAccessor<Database> with _$DriveDaoMixin {
   Future<void> writeToFolder(Insertable<FolderEntry> folder) =>
       (update(folderEntries)..whereSamePrimaryKey(folder)).write(folder);
 
+  /// The deployments in [ownerAddress]'s own public drives, one row per file
+  /// at its latest revision, hidden ones left out: what the Web pages list
+  /// shows beside publications. Private drives are never on the web.
+  Stream<List<FileEntry>> watchDeploymentsOfOwner(String ownerAddress) {
+    final query = select(fileEntries).join([
+      innerJoin(drives, drives.id.equalsExp(fileEntries.driveId)),
+    ])
+      ..where(fileEntries.dataContentType.equals(ContentTypeTag.manifest) &
+          fileEntries.isHidden.equals(false) &
+          drives.ownerAddress.equals(ownerAddress) &
+          drives.privacy.equals(DrivePrivacyTag.public));
+    return query.map((row) => row.readTable(fileEntries)).watch();
+  }
+
   /// Constructs a tree of folders and files that are children of the specified folder.
   /// The folder tree under [rootFolderId], with every file in it.
   ///

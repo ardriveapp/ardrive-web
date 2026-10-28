@@ -25,7 +25,7 @@ class PaymentMethodSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
     return Column(
@@ -35,195 +35,55 @@ class PaymentMethodSelector extends StatelessWidget {
           appLocalizationsOf(context).paymentMethod,
           style: typography.paragraphNormal(
             fontWeight: ArFontWeight.semiBold,
-            color: colors.themeFgDefault,
+            color: colors.textHigh,
           ),
         ),
         const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: colors.themeBorderDefault),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              // Card payment tab
-              Expanded(
-                child: _PaymentTab(
-                  icon: Icons.credit_card,
-                  label: appLocalizationsOf(context).paymentMethodCard,
-                  isSelected: selectedMethod == PaymentMethod.card,
-                  onTap: () => onMethodChanged(PaymentMethod.card),
-                  isFirst: true,
+        ArDriveSegmentedControl<PaymentMethod>(
+          expand: true,
+          selected: selectedMethod,
+          // Only Card calls this: Crypto is chosen through its token menu.
+          onSelected: onMethodChanged,
+          segments: [
+            ArDriveSegment(
+              value: PaymentMethod.card,
+              label: appLocalizationsOf(context).paymentMethodCard,
+              icon: Icons.credit_card,
+            ),
+            ArDriveSegment(
+              value: PaymentMethod.crypto,
+              label: selectedToken?.displayName ??
+                  appLocalizationsOf(context).paymentMethodCrypto,
+              icon: Icons.account_balance_wallet,
+              trailingIcon: Icons.keyboard_arrow_down,
+              wrap: (context, segment) => PopupMenuButton<CryptoToken>(
+                initialValue: selectedToken,
+                tooltip: appLocalizationsOf(context).paymentMethodCrypto,
+                // Choosing a token switches to crypto (onTokenSelected
+                // carries both); closing the menu without one leaves the
+                // method as it was.
+                onSelected: onTokenSelected,
+                offset: const Offset(0, 40),
+                constraints: const BoxConstraints(minWidth: 300),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(ArDriveRadius.md),
                 ),
+                itemBuilder: _buildTokenMenuItems,
+                child: segment,
               ),
-              // Crypto payment tab with dropdown
-              Expanded(
-                child: _CryptoPaymentTab(
-                  isSelected: selectedMethod == PaymentMethod.crypto,
-                  selectedToken: selectedToken,
-                  onTap: () {
-                    if (selectedMethod != PaymentMethod.crypto) {
-                      onMethodChanged(PaymentMethod.crypto);
-                    }
-                  },
-                  // onTap already handles method change, just forward token selection
-                  onTokenSelected: onTokenSelected,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
   }
-}
-
-/// Individual payment method tab
-class _PaymentTab extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final bool isFirst;
-
-  const _PaymentTab({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    this.isFirst = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Material(
-      color: isSelected ? colors.themeFgMuted : colors.themeBgSurface,
-      borderRadius: BorderRadius.only(
-        topLeft: isFirst ? const Radius.circular(7) : Radius.zero,
-        bottomLeft: isFirst ? const Radius.circular(7) : Radius.zero,
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.only(
-          topLeft: isFirst ? const Radius.circular(7) : Radius.zero,
-          bottomLeft: isFirst ? const Radius.circular(7) : Radius.zero,
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: isSelected ? colors.themeBgSurface : colors.themeFgMuted,
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  label,
-                  style: typography.paragraphSmall(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: isSelected
-                        ? colors.themeBgSurface
-                        : colors.themeFgMuted,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Crypto payment tab with token dropdown
-class _CryptoPaymentTab extends StatelessWidget {
-  final bool isSelected;
-  final CryptoToken? selectedToken;
-  final VoidCallback onTap;
-  final ValueChanged<CryptoToken> onTokenSelected;
-
-  const _CryptoPaymentTab({
-    required this.isSelected,
-    this.selectedToken,
-    required this.onTap,
-    required this.onTokenSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final typography = ArDriveTypographyNew.of(context);
-
-    return Material(
-      color: isSelected ? colors.themeFgMuted : colors.themeBgSurface,
-      borderRadius: const BorderRadius.only(
-        topRight: Radius.circular(7),
-        bottomRight: Radius.circular(7),
-      ),
-      child: PopupMenuButton<CryptoToken>(
-        initialValue: selectedToken,
-        onSelected: (token) {
-          onTap(); // Trigger onTap to select crypto method
-          onTokenSelected(token);
-        },
-        // Don't call onTap on cancel - only switch methods when token is selected
-        offset: const Offset(0, 48),
-        constraints: const BoxConstraints(minWidth: 300),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-        itemBuilder: (context) => _buildTokenMenuItems(context),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.account_balance_wallet,
-                size: 18,
-                color: isSelected ? colors.themeBgSurface : colors.themeFgMuted,
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  selectedToken?.displayName ??
-                      appLocalizationsOf(context).paymentMethodCrypto,
-                  style: typography.paragraphSmall(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: isSelected
-                        ? colors.themeBgSurface
-                        : colors.themeFgMuted,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.keyboard_arrow_down,
-                size: 16,
-                color: isSelected ? colors.themeBgSurface : colors.themeFgMuted,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   List<PopupMenuItem<CryptoToken>> _buildTokenMenuItems(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final typography = ArDriveTypographyNew.of(context);
 
-    final availableTokens = TokenGroup.allGroups
-        .expand((group) => group.tokens)
-        .toList();
+    final availableTokens =
+        TokenGroup.allGroups.expand((group) => group.tokens).toList();
 
     return availableTokens.map((token) {
       return PopupMenuItem<CryptoToken>(
@@ -233,19 +93,13 @@ class _CryptoPaymentTab extends StatelessWidget {
             _TokenIcon(token: token),
             const SizedBox(width: 12),
             Expanded(
-              child: Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      token.displayName,
-                      style: typography.paragraphNormal(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colors.themeFgDefault,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+              child: Text(
+                token.displayName,
+                style: typography.paragraphNormal(
+                  fontWeight: ArFontWeight.semiBold,
+                  color: colors.textHigh,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -267,14 +121,14 @@ class _TokenIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final isSvg = token.logoAsset.endsWith('.svg');
 
     return Container(
       width: _size,
       height: _size,
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerRaised,
         borderRadius: BorderRadius.circular(_size / 2),
       ),
       child: ClipRRect(

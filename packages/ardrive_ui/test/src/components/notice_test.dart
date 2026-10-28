@@ -105,4 +105,25 @@ void main() {
     expect(decorationOf(tester).borderRadius,
         BorderRadius.circular(ArDriveRadius.md));
   });
+
+  testWidgets('an action without a callback is shown disabled', (tester) async {
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => const MaterialApp(
+          home: Scaffold(
+            body: ArDriveNotice(
+              type: ArDriveNoticeType.info,
+              message: 'A newer version is available',
+              actionLabel: 'Get latest',
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final action = tester.widget<ArDriveButtonNew>(
+      find.widgetWithText(ArDriveButtonNew, 'Get latest'),
+    );
+    expect(action.isDisabled, isTrue);
+  });
 }

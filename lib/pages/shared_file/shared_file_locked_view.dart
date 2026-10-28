@@ -1,4 +1,3 @@
-import 'package:ardrive/pages/shared_file/shared_file_colors.dart';
 import 'package:ardrive/pages/shared_file/shared_file_identity.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
@@ -96,61 +95,10 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    // The key field is the most prominent thing on this card, and the design
-    // system paints it white in both themes - a white slab in the middle of a
-    // near-black card. Overridden here rather than in the token, which every
-    // text field in the app shares; see [_keyFieldTheme].
-    //
-    // The gate is built under a [Builder] so that it reads the overridden
-    // theme rather than the one this method was handed.
-    return ArDriveTheme(
-      themeData: _keyFieldTheme(context),
-      child: Builder(builder: _buildGate),
-    );
-  }
-
-  /// This card's own text field styling.
-  ///
-  /// Three of the design system's input tokens are one colour in both themes:
-  /// `themeInputBackground` is `white`, `themeInputText` is `grey.800` and
-  /// `themeInputBorderDisabled` is `grey.200`. That is a deliberate pairing on
-  /// the light theme and an unreadable one on the dark theme, where it puts a
-  /// pure white rectangle - the brightest thing on the page - in the middle of
-  /// a `#1F1F1F` card.
-  ///
-  /// Restyling the tokens would restyle every text field in the app, so this
-  /// follows what the top-up, gift and review forms already do: copy the theme
-  /// for this subtree and pick, per theme, the token that works. Nothing
-  /// outside this card changes.
-  ArDriveThemeData _keyFieldTheme(BuildContext context) {
-    final theme = ArDriveTheme.of(context).themeData;
-    final colors = theme.colors;
-    final isLight = ArDriveTheme.of(context).isLight();
-
-    return theme.copyWith(
-      textFieldTheme: theme.textFieldTheme.copyWith(
-        // An inset well: one step back from the card in either theme.
-        inputBackgroundColor: colors.themeBgCanvas,
-        // The eye toggle takes this one as well as the text.
-        inputTextColor: isLight ? colors.themeInputText : colors.themeFgDefault,
-        inputTextStyle: theme.textFieldTheme.inputTextStyle.copyWith(
-          color: isLight ? colors.themeInputText : colors.themeFgDefault,
-        ),
-        // `grey.500` is ~2.8:1 on the light card.
-        inputPlaceholderColor:
-            isLight ? colors.themeFgMuted : colors.themeInputPlaceholder,
-        // `red.400` is ~3.4:1 on white, and the message under this field is
-        // the one string on this page a recipient has to be able to read.
-        errorColor: isLight ? colors.themeErrorFg : colors.themeErrorDefault,
-        // `grey.200` is a near-white border on a near-black card.
-        inputDisabledBorderColor: colors.themeBorderDefault,
-      ),
-    );
-  }
+  Widget build(BuildContext context) => _buildGate(context);
 
   Widget _buildGate(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final payload = widget.payload;
     final detailsAreHidden = payload?.detailsAreHidden ?? false;
     final showEmbeddedDetails = payload != null && !detailsAreHidden;
@@ -169,28 +117,31 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
           const SizedBox(height: 12),
           Text(
             appLocalizationsOf(context).sharedFileDetailsHiddenBySender,
-            style: ArDriveTypography.body.captionRegular(
-              color: SharedFileColors.subtle(context),
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
             ),
           ),
         ],
         const SizedBox(height: 24),
         Text(
           appLocalizationsOf(context).sharedFileProtectedWithAccessKey,
-          style: ArDriveTypography.body.bodyBold(
-            color: colors.themeFgDefault,
+          style: ArDriveTypographyNew.of(context).paragraphXLarge(
+            fontWeight: ArFontWeight.semiBold,
+            color: colors.textHigh,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           appLocalizationsOf(context).sharedFileAccessKeySentSeparately,
-          style: ArDriveTypography.body.captionRegular(
-            color: SharedFileColors.subtle(context),
+          style: ArDriveTypographyNew.of(context).paragraphNormal(
+            color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
           ),
         ),
         const SizedBox(height: 16),
-        ArDriveTextField(
+        ArDriveTextFieldNew(
           controller: widget.controller,
+          // A key, so monospace, like every key in the app.
+          textStyle: ArDriveTypographyNew.of(context).code(),
           focusNode: _keyFieldFocus,
           autofocus: true,
           autocorrect: false,
@@ -208,7 +159,10 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
           onChanged: (value) => widget.onRememberChanged?.call(value),
         ),
         const SizedBox(height: 16),
-        ArDriveButton(
+        ArDriveButtonNew(
+          variant: ButtonVariant.primary,
+          size: ArDriveButtonSize.large,
+          typography: ArDriveTypographyNew.of(context),
           maxWidth: double.infinity,
           isDisabled: widget.isBusy || widget.controller.text.trim().isEmpty,
           onPressed: _submit,
@@ -216,14 +170,14 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
         ),
         if (widget.isBusy) ...[
           const SizedBox(height: 8),
-          const LinearProgressIndicator(minHeight: 2),
+          const ArDriveLinearProgress(),
         ],
         const SizedBox(height: 12),
         Text(
           appLocalizationsOf(context).sharedFileAccessKeyStaysOnThisDevice,
           textAlign: TextAlign.center,
-          style: ArDriveTypography.body.captionRegular(
-            color: SharedFileColors.subtle(context),
+          style: ArDriveTypographyNew.of(context).paragraphNormal(
+            color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
           ),
         ),
       ],
@@ -307,7 +261,7 @@ class _RememberKeyCheckBoxState extends State<_RememberKeyCheckBox> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final label = appLocalizationsOf(context).sharedFileRememberKeyForThisTab;
 
     return Semantics(
@@ -330,7 +284,7 @@ class _RememberKeyCheckBoxState extends State<_RememberKeyCheckBox> {
           // A keyboard user has to be able to see where they are.
           decoration: BoxDecoration(
             border: Border.all(
-              color: _isFocused ? colors.themeFgDefault : Colors.transparent,
+              color: _isFocused ? colors.textHigh : Colors.transparent,
             ),
             borderRadius: BorderRadius.circular(4),
           ),
@@ -341,8 +295,8 @@ class _RememberKeyCheckBoxState extends State<_RememberKeyCheckBox> {
               title: label,
               checked: widget.isChecked,
               onChange: widget.onChanged,
-              titleStyle: ArDriveTypography.body.captionRegular(
-                color: SharedFileColors.subtle(context),
+              titleStyle: ArDriveTypographyNew.of(context).paragraphNormal(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
               ),
             ),
           ),

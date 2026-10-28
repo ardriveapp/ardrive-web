@@ -243,6 +243,11 @@ class TokenBalance extends Equatable {
     return rawBalance.toDouble() / divisor;
   }
 
+  /// The balance, or null while it loads or after it failed to load, so a
+  /// failed fetch never reads as an empty wallet.
+  double? get knownBalanceDisplay =>
+      hasError || isLoading ? null : balanceDisplay;
+
   /// Formatted balance with symbol for display
   String get displayBalance {
     final decimals = switch (token) {
