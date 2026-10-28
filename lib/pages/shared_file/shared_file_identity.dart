@@ -1,6 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
-import 'package:ardrive/pages/shared_file/shared_file_colors.dart';
 import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -68,7 +67,7 @@ class SharedFileIdentity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final mismatch = verification == LinkVerification.mismatch;
 
     return Column(
@@ -106,15 +105,15 @@ class SharedFileIdentity extends StatelessWidget {
                 ExcludeSemantics(
                   child: ArDriveIcons.triangle(
                     size: 16,
-                    color: colors.themeWarningFg,
+                    color: colors.statusWarningFg,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     appLocalizationsOf(context).sharedFileLinkDetailsMismatch,
-                    style: ArDriveTypography.body.captionRegular(
-                      color: colors.themeFgDefault,
+                    style: ArDriveTypographyNew.of(context).paragraphNormal(
+                      color: colors.textHigh,
                     ),
                   ),
                 ),
@@ -127,7 +126,7 @@ class SharedFileIdentity extends StatelessWidget {
   }
 
   Widget _buildTitle(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final name = this.name;
 
     if (name == null && isLoading) {
@@ -154,7 +153,7 @@ class SharedFileIdentity extends StatelessWidget {
         // competing with the primary action, and it is the scale
         // `details_panel.dart` uses, which is the surface this page replaced.
         style: ArDriveTypographyNew.of(context).heading5(
-          color: colors.themeFgDefault,
+          color: colors.textHigh,
           fontWeight: ArFontWeight.bold,
         ),
       ),
@@ -174,8 +173,8 @@ class SharedFileIdentity extends StatelessWidget {
   /// item they introduce, and the one place that reliably wrapped is not a
   /// wrap any more.
   Widget _buildMeta(BuildContext context) {
-    final style = ArDriveTypography.body.captionRegular(
-      color: SharedFileColors.subtle(context),
+    final style = ArDriveTypographyNew.of(context).paragraphNormal(
+      color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
     );
 
     final facts = _buildFacts(context, style);
@@ -252,9 +251,18 @@ class SharedFileIdentity extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(
-          child: Text(
-            appLocalizationsOf(context)
-                .sharedFileSharedBy(_shortAddress(ownerAddress)),
+          // The address in monospace, at its final width so the badge beside
+          // it doesn't move when the face loads.
+          child: Text.rich(
+            TextSpan(
+              children: ArDriveIdText.spansIn(
+                appLocalizationsOf(context)
+                    .sharedFileSharedBy(_shortAddress(ownerAddress)),
+                _shortAddress(ownerAddress),
+                idStyle:
+                    ArDriveTypographyNew.of(context).code(color: style.color),
+              ),
+            ),
             style: style,
             overflow: TextOverflow.ellipsis,
           ),
@@ -349,12 +357,13 @@ class SharedFileVerificationBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     if (verification == LinkVerification.verified) {
       // `themeSuccessDefault` is `green.400` in both themes and reads at
       // ~2.2:1 on the light card, so the badge takes the token that passes.
-      final color = SharedFileColors.success(context);
+      final color =
+          ArDriveTheme.of(context).themeData.colorTokens.statusSuccessFg;
 
       return _badge(
         context,
@@ -367,9 +376,9 @@ class SharedFileVerificationBadge extends StatelessWidget {
     if (verification == LinkVerification.mismatch) {
       return _badge(
         context,
-        icon: ArDriveIcons.triangle(size: 14, color: colors.themeWarningFg),
+        icon: ArDriveIcons.triangle(size: 14, color: colors.statusWarningFg),
         label: appLocalizationsOf(context).sharedFileLinkDetailsMismatch,
-        color: colors.themeFgDefault,
+        color: colors.textHigh,
       );
     }
 
@@ -378,7 +387,7 @@ class SharedFileVerificationBadge extends StatelessWidget {
         context,
         icon: null,
         label: appLocalizationsOf(context).sharedFileLinkChecking,
-        color: SharedFileColors.subtle(context),
+        color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
       );
     }
 
@@ -388,7 +397,7 @@ class SharedFileVerificationBadge extends StatelessWidget {
       context,
       icon: null,
       label: appLocalizationsOf(context).sharedFileLinkNotChecked,
-      color: SharedFileColors.subtle(context),
+      color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
     );
   }
 
@@ -408,7 +417,8 @@ class SharedFileVerificationBadge extends StatelessWidget {
           ],
           Text(
             label,
-            style: ArDriveTypography.body.captionRegular(color: color),
+            style:
+                ArDriveTypographyNew.of(context).paragraphNormal(color: color),
           ),
         ],
       ),
@@ -428,7 +438,7 @@ class _SharedFileSkeletonBar extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+        color: ArDriveTheme.of(context).themeData.colorTokens.containerL1,
         borderRadius: BorderRadius.circular(4),
       ),
     );

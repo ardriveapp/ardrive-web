@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:ardrive/pages/shared_file/shared_file_colors.dart';
 import 'package:ardrive/pages/shared_file/shared_file_identity.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/shared_file_link.dart';
@@ -39,17 +38,13 @@ class SharedFileResolvingView extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(
-              height: 16,
-              width: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            const ArDriveSpinner(),
             const SizedBox(width: 12),
             Flexible(
               child: Text(
                 appLocalizationsOf(context).sharedFileLoadingDetails,
-                style: ArDriveTypography.body.captionRegular(
-                  color: SharedFileColors.subtle(context),
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
                 ),
               ),
             ),
@@ -133,7 +128,7 @@ class _SharedFileNotFoundViewState extends State<SharedFileNotFoundView> {
   Widget build(BuildContext context) {
     // Not `themeFgSubtle`: at ~2.7:1 on the light card it is under the 3:1 a
     // graphic needs, and this icon is the state of the page.
-    final iconColor = SharedFileColors.subtle(context);
+    final iconColor = ArDriveTheme.of(context).themeData.colorTokens.textMid;
 
     if (widget.mayStillBePropagating) {
       return SharedFileMessage(
@@ -194,7 +189,7 @@ class SharedFileNetworkErrorView extends StatelessWidget {
     return SharedFileMessage(
       icon: ArDriveIcons.triangle(
         size: 32,
-        color: SharedFileColors.subtle(context),
+        color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
       ),
       message: appLocalizationsOf(context).sharedFileNetworkTrouble,
       actionLabel: appLocalizationsOf(context).sharedFileRetry,
@@ -215,7 +210,7 @@ class SharedFileLinkErrorView extends StatelessWidget {
     return SharedFileMessage(
       icon: ArDriveIcons.fileX(
         size: 32,
-        color: SharedFileColors.subtle(context),
+        color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
       ),
       message: appLocalizationsOf(context).sharedFileLinkIncomplete,
     );
@@ -241,7 +236,7 @@ class SharedFileMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final actionLabel = this.actionLabel;
 
     return Column(
@@ -255,13 +250,16 @@ class SharedFileMessage extends StatelessWidget {
         Text(
           message,
           textAlign: TextAlign.center,
-          style: ArDriveTypography.body.bodyRegular(
-            color: colors.themeFgDefault,
+          style: ArDriveTypographyNew.of(context).paragraphXLarge(
+            color: colors.textHigh,
           ),
         ),
         if (actionLabel != null && onAction != null) ...[
           const SizedBox(height: 24),
-          ArDriveButton(
+          ArDriveButtonNew(
+            variant: ButtonVariant.primary,
+            size: ArDriveButtonSize.large,
+            typography: ArDriveTypographyNew.of(context),
             maxWidth: double.infinity,
             onPressed: onAction,
             text: actionLabel,

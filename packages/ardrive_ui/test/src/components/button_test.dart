@@ -319,6 +319,37 @@ void main() {
         reason: 'the whole label is inside the button');
   });
 
+  /// A full-width button with an icon fills its width like any other, so it
+  /// lines up with the column it sits in. Its fill was inset 24 px on each
+  /// side, which left a full-width Download 48 px narrower than its card.
+  testWidgets('ArDriveButtonNew with an icon fills the width it is given',
+      (tester) async {
+    await tester.pumpWidget(
+      ArDriveApp(
+        builder: (context) => MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 320,
+              child: ArDriveButtonNew(
+                text: 'Download',
+                typography: ArDriveTypographyNew.of(context),
+                maxWidth: double.infinity,
+                icon: const SizedBox.square(dimension: 20),
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final button = tester.getRect(find.byType(ArDriveButtonNew));
+    final fill = tester.getRect(find.byType(TextButton));
+    expect(button.width, 320);
+    expect(fill.left, button.left);
+    expect(fill.right, button.right);
+  });
+
   /// Three heights, chosen by where the button sits. Buttons were 30, 36, 40,
   /// 45, 46, 56 and 60 high, so no two screens matched.
   testWidgets('ArDriveButtonNew comes in three heights', (tester) async {

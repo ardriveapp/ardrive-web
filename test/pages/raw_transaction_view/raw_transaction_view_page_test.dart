@@ -229,7 +229,7 @@ void main() {
       // Download spans the column, under the name.
       final name = tester.getRect(find.text('notes.txt'));
       final download = tester.getRect(find.widgetWithText(
-        ArDriveButton,
+        ArDriveButtonNew,
         'Download',
       ));
       expect(download.top, greaterThan(name.bottom));

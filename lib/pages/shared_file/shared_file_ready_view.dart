@@ -11,7 +11,6 @@ import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.d
 import 'package:ardrive/pages/drive_detail/drive_detail_page.dart'
     show FsEntryPreviewWidget;
 import 'package:ardrive/pages/drive_detail/models/data_table_item.dart';
-import 'package:ardrive/pages/shared_file/shared_file_colors.dart';
 import 'package:ardrive/pages/shared_file/shared_file_identity.dart';
 import 'package:ardrive/pages/shared_file/shared_file_ready_layout.dart';
 import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
@@ -141,7 +140,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
 
     return SharedFileReadyLayout(
       isWide: isWide,
-      notices: _buildNotice(context, isWide: isWide),
+      notices: _buildNotice(context),
       // The thumbnail belongs in the pane on the wide card, at a size worth
       // looking at. Showing it twice would be one fetch and one picture too
       // many.
@@ -160,7 +159,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   }
 
   /// The version notice, when there is one, above both panes.
-  List<Widget> _buildNotice(BuildContext context, {required bool isWide}) {
+  List<Widget> _buildNotice(BuildContext context) {
     final state = widget.state;
 
     // Nothing may move the target while bytes are on their way, and nothing may
@@ -170,7 +169,6 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     if (state.isPinned && state.showsLatestRevision) {
       return [
         SharedFileLatestVersionNotice(
-          isWide: isWide,
           isDisabled: !canChangeRevision,
           onPressed: () => _changeRevision(
             () => context.read<SharedFileCubit>().showSharedRevision(),
@@ -184,7 +182,6 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       return [
         SharedFileFreshnessBanner(
           isPinned: state.isPinned,
-          isWide: isWide,
           isDisabled: !canChangeRevision,
           onPressed: () => _changeRevision(
             () => context.read<SharedFileCubit>().showLatestRevision(),
@@ -234,14 +231,20 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
     final canDownload =
         revision.name.isNotEmpty && revision.dataTxId.isNotEmpty;
 
-    return ArDriveButton(
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    // The page's main action, so the large size.
+    return ArDriveButtonNew(
       // Keyed by the bytes it fetches: the key changes only when the
       // recipient has changed the target themselves, never because a newer
       // revision turned up.
       key: ValueKey('sharedFileDownload_${revision.dataTxId}'),
+      variant: ButtonVariant.primary,
+      size: ArDriveButtonSize.large,
+      typography: ArDriveTypographyNew.of(context),
       maxWidth: fillWidth ? double.infinity : null,
       isDisabled: !canDownload,
-      icon: ArDriveIcons.download(size: 20, color: Colors.white),
+      icon: ArDriveIcons.download(size: 20, color: colorTokens.textOnPrimary),
       onPressed: () => _download(context, revision),
       text: appLocalizationsOf(context).download,
     );
@@ -256,8 +259,8 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       const SizedBox(height: 16),
       Text(
         appLocalizationsOf(context).sharedFileUnlockedWithAccessKey,
-        style: ArDriveTypography.body.captionRegular(
-          color: SharedFileColors.subtle(context),
+        style: ArDriveTypographyNew.of(context).paragraphNormal(
+          color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
         ),
       ),
     ];
@@ -367,7 +370,7 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
       child: getIconForContentType(
         contentType ?? 'application/octet-stream',
         size: 40,
-        color: SharedFileColors.subtle(context),
+        color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
       ),
     );
 
@@ -394,8 +397,8 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: ArDriveTypography.body.captionRegular(
-              color: SharedFileColors.subtle(context),
+            style: ArDriveTypographyNew.of(context).paragraphNormal(
+              color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
             ),
           ),
         ],
@@ -406,13 +409,13 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
   /// The type icon, given enough weight to read as a placeholder rather than as
   /// a stray glyph in a large empty box.
   Widget _buildIconTile(BuildContext context, Widget icon) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Container(
       width: 96,
       height: 96,
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerL1,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(child: icon),
@@ -690,8 +693,8 @@ class _SharedFileReadyViewState extends State<SharedFileReadyView> {
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: ArDriveTypography.body.captionRegular(
-            color: SharedFileColors.subtle(context),
+          style: ArDriveTypographyNew.of(context).paragraphNormal(
+            color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
           ),
         ),
       );
@@ -758,15 +761,11 @@ class SharedFileFreshnessBanner extends StatelessWidget {
     super.key,
     required this.isPinned,
     required this.onPressed,
-    this.isWide = false,
     this.isDisabled = false,
   });
 
   final bool isPinned;
   final VoidCallback onPressed;
-
-  /// Whether there is room to put the action beside the message.
-  final bool isWide;
 
   final bool isDisabled;
 
@@ -778,7 +777,6 @@ class SharedFileFreshnessBanner extends StatelessWidget {
           ? appLocalizationsOf(context).sharedFileViewLatest
           : appLocalizationsOf(context).sharedFileGetLatest,
       onPressed: onPressed,
-      isWide: isWide,
       isDisabled: isDisabled,
     );
   }
@@ -794,14 +792,10 @@ class SharedFileLatestVersionNotice extends StatelessWidget {
   const SharedFileLatestVersionNotice({
     super.key,
     required this.onPressed,
-    this.isWide = false,
     this.isDisabled = false,
   });
 
   final VoidCallback onPressed;
-
-  /// Whether there is room to put the action beside the message.
-  final bool isWide;
 
   final bool isDisabled;
 
@@ -811,109 +805,39 @@ class SharedFileLatestVersionNotice extends StatelessWidget {
       message: appLocalizationsOf(context).sharedFileShowingLatestVersion,
       actionLabel: appLocalizationsOf(context).sharedFileViewSharedVersion,
       onPressed: onPressed,
-      isWide: isWide,
       isDisabled: isDisabled,
     );
   }
 }
 
 /// One line about the version on screen, and one thing to do about it.
+///
+/// The design system's notice: its info colours meet AA in both themes, and
+/// its action drops under the sentence where the card is narrow.
 class _SharedFileNoticeCard extends StatelessWidget {
   const _SharedFileNoticeCard({
     required this.message,
     required this.actionLabel,
     required this.onPressed,
-    required this.isWide,
     required this.isDisabled,
   });
 
   final String message;
   final String actionLabel;
   final VoidCallback onPressed;
-  final bool isWide;
   final bool isDisabled;
 
   @override
   Widget build(BuildContext context) {
-    // Not `themeInfoSubtle`: that token is the same pale blue in both themes,
-    // and the dark theme paints white text on it. See [SharedFileColors].
-    final background = SharedFileColors.noticeBackground(context);
-    final foreground = SharedFileColors.onNotice(context);
-
-    return Container(
-      padding: EdgeInsets.all(isWide ? 4 : 12),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: isWide
-          ? _buildRow(context, foreground)
-          : _buildColumn(context, foreground),
+    return ArDriveNotice(
+      type: ArDriveNoticeType.info,
+      message: message,
+      actionLabel: actionLabel,
+      // Withdrawn while a version change is in flight, which disables the
+      // button and tells a screen reader it is unavailable.
+      onAction: isDisabled ? null : onPressed,
     );
   }
-
-  /// On the wide card the notice is a bar: one line, the sentence on the left
-  /// and the action on the right. Stacked across 1040px it was a short sentence
-  /// pinned to one corner, a link pinned to another and a hundred pixels of
-  /// empty grey in between.
-  Widget _buildRow(BuildContext context, Color foreground) {
-    return Row(
-      children: [
-        const SizedBox(width: 8),
-        _buildIcon(foreground),
-        const SizedBox(width: 8),
-        Expanded(child: _buildMessage(foreground)),
-        const SizedBox(width: 16),
-        _buildAction(),
-      ],
-    );
-  }
-
-  /// On a phone the action sits below the message. A row of [Expanded] text
-  /// next to a button sized to its own label overflows as soon as the label is
-  /// long - and these labels are sentences, on a card capped at 400px.
-  Widget _buildColumn(BuildContext context, Color foreground) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildIcon(foreground),
-            const SizedBox(width: 8),
-            Expanded(child: _buildMessage(foreground)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Align(alignment: Alignment.centerRight, child: _buildAction()),
-      ],
-    );
-  }
-
-  /// The sentence next to it says everything the icon does, so the icon is not
-  /// read out as well.
-  Widget _buildIcon(Color foreground) => ExcludeSemantics(
-        child: ArDriveIcons.info(size: 16, color: foreground),
-      );
-
-  Widget _buildMessage(Color foreground) => Text(
-        message,
-        style: ArDriveTypography.body.captionRegular(color: foreground),
-      );
-
-  Widget _buildAction() => ArDriveButton(
-        style: ArDriveButtonStyle.tertiary,
-        isDisabled: isDisabled,
-        // A tertiary [ArDriveButton] is an [ArDriveTextButton], which is handed
-        // nothing but a label and a callback: `isDisabled` styles the other two
-        // variants and does nothing here. Withdrawing the callback is what
-        // takes the button out of the focus order and tells a screen reader it
-        // is unavailable, which is what should happen while a version change is
-        // in flight.
-        onPressed: isDisabled ? null : onPressed,
-        text: actionLabel,
-      );
 }
 
 /// What the file is, for someone who was sent it by a stranger.
@@ -1001,6 +925,7 @@ class SharedFileDetailsContent extends StatelessWidget {
           SharedFileDetailRow(
             label: appLocalizationsOf(context).sharedFileDetailsOwner,
             value: ownerAddress,
+            isId: true,
           ),
         if (licenseName != null && licenseName.isNotEmpty)
           SharedFileDetailRow(
@@ -1021,16 +946,19 @@ class SharedFileDetailsContent extends StatelessWidget {
             SharedFileDetailRow(
               label: appLocalizationsOf(context).fileID,
               value: revision.fileId,
+              isId: true,
             ),
             if (revision.dataTxId.isNotEmpty)
               SharedFileDetailRow(
                 label: appLocalizationsOf(context).sharedFileDetailsTransaction,
                 value: revision.dataTxId,
+                isId: true,
               ),
             if (revision.metadataTxId.isNotEmpty)
               SharedFileDetailRow(
                 label: appLocalizationsOf(context).sharedFileDetailsMetadata,
                 value: revision.metadataTxId,
+                isId: true,
               ),
           ],
         ),
@@ -1111,8 +1039,8 @@ class SharedFileVersionsContent extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 4),
             child: Text(
               appLocalizationsOf(context).sharedFileChooseVersion,
-              style: ArDriveTypography.body.captionRegular(
-                color: SharedFileColors.subtle(context),
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
               ),
             ),
           ),
@@ -1132,8 +1060,8 @@ class SharedFileVersionsContent extends StatelessWidget {
             padding: const EdgeInsets.only(top: 4, bottom: 8),
             child: Text(
               appLocalizationsOf(context).sharedFileVersionsLooking,
-              style: ArDriveTypography.body.captionRegular(
-                color: SharedFileColors.subtle(context),
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
               ),
             ),
           ),
@@ -1146,8 +1074,11 @@ class SharedFileVersionsContent extends StatelessWidget {
                   child: Text(
                     appLocalizationsOf(context)
                         .sharedFileVersionsUnavailableShort,
-                    style: ArDriveTypography.body.captionRegular(
-                      color: SharedFileColors.subtle(context),
+                    style: ArDriveTypographyNew.of(context).paragraphNormal(
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colorTokens
+                          .textMid,
                     ),
                   ),
                 ),
@@ -1192,8 +1123,8 @@ class _SharedFileVersionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
-    final subtle = SharedFileColors.subtle(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final subtle = ArDriveTheme.of(context).themeData.colorTokens.textMid;
 
     final hasDate = !SharedFileCubit.isUnknownDate(revision.dateCreated);
 
@@ -1225,7 +1156,7 @@ class _SharedFileVersionRow extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: _rowHeight),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? colors.themeBgSubtle : null,
+            color: isSelected ? colors.containerL1 : null,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Row(
@@ -1251,10 +1182,11 @@ class _SharedFileVersionRow extends StatelessWidget {
                       formatDate(revision.dateCreated),
                       overflow: TextOverflow.ellipsis,
                       style: isSelected
-                          ? ArDriveTypography.body
-                              .captionBold(color: colors.themeFgDefault)
-                          : ArDriveTypography.body
-                              .captionRegular(color: colors.themeFgDefault),
+                          ? ArDriveTypographyNew.of(context).paragraphNormal(
+                              fontWeight: ArFontWeight.semiBold,
+                              color: colors.textHigh)
+                          : ArDriveTypographyNew.of(context)
+                              .paragraphNormal(color: colors.textHigh),
                     ),
                   ),
                 )
@@ -1263,14 +1195,16 @@ class _SharedFileVersionRow extends StatelessWidget {
                   child: Text(
                     label ?? '',
                     overflow: TextOverflow.ellipsis,
-                    style: ArDriveTypography.body
-                        .captionBold(color: colors.themeFgDefault),
+                    style: ArDriveTypographyNew.of(context).paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: colors.textHigh),
                   ),
                 ),
               const SizedBox(width: 8),
               Text(
                 filesize(revision.size),
-                style: ArDriveTypography.body.captionRegular(color: subtle),
+                style: ArDriveTypographyNew.of(context)
+                    .paragraphNormal(color: subtle),
               ),
               // At most one chip. A row that is both the newest and the one the
               // link named would otherwise carry two labels saying much the
@@ -1302,9 +1236,7 @@ class _VersionRadio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ArDriveTheme.of(context).themeData;
-    final colors = theme.colors;
-    final colorTokens = theme.colorTokens;
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
     return ExcludeSemantics(
       child: Container(
@@ -1312,9 +1244,9 @@ class _VersionRadio extends StatelessWidget {
         height: 16,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isSelected ? colors.themeFgDefault : null,
+          color: isSelected ? colorTokens.textHigh : null,
           border: Border.all(
-            color: isSelected ? colors.themeFgDefault : colorTokens.strokeMid,
+            color: isSelected ? colorTokens.textHigh : colorTokens.strokeMid,
             width: isSelected ? 4.5 : 1.5,
           ),
         ),
@@ -1330,20 +1262,21 @@ class _VersionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: colors.themeBgSubtle,
+        color: colors.containerL1,
         borderRadius: BorderRadius.circular(3),
       ),
       child: Text(
         label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: ArDriveTypography.body.captionBold(
-          color: SharedFileColors.subtle(context),
+        style: ArDriveTypographyNew.of(context).paragraphNormal(
+          fontWeight: ArFontWeight.semiBold,
+          color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
         ),
       ),
     );
@@ -1411,7 +1344,7 @@ class _SharedFileInfoPanelState extends State<SharedFileInfoPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     final isFixed = widget.height != null;
     final versions = widget.versions;
@@ -1422,7 +1355,7 @@ class _SharedFileInfoPanelState extends State<SharedFileInfoPanel> {
     return Container(
       height: widget.height,
       decoration: BoxDecoration(
-        border: Border.all(color: colors.themeBorderDefault),
+        border: Border.all(color: colors.strokeMid),
         borderRadius: BorderRadius.circular(8),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1487,7 +1420,7 @@ class _SharedFileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Semantics(
       selected: isSelected,
@@ -1501,17 +1434,19 @@ class _SharedFileTab extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: _rowHeight),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected ? colors.themeBgSubtle : null,
+            color: isSelected ? colors.containerL1 : null,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
             label,
             style: isSelected
-                ? ArDriveTypography.body.captionBold(
-                    color: colors.themeFgDefault,
+                ? ArDriveTypographyNew.of(context).paragraphNormal(
+                    fontWeight: ArFontWeight.semiBold,
+                    color: colors.textHigh,
                   )
-                : ArDriveTypography.body.captionRegular(
-                    color: SharedFileColors.subtle(context),
+                : ArDriveTypographyNew.of(context).paragraphNormal(
+                    color:
+                        ArDriveTheme.of(context).themeData.colorTokens.textMid,
                   ),
           ),
         ),
@@ -1571,8 +1506,12 @@ class _SharedFileDrawerState extends State<SharedFileDrawer> {
                   Expanded(
                     child: Text(
                       widget.title,
-                      style: ArDriveTypography.body.captionBold(
-                        color: SharedFileColors.subtle(context),
+                      style: ArDriveTypographyNew.of(context).paragraphNormal(
+                        fontWeight: ArFontWeight.semiBold,
+                        color: ArDriveTheme.of(context)
+                            .themeData
+                            .colorTokens
+                            .textMid,
                       ),
                     ),
                   ),
@@ -1581,7 +1520,10 @@ class _SharedFileDrawerState extends State<SharedFileDrawer> {
                     duration: const Duration(milliseconds: 150),
                     child: ArDriveIcons.chevronDown(
                       size: 16,
-                      color: SharedFileColors.subtle(context),
+                      color: ArDriveTheme.of(context)
+                          .themeData
+                          .colorTokens
+                          .textMid,
                     ),
                   ),
                 ],
@@ -1602,18 +1544,27 @@ class SharedFileDetailRow extends StatelessWidget {
     required this.value,
     this.canCopy = true,
     this.tooltip,
+    this.isId = false,
   });
 
   final String label;
   final String value;
   final bool canCopy;
 
+  /// An ID or an address, drawn in monospace so every character can be told
+  /// apart.
+  final bool isId;
+
   /// The long form of [value], when the row shows a short one.
   final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final typography = ArDriveTypographyNew.of(context);
+    final valueStyle = isId
+        ? typography.code(color: colors.textHigh)
+        : typography.paragraphNormal(color: colors.textHigh);
 
     return Container(
       // Every row is the same height whether or not it can be copied.
@@ -1632,8 +1583,8 @@ class SharedFileDetailRow extends StatelessWidget {
             width: 96,
             child: Text(
               label,
-              style: ArDriveTypography.body.captionRegular(
-                color: SharedFileColors.subtle(context),
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
               ),
             ),
           ),
@@ -1642,18 +1593,14 @@ class SharedFileDetailRow extends StatelessWidget {
                 ? Text(
                     value,
                     overflow: TextOverflow.ellipsis,
-                    style: ArDriveTypography.body.captionRegular(
-                      color: colors.themeFgDefault,
-                    ),
+                    style: valueStyle,
                   )
                 : ArDriveTooltip(
                     message: tooltip!,
                     child: Text(
                       value,
                       overflow: TextOverflow.ellipsis,
-                      style: ArDriveTypography.body.captionRegular(
-                        color: colors.themeFgDefault,
-                      ),
+                      style: valueStyle,
                     ),
                   ),
           ),
@@ -1700,7 +1647,7 @@ class _SharedFileCopyButton extends StatelessWidget {
               child: ExcludeSemantics(
                 child: ArDriveIcons.copy(
                   size: 16,
-                  color: SharedFileColors.subtle(context),
+                  color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
                 ),
               ),
             ),

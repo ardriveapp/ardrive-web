@@ -381,12 +381,11 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
   /// pointer. Content that can't be measured fills, as before.
   double? _labelWidth(BuildContext context) {
     if (widget.customContent != null) return null;
-    // The left icon is drawn over the label's row at 32-56, and the label is
-    // centred in what the 24 px insets leave: 100 puts the label's left edge
-    // at 64, 8 clear of the icon. A right icon, at 16 from the edge, clears a
-    // centred label with 64.
+    // A left icon sits 8 px before the label and is centred with it as one
+    // group, so it adds its width (up to 24) and the gap. A right icon, at 16
+    // from the edge, clears a centred label with 64.
     final icons = widget.icon != null
-        ? 100
+        ? 32
         : widget.rightIcon != null
             ? 64
             : 0;
@@ -509,60 +508,63 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
         height: buttonH,
         width: widget.maxWidth ?? _labelWidth(context),
         child: Stack(fit: StackFit.expand, children: [
-          Padding(
-            padding: EdgeInsets.only(
-                left: widget.icon != null ? 24 : 0,
-                right: widget.icon != null ? 24 : 0),
-            child: TextButton(
-                onPressed: widget.isDisabled ? null : widget.onPressed,
-                onHover: widget.hoverIcon == null || isMobile(context)
-                    ? null
-                    : (hovering) {
-                        setState(() {
-                          _hovering = hovering;
-                        });
-                      },
-                style: style,
-                child: widget.customContent != null
-                    // Declared since this button was written and never drawn,
-                    // so a caller that passed one silently got the plain
-                    // label. Drawn in the TextButton's own centred child,
-                    // which is what makes a spinner and its label read as one
-                    // centred group - `icon` cannot, being pinned to the left
-                    // edge in the stack below.
-                    ? Center(child: widget.customContent!)
-                    : widget.hoverIcon == null || isMobile(context)
-                        ? text
-                        // The icon joins the label on hover rather than
-                        // replacing it. Sliding the label out left the button
-                        // blank exactly when the pointer was on it, and blank
-                        // behind a dialog the click had opened.
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              AnimatedSize(
-                                duration: const Duration(milliseconds: 100),
-                                child: _hovering && !widget.isDisabled
-                                    ? Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 8),
-                                        child: SizedBox.square(
-                                          dimension: 24,
-                                          child: widget.hoverIcon,
-                                        ),
-                                      )
-                                    : const SizedBox(height: 24),
-                              ),
-                              Flexible(child: text),
-                            ],
-                          )),
-          ),
-          if (widget.icon != null)
-            Container(
-              alignment: Alignment.centerLeft,
-              padding: const EdgeInsets.only(left: 32),
-              child: widget.icon!,
-            ),
+          // The fill spans the whole button, icon or not, so a full-width
+          // button with an icon lines up with everything else in its column.
+          // It was inset 24 px on each side when it had an icon.
+          TextButton(
+              onPressed: widget.isDisabled ? null : widget.onPressed,
+              onHover: widget.hoverIcon == null || isMobile(context)
+                  ? null
+                  : (hovering) {
+                      setState(() {
+                        _hovering = hovering;
+                      });
+                    },
+              style: style,
+              child: widget.customContent != null
+                  // Declared since this button was written and never drawn,
+                  // so a caller that passed one silently got the plain
+                  // label. Drawn in the TextButton's own centred child,
+                  // which is what makes a spinner and its label read as one
+                  // centred group - `icon` cannot, being pinned to the left
+                  // edge in the stack below.
+                  ? Center(child: widget.customContent!)
+                  : widget.hoverIcon == null || isMobile(context)
+                      ? widget.icon == null
+                          ? text
+                          // The icon and label are one group, centred
+                          // together, at any width.
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                widget.icon!,
+                                const SizedBox(width: 8),
+                                Flexible(child: text),
+                              ],
+                            )
+                      // The icon joins the label on hover rather than
+                      // replacing it. Sliding the label out left the button
+                      // blank exactly when the pointer was on it, and blank
+                      // behind a dialog the click had opened.
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 100),
+                              child: _hovering && !widget.isDisabled
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: SizedBox.square(
+                                        dimension: 24,
+                                        child: widget.hoverIcon,
+                                      ),
+                                    )
+                                  : const SizedBox(height: 24),
+                            ),
+                            Flexible(child: text),
+                          ],
+                        )),
           if (widget.rightIcon != null)
             Container(
               alignment: Alignment.centerRight,
