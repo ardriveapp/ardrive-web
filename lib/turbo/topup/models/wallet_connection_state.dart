@@ -112,13 +112,6 @@ class EthereumWalletState extends Equatable {
   String get displayWithProvider =>
       '$truncatedAddress (${provider.displayName})';
 
-  /// Whether the wallet is on the correct chain for the given token
-  bool isCorrectChainFor(CryptoToken token, {required bool isTestnet}) {
-    final expectedChainId = isTestnet ? token.testnetChainId : token.chainId;
-    if (expectedChainId == null) return true; // Non-EVM tokens
-    return chainId == expectedChainId;
-  }
-
   /// Human-readable chain name
   String get chainName => switch (chainId) {
         1 => 'Ethereum Mainnet',

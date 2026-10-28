@@ -105,17 +105,9 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
     final auth = context.read<ArDriveAuth>();
     final configService = context.read<ConfigService>();
 
-    // Determine environment for network config
-    final environment =
-        configService.config.useTurboUpload ? 'production' : 'development';
     final gatewayUrl =
         configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
-    final networkConfig = CryptoNetworkConfig.fromEnvironment(
-      environment,
-      arweaveGatewayUrl: gatewayUrl,
-      turboUploadUrl: configService.config.defaultTurboUploadUrl,
-      turboPaymentUrl: configService.config.defaultTurboPaymentUrl,
-    );
+    final networkConfig = CryptoNetworkConfig.forApp(configService);
 
     // Create services
     final httpClient = ArDriveHTTP();
@@ -142,6 +134,7 @@ class _UnifiedCryptoFlowState extends State<UnifiedCryptoFlow> {
 
     // Create the BLoC with balance data for checkout display
     _bloc = CryptoTopupBloc(
+      networkConfig: networkConfig,
       paymentService: cryptoPaymentService,
       ethereumWalletService: _ethereumWalletService!,
       solanaWalletService: _solanaWalletService!,

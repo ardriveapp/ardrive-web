@@ -99,17 +99,9 @@ void showTurboTopupModal(BuildContext context, {Function()? onSuccess}) {
             final httpClient = ArDriveHTTP();
             final priceService = CryptoPriceService(httpClient: httpClient);
             final configService = context.read<ConfigService>();
-            final environment = configService.config.useTurboUpload
-                ? 'production'
-                : 'development';
-            final gatewayUrl = configService.config.arweaveGatewayUrl ??
-                defaultGraphqlGateway;
-            final networkConfig = CryptoNetworkConfig.fromEnvironment(
-              environment,
-              arweaveGatewayUrl: gatewayUrl,
-              turboUploadUrl: configService.config.defaultTurboUploadUrl,
-              turboPaymentUrl: configService.config.defaultTurboPaymentUrl,
-            );
+            final gatewayUrl =
+                configService.config.arweaveGatewayUrl ?? defaultGraphqlGateway;
+            final networkConfig = CryptoNetworkConfig.forApp(configService);
 
             return UnifiedTopupBloc(
               turbo: context.read<Turbo>(),

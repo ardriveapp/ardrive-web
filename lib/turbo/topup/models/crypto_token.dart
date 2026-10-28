@@ -172,25 +172,8 @@ extension CryptoTokenX on CryptoToken {
         CryptoToken.ethBase || CryptoToken.ethL1 => 18, // wei
       };
 
-  /// EVM chain ID (null for non-EVM tokens)
-  int? get chainId => switch (this) {
-        CryptoToken.arioBase ||
-        CryptoToken.usdcBase ||
-        CryptoToken.ethBase =>
-          8453, // Base Mainnet
-        CryptoToken.usdcEth || CryptoToken.ethL1 => 1, // Ethereum Mainnet
-        _ => null, // arioAO, arioAOViaEth, sol don't have EVM chain IDs
-      };
-
-  /// EVM chain ID for testnet (null for non-EVM tokens)
-  int? get testnetChainId => switch (this) {
-        CryptoToken.arioBase ||
-        CryptoToken.usdcBase ||
-        CryptoToken.ethBase =>
-          84532, // Base Sepolia
-        CryptoToken.usdcEth || CryptoToken.ethL1 => 11155111, // Sepolia
-        _ => null,
-      };
+  // A token's chain ID depends on whether the app is on testnet: ask
+  // [CryptoNetworkConfig.getChainIdForToken].
 
   /// The type of wallet required to pay with this token
   WalletType get walletType => switch (this) {

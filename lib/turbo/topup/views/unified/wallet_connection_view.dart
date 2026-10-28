@@ -319,7 +319,8 @@ class _WalletConnectionViewState extends State<WalletConnectionView> {
             child: ArDriveButton(
               text: 'Switch network',
               onPressed: () {
-                final chainId = widget.token.chainId;
+                final chainId =
+                    bloc.networkConfig.getChainIdForToken(widget.token);
                 if (chainId != null) {
                   bloc.add(CryptoTopupSwitchNetwork(chainId));
                 }

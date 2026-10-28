@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:ardrive/permanence/permanence_cache.dart';
+import 'package:ardrive/turbo/config/crypto_network_config.dart';
 import 'package:ardrive/turbo/services/crypto_payment_service.dart';
 import 'package:ardrive/turbo/services/crypto_transaction_storage.dart';
 import 'package:ardrive/turbo/services/ethereum_wallet_service.dart';
@@ -38,6 +39,10 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   final String arweaveWalletAddress;
 
   // Session management
+  /// The chain last added to the wallet, so a switch that still fails after
+  /// adding it isn't followed by another add.
+  int? _chainAddedFor;
+
   Timer? _sessionTimer;
   Timer? _quoteTimer;
   Timer? _balanceRefreshTimer;
@@ -74,7 +79,11 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   /// Used for ARIO on AO tokens to avoid redundant JS calls
   final String? arioBalance;
 
+  /// The chains this app pays on: testnets on the development flavor.
+  final CryptoNetworkConfig networkConfig;
+
   CryptoTopupBloc({
+    required this.networkConfig,
     required CryptoPaymentService paymentService,
     required EthereumWalletService ethereumWalletService,
     required SolanaWalletService solanaWalletService,
@@ -480,7 +489,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
     // For EVM tokens, check if on correct chain and switch if needed
     if (event.walletType == WalletType.ethereum) {
-      final requiredChainId = _selectedToken!.chainId;
+      final requiredChainId = networkConfig.getChainIdForToken(_selectedToken!);
       if (requiredChainId != null && event.chainId != requiredChainId) {
         // Automatically request network switch
         logger.d(
@@ -910,7 +919,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       return;
     }
 
-    final requiredChainId = token.chainId;
+    final requiredChainId = networkConfig.getChainIdForToken(token);
     if (requiredChainId == null) {
       emit(currentState.copyWith(networkState: NetworkState.correct));
       return;
@@ -952,9 +961,16 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
 
     try {
       await _ethereumWalletService.switchChain(event.targetChainId);
+      _chainAddedFor = null;
       add(CryptoTopupNetworkSwitchCompleted(event.targetChainId));
     } on EthereumWalletException catch (e) {
-      if (e.isChainNotAdded && _selectedToken != null) {
+      // The chain is added once. A wallet that takes the chain and still
+      // won't switch to it gets the manual instructions, rather than adding
+      // and switching in a loop that never ends.
+      if (e.isChainNotAdded &&
+          _selectedToken != null &&
+          _chainAddedFor != event.targetChainId) {
+        _chainAddedFor = event.targetChainId;
         add(CryptoTopupNetworkAddRequested(_selectedToken!));
       } else {
         add(CryptoTopupNetworkSwitchFailed(e.userMessage));
@@ -1021,7 +1037,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       emit(CryptoTopupNetworkSwitch(
         token: _selectedToken!,
         currentChainId: _connectedChainId ?? 0,
-        requiredChainId: _selectedToken!.chainId ?? 0,
+        requiredChainId: networkConfig.getChainIdForToken(_selectedToken!) ?? 0,
         showManualInstructions: true,
         error: event.error,
       ));
@@ -1052,7 +1068,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
   ) {
     // Try switching again after adding
     if (_selectedToken != null) {
-      final chainId = _selectedToken!.chainId;
+      final chainId = networkConfig.getChainIdForToken(_selectedToken!);
       if (chainId != null) {
         add(CryptoTopupNetworkSwitchRequested(chainId));
       }
@@ -1063,11 +1079,13 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
     CryptoTopupNetworkAddFailed event,
     Emitter<CryptoTopupState> emit,
   ) {
+    // Nothing was added, so the next switch may offer it again.
+    _chainAddedFor = null;
     if (_selectedToken != null) {
       emit(CryptoTopupNetworkSwitch(
         token: _selectedToken!,
         currentChainId: _connectedChainId ?? 0,
-        requiredChainId: _selectedToken!.chainId ?? 0,
+        requiredChainId: networkConfig.getChainIdForToken(_selectedToken!) ?? 0,
         showManualInstructions: true,
         error: event.error,
       ));
@@ -1084,7 +1102,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       _connectedChainId = chainId;
 
       if (_selectedToken != null &&
-          chainId == _selectedToken!.chainId &&
+          chainId == networkConfig.getChainIdForToken(_selectedToken!) &&
           _currentQuote != null) {
         final balance = await _getTokenBalance(_selectedToken!);
         final storageValues = _calculateStorageValues(_currentQuote!);
@@ -1628,7 +1646,7 @@ class CryptoTopupBloc extends Bloc<CryptoTopupEvent, CryptoTopupState> {
       emit(CryptoTopupNetworkSwitch(
         token: _selectedToken!,
         currentChainId: _connectedChainId ?? 0,
-        requiredChainId: _selectedToken!.chainId ?? 0,
+        requiredChainId: networkConfig.getChainIdForToken(_selectedToken!) ?? 0,
         showManualInstructions: true,
       ));
     }
