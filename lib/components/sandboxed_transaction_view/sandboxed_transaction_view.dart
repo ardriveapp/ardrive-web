@@ -60,28 +60,31 @@ class _SandboxedTransactionViewState extends State<SandboxedTransactionView> {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final viewType = _viewType;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ArDriveButton(
+        ArDriveButtonNew(
+          typography: ArDriveTypographyNew.of(context),
           maxWidth: double.infinity,
-          style: ArDriveButtonStyle.secondary,
           onPressed: _open,
           text: widget.openLabel ??
               appLocalizationsOf(context).rawTransactionOpenSandboxed,
         ),
         if (sandboxedIframeIsSupported) ...[
-          const SizedBox(height: 8),
-          ArDriveButton(
-            style: ArDriveButtonStyle.tertiary,
-            onPressed: _toggleInline,
-            text: _isShowingInline
-                ? appLocalizationsOf(context).rawTransactionHideSandboxedFrame
-                : appLocalizationsOf(context).rawTransactionShowSandboxedFrame,
+          const SizedBox(height: 12),
+          Center(
+            child: ArDriveLink(
+              isAction: true,
+              onTap: _toggleInline,
+              text: _isShowingInline
+                  ? appLocalizationsOf(context).rawTransactionHideSandboxedFrame
+                  : appLocalizationsOf(context)
+                      .rawTransactionShowSandboxedFrame,
+            ),
           ),
         ],
         if (_isShowingInline && viewType != null) ...[
@@ -91,7 +94,7 @@ class _SandboxedTransactionViewState extends State<SandboxedTransactionView> {
             child: Container(
               height: widget.height,
               decoration: BoxDecoration(
-                border: Border.all(color: colors.themeBorderDefault),
+                border: Border.all(color: colors.strokeMid),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: HtmlElementView(viewType: viewType),

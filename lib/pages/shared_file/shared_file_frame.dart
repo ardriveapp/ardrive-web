@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/misc/resources.dart';
-import 'package:ardrive/pages/shared_file/shared_file_colors.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -28,7 +27,7 @@ class SharedFileFrame extends StatelessWidget {
     this.maxWidth = maxContentWidth,
   });
 
-  /// Wide enough for a full width [ArDriveButton] (368) plus the card padding,
+  /// Wide enough for a full width button (368) plus the card padding,
   /// and narrow enough to stay a readable single column on a desktop monitor.
   static const double maxContentWidth = 400;
 
@@ -78,25 +77,28 @@ class SharedFileFrame extends StatelessWidget {
                         _buildTrustStrip(context),
                         const SizedBox(height: 24),
                         ArDriveCard(
-                          backgroundColor: theme.colors.themeBgSurface,
+                          backgroundColor: theme.colorTokens.containerRaised,
                           elevation: 2,
                           contentPadding: EdgeInsets.all(isWide ? 24 : 16),
                           content: child,
                         ),
                         const SizedBox(height: 16),
                         // Centred rather than stretched: on the wide card a
-                        // full width text button would be a 1040px underline.
+                        // full width link would be a 1040px underline.
                         Center(
-                          child: ArDriveButton(
-                            style: ArDriveButtonStyle.tertiary,
-                            onPressed: () =>
-                                openUrl(url: Resources.ardrivePublicSiteLink),
+                          child: ArDriveLink(
                             text: appLocalizationsOf(context).whatIsArDrive,
+                            external: true,
+                            onTap: () =>
+                                openUrl(url: Resources.ardrivePublicSiteLink),
                           ),
                         ),
                         const SizedBox(height: 8),
                         AppVersionWidget(
-                          color: SharedFileColors.subtle(context),
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colorTokens
+                              .textMid,
                         ),
                       ],
                     ),

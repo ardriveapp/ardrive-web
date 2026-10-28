@@ -1,3 +1,4 @@
+import 'package:ardrive/arns/data/arns_change_executor.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog.dart';
 import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
@@ -32,7 +33,6 @@ import 'package:ardrive/turbo/services/payment_service.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/turbo/turbo.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
-import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -98,6 +98,7 @@ Future<void> showPublishDialog(
   final profileCubit = context.read<ProfileCubit>();
   final repository = context.read<PublicationRepository>();
   final turboUploadService = context.read<TurboUploadService>();
+  final syncCubit = context.read<SyncCubit>();
   // Every publication is on one gateway, whatever the data gateway setting.
   String gatewayUrl() => configService.config.publicationGatewayUrl;
   final publisher = PublicationPublisher(
@@ -148,6 +149,22 @@ Future<void> showPublishDialog(
     ),
     cardMark: () => loadAssetImage(Resources.images.brand.logo1),
     fileCountLabel: strings.publishFileCount,
+    syncDrive: (driveId, {required deep, required isCancelled}) async {
+      // A running sync may cover the drive already: wait for it, and sync
+      // only if the drive still can't be confirmed complete. Not when items
+      // were skipped: a plain sync clears that record without reading them,
+      // so only the deep sync asked for will do.
+      await syncCubit.waitCurrentSync();
+      if (syncCubit.state is SyncLoadingDrives) {
+        await syncCubit.waitForDriveListRefresh();
+      }
+      if (isCancelled()) return false;
+      if (!deep &&
+          SyncCubitDriveStateSkipSource(syncCubit).statusFor(driveId).isClean) {
+        return true;
+      }
+      return syncCubit.startSyncForDrive(driveId: driveId, deepSync: deep);
+    },
   );
   // The app's messenger outlives the dialog, which may be closed while the
   // publish runs.
@@ -253,13 +270,20 @@ class PublishDialog extends StatelessWidget {
           case PublishStage.pricing:
             return _waiting(
                 context, title, strings.publishWorkingOutCost, close);
+          case PublishStage.syncing:
+            return _waiting(context, title, strings.publishSyncingDrive, close);
           case PublishStage.blocked:
             return _modal(
               context,
               title: title,
               content: _Blocked(state: state),
               actions: [
-                ModalAction.dismiss(title: strings.close, action: close)
+                if (cubit.canSyncDrive) ...[
+                  ModalAction(title: strings.close, action: close),
+                  ModalAction(
+                      title: strings.publishSyncDrive, action: cubit.syncDrive),
+                ] else
+                  ModalAction.dismiss(title: strings.close, action: close),
               ],
             );
           case PublishStage.included:
@@ -334,7 +358,7 @@ class PublishDialog extends StatelessWidget {
             return _modal(
               context,
               title: title,
-              content: _Progress(state: state),
+              content: _Progress(state: state, names: cubit.names),
               actions: [
                 ModalAction.dismiss(title: strings.close, action: close)
               ],
@@ -570,7 +594,6 @@ class _Included extends StatelessWidget {
         _Card(children: [
           SummaryRow(strings.publishFiles, '${summary.fileCount}'),
           SummaryRow(strings.publishFolders, '${summary.folderCount}'),
-          SummaryRow(strings.publishSize, filesize(summary.totalSize)),
         ]),
         if (leftOut.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -683,15 +706,19 @@ class _Review extends StatelessWidget {
 }
 
 class _Progress extends StatelessWidget {
-  const _Progress({required this.state});
+  const _Progress({required this.state, this.names});
 
   final PublishState state;
+
+  /// The name step, whose wallet prompts show under the naming row.
+  final ArNSFlowNameCubit? names;
 
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
     final typography = ArDriveTypographyNew.of(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final naming = state.naming;
     final steps = [
       if (!state.reusesSnapshot)
         (PublicationStep.snapshot, strings.publishStepSnapshot),
@@ -699,36 +726,71 @@ class _Progress extends StatelessWidget {
       (PublicationStep.publication, strings.publishStepUpload),
       if (state.method == UploadMethod.turbo)
         (PublicationStep.warmUp, strings.publishStepWarmUp),
+      // The names change last, once the page is up.
+      if (naming.isNotEmpty)
+        (
+          null,
+          naming.length == 1
+              ? strings.publishStepName(naming.single)
+              : strings.publishStepNames(naming.length),
+        ),
     ];
     final current = state.step;
-    final currentIndex =
-        current == null ? 0 : steps.indexWhere((s) => s.$1 == current);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final (i, (_, label)) in steps.indexed)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: i < currentIndex
-                      ? ArDriveIcons.checkCirle(
-                          size: 20, color: colors.iconHigh)
-                      : i == currentIndex
-                          ? const CircularProgressIndicator(strokeWidth: 2)
-                          : null,
-                ),
-                const SizedBox(width: 12),
-                Text(label,
+    final currentIndex = state.namingStarted
+        ? steps.length - 1
+        : current == null
+            ? 0
+            : steps.indexWhere((s) => s.$1 == current);
+    Widget row(int i, String label) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: i < currentIndex
+                    ? ArDriveIcons.checkCirle(size: 20, color: colors.iconHigh)
+                    : i == currentIndex
+                        ? const CircularProgressIndicator(strokeWidth: 2)
+                        : null,
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(label,
                     style: typography.paragraphNormal(
                         color: i <= currentIndex
                             ? colors.textHigh
                             : colors.textLow)),
-              ],
-            ),
+              ),
+            ],
+          ),
+        );
+    final nameCubit = names;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final (i, (_, label)) in steps.indexed) row(i, label),
+        // An ArNS wallet that has to approve the change says so, or the
+        // dialog looks stuck while the prompt waits in the wallet.
+        if (state.namingStarted && nameCubit != null)
+          BlocBuilder<ArNSNameDialogCubit, ArNSNameDialogState>(
+            bloc: nameCubit,
+            builder: (context, nameState) {
+              final prompt = switch (nameState.step) {
+                ArNSCommitStep.approve => strings.arnsApproveInWallet,
+                ArNSCommitStep.approveTransaction =>
+                  strings.arnsApproveSecondPrompt,
+                _ => null,
+              };
+              if (prompt == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(left: 32, bottom: 6),
+                child: Text(prompt,
+                    style: typography.paragraphNormal(
+                        color: colors.textHigh,
+                        fontWeight: ArFontWeight.semiBold)),
+              );
+            },
           ),
         const SizedBox(height: 12),
         Text(strings.publishKeepOpen,

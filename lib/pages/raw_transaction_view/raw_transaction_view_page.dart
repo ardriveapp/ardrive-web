@@ -125,7 +125,7 @@ class RawTransactionViewBody extends StatelessWidget {
       return SharedFileMessage(
         icon: ArDriveIcons.fileX(
           size: 32,
-          color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+          color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
         ),
         message: appLocalizationsOf(context).rawTransactionLinkDamaged,
       );
@@ -135,7 +135,7 @@ class RawTransactionViewBody extends StatelessWidget {
       return SharedFileMessage(
         icon: ArDriveIcons.fileX(
           size: 32,
-          color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+          color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
         ),
         message: appLocalizationsOf(context).rawTransactionNotFoundOnNetwork,
         actionLabel: appLocalizationsOf(context).sharedFileRetry,
@@ -172,7 +172,7 @@ class _RawTransactionResolvingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -187,17 +187,13 @@ class _RawTransactionResolvingView extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(
-              height: 16,
-              width: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
+            const ArDriveSpinner(),
             const SizedBox(width: 12),
             Flexible(
               child: Text(
                 appLocalizationsOf(context).sharedFileLoadingDetails,
-                style: ArDriveTypography.body.captionRegular(
-                  color: colors.themeFgSubtle,
+                style: ArDriveTypographyNew.of(context).paragraphNormal(
+                  color: colors.textMid,
                 ),
               ),
             ),
@@ -263,10 +259,17 @@ class _RawTransactionReadyViewState extends State<RawTransactionReadyView> {
         contentType: state.presentation.contentType,
         ownerAddress: state.ownerAddress,
       ),
-      download: ArDriveButton(
+      // The page's main action, so the large size, as on the shared file page.
+      download: ArDriveButtonNew(
+        variant: ButtonVariant.primary,
+        size: ArDriveButtonSize.large,
+        typography: ArDriveTypographyNew.of(context),
         maxWidth: isWide ? null : double.infinity,
         isDisabled: _isSaving,
-        icon: ArDriveIcons.download(size: 20, color: Colors.white),
+        icon: ArDriveIcons.download(
+          size: 20,
+          color: ArDriveTheme.of(context).themeData.colorTokens.textOnPrimary,
+        ),
         onPressed: _download,
         text: appLocalizationsOf(context).download,
       ),
@@ -384,6 +387,7 @@ class RawTransactionDetailsContent extends StatelessWidget {
           SharedFileDetailRow(
             label: appLocalizationsOf(context).sharedFileDetailsOwner,
             value: ownerAddress,
+            isId: true,
           ),
         SharedFileDrawer(
           title: appLocalizationsOf(context).sharedFileTransactionDetails,
@@ -391,6 +395,7 @@ class RawTransactionDetailsContent extends StatelessWidget {
             SharedFileDetailRow(
               label: appLocalizationsOf(context).sharedFileDetailsTransaction,
               value: state.txId,
+              isId: true,
             ),
           ],
         ),

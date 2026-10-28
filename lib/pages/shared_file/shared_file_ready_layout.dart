@@ -117,7 +117,7 @@ class SharedFileReadyLayout extends StatelessWidget {
   /// order are the same one, so no focus traversal policy is needed to make
   /// the keyboard reach Download first.
   Widget _buildWide(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -143,9 +143,9 @@ class SharedFileReadyLayout extends StatelessWidget {
                 key: previewPaneKey,
                 height: previewPaneHeight,
                 decoration: BoxDecoration(
-                  color: colors.themeBgCanvas,
+                  color: colors.containerL0,
                   borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: colors.themeBorderDefault),
+                  border: Border.all(color: colors.strokeMid),
                 ),
                 clipBehavior: Clip.antiAlias,
                 // Centred the way `DetailsPanel` centres the same widget.

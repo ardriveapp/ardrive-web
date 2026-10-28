@@ -334,7 +334,7 @@ void main() {
         (tester) async {
       await pumpPage(tester, locked());
 
-      await tester.enterText(find.byType(ArDriveTextField), 'not-a-key');
+      await tester.enterText(find.byType(ArDriveTextFieldNew), 'not-a-key');
       await tester.pump();
       await tester.tap(find.text('Unlock file'));
       await tester.pump();
@@ -347,7 +347,7 @@ void main() {
         (tester) async {
       await pumpPage(tester, locked());
 
-      await tester.enterText(find.byType(ArDriveTextField), wellFormedKey);
+      await tester.enterText(find.byType(ArDriveTextFieldNew), wellFormedKey);
       await tester.pump();
 
       verify(() => cubit.submit(wellFormedKey)).called(1);
@@ -357,14 +357,14 @@ void main() {
         (tester) async {
       await pumpPage(tester, locked());
 
-      await tester.enterText(find.byType(ArDriveTextField), wellFormedKey);
+      await tester.enterText(find.byType(ArDriveTextFieldNew), wellFormedKey);
       await tester.pump();
 
       states.add(keyInvalid());
       await tester.pump();
 
-      final field = tester.widget<ArDriveTextField>(
-        find.byType(ArDriveTextField),
+      final field = tester.widget<ArDriveTextFieldNew>(
+        find.byType(ArDriveTextFieldNew),
       );
 
       expect(field.controller?.text, wellFormedKey);
@@ -386,7 +386,7 @@ void main() {
       expect(find.textContaining('damaged'), findsOneWidget);
       expect(find.textContaining('Check for missing characters'), findsNothing);
       // The recovery path is the same gate either way.
-      expect(find.byType(ArDriveTextField), findsOneWidget);
+      expect(find.byType(ArDriveTextFieldNew), findsOneWidget);
       expect(find.text('Unlock file'), findsOneWidget);
     });
 
@@ -438,7 +438,7 @@ void main() {
         ),
       );
 
-      await tester.enterText(find.byType(ArDriveTextField), wellFormedKey);
+      await tester.enterText(find.byType(ArDriveTextFieldNew), wellFormedKey);
       await tester.pump();
 
       states.add(success());
@@ -462,7 +462,7 @@ void main() {
       await tester.tap(find.byType(ArDriveCheckBox));
       await tester.pump();
 
-      await tester.enterText(find.byType(ArDriveTextField), wellFormedKey);
+      await tester.enterText(find.byType(ArDriveTextFieldNew), wellFormedKey);
       await tester.pump();
 
       states.add(success());
@@ -489,7 +489,7 @@ void main() {
 
       // Pasting a whole key submits it, so from here the page is holding the
       // key it will write *if* it works.
-      await tester.enterText(find.byType(ArDriveTextField), wellFormedKey);
+      await tester.enterText(find.byType(ArDriveTextFieldNew), wellFormedKey);
       await tester.pump();
 
       // Second thoughts, while the unlock is still in flight. Un-ticking
@@ -519,7 +519,7 @@ void main() {
         keySession: GatedKeySession(gate, wellFormedKey),
       );
 
-      await tester.enterText(find.byType(ArDriveTextField), typedKey);
+      await tester.enterText(find.byType(ArDriveTextFieldNew), typedKey);
       await tester.pump();
 
       verify(() => cubit.submit(typedKey)).called(1);
@@ -529,8 +529,8 @@ void main() {
 
       verifyNever(() => cubit.submit(wellFormedKey));
 
-      final field = tester.widget<ArDriveTextField>(
-        find.byType(ArDriveTextField),
+      final field = tester.widget<ArDriveTextFieldNew>(
+        find.byType(ArDriveTextFieldNew),
       );
 
       expect(field.controller?.text, typedKey);
@@ -698,7 +698,7 @@ void main() {
         ),
       );
 
-      final download = tester.widget<ArDriveButton>(
+      final download = tester.widget<ArDriveButtonNew>(
         find.byKey(const ValueKey('sharedFileDownload_data-tx-newest')),
       );
 
@@ -1074,7 +1074,7 @@ void main() {
       );
       expect(
         tester
-            .widget<ArDriveButton>(
+            .widget<ArDriveButtonNew>(
               find.byKey(const ValueKey('sharedFileDownload_data-tx-newest')),
             )
             .isDisabled,
@@ -1134,14 +1134,16 @@ void main() {
       await tester.tap(find.text('Get latest'));
       await tester.pump();
 
-      final action = tester.widget<ArDriveButton>(
+      final action = tester.widget<ArDriveButtonNew>(
         find.ancestor(
           of: find.text('Get latest'),
-          matching: find.byType(ArDriveButton),
+          matching: find.byType(ArDriveButtonNew),
         ),
       );
 
-      expect(action.isDisabled, isTrue);
+      // The notice withdraws its action's callback while a change is in
+      // flight, which disables the button.
+      expect(action.onPressed, isNull);
 
       await tester.tap(find.text('Get latest'), warnIfMissed: false);
       await tester.pump();
@@ -1417,7 +1419,7 @@ void main() {
       expect(find.textContaining('link looks incomplete'), findsOneWidget);
       // Nothing to retry and nothing to unlock: only the sender can fix it.
       expect(find.text('Retry'), findsNothing);
-      expect(find.byType(ArDriveTextField), findsNothing);
+      expect(find.byType(ArDriveTextFieldNew), findsNothing);
     });
   });
 
