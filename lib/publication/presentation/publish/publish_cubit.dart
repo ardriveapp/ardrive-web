@@ -76,8 +76,17 @@ class PublishDependencies {
   final String Function(int count) fileCountLabel;
 
   /// Syncs a drive, waiting first for a sync already running, for the Sync
-  /// drive button of a dialog blocked by sync. Null hides the button.
-  final Future<void> Function(String driveId)? syncDrive;
+  /// drive button of a dialog blocked by sync; false when no sync could start.
+  /// [deep] re-reads the drive from its first block: only that reads again
+  /// what an earlier sync skipped, since a plain sync starts where the last
+  /// one stopped and would only clear the record of the gap. [isCancelled]
+  /// says the dialog has closed, so a sync not yet started never starts.
+  /// Null hides the button.
+  final Future<bool> Function(
+    String driveId, {
+    required bool deep,
+    required bool Function() isCancelled,
+  })? syncDrive;
 }
 
 /// The publish dialog (docs/PUBLICATIONS.md, "The publish dialog"): what is
@@ -197,15 +206,26 @@ class PublishCubit extends Cubit<PublishState> {
   Future<void> syncDrive() async {
     final sync = _deps.syncDrive;
     if (sync == null || !canSyncDrive) return;
+    final deep = _deps.syncSkipSource.statusFor(drive.id).state ==
+        DriveStateSyncSkipState.skipped;
     emit(const PublishState(stage: PublishStage.syncing));
+    var started = true;
     try {
-      await sync(drive.id);
+      started = await sync(drive.id, deep: deep, isCancelled: () => isClosed);
     } catch (e, stackTrace) {
       // The check that follows says what the sync left.
       logger.e('[publication] syncing the drive failed', e, stackTrace);
     }
     if (isClosed) return;
     await load();
+    // A sync that never started leaves the same sentence, which would read
+    // as the button doing nothing.
+    if (!started && !isClosed && state.blocked == PublishBlock.sync) {
+      emit(state.copyWith(
+        blockedReason: "A sync couldn't start. Wait for any upload in "
+            'progress to finish, then try again.',
+      ));
+    }
   }
 
   /// What stops publishing right now, with the sentence that says so.

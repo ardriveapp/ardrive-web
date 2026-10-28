@@ -149,17 +149,21 @@ Future<void> showPublishDialog(
     ),
     cardMark: () => loadAssetImage(Resources.images.brand.logo1),
     fileCountLabel: strings.publishFileCount,
-    syncDrive: (driveId) async {
+    syncDrive: (driveId, {required deep, required isCancelled}) async {
       // A running sync may cover the drive already: wait for it, and sync
-      // only if the drive still can't be confirmed complete.
+      // only if the drive still can't be confirmed complete. Not when items
+      // were skipped: a plain sync clears that record without reading them,
+      // so only the deep sync asked for will do.
       await syncCubit.waitCurrentSync();
       if (syncCubit.state is SyncLoadingDrives) {
         await syncCubit.waitForDriveListRefresh();
       }
-      if (SyncCubitDriveStateSkipSource(syncCubit).statusFor(driveId).isClean) {
-        return;
+      if (isCancelled()) return false;
+      if (!deep &&
+          SyncCubitDriveStateSkipSource(syncCubit).statusFor(driveId).isClean) {
+        return true;
       }
-      await syncCubit.startSyncForDrive(driveId: driveId);
+      return syncCubit.startSyncForDrive(driveId: driveId, deepSync: deep);
     },
   );
   // The app's messenger outlives the dialog, which may be closed while the

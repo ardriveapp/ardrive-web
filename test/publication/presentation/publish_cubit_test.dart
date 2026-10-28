@@ -180,7 +180,11 @@ void main() {
     Publication? previous,
     ArNSFlowNameCubit? names,
     void Function(String? link)? onSettledAfterClose,
-    Future<void> Function(String driveId)? syncDrive,
+    Future<bool> Function(
+      String driveId, {
+      required bool deep,
+      required bool Function() isCancelled,
+    })? syncDrive,
   }) =>
       PublishCubit(
         drive: drive,
@@ -261,10 +265,12 @@ void main() {
   group('Sync drive, from a dialog blocked by sync', () {
     test('syncs the drive and checks it again', () async {
       skip.status = const DriveStateSyncSkipStatus.unknown('Never synced.');
-      final synced = <String>[];
-      final c = cubit(syncDrive: (driveId) async {
-        synced.add(driveId);
+      final synced = <(String, bool)>[];
+      final c = cubit(
+          syncDrive: (driveId, {required deep, required isCancelled}) async {
+        synced.add((driveId, deep));
         skip.status = const DriveStateSyncSkipStatus.clean();
+        return true;
       });
       await c.load();
       expect(c.canSyncDrive, isTrue);
@@ -274,20 +280,72 @@ void main() {
       await c.syncDrive();
       await sub.cancel();
 
-      expect(synced, [_drive]);
+      expect(synced, [(_drive, false)]);
       expect(stages.first, PublishStage.syncing);
       expect(c.state.stage, PublishStage.included);
     });
 
     test('stays blocked, and can sync again, when the sync fails', () async {
       skip.status = const DriveStateSyncSkipStatus.unknown('Never synced.');
-      final c = cubit(syncDrive: (_) async => throw Exception('offline'));
+      final c = cubit(
+          syncDrive: (_, {required deep, required isCancelled}) async =>
+              throw Exception('offline'));
       await c.load();
       await c.syncDrive();
 
       expect(c.state.stage, PublishStage.blocked);
       expect(c.state.blocked, PublishBlock.sync);
       expect(c.canSyncDrive, isTrue);
+    });
+
+    test('re-reads the drive from its start when items were skipped', () async {
+      // A plain sync starts where the last one stopped: it would clear the
+      // record of the skipped items without reading them, and the page would
+      // leave them out for good.
+      skip.status = const DriveStateSyncSkipStatus.skipped(
+          skippedEntityCount: 3, reason: 'Could not read 3 items.');
+      bool? deepAsked;
+      final c =
+          cubit(syncDrive: (_, {required deep, required isCancelled}) async {
+        deepAsked = deep;
+        return true;
+      });
+      await c.load();
+      await c.syncDrive();
+
+      expect(deepAsked, isTrue);
+    });
+
+    test('says why when no sync could start', () async {
+      skip.status = const DriveStateSyncSkipStatus.unknown('Never synced.');
+      final c = cubit(
+          syncDrive: (_, {required deep, required isCancelled}) async => false);
+      await c.load();
+      await c.syncDrive();
+
+      expect(c.state.stage, PublishStage.blocked);
+      expect(c.state.blockedReason, contains("couldn't start"));
+      expect(c.canSyncDrive, isTrue);
+    });
+
+    test('tells the sync when the dialog has closed', () async {
+      skip.status = const DriveStateSyncSkipStatus.unknown('Never synced.');
+      final release = Completer<void>();
+      bool Function()? cancelled;
+      final c =
+          cubit(syncDrive: (_, {required deep, required isCancelled}) async {
+        cancelled = isCancelled;
+        await release.future;
+        return !isCancelled();
+      });
+      await c.load();
+      final running = c.syncDrive();
+      await Future<void>.delayed(Duration.zero);
+      expect(cancelled!(), isFalse);
+      await c.close();
+      expect(cancelled!(), isTrue);
+      release.complete();
+      await running;
     });
 
     test('is not offered for other blocks, or without a way to sync', () async {
@@ -297,7 +355,8 @@ void main() {
       expect(c.canSyncDrive, isFalse, reason: 'no way to sync');
 
       skip.status = const DriveStateSyncSkipStatus.clean();
-      final open = cubit(syncDrive: (_) async {});
+      final open = cubit(
+          syncDrive: (_, {required deep, required isCancelled}) async => true);
       await open.load();
       expect(open.state.blocked, isNull);
       expect(open.canSyncDrive, isFalse);
