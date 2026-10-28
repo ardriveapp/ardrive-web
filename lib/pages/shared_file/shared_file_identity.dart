@@ -350,69 +350,42 @@ class SharedFileVerificationBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colors;
+    final strings = appLocalizationsOf(context);
+    // The standard status text in the page's own contrast colours (design
+    // decision Q5), which this badge always used.
+    final style = ArDriveTypography.body.captionRegular();
 
-    if (verification == LinkVerification.verified) {
+    return switch (verification) {
       // `themeSuccessDefault` is `green.400` in both themes and reads at
       // ~2.2:1 on the light card, so the badge takes the token that passes.
-      final color = SharedFileColors.success(context);
-
-      return _badge(
-        context,
-        icon: ArDriveIcons.checkCirle(size: 14, color: color),
-        label: appLocalizationsOf(context).sharedFileLinkVerified,
-        color: color,
-      );
-    }
-
-    if (verification == LinkVerification.mismatch) {
-      return _badge(
-        context,
-        icon: ArDriveIcons.triangle(size: 14, color: colors.themeWarningFg),
-        label: appLocalizationsOf(context).sharedFileLinkDetailsMismatch,
-        color: colors.themeFgDefault,
-      );
-    }
-
-    if (verification == LinkVerification.pending) {
-      return _badge(
-        context,
-        icon: null,
-        label: appLocalizationsOf(context).sharedFileLinkChecking,
-        color: SharedFileColors.subtle(context),
-      );
-    }
-
-    // Unavailable - and anything a later verification step adds. A check that
-    // did not run is never reported as a problem with the file.
-    return _badge(
-      context,
-      icon: null,
-      label: appLocalizationsOf(context).sharedFileLinkNotChecked,
-      color: SharedFileColors.subtle(context),
-    );
-  }
-
-  Widget _badge(
-    BuildContext context, {
-    required Widget? icon,
-    required String label,
-    required Color color,
-  }) {
-    return MergeSemantics(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            ExcludeSemantics(child: icon),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: ArDriveTypography.body.captionRegular(color: color),
-          ),
-        ],
-      ),
-    );
+      LinkVerification.verified => ArDriveStatusText(
+          text: strings.sharedFileLinkVerified,
+          type: ArDriveStatusType.success,
+          style: style,
+          color: SharedFileColors.success(context),
+        ),
+      LinkVerification.mismatch => ArDriveStatusText(
+          text: strings.sharedFileLinkDetailsMismatch,
+          type: ArDriveStatusType.warning,
+          style: style,
+          color: colors.themeFgDefault,
+          iconColor: colors.themeWarningFg,
+        ),
+      LinkVerification.pending => ArDriveStatusText(
+          text: strings.sharedFileLinkChecking,
+          type: ArDriveStatusType.neutral,
+          style: style,
+          color: SharedFileColors.subtle(context),
+        ),
+      // Unavailable - and anything a later verification step adds. A check
+      // that did not run is never reported as a problem with the file.
+      _ => ArDriveStatusText(
+          text: strings.sharedFileLinkNotChecked,
+          type: ArDriveStatusType.neutral,
+          style: style,
+          color: SharedFileColors.subtle(context),
+        ),
+    };
   }
 }
 

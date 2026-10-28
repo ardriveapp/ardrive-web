@@ -246,24 +246,7 @@ class _TokenSelector extends StatelessWidget {
                 ),
                 if (isNoFees) ...[
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colors.containerRaised,
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: colors.strokeMid),
-                    ),
-                    child: Text(
-                      'No Turbo fee',
-                      style: typography.caption(
-                        fontWeight: ArFontWeight.semiBold,
-                        color: colors.textMid,
-                      ),
-                    ),
-                  ),
+                  const ArDriveTag(text: 'No Turbo fee'),
                 ],
               ],
             ),

@@ -821,9 +821,6 @@ class _SyncSummaryPill extends StatelessWidget {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final lead = announcement.lead;
     final trailing = announcement.trailing;
-    final textColor =
-        announcement.isError ? colorTokens.textRed : colorTokens.textHigh;
-
     return IgnorePointer(
       // The margin is what keeps a gutter on the narrowest phone: the anchor's
       // shiftToWithinBound pulls the follower to x=0, so without it the pill
@@ -846,18 +843,49 @@ class _SyncSummaryPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // A failure is said as ardrive_ui's error status text: red, with
+            // the error icon once, beside the first line.
             if (lead != null)
-              Text(
-                lead,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: typography.paragraphSmall(color: textColor),
-              ),
+              announcement.isError
+                  ? ArDriveStatusText(
+                      text: lead,
+                      type: ArDriveStatusType.error,
+                      maxLines: 2,
+                    )
+                  : Text(
+                      lead,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: typography.paragraphSmall(
+                        color: colorTokens.textHigh,
+                      ),
+                    ),
             if (trailing != null)
-              Text(
-                trailing,
-                style: typography.paragraphSmall(color: textColor),
-              ),
+              announcement.isError && lead == null
+                  ? ArDriveStatusText(
+                      text: trailing,
+                      type: ArDriveStatusType.error,
+                    )
+                  : Padding(
+                      // Under the lead's words, past its icon.
+                      padding: EdgeInsetsDirectional.only(
+                        // Where [ArDriveStatusText]'s words start: its icon
+                        // (the font size plus 2) and the gap after it.
+                        start: announcement.isError
+                            ? (typography.paragraphSmall().fontSize ?? 14) +
+                                2 +
+                                ArDriveSpacing.xxs
+                            : 0,
+                      ),
+                      child: Text(
+                        trailing,
+                        style: typography.paragraphSmall(
+                          color: announcement.isError
+                              ? colorTokens.statusErrorFg
+                              : colorTokens.textHigh,
+                        ),
+                      ),
+                    ),
           ],
         ),
       ),
@@ -1028,31 +1056,27 @@ class _SyncStatusHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (status.isError) ...[
-                ArDriveIcons.triangle(
-                  size: 16,
-                  color: colorTokens.strokeRed,
-                ),
-                const SizedBox(width: 8),
-              ],
-              Flexible(
-                child: Text(
-                  status.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: typography.paragraphNormal(
-                    fontWeight: ArFontWeight.semiBold,
-                    color: status.isError
-                        ? colorTokens.textRed
-                        : colorTokens.textHigh,
-                  ),
-                ),
+          // A failure is ardrive_ui's error status text; anything else a
+          // plain title.
+          if (status.isError)
+            ArDriveStatusText(
+              text: status.title,
+              type: ArDriveStatusType.error,
+              maxLines: 2,
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.semiBold,
               ),
-            ],
-          ),
+            )
+          else
+            Text(
+              status.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: typography.paragraphNormal(
+                fontWeight: ArFontWeight.semiBold,
+                color: colorTokens.textHigh,
+              ),
+            ),
           if (detail != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),

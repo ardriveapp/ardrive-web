@@ -173,7 +173,7 @@ class ArNSChoiceRow extends StatelessWidget {
                   ),
                   if (tag != null) ...[
                     const SizedBox(width: ArDriveSpacing.xs),
-                    ArNSTag(text: tag!),
+                    ArDriveTag(text: tag!),
                   ],
                   if (leadingIcon != null && selected) ...[
                     const SizedBox(width: ArDriveSpacing.xs),
@@ -183,54 +183,6 @@ class ArNSChoiceRow extends StatelessWidget {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A small quiet label: "Managed for its owner", "Renews in 12 days".
-class ArNSTag extends StatelessWidget {
-  const ArNSTag({
-    super.key,
-    required this.text,
-    this.warning = false,
-    this.urgent = false,
-  });
-
-  final String text;
-  final bool warning;
-
-  /// Red: something is about to be lost, such as a lease ending.
-  final bool urgent;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: ArDriveSpacing.xs,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: urgent
-            ? colors.statusErrorContainer
-            : warning
-                ? colors.statusWarningContainer
-                : colors.containerL2,
-        borderRadius: BorderRadius.circular(ArDriveRadius.sm),
-        border: urgent
-            ? Border.all(color: colors.statusErrorStroke)
-            : warning
-                ? Border.all(color: colors.statusWarningStroke)
-                : null,
-      ),
-      child: Text(
-        text,
-        style: typography.caption(
-          color: urgent ? colors.statusErrorFg : colors.textMid,
-          fontWeight: ArFontWeight.semiBold,
         ),
       ),
     );
