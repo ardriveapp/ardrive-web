@@ -160,6 +160,9 @@ class CryptoConfirmationView extends StatelessWidget {
     if (state.networkState == NetworkState.needsSwitch) {
       return 'Switch network first';
     }
+    if (state.hasInsufficientBalance) {
+      return 'Not enough ${state.token.symbol}';
+    }
     return 'Confirm & Pay';
   }
 }

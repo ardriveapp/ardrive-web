@@ -20,9 +20,10 @@ class CryptoProcessingView extends StatelessWidget {
 
         if (state is CryptoTopupProcessing) {
           if (state.isSubmitting) {
-            message = 'Please approve in your wallet';
-            submessage =
-                'Check your wallet extension for the signature request';
+            // One SDK call sends the payment and waits for the network, so
+            // this covers both: the wallet's prompt and the confirmation.
+            message = 'Approve the payment in your wallet';
+            submessage = 'Once you approve it, it can take a minute to confirm';
           } else if (state.txId != null) {
             message = 'Confirming transaction...';
             submessage = 'Waiting for network confirmation';
