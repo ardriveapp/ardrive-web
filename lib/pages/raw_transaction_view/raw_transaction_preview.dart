@@ -49,26 +49,23 @@ class RawTransactionPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (state.presentation.claimIsContradicted) ...[
-          _RawTransactionNotice(
-            icon: ArDriveIcons.triangle(size: 16, color: colors.themeWarningFg),
+          ArDriveNotice(
+            type: ArDriveNoticeType.warning,
             message: appLocalizationsOf(context).rawTransactionTypeMismatch,
-            color: colors.themeWarningFg,
           ),
           const SizedBox(height: 12),
         ],
         if (state.presentation.renderer ==
             RawTransactionRenderer.sandboxed) ...[
-          _RawTransactionNotice(
-            icon: ArDriveIcons.info(size: 16, color: colors.themeFgSubtle),
+          ArDriveNotice(
+            type: ArDriveNoticeType.info,
             message: appLocalizationsOf(context).rawTransactionSandboxedNotice,
-            color: colors.themeFgSubtle,
           ),
           const SizedBox(height: 12),
         ],
@@ -91,7 +88,7 @@ class RawTransactionPreview extends StatelessWidget {
   }
 
   Widget _buildBody(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final bytes = state.bytes;
     final text = state.text;
     final filename =
@@ -181,8 +178,9 @@ class RawTransactionPreview extends StatelessWidget {
           children: [
             Text(
               appLocalizationsOf(context).rawTransactionSourceHeading,
-              style: ArDriveTypography.body.captionBold(
-                color: colors.themeFgSubtle,
+              style: ArDriveTypographyNew.of(context).paragraphNormal(
+                fontWeight: ArFontWeight.semiBold,
+                color: colors.textMid,
               ),
             ),
             const SizedBox(height: 8),
@@ -263,41 +261,10 @@ class RawTransactionPreview extends StatelessWidget {
       child: Text(
         message,
         textAlign: TextAlign.center,
-        style: ArDriveTypography.body.captionRegular(
-          color: ArDriveTheme.of(context).themeData.colors.themeFgSubtle,
+        style: ArDriveTypographyNew.of(context).paragraphNormal(
+          color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
         ),
       ),
-    );
-  }
-}
-
-/// One line of explanation with an icon, the shape the identity card already
-/// uses for its mismatch warning.
-class _RawTransactionNotice extends StatelessWidget {
-  const _RawTransactionNotice({
-    required this.icon,
-    required this.message,
-    required this.color,
-  });
-
-  final Widget icon;
-  final String message;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        icon,
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            message,
-            style: ArDriveTypography.body.captionRegular(color: color),
-          ),
-        ),
-      ],
     );
   }
 }

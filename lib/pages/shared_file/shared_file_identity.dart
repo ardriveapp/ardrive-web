@@ -1,6 +1,5 @@
 import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
-import 'package:ardrive/pages/shared_file/shared_file_colors.dart';
 import 'package:ardrive/pages/shared_file/shared_file_thumbnail.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
@@ -68,7 +67,7 @@ class SharedFileIdentity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final mismatch = verification == LinkVerification.mismatch;
 
     return Column(
@@ -106,15 +105,15 @@ class SharedFileIdentity extends StatelessWidget {
                 ExcludeSemantics(
                   child: ArDriveIcons.triangle(
                     size: 16,
-                    color: colors.themeWarningFg,
+                    color: colors.statusWarningFg,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     appLocalizationsOf(context).sharedFileLinkDetailsMismatch,
-                    style: ArDriveTypography.body.captionRegular(
-                      color: colors.themeFgDefault,
+                    style: ArDriveTypographyNew.of(context).paragraphNormal(
+                      color: colors.textHigh,
                     ),
                   ),
                 ),
@@ -127,7 +126,7 @@ class SharedFileIdentity extends StatelessWidget {
   }
 
   Widget _buildTitle(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final name = this.name;
 
     if (name == null && isLoading) {
@@ -154,7 +153,7 @@ class SharedFileIdentity extends StatelessWidget {
         // competing with the primary action, and it is the scale
         // `details_panel.dart` uses, which is the surface this page replaced.
         style: ArDriveTypographyNew.of(context).heading5(
-          color: colors.themeFgDefault,
+          color: colors.textHigh,
           fontWeight: ArFontWeight.bold,
         ),
       ),
@@ -174,8 +173,8 @@ class SharedFileIdentity extends StatelessWidget {
   /// item they introduce, and the one place that reliably wrapped is not a
   /// wrap any more.
   Widget _buildMeta(BuildContext context) {
-    final style = ArDriveTypography.body.captionRegular(
-      color: SharedFileColors.subtle(context),
+    final style = ArDriveTypographyNew.of(context).paragraphNormal(
+      color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
     );
 
     final facts = _buildFacts(context, style);
@@ -252,9 +251,18 @@ class SharedFileIdentity extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Flexible(
-          child: Text(
-            appLocalizationsOf(context)
-                .sharedFileSharedBy(_shortAddress(ownerAddress)),
+          // The address in monospace, at its final width so the badge beside
+          // it doesn't move when the face loads.
+          child: Text.rich(
+            TextSpan(
+              children: ArDriveIdText.spansIn(
+                appLocalizationsOf(context)
+                    .sharedFileSharedBy(_shortAddress(ownerAddress)),
+                _shortAddress(ownerAddress),
+                idStyle:
+                    ArDriveTypographyNew.of(context).code(color: style.color),
+              ),
+            ),
             style: style,
             overflow: TextOverflow.ellipsis,
           ),
@@ -349,33 +357,25 @@ class SharedFileVerificationBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colors;
     final strings = appLocalizationsOf(context);
-    // The standard status text in the page's own contrast colours (design
-    // decision Q5), which this badge always used.
-    final style = ArDriveTypography.body.captionRegular();
+    // The standard status text, at the page's paragraph size.
+    final style = ArDriveTypographyNew.of(context).paragraphNormal();
 
     return switch (verification) {
-      // `themeSuccessDefault` is `green.400` in both themes and reads at
-      // ~2.2:1 on the light card, so the badge takes the token that passes.
       LinkVerification.verified => ArDriveStatusText(
           text: strings.sharedFileLinkVerified,
           type: ArDriveStatusType.success,
           style: style,
-          color: SharedFileColors.success(context),
         ),
       LinkVerification.mismatch => ArDriveStatusText(
           text: strings.sharedFileLinkDetailsMismatch,
           type: ArDriveStatusType.warning,
           style: style,
-          color: colors.themeFgDefault,
-          iconColor: colors.themeWarningFg,
         ),
       LinkVerification.pending => ArDriveStatusText(
           text: strings.sharedFileLinkChecking,
           type: ArDriveStatusType.neutral,
           style: style,
-          color: SharedFileColors.subtle(context),
         ),
       // Unavailable - and anything a later verification step adds. A check
       // that did not run is never reported as a problem with the file.
@@ -383,7 +383,6 @@ class SharedFileVerificationBadge extends StatelessWidget {
           text: strings.sharedFileLinkNotChecked,
           type: ArDriveStatusType.neutral,
           style: style,
-          color: SharedFileColors.subtle(context),
         ),
     };
   }
@@ -401,7 +400,7 @@ class _SharedFileSkeletonBar extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: ArDriveTheme.of(context).themeData.colors.themeBgSubtle,
+        color: ArDriveTheme.of(context).themeData.colorTokens.containerL1,
         borderRadius: BorderRadius.circular(4),
       ),
     );
