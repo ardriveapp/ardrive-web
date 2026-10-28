@@ -30,11 +30,11 @@ class _ArDriveProgressBarState extends State<ArDriveProgressBar> {
       lineHeight: widget.height,
       barRadius: const Radius.circular(8),
       backgroundColor: widget.backgroundColor ??
-          ArDriveTheme.of(context).themeData.colors.themeAccentSubtle,
+          ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
       animationDuration: 1000,
       percent: widget.percentage,
       progressColor: widget.indicatorColor ??
-          ArDriveTheme.of(context).themeData.colors.themeAccentMuted,
+          ArDriveTheme.of(context).themeData.colorTokens.buttonPrimaryDefault,
       padding: EdgeInsets.zero,
     );
   }

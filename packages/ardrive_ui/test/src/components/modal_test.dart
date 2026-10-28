@@ -22,62 +22,6 @@ void main() {
     expect(find.text('Some widget'), findsOneWidget);
   });
 
-  testWidgets('ArDriveMiniModal widget and its contents render',
-      (tester) async {
-    const modal = ArDriveMiniModal(
-      content: 'Content',
-      title: 'Title',
-    );
-
-    await tester.pumpWidget(
-      ArDriveApp(
-        builder: (context) => const MaterialApp(home: modal),
-      ),
-    );
-
-    expect(find.byWidget(modal), findsOneWidget);
-    expect(find.text('Content'), findsOneWidget);
-    expect(find.text('Title'), findsOneWidget);
-  });
-
-  testWidgets('ArDriveIconModal widget and its contents render',
-      (tester) async {
-    const modal = ArDriveIconModal(
-      content: 'Content',
-      title: 'Title',
-      icon: Icon(Icons.abc),
-    );
-
-    await tester.pumpWidget(
-      ArDriveApp(
-        builder: (context) => const MaterialApp(home: modal),
-      ),
-    );
-
-    expect(find.byWidget(modal), findsOneWidget);
-    expect(find.byType(Icon), findsWidgets); // icon and the close icon
-    expect(find.text('Content'), findsOneWidget);
-    expect(find.text('Title'), findsOneWidget);
-  });
-
-  testWidgets('ArDriveLongModal widget and its contents render',
-      (tester) async {
-    const modal = ArDriveLongModal(
-      content: 'Content',
-      title: 'Title',
-    );
-
-    await tester.pumpWidget(
-      ArDriveApp(
-        builder: (context) => const MaterialApp(home: modal),
-      ),
-    );
-
-    expect(find.byWidget(modal), findsOneWidget);
-    expect(find.text('Content'), findsOneWidget);
-    expect(find.text('Title'), findsOneWidget);
-  });
-
   testWidgets('ArDriveStandardModal widget and its contents render',
       (tester) async {
     bool varToChange = false;

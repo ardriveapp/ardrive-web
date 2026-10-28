@@ -57,7 +57,7 @@ class _ArDriveTabViewState extends State<ArDriveTabView>
           child: ArDriveCard(
             contentPadding: EdgeInsets.zero,
             backgroundColor: widget.backgroundColor ??
-                ArDriveTheme.of(context).themeData.colors.themeBgCanvas,
+                ArDriveTheme.of(context).themeData.colorTokens.containerL3,
             content: TabBarView(
               controller: _tabController,
               children: [...widget.tabs.map((tab) => tab.value)],
@@ -131,9 +131,9 @@ class ArDriveTabBar extends StatelessWidget {
               ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor,
         ),
         labelColor: selectedLabelColor ??
-            ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+            ArDriveTheme.of(context).themeData.colorTokens.textHigh,
         unselectedLabelColor: unselectedLabelColor ??
-            ArDriveTheme.of(context).themeData.colors.themeAccentDisabled,
+            ArDriveTheme.of(context).themeData.colorTokens.textLow,
         tabs: tabs,
       ),
     );

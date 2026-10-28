@@ -106,8 +106,8 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
                           size: 22,
                           color: ArDriveTheme.of(context)
                               .themeData
-                              .colors
-                              .themeFgDefault,
+                              .colorTokens
+                              .iconHigh,
                         )
                       : AnimatedContainer(
                           height: widget.iconSize,
@@ -152,7 +152,7 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
                   icon: ArDriveIconsData.minus_rectangle,
                   size: widget.iconSize,
                   color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                      ArDriveTheme.of(context).themeData.colorTokens.iconHigh,
                 )
               : checked
                   ? ArDriveIcons.checked(size: widget.iconSize)
@@ -174,7 +174,7 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
           child: Text(
             widget.title!,
             style: widget.titleStyle ??
-                ArDriveTypography.body.bodyRegular(
+                ArDriveTypographyNew.of(context).paragraphNormal(
                   color: _textColor(),
                 ),
           ),
@@ -194,11 +194,11 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
       case CheckBoxState.indeterminate:
       case CheckBoxState.checked:
       case CheckBoxState.hover:
-        return ArDriveTheme.of(context).themeData.colors.themeFgDefault;
+        return ArDriveTheme.of(context).themeData.colorTokens.iconHigh;
       case CheckBoxState.disabled:
-        return ArDriveTheme.of(context).themeData.colors.themeFgDisabled;
+        return ArDriveTheme.of(context).themeData.colorTokens.textLow;
       case CheckBoxState.normal:
-        return ArDriveTheme.of(context).themeData.colors.themeFgDefault;
+        return ArDriveTheme.of(context).themeData.colorTokens.iconHigh;
     }
   }
 
@@ -207,7 +207,7 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
       case CheckBoxState.indeterminate:
       case CheckBoxState.checked:
       case CheckBoxState.hover:
-        return ArDriveTheme.of(context).themeData.colors.themeFgDefault;
+        return ArDriveTheme.of(context).themeData.colorTokens.iconHigh;
       case CheckBoxState.disabled:
         return Colors.transparent;
 
@@ -221,11 +221,11 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
       case CheckBoxState.indeterminate:
       case CheckBoxState.checked:
       case CheckBoxState.hover:
-        return ArDriveTheme.of(context).themeData.colors.themeBgSubtle;
+        return ArDriveTheme.of(context).themeData.colorTokens.containerL0;
       case CheckBoxState.disabled:
-        return ArDriveTheme.of(context).themeData.colors.themeFgDisabled;
+        return ArDriveTheme.of(context).themeData.colorTokens.textLow;
       case CheckBoxState.normal:
-        return ArDriveTheme.of(context).themeData.colors.themeAccentDefault;
+        return ArDriveTheme.of(context).themeData.colorTokens.iconHigh;
     }
   }
 
@@ -235,9 +235,9 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
       case CheckBoxState.checked:
       case CheckBoxState.hover:
       case CheckBoxState.normal:
-        return ArDriveTheme.of(context).themeData.colors.themeFgDefault;
+        return ArDriveTheme.of(context).themeData.colorTokens.textHigh;
       case CheckBoxState.disabled:
-        return ArDriveTheme.of(context).themeData.colors.themeFgDisabled;
+        return ArDriveTheme.of(context).themeData.colorTokens.textLow;
     }
   }
 }
