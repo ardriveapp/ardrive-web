@@ -293,79 +293,56 @@ class _DetailsPanelState extends State<DetailsPanel> {
                 ),
                 mobile: (context) => const SizedBox.shrink(),
               ),
-              ArDriveCard(
-                contentPadding: const EdgeInsets.all(24),
-                backgroundColor: ArDriveTheme.of(context)
-                    .themeData
-                    .tableTheme
-                    .selectedItemColor,
-                content: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    DriveExplorerItemTileLeading(
-                      item: widget.item,
-                    ),
-                    const SizedBox(
-                      width: 8,
-                    ),
-                    Expanded(
-                      child: ArDriveTooltip(
-                        message: widget.item.name,
-                        child: Text(
-                          widget.item.name,
-                          style: typography.paragraphLarge(
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    if (widget.item is FileDataTableItem &&
-                        (widget.item as FileDataTableItem)
-                                .pinnedDataOwnerAddress !=
-                            null) ...[
-                      const PinIndicator(
-                        size: 32,
-                      ),
-                    ],
-                    if (widget.item is FileDataTableItem &&
-                        isSupportedImageTypeForPreview(
-                            widget.item.contentType) &&
-                        (widget.item as FileDataTableItem).thumbnail == null &&
-                        widget.item.isOwner) ...[
-                      ArDriveIconButton(
-                        icon: ArDriveIcons.image(),
-                        tooltip: 'Create thumbnail',
-                        onPressed: () {
-                          showArDriveDialog(
-                            context,
-                            content: BlocProvider.value(
-                              value: context.read<DriveDetailCubit>(),
-                              child: ThumbnailCreationModal(
-                                fileDataTableItem:
-                                    widget.item as FileDataTableItem,
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                    ],
-                    if (widget.currentDrive != null)
-                      ScreenTypeLayout.builder(
-                        desktop: (context) => const SizedBox.shrink(),
-                        mobile: (context) => EntityActionsMenu(
-                          drive: widget.currentDrive,
-                          withInfo: false,
-                          item: widget.item,
-                          alignment: const Aligned(
-                            follower: Alignment.topRight,
-                            target: Alignment.bottomRight,
-                            offset: Offset(24, 32),
-                          ),
-                        ),
-                      ),
-                  ],
+              DetailsPanelTitleCard(
+                leading: DriveExplorerItemTileLeading(
+                  item: widget.item,
                 ),
+                title: widget.item.name,
+                trailing: [
+                  if (widget.item is FileDataTableItem &&
+                      (widget.item as FileDataTableItem)
+                              .pinnedDataOwnerAddress !=
+                          null) ...[
+                    const PinIndicator(
+                      size: 32,
+                    ),
+                  ],
+                  if (widget.item is FileDataTableItem &&
+                      isSupportedImageTypeForPreview(widget.item.contentType) &&
+                      (widget.item as FileDataTableItem).thumbnail == null &&
+                      widget.item.isOwner) ...[
+                    ArDriveIconButton(
+                      icon: ArDriveIcons.image(),
+                      tooltip: 'Create thumbnail',
+                      onPressed: () {
+                        showArDriveDialog(
+                          context,
+                          content: BlocProvider.value(
+                            value: context.read<DriveDetailCubit>(),
+                            child: ThumbnailCreationModal(
+                              fileDataTableItem:
+                                  widget.item as FileDataTableItem,
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  ],
+                  if (widget.currentDrive != null)
+                    ScreenTypeLayout.builder(
+                      desktop: (context) => const SizedBox.shrink(),
+                      mobile: (context) => EntityActionsMenu(
+                        drive: widget.currentDrive,
+                        withInfo: false,
+                        item: widget.item,
+                        alignment: const Aligned(
+                          follower: Alignment.topRight,
+                          target: Alignment.bottomRight,
+                          offset: Offset(24, 32),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(
                 height: 24,
@@ -1475,178 +1452,159 @@ class DetailsPanelToolbar extends StatelessWidget {
     // promoted, and the share icon has to ask a folder whether it is a ghost.
     final item = this.item;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          const SizedBox(
-            width: 16,
+    return DetailsPanelToolbarFrame(
+      onClose: onClose,
+      actions: [
+        if (item is FileDataTableItem ||
+            item is DriveDataItem ||
+            // Not a ghost folder: its metadata was never found, so a link
+            // naming it points the recipient at nothing. The two dropdown
+            // menus gate this the same way.
+            (item is FolderDataTableItem && !item.isGhostFolder))
+          PublicationMode.isOn
+              // On a publication, the publication's own link to the item.
+              ? _buildActionIcon(
+                  tooltip: appLocalizationsOf(context).copyLink,
+                  icon: ArDriveIcons.copy(size: defaultIconSize),
+                  onTap: () => switch (item) {
+                    FileDataTableItem(:final parentFolderId, :final id) =>
+                      copyPublicationLink(
+                        context,
+                        folderId: parentFolderId,
+                        fileId: id,
+                      ),
+                    FolderDataTableItem(:final id) =>
+                      copyPublicationLink(context, folderId: id),
+                    _ => copyPublicationLink(
+                        context,
+                        folderId: drive.rootFolderId,
+                      ),
+                  },
+                )
+              : _buildActionIcon(
+                  tooltip: _getShareTooltip(item, context),
+                  icon: ArDriveIcons.share(size: defaultIconSize),
+                  onTap: () {
+                    if (item is FileDataTableItem) {
+                      promptToShareFile(
+                        context: context,
+                        driveId: item.driveId,
+                        fileId: item.id,
+                      );
+                    } else if (item is FolderDataTableItem) {
+                      // A folder link is a drive link that names a folder, and it
+                      // carries the drive key for the same reason - a folder in a
+                      // private drive cannot be read without it.
+                      promptToShareDrive(
+                        context: context,
+                        drive: drive,
+                        folderId: item.id,
+                        folderName: item.name,
+                      );
+                    } else if (item is DriveDataItem) {
+                      promptToShareDrive(
+                        context: context,
+                        drive: drive,
+                      );
+                    }
+                  },
+                ),
+        // Publishing a folder or the drive; a file is shared, not published.
+        if (item is! FileDataTableItem &&
+            !(item is FolderDataTableItem && item.isGhostFolder) &&
+            offersPublishToWeb(context, drive))
+          _buildActionIcon(
+            tooltip: publishToWebLabel(
+              context,
+              drive,
+              item is FolderDataTableItem ? item.id : null,
+            ),
+            icon: publishToWebIcon(size: defaultIconSize),
+            onTap: () => openPublishToWeb(
+              context,
+              drive: drive,
+              folderId: item is FolderDataTableItem ? item.id : null,
+            ),
           ),
-          if (item is FileDataTableItem ||
-              item is DriveDataItem ||
-              // Not a ghost folder: its metadata was never found, so a link
-              // naming it points the recipient at nothing. The two dropdown
-              // menus gate this the same way.
-              (item is FolderDataTableItem && !item.isGhostFolder))
-            PublicationMode.isOn
-                // On a publication, the publication's own link to the item.
-                ? _buildActionIcon(
-                    tooltip: appLocalizationsOf(context).copyLink,
-                    icon: ArDriveIcons.copy(size: defaultIconSize),
-                    onTap: () => switch (item) {
-                      FileDataTableItem(:final parentFolderId, :final id) =>
-                        copyPublicationLink(
-                          context,
-                          folderId: parentFolderId,
-                          fileId: id,
-                        ),
-                      FolderDataTableItem(:final id) =>
-                        copyPublicationLink(context, folderId: id),
-                      _ => copyPublicationLink(
-                          context,
-                          folderId: drive.rootFolderId,
-                        ),
-                    },
-                  )
-                : _buildActionIcon(
-                    tooltip: _getShareTooltip(item, context),
-                    icon: ArDriveIcons.share(size: defaultIconSize),
-                    onTap: () {
-                      if (item is FileDataTableItem) {
-                        promptToShareFile(
-                          context: context,
-                          driveId: item.driveId,
-                          fileId: item.id,
-                        );
-                      } else if (item is FolderDataTableItem) {
-                        // A folder link is a drive link that names a folder, and it
-                        // carries the drive key for the same reason - a folder in a
-                        // private drive cannot be read without it.
-                        promptToShareDrive(
-                          context: context,
-                          drive: drive,
-                          folderId: item.id,
-                          folderName: item.name,
-                        );
-                      } else if (item is DriveDataItem) {
-                        promptToShareDrive(
-                          context: context,
-                          drive: drive,
-                        );
-                      }
-                    },
-                  ),
-          // Publishing a folder or the drive; a file is shared, not published.
-          if (item is! FileDataTableItem &&
-              !(item is FolderDataTableItem && item.isGhostFolder) &&
-              offersPublishToWeb(context, drive))
-            _buildActionIcon(
-              tooltip: publishToWebLabel(
-                context,
-                drive,
-                item is FolderDataTableItem ? item.id : null,
-              ),
-              icon: publishToWebIcon(size: defaultIconSize),
-              onTap: () => openPublishToWeb(
-                context,
-                drive: drive,
-                folderId: item is FolderDataTableItem ? item.id : null,
-              ),
-            ),
-          // A drive whose contents this device does not know has nothing to
-          // download. Said by the details below it. See [offersDownload].
-          if (offersDownload(item, context.watch<FsEntryInfoCubit>().state))
-            _buildActionIcon(
-                tooltip: appLocalizationsOf(context).download,
-                icon: ArDriveIcons.download(size: defaultIconSize),
-                onTap: () {
-                  if (item is FileDataTableItem) {
-                    promptToDownloadProfileFile(
-                      context: context,
-                      file: item,
-                    );
-                  } else if (item is FolderDataTableItem) {
-                    promptToDownloadMultipleFiles(context,
-                        selectedItems: [item], zipName: item.name);
-                  } else if (item is DriveDataItem) {
-                    promptToDownloadMultipleFiles(context,
-                        selectedItems: [item], zipName: item.name);
-                  }
-                }),
-          if (item is FileDataTableItem && drive.isPublic)
-            _buildActionIcon(
-              tooltip: appLocalizationsOf(context).preview,
-              icon: ArDriveIcons.newWindow(size: defaultIconSize),
+        // A drive whose contents this device does not know has nothing to
+        // download. Said by the details below it. See [offersDownload].
+        if (offersDownload(item, context.watch<FsEntryInfoCubit>().state))
+          _buildActionIcon(
+              tooltip: appLocalizationsOf(context).download,
+              icon: ArDriveIcons.download(size: defaultIconSize),
               onTap: () {
-                final bloc = context.read<DriveDetailCubit>();
-                bloc.launchPreview(item.dataTxId);
-              },
-            ),
-          if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
-            _buildActionIcon(
-              tooltip: appLocalizationsOf(context).rename,
-              icon: ArDriveIcons.edit(size: defaultIconSize),
-              onTap: () {
-                if (item is DriveDataItem) {
-                  promptToRenameDrive(
-                    context,
-                    driveId: drive.id,
-                    driveName: drive.name,
+                if (item is FileDataTableItem) {
+                  promptToDownloadProfileFile(
+                    context: context,
+                    file: item,
                   );
-                  return;
+                } else if (item is FolderDataTableItem) {
+                  promptToDownloadMultipleFiles(context,
+                      selectedItems: [item], zipName: item.name);
+                } else if (item is DriveDataItem) {
+                  promptToDownloadMultipleFiles(context,
+                      selectedItems: [item], zipName: item.name);
                 }
-
-                promptToRenameModal(
+              }),
+        if (item is FileDataTableItem && drive.isPublic)
+          _buildActionIcon(
+            tooltip: appLocalizationsOf(context).preview,
+            icon: ArDriveIcons.newWindow(size: defaultIconSize),
+            onTap: () {
+              final bloc = context.read<DriveDetailCubit>();
+              bloc.launchPreview(item.dataTxId);
+            },
+          ),
+        if (isDriveOwner(context.read<ArDriveAuth>(), drive.ownerAddress))
+          _buildActionIcon(
+            tooltip: appLocalizationsOf(context).rename,
+            icon: ArDriveIcons.edit(size: defaultIconSize),
+            onTap: () {
+              if (item is DriveDataItem) {
+                promptToRenameDrive(
                   context,
                   driveId: drive.id,
-                  initialName: item.name,
-                  fileId: item is FileDataTableItem ? item.id : null,
-                  folderId: item is FolderDataTableItem ? item.id : null,
+                  driveName: drive.name,
                 );
-              },
-            ),
-          if (item.isOwner &&
-              (item is FileDataTableItem || item is FolderDataTableItem))
-            _buildActionIcon(
-              tooltip: appLocalizationsOf(context).move,
-              icon: ArDriveIcons.move(size: defaultIconSize),
-              onTap: () {
-                promptToMove(context, driveId: drive.id, selectedItems: [item]);
-              },
-            ),
-          if (item.isOwner)
-            _buildActionIcon(
-              tooltip: item.isHidden
-                  ? appLocalizationsOf(context).unhide
-                  : appLocalizationsOf(context).hide,
-              icon: item.isHidden
-                  ? ArDriveIcons.eyeClosed(size: defaultIconSize)
-                  : ArDriveIcons.eyeOpen(size: defaultIconSize),
-              onTap: () {
-                promptToToggleHideState(
-                  context,
-                  item: item,
-                );
-              },
-            ),
-          // Note: Sync/Deep Sync/Snapshot actions are in the drive kebab menu
-          // to avoid redundant UI elements
-          const Spacer(),
-          _buildActionIcon(
-            tooltip: appLocalizationsOf(context).close,
-            icon: ArDriveIcons.x(size: defaultIconSize),
-            onTap: onClose,
+                return;
+              }
+
+              promptToRenameModal(
+                context,
+                driveId: drive.id,
+                initialName: item.name,
+                fileId: item is FileDataTableItem ? item.id : null,
+                folderId: item is FolderDataTableItem ? item.id : null,
+              );
+            },
           ),
-        ],
-      ),
+        if (item.isOwner &&
+            (item is FileDataTableItem || item is FolderDataTableItem))
+          _buildActionIcon(
+            tooltip: appLocalizationsOf(context).move,
+            icon: ArDriveIcons.move(size: defaultIconSize),
+            onTap: () {
+              promptToMove(context, driveId: drive.id, selectedItems: [item]);
+            },
+          ),
+        if (item.isOwner)
+          _buildActionIcon(
+            tooltip: item.isHidden
+                ? appLocalizationsOf(context).unhide
+                : appLocalizationsOf(context).hide,
+            icon: item.isHidden
+                ? ArDriveIcons.eyeClosed(size: defaultIconSize)
+                : ArDriveIcons.eyeOpen(size: defaultIconSize),
+            onTap: () {
+              promptToToggleHideState(
+                context,
+                item: item,
+              );
+            },
+          ),
+        // Note: Sync/Deep Sync/Snapshot actions are in the drive kebab menu
+        // to avoid redundant UI elements
+      ],
     );
   }
 
@@ -1757,6 +1715,95 @@ class _LicenseDetailsPopoverButtonState
             });
           },
         ),
+      ),
+    );
+  }
+}
+
+/// The bordered strip at the top of a details panel: the item's actions on
+/// the left, close on the right. Shared by the explorer's panel and the list
+/// pages' ([ListDetailsPanel]), so every details panel has the same top.
+class DetailsPanelToolbarFrame extends StatelessWidget {
+  const DetailsPanelToolbarFrame({
+    super.key,
+    required this.actions,
+    required this.onClose,
+  });
+
+  final List<Widget> actions;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          const SizedBox(width: 16),
+          ...actions,
+          const Spacer(),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ArDriveIconButton(
+              tooltip: appLocalizationsOf(context).close,
+              onPressed: onClose,
+              icon: ArDriveIcons.x(size: defaultIconSize),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The card naming what a details panel is about: its icon, its name and
+/// anything that belongs beside the name.
+class DetailsPanelTitleCard extends StatelessWidget {
+  const DetailsPanelTitleCard({
+    super.key,
+    required this.leading,
+    required this.title,
+    this.trailing = const [],
+  });
+
+  final Widget leading;
+  final String title;
+  final List<Widget> trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    return ArDriveCard(
+      contentPadding: const EdgeInsets.all(24),
+      backgroundColor:
+          ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor,
+      content: Row(
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          leading,
+          const SizedBox(width: 8),
+          Expanded(
+            child: ArDriveTooltip(
+              message: title,
+              child: Text(
+                title,
+                style: typography.paragraphLarge(
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          ...trailing,
+        ],
       ),
     );
   }

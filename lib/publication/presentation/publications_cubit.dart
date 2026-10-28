@@ -28,16 +28,24 @@ class DrivePublications extends Equatable {
   List<Object?> get props => [loading, publications];
 }
 
+/// Where the owner's publications are: [idle] before any are asked for, and
+/// where they never are (off the web, inside a publication).
+enum PublicationsStatus { idle, loading, loaded, failed }
+
 class PublicationsState extends Equatable {
-  const PublicationsState([this.byDrive = const {}]);
+  const PublicationsState([
+    this.byDrive = const {},
+    this.status = PublicationsStatus.idle,
+  ]);
 
   final Map<String, DrivePublications> byDrive;
+  final PublicationsStatus status;
 
   Publication? publicationOf(String driveId, String? folderId) =>
       byDrive[driveId]?.of(folderId);
 
   @override
-  List<Object?> get props => [byDrive];
+  List<Object?> get props => [byDrive, status];
 }
 
 /// Which of the signed-in owner's drives and folders are published to the
@@ -89,6 +97,12 @@ class PublicationsCubit extends Cubit<PublicationsState> {
   bool canPublish(Drive drive) =>
       drive.isPublic && _owner != null && drive.ownerAddress == _owner;
 
+  /// Asks again after a failure.
+  Future<void> retry() {
+    _load = null;
+    return watchOwner();
+  }
+
   /// Starts finding the owner's publications, unless known already. One
   /// query covers every drive, so the drives list can mark them all.
   Future<void> watchOwner() {
@@ -119,6 +133,11 @@ class PublicationsCubit extends Cubit<PublicationsState> {
   bool _failed = false;
 
   Future<void> _loadAll(String owner) async {
+    // A reload after a publish keeps what is shown; only a first read, or one
+    // after a failure, says it is reading.
+    if (state.status != PublicationsStatus.loaded) {
+      emit(PublicationsState(state.byDrive, PublicationsStatus.loading));
+    }
     try {
       final byDrive = await _repository.publicationsOfOwner(owner);
       _failed = false;
@@ -126,11 +145,13 @@ class PublicationsCubit extends Cubit<PublicationsState> {
       emit(PublicationsState({
         for (final MapEntry(:key, :value) in byDrive.entries)
           key: DrivePublications(publications: value),
-      }));
+      }, PublicationsStatus.loaded));
     } on PublicationReadException catch (e) {
       logger.w('[publication] could not list publications: $e');
       _failed = true;
       _load = null;
+      if (isClosed || _loadedFor != owner) return;
+      emit(PublicationsState(state.byDrive, PublicationsStatus.failed));
     }
   }
 

@@ -218,7 +218,8 @@ void main() {
       expect(rowFor('website').isCurrent, isFalse);
     });
 
-    testWidgets('a heading folds its drives away and back', (tester) async {
+    testWidgets('for a visitor, a heading folds its drives away and back',
+        (tester) async {
       await pumpSidebar(tester);
 
       final heading = DriveScopeRail.labelFor(
@@ -231,6 +232,46 @@ void main() {
       expect(find.text('photos'), findsNothing);
 
       await tester.tap(find.text(heading));
+      await tester.pump();
+      expect(find.text('photos'), findsOneWidget);
+    });
+
+    /// Signed in, a heading is two buttons, like Web pages and Names: its
+    /// words open Your drives at that scope, its chevron folds.
+    testWidgets("signed in, a heading's words open Your drives at its scope",
+        (tester) async {
+      await pumpSidebar(tester, loggedIn: true);
+      final delegate =
+          tester.element(find.byType(AppSideBar)).read<AppRouterDelegate>();
+
+      final heading = DriveScopeRail.labelFor(
+        tester.element(find.byType(AppSideBar)),
+        DriveScope.private,
+      );
+      // Not pumped after: the nav would turn into the drives list's, which
+      // reads a cubit only that page provides.
+      await tester.tap(find.text(heading));
+
+      expect(delegate.showingDrivesList, isTrue);
+      expect(delegate.drivesListScope, DriveScope.private);
+    });
+
+    testWidgets("signed in, a heading's chevron alone folds its drives",
+        (tester) async {
+      await pumpSidebar(tester, loggedIn: true);
+      final delegate =
+          tester.element(find.byType(AppSideBar)).read<AppRouterDelegate>();
+      final heading = DriveScopeRail.labelFor(
+        tester.element(find.byType(AppSideBar)),
+        DriveScope.private,
+      );
+
+      await tester.tap(find.byKey(ValueKey('nav-toggle-$heading')));
+      await tester.pump();
+      expect(find.text('photos'), findsNothing);
+      expect(delegate.showingDrivesList, isFalse);
+
+      await tester.tap(find.byKey(ValueKey('nav-toggle-$heading')));
       await tester.pump();
       expect(find.text('photos'), findsOneWidget);
     });

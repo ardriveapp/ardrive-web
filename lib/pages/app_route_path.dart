@@ -22,6 +22,14 @@ class AppRoutePath {
   /// "The Names page"). Like [drivesList], a drive can stay selected under it.
   final bool names;
 
+  /// One name's page - `/names/<name>` - with [names] set.
+  final String? arnsName;
+
+  /// Whether the app is showing the Web pages page - `/web-pages`: what the
+  /// user has published. Like [drivesList], a drive can stay selected under
+  /// it.
+  final bool webPages;
+
   final String? driveId;
   final String? driveName;
   final String? driveFolderId;
@@ -84,6 +92,8 @@ class AppRoutePath {
     this.getStarted = false,
     this.drivesList = false,
     this.names = false,
+    this.arnsName,
+    this.webPages = false,
     this.driveId,
     this.driveName,
     this.driveFolderId,
@@ -110,7 +120,11 @@ class AppRoutePath {
   factory AppRoutePath.drivesList() => const AppRoutePath(drivesList: true);
 
   /// The Names page.
-  factory AppRoutePath.names() => const AppRoutePath(names: true);
+  factory AppRoutePath.names({String? name}) =>
+      AppRoutePath(names: true, arnsName: name);
+
+  /// The Web pages page.
+  factory AppRoutePath.webPages() => const AppRoutePath(webPages: true);
 
   /// Creates a route that points to a particular drive.
   factory AppRoutePath.driveDetail({

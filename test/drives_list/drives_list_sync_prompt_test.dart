@@ -118,11 +118,9 @@ void main() {
 
     final size = tester.getSize(card.first);
 
-    // 16px of page padding either side of the card, and the list itself is
-    // capped - so this is what a surface of this width actually gives it.
-    final expected =
-        (width < driveListMaxContentWidth ? width : driveListMaxContentWidth) -
-            32;
+    // 16px of page padding either side of the card: the list fills the
+    // surface, so this is what a surface of this width actually gives it.
+    final expected = width - 32;
 
     expect(size.width, expected,
         reason: 'the surface did not lay out at the width under test, so '
@@ -165,7 +163,8 @@ void main() {
       // The breakpoint used to be pure pixels, so at a large text scale the
       // page kept five columns and ellipsized the values inside them - and a
       // count cut mid-digit still reads as a count.
-      const widest = driveListMaxContentWidth;
+      // A wide desktop list.
+      const widest = 1200.0;
 
       expect(driveListShowsColumns(widest, textScale: 1.0), isTrue,
           reason: 'precondition: the widest list draws columns at 1.0');
