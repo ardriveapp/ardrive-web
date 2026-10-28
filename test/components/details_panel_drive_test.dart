@@ -264,15 +264,19 @@ void main() {
     await tester.runAsync(markDriveRead);
     await pumpPanel(tester);
 
-    final figure = find.text(filesize(0));
-    expect(figure, findsOneWidget);
-    final style = tester.widget<Text>(figure).style!;
-    expect(style.fontWeight, ArFontWeight.light.weight);
-    expect(style.fontSize, greaterThanOrEqualTo(25));
-    expect(find.text('Size'), findsNothing);
-    expect(find.text('Contains'), findsNothing);
-
-    await takeDown(tester);
+    // Taken down whatever the assertions find, so a failure can't leave the
+    // panel to hang the fake-clock teardown.
+    try {
+      final figure = find.text(filesize(0));
+      expect(figure, findsOneWidget);
+      final style = tester.widget<Text>(figure).style!;
+      expect(style.fontWeight, ArFontWeight.light.weight);
+      expect(style.fontSize, greaterThanOrEqualTo(25));
+      expect(find.text('Size'), findsNothing);
+      expect(find.text('Contains'), findsNothing);
+    } finally {
+      await takeDown(tester);
+    }
   });
 
   /// Offered, never done for the reader: opening a drive's details is not
