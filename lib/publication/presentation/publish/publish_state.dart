@@ -12,6 +12,9 @@ enum PublishStage {
 
   /// Working out the snapshot and the cost, on the way to [review].
   pricing,
+
+  /// Syncing the drive, from [blocked] by a sync, to check it again after.
+  syncing,
   review,
   publishing,
   failed,
@@ -96,12 +99,22 @@ class PublishState extends Equatable {
     this.isUpdate = false,
     this.imageError,
     this.names,
+    this.naming = const [],
+    this.namingStarted = false,
   });
 
   final PublishStage stage;
 
   /// The names after publishing, when the name step had work.
   final ArNSFlowOutcome? names;
+
+  /// The names a running publish points at the page, its last step; empty
+  /// when it has none.
+  final List<String> naming;
+
+  /// Whether that last step has begun: the page is up and the names are
+  /// being changed, which may wait on the ArNS wallet.
+  final bool namingStarted;
   final PublishBlock? blocked;
   final String blockedReason;
   final PublicationSummary? summary;
@@ -173,6 +186,8 @@ class PublishState extends Equatable {
     ({PublicationImageSlot slot, PublicationImageProblem problem})? Function()?
         imageError,
     ArNSFlowOutcome? names,
+    List<String>? naming,
+    bool? namingStarted,
   }) =>
       PublishState(
         stage: stage ?? this.stage,
@@ -199,6 +214,8 @@ class PublishState extends Equatable {
         isUpdate: isUpdate ?? this.isUpdate,
         imageError: imageError != null ? imageError() : this.imageError,
         names: names ?? this.names,
+        naming: naming ?? this.naming,
+        namingStarted: namingStarted ?? this.namingStarted,
       );
 
   @override
@@ -227,6 +244,8 @@ class PublishState extends Equatable {
         isUpdate,
         imageError,
         names,
+        naming,
+        namingStarted,
       ];
 }
 

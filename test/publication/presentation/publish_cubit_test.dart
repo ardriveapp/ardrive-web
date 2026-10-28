@@ -180,6 +180,7 @@ void main() {
     Publication? previous,
     ArNSFlowNameCubit? names,
     void Function(String? link)? onSettledAfterClose,
+    Future<void> Function(String driveId)? syncDrive,
   }) =>
       PublishCubit(
         drive: drive,
@@ -207,6 +208,7 @@ void main() {
             return recorder.endRecording().toImage(4, 4);
           },
           fileCountLabel: (n) => '$n files',
+          syncDrive: syncDrive,
         ),
       );
 
@@ -254,6 +256,52 @@ void main() {
     expect(c.state.stage, PublishStage.blocked);
     expect(c.state.blocked, PublishBlock.sync);
     expect(c.state.blockedReason, 'Still syncing.');
+  });
+
+  group('Sync drive, from a dialog blocked by sync', () {
+    test('syncs the drive and checks it again', () async {
+      skip.status = const DriveStateSyncSkipStatus.unknown('Never synced.');
+      final synced = <String>[];
+      final c = cubit(syncDrive: (driveId) async {
+        synced.add(driveId);
+        skip.status = const DriveStateSyncSkipStatus.clean();
+      });
+      await c.load();
+      expect(c.canSyncDrive, isTrue);
+
+      final stages = <PublishStage>[];
+      final sub = c.stream.listen((s) => stages.add(s.stage));
+      await c.syncDrive();
+      await sub.cancel();
+
+      expect(synced, [_drive]);
+      expect(stages.first, PublishStage.syncing);
+      expect(c.state.stage, PublishStage.included);
+    });
+
+    test('stays blocked, and can sync again, when the sync fails', () async {
+      skip.status = const DriveStateSyncSkipStatus.unknown('Never synced.');
+      final c = cubit(syncDrive: (_) async => throw Exception('offline'));
+      await c.load();
+      await c.syncDrive();
+
+      expect(c.state.stage, PublishStage.blocked);
+      expect(c.state.blocked, PublishBlock.sync);
+      expect(c.canSyncDrive, isTrue);
+    });
+
+    test('is not offered for other blocks, or without a way to sync', () async {
+      skip.status = const DriveStateSyncSkipStatus.unknown('Never synced.');
+      final c = cubit();
+      await c.load();
+      expect(c.canSyncDrive, isFalse, reason: 'no way to sync');
+
+      skip.status = const DriveStateSyncSkipStatus.clean();
+      final open = cubit(syncDrive: (_) async {});
+      await open.load();
+      expect(open.state.blocked, isNull);
+      expect(open.canSyncDrive, isFalse);
+    });
   });
 
   test('a hidden folder, unconfirmed uploads and an empty folder block',
@@ -322,16 +370,30 @@ void main() {
     final names = _Names();
     when(() => names.plannedNames).thenReturn(['news_acme']);
     when(() => names.hasWork).thenReturn(true);
+    late PublishCubit c;
+    // The name is the last step shown, and has begun once the page is up.
+    final namingWhenApplied = <(List<String>, bool)>[];
     when(() => names.applyTo(any(), publication: any(named: 'publication')))
-        .thenAnswer((_) async => const ArNSFlowOutcome(live: ['news_acme']));
+        .thenAnswer((_) async {
+      namingWhenApplied.add((c.state.naming, c.state.namingStarted));
+      return const ArNSFlowOutcome(live: ['news_acme']);
+    });
     when(() => names.close()).thenAnswer((_) async {});
 
-    final c = cubit(names: names);
+    c = cubit(names: names);
     await c.load();
     await c.review();
+    final publishing = <PublishState>[];
+    final sub = c.stream.listen(publishing.add);
     await c.publish();
+    await sub.cancel();
 
     expect(c.state.stage, PublishStage.done);
+    expect(publishing.first.naming, ['news_acme']);
+    expect(publishing.first.namingStarted, isFalse);
+    expect(namingWhenApplied, hasLength(1));
+    expect(namingWhenApplied.single.$1, ['news_acme']);
+    expect(namingWhenApplied.single.$2, isTrue);
     verify(() => names.applyTo(
           'MANIFEST',
           publication: const ArNSPublicationItem(

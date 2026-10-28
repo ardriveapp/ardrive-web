@@ -404,7 +404,9 @@ publications cannot be read at all, rather than risk a second publication of
 the same drive or folder):
 
 - the drive is syncing, or has not been fully read in this session (the
-  snapshot dialog's own sync check and sentence);
+  snapshot dialog's own sync check and sentence). This one also offers
+  **Sync drive**, which waits for a running sync, syncs the drive if it still
+  can't be confirmed complete ("Syncing this drive..."), and checks again;
 - any upload in the drive is unconfirmed: "Some uploads in this drive aren't
   confirmed yet. Publish once they are; it usually takes a few minutes." (a
   new snapshot would refuse them);
@@ -415,7 +417,8 @@ the same drive or folder):
   refused (its reason).
 
 **Step 1 · What's included.** "The whole drive • <name>" or "This folder and
-everything in it • <name>"; files, folders and size; **Left out**, one line
+everything in it • <name>"; files and folders, but not their size, which
+read as uploading them again when only the page is uploaded; **Left out**, one line
 each: hidden items, files in hidden folders, files in folders whose details
 are missing (ghost folders), failed uploads; when hidden items are among them,
 once: "Hidden items in a public drive can still be found." Then: "Anyone can
@@ -465,7 +468,11 @@ a new snapshot) is within Turbo's per-item limit (`/v1/info`, else
 Otherwise it is priced as a whole.
 
 **Progress.** Saving a snapshot of the drive (when new), signing the page's
-files, uploading, getting the page ready (Turbo). "Keep this tab open until
+files, uploading, getting the page ready (Turbo), and last, when the page has
+names, "Updating <name>" (or "Updating N names"). While the ArNS wallet is
+asked to approve, that step says so under it ("Approve the change in your
+ArNS wallet."), or the dialog looks stuck on a prompt waiting in the
+wallet. "Keep this tab open until
 it's done." **Close** hides the dialog and the publish carries on (there is
 no Cancel: what was sent is paid for); when it settles the app shows "Your
 page is published" with **Open**, or "Publishing stopped. Open Publish to web

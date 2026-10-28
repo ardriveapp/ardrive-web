@@ -53,6 +53,7 @@ class PublishDependencies {
     required this.labels,
     required this.cardMark,
     required this.fileCountLabel,
+    this.syncDrive,
   });
 
   final DriveDao driveDao;
@@ -73,6 +74,10 @@ class PublishDependencies {
 
   /// "N files", worded.
   final String Function(int count) fileCountLabel;
+
+  /// Syncs a drive, waiting first for a sync already running, for the Sync
+  /// drive button of a dialog blocked by sync. Null hides the button.
+  final Future<void> Function(String driveId)? syncDrive;
 }
 
 /// The publish dialog (docs/PUBLICATIONS.md, "The publish dialog"): what is
@@ -182,6 +187,25 @@ class PublishCubit extends Cubit<PublishState> {
                 'gateway. Try again in a minute.',
       ));
     }
+  }
+
+  /// Whether a dialog blocked by sync can sync the drive itself.
+  bool get canSyncDrive =>
+      _deps.syncDrive != null && state.blocked == PublishBlock.sync;
+
+  /// Syncs the drive and checks it again, for a dialog blocked by sync.
+  Future<void> syncDrive() async {
+    final sync = _deps.syncDrive;
+    if (sync == null || !canSyncDrive) return;
+    emit(const PublishState(stage: PublishStage.syncing));
+    try {
+      await sync(drive.id);
+    } catch (e, stackTrace) {
+      // The check that follows says what the sync left.
+      logger.e('[publication] syncing the drive failed', e, stackTrace);
+    }
+    if (isClosed) return;
+    await load();
   }
 
   /// What stops publishing right now, with the sentence that says so.
@@ -667,7 +691,12 @@ class PublishCubit extends Cubit<PublishState> {
     _lastJob = run;
     run.names = names?.plannedNames ?? const [];
     _publishing = true;
-    emit(state.copyWith(stage: PublishStage.publishing, failure: ''));
+    emit(state.copyWith(
+      stage: PublishStage.publishing,
+      failure: '',
+      naming: names?.hasWork == true ? run.names : const [],
+      namingStarted: false,
+    ));
     try {
       final version = await _deps.publisher.publish(
         run,
@@ -681,6 +710,7 @@ class PublishCubit extends Cubit<PublishState> {
       final named = names;
       ArNSFlowOutcome? outcome;
       if (named != null && named.hasWork) {
+        if (!isClosed) emit(state.copyWith(namingStarted: true));
         outcome = await named.applyTo(
           version.txId,
           // GraphQL lags a new version: its names read as a publication now.
