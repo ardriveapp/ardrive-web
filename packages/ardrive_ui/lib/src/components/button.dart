@@ -383,12 +383,9 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
     if (widget.customContent != null) return null;
     // A left icon sits 8 px before the label and is centred with it as one
     // group, so it adds its width (up to 24) and the gap. A right icon, at 16
-    // from the edge, clears a centred label with 64.
-    final icons = widget.icon != null
-        ? 32
-        : widget.rightIcon != null
-            ? 64
-            : 0;
+    // from the edge, clears a centred group with 64. With both, both apply.
+    final icons =
+        (widget.icon != null ? 32 : 0) + (widget.rightIcon != null ? 64 : 0);
     final hover = widget.hoverIcon != null ? 32 : 0;
     return ArDriveButtonNew.fittedWidth(
           context,
@@ -562,6 +559,12 @@ class _ArDriveButtonNewState extends State<ArDriveButtonNew> {
                                     )
                                   : const SizedBox(height: 24),
                             ),
+                            // The icon stays, hovered or not; the hover icon
+                            // only joins it.
+                            if (widget.icon != null) ...[
+                              widget.icon!,
+                              const SizedBox(width: 8),
+                            ],
                             Flexible(child: text),
                           ],
                         )),
