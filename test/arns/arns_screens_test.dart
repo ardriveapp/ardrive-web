@@ -195,6 +195,31 @@ List<ArNSManagedName> _names() => [
       ),
     ];
 
+/// A name with dozens of undernames, for paging and the picker's search.
+ArNSManagedName _bigName() => ArNSManagedName(
+      name: 'studio',
+      processId: 'ant-studio',
+      role: ArNSRole.owner,
+      type: ArNSNameType.lease,
+      endTimestamp: _now.add(const Duration(days: 12, hours: 3)),
+      undernameLimit: 100,
+      records: [
+        const ArNSNameRecord(
+          name: 'studio',
+          undername: '@',
+          transactionId: _elseTx,
+          ttlSeconds: 3600,
+        ),
+        for (var i = 1; i <= 24; i++)
+          ArNSNameRecord(
+            name: 'studio',
+            undername: 'project-$i',
+            transactionId: _elseTx,
+            ttlSeconds: 3600,
+          ),
+      ],
+    );
+
 const _item = ArNSNameableItem(
   fileId: 'f9',
   driveId: 'd1',
@@ -529,6 +554,19 @@ void main() {
       drive: (cubit) async {
         cubit.choose('acme', 'blog');
         await Future.delayed(const Duration(milliseconds: 50));
+      },
+    );
+  });
+
+  testWidgets('name dialog: many undernames, collapsed', (tester) async {
+    await dialogShot(
+      tester,
+      '01b-many-undernames',
+      walletStatus: ArNSWalletStatus.connected,
+      names: [_bigName(), ..._names().take(1)],
+      drive: (cubit) async {},
+      interact: (tester) async {
+        await tester.enterText(find.byType(TextField).first, 'project-2');
       },
     );
   });
@@ -879,6 +917,23 @@ void main() {
           phone: phone,
           dark: dark,
           height: phone ? 1900 : 1180,
+        );
+        await capture(
+          tester,
+          '20b-names-paged',
+          (context) => namesPage(
+            context,
+            phone: phone,
+            walletState: _wallet(ArNSWalletStatus.connected),
+            namesState: ArNSNamesState(
+              status: ArNSNamesStatus.loaded,
+              address: _sol,
+              names: [_bigName()],
+            ),
+          ),
+          phone: phone,
+          dark: dark,
+          height: phone ? 1500 : 1000,
         );
         await capture(
           tester,

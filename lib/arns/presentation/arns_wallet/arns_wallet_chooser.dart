@@ -1,4 +1,5 @@
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
+import 'package:ardrive/misc/resources.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
@@ -126,7 +127,11 @@ class _WalletRow extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  ArNSWalletIcon(icon: wallet.icon, size: 28),
+                  ArNSWalletIcon(
+                    name: wallet.name,
+                    icon: wallet.icon,
+                    size: 28,
+                  ),
                   const SizedBox(width: ArDriveSpacing.sm),
                   Expanded(
                     child: Text(
@@ -148,12 +153,31 @@ class _WalletRow extends StatelessWidget {
   }
 }
 
-/// A wallet's Wallet Standard icon: a data URI, SVG or bitmap.
+/// A wallet's logo: ours for the wallets we know, else its Wallet Standard
+/// icon (a data URI, SVG or bitmap).
 class ArNSWalletIcon extends StatelessWidget {
-  const ArNSWalletIcon({super.key, required this.icon, this.size = 24});
+  const ArNSWalletIcon({
+    super.key,
+    required this.name,
+    required this.icon,
+    this.size = 24,
+  });
 
+  final String name;
   final String icon;
   final double size;
+
+  /// Solflare's and MetaMask's own icons drew blank on staging; the sign-in
+  /// page's logos draw.
+  static String? _bundled(String name) {
+    final logos = Resources.images.login;
+    return switch (name.toLowerCase()) {
+      'phantom' => logos.phantom,
+      'solflare' => logos.solflare,
+      'metamask' => logos.metamask,
+      _ => null,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,19 +188,31 @@ class ArNSWalletIcon extends StatelessWidget {
       color: colors.iconMid,
     );
     Widget image = fallback;
-    try {
-      final data = UriData.parse(icon);
-      final bytes = data.contentAsBytes();
-      image = data.mimeType.contains('svg')
-          ? SvgPicture.memory(bytes, width: size, height: size)
-          : Image.memory(
-              bytes,
+    final bundled = _bundled(name);
+    if (bundled != null) {
+      image = bundled.endsWith('.svg')
+          ? SvgPicture.asset(bundled, width: size, height: size)
+          : Image.asset(
+              bundled,
               width: size,
               height: size,
               errorBuilder: (_, __, ___) => fallback,
             );
-    } catch (_) {
-      // Not a data URI: the generic wallet icon.
+    } else {
+      try {
+        final data = UriData.parse(icon);
+        final bytes = data.contentAsBytes();
+        image = data.mimeType.contains('svg')
+            ? SvgPicture.memory(bytes, width: size, height: size)
+            : Image.memory(
+                bytes,
+                width: size,
+                height: size,
+                errorBuilder: (_, __, ___) => fallback,
+              );
+      } catch (_) {
+        // Not a data URI: the generic wallet icon.
+      }
     }
     return ClipRRect(
       borderRadius: BorderRadius.circular(ArDriveRadius.sm),

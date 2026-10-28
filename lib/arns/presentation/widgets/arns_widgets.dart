@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:ardrive/arns/domain/arns_cache_time.dart';
 import 'package:ardrive/arns/domain/arns_nameable_item.dart';
 import 'package:ardrive/arns/domain/arns_names.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/truncate_string.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// The icon that stands for a name, beside the name as text: ArNS's own, as
 /// in the left nav's Names entry. The globe is for public drives.
@@ -72,7 +76,7 @@ class ArNSNoNames extends StatelessWidget {
       title: strings.arnsNoNamesTitle,
       message: strings.arnsNoNamesBody,
       actionLabel: strings.arnsGetANameInConsole,
-      onAction: () => openUrl(url: arnsConsoleUrl),
+      onAction: () => openUrl(url: arnsGetNameUrl),
     );
   }
 }
@@ -187,10 +191,18 @@ class ArNSChoiceRow extends StatelessWidget {
 
 /// A small quiet label: "Managed for its owner", "Renews in 12 days".
 class ArNSTag extends StatelessWidget {
-  const ArNSTag({super.key, required this.text, this.warning = false});
+  const ArNSTag({
+    super.key,
+    required this.text,
+    this.warning = false,
+    this.urgent = false,
+  });
 
   final String text;
   final bool warning;
+
+  /// Red: something is about to be lost, such as a lease ending.
+  final bool urgent;
 
   @override
   Widget build(BuildContext context) {
@@ -202,14 +214,22 @@ class ArNSTag extends StatelessWidget {
         vertical: 2,
       ),
       decoration: BoxDecoration(
-        color: warning ? colors.statusWarningContainer : colors.containerL2,
+        color: urgent
+            ? colors.statusErrorContainer
+            : warning
+                ? colors.statusWarningContainer
+                : colors.containerL2,
         borderRadius: BorderRadius.circular(ArDriveRadius.sm),
-        border: warning ? Border.all(color: colors.statusWarningStroke) : null,
+        border: urgent
+            ? Border.all(color: colors.statusErrorStroke)
+            : warning
+                ? Border.all(color: colors.statusWarningStroke)
+                : null,
       ),
       child: Text(
         text,
         style: typography.caption(
-          color: colors.textMid,
+          color: urgent ? colors.statusErrorFg : colors.textMid,
           fontWeight: ArFontWeight.semiBold,
         ),
       ),
@@ -438,13 +458,16 @@ String arnsPointsToLabel(
     ArNSPointsToKind.file => strings.arnsPointsToItem(name),
     ArNSPointsToKind.olderVersion => strings.arnsPointsToOlderVersion(name),
     ArNSPointsToKind.publication => strings.arnsPointsToPublication,
-    ArNSPointsToKind.elsewhere => strings.arnsPointsElsewhere,
+    ArNSPointsToKind.elsewhere => strings.arnsPointsToItem(
+        record.transactionId.length > 16
+            ? truncateString(record.transactionId, offsetStart: 6, offsetEnd: 6)
+            : record.transactionId,
+      ),
   };
 }
 
-/// "Points to" with the item, or "Points elsewhere" (Q22). The transaction
-/// it points to is in the tooltip, not the row: it means nothing to most
-/// people, and nothing here acts on it.
+/// "Points to" with the item; for anything else, the transaction it points
+/// to, shortened, with a copy button.
 class ArNSPointsTo extends StatelessWidget {
   const ArNSPointsTo({super.key, required this.record, this.placeholder});
 
@@ -461,10 +484,70 @@ class ArNSPointsTo extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: typography.paragraphSmall(color: colors.textMid),
     );
+    final id = record.transactionId;
     if (arnsPointsToKind(record, placeholder: placeholder) !=
-        ArNSPointsToKind.elsewhere) {
+            ArNSPointsToKind.elsewhere ||
+        id.length <= 16) {
       return text;
     }
-    return ArDriveTooltip(message: record.transactionId, child: text);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: ArDriveTooltip(
+            message: id,
+            child: Text(
+              truncateString(id, offsetStart: 6, offsetEnd: 6),
+              overflow: TextOverflow.ellipsis,
+              style: typography.paragraphSmall(color: colors.textMid),
+            ),
+          ),
+        ),
+        const SizedBox(width: ArDriveSpacing.xxs),
+        ArNSCopyButton(value: id),
+      ],
+    );
+  }
+}
+
+/// A small copy button that shows a tick for a moment once copied.
+class ArNSCopyButton extends StatefulWidget {
+  const ArNSCopyButton({super.key, required this.value});
+
+  final String value;
+
+  @override
+  State<ArNSCopyButton> createState() => _ArNSCopyButtonState();
+}
+
+class _ArNSCopyButtonState extends State<ArNSCopyButton> {
+  Timer? _reset;
+
+  @override
+  void dispose() {
+    _reset?.cancel();
+    super.dispose();
+  }
+
+  void _copy() {
+    Clipboard.setData(ClipboardData(text: widget.value));
+    _reset?.cancel();
+    setState(() => _reset = Timer(const Duration(seconds: 2), () {
+          if (mounted) setState(() => _reset = null);
+        }));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final strings = appLocalizationsOf(context);
+    final copied = _reset != null;
+    return ArDriveIconButton(
+      icon: copied
+          ? ArDriveIcons.checkmark(size: 16, color: colors.iconMid)
+          : ArDriveIcons.copy(size: 16, color: colors.iconMid),
+      tooltip: copied ? strings.copied : strings.copyTooltip,
+      onPressed: _copy,
+    );
   }
 }
