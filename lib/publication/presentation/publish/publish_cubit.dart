@@ -53,6 +53,7 @@ class PublishDependencies {
     required this.labels,
     required this.cardMark,
     required this.fileCountLabel,
+    this.syncDrive,
   });
 
   final DriveDao driveDao;
@@ -73,6 +74,19 @@ class PublishDependencies {
 
   /// "N files", worded.
   final String Function(int count) fileCountLabel;
+
+  /// Syncs a drive, waiting first for a sync already running, for the Sync
+  /// drive button of a dialog blocked by sync; false when no sync could start.
+  /// [deep] re-reads the drive from its first block: only that reads again
+  /// what an earlier sync skipped, since a plain sync starts where the last
+  /// one stopped and would only clear the record of the gap. [isCancelled]
+  /// says the dialog has closed, so a sync not yet started never starts.
+  /// Null hides the button.
+  final Future<bool> Function(
+    String driveId, {
+    required bool deep,
+    required bool Function() isCancelled,
+  })? syncDrive;
 }
 
 /// The publish dialog (docs/PUBLICATIONS.md, "The publish dialog"): what is
@@ -180,6 +194,36 @@ class PublishCubit extends Cubit<PublishState> {
                 'Try again in a minute.'
             : 'ArDrive could not read the release a page runs from the '
                 'gateway. Try again in a minute.',
+      ));
+    }
+  }
+
+  /// Whether a dialog blocked by sync can sync the drive itself.
+  bool get canSyncDrive =>
+      _deps.syncDrive != null && state.blocked == PublishBlock.sync;
+
+  /// Syncs the drive and checks it again, for a dialog blocked by sync.
+  Future<void> syncDrive() async {
+    final sync = _deps.syncDrive;
+    if (sync == null || !canSyncDrive) return;
+    final deep = _deps.syncSkipSource.statusFor(drive.id).state ==
+        DriveStateSyncSkipState.skipped;
+    emit(const PublishState(stage: PublishStage.syncing));
+    var started = true;
+    try {
+      started = await sync(drive.id, deep: deep, isCancelled: () => isClosed);
+    } catch (e, stackTrace) {
+      // The check that follows says what the sync left.
+      logger.e('[publication] syncing the drive failed', e, stackTrace);
+    }
+    if (isClosed) return;
+    await load();
+    // A sync that never started leaves the same sentence, which would read
+    // as the button doing nothing.
+    if (!started && !isClosed && state.blocked == PublishBlock.sync) {
+      emit(state.copyWith(
+        blockedReason: "A sync couldn't start. Wait for any upload in "
+            'progress to finish, then try again.',
       ));
     }
   }
@@ -667,7 +711,12 @@ class PublishCubit extends Cubit<PublishState> {
     _lastJob = run;
     run.names = names?.plannedNames ?? const [];
     _publishing = true;
-    emit(state.copyWith(stage: PublishStage.publishing, failure: ''));
+    emit(state.copyWith(
+      stage: PublishStage.publishing,
+      failure: '',
+      naming: names?.hasWork == true ? run.names : const [],
+      namingStarted: false,
+    ));
     try {
       final version = await _deps.publisher.publish(
         run,
@@ -681,6 +730,7 @@ class PublishCubit extends Cubit<PublishState> {
       final named = names;
       ArNSFlowOutcome? outcome;
       if (named != null && named.hasWork) {
+        if (!isClosed) emit(state.copyWith(namingStarted: true));
         outcome = await named.applyTo(
           version.txId,
           // GraphQL lags a new version: its names read as a publication now.

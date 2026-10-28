@@ -1,5 +1,11 @@
+import 'package:ardrive/arns/data/arns_change_executor.dart';
+import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dart';
 import 'package:ardrive/core/upload/cost_calculator.dart';
+import 'package:ardrive/drive_state/domain/drive_state_sync_skip_status.dart'
+    show DriveStateSyncSkipStatus;
 import 'package:ardrive/drive_state/domain/drive_state_publish_cost.dart';
+import 'package:ardrive/publication/domain/publication_publisher.dart'
+    show PublicationStep;
 import 'package:ardrive/publication/domain/publication_scope.dart';
 import 'package:ardrive/publication/presentation/publish/publish_cubit.dart';
 import 'package:ardrive/publication/presentation/publish/publish_dialog.dart';
@@ -15,6 +21,9 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockPublishCubit extends MockCubit<PublishState>
     implements PublishCubit {}
+
+class _MockNameCubit extends MockCubit<ArNSNameDialogState>
+    implements ArNSFlowNameCubit {}
 
 const _summary = PublicationSummary(
   fileCount: 3,
@@ -46,6 +55,7 @@ void main() {
     cubit = _MockPublishCubit();
     when(() => cubit.scopeName).thenReturn('Archive');
     when(() => cubit.folder).thenReturn(null);
+    when(() => cubit.canSyncDrive).thenReturn(false);
   });
 
   Widget app(Widget home) => ArDriveTheme(
@@ -98,6 +108,55 @@ void main() {
     expect(find.textContaining('snapshot'), findsNothing);
   });
 
+  testWidgets('what is included counts files and folders, not their size',
+      (tester) async {
+    // The files are stored already: a size here read as uploading them
+    // again.
+    await open(
+      tester,
+      const PublishState(stage: PublishStage.included, summary: _summary),
+    );
+
+    expect(find.text('Files'), findsOneWidget);
+    expect(find.text('Folders'), findsOneWidget);
+    expect(find.text('Size'), findsNothing);
+    expect(find.text('1 KB'), findsNothing);
+  });
+
+  group('blocked by sync', () {
+    final blocked = PublishState(
+      stage: PublishStage.blocked,
+      blocked: PublishBlock.sync,
+      blockedReason: const DriveStateSyncSkipStatus.unknown(
+              'No sync has finished yet. Sync this drive, then try again.')
+          .reason,
+    );
+
+    testWidgets('offers Sync drive, which syncs', (tester) async {
+      when(() => cubit.canSyncDrive).thenReturn(true);
+      when(() => cubit.syncDrive()).thenAnswer((_) async {});
+      await open(tester, blocked);
+
+      expect(find.text('Close'), findsOneWidget);
+      await tester.tap(find.text('Sync drive'));
+      await tester.pump();
+      verify(() => cubit.syncDrive()).called(1);
+    });
+
+    testWidgets('only Close when the dialog cannot sync', (tester) async {
+      await open(tester, blocked);
+
+      expect(find.text('Sync drive'), findsNothing);
+      expect(find.text('Close'), findsOneWidget);
+    });
+
+    testWidgets('says it is syncing while it does', (tester) async {
+      await open(tester, const PublishState(stage: PublishStage.syncing));
+
+      expect(find.text('Syncing this drive...'), findsOneWidget);
+    });
+  });
+
   group('while publishing', () {
     final publishing = PublishState(
       stage: PublishStage.publishing,
@@ -121,6 +180,66 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump();
       expect(find.byType(PublishDialog), findsNothing);
+    });
+  });
+
+  group('a publish with a name', () {
+    final base = PublishState(
+      stage: PublishStage.publishing,
+      summary: _summary,
+      title: 'Archive',
+      cost: _freeCost,
+      step: PublicationStep.warmUp,
+      naming: const ['published_playdead'],
+    );
+
+    testWidgets('lists the name as the last step', (tester) async {
+      await open(tester, base);
+
+      expect(find.text('Getting the page ready'), findsOneWidget);
+      expect(find.text('Updating published_playdead'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('says when the ArNS wallet is waiting for approval',
+        (tester) async {
+      final names = _MockNameCubit();
+      whenListen(
+        names,
+        const Stream<ArNSNameDialogState>.empty(),
+        initialState: const ArNSNameDialogState(
+          mode: ArNSNameDialogMode.nameItem,
+          step: ArNSCommitStep.approve,
+        ),
+      );
+      when(() => cubit.names).thenReturn(names);
+      await open(tester, base.copyWith(namingStarted: true));
+
+      expect(
+          find.text('Approve the change in your ArNS wallet.'), findsOneWidget);
+    });
+
+    testWidgets('says nothing about the wallet while Turbo works',
+        (tester) async {
+      final names = _MockNameCubit();
+      whenListen(
+        names,
+        const Stream<ArNSNameDialogState>.empty(),
+        initialState: const ArNSNameDialogState(
+          mode: ArNSNameDialogMode.nameItem,
+          step: ArNSCommitStep.working,
+        ),
+      );
+      when(() => cubit.names).thenReturn(names);
+      await open(tester, base.copyWith(namingStarted: true));
+
+      expect(find.textContaining('wallet'), findsNothing);
+    });
+
+    testWidgets('names several by count', (tester) async {
+      await open(tester, base.copyWith(naming: const ['a', 'b_a']));
+
+      expect(find.text('Updating 2 names'), findsOneWidget);
     });
   });
 
