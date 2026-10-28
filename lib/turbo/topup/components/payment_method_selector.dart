@@ -59,14 +59,10 @@ class PaymentMethodSelector extends StatelessWidget {
               wrap: (context, segment) => PopupMenuButton<CryptoToken>(
                 initialValue: selectedToken,
                 tooltip: appLocalizationsOf(context).paymentMethodCrypto,
-                // Choosing a token switches to crypto; closing the menu
-                // without one leaves the method as it was.
-                onSelected: (token) {
-                  if (selectedMethod != PaymentMethod.crypto) {
-                    onMethodChanged(PaymentMethod.crypto);
-                  }
-                  onTokenSelected(token);
-                },
+                // Choosing a token switches to crypto (onTokenSelected
+                // carries both); closing the menu without one leaves the
+                // method as it was.
+                onSelected: onTokenSelected,
                 offset: const Offset(0, 40),
                 constraints: const BoxConstraints(minWidth: 300),
                 shape: RoundedRectangleBorder(

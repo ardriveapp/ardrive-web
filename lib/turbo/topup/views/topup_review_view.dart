@@ -136,6 +136,10 @@ class _TurboReviewViewState extends State<TurboReviewView> {
                     child: QuoteTimer(
                       expiresAt: loadedState.quoteExpirationDate,
                       isLoading: payState is PaymentReviewLoadingQuote,
+                      // Redraws the actions so Confirm & Pay turns off.
+                      onExpired: () {
+                        if (mounted) setState(() {});
+                      },
                       onRefresh: () {
                         context
                             .read<PaymentReviewBloc>()

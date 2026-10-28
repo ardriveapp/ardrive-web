@@ -131,7 +131,7 @@ String turboErrorMessage(BuildContext context, TurboErrorType errorType) {
       return appLocalizationsOf(context).turboErrorMessageServer;
     case TurboErrorType.fetchPaymentIntentFailed:
       return appLocalizationsOf(context)
-          .turboErrorMessageEstimationInformationFailed;
+          .turboErrorMessageFetchPaymentIntentFailed;
     case TurboErrorType.fetchEstimationInformationFailed:
       return appLocalizationsOf(context)
           .turboErrorMessageEstimationInformationFailed;

@@ -1,6 +1,7 @@
 import 'package:ardrive/turbo/topup/blocs/crypto_topup/crypto_topup_bloc.dart';
 import 'package:ardrive/turbo/topup/models/crypto_quote.dart';
 import 'package:ardrive/turbo/topup/models/crypto_token.dart';
+import 'package:ardrive/turbo/topup/models/wallet_connection_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -43,5 +44,13 @@ void main() {
 
     expect(state.hasInsufficientBalance, isFalse);
     expect(state.canConfirm, isTrue);
+  });
+
+  test('a balance that failed to load is unknown, not an empty wallet', () {
+    final failed = TokenBalance.error(CryptoToken.usdcBase, 'Failed');
+
+    expect(failed.knownBalanceDisplay, isNull);
+    expect(confirmation(walletUsdc: failed.knownBalanceDisplay).canConfirm,
+        isTrue);
   });
 }

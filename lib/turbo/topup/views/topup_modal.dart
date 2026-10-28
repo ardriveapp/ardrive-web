@@ -372,7 +372,8 @@ class _TurboModalState extends State<TurboModal> with TickerProviderStateMixin {
           // In place of the screen that failed, not a second dialog over it.
           view = TurboErrorView(
             errorType: state.errorType,
-            onDismiss: () => Navigator.of(context).pop(),
+            // The error view's close button pops the dialog itself.
+            onDismiss: () {},
             onTryAgain: () {
               Navigator.of(context).pop();
               showTurboTopupModal(widget.parentContext);
