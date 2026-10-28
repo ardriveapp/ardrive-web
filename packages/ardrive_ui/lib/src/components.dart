@@ -27,6 +27,7 @@ export 'components/scroll_bar.dart';
 export 'components/spinner.dart';
 export 'components/submenu.dart';
 export 'components/tab_view.dart';
+export 'components/tag.dart';
 export 'components/text_field.dart';
 export 'components/text_field_new.dart';
 export 'components/toggle_switch.dart';

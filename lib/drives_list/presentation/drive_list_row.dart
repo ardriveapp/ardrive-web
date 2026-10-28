@@ -727,22 +727,8 @@ class DriveListRow extends StatelessWidget {
 /// its own.
 class _SharedMarker extends StatelessWidget {
   @override
-  Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: _badgeGap, vertical: 2),
-      decoration: BoxDecoration(
-        color: colorTokens.containerL3,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        appLocalizationsOf(context).driveSharedWithMe,
-        style: typography.paragraphSmall(color: colorTokens.textMid),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      ArDriveTag(text: appLocalizationsOf(context).driveSharedWithMe);
 }
 
 /// What the row says about when this drive was last read.

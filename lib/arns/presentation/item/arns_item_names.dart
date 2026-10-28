@@ -402,44 +402,17 @@ class _NameChipView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
     final host = arnsHostFor(names.first);
     final more = names.length - 1;
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: ArDriveSpacing.xs),
       child: ArDriveTooltip(
         message: names.map(arnsHostFor).join('\n'),
-        child: Container(
+        child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 200),
-          padding: const EdgeInsets.symmetric(
-            horizontal: ArDriveSpacing.xs,
-            vertical: 2,
-          ),
-          decoration: BoxDecoration(
-            color: colors.containerL2,
-            borderRadius: BorderRadius.circular(ArDriveRadius.lg),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(arnsNameIcon, size: 12, color: colors.iconMid),
-              if (!iconOnly) ...[
-                const SizedBox(width: ArDriveSpacing.xxs),
-                Flexible(
-                  child: Text(
-                    more > 0 ? '$host +$more' : host,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    softWrap: false,
-                    style: typography.caption(
-                      color: colors.textMid,
-                      fontWeight: ArFontWeight.semiBold,
-                    ),
-                  ),
-                ),
-              ],
-            ],
+          child: ArDriveTag(
+            icon: arnsNameIcon,
+            text: iconOnly ? null : (more > 0 ? '$host +$more' : host),
           ),
         ),
       ),
