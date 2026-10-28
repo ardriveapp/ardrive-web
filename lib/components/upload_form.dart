@@ -1482,6 +1482,9 @@ class _SelectPaymentMethodManifestUploadState
   }
 }
 
+/// The upload's percentage ring. Drawn here rather than with ArDriveSpinner:
+/// a 40px ring in the brand red with the percentage inside is its own
+/// indicator, not a loading spinner.
 class CircularProgressWidget extends StatelessWidget {
   final double progress; // progress value from 0 to 100
 

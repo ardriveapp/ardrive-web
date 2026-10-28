@@ -66,8 +66,8 @@ class _CopyButtonState extends State<CopyButton> {
                 size: widget.size,
                 color: ArDriveTheme.of(context)
                     .themeData
-                    .colors
-                    .themeSuccessDefault,
+                    .colorTokens
+                    .statusSuccessFg,
               )
             : ArDriveIcons.copy(size: widget.size),
       ),
@@ -128,8 +128,7 @@ class _CopyButtonState extends State<CopyButton> {
     final Offset buttonPosition = button.localToGlobal(Offset.zero);
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final errorColor =
-        ArDriveTheme.of(context).themeData.colors.themeErrorDefault;
+    final errorColor = colorTokens.statusErrorFg;
     final localizations = appLocalizationsOf(context);
 
     return OverlayEntry(

@@ -664,7 +664,7 @@ class AppConfigWindowManagerState extends State<AppConfigWindowManager> {
 
       case ArDriveDevToolOptionType.turboCredits:
         final optionAsBigInt = option as ArDriveDevToolOption<BigInt?>;
-        return ArDriveTextField(
+        return ArDriveTextFieldNew(
           label: optionAsBigInt.name,
           initialValue: optionAsBigInt.value != null
               ? (optionAsBigInt.value! / BigInt.from(1000000000000)).toString()
@@ -756,7 +756,7 @@ class DraggableWindow extends HookWidget {
                 Container(
                   height: 64,
                   color:
-                      ArDriveTheme.of(context).themeData.colors.themeFgDefault,
+                      ArDriveTheme.of(context).themeData.colorTokens.textHigh,
                   child: Row(
                     mainAxisSize: MainAxisSize.max,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -777,11 +777,13 @@ class DraggableWindow extends HookWidget {
                             child: Text(
                               value,
                               key: ValueKey<String>(value),
-                              style: ArDriveTypography.body.bodyBold(
+                              style: ArDriveTypographyNew.of(context)
+                                  .paragraphNormal(
+                                fontWeight: ArFontWeight.bold,
                                 color: ArDriveTheme.of(context)
                                     .themeData
-                                    .colors
-                                    .themeBgCanvas,
+                                    .colorTokens
+                                    .containerL0,
                               ),
                             ),
                           ),
@@ -821,8 +823,8 @@ class DraggableWindow extends HookWidget {
                         Icons.open_with,
                         color: ArDriveTheme.of(context)
                             .themeData
-                            .colors
-                            .themeFgDefault,
+                            .colorTokens
+                            .iconHigh,
                       ),
                     ),
                   ),

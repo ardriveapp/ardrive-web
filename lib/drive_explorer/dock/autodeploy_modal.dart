@@ -31,7 +31,7 @@ class _AutoDeployWidgetState extends State<AutoDeployWidget> {
                 style: typography.paragraphLarge(fontWeight: ArFontWeight.bold),
               ),
               const SizedBox(height: 16),
-              const LinearProgressIndicator(),
+              const ArDriveLinearProgress(),
             ],
           );
         }

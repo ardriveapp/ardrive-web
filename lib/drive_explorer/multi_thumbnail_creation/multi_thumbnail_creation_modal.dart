@@ -198,7 +198,7 @@ class _MultiThumbnailCreationModalContentState
 
         if (state is MultiThumbnailCreationLoadingFiles) {
           return const Center(
-            child: CircularProgressIndicator(),
+            child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
           );
         }
 

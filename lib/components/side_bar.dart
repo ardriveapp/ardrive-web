@@ -157,8 +157,8 @@ class _AppSideBarState extends State<AppSideBar> {
                             size: defaultIconSize,
                             color: ArDriveTheme.of(context)
                                 .themeData
-                                .colors
-                                .themeFgDefault,
+                                .colorTokens
+                                .iconHigh,
                           ),
                           onPressed: () => Scaffold.of(context).closeDrawer(),
                         ),
@@ -685,8 +685,8 @@ class DriveListTile extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: ArDriveTheme.of(context)
                           .themeData
-                          .colors
-                          .themeErrorOnEmphasis,
+                          .colorTokens
+                          .statusErrorFg,
                       shape: BoxShape.circle,
                     ),
                   ),

@@ -569,7 +569,9 @@ class _ChooseImage extends StatelessWidget {
             builder: (context, snapshot) {
               final files = snapshot.data;
               if (files == null) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+                );
               }
               if (files.isEmpty) {
                 return Text(strings.publishNoImagesInDrive,

@@ -425,10 +425,9 @@ class PublishDialog extends StatelessWidget {
       title: title,
       content: Row(
         children: [
-          const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
+          const SizedBox.square(
+            dimension: 20,
+            child: Center(child: ArDriveSpinner()),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -751,7 +750,7 @@ class _Progress extends StatelessWidget {
                 child: i < currentIndex
                     ? ArDriveIcons.checkCirle(size: 20, color: colors.iconHigh)
                     : i == currentIndex
-                        ? const CircularProgressIndicator(strokeWidth: 2)
+                        ? const Center(child: ArDriveSpinner())
                         : null,
               ),
               const SizedBox(width: 12),

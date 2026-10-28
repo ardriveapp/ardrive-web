@@ -42,7 +42,14 @@ class _FolderSelectorState extends State<FolderSelector> {
         String title;
         String description = '';
         Widget content;
-        final colors = ArDriveTheme.of(context).themeData.colors;
+        final colors = ArDriveTheme.of(context).themeData.colorTokens;
+        final typography = ArDriveTypographyNew.of(context);
+        // A row's label: bold when it's the one chosen.
+        TextStyle rowStyle(Color? color, {bool chosen = false}) =>
+            typography.paragraphLarge(
+              color: color,
+              fontWeight: chosen ? ArFontWeight.bold : ArFontWeight.semiBold,
+            );
         final actions = <ModalAction>[];
         if (state is SelectingDriveState) {
           final publicDrives =
@@ -59,11 +66,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                   if (publicDrives.isNotEmpty) ...[
                     Text(
                       'Public drives',
-                      style: ArDriveTypography.body.buttonLargeBold(
-                          color: ArDriveTheme.of(context)
-                              .themeData
-                              .colors
-                              .themeFgDefault),
+                      style: rowStyle(colors.textHigh),
                     ),
                     const Divider(),
                     ListView.builder(
@@ -74,11 +77,11 @@ class _FolderSelectorState extends State<FolderSelector> {
                       itemBuilder: (context, index) {
                         final publicDrive = publicDrives[index];
                         final color = state.selectedDrive == null
-                            ? colors.themeFgDefault
+                            ? colors.textHigh
                             : state.selectedDrive != null
                                 ? publicDrive.id == state.selectedDrive!.id
-                                    ? colors.themeFgDefault
-                                    : colors.themeAccentDisabled
+                                    ? colors.textHigh
+                                    : colors.textLow
                                 : null;
                         return ListTile(
                           leading: ArDriveIcons.addDrive(
@@ -86,14 +89,10 @@ class _FolderSelectorState extends State<FolderSelector> {
                           ),
                           title: Text(
                             publicDrive.name,
-                            style: ArDriveTypography.body
-                                .buttonLargeBold(color: color)
-                                .copyWith(
-                                  fontWeight:
-                                      state.selectedDrive?.id == publicDrive.id
-                                          ? FontWeight.w700
-                                          : null,
-                                ),
+                            style: rowStyle(
+                              color,
+                              chosen: state.selectedDrive?.id == publicDrive.id,
+                            ),
                           ),
                           onTap: () {
                             context
@@ -106,8 +105,7 @@ class _FolderSelectorState extends State<FolderSelector> {
                   ],
                   if (privateDrives.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    Text('Private drives',
-                        style: ArDriveTypography.body.buttonLargeBold()),
+                    Text('Private drives', style: rowStyle(colors.textHigh)),
                     const Divider(),
                     ListView.builder(
                       padding: EdgeInsets.zero,
@@ -116,11 +114,11 @@ class _FolderSelectorState extends State<FolderSelector> {
                       itemBuilder: (context, index) {
                         final privateDrive = privateDrives[index];
                         final color = state.selectedDrive == null
-                            ? colors.themeFgDefault
+                            ? colors.textHigh
                             : state.selectedDrive != null
                                 ? privateDrive.id == state.selectedDrive!.id
-                                    ? colors.themeFgDefault
-                                    : colors.themeAccentDisabled
+                                    ? colors.textHigh
+                                    : colors.textLow
                                 : null;
                         return ListTile(
                           leading: ArDriveIcons.addDrive(
@@ -128,16 +126,11 @@ class _FolderSelectorState extends State<FolderSelector> {
                           ),
                           title: Text(
                             privateDrive.name,
-                            style: ArDriveTypography.body
-                                .buttonLargeBold(
-                                  color: color,
-                                )
-                                .copyWith(
-                                  fontWeight:
-                                      state.selectedDrive?.id == privateDrive.id
-                                          ? FontWeight.w700
-                                          : null,
-                                ),
+                            style: rowStyle(
+                              color,
+                              chosen:
+                                  state.selectedDrive?.id == privateDrive.id,
+                            ),
                           ),
                           onTap: () {
                             context
@@ -153,7 +146,7 @@ class _FolderSelectorState extends State<FolderSelector> {
             ),
           );
           actions.add(
-            ModalAction(
+            ModalAction.dismiss(
               title: 'Cancel',
               action: () {
                 Navigator.of(context).pop();
@@ -195,13 +188,8 @@ class _FolderSelectorState extends State<FolderSelector> {
                                     getIconForContentType('folder', size: 24),
                                 title: Text(
                                   'Root folder',
-                                  style: ArDriveTypography.body
-                                      .buttonLargeBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgDefault)
-                                      .copyWith(fontWeight: FontWeight.w700),
+                                  style:
+                                      rowStyle(colors.textHigh, chosen: true),
                                 ),
                               ),
                             ),
@@ -228,13 +216,8 @@ class _FolderSelectorState extends State<FolderSelector> {
                                     getIconForContentType('folder', size: 24),
                                 title: Text(
                                   state.selectedFolder!.name,
-                                  style: ArDriveTypography.body
-                                      .buttonLargeBold(
-                                          color: ArDriveTheme.of(context)
-                                              .themeData
-                                              .colors
-                                              .themeFgDefault)
-                                      .copyWith(fontWeight: FontWeight.w700),
+                                  style:
+                                      rowStyle(colors.textHigh, chosen: true),
                                 ),
                               ),
                             ),
@@ -254,12 +237,12 @@ class _FolderSelectorState extends State<FolderSelector> {
                     physics: const ScrollPhysics(),
                     itemBuilder: (context, index) {
                       final color = state.selectedFolder == null
-                          ? colors.themeFgSubtle
+                          ? colors.textMid
                           : state.selectedFolder != null
                               ? state.folders[index].id ==
                                       state.selectedFolder!.id
                                   ? null
-                                  : colors.themeAccentDisabled
+                                  : colors.textLow
                               : null;
                       return SizedBox(
                         width: 200,
@@ -268,15 +251,11 @@ class _FolderSelectorState extends State<FolderSelector> {
                               color: color, size: 24),
                           title: Text(
                             state.folders[index].name,
-                            style: ArDriveTypography.body
-                                .buttonLargeBold(
-                                  color: color,
-                                )
-                                .copyWith(
-                                    fontWeight: state.selectedFolder?.id ==
-                                            state.folders[index].id
-                                        ? FontWeight.w700
-                                        : null),
+                            style: rowStyle(
+                              color,
+                              chosen: state.selectedFolder?.id ==
+                                  state.folders[index].id,
+                            ),
                           ),
                           onTap: () {
                             context.read<FolderSelectorBloc>().add(
@@ -293,7 +272,7 @@ class _FolderSelectorState extends State<FolderSelector> {
           );
 
           actions.addAll([
-            ModalAction(
+            ModalAction.dismiss(
               title: 'Back',
               action: () {
                 context.read<FolderSelectorBloc>().add(SelectDriveEvent(
@@ -313,12 +292,14 @@ class _FolderSelectorState extends State<FolderSelector> {
           ]);
         } else {
           title = 'Loading';
-          content = const Center(child: CircularProgressIndicator());
+          content = const Center(
+            child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+          );
         }
 
-        return ArDriveStandardModal(
+        return ArDriveStandardModalNew(
           title: title,
-          description: description,
+          description: description.isEmpty ? null : description,
           actions: actions,
           content: SizedBox(
             height: 400,

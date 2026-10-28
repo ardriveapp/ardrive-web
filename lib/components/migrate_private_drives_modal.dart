@@ -103,17 +103,13 @@ class _PrivateDriveMigrationDialogState
                         itemBuilder: (BuildContext context, int index) {
                           final drive = drivesToMigrate[index];
                           final indicator = (completed.contains(drive))
-                              ? const Icon(
+                              ? Icon(
                                   Icons.check,
                                   size: 16.0,
-                                  color: Colors.green,
+                                  color: colorTokens.statusSuccessFg,
                                 )
                               : (drive == driveInProgress)
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(),
-                                    )
+                                  ? const ArDriveSpinner()
                                   : ArDriveIcons.privateDrive(
                                       size: 16.0,
                                       color: colorTokens.textMid,
