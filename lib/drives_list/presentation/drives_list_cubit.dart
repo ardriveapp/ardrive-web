@@ -29,7 +29,9 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     required SyncCubit syncCubit,
     required DriveDao driveDao,
     required UserPreferencesRepository userPreferencesRepository,
+    DriveScope initialScope = DriveScope.all,
   })  : _drivesCubit = drivesCubit,
+        _scope = initialScope,
         _syncCubit = syncCubit,
         _driveDao = driveDao,
         _userPreferencesRepository = userPreferencesRepository,
@@ -347,7 +349,7 @@ class DrivesListCubit extends Cubit<DrivesListState> {
   }
 
   /// Which drives the list is showing. See [DriveScope].
-  DriveScope _scope = DriveScope.all;
+  DriveScope _scope;
 
   DriveScope get scope => _scope;
 

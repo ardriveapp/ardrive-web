@@ -427,8 +427,10 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('the list does not stretch across a 1920 monitor',
-        (tester) async {
+    /// Every list page fills its width, as Web pages and Names do. The cap
+    /// at 1200px left a band of empty page beside the list on a wide
+    /// monitor, and the four pages did not line up.
+    testWidgets('the list fills a 1920 monitor', (tester) async {
       await pumpBody(
         tester,
         DrivesListLoaded(drives: [drive(id: 'a', name: 'Photos')]),
@@ -436,10 +438,7 @@ void main() {
       );
 
       expect(tester.getSize(find.byType(DrivesListBody)).width, 1920);
-      expect(
-        tester.getSize(find.byType(DriveListRow)).width,
-        lessThanOrEqualTo(driveListMaxContentWidth),
-      );
+      expect(tester.getSize(find.byType(DriveListRow)).width, 1920);
     });
   });
 

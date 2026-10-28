@@ -9,12 +9,15 @@ import 'package:ardrive/arns/presentation/name_dialog/arns_name_dialog_cubit.dar
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/arns/presentation/widgets/arns_widgets.dart';
 import 'package:ardrive/blocs/drives/drives_cubit.dart';
-import 'package:ardrive/components/profile_card.dart';
-import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/components/copy_button.dart';
+import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/components/list_page/list_page_layout.dart';
+import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/drives_list/presentation/open_drive_on_selection.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive/utils/show_general_dialog.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -23,8 +26,6 @@ import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 /// From 30 days before a lease ends, "Renews in 12 days".
 const arnsRenewalNoticeWindow = Duration(days: 30);
@@ -55,9 +56,10 @@ class ArNSNamesShell extends StatelessWidget {
   }
 }
 
-/// On the web › Names: every name and undername the ArNS wallet owns or
-/// manages, what each points to and its cache time (docs/NAMES.md, "The
-/// Names page"). Read from ArNS again each time it opens.
+/// Names: every name the ArNS wallet owns or manages, in the list pages'
+/// frame (docs/NAMES.md, "The Names page"). A click shows a name's details
+/// beside the list, a double-click opens its page. Read from ArNS again each
+/// time it opens.
 class ArNSNamesPage extends StatefulWidget {
   const ArNSNamesPage({super.key});
 
@@ -74,61 +76,149 @@ class _ArNSNamesPageState extends State<ArNSNamesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenTypeLayout.builder(
-      mobile: (context) => Scaffold(
-        drawerScrimColor: ArDriveTheme.of(context)
-            .themeData
-            .colorTokens
-            .containerL0
-            .withOpacity(0.5),
-        drawer: const AppSideBar(),
-        appBar: const MobileAppBar(),
-        body: const ArNSNamesView(isPhone: true),
-      ),
-      desktop: (context) => const Padding(
-        padding: EdgeInsets.only(top: 32, right: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [ProfileCard()],
-            ),
-            SizedBox(height: ArDriveSpacing.lg),
-            Expanded(child: ArNSNamesView(isPhone: false)),
-          ],
-        ),
-      ),
+    return const ListPageChrome(
+      desktopChild: ArNSNamesBody(),
+      child: ArNSNamesView(),
     );
   }
 }
 
-/// The page's content, without the shell: the header and the names.
-class ArNSNamesView extends StatelessWidget {
-  const ArNSNamesView({super.key, required this.isPhone});
+/// The names with one name's details beside them, as desktop shows it.
+class ArNSNamesBody extends StatelessWidget {
+  const ArNSNamesBody({super.key, this.initialChosenId});
 
-  final bool isPhone;
+  /// See [ListDetailsHost.initialChosenId].
+  final String? initialChosenId;
+
+  @override
+  Widget build(BuildContext context) {
+    final names = context.watch<ArNSNamesCubit>().state;
+    return ListDetailsHost(
+      initialChosenId: initialChosenId,
+      buildBody: ({chosenId, onChoose}) =>
+          ArNSNamesView(chosenId: chosenId, onChoose: onChoose),
+      panelFor: (context, id, close) {
+        final name = names.nameOf(id);
+        if (name == null || name.isExpired(DateTime.now())) return null;
+        return ArNSNameDetailsPanel(
+          key: ValueKey('name-details-$id'),
+          name: name,
+          onClose: close,
+        );
+      },
+    );
+  }
+}
+
+enum ArNSNamesSort { name, leaseEnds }
+
+/// The narrowest list that draws the names' columns; narrower, each name is
+/// a stacked card.
+const double arnsNamesColumnsFrom = 520;
+
+bool _showsColumns(BuildContext context, double width) =>
+    width - listRowHorizontalPadding * 2 - listMenuGutter >=
+    arnsNamesColumnsFrom * MediaQuery.textScalerOf(context).scale(1);
+
+/// The page's content under the top bar: the title row and the names.
+class ArNSNamesView extends StatefulWidget {
+  const ArNSNamesView({super.key, this.chosenId, this.onChoose});
+
+  /// The name whose details are open beside the list, if any.
+  final String? chosenId;
+
+  /// A click on a row: show its details. Null where there is no room.
+  final void Function(String name)? onChoose;
+
+  @override
+  State<ArNSNamesView> createState() => _ArNSNamesViewState();
+}
+
+class _ArNSNamesViewState extends State<ArNSNamesView> {
+  ArNSNamesSort _sort = ArNSNamesSort.name;
+  bool _ascending = true;
+
+  void _sortBy(ArNSNamesSort column) => setState(() {
+        if (_sort == column) {
+          _ascending = !_ascending;
+        } else {
+          _sort = column;
+          _ascending = true;
+        }
+      });
+
+  List<ArNSManagedName> _sorted(List<ArNSManagedName> names) {
+    // A name bought for good never ends: after every lease.
+    final never = DateTime(9999);
+    int compare(ArNSManagedName a, ArNSManagedName b) => switch (_sort) {
+          ArNSNamesSort.name => a.name.compareTo(b.name),
+          ArNSNamesSort.leaseEnds =>
+            (a.endTimestamp ?? never).compareTo(b.endTimestamp ?? never),
+        };
+    return [...names]
+      ..sort((a, b) => _ascending ? compare(a, b) : compare(b, a));
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ArNSWalletCubit, ArNSWalletState>(
       builder: (context, wallet) => BlocBuilder<ArNSNamesCubit, ArNSNamesState>(
-        builder: (context, names) {
-          final padding = EdgeInsets.symmetric(
-            horizontal: isPhone ? ArDriveSpacing.md : 0,
-            vertical: isPhone ? ArDriveSpacing.md : 0,
-          );
-          final body = _body(context, wallet, names);
-          return ListView(
-            padding: padding.copyWith(bottom: ArDriveSpacing.xl),
-            children: [
-              _Header(wallet: wallet, names: names, isPhone: isPhone),
-              const SizedBox(height: ArDriveSpacing.lg),
-              ...body,
-            ],
-          );
-        },
+        builder: (context, names) => LayoutBuilder(
+          builder: (context, constraints) {
+            final showsColumns = _showsColumns(context, constraints.maxWidth);
+            return ArDriveScrollBar(
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _titleRow(context, wallet, names),
+                  ),
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: listPageBlockGap),
+                  ),
+                  ..._body(context, wallet, names, showsColumns),
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: listPageSectionGap),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
+    );
+  }
+
+  Widget _titleRow(
+    BuildContext context,
+    ArNSWalletState wallet,
+    ArNSNamesState names,
+  ) {
+    final strings = appLocalizationsOf(context);
+    final typography = ArDriveTypographyNew.of(context);
+    return ListPageTitleRow(
+      title: Row(
+        children: [
+          Flexible(child: ListPageTitleRow.text(context, strings.arnsNames)),
+          if (names.refreshing && names.status == ArNSNamesStatus.loaded)
+            const Padding(
+              padding: EdgeInsets.only(left: ArDriveSpacing.sm),
+              child: ArDriveSpinner(),
+            ),
+        ],
+      ),
+      action: wallet.linked == null
+          ? null
+          : ArDriveButtonNew(
+              text: strings.arnsGetAName,
+              typography: typography,
+              variant: ButtonVariant.secondary,
+              maxWidth: ArDriveButtonNew.fittedWidth(
+                context,
+                strings.arnsGetAName,
+                minWidth: 96,
+              ),
+              onPressed: () => openUrl(url: arnsGetNameUrl),
+            ),
     );
   }
 
@@ -136,22 +226,34 @@ class ArNSNamesView extends StatelessWidget {
     BuildContext context,
     ArNSWalletState wallet,
     ArNSNamesState names,
+    bool showsColumns,
   ) {
     final strings = appLocalizationsOf(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    Widget box(Widget child) => SliverToBoxAdapter(child: child);
+    Widget padded(Widget child) => box(Padding(
+          padding: const EdgeInsets.fromLTRB(
+            listPagePadding,
+            0,
+            listPagePadding,
+            listPageBlockGap,
+          ),
+          child: child,
+        ));
 
     if (wallet.linked == null) {
       return [
-        const SizedBox(height: ArDriveSpacing.xl),
-        ArDriveEmptyState(
-          icon: Icon(arnsNameIcon, size: 32, color: colors.iconLow),
-          title: strings.arnsLinkWalletTitle,
-          message: strings.arnsLinkWalletPageBody,
-          actionLabel: strings.arnsLinkSolanaWallet,
-          onAction: () => showArNSWalletDialog(context),
-          secondaryActionLabel: strings.arnsWhatIsArNS,
-          onSecondaryAction: () => openUrl(url: arnsDocsUrl),
-        ),
+        box(ListPageMessage(
+          child: ArDriveEmptyState(
+            icon: Icon(arnsNameIcon, size: 32, color: colors.iconLow),
+            title: strings.arnsLinkWalletTitle,
+            message: strings.arnsLinkWalletPageBody,
+            actionLabel: strings.arnsLinkSolanaWallet,
+            onAction: () => showArNSWalletDialog(context),
+            secondaryActionLabel: strings.arnsWhatIsArNS,
+            onSecondaryAction: () => openUrl(url: arnsDocsUrl),
+          ),
+        )),
       ];
     }
 
@@ -159,105 +261,329 @@ class ArNSNamesView extends StatelessWidget {
       case ArNSNamesStatus.none:
       case ArNSNamesStatus.loading:
         return [
-          const SizedBox(height: ArDriveSpacing.xl),
-          const Center(child: ArDriveSpinner(size: ArDriveSpinnerSize.large)),
+          box(const ListPageMessage(
+            child: ArDriveSpinner(size: ArDriveSpinnerSize.large),
+          )),
         ];
       case ArNSNamesStatus.failed:
         return [
-          ArDriveNotice(
+          padded(ArDriveNotice(
             type: ArDriveNoticeType.error,
             message: strings.arnsNamesCouldNotBeRead,
             actionLabel: strings.tryAgain,
             onAction: () => context.read<ArNSNamesCubit>().refresh(),
-          ),
+          )),
         ];
       case ArNSNamesStatus.loaded:
         break;
     }
 
-    if (names.names.isEmpty) {
-      return [
-        const SizedBox(height: ArDriveSpacing.xl),
-        const ArNSNoNames(),
-      ];
+    final now = DateTime.now();
+    final shown = _sorted([
+      for (final name in names.names)
+        if (!name.isExpired(now)) name,
+    ]);
+    if (shown.isEmpty) {
+      return [box(const ListPageMessage(child: ArNSNoNames()))];
     }
 
-    final now = DateTime.now();
+    final rows = SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final name = shown[index];
+          return ArNSNameRow(
+            key: ValueKey(name.name),
+            name: name,
+            now: now,
+            showsColumns: showsColumns,
+            chosen:
+                widget.onChoose == null ? null : widget.chosenId == name.name,
+            onChoose: widget.onChoose == null
+                ? null
+                : () => widget.onChoose!(name.name),
+          );
+        },
+        childCount: shown.length,
+      ),
+    );
+
     return [
-      if (names.refreshFailed) ...[
-        ArDriveNotice(
+      if (names.refreshFailed)
+        padded(ArDriveNotice(
           type: ArDriveNoticeType.warning,
           message: strings.arnsShowingLastRead,
           actionLabel: strings.tryAgain,
           onAction: () => context.read<ArNSNamesCubit>().refresh(),
-        ),
-        const SizedBox(height: ArDriveSpacing.md),
-      ],
-      for (final name in names.names)
-        if (!name.isExpired(now)) ...[
-          _NameCard(name: name, now: now, isPhone: isPhone),
-          const SizedBox(height: ArDriveSpacing.md),
-        ],
+        )),
+      if (showsColumns)
+        ListTablePanel(
+          header: ListTableHeader<ArNSNamesSort>(
+            sort: _sort,
+            sortAscending: _ascending,
+            onSort: _sortBy,
+            columns: [
+              ListColumn(strings.arnsName, _nameFlex,
+                  sortKey: ArNSNamesSort.name),
+              ListColumn(strings.arnsUndernames, _undernamesFlex),
+              ListColumn(strings.arnsLeaseEndsHeading, _leaseFlex,
+                  sortKey: ArNSNamesSort.leaseEnds),
+            ],
+          ),
+          rows: rows,
+        )
+      else
+        rows,
     ];
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.wallet,
-    required this.names,
-    required this.isPhone,
+const _nameFlex = 5;
+const _undernamesFlex = 3;
+const _leaseFlex = 4;
+
+/// When a name's lease ends: a date, red status text from
+/// [arnsRenewalNoticeWindow] before ("Ends in 12 days") and in its grace
+/// period ("Ended"), "Never" for a name bought for good.
+class ArNSLeaseCell extends StatelessWidget {
+  const ArNSLeaseCell({
+    super.key,
+    required this.name,
+    required this.now,
+    this.underHeading = true,
   });
 
-  final ArNSWalletState wallet;
-  final ArNSNamesState names;
-  final bool isPhone;
+  final ArNSManagedName name;
+  final DateTime now;
+
+  /// False on a stacked card, where no heading says what a bare date is:
+  /// "Lease ends Jun 25, 2027".
+  final bool underHeading;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final end = name.endTimestamp;
+    if (end == null) return ListTextCell(strings.arnsLeaseNeverEnds);
+    // A lease about to be lost is said in red, as status text, not boxed.
+    Widget status(String text) => Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: ArDriveStatusText(
+            text: text,
+            type: ArDriveStatusType.error,
+            maxLines: 1,
+          ),
+        );
+    if (name.isInGracePeriod(now)) return status(strings.arnsLeaseEnded);
+    final left = end.difference(now);
+    if (left <= arnsRenewalNoticeWindow) {
+      final days = left.inDays.clamp(0, 30);
+      // Under the Lease ends heading the short form; on a card, which has
+      // no heading, the whole sentence.
+      return status(
+        underHeading
+            ? strings.arnsEndsInDays(days)
+            : strings.arnsLeaseEndsInDays(days),
+      );
+    }
+    return ListTextCell(
+      underHeading ? formatDate(end) : strings.arnsLeaseEnds(formatDate(end)),
+    );
+  }
+}
+
+/// A name needs renewing: within [arnsRenewalNoticeWindow] of its lease
+/// ending, or in its grace period.
+bool arnsNeedsRenewal(ArNSManagedName name, DateTime now) {
+  final end = name.endTimestamp;
+  return end != null && end.difference(now) <= arnsRenewalNoticeWindow;
+}
+
+/// One name, as a table row or a stacked card.
+class ArNSNameRow extends StatelessWidget {
+  const ArNSNameRow({
+    super.key,
+    required this.name,
+    required this.now,
+    required this.showsColumns,
+    this.chosen,
+    this.onChoose,
+  });
+
+  final ArNSManagedName name;
+  final DateTime now;
+  final bool showsColumns;
+  final bool? chosen;
+  final VoidCallback? onChoose;
 
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-    final linked = wallet.linked;
-
-    final title = Row(
-      children: [
-        Expanded(
-          child: Text(
-            strings.arnsNames,
-            style: typography.heading3(
-              color: colors.textHigh,
-              fontWeight: ArFontWeight.bold,
-            ),
-          ),
-        ),
-        if (names.refreshing && names.status == ArNSNamesStatus.loaded)
-          const Padding(
-            padding: EdgeInsets.only(right: ArDriveSpacing.sm),
-            child: ArDriveSpinner(),
-          ),
-        if (linked != null)
-          ArDriveButtonNew(
-            text: strings.arnsGetAName,
-            typography: typography,
-            variant: ButtonVariant.secondary,
-            onPressed: () => openUrl(url: arnsGetNameUrl),
-          ),
+    final title = ListNameCell(
+      icon: Icon(arnsNameIcon,
+          size: ListNameCell.iconSize, color: colors.textMid),
+      title: name.name,
+      marks: [
+        if (name.role == ArNSRole.controller)
+          ArDriveTag(text: strings.arnsManagedForOwner),
       ],
     );
+    final undernames = ListTextCell(
+        strings.arnsUndernamesOf(name.undernamesUsed, name.undernameLimit));
+    final lease = ArNSLeaseCell(name: name, now: now);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        title,
-        const SizedBox(height: ArDriveSpacing.xxs),
-        // The ArNS wallet's address is in the profile card, where it is
-        // linked and changed; here it was one more thing to read.
-        Text(
-          strings.arnsNamesPageIntro,
-          style: typography.paragraphNormal(color: colors.textMid),
+    return ListTableRow(
+      semanticLabel: name.name,
+      onOpen: () =>
+          context.read<AppRouterDelegate>().showNames(name: name.name),
+      showsColumns: showsColumns,
+      chosen: chosen,
+      onChoose: onChoose,
+      menu: ArNSNameMenu(name: name),
+      child: showsColumns
+          ? ListColumnsRow(
+              flexes: const [_nameFlex, _undernamesFlex, _leaseFlex],
+              cells: [title, undernames, lease],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                title,
+                const SizedBox(height: listStackedGap),
+                ListTextCell(strings.arnsUndernamesUsed(
+                    name.undernamesUsed, name.undernameLimit)),
+                // A name bought for good has no lease to speak of.
+                if (name.endTimestamp != null) ...[
+                  const SizedBox(height: listStackedGap),
+                  ArNSLeaseCell(name: name, now: now, underHeading: false),
+                ],
+              ],
+            ),
+    );
+  }
+}
+
+/// A name's ⋮ menu: Open, Renew, Copy link.
+class ArNSNameMenu extends StatelessWidget {
+  const ArNSNameMenu({super.key, required this.name});
+
+  final ArNSManagedName name;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    ArDriveDropdownItem item(String label, IconData icon, VoidCallback onTap) =>
+        ArDriveDropdownItem(
+          onClick: onTap,
+          content: ArDriveDropdownItemTile(
+            name: label,
+            icon: ArDriveIcon(icon: icon, size: ListRowMenu.iconSize),
+          ),
+        );
+    return ListRowMenu(
+      label: strings.showMenu,
+      items: [
+        item(strings.listOpen, Icons.arrow_forward,
+            () => context.read<AppRouterDelegate>().showNames(name: name.name)),
+        if (name.endTimestamp != null)
+          item(strings.arnsRenew, Icons.autorenew,
+              () => openUrl(url: arnsRenewUrlFor(name.name))),
+        item(
+          strings.copyLink,
+          Icons.link,
+          () => Clipboard.setData(ClipboardData(text: arnsUrlFor(name.name))),
         ),
+      ],
+    );
+  }
+}
+
+/// A name's details beside the Names list: when its lease ends, with Renew;
+/// undernames used; its link; and its page.
+class ArNSNameDetailsPanel extends StatelessWidget {
+  const ArNSNameDetailsPanel({
+    super.key,
+    required this.name,
+    required this.onClose,
+  });
+
+  final ArNSManagedName name;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final now = DateTime.now();
+    final host = arnsHostFor(name.name);
+    void open() => context.read<AppRouterDelegate>().showNames(name: name.name);
+
+    Widget button(String text, VoidCallback onPressed,
+            {bool primary = false}) =>
+        ArDriveButtonNew(
+          text: text,
+          typography: typography,
+          variant: primary ? ButtonVariant.primary : ButtonVariant.secondary,
+          size: ArDriveButtonSize.compact,
+          maxWidth: ArDriveButtonNew.fittedWidth(context, text, minWidth: 96),
+          onPressed: onPressed,
+        );
+
+    return ListDetailsPanel(
+      onClose: onClose,
+      icon: Icon(arnsNameIcon, size: 24, color: colors.textMid),
+      title: host,
+      marks: [
+        if (name.role == ArNSRole.controller)
+          ArDriveTag(text: strings.arnsManagedForOwner),
+      ],
+      toolbarActions: [
+        ArDriveIconButton(
+          tooltip: strings.listOpen,
+          icon: const ArDriveIcon(icon: Icons.arrow_forward, size: 20),
+          onPressed: open,
+        ),
+      ],
+      details: [
+        DetailsPanelItem(
+          itemTitle: strings.arnsLeaseEndsHeading,
+          leading: ArNSLeaseCell(name: name, now: now),
+        ),
+        DetailsPanelItem(
+          itemTitle: strings.arnsUndernames,
+          leading: Text(
+            strings.arnsUndernamesOf(name.undernamesUsed, name.undernameLimit),
+            style: typography.paragraphNormal(color: colors.textMid),
+          ),
+        ),
+        DetailsPanelItem(
+          itemTitle: strings.webPagesLink,
+          leading: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: ArDriveLink(
+                  text: host,
+                  external: true,
+                  onTap: () => openUrl(url: arnsUrlFor(name.name)),
+                ),
+              ),
+              const SizedBox(width: 8),
+              CopyButton(text: arnsUrlFor(name.name), size: 18),
+            ],
+          ),
+        ),
+      ],
+      actions: [
+        button(strings.listOpen, open),
+        if (name.endTimestamp != null)
+          button(
+            strings.arnsRenew,
+            () => openUrl(url: arnsRenewUrlFor(name.name)),
+            primary: arnsNeedsRenewal(name, now),
+          ),
       ],
     );
   }
@@ -266,146 +592,415 @@ class _Header extends StatelessWidget {
 /// A name's records a page at a time: some names have dozens.
 const arnsRecordsPerPage = 10;
 
-class _NameCard extends StatefulWidget {
-  const _NameCard({
-    required this.name,
-    required this.now,
-    required this.isPhone,
-  });
+/// The host, its tags: the title of the name's own page.
+class _NameTitle extends StatelessWidget {
+  const _NameTitle({required this.name, required this.now});
 
   final ArNSManagedName name;
   final DateTime now;
-  final bool isPhone;
 
   @override
-  State<_NameCard> createState() => _NameCardState();
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final grace = name.isInGracePeriod(now);
+    final end = name.endTimestamp;
+
+    Widget? lease;
+    if (!grace && end != null) {
+      final left = end.difference(now);
+      // About to be lost: said in red, not boxed (ardrive_ui's status text).
+      lease = left <= arnsRenewalNoticeWindow
+          ? ArDriveStatusText(
+              text: strings.arnsLeaseEndsInDays(left.inDays.clamp(0, 30)),
+              type: ArDriveStatusType.error,
+            )
+          : ArNSCaption(strings.arnsLeaseEnds(formatDate(end)));
+    }
+
+    return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: ArDriveSpacing.sm,
+      runSpacing: ArDriveSpacing.xxs,
+      children: [
+        ListPageTitleRow.text(context, arnsHostFor(name.name)),
+        if (name.role == ArNSRole.controller)
+          ArDriveTag(text: strings.arnsManagedForOwner),
+        if (lease != null) lease,
+      ],
+    );
+  }
 }
 
-class _NameCardState extends State<_NameCard> {
+/// [records] whose literal name (`blog_ardrive`) has [query] in it.
+List<ArNSNameRecord> arnsRecordsMatching(
+  List<ArNSNameRecord> records,
+  String query,
+) {
+  final needle = query.trim().toLowerCase();
+  if (needle.isEmpty) return records;
+  return [
+    for (final r in records)
+      if (r.literalName.toLowerCase().contains(needle)) r,
+  ];
+}
+
+/// A record on its name's own page: the undername alone, or the bare name
+/// for the name itself.
+String arnsShortLabel(ArNSNameRecord record) =>
+    record.isApex ? record.name : record.undername;
+
+/// One name's page: its records, with a search over them (docs/NAMES.md,
+/// "The Names page"). Opened from the Names list or the nav.
+class ArNSNamePage extends StatefulWidget {
+  const ArNSNamePage({super.key, required this.name});
+
+  final String name;
+
+  @override
+  State<ArNSNamePage> createState() => _ArNSNamePageState();
+}
+
+class _ArNSNamePageState extends State<ArNSNamePage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<ArNSNamesCubit>().refresh();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListPageChrome(child: ArNSNameView(name: widget.name));
+  }
+}
+
+/// One name's page under the top bar: the way back, the title row, the
+/// search and the records.
+///
+/// A click on a record only highlights it - its details are its row - and a
+/// double-click opens its link, the full URL.
+class ArNSNameView extends StatefulWidget {
+  const ArNSNameView({super.key, required this.name});
+
+  final String name;
+
+  @override
+  State<ArNSNameView> createState() => _ArNSNameViewState();
+}
+
+class _ArNSNameViewState extends State<ArNSNameView> {
+  String _query = '';
   int _page = 0;
 
-  ArNSManagedName get name => widget.name;
-  DateTime get now => widget.now;
-  bool get isPhone => widget.isPhone;
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    final typography = ArDriveTypographyNew.of(context);
+    Widget padded(Widget child, {double bottom = listPageBlockGap}) =>
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              listPagePadding,
+              0,
+              listPagePadding,
+              bottom,
+            ),
+            child: child,
+          ),
+        );
+    final back = SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          listPagePadding,
+          ArDriveSpacing.sm,
+          listPagePadding,
+          0,
+        ),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: ArDriveLink(
+            text: strings.arnsNames,
+            onTap: () => context.read<AppRouterDelegate>().showNames(),
+          ),
+        ),
+      ),
+    );
+
+    return BlocBuilder<ArNSNamesCubit, ArNSNamesState>(
+      builder: (context, names) => LayoutBuilder(
+        builder: (context, constraints) {
+          final now = DateTime.now();
+          final name = names.nameOf(widget.name);
+          final List<Widget> body;
+          if (name == null || name.isExpired(now)) {
+            final settled = names.status == ArNSNamesStatus.loaded ||
+                names.status == ArNSNamesStatus.none;
+            body = [
+              SliverToBoxAdapter(
+                child: ListPageTitleRow(
+                  title: ListPageTitleRow.text(
+                    context,
+                    arnsHostFor(widget.name),
+                  ),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: ListPageMessage(
+                  child: settled
+                      ? ArNSBodyText(strings.arnsNameNotFound)
+                      : const ArDriveSpinner(size: ArDriveSpinnerSize.large),
+                ),
+              ),
+            ];
+          } else {
+            final showsColumns = constraints.maxWidth - listMenuGutter >= 560;
+            final grace = name.isInGracePeriod(now);
+            final records = arnsRecordsMatching(name.records, _query);
+            final pages = (records.length / arnsRecordsPerPage).ceil();
+            // A removed record can leave the page past the end.
+            final page = _page.clamp(0, pages == 0 ? 0 : pages - 1);
+            final start = page * arnsRecordsPerPage;
+            final shown = records.skip(start).take(arnsRecordsPerPage).toList();
+            final placeholder =
+                context.read<ConfigService>().config.arnsPlaceholderTxId;
+            final rows = SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => ArNSRecordRow(
+                  key: ValueKey(shown[index].undername),
+                  record: shown[index],
+                  placeholder: placeholder,
+                  blocked: grace,
+                  showsColumns: showsColumns,
+                ),
+                childCount: shown.length,
+              ),
+            );
+
+            body = [
+              SliverToBoxAdapter(
+                child: ListPageTitleRow(
+                  title: _NameTitle(name: name, now: now),
+                  action: name.endTimestamp != null && !grace
+                      ? ArDriveButtonNew(
+                          text: strings.arnsRenew,
+                          typography: typography,
+                          variant: arnsNeedsRenewal(name, now)
+                              ? ButtonVariant.primary
+                              : ButtonVariant.secondary,
+                          maxWidth: ArDriveButtonNew.fittedWidth(
+                            context,
+                            strings.arnsRenew,
+                            minWidth: 96,
+                          ),
+                          onPressed: () =>
+                              openUrl(url: arnsRenewUrlFor(name.name)),
+                        )
+                      : null,
+                ),
+              ),
+              padded(_NameSummary(name: name, now: now)),
+              padded(
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: SizedBox(
+                    width: showsColumns ? 360 : double.infinity,
+                    child: ArDriveTextFieldNew(
+                      hintText: strings.arnsFindUndername,
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      onChanged: (query) => setState(() {
+                        _query = query;
+                        // A new search starts from its first match.
+                        _page = 0;
+                      }),
+                    ),
+                  ),
+                ),
+              ),
+              if (records.isEmpty)
+                padded(ArNSCaption(strings.arnsNoUndernamesMatch))
+              else ...[
+                if (showsColumns)
+                  ListTablePanel(
+                    header: ListTableHeader<Never>(
+                      columns: [
+                        ListColumn(strings.arnsName, _recordNameFlex),
+                        ListColumn(strings.arnsPointsTo, _pointsToFlex),
+                        ListColumn(strings.arnsCacheTime, _cacheFlex),
+                      ],
+                    ),
+                    rows: rows,
+                  )
+                else
+                  rows,
+                if (pages > 1)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        listPagePadding,
+                        ArDriveSpacing.sm,
+                        listPagePadding,
+                        0,
+                      ),
+                      child: _Pager(
+                        from: start + 1,
+                        to: start + shown.length,
+                        total: records.length,
+                        onPrevious: page > 0
+                            ? () => setState(() => _page = page - 1)
+                            : null,
+                        onNext: page < pages - 1
+                            ? () => setState(() => _page = page + 1)
+                            : null,
+                      ),
+                    ),
+                  ),
+              ],
+            ];
+          }
+
+          return ArDriveScrollBar(
+            child: CustomScrollView(
+              slivers: [
+                back,
+                ...body,
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: listPageSectionGap),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Undernames used, and the notice that changes wait for a renewal.
+class _NameSummary extends StatelessWidget {
+  const _NameSummary({required this.name, required this.now});
+
+  final ArNSManagedName name;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = appLocalizationsOf(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ArNSCaption(
+          name.hasFreeUndername
+              ? strings.arnsUndernamesUsed(
+                  name.undernamesUsed, name.undernameLimit)
+              : strings.arnsAllUndernamesUsed(name.undernameLimit),
+        ),
+        if (name.isInGracePeriod(now)) ...[
+          const SizedBox(height: ArDriveSpacing.sm),
+          ArDriveNotice(
+            type: ArDriveNoticeType.warning,
+            message: strings.arnsRenewInConsole,
+            actionLabel: strings.arnsRenew,
+            onAction: () => openUrl(url: arnsRenewUrlFor(name.name)),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+const _recordNameFlex = 4;
+const _pointsToFlex = 5;
+const _cacheFlex = 2;
+
+/// One record on its name's page: the undername alone (`project-1`, or the
+/// bare name for the name itself), what it points to and its cache time.
+/// Copy link and opening still use the full URL.
+class ArNSRecordRow extends StatelessWidget {
+  const ArNSRecordRow({
+    super.key,
+    required this.record,
+    required this.placeholder,
+    required this.blocked,
+    required this.showsColumns,
+  });
+
+  final ArNSNameRecord record;
+  final String? placeholder;
+  final bool blocked;
+  final bool showsColumns;
+
+  bool get _unused =>
+      placeholder != null && record.transactionId == placeholder;
 
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-    final grace = name.isInGracePeriod(now);
-    final end = name.endTimestamp;
-    final placeholder =
-        context.read<ConfigService>().config.arnsPlaceholderTxId;
-    final records = name.records;
-    final pages = (records.length / arnsRecordsPerPage).ceil();
-    // A removed record can leave the page past the end.
-    final page = _page.clamp(0, pages == 0 ? 0 : pages - 1);
-    final start = page * arnsRecordsPerPage;
-    final shown = records.skip(start).take(arnsRecordsPerPage).toList();
-
-    Widget? lease;
-    if (grace) {
-      lease = null;
-    } else if (end != null) {
-      final left = end.difference(now);
-      if (left <= arnsRenewalNoticeWindow) {
-        // About to be lost: said in red, not boxed (ardrive_ui's status
-        // text).
-        lease = ArDriveStatusText(
-          text: strings.arnsLeaseEndsInDays(left.inDays.clamp(0, 30)),
-          type: ArDriveStatusType.error,
-        );
-      } else {
-        lease = ArNSCaption(
-          strings.arnsLeaseEnds(DateFormat.yMMMd().format(end.toLocal())),
-        );
-      }
-    }
-
-    final header = Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: ArDriveSpacing.sm,
-      runSpacing: ArDriveSpacing.xxs,
-      children: [
-        Text(
-          arnsHostFor(name.name),
-          style: typography.heading5(
-            color: colors.textHigh,
-            fontWeight: ArFontWeight.bold,
-          ),
-        ),
-        if (name.role == ArNSRole.controller)
-          ArDriveTag(text: strings.arnsManagedForOwner),
-        if (lease != null) lease,
-        if (end != null && !grace)
-          if (end.difference(now) <= arnsRenewalNoticeWindow)
-            ArDriveButtonNew(
-              text: strings.arnsRenew,
-              typography: typography,
-              variant: ButtonVariant.primary,
-              size: ArDriveButtonSize.compact,
-              onPressed: () => openUrl(url: arnsRenewUrlFor(name.name)),
-            )
-          else
-            ArDriveLink(
-              text: strings.arnsRenew,
-              external: true,
-              onTap: () => openUrl(url: arnsRenewUrlFor(name.name)),
-            ),
-      ],
+    final label = ListNameCell(
+      icon: Icon(
+        record.isApex ? arnsNameIcon : Icons.subdirectory_arrow_right,
+        size: ListNameCell.iconSize,
+        color: colors.textMid,
+      ),
+      title: arnsShortLabel(record),
     );
+    final pointsTo = _PointsToCell(record: record, placeholder: placeholder);
+    final cacheTime = ListTextCell(arnsTtlLabel(context, record.ttlSeconds));
+    // An unused name gets a quiet way in: the page's one primary action
+    // stays Renew.
+    final use = _unused && !blocked
+        ? ArDriveLink(
+            text: strings.arnsUseThisName,
+            isAction: true,
+            onTap: () => showArNSNameDialog(
+              context,
+              mode: ArNSNameDialogMode.pointRecord,
+              choice: ArNSRecordChoice(
+                name: record.name,
+                undername: record.undername,
+              ),
+            ),
+          )
+        : null;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.containerRaised,
-        borderRadius: BorderRadius.circular(ArDriveRadius.lg),
-        border: Border.all(color: colors.strokeLow),
-      ),
-      padding: EdgeInsets.all(isPhone ? ArDriveSpacing.md : ArDriveSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          header,
-          const SizedBox(height: ArDriveSpacing.xxs),
-          ArNSCaption(
-            name.hasFreeUndername
-                ? strings.arnsUndernamesUsed(
-                    name.undernamesUsed, name.undernameLimit)
-                : strings.arnsAllUndernamesUsed(name.undernameLimit),
-          ),
-          if (grace) ...[
-            const SizedBox(height: ArDriveSpacing.sm),
-            ArDriveNotice(
-              type: ArDriveNoticeType.warning,
-              message: strings.arnsRenewInConsole,
-              actionLabel: strings.arnsRenew,
-              onAction: () => openUrl(url: arnsRenewUrlFor(name.name)),
+    return ListTableRow(
+      semanticLabel: arnsHostFor(record.literalName),
+      onOpen: () => openUrl(url: arnsUrlFor(record.literalName)),
+      showsColumns: showsColumns,
+      menu: ArNSRecordMenu(record: record, blocked: blocked, unused: _unused),
+      child: showsColumns
+          ? ListColumnsRow(
+              flexes: const [_recordNameFlex, _pointsToFlex, _cacheFlex],
+              cells: [
+                label,
+                use == null
+                    ? pointsTo
+                    : Wrap(
+                        spacing: ArDriveSpacing.sm,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [pointsTo, use],
+                      ),
+                cacheTime,
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                label,
+                const SizedBox(height: listStackedGap),
+                pointsTo,
+                const SizedBox(height: listStackedGap),
+                ListTextCell(
+                  strings.arnsCacheTimeIs(
+                      arnsTtlLabel(context, record.ttlSeconds)),
+                ),
+                if (use != null) ...[
+                  const SizedBox(height: listStackedGap),
+                  use,
+                ],
+              ],
             ),
-          ],
-          const SizedBox(height: ArDriveSpacing.md),
-          if (!isPhone) const _RecordHeadings(),
-          for (final record in shown)
-            _RecordRow(
-              isLast: identical(record, shown.last),
-              record: record,
-              placeholder: placeholder,
-              blocked: grace,
-              isPhone: isPhone,
-            ),
-          if (pages > 1) ...[
-            const SizedBox(height: ArDriveSpacing.sm),
-            _Pager(
-              from: start + 1,
-              to: start + shown.length,
-              total: records.length,
-              onPrevious: page > 0 ? () => setState(() => _page--) : null,
-              onNext: page < pages - 1 ? () => setState(() => _page++) : null,
-            ),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -453,193 +1048,6 @@ class _Pager extends StatelessWidget {
       ],
     );
   }
-}
-
-const _nameColumnFlex = 4;
-const _pointsToColumnFlex = 5;
-const _cacheColumnWidth = 96.0;
-
-/// The overflow menu's button.
-const _actionsColumnWidth = 48.0;
-
-class _RecordHeadings extends StatelessWidget {
-  const _RecordHeadings();
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = appLocalizationsOf(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-    final style = typography.paragraphSmall(
-      color: colors.textLow,
-      fontWeight: ArFontWeight.semiBold,
-    );
-    return Container(
-      padding: const EdgeInsets.only(bottom: ArDriveSpacing.xs),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: colors.strokeLow)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: _nameColumnFlex,
-            child: Text(strings.arnsName, style: style),
-          ),
-          Expanded(
-            flex: _pointsToColumnFlex,
-            child: Text(strings.arnsPointsTo, style: style),
-          ),
-          SizedBox(
-            width: _cacheColumnWidth,
-            child: Text(strings.arnsCacheTime, style: style),
-          ),
-          const SizedBox(width: _actionsColumnWidth),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecordRow extends StatelessWidget {
-  const _RecordRow({
-    required this.isLast,
-    required this.record,
-    required this.placeholder,
-    required this.blocked,
-    required this.isPhone,
-  });
-
-  final ArNSNameRecord record;
-  final String? placeholder;
-  final bool blocked;
-  final bool isPhone;
-  final bool isLast;
-
-  bool get _unused =>
-      placeholder != null && record.transactionId == placeholder;
-
-  @override
-  Widget build(BuildContext context) {
-    final strings = appLocalizationsOf(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-
-    final host = Text(
-      arnsHostFor(record.literalName),
-      overflow: TextOverflow.ellipsis,
-      style: typography.paragraphNormal(
-        color: colors.textHigh,
-        fontWeight: ArFontWeight.semiBold,
-      ),
-    );
-    final pointsTo = _PointsToCell(record: record, placeholder: placeholder);
-    final cacheTime = Text(
-      arnsTtlLabel(context, record.ttlSeconds),
-      style: typography.paragraphNormal(color: colors.textMid),
-    );
-    // An unused name gets a quiet way in: "Get a name" stays the page's one
-    // primary action.
-    final use = _unused && !blocked
-        ? ArDriveLink(
-            text: strings.arnsUseThisName,
-            isAction: true,
-            onTap: () => showArNSNameDialog(
-              context,
-              mode: ArNSNameDialogMode.pointRecord,
-              choice: _choice,
-            ),
-          )
-        : null;
-    final menu =
-        ArNSRecordMenu(record: record, blocked: blocked, unused: _unused);
-
-    final divider = BoxDecoration(
-      border:
-          isLast ? null : Border(bottom: BorderSide(color: colors.strokeLow)),
-    );
-
-    if (isPhone) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.sm),
-        decoration: divider,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: _phoneDetails(context, host, pointsTo, use)),
-            menu,
-          ],
-        ),
-      );
-    }
-    return _desktop(host, pointsTo, cacheTime, use, menu, divider);
-  }
-
-  Widget _phoneDetails(
-    BuildContext context,
-    Widget host,
-    Widget pointsTo,
-    Widget? use,
-  ) {
-    final strings = appLocalizationsOf(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        host,
-        const SizedBox(height: ArDriveSpacing.xxs),
-        pointsTo,
-        const SizedBox(height: ArDriveSpacing.xxs),
-        Text(
-          strings.arnsCacheTimeIs(arnsTtlLabel(context, record.ttlSeconds)),
-          style: typography.paragraphSmall(color: colors.textLow),
-        ),
-        if (use != null) ...[
-          const SizedBox(height: ArDriveSpacing.xs),
-          use,
-        ],
-      ],
-    );
-  }
-
-  Widget _desktop(
-    Widget host,
-    Widget pointsTo,
-    Widget cacheTime,
-    Widget? use,
-    Widget menu,
-    BoxDecoration divider,
-  ) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 56),
-      padding: const EdgeInsets.symmetric(vertical: ArDriveSpacing.xxs),
-      decoration: divider,
-      child: Row(
-        children: [
-          Expanded(flex: _nameColumnFlex, child: host),
-          Expanded(
-            flex: _pointsToColumnFlex,
-            child: use == null
-                ? pointsTo
-                : Wrap(
-                    spacing: ArDriveSpacing.sm,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [pointsTo, use],
-                  ),
-          ),
-          SizedBox(width: _cacheColumnWidth, child: cacheTime),
-          SizedBox(
-            width: _actionsColumnWidth,
-            child: Align(alignment: Alignment.centerRight, child: menu),
-          ),
-        ],
-      ),
-    );
-  }
-
-  ArNSRecordChoice get _choice =>
-      ArNSRecordChoice(name: record.name, undername: record.undername);
 }
 
 /// The item, a link that opens it; or "Points elsewhere".
@@ -804,7 +1212,6 @@ class ArNSRecordMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final strings = appLocalizationsOf(context);
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final height =
         MediaQuery.sizeOf(context).width < arnsSheetBreakpoint ? 44.0 : 48.0;
     final choice =
@@ -820,7 +1227,7 @@ class ArNSRecordMenu extends StatelessWidget {
           onClick: enabled ? onTap : null,
           content: ArDriveDropdownItemTile(
             name: label,
-            icon: ArDriveIcon(icon: icon, size: 24),
+            icon: ArDriveIcon(icon: icon, size: ListRowMenu.iconSize),
             isDisabled: !enabled,
             height: height,
           ),
@@ -862,21 +1269,7 @@ class ArNSRecordMenu extends StatelessWidget {
       ),
     ];
 
-    return ArDriveDropdown(
-      height: height,
-      maxHeight: items.length * height,
-      anchor: const Aligned(
-        follower: Alignment.topRight,
-        target: Alignment.bottomRight,
-      ),
-      calculateVerticalAlignment: (isAboveHalfScreen) =>
-          isAboveHalfScreen ? Alignment.bottomRight : Alignment.topRight,
-      items: items,
-      child: HoverWidget(
-        tooltip: strings.showMenu,
-        child: ArDriveIcons.kebabMenu(color: colors.iconMid),
-      ),
-    );
+    return ListRowMenu(label: strings.showMenu, items: items);
   }
 
   void _remove(BuildContext context) {

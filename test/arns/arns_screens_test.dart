@@ -29,12 +29,19 @@ import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/arns/presentation/names_page/names_page.dart';
 import 'package:ardrive/arns/presentation/resume/arns_resume_cubit.dart';
 import 'package:ardrive/arns/presentation/resume/arns_resume_scope.dart';
-import 'package:ardrive/components/side_bar.dart';
+import 'package:ardrive/components/web_nav_headings.dart';
 import 'package:ardrive/core/activity_tracker.dart';
 import 'package:ardrive/pages/drive_detail/components/drive_explorer_item_tile.dart';
+import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
+import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
+import 'package:ardrive/drives_list/presentation/drives_list_page.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
+import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/services/config/config.dart';
+import 'package:ardrive/web_pages/domain/web_page.dart';
+import 'package:ardrive/web_pages/presentation/web_pages_cubit.dart';
+import 'package:ardrive/web_pages/presentation/web_pages_page.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:ario_sdk/ario_sdk.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -74,6 +81,102 @@ class _MockOwner extends Mock implements ArNSOwnerSigner {}
 class _MockPayer extends Mock implements ArNSPayerSigner {}
 
 class _MockConfigService extends Mock implements ConfigService {}
+
+class _MockWebPagesCubit extends MockCubit<WebPagesState>
+    implements WebPagesCubit {}
+
+Publication _publication(
+        String id, String driveId, String? folderId, DateTime at) =>
+    Publication([
+      PublishedVersion(
+        txId: '$id-tx-0000000000000000000000000000000000',
+        publicationId: id,
+        driveId: driveId,
+        folderId: folderId,
+        publishedAt: at,
+      ),
+    ]);
+
+/// What the Web pages shots list: publications and deployments, newest
+/// first, as the cubit sorts them.
+List<WebPage> _webPages() => [
+      WebPage(
+        kind: WebPageKind.publication,
+        id: 'pub-notes',
+        title: 'Field notes',
+        driveId: 'd-studio',
+        driveName: 'Maya studio',
+        folderName: 'Field notes',
+        openFolderId: 'f-notes',
+        dataTxId: 'pub-notes-tx-0000000000000000000000000000000000',
+        updatedAt: DateTime(2026, 10, 24),
+        publication: _publication(
+            'pub-notes', 'd-studio', 'f-notes', DateTime(2026, 10, 24)),
+      ),
+      WebPage(
+        kind: WebPageKind.deployment,
+        id: 'dep-portfolio',
+        title: 'Portfolio site',
+        driveId: 'd-web',
+        driveName: 'Websites',
+        folderName: null,
+        openFolderId: 'd-web-root',
+        dataTxId: _siteTx,
+        updatedAt: DateTime(2026, 10, 19),
+      ),
+      WebPage(
+        kind: WebPageKind.publication,
+        id: 'pub-studio',
+        title: 'Maya studio',
+        driveId: 'd-studio',
+        driveName: 'Maya studio',
+        folderName: null,
+        openFolderId: 'd-studio-root',
+        dataTxId: 'pubStudioTx0pubStudioTx0pubStudioTx0pubStu',
+        updatedAt: DateTime(2026, 9, 30),
+        publication:
+            _publication('pub-studio', 'd-studio', null, DateTime(2026, 9, 30)),
+      ),
+      WebPage(
+        kind: WebPageKind.deployment,
+        id: 'dep-spring',
+        title: 'Spring launch',
+        driveId: 'd-web',
+        driveName: 'Websites',
+        folderName: 'Campaigns',
+        openFolderId: 'f-campaigns',
+        dataTxId: _blogTx,
+        updatedAt: DateTime(2026, 4, 2),
+      ),
+    ];
+
+/// The names the Web pages shots resolve links from: `maya` points at the
+/// Field notes publication.
+List<ArNSManagedName> _webPageNames() => [
+      ..._names(),
+      const ArNSManagedName(
+        name: 'maya',
+        processId: 'ant-maya',
+        role: ArNSRole.owner,
+        type: ArNSNameType.permabuy,
+        endTimestamp: null,
+        undernameLimit: 10,
+        records: [
+          ArNSNameRecord(
+            name: 'maya',
+            undername: '@',
+            transactionId: 'pub-notes-tx-0000000000000000000000000000000000',
+            ttlSeconds: 300,
+            target: ArNSPublicationItem(
+              publicationId: 'pub-notes',
+              driveId: 'd-studio',
+              folderId: 'f-notes',
+              isLatestVersion: true,
+            ),
+          ),
+        ],
+      ),
+    ];
 
 const _sol = '7xKpH3nV9qR2bT5mW8cY4dF6gJ1kL3sA9eZ2uQ7q2Fd';
 const _siteTx = 'nS7hxbLQmk3W1o9zX2cV4bN5mL6kJ7hG8fD9sA0qWeQ';
@@ -307,6 +410,7 @@ void main() {
       stripePublishableKey: '',
       allowedDataItemSizeForTurbo: 100,
       enableArNS: true,
+      enableDriveStatePublishing: true,
       arnsPlaceholderTxId: _placeholder,
     ));
     when(() => repository.cached(any())).thenAnswer((_) async => _names());
@@ -352,8 +456,9 @@ void main() {
     required bool phone,
     required bool dark,
     double? height,
+    double width = 1280,
   }) async {
-    final size = phone ? Size(390, height ?? 844) : Size(1280, height ?? 800);
+    final size = phone ? Size(390, height ?? 844) : Size(width, height ?? 800);
     tester.view.devicePixelRatio = 2;
     tester.view.physicalSize = size * 2;
     addTearDown(tester.view.reset);
@@ -803,8 +908,51 @@ void main() {
     );
   });
 
-  /// The nav as the app draws it: Your drives, the drive sections, and On
-  /// the web under them, so the match is visible.
+  _MockWebPagesCubit webPagesCubit(List<WebPage> pages, {bool loaded = true}) {
+    final cubit = _MockWebPagesCubit();
+    whenListen(cubit, const Stream<WebPagesState>.empty(),
+        initialState: WebPagesState(loaded: loaded, pages: pages));
+    return cubit;
+  }
+
+  _MockNamesCubit namesCubit(List<ArNSManagedName> list) {
+    final names = _MockNamesCubit();
+    whenListen(names, const Stream<ArNSNamesState>.empty(),
+        initialState: ArNSNamesState(
+          status: ArNSNamesStatus.loaded,
+          address: _sol,
+          names: list,
+        ));
+    when(() => names.refresh()).thenAnswer((_) async {});
+    return names;
+  }
+
+  /// Nine pages, so the heading ends in "Show all 9".
+  List<WebPage> manyWebPages() => [
+        ..._webPages(),
+        for (final title in [
+          'Recipes',
+          'Wedding photos',
+          'Band merch',
+          'Reading list',
+          'Old portfolio',
+        ])
+          WebPage(
+            kind: WebPageKind.deployment,
+            id: title,
+            title: title,
+            driveId: 'd-web',
+            driveName: 'Websites',
+            folderName: null,
+            openFolderId: 'd-web-root',
+            dataTxId: _elseTx,
+            updatedAt: DateTime(2026, 1, 1),
+          ),
+      ];
+
+  /// The nav as the app draws it: Your drives, the drive sections, and Web
+  /// pages and Names under them, so the match is visible. Needs the names
+  /// and web pages cubits above it.
   Widget fakeNav(BuildContext context) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     Widget section(IconData icon, String label, {required bool open}) =>
@@ -813,10 +961,7 @@ void main() {
           label: label,
           onTap: () {},
           isExpanded: open,
-          trailing: RotatedBox(
-            quarterTurns: open ? 2 : 0,
-            child: ArDriveIcons.chevronDown(size: 16, color: colors.textMid),
-          ),
+          onToggle: () {},
         );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -834,29 +979,42 @@ void main() {
             icon: null, dense: true, label: 'Acme website', onTap: () {}),
         DriveNavRow(icon: null, dense: true, label: 'Photos', onTap: () {}),
         section(Icons.lock_outline, 'Private', open: false),
-        const OnTheWebNavGroup(showLabel: true),
+        const WebNavHeadings(showLabel: true),
       ],
     );
   }
 
-  Widget namesPage(
+  /// A page beside the nav on desktop, alone on a phone.
+  Widget besideNav(
     BuildContext context, {
     required bool phone,
-    required ArNSWalletState walletState,
-    required ArNSNamesState namesState,
+    required Widget page,
+    required AppRouterDelegate delegate,
+    required List<WebPage> pages,
+    List<ArNSManagedName>? names,
+    ArNSNamesState? namesState,
+    ArNSWalletState? walletState,
   }) {
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
-    final names = _MockNamesCubit();
-    whenListen(names, const Stream<ArNSNamesState>.empty(),
-        initialState: namesState);
-    when(() => names.refresh()).thenAnswer((_) async {});
-    final delegate = AppRouterDelegate()..showingNames = true;
-    final page = MultiProvider(
+    final ArNSNamesCubit namesBloc;
+    if (namesState != null) {
+      final mock = _MockNamesCubit();
+      whenListen(mock, const Stream<ArNSNamesState>.empty(),
+          initialState: namesState);
+      when(() => mock.refresh()).thenAnswer((_) async {});
+      namesBloc = mock;
+    } else {
+      namesBloc = namesCubit(names ?? _webPageNames());
+    }
+    return MultiProvider(
       providers: [
         RepositoryProvider<ConfigService>.value(value: config),
         ChangeNotifierProvider<AppRouterDelegate>.value(value: delegate),
-        BlocProvider<ArNSWalletCubit>.value(value: walletCubit(walletState)),
-        BlocProvider<ArNSNamesCubit>.value(value: names),
+        BlocProvider<ArNSWalletCubit>.value(
+            value: walletCubit(
+                walletState ?? _wallet(ArNSWalletStatus.connected))),
+        BlocProvider<ArNSNamesCubit>.value(value: namesBloc),
+        BlocProvider<WebPagesCubit>.value(value: webPagesCubit(pages)),
       ],
       child: Builder(
         builder: (context) => phone
@@ -867,7 +1025,7 @@ void main() {
                   elevation: 0,
                   leading: Icon(Icons.menu, color: colors.iconHigh),
                 ),
-                body: const ArNSNamesView(isPhone: true),
+                body: page,
               )
             : Scaffold(
                 backgroundColor: colors.containerL0,
@@ -882,12 +1040,16 @@ void main() {
                           right: BorderSide(color: colors.strokeLow),
                         ),
                       ),
-                      child: fakeNav(context),
+                      child: SingleChildScrollView(child: fakeNav(context)),
                     ),
-                    const Expanded(
+                    // Where the app's list pages put their content: under the
+                    // top bar (32 + its height + 24), flush with the nav,
+                    // 16 from the right. The top bar itself needs the whole
+                    // app's blocs and is left out.
+                    Expanded(
                       child: Padding(
-                        padding: EdgeInsets.fromLTRB(32, 48, 32, 0),
-                        child: ArNSNamesView(isPhone: false),
+                        padding: const EdgeInsets.fromLTRB(0, 104, 16, 0),
+                        child: page,
                       ),
                     ),
                   ],
@@ -895,8 +1057,26 @@ void main() {
               ),
       ),
     );
-    return page;
   }
+
+  Widget namesPage(
+    BuildContext context, {
+    required bool phone,
+    required ArNSWalletState walletState,
+    required ArNSNamesState namesState,
+    String? chosen,
+  }) =>
+      besideNav(
+        context,
+        phone: phone,
+        delegate: AppRouterDelegate()..showingNames = true,
+        pages: _webPages(),
+        namesState: namesState,
+        walletState: walletState,
+        page: phone
+            ? const ArNSNamesView()
+            : ArNSNamesBody(initialChosenId: chosen),
+      );
 
   testWidgets('names page', (tester) async {
     for (final phone in [false, true]) {
@@ -1089,7 +1269,8 @@ void main() {
     }
   });
 
-  testWidgets('nav: On the web beside the drive sections', (tester) async {
+  testWidgets('nav: Web pages and Names beside the drive sections',
+      (tester) async {
     for (final phone in [false, true]) {
       for (final dark in [true, false]) {
         await capture(
@@ -1097,12 +1278,16 @@ void main() {
           '23-nav',
           (context) {
             final colors = ArDriveTheme.of(context).themeData.colorTokens;
-            final delegate = AppRouterDelegate()..showingNames = true;
+            final delegate = AppRouterDelegate()..showingWebPages = true;
             return MultiProvider(
               providers: [
                 RepositoryProvider<ConfigService>.value(value: config),
                 ChangeNotifierProvider<AppRouterDelegate>.value(
                     value: delegate),
+                BlocProvider<ArNSNamesCubit>.value(
+                    value: namesCubit(_webPageNames())),
+                BlocProvider<WebPagesCubit>.value(
+                    value: webPagesCubit(manyWebPages())),
               ],
               child: Scaffold(
                 backgroundColor: phone
@@ -1115,7 +1300,9 @@ void main() {
                     height: double.infinity,
                     color: colors.containerL0,
                     padding: EdgeInsets.fromLTRB(16, phone ? 72 : 120, 16, 0),
-                    child: Builder(builder: fakeNav),
+                    child: SingleChildScrollView(
+                      child: Builder(builder: fakeNav),
+                    ),
                   ),
                 ),
               ),
@@ -1123,7 +1310,165 @@ void main() {
           },
           phone: phone,
           dark: dark,
-          height: phone ? 844 : 600,
+          height: phone ? 1000 : 1000,
+        );
+      }
+    }
+  });
+
+  /// The four list pages at one desktop width, for comparing side by side:
+  /// Your drives, Web pages and Names with a row's details open, one name.
+  testWidgets('list pages side by side', (tester) async {
+    DriveListItem drive(String name, {bool private = false, int days = 1}) =>
+        DriveListItem(
+          id: name,
+          name: name,
+          isPrivate: private,
+          isSharedWithMe: false,
+          isHidden: false,
+          dateCreated: DateTime(2025, 3, 4),
+          hasBeenWalked: true,
+          fileCount: 120 * days,
+          totalSize: 4200000 * days,
+          lastSyncedAt: _now.subtract(Duration(minutes: 7 * days)),
+          isSyncing: false,
+          lastSyncFailed: false,
+        );
+    for (final dark in [true, false]) {
+      await capture(
+        tester,
+        '60-your-drives',
+        (context) => besideNav(
+          context,
+          phone: false,
+          delegate: AppRouterDelegate()..showingDrivesList = true,
+          pages: manyWebPages(),
+          page: DrivesListBody(
+            state: DrivesListLoaded(drives: [
+              drive('Maya studio'),
+              drive('Websites', days: 2),
+              drive('Photos', private: true, days: 3),
+              drive('Taxes', private: true, days: 5),
+            ]),
+            onOpenDrive: (_) {},
+            onTryAgain: () {},
+            onSort: (_) {},
+          ),
+        ),
+        phone: false,
+        dark: dark,
+        width: 1440,
+        height: 900,
+      );
+      await capture(
+        tester,
+        '61-web-pages-selected',
+        (context) => besideNav(
+          context,
+          phone: false,
+          delegate: AppRouterDelegate()..showingWebPages = true,
+          pages: _webPages(),
+          page: const WebPagesBody(initialChosenId: 'pub-notes'),
+        ),
+        phone: false,
+        dark: dark,
+        width: 1440,
+        height: 900,
+      );
+      await capture(
+        tester,
+        '62-names-selected',
+        (context) => namesPage(
+          context,
+          phone: false,
+          walletState: _wallet(ArNSWalletStatus.connected),
+          namesState: ArNSNamesState(
+            status: ArNSNamesStatus.loaded,
+            address: _sol,
+            names: [..._names(), _bigName()],
+          ),
+          chosen: 'studio',
+        ),
+        phone: false,
+        dark: dark,
+        width: 1440,
+        height: 900,
+      );
+      await capture(
+        tester,
+        '63-name-page',
+        (context) => besideNav(
+          context,
+          phone: false,
+          delegate: AppRouterDelegate()
+            ..showingNames = true
+            ..shownName = 'studio',
+          pages: _webPages(),
+          names: [..._names(), _bigName()],
+          page: const ArNSNameView(name: 'studio'),
+        ),
+        phone: false,
+        dark: dark,
+        width: 1440,
+        height: 900,
+      );
+    }
+  });
+
+  testWidgets('web pages: the list and the empty page', (tester) async {
+    for (final phone in [false, true]) {
+      for (final dark in [true, false]) {
+        await capture(
+          tester,
+          '40-web-pages',
+          (context) => besideNav(
+            context,
+            phone: phone,
+            delegate: AppRouterDelegate()..showingWebPages = true,
+            pages: _webPages(),
+            page: phone ? const WebPagesView() : const WebPagesBody(),
+          ),
+          phone: phone,
+          dark: dark,
+          height: phone ? 1000 : 800,
+        );
+        await capture(
+          tester,
+          '41-web-pages-empty',
+          (context) => besideNav(
+            context,
+            phone: phone,
+            delegate: AppRouterDelegate()..showingWebPages = true,
+            pages: const [],
+            names: const [],
+            page: phone ? const WebPagesView() : const WebPagesBody(),
+          ),
+          phone: phone,
+          dark: dark,
+        );
+      }
+    }
+  });
+
+  testWidgets("one name's page", (tester) async {
+    for (final phone in [false, true]) {
+      for (final dark in [true, false]) {
+        await capture(
+          tester,
+          '25-name-page',
+          (context) => besideNav(
+            context,
+            phone: phone,
+            delegate: AppRouterDelegate()
+              ..showingNames = true
+              ..shownName = 'studio',
+            pages: _webPages(),
+            names: [..._names(), _bigName()],
+            page: const ArNSNameView(name: 'studio'),
+          ),
+          phone: phone,
+          dark: dark,
+          height: phone ? 1500 : 1000,
         );
       }
     }

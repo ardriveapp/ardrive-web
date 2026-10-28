@@ -10,6 +10,7 @@ import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/copy_button.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
+import 'package:ardrive/components/web_nav_headings.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/main.dart';
@@ -44,31 +45,55 @@ import 'package:responsive_builder/responsive_builder.dart';
 /// drives row, so the two navs share one grid - the same icon, the same
 /// words from [DriveScopeRail.labelFor], at the same indent - instead of
 /// looking like two products. The drives under it start where its words do.
+///
+/// Its words open Your drives at that scope and its chevron folds the
+/// drives away, like the Web pages and Names headings below it: one rule
+/// for every heading in the nav.
 class _DrivesHeading extends StatelessWidget {
   const _DrivesHeading({
     required this.scope,
     required this.isExpanded,
     required this.onToggle,
+    required this.opensDrivesList,
   });
 
   final DriveScope scope;
   final bool isExpanded;
   final VoidCallback onToggle;
 
+  /// False for a visitor, who has no drives list to open: the whole row
+  /// folds, as it used to.
+  final bool opensDrivesList;
+
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
+    if (!opensDrivesList) {
+      return DriveNavRow(
+        icon: DriveScopeRail.iconFor(scope),
+        label: DriveScopeRail.labelFor(context, scope),
+        onTap: onToggle,
+        isExpanded: isExpanded,
+        trailing: AnimatedRotation(
+          turns: isExpanded ? 0.5 : 0,
+          duration: const Duration(milliseconds: 150),
+          child: ArDriveIcons.chevronDown(
+            size: 16,
+            color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
+          ),
+        ),
+      );
+    }
     return DriveNavRow(
       icon: DriveScopeRail.iconFor(scope),
       label: DriveScopeRail.labelFor(context, scope),
-      onTap: onToggle,
+      onTap: () {
+        if (Scaffold.maybeOf(context) != null) {
+          Scaffold.of(context).closeDrawer();
+        }
+        context.read<AppRouterDelegate>().showDrivesList(scope: scope);
+      },
       isExpanded: isExpanded,
-      trailing: AnimatedRotation(
-        turns: isExpanded ? 0.5 : 0,
-        duration: const Duration(milliseconds: 150),
-        child: ArDriveIcons.chevronDown(size: 16, color: colorTokens.textMid),
-      ),
+      onToggle: onToggle,
     );
   }
 }
@@ -318,7 +343,7 @@ class _AppSideBarState extends State<AppSideBar> {
           ),
           const SizedBox(height: 6),
           DriveScopeRail(showLabels: showLabels),
-          if (canGoToDrivesList) OnTheWebNavGroup(showLabel: showLabels),
+          if (canGoToDrivesList) WebNavHeadings(showLabel: showLabels),
         ],
       );
     }
@@ -358,7 +383,7 @@ class _AppSideBarState extends State<AppSideBar> {
             return const SizedBox();
           },
         ),
-        if (canGoToDrivesList) OnTheWebNavGroup(showLabel: showLabels),
+        if (canGoToDrivesList) WebNavHeadings(showLabel: showLabels),
       ],
     );
   }
@@ -1053,6 +1078,9 @@ class _DriveSectionsState extends State<_DriveSections> {
         _DrivesHeading(
           scope: scope,
           isExpanded: isExpanded,
+          opensDrivesList: AppRouterDelegate.canShowDrivesList(
+            context.watch<ProfileCubit>().state,
+          ),
           onToggle: () => setState(() {
             if (!_collapsed.remove(scope)) {
               _collapsed.add(scope);
@@ -1066,9 +1094,11 @@ class _DriveSectionsState extends State<_DriveSections> {
               hasAlert: state.drivesWithAlerts.contains(drive.id),
               drive: drive,
               onTap: () => _openDrive(context, drive),
-              // Not lit on the Names page: the page is where the reader is.
+              // Not lit on the Names or Web pages page: the page is where
+              // the reader is.
               isSelected: state.selectedDriveId == drive.id &&
-                  !context.watch<AppRouterDelegate>().showingNames,
+                  !context.watch<AppRouterDelegate>().showingNames &&
+                  !context.watch<AppRouterDelegate>().showingWebPages,
               // Hiding is something a reader does to their own drives, so a
               // drive shared with them is never drawn as hidden.
               isHidden: scope != DriveScope.sharedWithMe && drive.isHidden,
@@ -1156,89 +1186,6 @@ class _AllDrivesRow extends StatelessWidget {
 
         context.read<AppRouterDelegate>().showDrivesList();
       },
-    );
-  }
-}
-
-/// "On the web" below the drives: what the reader has put on the web, with
-/// one row, Names, for now (docs/NAMES.md, "Where it lives", Q15).
-///
-/// Drawn like the drive sections above it: a section row with its icon and
-/// chevron, and Names under it the way a drive sits under Public. Its own
-/// row type: [DriveScope] filters drives and doesn't grow a value for it.
-class OnTheWebNavGroup extends StatefulWidget {
-  const OnTheWebNavGroup({super.key, required this.showLabel});
-
-  final bool showLabel;
-
-  /// The section's icon: ArNS's own, not the globe Public already uses.
-  static const icon = ArDriveIconsData.arns_name;
-
-  @override
-  State<OnTheWebNavGroup> createState() => _OnTheWebNavGroupState();
-}
-
-class _OnTheWebNavGroupState extends State<OnTheWebNavGroup> {
-  bool _isExpanded = true;
-
-  void _showNames(BuildContext context) {
-    if (Scaffold.maybeOf(context) != null) {
-      Scaffold.of(context).closeDrawer();
-    }
-    context.read<AppRouterDelegate>().showNames();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!AppRouterDelegate.namesPageIsOn(context)) {
-      return const SizedBox.shrink();
-    }
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final strings = appLocalizationsOf(context);
-    final isCurrent = context.watch<AppRouterDelegate>().showingNames;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 6),
-        Divider(height: 1, color: colorTokens.strokeLow),
-        const SizedBox(height: 6),
-        // The collapsed rail has no room for a child row: the section's
-        // icon goes straight to Names.
-        if (!widget.showLabel)
-          DriveNavRow(
-            icon: OnTheWebNavGroup.icon,
-            label: strings.arnsNames,
-            showLabel: false,
-            isCurrent: isCurrent,
-            onTap: () => _showNames(context),
-          )
-        else ...[
-          DriveNavRow(
-            icon: OnTheWebNavGroup.icon,
-            label: strings.arnsOnTheWeb,
-            isExpanded: _isExpanded,
-            onTap: () => setState(() => _isExpanded = !_isExpanded),
-            trailing: AnimatedRotation(
-              turns: _isExpanded ? 0.5 : 0,
-              duration: const Duration(milliseconds: 150),
-              child: ArDriveIcons.chevronDown(
-                size: 16,
-                color: colorTokens.textMid,
-              ),
-            ),
-          ),
-          if (_isExpanded)
-            DriveNavRow(
-              icon: null,
-              dense: true,
-              label: strings.arnsNames,
-              isCurrent: isCurrent,
-              onTap: () => _showNames(context),
-            ),
-        ],
-      ],
     );
   }
 }

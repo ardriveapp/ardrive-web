@@ -1,5 +1,4 @@
-import 'dart:math' as math;
-
+import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/publication/presentation/publish_to_web.dart';
 import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
@@ -7,7 +6,6 @@ import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/filesize.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -39,43 +37,21 @@ const double driveListColumnsFrom = 760;
 /// [driveListShowsColumns] - rather than by leaving slack in a measurement.
 const double driveListSyncColumnMinimum = 150;
 
-/// How wide the list is allowed to grow.
-///
-/// Past this, a drive's name and its date are simply far apart: the eye has to
-/// travel the whole monitor to read one row, and the columns stop reading as a
-/// table. Kept here with the widths it is a width for.
-const double driveListMaxContentWidth = 1200;
+/// The padding a row puts either side of its content: the shared table's
+/// ([listRowHorizontalPadding]).
+const double driveListRowHorizontalPadding = listRowHorizontalPadding;
 
-/// The padding a row puts either side of its content.
-///
-/// Public because the layout decision is made outside the row and has to be
-/// made on the width the row will actually lay out in.
-const double driveListRowHorizontalPadding = 16;
+/// The width of the selection column - see [listCheckboxColumn].
+const double driveListCheckboxColumn = listCheckboxColumn;
 
-/// The width of the selection column, header and rows alike.
-///
-/// One constant for both so the ticks line up down the table - the usual
-/// failure is a header drawn inside the table's own padding and rows drawn
-/// outside it, which offsets the two by exactly that padding. Wide enough to
-/// hold the box and the gap a checkbox needs from what it labels.
-const double driveListCheckboxColumn = 40;
+/// How big the per-row actions menu's tap target is - see
+/// [listMenuTapTarget]. `drives_list_menu_test.dart` measures it against the
+/// row's height.
+const double driveListMenuTapTarget = listMenuTapTarget;
 
-/// How big the per-row actions menu's tap target is.
-///
-/// The touch minimum, and no larger: a row that draws columns is 48px tall -
-/// its content inside [_rowVerticalPadding] either side - so a target of
-/// exactly this size is the largest one that cannot make a row taller than it
-/// already is. `drives_list_menu_test.dart` measures both halves of that.
-const double driveListMenuTapTarget = 48;
-
-/// The trailing gutter every row and the header reserve for that menu.
-///
-/// Reserved whether or not a menu is drawn, so the header's columns and a
-/// row's columns are laid out in the same width in every state. A gutter that
-/// existed only on the rows would put the headings 56px out of line with the
-/// values under them, which is the same class of bug as a table header over a
-/// column of cards.
-const double driveListMenuGutter = driveListMenuTapTarget + 8;
+/// The trailing gutter every row and the header reserve for that menu - see
+/// [listMenuGutter].
+const double driveListMenuGutter = listMenuGutter;
 
 /// Whether a list this wide draws columns.
 ///
@@ -111,11 +87,9 @@ bool driveListShowsColumns(double contentWidth, {double textScale = 1}) =>
 /// renders out of the brand face in whatever the fallback happens to be.
 const String driveListWithheldFigure = '-';
 
-const double _rowVerticalPadding = 14;
-const double _columnGap = 16;
-const double _stackedGap = 6;
-const double _badgeGap = 8;
-const double _iconSize = 20;
+const double _columnGap = listColumnGap;
+const double _stackedGap = listStackedGap;
+const double _iconSize = ListNameCell.iconSize;
 
 /// The narrowest a row may be and still be drawn as three columns - name,
 /// last synced and size - at a text scale of 1.
@@ -148,14 +122,13 @@ bool driveListShowsCompactColumns(
 /// double-click. A list that has three columns beside the panel had at least
 /// three without it, so only the narrower width is measured.
 ///
-/// The list caps its own width at [driveListMaxContentWidth], so that is the
-/// width it measures, as it does itself.
+/// The list fills the width it is given, so that is the width it measures.
 bool driveDetailsPushList({
   required double width,
   required double panelWidth,
   double textScale = 1,
 }) {
-  final listWidth = math.min(width - panelWidth, driveListMaxContentWidth);
+  final listWidth = width - panelWidth;
 
   return driveListShowsColumns(listWidth, textScale: textScale) ||
       driveListShowsCompactColumns(listWidth, textScale: textScale);
@@ -171,7 +144,8 @@ const int _sizeFlex = 2;
 // row - so the slack belongs to the name.
 const int _createdFlex = 3;
 
-/// The column headings, drawn only where there are columns to head.
+/// The column headings, drawn only where there are columns to head: the
+/// shared [ListTableHeader] with the drives list's columns.
 ///
 /// It shares the row's flex constants rather than repeating them: a heading
 /// that drifts out of line with the column under it is worse than no heading.
@@ -209,111 +183,26 @@ class DriveListHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final strings = appLocalizationsOf(context);
 
-    Widget heading(String text, int flex, {DriveListSort? column}) {
-      final isSorted = column != null && column == sort;
-
-      final label = Text(
-        text,
-        overflow: TextOverflow.ellipsis,
-        // The explorer's column headings exactly: paragraphNormal in
-        // textMid, semi-bold. This list had them a step smaller and a
-        // shade fainter than its own row text, which is the pairing that
-        // made the two tables read as different components rather than
-        // the same one twice.
-        style: typography.paragraphNormal(
-          // The ordering column names itself by weight and colour as well as
-          // by the arrow, so which one is sorting survives a glance.
-          color: isSorted ? colorTokens.textHigh : colorTokens.textMid,
-          fontWeight: ArFontWeight.semiBold,
-        ),
-      );
-
-      // The arrow occupies its slot whether or not it is drawn, so pressing a
-      // heading does not shuffle the others sideways.
-      final content = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(child: label),
-          SizedBox(
-            width: 18,
-            child: isSorted
-                ? Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Icon(
-                      sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-                      size: 14,
-                      color: colorTokens.textHigh,
-                    ),
-                  )
-                : null,
-          ),
-        ],
-      );
-
-      if (column == null || onSort == null) {
-        return Expanded(flex: flex, child: content);
-      }
-
-      return Expanded(
-        flex: flex,
-        child: ArDriveClickArea(
-          child: Semantics(
-            button: true,
-            label: text,
-            child: InkWell(
-              onTap: () => onSort!(column),
-              child: content,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: driveListRowHorizontalPadding,
-        vertical: _stackedGap,
-      ),
-      child: Row(
-        children: [
-          if (allSelected != null)
-            SizedBox(
-              width: driveListCheckboxColumn,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: ArDriveCheckBox(
-                  key: ValueKey('select-all-$allSelected'),
-                  checked: allSelected!,
-                  onChange: (_) => onToggleSelectAll?.call(),
-                ),
-              ),
-            ),
-          heading(appLocalizationsOf(context).name, _nameFlex,
-              column: DriveListSort.name),
-          const SizedBox(width: _columnGap),
-          heading(appLocalizationsOf(context).lastSynced, _syncFlex,
-              column: DriveListSort.lastSynced),
-          const SizedBox(width: _columnGap),
-          if (showsAllColumns) ...[
-            heading(
-                appLocalizationsOf(context).driveListFilesHeading, _filesFlex,
-                column: DriveListSort.files),
-            const SizedBox(width: _columnGap),
-          ],
-          heading(appLocalizationsOf(context).size, _sizeFlex,
-              column: DriveListSort.size),
-          if (showsAllColumns) ...[
-            const SizedBox(width: _columnGap),
-            heading(appLocalizationsOf(context).dateCreated, _createdFlex,
-                column: DriveListSort.created),
-          ],
-          // The rows' menu gutter, so the headings sit over their own columns.
-          const SizedBox(width: driveListMenuGutter),
-        ],
-      ),
+    return ListTableHeader<DriveListSort>(
+      sort: sort,
+      sortAscending: sortAscending,
+      onSort: onSort,
+      allSelected: allSelected,
+      onToggleSelectAll: onToggleSelectAll,
+      columns: [
+        ListColumn(strings.name, _nameFlex, sortKey: DriveListSort.name),
+        ListColumn(strings.lastSynced, _syncFlex,
+            sortKey: DriveListSort.lastSynced),
+        if (showsAllColumns)
+          ListColumn(strings.driveListFilesHeading, _filesFlex,
+              sortKey: DriveListSort.files),
+        ListColumn(strings.size, _sizeFlex, sortKey: DriveListSort.size),
+        if (showsAllColumns)
+          ListColumn(strings.dateCreated, _createdFlex,
+              sortKey: DriveListSort.created),
+      ],
     );
   }
 }
@@ -382,129 +271,35 @@ class DriveListRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return _HoverHighlight(
-      colour: colorTokens.containerL1,
-      // The explorer's own colour for a chosen row, for a row that is ticked
-      // or the one just clicked. A click has to show it did something, and on
-      // a narrow screen there is no checkbox column at all.
-      selectedColour:
-          ArDriveTheme.of(context).themeData.tableTheme.selectedItemColor,
-      selected: selected ?? false,
+    return ListTableRow(
+      semanticLabel: drive.name,
+      onOpen: onOpen,
+      showsColumns: showsColumns,
+      menu: menu,
+      selected: selected,
+      checkboxKey: ValueKey('select-${drive.id}-$selected'),
+      onSelectedChanged: () => onSelectedChanged?.call(drive.id),
       chosen: chosen,
-      onFocusGained: onChoose,
-      child: Container(
-        // A hairline under every row is what made this read as a spreadsheet
-        // where every other table reads as a panel: the explorer separates its
-        // rows with the card ground and hover alone, and draws no lines at
-        // all. Inside the panel this list now sits in, the same holds here.
-        //
-        // The stacked layout keeps its lines. There the row is a block of
-        // wrapped text rather than a line of cells, and without a rule between
-        // them two drives run together - which is why the explorer's own phone
-        // view separates its tiles too, by a gap rather than by nothing.
-        decoration: showsColumns
-            ? null
-            : BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: colorTokens.strokeLow),
-                ),
-              ),
-        // The menu sits beside the row's content rather than inside it, so the
-        // tap that opens the drive and the tap that opens the menu are two
-        // targets rather than one on top of the other - and so the menu's own
-        // height is bounded by the row instead of setting it. A phone's row is
-        // the stacked card, which is taller than the target either way.
-        child: Row(
-          children: [
-            if (selected != null && showsColumns)
-              Padding(
-                padding: const EdgeInsets.only(
-                  left: driveListRowHorizontalPadding,
-                ),
-                child: SizedBox(
-                  width: driveListCheckboxColumn,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    // Its own target, beside the row's content rather than
-                    // inside it, so ticking a drive is never mistaken for
-                    // opening one.
-                    child: ArDriveCheckBox(
-                      key: ValueKey('select-${drive.id}-$selected'),
-                      checked: selected!,
-                      onChange: (_) => onSelectedChanged?.call(drive.id),
-                    ),
-                  ),
-                ),
-              ),
-            Expanded(
-              child: ArDriveClickArea(
-                child: Semantics(
-                  button: true,
-                  label: drive.name,
-                  child: _SelectOrOpen(
-                    onOpen: onOpen,
-                    onChoose: onChoose,
-                    child: Padding(
-                      // The checkbox column already supplies the gutter on
-                      // its side, so the name would otherwise be indented one
-                      // padding further than the heading above it.
-                      padding: EdgeInsets.only(
-                        left: selected != null && showsColumns
-                            ? 0
-                            : driveListRowHorizontalPadding,
-                        right: driveListRowHorizontalPadding,
-                        top: _rowVerticalPadding,
-                        bottom: _rowVerticalPadding,
-                      ),
-                      child:
-                          showsColumns ? _columns(context) : _stacked(context),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(
-              width: driveListMenuGutter,
-              // `heightFactor: 1` so the gutter is as tall as the menu and no
-              // taller. A plain Center fills whatever height it is offered, and
-              // in any box with a bounded height - which is most of them outside
-              // a sliver - that made the gutter set the row's height instead of
-              // fitting inside it.
-              child: menu == null
-                  ? null
-                  : Align(
-                      alignment: Alignment.center,
-                      heightFactor: 1,
-                      child: menu,
-                    ),
-            ),
-          ],
-        ),
-      ),
+      onChoose: onChoose,
+      child: showsColumns ? _columns(context) : _stacked(context),
     );
   }
 
   Widget _columns(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(flex: _nameFlex, child: _name(context)),
-        const SizedBox(width: _columnGap),
-        Expanded(flex: _syncFlex, child: _syncState(context)),
-        const SizedBox(width: _columnGap),
-        if (showsAllColumns) ...[
-          Expanded(
-              flex: _filesFlex, child: _files(context, underHeading: true)),
-          const SizedBox(width: _columnGap),
-        ],
-        Expanded(flex: _sizeFlex, child: _size(context)),
-        if (showsAllColumns) ...[
-          const SizedBox(width: _columnGap),
-          Expanded(
-              flex: _createdFlex, child: _created(context, underHeading: true)),
-        ],
+    return ListColumnsRow(
+      flexes: [
+        _nameFlex,
+        _syncFlex,
+        if (showsAllColumns) _filesFlex,
+        _sizeFlex,
+        if (showsAllColumns) _createdFlex,
+      ],
+      cells: [
+        _name(context),
+        _syncState(context),
+        if (showsAllColumns) _files(context, underHeading: true),
+        _size(context),
+        if (showsAllColumns) _created(context, underHeading: true),
       ],
     );
   }
@@ -544,57 +339,29 @@ class DriveListRow extends StatelessWidget {
   }
 
   Widget _name(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Public or private, said with the same icon the rest of the app uses
-        // for it rather than a word this row has no space for.
-        Tooltip(
-          message: drive.isPrivate
-              ? appLocalizationsOf(context).private
-              : appLocalizationsOf(context).public,
-          child: drive.isPrivate
-              ? ArDriveIcons.privateDrive(
-                  size: _iconSize,
-                  color: colorTokens.textMid,
-                )
-              : ArDriveIcons.publicDrive(
-                  size: _iconSize,
-                  color: colorTokens.textMid,
-                ),
-        ),
-        const SizedBox(width: _badgeGap),
-        // The name and the badge together, allowed to become two lines.
-        //
-        // The badge was a rigid child of this row, so the name - the only
-        // thing that says *which* drive this is - was the one that gave: at
-        // 320px it collapsed to zero width and vanished while the badge ran
-        // off the screen, from about 1.1x text scale. Ordinary browser zoom,
-        // not an accessibility extreme. `_stacked()` already wraps the figures
-        // below for the same reason; this row never got the same treatment.
-        Flexible(
-          child: Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: _badgeGap,
-            runSpacing: 2,
-            children: [
-              Text(
-                drive.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: typography.paragraphNormal(
-                  color: colorTokens.textHigh,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
+    return ListNameCell(
+      // Public or private, said with the same icon the rest of the app uses
+      // for it rather than a word this row has no space for.
+      icon: Tooltip(
+        message: drive.isPrivate
+            ? appLocalizationsOf(context).private
+            : appLocalizationsOf(context).public,
+        child: drive.isPrivate
+            ? ArDriveIcons.privateDrive(
+                size: _iconSize,
+                color: colorTokens.textMid,
+              )
+            : ArDriveIcons.publicDrive(
+                size: _iconSize,
+                color: colorTokens.textMid,
               ),
-              if (drive.isSharedWithMe) _SharedMarker(),
-              PublishedToWebMark(driveId: drive.id),
-            ],
-          ),
-        ),
+      ),
+      title: drive.name,
+      marks: [
+        if (drive.isSharedWithMe) _SharedMarker(),
+        PublishedToWebMark(driveId: drive.id),
       ],
     );
   }
@@ -782,147 +549,4 @@ String formatDriveSyncState(
 
   return appLocalizationsOf(context)
       .driveSyncedOnDate(formatDate(lastSyncedAt));
-}
-
-/// A row's tap, read the way a file manager reads it.
-///
-/// A mouse click highlights the row and a double-click opens it; a tap on a
-/// touch screen opens it; so do Enter and Space on the highlighted row, and a
-/// screen reader's activate, which reach [InkWell.onTap] with no pointer
-/// behind them. The rule is the explorer's, from [ArDriveDoubleClick], so the
-/// two lists cannot disagree.
-///
-/// The highlight is keyboard focus. A click puts focus on the row, which is
-/// what lets Enter open it straight after, and Tab moves the same highlight
-/// from row to row.
-class _SelectOrOpen extends StatefulWidget {
-  const _SelectOrOpen({
-    required this.onOpen,
-    required this.child,
-    this.onChoose,
-  });
-
-  final VoidCallback onOpen;
-
-  /// See [DriveListRow.onChoose]. Called on the click itself as well as when
-  /// focus arrives: a row that already has focus - the one whose details
-  /// were just closed - reports no change of focus when clicked again.
-  final VoidCallback? onChoose;
-  final Widget child;
-
-  @override
-  State<_SelectOrOpen> createState() => _SelectOrOpenState();
-}
-
-class _SelectOrOpenState extends State<_SelectOrOpen> {
-  final _doubleClick = ArDriveDoubleClick<Object>();
-  final _focusNode = FocusNode(debugLabel: 'DriveListRow');
-  static const _thisRow = Object();
-  PointerDeviceKind? _kind;
-
-  @override
-  void dispose() {
-    _doubleClick.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _onTap() {
-    final kind = _kind;
-    _kind = null;
-
-    if (_doubleClick.completes(_thisRow) || ArDriveDoubleClick.tapOpens(kind)) {
-      widget.onOpen();
-      return;
-    }
-
-    _focusNode.requestFocus();
-    widget.onChoose?.call();
-    _doubleClick.arm(_thisRow);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      focusNode: _focusNode,
-      // The row paints its own highlight across its full width, checkbox and
-      // menu included; the InkWell's would cover only the middle.
-      focusColor: Colors.transparent,
-      onTapDown: (details) => _kind = details.kind,
-      onTapCancel: () => _kind = null,
-      onTap: _onTap,
-      child: widget.child,
-    );
-  }
-}
-
-/// Paints a row's hover state, and its selected state.
-///
-/// A row that opens a drive when clicked should look like one. The row uses an
-/// `InkWell` for its tap, and an InkWell's hover needs a `Material` ancestor
-/// that a table built out of Containers does not provide - so nothing ever
-/// painted. This owns the state so the row itself can stay stateless.
-class _HoverHighlight extends StatefulWidget {
-  const _HoverHighlight({
-    required this.colour,
-    required this.selectedColour,
-    required this.selected,
-    required this.child,
-    this.chosen,
-    this.onFocusGained,
-  });
-
-  final Color colour;
-  final Color selectedColour;
-  final bool selected;
-  final Widget child;
-
-  /// See [DriveListRow.chosen].
-  final bool? chosen;
-
-  /// Called when focus arrives anywhere in the row: a click, or Tab.
-  final VoidCallback? onFocusGained;
-
-  @override
-  State<_HoverHighlight> createState() => _HoverHighlightState();
-}
-
-class _HoverHighlightState extends State<_HoverHighlight> {
-  bool _isHovering = false;
-
-  /// Whether focus is anywhere in the row: the row just clicked, or reached
-  /// with Tab.
-  bool _hasFocus = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: ColoredBox(
-        // Where a drive's details can be open, the highlight is theirs: it
-        // goes when they are closed, as a chosen row does in the explorer.
-        // Elsewhere, focus is the only sign a click landed.
-        color: widget.selected || (widget.chosen ?? _hasFocus)
-            ? widget.selectedColour
-            : _isHovering
-                ? widget.colour
-                : Colors.transparent,
-        // Not focusable itself; it only hears when something inside the row
-        // takes focus or gives it up.
-        child: Focus(
-          canRequestFocus: false,
-          skipTraversal: true,
-          includeSemantics: false,
-          onFocusChange: (hasFocus) {
-            setState(() => _hasFocus = hasFocus);
-            if (hasFocus) {
-              widget.onFocusGained?.call();
-            }
-          },
-          child: widget.child,
-        ),
-      ),
-    );
-  }
 }

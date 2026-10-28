@@ -109,6 +109,7 @@ class DriveNavRow extends StatelessWidget {
     this.isMuted = false,
     this.dense = false,
     this.isExpanded,
+    this.onToggle,
   });
 
   /// Null for a row that belongs to the row above it - a drive under its
@@ -136,6 +137,11 @@ class DriveNavRow extends StatelessWidget {
   /// showing, said to a screen reader. Null for every other row.
   final bool? isExpanded;
 
+  /// For a heading whose words go somewhere: the chevron alone opens and
+  /// closes the rows under it, as its own button. Null when the whole row
+  /// toggles, or nothing does.
+  final VoidCallback? onToggle;
+
   /// The icon's size, and the space a row without one keeps for it.
   static const iconSize = 18.0;
 
@@ -158,7 +164,8 @@ class DriveNavRow extends StatelessWidget {
         child: Semantics(
           button: true,
           selected: isCurrent,
-          expanded: isExpanded,
+          // Said by the chevron instead when it is a button of its own.
+          expanded: onToggle == null ? isExpanded : null,
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onTap,
@@ -215,10 +222,65 @@ class DriveNavRow extends StatelessWidget {
                       const SizedBox(width: 8),
                       trailing!,
                     ],
+                    if (onToggle != null) ...[
+                      const SizedBox(width: 4),
+                      _Chevron(
+                        key: ValueKey('nav-toggle-$label'),
+                        section: label,
+                        isExpanded: isExpanded ?? false,
+                        onToggle: onToggle!,
+                      ),
+                    ],
                   ],
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A heading's chevron as a button of its own: the heading's words open its
+/// page, and this opens and closes the rows under it.
+class _Chevron extends StatelessWidget {
+  const _Chevron({
+    super.key,
+    required this.section,
+    required this.isExpanded,
+    required this.onToggle,
+  });
+
+  final String section;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final strings = appLocalizationsOf(context);
+
+    return Semantics(
+      container: true,
+      button: true,
+      expanded: isExpanded,
+      label: isExpanded
+          ? strings.navCollapseSection(section)
+          : strings.navExpandSection(section),
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onToggle,
+        // Wider than the arrow: the row's padding is all that is around it,
+        // and a 16px target is easy to miss for the label beside it.
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: AnimatedRotation(
+            turns: isExpanded ? 0.5 : 0,
+            duration: const Duration(milliseconds: 150),
+            child:
+                ArDriveIcons.chevronDown(size: 16, color: colorTokens.textMid),
           ),
         ),
       ),

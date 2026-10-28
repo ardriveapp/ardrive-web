@@ -46,6 +46,7 @@ import 'package:ardrive/user/name/domain/repository/profile_logo_repository.dart
 import 'package:ardrive/user/name/presentation/bloc/profile_name_bloc.dart';
 import 'package:ardrive/user/repositories/user_preferences_repository.dart';
 import 'package:ardrive/user/repositories/user_repository.dart';
+import 'package:ardrive/web_pages/presentation/web_pages_cubit.dart';
 import 'package:ardrive/utils/app_flavors.dart';
 import 'package:ardrive/utils/app_url_strategy.dart';
 import 'package:ardrive/utils/dependency_injection_utils.dart';
@@ -414,6 +415,15 @@ class AppState extends State<App> {
         BlocProvider(
           create: (context) => PublicationsCubit(
             repository: context.read<PublicationRepository>(),
+            profileCubit: context.read<ProfileCubit>(),
+          ),
+        ),
+        // Publications and deployments together, for the Web pages nav
+        // heading and page. Lazy: nothing reads it until the nav shows.
+        BlocProvider(
+          create: (context) => WebPagesCubit(
+            driveDao: context.read<DriveDao>(),
+            publicationsCubit: context.read<PublicationsCubit>(),
             profileCubit: context.read<ProfileCubit>(),
           ),
         ),
