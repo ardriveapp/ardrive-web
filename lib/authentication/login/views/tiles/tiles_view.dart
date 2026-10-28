@@ -1,521 +1,919 @@
-// ignore_for_file: library_private_types_in_public_api, deprecated_member_use
+import 'dart:async';
+import 'dart:math' as math;
 
-import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/misc/misc.dart';
+import 'package:ardrive/turbo/services/payment_service.dart';
+import 'package:ardrive/utils/app_localizations_wrapper.dart';
+import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/open_url.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
-import 'package:carousel_slider/carousel_slider.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 
+/// The brand red and the warm highlight it fades from, as in the art.
+const _brandRed = Color(0xFFD31721);
+const _brandPeach = Color(0xFFF4BE8C);
+
+/// The bento beside the sign-in panel: what ArDrive is, in five tiles.
+///
+/// Every width keeps all five. Wide, they sit in three columns; narrower, two;
+/// on a phone, below the sign-in panel, one. Which one is decided by the
+/// bento's own width, and an unbounded height (inside a scroll view) means the
+/// stacked phone column.
 class TilesView extends StatelessWidget {
-  const TilesView({
-    super.key,
-  });
+  const TilesView({super.key, this.loadPricePerGb});
+
+  /// The price of 1 GB in USD; null when it can't be found. Defaults to
+  /// Turbo's, read from [PaymentService].
+  final Future<double?> Function()? loadPricePerGb;
+
+  /// From here the bento has three columns.
+  static const threeColumnsFrom = 600.0;
+
+  /// From here, and with a bounded height, it has two.
+  static const twoColumnsFrom = 400.0;
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    final loadPrice =
+        loadPricePerGb ?? () => turboPricePerGb(context.read<PaymentService>());
+    return LayoutBuilder(builder: (context, constraints) {
+      final width = constraints.maxWidth;
+      if (!constraints.hasBoundedHeight || width < twoColumnsFrom) {
+        return _Stacked(loadPrice: loadPrice);
+      }
+      if (width < threeColumnsFrom) {
+        return _TwoColumns(loadPrice: loadPrice);
+      }
+      return _ThreeColumns(width: width, loadPrice: loadPrice);
+    });
+  }
+}
 
-    if (width < SMALL_DESKTOP) {
-      return _tablet();
-    } else if (width < LARGE_DESKTOP) {
-      return _smallDesktop();
-    } else {
-      return _largeDesktop();
+/// The price of 1 GB in USD from Turbo: the credits a gigabyte costs, against
+/// the credits ten dollars buy (Turbo's fees included, as a buyer pays them). Read once per session; null when Turbo can't
+/// be reached, and the tile then leaves the price out.
+Future<double?> turboPricePerGb(PaymentService payments) =>
+    _pricePerGb ??= () async {
+      try {
+        final perGb = await payments.getPriceForBytes(byteSize: 1000000000);
+        final perTenDollars = await payments.getPriceForFiat(
+          wallet: null,
+          // In cents, as Turbo takes it.
+          amount: 1000,
+          currency: 'usd',
+        );
+        if (perTenDollars.winc == BigInt.zero) return null;
+        return perGb / perTenDollars.winc * 10;
+      } catch (e) {
+        logger.w('[bento] could not read the price of 1 GB: $e');
+        _pricePerGb = null;
+        return null;
+      }
+    }();
+Future<double?>? _pricePerGb;
+
+class _ThreeColumns extends StatelessWidget {
+  const _ThreeColumns({required this.width, required this.loadPrice});
+
+  final double width;
+  final Future<double?> Function() loadPrice;
+
+  @override
+  Widget build(BuildContext context) {
+    // The publishing tile is as wide as its one-line title needs; the slides
+    // as wide as their art.
+    final webWidth = (width * 0.4).clamp(268.0, 300.0);
+    final slidesWidth = (width * 0.4).clamp(240.0, 280.0);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Expanded(child: _PeopleTile()),
+              const SizedBox(width: 8),
+              SizedBox(width: webWidth, child: const _OnlineTile()),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Expanded(child: _HeroTile()),
+        const SizedBox(height: 8),
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(width: slidesWidth, child: const _FeatureSlides()),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _CostTile(loadPrice: loadPrice, showEquivalents: true),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TwoColumns extends StatelessWidget {
+  const _TwoColumns({required this.loadPrice});
+
+  final Future<double?> Function() loadPrice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Expanded(flex: 10, child: _PeopleTile()),
+        const SizedBox(height: 8),
+        const Expanded(flex: 6, child: _HeroTile(compact: true)),
+        const SizedBox(height: 8),
+        const Expanded(flex: 6, child: _OnlineTile()),
+        const SizedBox(height: 8),
+        // The price tile is the tallest of these; the page is never shorter
+        // than 832, so at least 816 is shared out.
+        Expanded(
+          flex: 9,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Expanded(child: _FeatureSlides()),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _CostTile(loadPrice: loadPrice, showEquivalents: false),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Stacked extends StatelessWidget {
+  const _Stacked({required this.loadPrice});
+
+  final Future<double?> Function() loadPrice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _PeopleTile(),
+        const SizedBox(height: 8),
+        const SizedBox(height: 128, child: _HeroTile(compact: true)),
+        const SizedBox(height: 8),
+        const SizedBox(height: 200, child: _OnlineTile()),
+        const SizedBox(height: 8),
+        const SizedBox(height: 260, child: _FeatureSlides()),
+        const SizedBox(height: 8),
+        _CostTile(loadPrice: loadPrice, showEquivalents: false),
+      ],
+    );
+  }
+}
+
+/// [child] takes the room that is left when there is a bounded height to share,
+/// and its own height in the phone column, where there is none.
+class _FlexIfBounded extends StatelessWidget {
+  const _FlexIfBounded({required this.bounded, required this.child});
+
+  final bool bounded;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) =>
+      bounded ? Flexible(child: child) : child;
+}
+
+/// Whether the viewer asked for less motion: nothing then moves on its own.
+bool _still(BuildContext context) => MediaQuery.of(context).disableAnimations;
+
+bool _isLight(BuildContext context) =>
+    ArDriveTheme.of(context).themeData.name == 'light';
+
+/// One tile: a large panel, radius 12, on the panel surface. A tile that is a
+/// link lifts a little under the pointer; the others don't react.
+class _Tile extends StatefulWidget {
+  const _Tile({
+    required this.child,
+    this.padding = const EdgeInsets.all(24),
+    this.onTap,
+    this.semanticsLabel,
+  });
+
+  final Widget child;
+  final EdgeInsets padding;
+  final VoidCallback? onTap;
+  final String? semanticsLabel;
+
+  @override
+  State<_Tile> createState() => _TileState();
+}
+
+class _TileState extends State<_Tile> {
+  bool _hovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final lifted = widget.onTap != null && _hovering;
+    final tile = AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      transform: Matrix4.translationValues(0, lifted ? -2 : 0, 0),
+      padding: widget.padding,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: colors.containerL1,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: lifted ? colors.strokeHigh : colors.strokeLow,
+        ),
+      ),
+      child: widget.child,
+    );
+    if (widget.onTap == null) return tile;
+    return Semantics(
+      link: true,
+      label: widget.semanticsLabel,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) {
+          if (mounted) setState(() => _hovering = true);
+        },
+        onExit: (_) {
+          if (mounted) setState(() => _hovering = false);
+        },
+        child: GestureDetector(onTap: widget.onTap, child: tile),
+      ),
+    );
+  }
+}
+
+/// Dots under a slider: the current one is a bar that fills over [interval],
+/// like a progress bar. Each dot is a 24 px target that a keyboard reaches.
+class _ProgressDots extends StatefulWidget {
+  const _ProgressDots({
+    required this.count,
+    required this.index,
+    required this.interval,
+    required this.labels,
+    required this.groupLabel,
+    required this.onPick,
+    this.running = true,
+  });
+
+  final int count;
+  final int index;
+  final Duration interval;
+  final List<String> labels;
+  final String groupLabel;
+  final ValueChanged<int> onPick;
+
+  /// False while paused or under reduced motion: the bar shows full.
+  final bool running;
+
+  @override
+  State<_ProgressDots> createState() => _ProgressDotsState();
+}
+
+class _ProgressDotsState extends State<_ProgressDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fill =
+      AnimationController(vsync: this, duration: widget.interval);
+
+  @override
+  void initState() {
+    super.initState();
+    _restart();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProgressDots old) {
+    super.didUpdateWidget(old);
+    if (old.index != widget.index || old.running != widget.running) {
+      _restart();
     }
   }
 
-  Widget _tablet() {
-    return const _RoundContainer(child: _PermanentStorageTile());
+  void _restart() {
+    if (widget.running) {
+      _fill.forward(from: 0);
+    } else {
+      _fill.value = 1;
+    }
   }
 
-  Widget _largeDesktop() {
-    return Column(
-      children: [
-        Flexible(
-          child: Row(
-            children: [
-              const Flexible(
-                flex: 2,
-                child: Padding(
-                  padding:
-                      EdgeInsets.only(left: 8, right: 8, top: 8, bottom: 8),
-                  child: _RoundContainer(child: _ArDriveIsForEveryOne()),
-                ),
-              ),
-              Flexible(
-                child: Padding(
-                    padding: const EdgeInsets.only(
-                      right: 8,
-                      top: 8,
-                      bottom: 8,
-                    ),
-                    child: _RoundContainer(
-                      padding: const EdgeInsets.all(0),
-                      child: _EncryptionTile(),
-                    )),
-              )
-            ],
-          ),
-        ),
-        const Flexible(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 8,
-              right: 8,
-              bottom: 8,
-            ),
-            child: _RoundContainer(
-              child: Row(
-                children: [
-                  Flexible(flex: 1, child: _PermanentStorageTile()),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const Flexible(
-          child: Row(
-            children: [
-              Flexible(
-                flex: 2,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    bottom: 8,
-                    left: 8,
-                  ),
-                  child: _Bento5(),
-                ),
-              ),
-              Flexible(
-                flex: 3,
-                child: Padding(
-                  padding: EdgeInsets.only(
-                    left: 8,
-                    bottom: 8,
-                    right: 8,
-                  ),
-                  child: _RoundContainer(
-                    child: Center(
-                      child: _PriceCalculator(),
+  @override
+  void dispose() {
+    _fill.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    return Semantics(
+      label: widget.groupLabel,
+      container: true,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (var i = 0; i < widget.count; i++)
+            Semantics(
+              button: true,
+              selected: i == widget.index,
+              label: widget.labels[i],
+              excludeSemantics: true,
+              child: InkWell(
+                key: ValueKey('bentoDot-${widget.groupLabel}-$i'),
+                onTap: () => widget.onPick(i),
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox.square(
+                  dimension: 24,
+                  child: Center(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: i == widget.index ? 28 : 8,
+                      height: 8,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        color: colors.strokeHigh,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: i == widget.index
+                          ? AnimatedBuilder(
+                              animation: _fill,
+                              builder: (context, _) => FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: _fill.value,
+                                child: ColoredBox(color: colors.iconMid),
+                              ),
+                            )
+                          : null,
                     ),
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _smallDesktop() {
-    return const Column(
-      children: [
-        Flexible(
-          flex: 1,
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 8,
-              right: 8,
-              top: 8,
             ),
-            child: _RoundContainer(child: _PermanentStorageTile()),
-          ),
-        ),
-        Flexible(
-          flex: 1,
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 8,
-              right: 8,
-              top: 8,
-              bottom: 8,
-            ),
-            child: Row(
-              children: [
-                Flexible(
-                  flex: 1,
-                  child: Padding(
-                    padding: EdgeInsets.only(right: 8.0),
-                    child: _Bento5(),
-                  ),
-                ),
-                Flexible(
-                  flex: 1,
-                  child: _RoundContainer(child: _PriceCalculator()),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _EncryptionTile extends StatelessWidget {
-  // The picture's own size. The heading is laid out on it, so both scale and
-  // crop together.
-  static const _pictureSize = Size(252, 320);
-
-  @override
-  Widget build(BuildContext context) {
-    // TODO: replace with ArDriveTheme .isLight method
-    final isLightMode = ArDriveTheme.of(context).themeData.name == 'light';
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(8),
-        topRight: Radius.circular(8),
-        bottomLeft: Radius.circular(8),
-        bottomRight: Radius.circular(8),
-      ),
-      child: FittedBox(
-        fit: BoxFit.cover,
-        clipBehavior: Clip.antiAliasWithSaveLayer,
-        child: SizedBox.fromSize(
-          size: _pictureSize,
-          child: Stack(
-            children: [
-              SvgPicture.asset(
-                isLightMode
-                    ? Resources.images.login.bentoBox.bentoBox2LightMode
-                    : Resources.images.login.bentoBox.bentoBox2DarkMode,
-              ),
-              Positioned(
-                left: 28,
-                top: 26,
-                right: 28,
-                child: Text(
-                  'AES-256 encryption on your device',
-                  style: ArDriveTypographyNew.of(context).heading6(
-                    color: colorTokens.textMid,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
 }
 
-class _RoundContainer extends StatefulWidget {
-  const _RoundContainer({
-    required this.child,
-    this.padding,
-  });
-  final Widget child;
-  final EdgeInsets? padding;
+/// A timer that steps an index, unless reduced motion is on or it is held.
+mixin _Stepper<T extends StatefulWidget> on State<T> {
+  Timer? _timer;
+  int index = 0;
+  bool held = false;
+
+  int get length;
+  Duration get interval;
+
+  void startStepping() {
+    _timer?.cancel();
+    if (_still(context)) return;
+    _timer = Timer.periodic(interval, (_) {
+      if (!held && mounted) setState(() => index = (index + 1) % length);
+    });
+  }
+
+  void pick(int i) {
+    setState(() => index = i);
+    // Picking restarts the count, so the chosen one gets its full time.
+    startStepping();
+  }
 
   @override
-  State<_RoundContainer> createState() => _RoundContainerState();
-}
-
-class _RoundContainerState extends State<_RoundContainer> {
-  bool _isHovering = false;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    startStepping();
+  }
 
   @override
-  Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: Container(
-        padding: widget.padding ?? const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: _isHovering
-                ? colorTokens.textRed
-                : colorTokens.strokeLow.withOpacity(0.08),
-            width: 1,
-          ),
-          borderRadius: BorderRadius.circular(8),
-          color: colorTokens.containerL1,
-        ),
-        child: widget.child,
-      ),
-    );
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 }
 
-class _ArDriveIsForEveryOne extends StatefulWidget {
-  const _ArDriveIsForEveryOne();
-
-  @override
-  State<_ArDriveIsForEveryOne> createState() => __ArDriveIsForEveryOneState();
-}
-
-class __ArDriveIsForEveryOneState extends State<_ArDriveIsForEveryOne> {
-  _ProfileImageTileModel? _hoveredProfile;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final description = _hoveredProfile != null
-        ? _hoveredProfile!.description
-        : 'Your permanent hard drive that never forgets.';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 0, left: 28),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 150),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            child: Row(
-              key: ValueKey('FirstRow$_hoveredProfile'),
-              children: [
-                Text(
-                  'ArDrive is for',
-                  style: ArDriveTypographyNew.of(context).paragraphXLarge(
-                    color: ArDriveTheme.of(context)
-                        .themeData
-                        .colorTokens
-                        .textMid
-                        .withOpacity(0.5),
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-                Text(
-                  ' ${_hoveredProfile != null ? _hoveredProfile!.name : 'everyone'}',
-                  style: ArDriveTypographyNew.of(context).paragraphXLarge(
-                    color: _hoveredProfile != null
-                        ? colorTokens.textRed
-                        : colorTokens.textMid,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(left: 28),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 150),
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            child: Row(
-              key: ValueKey('SecondRow$_hoveredProfile'),
-              children: [
-                Text(
-                  description,
-                  textAlign: TextAlign.start,
-                  style: ArDriveTypographyNew.of(context).paragraphNormal(
-                    color:
-                        ArDriveTheme.of(context).themeData.colorTokens.textLow,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        Flexible(
-          child: CarouselWithGroups(
-            onHover: (model) {
-              setState(() {
-                _hoveredProfile = model;
-              });
-            },
-            onEndHover: () {
-              setState(() {
-                _hoveredProfile = null;
-              });
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProfileImageTile extends StatefulWidget {
-  const _ProfileImageTile({
-    required this.model,
-    required this.onHover,
-    required this.onEndHover,
-  });
-
-  final Function(_ProfileImageTileModel) onHover;
-  final Function() onEndHover;
-
-  final _ProfileImageTileModel model;
-
-  @override
-  State<_ProfileImageTile> createState() => _ProfileImageTileState();
-}
-
-class _ProfileImageTileModel {
+class _Person {
+  const _Person(this.image, this.name, this.line);
   final String image;
   final String name;
-  final String description;
-
-  _ProfileImageTileModel(this.image, this.name, this.description);
+  final String line;
 }
 
-class _ProfileImageTileState extends State<_ProfileImageTile> {
-  bool _isHovering = false;
+class _PeopleTile extends StatefulWidget {
+  const _PeopleTile();
+
+  @override
+  State<_PeopleTile> createState() => _PeopleTileState();
+}
+
+class _PeopleTileState extends State<_PeopleTile> with _Stepper {
+  _Person? _hovered;
+
+  @override
+  int get length => 2;
+
+  @override
+  Duration get interval => const Duration(seconds: 10);
+
+  List<List<_Person>> _groups(BuildContext context) {
+    final s = appLocalizationsOf(context);
+    final images = Resources.images.login.bentoBox;
+    return [
+      [
+        _Person(images.profile1, s.bentoEducators, s.bentoEducatorsLine),
+        _Person(images.profile2, s.bentoJournalists, s.bentoJournalistsLine),
+        _Person(images.profile3, s.bentoPodcasters, s.bentoPodcastersLine),
+      ],
+      [
+        _Person(images.profile4, s.bentoArtists, s.bentoArtistsLine),
+        _Person(images.profile5, s.bentoCreators, s.bentoCreatorsLine),
+        _Person(
+            images.profile6, s.bentoSoundEngineers, s.bentoSoundEngineersLine),
+      ],
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(8),
-        topRight: Radius.circular(8),
-      ),
-      clipBehavior: Clip.hardEdge,
-      child: MouseRegion(
-        onHover: (_) {
-          setState(() => _isHovering = true);
-          widget.onHover(widget.model);
-        },
-        onExit: (_) {
-          setState(() => _isHovering = false);
-          widget.onEndHover();
-        },
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: colorTokens.strokeLow.withOpacity(0.08),
-              width: 1,
-            ),
-            color: colorTokens.containerL0,
-            borderRadius: const BorderRadius.all(
-              Radius.circular(8),
-            ),
-          ),
-          padding: const EdgeInsets.all(4),
-          height: 106,
-          width: 106,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.all(
-                  Radius.circular(8),
-                ),
-                child: ArDriveImage(
-                  image: AssetImage(widget.model.image),
-                  fit: BoxFit.contain,
-                  height: 106,
-                  width: 106,
-                ),
-              ),
-              if (!_isHovering)
-                Container(
-                  height: 106,
-                  width: 107,
-                  decoration: BoxDecoration(
-                    color: colorTokens.containerL0.withOpacity(0.75),
-                  ),
-                  child: Center(
-                    child: Text(
-                      widget.model.name,
-                      textAlign: TextAlign.center,
-                      style: ArDriveTypographyNew.of(context).paragraphNormal(
-                        color: colorTokens.textLow,
-                        fontWeight: ArFontWeight.bold,
+    final s = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
+    final groups = _groups(context);
+    final hovered = _hovered;
+    return _Tile(
+      child: LayoutBuilder(
+        builder: (context, constraints) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          // Heading at the top, dots at the bottom, the people centred
+          // between them, however tall the tile.
+          mainAxisSize: constraints.hasBoundedHeight
+              ? MainAxisSize.max
+              : MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: '${s.bentoIsFor} '),
+                    TextSpan(
+                      text: hovered?.name ?? s.bentoEveryone,
+                      style: TextStyle(
+                        color: hovered == null ? colors.textHigh : _brandRed,
                       ),
                     ),
+                  ]),
+                  key: const Key('bentoPeopleHeading'),
+                  style: type.heading6(
+                    color: colors.textHigh,
+                    fontWeight: ArFontWeight.semiBold,
                   ),
                 ),
-            ],
-          ),
+                const SizedBox(height: 4),
+                Text(
+                  hovered?.line ?? s.bentoEveryoneLine,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: type.paragraphNormal(color: colors.textMid),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _FlexIfBounded(
+              bounded: constraints.hasBoundedHeight,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 350),
+                child: Row(
+                  key: ValueKey('bentoPeople-$index'),
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final (i, person) in groups[index].indexed) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      Expanded(
+                        child: _PersonPicture(
+                          person: person,
+                          onHover: (on) {
+                            if (!mounted) return;
+                            setState(() {
+                              _hovered = on ? person : null;
+                              held = on;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _ProgressDots(
+              count: groups.length,
+              index: index,
+              interval: interval,
+              running: !held && !_still(context),
+              groupLabel: s.bentoPeopleDots,
+              labels: [
+                for (final g in groups) g.map((p) => p.name).join(', '),
+              ],
+              onPick: pick,
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _PermanentStorageTile extends StatefulWidget {
-  const _PermanentStorageTile();
+class _PersonPicture extends StatelessWidget {
+  const _PersonPicture({required this.person, required this.onHover});
 
-  @override
-  State<_PermanentStorageTile> createState() => _PermanentStorageTileState();
-}
-
-class _PermanentStorageTileState extends State<_PermanentStorageTile> {
-  bool _isHovering = false;
+  final _Person person;
+  final ValueChanged<bool> onHover;
 
   @override
   Widget build(BuildContext context) {
-    final typography = ArDriveTypographyNew.of(context);
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
     return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.all(
-              Radius.circular(8),
+      onEnter: (_) => onHover(true),
+      onExit: (_) => onHover(false),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 140),
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: colors.strokeLow),
             ),
-            child: ArDriveImage(
-              image: AssetImage(
-                Resources.images.login.bentoBox.particleSpace,
-              ),
-              fit: BoxFit.cover,
-              color: colorTokens.containerL0,
-              colorBlendMode: BlendMode.color,
-            ),
-          ),
-          Align(
-            alignment: Alignment.center,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                AnimatedScale(
-                  scale: _isHovering ? 1.05 : 1.0,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  child: SvgPicture.asset(
-                    Resources.images.login.bentoBox.dataStorage,
-                    height: 133,
-                    width: 133,
-                  ),
-                ),
-                const SizedBox(width: 29),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Permanent',
-                      style: typography.heading2(
-                          color: colorTokens.textRed,
-                          fontWeight: ArFontWeight.semiBold),
+                Image.asset(person.image, fit: BoxFit.cover),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Color(0x00000000), Color(0xB8000000)],
+                      ),
                     ),
-                    Text(
-                      'data storage',
-                      style: typography.heading2(
-                        color: colorTokens.textMid,
+                    child: Text(
+                      person.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      // White on the photo's dark fade, in both themes.
+                      style: type.paragraphSmall(
+                        color: const Color(0xFFFFFFFF),
                         fontWeight: ArFontWeight.semiBold,
                       ),
                     ),
-                  ],
-                )
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Put it online, for good": an example address types itself out, holds,
+/// and gives way to the next. Every name is an example.
+class _OnlineTile extends StatefulWidget {
+  const _OnlineTile();
+
+  @override
+  State<_OnlineTile> createState() => _OnlineTileState();
+}
+
+class _OnlineTileState extends State<_OnlineTile> {
+  static const _names = ['maya', 'recipes', 'my-band', 'thesis'];
+  static const _typeEvery = Duration(milliseconds: 120);
+
+  /// Ticks a finished name is held before it is deleted.
+  static const _holdTicks = 14;
+
+  Timer? _typer;
+  Timer? _blink;
+  int _example = 0;
+  int _chars = 0;
+  int _held = 0;
+  bool _deleting = false;
+  bool _caretOn = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _typer?.cancel();
+    _blink?.cancel();
+    if (_still(context)) {
+      _chars = _names[_example].length;
+      return;
+    }
+    _typer = Timer.periodic(_typeEvery, (_) => _tick());
+    _blink = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (mounted) setState(() => _caretOn = !_caretOn);
+    });
+  }
+
+  void _tick() {
+    if (!mounted) return;
+    final name = _names[_example];
+    setState(() {
+      if (!_deleting) {
+        if (_chars < name.length) {
+          _chars++;
+        } else if (++_held > _holdTicks) {
+          _held = 0;
+          _deleting = true;
+        }
+      } else if (_chars > 0) {
+        _chars--;
+      } else {
+        _deleting = false;
+        _example = (_example + 1) % _names.length;
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _typer?.cancel();
+    _blink?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
+    final labels = [
+      s.bentoExamplePortfolio,
+      s.bentoExampleRecipes,
+      s.bentoExampleBand,
+      s.bentoExampleResearch,
+    ];
+    final still = _still(context);
+    final address = type.heading3(fontWeight: ArFontWeight.semiBold);
+    return _Tile(
+      child: Stack(
+        children: [
+          const Positioned.fill(child: _Sparkles()),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                s.bentoOnlineTitle,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.fade,
+                style: type.heading6(
+                  color: colors.textHigh,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                s.bentoOnlineBody,
+                style: type.paragraphNormal(color: colors.textMid),
+              ),
+              Expanded(
+                child: Center(
+                  // Shrinks rather than overflows, for a narrow tile or a
+                  // longer translation of the label.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Semantics(
+                          label: '${_names[_example]}.ar.io',
+                          excludeSemantics: true,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ShaderMask(
+                                blendMode: BlendMode.srcIn,
+                                shaderCallback: (bounds) =>
+                                    const LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [_brandPeach, _brandRed],
+                                  stops: [0, 0.45],
+                                ).createShader(bounds),
+                                child: Text(
+                                  _names[_example].substring(0, _chars),
+                                  key: const Key('bentoTypedName'),
+                                  style: address,
+                                ),
+                              ),
+                              Opacity(
+                                opacity: !still && _caretOn ? 1 : 0,
+                                child: Container(
+                                  width: 2,
+                                  height: 24,
+                                  margin:
+                                      const EdgeInsets.symmetric(horizontal: 1),
+                                  color: _brandRed,
+                                ),
+                              ),
+                              Text(
+                                '.ar.io',
+                                style: address.copyWith(color: colors.textLow),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 350),
+                          child: Text(
+                            labels[_example],
+                            key: ValueKey(_example),
+                            style: type.paragraphSmall(
+                              color: colors.textLow,
+                              fontWeight: ArFontWeight.semiBold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The art's sparkles and dots, drawn behind a tile that has no picture.
+class _Sparkles extends StatelessWidget {
+  const _Sparkles();
+
+  @override
+  Widget build(BuildContext context) =>
+      ExcludeSemantics(child: CustomPaint(painter: _SparklePainter()));
+}
+
+class _SparklePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    void sparkle(double x, double y, double r, double opacity) {
+      final c = Offset(size.width * x, size.height * y);
+      final path = Path()
+        ..moveTo(c.dx, c.dy - r)
+        ..quadraticBezierTo(c.dx, c.dy, c.dx + r, c.dy)
+        ..quadraticBezierTo(c.dx, c.dy, c.dx, c.dy + r)
+        ..quadraticBezierTo(c.dx, c.dy, c.dx - r, c.dy)
+        ..quadraticBezierTo(c.dx, c.dy, c.dx, c.dy - r)
+        ..close();
+      final paint = Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            _brandPeach.withOpacity(opacity),
+            _brandRed.withOpacity(opacity),
+          ],
+        ).createShader(Rect.fromCircle(center: c, radius: r));
+      canvas.drawPath(path, paint);
+    }
+
+    void dot(double x, double y, double r, double opacity) => canvas.drawCircle(
+        Offset(size.width * x, size.height * y),
+        r,
+        Paint()..color = const Color(0xFF93161D).withOpacity(opacity));
+
+    // In the lower half, around the address, clear of the title and text.
+    sparkle(0.1, 0.72, 12, 0.7);
+    sparkle(0.9, 0.86, 6, 0.5);
+    dot(0.9, 0.62, 3, 0.3);
+    dot(0.2, 0.92, 2, 0.4);
+    dot(0.72, 0.95, 2, 0.2);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// The large tile: "Permanent web publishing and data storage", over a field
+/// of particles that drifts very slowly.
+class _HeroTile extends StatefulWidget {
+  const _HeroTile({this.compact = false});
+
+  /// Narrow layouts: a smaller picture and heading.
+  final bool compact;
+
+  @override
+  State<_HeroTile> createState() => _HeroTileState();
+}
+
+class _HeroTileState extends State<_HeroTile>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _drift = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 60),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_still(context)) {
+      _drift.stop();
+    } else if (!_drift.isAnimating) {
+      _drift.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _drift.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
+    final heading = widget.compact
+        ? type.heading5(fontWeight: ArFontWeight.bold)
+        : type.heading2(fontWeight: ArFontWeight.bold);
+    final picture = widget.compact ? 64.0 : 128.0;
+    return _Tile(
+      padding: EdgeInsets.zero,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ExcludeSemantics(
+            child: AnimatedBuilder(
+              animation: _drift,
+              builder: (context, child) {
+                final t = _drift.value * 2 * math.pi;
+                return Transform.translate(
+                  offset: Offset(math.sin(t) * 10, math.cos(t) * 6),
+                  child: Transform.scale(scale: 1.08, child: child),
+                );
+              },
+              child: Opacity(
+                opacity: _isLight(context) ? 0.35 : 0.55,
+                child: Image.asset(
+                  Resources.images.login.bentoBox.particleSpace,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SvgPicture.asset(
+                  Resources.images.login.bentoBox.dataStorage,
+                  height: picture,
+                  width: picture,
+                ),
+                const SizedBox(width: 24),
+                Flexible(
+                  child: Text.rich(
+                    TextSpan(children: [
+                      TextSpan(
+                        text: '${s.bentoHeroAccent}\n',
+                        style: const TextStyle(color: _brandRed),
+                      ),
+                      TextSpan(text: s.bentoHeroRest),
+                    ]),
+                    style: heading.copyWith(color: colors.textMid),
+                  ),
+                ),
               ],
             ),
           ),
@@ -525,434 +923,278 @@ class _PermanentStorageTileState extends State<_PermanentStorageTile> {
   }
 }
 
-class CarouselWithGroups extends StatefulWidget {
-  final Function(_ProfileImageTileModel model) onHover;
-  final Function() onEndHover;
-
-  const CarouselWithGroups({
-    super.key,
-    required this.onHover,
-    required this.onEndHover,
-  });
-
-  @override
-  _CarouselWithGroupsState createState() => _CarouselWithGroupsState();
-}
-
-class _CarouselWithGroupsState extends State<CarouselWithGroups> {
-  final CarouselController _mainCarouselController = CarouselController();
-
-  final List<List<_ProfileImageTileModel>> groupImages = [
-    // Group 1 images
-    [
-      _ProfileImageTileModel(Resources.images.login.bentoBox.profile1,
-          'Educators', 'Students and educators can preserve work forever.'),
-      _ProfileImageTileModel(
-          Resources.images.login.bentoBox.profile2,
-          'Journalists',
-          'Unleash journalistic freedom with censorship-resistant storage.'),
-      _ProfileImageTileModel(
-          Resources.images.login.bentoBox.profile3,
-          'Podcasters',
-          'Store episodes and research reliably and cost-effectively.'),
-    ],
-    // Group 2 images
-    [
-      _ProfileImageTileModel(Resources.images.login.bentoBox.profile4,
-          'Artists', 'Store and share your art with the world.'),
-      _ProfileImageTileModel(Resources.images.login.bentoBox.profile5,
-          'Creators', 'Preserve your creations for future generations.'),
-      _ProfileImageTileModel(Resources.images.login.bentoBox.profile6,
-          'Sound Engineers', 'Store and share your music and sound projects.'),
-    ],
-  ];
-
-  int _currentGroupIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.max,
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        CarouselSlider.builder(
-          carouselController: _mainCarouselController,
-          itemCount: groupImages.length,
-          itemBuilder:
-              (BuildContext context, int itemIndex, int pageViewIndex) {
-            return Row(
-              children: groupImages[itemIndex]
-                  .map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: _ProfileImageTile(
-                        model: item,
-                        onEndHover: widget.onEndHover,
-                        onHover: widget.onHover,
-                      ),
-                    ),
-                  )
-                  .toList(),
-            );
-          },
-          options: CarouselOptions(
-            height: 125,
-            enlargeCenterPage: false,
-            viewportFraction: 0.76,
-            enableInfiniteScroll: true,
-            autoPlayAnimationDuration: const Duration(milliseconds: 300),
-            pauseAutoPlayOnManualNavigate: true,
-            autoPlayInterval: const Duration(seconds: 10),
-            autoPlayCurve: Curves.easeInOut,
-            autoPlay: true,
-            aspectRatio: 1 / 1,
-            onPageChanged: (index, reason) => setState(() {
-              _currentGroupIndex = index;
-            }),
-          ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(groupImages.length, (index) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: CustomIndicator(
-                index: index,
-                currentPage: _currentGroupIndex,
-                onPageAnimationEnd: (index) {},
-                onClickDot: (index) {
-                  _mainCarouselController.animateToPage(
-                    index,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                  );
-                },
-              ),
-            );
-          }),
-        ),
-      ],
-    );
-  }
-}
-
-class CustomIndicator extends StatefulWidget {
-  final int index;
-  final int currentPage;
-  final Function(int) onPageAnimationEnd;
-  final Duration duration;
-  final Function(int) onClickDot;
-
-  const CustomIndicator({
-    super.key,
-    required this.index,
-    required this.currentPage,
-    required this.onPageAnimationEnd,
-    required this.onClickDot,
-    this.duration = const Duration(seconds: 10),
-  });
-
-  @override
-  _CustomIndicatorState createState() => _CustomIndicatorState();
-}
-
-class _CustomIndicatorState extends State<CustomIndicator>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
-
-    _animation = Tween<double>(begin: 0.1, end: 1.0).animate(_controller)
-      ..addListener(() {
-        setState(() {});
-      })
-      ..addStatusListener((status) {
-        if (status == AnimationStatus.completed &&
-            widget.index == widget.currentPage) {
-          widget.onPageAnimationEnd(widget.index);
-        }
-      });
-
-    if (widget.index == widget.currentPage) {
-      _controller.forward();
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant CustomIndicator oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.index == widget.currentPage &&
-        oldWidget.currentPage != widget.currentPage) {
-      _controller.reset();
-      _controller.forward();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ArDriveClickArea(
-      child: GestureDetector(
-        onTap: () {
-          widget.onClickDot(widget.index);
-        },
-        child: Builder(
-          builder: (context) {
-            double indicatorWidth =
-                widget.index == widget.currentPage ? 48.0 : 9.0;
-            final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-            if (widget.index != widget.currentPage) {
-              return Container(
-                width: indicatorWidth,
-                height: 9.0,
-                decoration: BoxDecoration(
-                  color: colorTokens.strokeHigh,
-                  borderRadius: BorderRadius.circular(4.5),
-                ),
-              );
-            }
-
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 100),
-              width: indicatorWidth,
-              height: 9.0,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4.5),
-                color: colorTokens.strokeHigh,
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: indicatorWidth * _animation.value,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: colorTokens.iconMid,
-                        borderRadius: BorderRadius.circular(4.5),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _Bento5 extends StatefulWidget {
-  const _Bento5();
-
-  @override
-  State<_Bento5> createState() => __Bento5State();
-}
-
-class __Bento5State extends State<_Bento5> {
-  final List<_BentoBox5Model> _bentoBox5Models = [
-    _BentoBox5Model(Resources.images.login.bentoBox.noSubscription,
-        'No monthly subscriptions.'),
-    _BentoBox5Model(Resources.images.login.bentoBox.permanentAccessibleData,
-        'Permanently archived'),
-    _BentoBox5Model(Resources.images.login.bentoBox.decentralized,
-        'Decentralized and open sourced.'),
-  ];
-
-  final CarouselController _mainCarouselController = CarouselController();
-  int _currentGroupIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    ArDriveTypographyNew.of(context);
-    return Container(
-      color: colorTokens.containerL0,
-      child: _RoundContainer(
-        child: Center(
-          child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 14.0, horizontal: 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  CarouselSlider.builder(
-                    carouselController: _mainCarouselController,
-                    itemCount: _bentoBox5Models.length,
-                    itemBuilder: (BuildContext context, int itemIndex,
-                        int pageViewIndex) {
-                      return GestureDetector(
-                        onTap: () {
-                          _mainCarouselController.nextPage();
-                        },
-                        child: _Bento5Tile(
-                          model: _bentoBox5Models[itemIndex],
-                        ),
-                      );
-                    },
-                    options: CarouselOptions(
-                      height: 200,
-                      enlargeCenterPage: false,
-                      viewportFraction: 1,
-                      enableInfiniteScroll: true,
-                      autoPlayAnimationDuration:
-                          const Duration(milliseconds: 300),
-                      pauseAutoPlayOnManualNavigate: true,
-                      autoPlayInterval: const Duration(seconds: 5),
-                      autoPlayCurve: Curves.easeInOut,
-                      autoPlay: true,
-                      aspectRatio: 1 / 1,
-                      onPageChanged: (index, reason) => setState(() {
-                        _currentGroupIndex = index;
-                      }),
-                    ),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(_bentoBox5Models.length, (index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                        child: CustomIndicator(
-                          index: index,
-                          currentPage: _currentGroupIndex,
-                          duration: const Duration(seconds: 5),
-                          onPageAnimationEnd: (index) {},
-                          onClickDot: (index) {
-                            _mainCarouselController.animateToPage(
-                              index,
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          },
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              )),
-        ),
-      ),
-    );
-  }
-}
-
-class _BentoBox5Model {
-  final String image;
+class _Slide {
+  const _Slide(this.title, this.art);
   final String title;
-
-  _BentoBox5Model(this.image, this.title);
+  final String art;
 }
 
-class _Bento5Tile extends StatelessWidget {
-  const _Bento5Tile({required this.model});
+class _FeatureSlides extends StatefulWidget {
+  const _FeatureSlides();
 
-  final _BentoBox5Model model;
+  @override
+  State<_FeatureSlides> createState() => _FeatureSlidesState();
+}
+
+class _FeatureSlidesState extends State<_FeatureSlides> with _Stepper {
+  @override
+  int get length => 5;
+
+  @override
+  Duration get interval => const Duration(seconds: 5);
+
+  List<_Slide> _slides(BuildContext context) {
+    final s = appLocalizationsOf(context);
+    final light = _isLight(context);
+    String art(String name) =>
+        Resources.images.login.bentoBox.featureArt(name, light: light);
+    return [
+      _Slide(s.bentoPrivate, art('encrypted_key')),
+      _Slide(s.bentoUnchangeable, art('cant_be_changed')),
+      _Slide(s.bentoProofOfTime, art('proof_of_time')),
+      _Slide(s.bentoShareLink, art('share_link')),
+      _Slide(s.bentoOpenSource, art('open_source')),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
-    final typography = ArDriveTypographyNew.of(context);
-    return Column(
-      children: [
-        Text(
-          model.title,
-          style: typography.heading6(
-            color: colorTokens.textLow,
-            fontWeight: ArFontWeight.semiBold,
-          ),
+    final s = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
+    final slides = _slides(context);
+    final slide = slides[index];
+    return MouseRegion(
+      onEnter: (_) {
+        if (mounted) setState(() => held = true);
+      },
+      onExit: (_) {
+        if (mounted) setState(() => held = false);
+      },
+      child: _Tile(
+        child: Column(
+          children: [
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 350),
+                child: Column(
+                  key: ValueKey(index),
+                  children: [
+                    Text(
+                      slide.title,
+                      key: const Key('bentoSlideTitle'),
+                      textAlign: TextAlign.center,
+                      style: type.heading6(
+                        color: colors.textHigh,
+                        fontWeight: ArFontWeight.semiBold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ExcludeSemantics(
+                        child: SvgPicture.asset(slide.art, fit: BoxFit.contain),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _ProgressDots(
+              count: slides.length,
+              index: index,
+              interval: interval,
+              running: !held && !_still(context),
+              groupLabel: s.bentoSlideDots,
+              labels: [for (final x in slides) x.title],
+              onPick: pick,
+            ),
+          ],
         ),
-        Expanded(
-          child: SvgPicture.asset(
-            model.image,
-            color: colorTokens.textRed,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _PriceCalculator extends StatefulWidget {
-  const _PriceCalculator();
+/// "What it costs": the live price of 1 GB, paid once. Opens the pricing page.
+class _CostTile extends StatefulWidget {
+  const _CostTile({required this.loadPrice, required this.showEquivalents});
+
+  final Future<double?> Function() loadPrice;
+
+  /// What a gigabyte holds, where there is room for it.
+  final bool showEquivalents;
 
   @override
-  State<_PriceCalculator> createState() => _PriceCalculatorState();
+  State<_CostTile> createState() => _CostTileState();
 }
 
-class _PriceCalculatorState extends State<_PriceCalculator> {
-  bool _isHovering = false;
+class _CostTileState extends State<_CostTile> {
+  /// The width the price and the list need side by side.
+  static const _equivalentsFrom = 340.0;
+
+  late final Future<double?> _price = widget.loadPrice();
 
   @override
   Widget build(BuildContext context) {
-    final color = ArDriveTheme.of(context).themeData.colorTokens.textLow;
-    return GestureDetector(
-      onTap: () {
-        openUrl(url: Resources.priceCalculatorLink);
-      },
-      child: ArDriveClickArea(
-        child: MouseRegion(
-          onEnter: (_) => setState(() => _isHovering = true),
-          onExit: (_) => setState(() => _isHovering = false),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Positioned(
-                top: 24,
-                left: 24,
-                child: Text(
-                  'Price calculator',
-                  style: ArDriveTypographyNew.of(context).heading6(
-                    color: color,
-                    fontWeight: ArFontWeight.semiBold,
-                  ),
+    final s = appLocalizationsOf(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    final type = ArDriveTypographyNew.of(context);
+    final body = type.paragraphNormal(color: colors.textMid);
+
+    final price = FutureBuilder<double?>(
+      future: _price,
+      builder: (context, snapshot) {
+        // A fixed-height line, so the tile doesn't move when the price lands.
+        const height = 36.0;
+        if (snapshot.connectionState != ConnectionState.done) {
+          return SizedBox(
+            height: height,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                key: const Key('bentoPriceLoading'),
+                width: 120,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: colors.strokeMid,
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(left: 24.0, right: 24),
-                child: SvgPicture.asset(
-                  Resources.images.login.bentoBox.priceCalculator,
-                  width: 328,
+            ),
+          );
+        }
+        final usd = snapshot.data;
+        if (usd == null) return const SizedBox.shrink();
+        return SizedBox(
+          height: height,
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(
+                text: '\$${usd.toStringAsFixed(2)} ',
+                style: type
+                    .heading2(
+                  color: colors.textHigh,
+                  fontWeight: ArFontWeight.light,
+                )
+                    .copyWith(fontFeatures: const [
+                  FontFeature.tabularFigures(),
+                ]),
+              ),
+              TextSpan(
+                text: 'USD',
+                style: type.paragraphNormal(
+                  color: colors.textMid,
+                  fontWeight: ArFontWeight.semiBold,
                 ),
               ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: ArDriveImage(
-                  image: AssetImage(Resources.images.login.bentoBox.dots),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              if (_isHovering)
-                Center(
-                  child: Container(
-                    width: double.maxFinite,
-                    height: double.maxFinite,
-                    color: color.withOpacity(0.1),
-                    child: ArDriveIcons.newWindow(),
-                  ),
-                ),
-            ],
+            ]),
+            key: const Key('bentoPrice'),
           ),
+        );
+      },
+    );
+
+    Widget equivalent(ArDriveIcon icon, String text) => Row(
+          children: [
+            icon,
+            const SizedBox(width: 8),
+            Text(text, style: body),
+          ],
+        );
+
+    return _Tile(
+      onTap: () => openUrl(url: Resources.priceCalculatorLink),
+      semanticsLabel: '${s.bentoCostTitle}. ${s.bentoSeePrices}',
+      child: LayoutBuilder(
+        builder: (context, constraints) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              s.bentoCostTitle,
+              style: type.heading6(
+                color: colors.textHigh,
+                fontWeight: ArFontWeight.semiBold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _FlexIfBounded(
+              bounded: constraints.hasBoundedHeight,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(s.bentoCostAmount, style: body),
+                        const SizedBox(height: 4),
+                        price,
+                        const SizedBox(height: 4),
+                        Text(s.bentoCostPaidOnce, style: body),
+                      ],
+                    ),
+                  ),
+                  if (widget.showEquivalents &&
+                      constraints.maxWidth >= _equivalentsFrom) ...[
+                    const SizedBox(width: 24),
+                    Container(
+                      padding: const EdgeInsets.only(left: 24),
+                      decoration: BoxDecoration(
+                        border:
+                            Border(left: BorderSide(color: colors.strokeLow)),
+                      ),
+                      child: Column(
+                        key: const Key('bentoEquivalents'),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          equivalent(
+                            ArDriveIcons.image(size: 16, color: colors.iconMid),
+                            s.bentoPictures,
+                          ),
+                          const SizedBox(height: 8),
+                          equivalent(
+                            ArDriveIcons.file(size: 16, color: colors.iconMid),
+                            s.bentoDocuments,
+                          ),
+                          const SizedBox(height: 8),
+                          equivalent(
+                            ArDriveIcons.video(size: 16, color: colors.iconMid),
+                            s.bentoVideos,
+                          ),
+                          const SizedBox(height: 8),
+                          equivalent(
+                            ArDriveIcons.music(size: 16, color: colors.iconMid),
+                            s.bentoSongs,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  s.bentoSeePrices,
+                  style: type
+                      .paragraphNormal(
+                        color: colors.textLink,
+                        fontWeight: ArFontWeight.semiBold,
+                      )
+                      .copyWith(decoration: TextDecoration.underline),
+                ),
+                const SizedBox(width: 4),
+                ArDriveIcons.newWindow(size: 14, color: colors.textLink),
+              ],
+            ),
+          ],
         ),
       ),
     );

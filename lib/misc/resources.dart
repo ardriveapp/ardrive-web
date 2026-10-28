@@ -95,6 +95,11 @@ class BentoBox {
   final String bentoBox2DarkMode =
       'assets/images/login/bento_box/bento-box-2-dark-mode.svg';
 
+  /// A feature slide's art, faded into a dark or a light tile. Shapes from
+  /// Phosphor Icons (MIT), see `assets/images/login/bento_box/LICENSES.md`.
+  String featureArt(String name, {required bool light}) =>
+      'assets/images/login/bento_box/$name${light ? '_light' : ''}.svg';
+
   const BentoBox();
 }
 
