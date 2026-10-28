@@ -204,78 +204,83 @@ class _SuccessViewState extends State<SuccessView> {
                 type: ArDriveNoticeType.success,
                 message: widget.detailMessage,
               ),
-              // The credits added are the screen's figure.
-              if (creditsReceived != null && creditsReceived.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: creditsReceived,
-                        style: typography.heading2(
-                          color: colors.textHigh,
-                          fontWeight: ArFontWeight.light,
-                        ),
-                      ),
-                      TextSpan(
-                        text: ' credits added',
-                        style: typography.paragraphLarge(
-                          color: colors.textMid,
-                          fontWeight: ArFontWeight.semiBold,
-                        ),
-                      ),
-                    ],
-                  ),
+              // One card for the result: the credits added as its figure,
+              // then what was paid and the new balance.
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colors.containerRaised,
+                  borderRadius: BorderRadius.circular(ArDriveRadius.md),
                 ),
-                if (widget.storageEstimate != null)
-                  Text(
-                    _formatStorageSubvalue(widget.storageEstimate!),
-                    style: typography.paragraphNormal(color: colors.textMid),
-                  ),
-              ],
-              if (widget.amountPaid != null ||
-                  widget.newBalanceCredits != null ||
-                  widget.newBalanceStorage != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: colors.containerRaised,
-                    borderRadius: BorderRadius.circular(ArDriveRadius.md),
-                  ),
-                  child: Column(
-                    children: [
-                      if (widget.amountPaid != null)
-                        _buildDetailRow(
-                          context,
-                          appLocalizationsOf(context).paymentSummaryPaid,
-                          widget.amountPaid!,
-                          colors,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (creditsReceived != null &&
+                        creditsReceived.isNotEmpty) ...[
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: creditsReceived,
+                              style: typography.heading2(
+                                color: colors.textHigh,
+                                fontWeight: ArFontWeight.light,
+                              ),
+                            ),
+                            TextSpan(
+                              text: ' credits added',
+                              style: typography.paragraphLarge(
+                                color: colors.textMid,
+                                fontWeight: ArFontWeight.semiBold,
+                              ),
+                            ),
+                          ],
                         ),
-                      if (widget.newBalanceCredits != null ||
+                      ),
+                      if (widget.storageEstimate != null)
+                        Text(
+                          _formatStorageSubvalue(widget.storageEstimate!),
+                          style:
+                              typography.paragraphNormal(color: colors.textMid),
+                        ),
+                      if (widget.amountPaid != null ||
+                          widget.newBalanceCredits != null ||
                           widget.newBalanceStorage != null) ...[
-                        if (widget.amountPaid != null) ...[
-                          const SizedBox(height: 12),
-                          Divider(color: colors.strokeMid, height: 1),
-                          const SizedBox(height: 12),
-                        ],
-                        _buildDetailRowWithSubvalue(
-                          context,
-                          appLocalizationsOf(context).paymentSummaryNewBalance,
-                          widget.newBalanceCredits ?? widget.newBalanceStorage!,
-                          widget.newBalanceCredits != null &&
-                                  widget.newBalanceStorage != null
-                              ? _formatStorageSubvalue(
-                                  widget.newBalanceStorage!)
-                              : null,
-                          colors,
-                          isHighlighted: true,
-                        ),
+                        const SizedBox(height: 12),
+                        Divider(color: colors.strokeMid, height: 1),
+                        const SizedBox(height: 12),
                       ],
                     ],
-                  ),
+                    if (widget.amountPaid != null)
+                      _buildDetailRow(
+                        context,
+                        appLocalizationsOf(context).paymentSummaryPaid,
+                        widget.amountPaid!,
+                        colors,
+                      ),
+                    if (widget.newBalanceCredits != null ||
+                        widget.newBalanceStorage != null) ...[
+                      if (widget.amountPaid != null) ...[
+                        const SizedBox(height: 12),
+                        Divider(color: colors.strokeMid, height: 1),
+                        const SizedBox(height: 12),
+                      ],
+                      _buildDetailRowWithSubvalue(
+                        context,
+                        appLocalizationsOf(context).paymentSummaryNewBalance,
+                        widget.newBalanceCredits ?? widget.newBalanceStorage!,
+                        widget.newBalanceCredits != null &&
+                                widget.newBalanceStorage != null
+                            ? _formatStorageSubvalue(widget.newBalanceStorage!)
+                            : null,
+                        colors,
+                        isHighlighted: true,
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ],
           ),
         ),

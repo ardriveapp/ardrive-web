@@ -85,33 +85,8 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                     message: appLocalizationsOf(context)
                         .yourCreditsWillBeAddedToYourAccount,
                   ),
-                  // The credits added are the screen's figure.
-                  const SizedBox(height: 24),
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: _formatCredits(state.creditsAdded),
-                          style: typography.heading2(
-                            color: colors.textHigh,
-                            fontWeight: ArFontWeight.light,
-                          ),
-                        ),
-                        TextSpan(
-                          text: ' credits added',
-                          style: typography.paragraphLarge(
-                            color: colors.textMid,
-                            fontWeight: ArFontWeight.semiBold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (state.storageEstimate != null)
-                    Text(
-                      _approximately(state.storageEstimate!),
-                      style: typography.paragraphNormal(color: colors.textMid),
-                    ),
+                  // One card for the result: the credits added as its
+                  // figure, then what was paid and the new balance.
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -120,7 +95,37 @@ class _CryptoSuccessViewState extends State<CryptoSuccessView> {
                       borderRadius: BorderRadius.circular(ArDriveRadius.md),
                     ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: _formatCredits(state.creditsAdded),
+                                style: typography.heading2(
+                                  color: colors.textHigh,
+                                  fontWeight: ArFontWeight.light,
+                                ),
+                              ),
+                              TextSpan(
+                                text: ' credits added',
+                                style: typography.paragraphLarge(
+                                  color: colors.textMid,
+                                  fontWeight: ArFontWeight.semiBold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (state.storageEstimate != null)
+                          Text(
+                            _approximately(state.storageEstimate!),
+                            style: typography.paragraphNormal(
+                                color: colors.textMid),
+                          ),
+                        const SizedBox(height: 12),
+                        Divider(color: colors.strokeMid, height: 1),
+                        const SizedBox(height: 12),
                         _SummaryRow(
                           label: 'Paid',
                           value: _formatTokenAmount(
