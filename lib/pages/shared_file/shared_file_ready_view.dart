@@ -1260,27 +1260,9 @@ class _VersionChip extends StatelessWidget {
 
   final String label;
 
+  // The page's own contrast colours (design decision Q5) on the standard tag.
   @override
-  Widget build(BuildContext context) {
-    final colors = ArDriveTheme.of(context).themeData.colorTokens;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: colors.containerL1,
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: ArDriveTypographyNew.of(context).paragraphNormal(
-          fontWeight: ArFontWeight.semiBold,
-          color: ArDriveTheme.of(context).themeData.colorTokens.textMid,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ArDriveTag(text: label);
 }
 
 /// Everything *about* the file, in a panel that does not change size.

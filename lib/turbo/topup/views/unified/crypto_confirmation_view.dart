@@ -380,32 +380,12 @@ class _PayingWithSection extends StatelessWidget {
           // Promo/discount badge
           if (promoCode != null && promoCode!.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: colors.themeSuccessSubtle,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.local_offer,
-                    size: 14,
-                    color: colors.themeSuccessDefault,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    discountPercent != null
-                        ? '$promoCode ($discountPercent% off)'
-                        : promoCode!,
-                    style: typography.paragraphSmall(
-                      fontWeight: ArFontWeight.semiBold,
-                      color: colors.themeSuccessDefault,
-                    ),
-                  ),
-                ],
-              ),
+            ArDriveTag(
+              type: ArDriveTagType.success,
+              icon: Icons.local_offer,
+              text: discountPercent != null
+                  ? '$promoCode ($discountPercent% off)'
+                  : promoCode!,
             ),
           ],
 

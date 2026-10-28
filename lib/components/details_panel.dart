@@ -454,21 +454,18 @@ class _DetailsPanelState extends State<DetailsPanel> {
   ) {
     final typography = ArDriveTypographyNew.of(context);
     return [
+      _SizeFigure(
+        bytes: folder.entry.computeFolderSize(),
+        contents: fileAndFolderCountsToString(
+          folderCount: folder.entry.getRecursiveSubFolderCount(),
+          fileCount: folder.entry.getRecursiveFileCount(),
+          localizations: appLocalizationsOf(context),
+        ),
+      ),
+      const SizedBox(height: 24),
       DetailsPanelItem(
         leading: _IdValue(id: folder.entry.folder.id),
         itemTitle: appLocalizationsOf(context).folderID,
-      ),
-      sizedBoxHeight16px,
-      DetailsPanelItem(
-        leading: Text(
-          fileAndFolderCountsToString(
-            folderCount: folder.entry.getRecursiveSubFolderCount(),
-            fileCount: folder.entry.getRecursiveFileCount(),
-            localizations: appLocalizationsOf(context),
-          ),
-          style: typography.paragraphNormal(),
-        ),
-        itemTitle: appLocalizationsOf(context).itemContains,
       ),
       sizedBoxHeight16px,
       DetailsPanelItem(
@@ -504,32 +501,21 @@ class _DetailsPanelState extends State<DetailsPanel> {
   List<Widget> _driveDetails(FsEntryInfoSuccess state) {
     final typography = ArDriveTypographyNew.of(context);
 
+    final tree = (state as FsEntryDriveInfoSuccess).rootFolderTree;
+
     return [
+      _SizeFigure(
+        bytes: tree.computeFolderSize(),
+        contents: fileAndFolderCountsToString(
+          fileCount: tree.getRecursiveFileCount(),
+          folderCount: tree.getRecursiveSubFolderCount(),
+          localizations: appLocalizationsOf(context),
+        ),
+      ),
+      const SizedBox(height: 24),
       DetailsPanelItem(
         leading: _IdValue(id: widget.item.id),
         itemTitle: appLocalizationsOf(context).driveID,
-      ),
-      sizedBoxHeight16px,
-      DetailsPanelItem(
-        leading: Text(
-          filesize((state as FsEntryDriveInfoSuccess)
-              .rootFolderTree
-              .computeFolderSize()),
-          style: typography.paragraphNormal(),
-        ),
-        itemTitle: appLocalizationsOf(context).size,
-      ),
-      sizedBoxHeight16px,
-      DetailsPanelItem(
-        leading: Text(
-          fileAndFolderCountsToString(
-            fileCount: state.rootFolderTree.getRecursiveFileCount(),
-            folderCount: state.rootFolderTree.getRecursiveSubFolderCount(),
-            localizations: appLocalizationsOf(context),
-          ),
-          style: typography.paragraphNormal(),
-        ),
-        itemTitle: appLocalizationsOf(context).itemContains,
       ),
       sizedBoxHeight16px,
       DetailsPanelItem(
@@ -1274,6 +1260,41 @@ class EntityRevision {
     required this.dateCreated,
     required this.action,
   });
+}
+
+/// A drive's or folder's size as the figure at the top of its details, with
+/// what it holds under it.
+class _SizeFigure extends StatelessWidget {
+  const _SizeFigure({required this.bytes, required this.contents});
+
+  final int bytes;
+  final String contents;
+
+  @override
+  Widget build(BuildContext context) {
+    final typography = ArDriveTypographyNew.of(context);
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+
+    return MergeSemantics(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            filesize(bytes),
+            style: typography.heading2(
+              color: colors.textHigh,
+              fontWeight: ArFontWeight.light,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            contents,
+            style: typography.paragraphNormal(color: colors.textLow),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class DetailsPanelItem extends StatelessWidget {

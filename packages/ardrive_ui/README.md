@@ -17,10 +17,26 @@ The package has two generations. Build with the new one, whose names end in
 | Status colour | `statusInfo…`, `statusWarning…`, `statusError…`, `statusSuccess…` | Each has `Fg` (icon, emphasis), `Container` (fill) and `Stroke` (edge). Body text on a status container stays `textHigh` |
 | Spacing | `ArDriveSpacing` | `xxs` 4, `xs` 8, `sm` 12, `md` 16, `lg` 24, `xl` 32, `xxl` 48 |
 | Radius | `ArDriveRadius` | `sm` 4 for small controls, `md` 8 for cards and notices, `lg` 12 for dialogs and sheets |
-| Type | `ArDriveTypographyNew.of(context)` | Wavehaus. `heading1`–`6`, `paragraphXXLarge`–`paragraphSmall`, `caption`, each with a weight of `book`, `semiBold` or `bold`. Phone sizes apply under 834 px |
+| Type | `ArDriveTypographyNew.of(context)` | Wavehaus. `heading1`–`6`, `paragraphXXLarge`–`paragraphSmall`, `caption`, each with a weight of `book`, `semiBold` or `bold`, or `light` for a figure (below). Phone sizes apply under 834 px |
 
-Secondary buttons are a translucent tint (8% white in dark, 8% black in light),
-so they read as a step up from whatever surface they sit on.
+Secondary buttons are a translucent tint (8% white in dark, 8% of a warm
+near-black in light), so they read as a step up from whatever surface they sit
+on.
+
+The light theme's greys are warm. The surface greys (`solidGrey50`–`300`, so
+every container, input and disabled fill), the table and menu backgrounds, and
+the translucent fills and edges over them lean slightly toward the brand red,
+the tint of the 2021 styleguide's Gallery `#F1EFF0`. Text and icon greys stay
+neutral, so text never reads pink, and so do the scrims. White
+(`containerRaised`) and the dark theme are unchanged. A new light grey follows
+the same rule.
+
+A figure that is the point of its block, such as the size on the permanence
+panel, is set in `ArFontWeight.light` (Wavehaus 42 Light) at `heading3` size
+or larger, with its label in a heavier weight beside or above it. The contrast
+between the two carries the hierarchy. Light is for figures only: never for
+running text, labels or anything under `heading3`, where it is too thin to
+read.
 
 Every colour comes from a token, in both themes. A literal colour, or a
 Material one such as `Colors.green`, looks right in one theme only.
@@ -80,6 +96,8 @@ it arrives. The licence is `assets/fonts/mono/OFL.txt`.
 | A dialog on a phone, or a menu from the bottom | `showArDriveBottomSheet` with `ArDriveBottomSheet` | Same title, spacing and action row as a dialog |
 | A text link | `ArDriveLink`, or `ArDriveLink.span` inside text | Keyboard reachable and announced as a link. `external` adds the new-window icon; `isAction` announces an action such as Copy as a button |
 | A message with a meaning | `ArDriveNotice` | `type`: info, warning, error or success. `layout`: inline box or full-width banner. Optional title, action and close button |
+| A label beside an item's name | `ArDriveTag` | `type`: neutral (default), info or success, and an optional leading `icon`. Caption, semi-bold, on a quiet fill with `ArDriveRadius.sm`. There is no warning or error tag: those are status text |
+| A status in a line of text | `ArDriveStatusText` | `type`: neutral, info, warning, error or success, each with its own icon. Error is red text and icon; warning is neutral text with the warning icon. Use it for "Lease ends in 12 days" or "2 drives could not be read", never a boxed tag |
 | Nothing to show | `ArDriveEmptyState` | Icon, heading, a line of text, and up to two actions |
 | Loading | `ArDriveSpinner` | `small` (16) in buttons and rows, `large` (32) on its own |
 | Progress | `ArDriveLinearProgress` | A 4 px bar; leave `value` null when progress isn't known. `color` marks progress that has stalled or finished without moving the bar |
