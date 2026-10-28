@@ -192,9 +192,6 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
                 obscureText: true,
                 autofocus: true,
                 autofillHints: const [AutofillHints.password],
-                onChanged: (s) {
-                  _formKey.currentState?.validate();
-                },
                 textInputAction: TextInputAction.next,
                 isEnabled: !_isProcessing,
                 validator: (value) {

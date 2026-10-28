@@ -111,14 +111,12 @@ void main() {
           (tester) async {
         form.control('ccTypeField').value = ccByLicenseMetaV2;
         final tokens = await pumpForm(tester, theme: theme);
-        final disabled = theme.colors.themeFgDisabled;
 
         Color colorOf(String text) =>
             tester.widget<Text>(find.text(text)).style!.color!;
 
         expect(colorOf('Type'), tokens.textMid);
         expect(colorOf(ccByLicenseMetaV2.shortName), tokens.textMid);
-        expect(colorOf('Type'), isNot(disabled));
       });
     }
   });

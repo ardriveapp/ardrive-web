@@ -59,7 +59,7 @@ class ArDriveFormNewState extends State<ArDriveFormNew> {
 
   Future<void> _waitValidations() async {
     context.visitChildElements((element) async {
-      if (element is! ArDriveTextField) {
+      if (element is! ArDriveTextFieldNew) {
         return await _findAndValidateTextFieldAsync(element);
       }
     });
@@ -67,7 +67,7 @@ class ArDriveFormNewState extends State<ArDriveFormNew> {
 
   Future<void> _findAndValidateTextFieldAsync(Element e) async {
     e.visitChildElements((element) async {
-      if (element.widget is! ArDriveTextField) {
+      if (element.widget is! ArDriveTextFieldNew) {
         return _findAndValidateTextFieldAsync(element);
       }
 
@@ -102,7 +102,7 @@ class ArDriveFormNewState extends State<ArDriveFormNew> {
 
   void _findTextFields(Element e) {
     e.visitChildElements((element) {
-      if (element.widget is! ArDriveTextField) {
+      if (element.widget is! ArDriveTextFieldNew) {
         return _findTextFields(element);
       }
 
@@ -511,10 +511,7 @@ class ArDriveTextFieldStateNew extends State<ArDriveTextFieldNew> {
       return _getErrorBorder(colorTokens);
     }
 
-    return _getBorder(
-      colorTokens.strokeHigh,
-      // ArDriveTheme.of(context).themeData.colors.themeFgDefault,
-    );
+    return _getBorder(colorTokens.strokeHigh);
   }
 
   InputBorder _getDisabledBorder(ArDriveColorTokens colorTokens) {

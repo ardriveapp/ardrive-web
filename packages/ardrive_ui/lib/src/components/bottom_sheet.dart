@@ -17,7 +17,7 @@ Future<T?> showArDriveBottomSheet<T>(
     enableDrag: isDismissible,
     useSafeArea: true,
     backgroundColor: colorTokens.containerL2,
-    barrierColor: const Color(0x80000000),
+    barrierColor: colorTokens.scrim,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
         top: Radius.circular(ArDriveRadius.lg),

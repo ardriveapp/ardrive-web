@@ -376,7 +376,10 @@ class _ListDetailsHostState extends State<ListDetailsHost> {
                       color: ArDriveTheme.of(context).themeData.backgroundColor,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.12),
+                          color: ArDriveTheme.of(context)
+                              .themeData
+                              .colorTokens
+                              .shadow,
                           blurRadius: 16,
                         ),
                       ],

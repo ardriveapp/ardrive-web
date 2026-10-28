@@ -1085,9 +1085,10 @@ class SharedFileVersionsContent extends StatelessWidget {
                 const SizedBox(width: 8),
                 // The drawer's own retry: `loadActivity` runs again after a
                 // failure, so pressing this is all it takes.
-                ArDriveTextButton(
+                ArDriveLink(
                   text: appLocalizationsOf(context).sharedFileRetry,
-                  onPressed: onOpened,
+                  onTap: onOpened,
+                  isAction: true,
                 ),
               ],
             ),
