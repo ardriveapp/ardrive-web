@@ -19,6 +19,8 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:sqlite3/wasm.dart';
 import 'package:test/test.dart';
 
+import '../../test_utils/schema_statements.dart';
+
 /// The web database in a dedicated worker, on OPFS (docs/WEB_DATABASE.md),
 /// exercised in a real browser.
 ///
@@ -443,6 +445,141 @@ void main() {
     expect(check.single.data.values.single, 'ok');
     expect(await driveCount(again), anyOf(1, 300002),
         reason: 'all of the transaction or none of it');
+  }, timeout: const Timeout(Duration(minutes: 2)));
+
+  test(
+      'a worker killed while it creates the schema leaves a database the '
+      'next start opens', () async {
+    // How many schema statements a first start issues.
+    final counter = SchemaStatements();
+    final first = startWorker();
+    await first.openWriter(name: name, sqlite3Url: sqlite3Url);
+    await first.migrate(null);
+    final counted = Database((await first.serve()).interceptWith(counter));
+    databases.add(counted);
+    await counted.customSelect('SELECT 1').get();
+    final statements = counter.count;
+    expect(statements, greaterThan(10));
+
+    final base = name;
+    // The first table, an index part way through, and the last statement.
+    for (final n in [2, statements ~/ 2, statements]) {
+      name = '$base-cut-$n';
+      final worker = startWorker();
+      final opened =
+          await worker.openWriter(name: name, sqlite3Url: sqlite3Url);
+      await worker.migrate(null);
+      expect(opened.needsMigration, isTrue);
+      final killed = Completer<void>();
+      final cut = Database((await worker.serve()).interceptWith(
+        SchemaStatements(
+          at: n,
+          instead: (_) {
+            // A reload: the worker goes, with no chance to finish or roll
+            // back, before statement n reaches it.
+            worker.terminate();
+            killed.complete();
+            return Completer<void>().future;
+          },
+        ),
+      ));
+      unawaited(
+          cut.customSelect('SELECT 1').get().then((_) {}, onError: (_) {}));
+      await killed.future.timeout(const Duration(seconds: 30));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      final reopened = await openThroughWorker(
+        scriptUrl: workerUrl(),
+        name: name,
+        sqlite3Url: sqlite3Url,
+        isWriter: true,
+        readMigrationSource: () async => null,
+      );
+      expect(reopened, isNotNull);
+      workers.add(reopened!.worker);
+      final again = Database(reopened.connection);
+      databases.add(again);
+      // Throws, on the unfinished schema, where this start would have hung.
+      await again.customSelect('SELECT 1').get();
+      await addDrive(again, 'after-the-cut');
+      expect(await driveCount(again), 1);
+      final indexes = await again
+          .customSelect("SELECT name FROM sqlite_master WHERE type = 'index' "
+              "AND name = 'idx_network_transactions_status'")
+          .get();
+      expect(indexes, hasLength(1));
+      await again.close();
+      databases.remove(again);
+      await removeOpfs(name);
+    }
+    name = base;
+  }, timeout: const Timeout(Duration(minutes: 4)));
+
+  test('deleting the local database removes every store, keeping a copy',
+      () async {
+    final worker = startWorker();
+    final db = await openWriter(worker);
+    await addDrive(db, 'before-the-reset');
+    webDatabaseWorker = worker;
+
+    final idbName = '$name-idb';
+    final legacyName = '$name-legacy';
+    for (final store in [idbName, legacyName]) {
+      final fs = await IndexedDbFileSystem.open(dbName: store);
+      fs
+          .xOpen(Sqlite3Filename('/db.sqlite'),
+              SqlFlag.SQLITE_OPEN_CREATE | SqlFlag.SQLITE_OPEN_READWRITE)
+          .file
+          .xClose();
+      await fs.flush();
+      await fs.close();
+    }
+
+    final deleted = await deleteLocalDatabase(
+      opfsName: name,
+      indexedDbName: idbName,
+      legacyIndexedDbName: legacyName,
+    );
+    databases.remove(db);
+    expect(deleted, isTrue);
+    expect(webDatabaseWorker, isNull);
+
+    final left = await IndexedDbFileSystem.databases();
+    if (left != null) {
+      expect(left, isNot(contains(idbName)));
+      expect(left, isNot(contains(legacyName)));
+    }
+
+    // The copy kept beside it, then removed by this test.
+    final storage =
+        js_util.getProperty<Object>(html.window.navigator, 'storage');
+    final root = await js_util.promiseToFuture<Object>(
+        js_util.callMethod(storage, 'getDirectory', []));
+    final parent = await js_util.promiseToFuture<Object>(
+        js_util.callMethod(root, 'getDirectoryHandle', ['ardrive-db']));
+    final names = <String>[];
+    final entries = js_util.callMethod<Object>(parent, 'keys', []);
+    while (true) {
+      final next = await js_util
+          .promiseToFuture<Object>(js_util.callMethod(entries, 'next', []));
+      if (js_util.getProperty<bool>(next, 'done')) break;
+      names.add(js_util.getProperty<String>(next, 'value'));
+    }
+    expect(names, isNot(contains(name)));
+    final copies = names.where((n) => n.startsWith('$name-reset-')).toList();
+    expect(copies, hasLength(1));
+    for (final copy in copies) {
+      await js_util.promiseToFuture<Object?>(
+          js_util.callMethod(parent, 'removeEntry', [copy]));
+    }
+
+    final fresh = startWorker();
+    final reopened = await fresh.openWriter(name: name, sqlite3Url: sqlite3Url);
+    expect(reopened.needsMigration, isTrue, reason: 'it starts fresh');
+    await fresh.migrate(null);
+    final empty = Database(await fresh.serve());
+    databases.add(empty);
+    expect(await driveCount(empty), 0);
   }, timeout: const Timeout(Duration(minutes: 2)));
 
   test('a worker script that does not load leaves the IndexedDB path',

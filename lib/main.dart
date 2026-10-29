@@ -30,6 +30,7 @@ import 'package:ardrive/publication/data/publication_repository.dart';
 import 'package:ardrive/publication/domain/publication_mode.dart';
 import 'package:ardrive/publication/presentation/publications_cubit.dart';
 import 'package:ardrive/models/database/database_helpers.dart';
+import 'package:ardrive/pages/database_unavailable/database_unavailable_app.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/authentication/biometric_authentication.dart';
 import 'package:ardrive/services/config/config_fetcher.dart';
@@ -124,6 +125,37 @@ void main() async {
 
 Future<void> _startApp() async {
   runApp(const App());
+  if (kIsWeb && !PublicationMode.isOn) unawaited(_replaceAppIfDatabaseFails());
+}
+
+/// Shows [DatabaseUnavailableApp] in place of the app if the database will
+/// not open or migrate.
+///
+/// The app opens its database on the first read, which the first screen
+/// makes while the splash is up, and no screen after it can show without
+/// one. Started alongside the app rather than awaited before it, so a sound
+/// database opens no later than it did. Web only: the way out reloads the
+/// page.
+Future<void> _replaceAppIfDatabaseFails() async {
+  final failure = await db.openFailure();
+  if (failure == null) return;
+  logger.e('The database did not open', failure);
+  // The theme the app would have shown, read as UserPreferencesRepository
+  // reads it: that repository is part of what could not start.
+  final theme = localKeyValueStore.getString('currentTheme') ??
+      ThemeDetector().getOSDefaultTheme().name;
+  runApp(DatabaseUnavailableApp(
+    dark: theme == ArDriveThemes.dark.name,
+    onTryAgain: triggerHTMLPageReload,
+    onReset: () async {
+      try {
+        await db.close().timeout(const Duration(seconds: 5));
+      } catch (_) {}
+      final deleted = await Database.deleteLocalData();
+      if (deleted) triggerHTMLPageReload();
+      return deleted;
+    },
+  ));
 }
 
 Future<void> _initializeServices() async {
