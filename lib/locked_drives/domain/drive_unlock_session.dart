@@ -25,8 +25,8 @@ class DriveUnlockSession {
   final _walletDeclined = <String>{};
   final _provenPasswordInfo = <String, List<int>>{};
 
-  /// The drives the session can't open, oldest change first. See
-  /// [LockedDrive].
+  /// The drives the session can't open, by drive ID: they have no name to
+  /// sort by, and the drives list orders them the same way. See [LockedDrive].
   Stream<List<LockedDrive>> get lockedDrives => _lockedDrives.stream;
 
   List<LockedDrive> get currentLockedDrives => _lockedDrives.value;
@@ -51,7 +51,7 @@ class DriveUnlockSession {
       for (final drive in _lockedDrives.value)
         if (drive.ownerAddress != ownerAddress) drive,
       ...drives,
-    ]..sort((a, b) => a.lastUpdated.compareTo(b.lastUpdated));
+    ]..sort((a, b) => a.driveId.compareTo(b.driveId));
 
     _lockedDrives.add(List.unmodifiable(next));
   }

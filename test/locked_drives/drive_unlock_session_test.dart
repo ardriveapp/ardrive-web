@@ -19,7 +19,7 @@ LockedDrive _locked(String id, String owner, int year) => LockedDrive(
 
 void main() {
   group('DriveUnlockSession', () {
-    test('replaces one owner\'s locked drives and keeps them in date order',
+    test('replaces one owner\'s locked drives and keeps them in drive ID order',
         () {
       final session = DriveUnlockSession()
         ..setLockedDrives(
