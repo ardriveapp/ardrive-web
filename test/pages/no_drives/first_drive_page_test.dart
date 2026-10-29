@@ -4,6 +4,7 @@ import 'package:ardrive/blocs/blocs.dart';
 import 'package:ardrive/blocs/drive_create/first_drive.dart';
 import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/pages/no_drives/first_drive_page.dart';
+import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/user/user.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
@@ -78,6 +79,7 @@ void main() {
     expect(asked, 1);
     expect(find.text('Setting up My files'), findsOneWidget);
     expect(find.text('Getting started'), findsNothing);
+    expect(find.byType(SyncLoadingIndicator), findsOneWidget);
 
     // Made: the explorer opens it, so this page waits to be replaced.
     making.complete(true);

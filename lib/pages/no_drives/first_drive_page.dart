@@ -4,6 +4,7 @@ import 'package:ardrive/core/arfs/entities/arfs_entities.dart'
     show DrivePrivacy;
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/services/services.dart';
+import 'package:ardrive/sync/presentation/sync_loading_indicator.dart';
 import 'package:ardrive/turbo/services/upload_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -97,7 +98,7 @@ class _SettingUpFirstDrive extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const ArDriveSpinner(size: ArDriveSpinnerSize.large),
+          const SyncLoadingIndicator(size: 96),
           const SizedBox(height: ArDriveSpacing.md),
           Text(
             appLocalizationsOf(context).firstDriveSettingUp,
