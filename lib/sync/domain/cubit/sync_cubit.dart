@@ -1139,10 +1139,16 @@ class SyncCubit extends Cubit<SyncState> {
         );
         _publishProgress();
 
+        // One drive's trouble no longer fails this: a cancelled wallet
+        // prompt or an unreadable signature leaves that drive locked or
+        // skipped and the rest sync. A sync the user started may ask the
+        // wallet again for drives whose prompt was cancelled earlier; a
+        // background one never brings a dismissed prompt back.
         await _syncRepository.updateUserDrives(
           wallet: wallet,
           password: password,
           cipherKey: profile.user.cipherKey,
+          askWalletAgain: trigger == SyncTrigger.userInitiated,
         );
 
         // Clear status message after discovery completes

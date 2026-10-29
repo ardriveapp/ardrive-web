@@ -7,6 +7,9 @@ import 'package:flutter/foundation.dart';
 import 'package:ardrive/entities/drive_signature.dart';
 import 'package:ardrive/entities/drive_signature_type.dart';
 import 'package:ardrive/entities/entities.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
+import 'package:ardrive/locked_drives/domain/locked_drive.dart';
+import 'package:ardrive/locked_drives/domain/user_drive_discovery.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/permanence/permanence_cache.dart';
 import 'package:ardrive/services/arweave/arweave_service_exception.dart';
@@ -93,7 +96,6 @@ bool syncFetchesEntityData(
 class ArweaveService {
   Arweave client;
   final ArDriveCrypto _crypto;
-  final DriveDao _driveDao;
   final ConfigService _configService;
   late ArtemisClient _gql;
   late DataGatewayFallback _gatewayFallback;
@@ -119,10 +121,14 @@ class ArweaveService {
     return uri.replace(path: newPath).toString();
   }
 
+  /// [driveDao] is no longer read: drive discovery's keys come from the
+  /// `resolvePrivateDriveKey` its caller passes. Kept so the many callers
+  /// that build this service don't change.
   ArweaveService(
     this.client,
     this._crypto,
-    this._driveDao,
+    // ignore: avoid_unused_constructor_parameters
+    DriveDao driveDao,
     this._configService, {
     ArtemisClient? artemisClient,
     Client? httpClient,
@@ -1387,7 +1393,6 @@ class ArweaveService {
   /// Drive discovery needs this for every private drive whose key is not
   /// already in memory. Routing it through the waterfall would have put the
   /// fan-out back into the sync path by the side door, one drive at a time.
-  @visibleForTesting
   Future<DriveSignatureEntity?> getDriveSignatureForDriveOnSync(
     Wallet wallet,
     String driveId,
@@ -1422,9 +1427,19 @@ class ArweaveService {
   }
 
   /// Gets the unique drive entities for a particular user.
-  Future<Map<DriveEntity, DriveKey?>> getUniqueUserDriveEntities(
+  ///
+  /// Each private drive's key comes from [resolvePrivateDriveKey], given the
+  /// drive's newest transaction and data. A drive it can't open is returned
+  /// in [UserDriveDiscovery.lockedDrives] rather than dropped, unless the
+  /// reason was a failed read, which drops it for this pass as before.
+  Future<UserDriveDiscovery> getUniqueUserDriveEntities(
     Wallet wallet,
     String password, {
+    required Future<DriveKeyAttempt> Function(
+      TransactionCommonMixin driveTx,
+      Uint8List data,
+    ) resolvePrivateDriveKey,
+
     /// Called as each drive's metadata comes back, with how many have arrived
     /// and how many were listed. Fires once with `(0, total)` as soon as the
     /// listing is known, so a reader waiting on this learns the size of the
@@ -1533,6 +1548,8 @@ class ArweaveService {
         onDriveUnlocked?.call(0, privateDriveIds.length);
       }
 
+      final lockedDrives = <LockedDrive>[];
+
       for (var i = 0; i < driveTxs.length; i++) {
         if (driveResponses[i] == null) continue;
         final driveTx = driveTxs[i];
@@ -1546,86 +1563,73 @@ class ArweaveService {
           continue;
         }
 
-        DriveKey? driveKey;
-
         if (driveTx.getTag(EntityTag.drivePrivacy) == DrivePrivacyTag.private) {
-          driveKey = await _driveDao.getDriveKeyFromMemory(
-            driveTx.getTag(EntityTag.driveId)!,
-          );
+          // Contained per drive. A gateway hiccup on one drive's signature, or
+          // a cancelled wallet prompt for it, used to throw out of drive
+          // discovery and fail the entire sync before any drive had synced.
+          // Now one drive's trouble is that drive's alone.
+          DriveKeyAttempt attempt;
+          try {
+            attempt = await resolvePrivateDriveKey(
+              driveTx,
+              driveResponses[i]!.bodyBytes,
+            );
+          } catch (e) {
+            logger.w('Could not open $txDriveId this pass: $e');
+            attempt =
+                const DriveKeyAttempt.failed(DriveUnlockFailure.unavailable);
+          }
+
+          // Claim the id, so that if it ever appeared twice an older
+          // transaction could not quietly stand in for the newest one. See
+          // [handledDriveIds].
+          handledDriveIds.add(txDriveId);
 
           // Settled, however it settles. Counting only the drives whose keys
           // were derived here left the figure short of its total whenever a
-          // signature could not be read - and stuck at "0 of 5" for a whole
-          // second pass, because by then every key is already in memory and
-          // the branch below never runs.
-          void settled() {
-            if (unlockedDriveIds.add(driveTx.getTag(EntityTag.driveId)!)) {
-              onDriveUnlocked?.call(
-                unlockedDriveIds.length,
-                privateDriveIds.length,
-              );
-            }
-          }
-
-          if (driveKey != null) {
-            settled();
-          }
-
-          if (driveKey == null) {
-            final sigTypeTag = driveTx.getTag(EntityTag.signatureType) ?? '1';
-            final signatureType = DriveSignatureType.fromString(sigTypeTag);
-
-            // Contained deliberately. This was the one unguarded await in the
-            // loop, and a gateway hiccup on a single drive's signature threw
-            // all the way out of drive discovery and killed the entire sync -
-            // before any drive had synced at all. Every other failure here
-            // drops one drive and carries on; this one now does too, and the
-            // drive is picked up on the next pass.
-            DriveSignatureEntity? driveSignature;
-
-            if (signatureType == DriveSignatureType.v1) {
-              try {
-                driveSignature = await getDriveSignatureForDriveOnSync(
-                    wallet, driveTx.getTag(EntityTag.driveId)!);
-              } catch (e) {
-                logger.w(
-                  'Could not read the drive signature for $txDriveId; '
-                  'skipping this drive for this pass: $e',
-                );
-                // Claim the id, so that if it ever appeared twice an older
-                // transaction could not quietly stand in for the newest one.
-                // See [handledDriveIds].
-                handledDriveIds.add(txDriveId);
-                settled();
-                continue;
-              }
-            }
-
-            driveKey = await _crypto.deriveDriveKey(
-                wallet,
-                driveTx.getTag(EntityTag.driveId)!,
-                password,
-                signatureType,
-                driveSignature);
-
-            _driveDao.putDriveKeyInMemory(
-              driveID: driveTx.getTag(EntityTag.driveId)!,
-              driveKey: driveKey,
+          // signature could not be read.
+          if (unlockedDriveIds.add(txDriveId!)) {
+            onDriveUnlocked?.call(
+              unlockedDriveIds.length,
+              privateDriveIds.length,
             );
-
-            settled();
           }
+
+          switch (PrivateDriveVerdict.of(attempt)) {
+            case PrivateDriveVerdict.readable:
+              drivesById[txDriveId] = attempt.entity!;
+              drivesWithKey[attempt.entity!] = attempt.key;
+            case PrivateDriveVerdict.skipped:
+              // Not locked, just unread: dropped for this pass, as before, and
+              // picked up on the next.
+              logger
+                  .w('Skipping $txDriveId for this pass: it could not be read');
+            case PrivateDriveVerdict.locked:
+              // The session has no key that opens it. It used to vanish here;
+              // now it is listed as locked, with no name and no row.
+              lockedDrives.add(
+                LockedDrive(
+                  driveId: txDriveId,
+                  ownerAddress: driveTx.owner.address,
+                  signatureType: DriveSignatureType.fromString(
+                      driveTx.getTag(EntityTag.signatureType) ?? '1'),
+                  lastUpdated: driveTx.getCommitTime(),
+                ),
+              );
+          }
+
+          continue;
         }
+
         try {
           final drive = await DriveEntity.fromTransaction(
             driveTx,
             _crypto,
             driveResponses[i]!.bodyBytes,
-            driveKey?.key,
           );
 
           drivesById[drive.id] = drive;
-          drivesWithKey[drive] = driveKey;
+          drivesWithKey[drive] = null;
 
           // If there's an error parsing the drive entity, just ignore it.
         } on EntityTransactionParseException catch (parseException) {
@@ -1636,7 +1640,10 @@ class ArweaveService {
           );
         }
       }
-      return drivesWithKey;
+      return UserDriveDiscovery(
+        drives: drivesWithKey,
+        lockedDrives: lockedDrives,
+      );
     } catch (e, stacktrace) {
       logger.e(
         'An error occurred when getting the unique user drive entities.',
@@ -1680,6 +1687,45 @@ class ArweaveService {
       return null;
     }
 
+    final fileTx = await getLatestDriveTx(
+      driveId,
+      driveOwner,
+      maxRetries: maxRetries,
+    );
+
+    if (fileTx == null) {
+      return null;
+    }
+
+    final entityBytes = await getEntityDataBytes(
+      fileTx.id,
+      configuredGatewayOnly: configuredGatewayOnly,
+    );
+
+    try {
+      return await DriveEntity.fromTransaction(
+          fileTx, _crypto, entityBytes, driveKey);
+    } on EntityTransactionParseException catch (parseException) {
+      logger.e(
+        'Failed to parse transaction '
+        'with id ${parseException.transactionId}',
+        parseException,
+      );
+      return null;
+    }
+  }
+
+  /// The newest valid metadata transaction of [driveId] by [driveOwner], or
+  /// null when it has none. Its data is read by [getEntityDataBytes].
+  ///
+  /// The query half of [getLatestDriveEntityWithId], for a reader that has to
+  /// tell a wrong key from a failed read - unlocking a drive does - and so
+  /// decrypts the bytes itself.
+  Future<TransactionCommonMixin?> getLatestDriveTx(
+    String driveId,
+    String driveOwner, {
+    int maxRetries = defaultMaxRetries,
+  }) async {
     String cursor = '';
     while (true) {
       final latestDriveQuery = await graphQLRetry.execute(
@@ -1716,28 +1762,30 @@ class ArweaveService {
         }
       }
 
-      final fileTx = filteredEdges.first.node;
-
-      // Use cached bytes if available (e.g., from getUniqueUserDriveEntities)
-      final cachedBytes = _cachedEntityDataBytes[fileTx.id];
-      final entityBytes = cachedBytes ??
-          (await (configuredGatewayOnly
-                  ? _gatewayFallback.fetchDataForSync(fileTx.id, client)
-                  : _gatewayFallback.fetchData(fileTx.id, client)))
-              .bodyBytes;
-
-      try {
-        return await DriveEntity.fromTransaction(
-            fileTx, _crypto, entityBytes, driveKey);
-      } on EntityTransactionParseException catch (parseException) {
-        logger.e(
-          'Failed to parse transaction '
-          'with id ${parseException.transactionId}',
-          parseException,
-        );
-        return null;
-      }
+      return filteredEdges.first.node;
     }
+  }
+
+  /// The data of the entity transaction [txId], from the bytes drive
+  /// discovery already read when it has them.
+  ///
+  /// [configuredGatewayOnly] as for [getLatestDriveEntityWithId]. Throws when
+  /// the data can't be read.
+  Future<Uint8List> getEntityDataBytes(
+    String txId, {
+    bool configuredGatewayOnly = false,
+  }) async {
+    // Use cached bytes if available (e.g., from getUniqueUserDriveEntities)
+    final cachedBytes = _cachedEntityDataBytes[txId];
+
+    if (cachedBytes != null) {
+      return cachedBytes;
+    }
+
+    return (await (configuredGatewayOnly
+            ? _gatewayFallback.fetchDataForSync(txId, client)
+            : _gatewayFallback.fetchData(txId, client)))
+        .bodyBytes;
   }
 
   /// Gets the drive privacy of the latest drive entity with the provided id.

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:ardrive/locked_drives/presentation/locked_drive_view.dart';
 import 'package:ardrive/arns/presentation/item/arns_item_names.dart';
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
@@ -572,6 +573,38 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                               hideState,
                             ),
                           ),
+                        ),
+                      );
+                    } else if (driveDetailState is DriveDetailLoadNotFound &&
+                        context.read<AppRouterDelegate>().sharedDriveKey ==
+                            null) {
+                      // A private drive of the user's that this session
+                      // can't open. A link that brought its key goes on to
+                      // attach as it always has.
+                      final lockedDrive = LockedDriveView(
+                        driveId:
+                            context.read<DriveDetailCubit>().currentDriveId,
+                        otherwise: const SizedBox(),
+                      );
+
+                      return ScreenTypeLayout.builder(
+                        mobile: (context) => Scaffold(
+                          drawerScrimColor: Colors.transparent,
+                          drawer:
+                              PublicationMode.isOn ? null : const AppSideBar(),
+                          appBar: const MobileAppBar(),
+                          body: lockedDrive,
+                        ),
+                        desktop: (context) => Column(
+                          children: [
+                            const AppTopBar(),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 16),
+                                child: lockedDrive,
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     } else {

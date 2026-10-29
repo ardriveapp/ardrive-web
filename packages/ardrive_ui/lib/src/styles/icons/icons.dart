@@ -400,6 +400,15 @@ class ArDriveIcons {
         color: color,
       );
 
+  /// A padlock: a private drive this session can't open yet. The same glyph
+  /// as the Private drives heading in the nav, so "private" and "locked"
+  /// read as one family.
+  static ArDriveIcon lock({double? size, Color? color}) => ArDriveIcon(
+        icon: Icons.lock_outline,
+        size: size,
+        color: color,
+      );
+
   // keypad
   static ArDriveIcon keypad({double? size, Color? color}) => ArDriveIcon(
         icon: ArDriveIconsData.keypad,

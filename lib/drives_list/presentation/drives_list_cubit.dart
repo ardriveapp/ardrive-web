@@ -287,6 +287,15 @@ class DrivesListCubit extends Cubit<DrivesListState> {
       );
     }).toList();
 
+    // Locked drives: listed, never opened, never counted as synced or not.
+    items.addAll([
+      for (final locked in drivesState.lockedDrives)
+        DriveListItem.locked(
+          id: locked.driveId,
+          dateCreated: locked.lastUpdated,
+        ),
+    ]);
+
     // Counted over everything, filtered to one scope. A scope reading zero is
     // exactly the fact a reader wants before clicking it, so the counts cannot
     // come from the filtered list.
@@ -296,7 +305,12 @@ class DrivesListCubit extends Cubit<DrivesListState> {
     // A drive that has been detached or hidden since the tick was made is no
     // longer selectable, and must not be carried into a sync as though it
     // were.
-    _selected.retainAll(shown.map((drive) => drive.id).toSet());
+    // A locked drive is never selectable either: there is nothing a sync can
+    // do with it.
+    _selected.retainAll({
+      for (final drive in shown)
+        if (!drive.isLocked) drive.id,
+    });
 
     emit(DrivesListLoaded(
       drives: shown,
@@ -431,7 +445,10 @@ class DrivesListCubit extends Cubit<DrivesListState> {
       return;
     }
 
-    final shown = current.drives.map((drive) => drive.id).toSet();
+    final shown = {
+      for (final drive in current.drives)
+        if (!drive.isLocked) drive.id,
+    };
 
     if (shown.every(_selected.contains)) {
       _selected.removeAll(shown);

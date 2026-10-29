@@ -1,3 +1,6 @@
+import 'package:ardrive/components/drive_fingerprint.dart';
+import 'package:ardrive/locked_drives/domain/locked_drive.dart';
+import 'package:ardrive/locked_drives/presentation/unlock_drive_dialog.dart';
 import 'package:ardrive/drives_list/presentation/drives_list_cubit.dart';
 import 'package:ardrive/drives_list/domain/drive_scope.dart';
 import 'package:ardrive/drives_list/presentation/drive_scope_rail.dart';
@@ -367,7 +370,8 @@ class _AppSideBarState extends State<AppSideBar> {
           builder: (context, state) {
             if (state is DrivesLoadSuccess &&
                 (state.userDrives.isNotEmpty ||
-                    state.sharedDrives.isNotEmpty)) {
+                    state.sharedDrives.isNotEmpty ||
+                    state.lockedDrives.isNotEmpty)) {
               // Not Flexible any more: inside the sidebar's scroll view this
               // has no bounded height to take a share of, and asking for one
               // is what kept the list exactly as tall as the window.
@@ -676,6 +680,46 @@ class DriveListTile extends StatelessWidget {
               ],
             )
           : null,
+    );
+  }
+}
+
+/// A locked drive in the nav: "Private drive", its emoji and a padlock.
+/// A tap opens its unlock dialog.
+class LockedDriveListTile extends StatelessWidget {
+  const LockedDriveListTile({
+    super.key,
+    required this.driveId,
+    required this.onTap,
+  });
+
+  final String driveId;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+    final strings = appLocalizationsOf(context);
+
+    return Semantics(
+      label: '${strings.lockedDriveName}, ${strings.driveLocked}',
+      child: DriveNavRow(
+        key: ValueKey('locked-drive-$driveId'),
+        icon: null,
+        dense: true,
+        label: strings.lockedDriveName,
+        isCurrent: false,
+        isMuted: true,
+        onTap: onTap,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DriveFingerprint(driveId: driveId, size: 14),
+            const SizedBox(width: ArDriveSpacing.xs),
+            ArDriveIcons.lock(size: 16, color: colorTokens.textLow),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1028,7 +1072,8 @@ class _DriveSectionsState extends State<_DriveSections> with FoldsNavSections {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (state.userDrives.isNotEmpty) ...[
+            if (state.userDrives.isNotEmpty ||
+                state.lockedDrives.isNotEmpty) ...[
               _section(
                 context,
                 DriveScope.public,
@@ -1038,6 +1083,7 @@ class _DriveSectionsState extends State<_DriveSections> with FoldsNavSections {
                 context,
                 DriveScope.private,
                 state.userDrives.where((d) => d.isPrivate && shown(d)),
+                locked: state.lockedDrives,
               ),
             ],
             // Shared drives are always visible.
@@ -1052,8 +1098,9 @@ class _DriveSectionsState extends State<_DriveSections> with FoldsNavSections {
   Widget _section(
     BuildContext context,
     DriveScope scope,
-    Iterable<Drive> drives,
-  ) {
+    Iterable<Drive> drives, {
+    Iterable<LockedDrive> locked = const [],
+  }) {
     final state = widget.state;
     final section = NavSection.forScope(scope);
     final isExpanded = !isFolded(section);
@@ -1085,6 +1132,16 @@ class _DriveSectionsState extends State<_DriveSections> with FoldsNavSections {
               // Hiding is something a reader does to their own drives, so a
               // drive shared with them is never drawn as hidden.
               isHidden: scope != DriveScope.sharedWithMe && drive.isHidden,
+            ),
+        // After the drives that open: these have no name to sort by.
+        if (isExpanded)
+          for (final drive in locked)
+            LockedDriveListTile(
+              driveId: drive.driveId,
+              onTap: () {
+                _closeDrawer(context);
+                showUnlockDriveDialog(context, driveId: drive.driveId);
+              },
             ),
       ],
     );

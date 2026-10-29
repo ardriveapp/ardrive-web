@@ -1,3 +1,4 @@
+import 'package:ardrive/locked_drives/presentation/unlock_drive_dialog.dart';
 import 'package:ardrive/pages/no_drives/first_drive_page.dart';
 import 'package:ardrive/drives_list/domain/drive_list_sort.dart';
 import 'package:ardrive/drives_list/domain/drive_scope.dart';
@@ -225,9 +226,10 @@ class _DrivesListChrome extends StatelessWidget {
               settingUpFirstDrive: FirstDrivePage.settingUp.value,
               state: state,
               // Selecting is how a drive is opened from anywhere on this route,
-              // the sidebar included.
-              onOpenDrive: (drive) =>
-                  context.read<DrivesCubit>().selectDrive(drive.id),
+              // the sidebar included. A locked drive opens its unlock dialog.
+              onOpenDrive: (drive) => drive.isLocked
+                  ? showUnlockDriveDialog(context, driveId: drive.id)
+                  : context.read<DrivesCubit>().selectDrive(drive.id),
               onTryAgain: cubit.retryLoadingDrives,
               onSort: cubit.sortBy,
               onToggleSelected: cubit.toggleSelected,
@@ -785,9 +787,10 @@ class _DrivesListLoadedView extends StatelessWidget {
                     // with a selection.
                     allSelected: onToggleSelectAll == null
                         ? null
-                        : state.drives.isNotEmpty &&
-                            state.drives.every(
-                                (drive) => state.selected.contains(drive.id)),
+                        : state.drives.any((drive) => !drive.isLocked) &&
+                            state.drives.every((drive) =>
+                                drive.isLocked ||
+                                state.selected.contains(drive.id)),
                     onToggleSelectAll: onToggleSelectAll,
                     showsCheckbox: showsCheckboxes,
                     showsAllColumns: showsAllColumns,

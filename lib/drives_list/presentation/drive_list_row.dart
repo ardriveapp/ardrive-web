@@ -1,3 +1,4 @@
+import 'package:ardrive/components/drive_fingerprint.dart';
 import 'package:ardrive/components/list_page/list_table.dart';
 import 'package:ardrive/drives_list/domain/drive_list_item.dart';
 import 'package:ardrive/publication/presentation/publish_to_web.dart';
@@ -285,7 +286,10 @@ class DriveListRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTableRow(
-      semanticLabel: drive.name,
+      semanticLabel: drive.isLocked
+          ? '${appLocalizationsOf(context).lockedDriveName}, '
+              '${appLocalizationsOf(context).driveLocked}'
+          : drive.name,
       onOpen: onOpen,
       showsColumns: showsColumns,
       menu: menu,
@@ -296,6 +300,8 @@ class DriveListRow extends StatelessWidget {
       onLongPress: onLongPress,
       chosen: chosen,
       onChoose: onChoose,
+      // A locked drive takes no tick: a sync can't read it.
+      selectable: !drive.isLocked,
       child: showsColumns ? _columns(context) : _stacked(context),
     );
   }
@@ -346,7 +352,7 @@ class DriveListRow extends StatelessWidget {
             // the same fact in words.
             if (drive.fileCount != null) _files(context),
             if (drive.totalSize != null) _size(context),
-            _created(context),
+            if (!drive.isLocked) _created(context),
           ],
         ),
       ],
@@ -355,6 +361,22 @@ class DriveListRow extends StatelessWidget {
 
   Widget _name(BuildContext context) {
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    // Its name is encrypted: the row says what it is, and its emoji say which
+    // one, the same three desktop shows.
+    if (drive.isLocked) {
+      return ListNameCell(
+        icon: Tooltip(
+          message: appLocalizationsOf(context).driveLocked,
+          child: ArDriveIcons.lock(
+            size: _iconSize,
+            color: colorTokens.textMid,
+          ),
+        ),
+        title: appLocalizationsOf(context).lockedDriveName,
+        marks: [DriveFingerprint(driveId: drive.id)],
+      );
+    }
 
     return ListNameCell(
       // Public or private, said with the same icon the rest of the app uses
@@ -384,6 +406,37 @@ class DriveListRow extends StatelessWidget {
   Widget _syncState(BuildContext context) {
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
+
+    // Status, then the one thing to do about it.
+    if (drive.isLocked) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              formatDriveSyncState(context, drive),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.paragraphSmall(color: colorTokens.textLow),
+            ),
+          ),
+          const SizedBox(width: ArDriveSpacing.xs),
+          ArDriveButtonNew(
+            key: ValueKey('unlock-${drive.id}'),
+            text: appLocalizationsOf(context).unlock,
+            typography: typography,
+            variant: ButtonVariant.secondary,
+            size: ArDriveButtonSize.compact,
+            maxWidth: ArDriveButtonNew.fittedWidth(
+              context,
+              appLocalizationsOf(context).unlock,
+              minWidth: 0,
+            ),
+            onPressed: onOpen,
+          ),
+        ],
+      );
+    }
 
     // A failure is drawn as one. The top bar reports "2 of 12 drives could not
     // be synced" in red with a triangle and sends the reader here to find out
@@ -452,6 +505,11 @@ class DriveListRow extends StatelessWidget {
 
   // See [_files] for [underHeading].
   Widget _created(BuildContext context, {bool underHeading = false}) {
+    // When a locked drive was made is inside it too.
+    if (drive.isLocked) {
+      return _figure(context, driveListWithheldFigure, withheld: true);
+    }
+
     final typography = ArDriveTypographyNew.of(context);
     final colorTokens = ArDriveTheme.of(context).themeData.colorTokens;
     final date = formatDate(drive.dateCreated);
@@ -494,7 +552,9 @@ class DriveListRow extends StatelessWidget {
           .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
     );
 
-    if (!withheld) {
+    // "Not known until synced" is not true of a locked drive: a sync can't
+    // read it either.
+    if (!withheld || drive.isLocked) {
       return label;
     }
 
@@ -523,6 +583,10 @@ String formatDriveSyncState(
   DriveListItem drive, {
   DateTime? now,
 }) {
+  if (drive.isLocked) {
+    return appLocalizationsOf(context).driveLocked;
+  }
+
   if (drive.isSyncing) {
     return appLocalizationsOf(context).driveSyncingNow;
   }

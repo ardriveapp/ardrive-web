@@ -1,5 +1,9 @@
 import 'dart:async';
+
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
+import 'package:ardrive/locked_drives/domain/user_drive_discovery.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/arweave/arweave.dart';
 import 'package:ardrive/services/arweave/data_gateway_fallback.dart';
 import 'package:ardrive/services/config/app_config.dart';
 import 'package:ardrive/sync/data/snapshot_validation_service.dart';
@@ -70,6 +74,10 @@ Drive _makeDrive({
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeWallet());
+    registerFallbackValue(
+      (TransactionCommonMixin driveTx, Uint8List data) async =>
+          const DriveKeyAttempt.failed(DriveUnlockFailure.unavailable),
+    );
     registerFallbackValue(_FakeSecretKey());
   });
 
@@ -307,8 +315,9 @@ void main() {
     /// entities it hands over only say when each last changed.
     test('passes each drive\'s creation time to the database', () async {
       final createdAt = DateTime(2025, 1, 1);
-      when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
-          .thenAnswer((_) async => {});
+      when(() => mockArweave.getUniqueUserDriveEntities(any(), any(),
+              resolvePrivateDriveKey: any(named: 'resolvePrivateDriveKey')))
+          .thenAnswer((_) async => const UserDriveDiscovery(drives: {}));
       when(() => mockArweave.cachedUserDriveCreationTimes(ownerAddress))
           .thenReturn({'drive-id': createdAt});
       when(() => mockDriveDao.updateUserDrives(any(), any(),
@@ -326,10 +335,11 @@ void main() {
 
     test('two callers that overlap share one fetch', () async {
       final gate = Completer<void>();
-      when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
+      when(() => mockArweave.getUniqueUserDriveEntities(any(), any(),
+              resolvePrivateDriveKey: any(named: 'resolvePrivateDriveKey')))
           .thenAnswer((_) async {
         await gate.future;
-        return {};
+        return const UserDriveDiscovery(drives: {});
       });
       when(() => mockDriveDao.updateUserDrives(any(), any(),
           creationTimes: any(named: 'creationTimes'))).thenAnswer((_) async {});
@@ -348,7 +358,8 @@ void main() {
       gate.complete();
       await Future.wait([first, second]);
 
-      verify(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
+      verify(() => mockArweave.getUniqueUserDriveEntities(any(), any(),
+              resolvePrivateDriveKey: any(named: 'resolvePrivateDriveKey')))
           .called(1);
     });
 
@@ -358,8 +369,9 @@ void main() {
       // *completed* fetch left the drive table empty and the app reporting
       // "no drives" as a fact - for the same wallet in the same tab, with
       // nothing short of a page reload to recover it.
-      when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
-          .thenAnswer((_) async => {});
+      when(() => mockArweave.getUniqueUserDriveEntities(any(), any(),
+              resolvePrivateDriveKey: any(named: 'resolvePrivateDriveKey')))
+          .thenAnswer((_) async => const UserDriveDiscovery(drives: {}));
       when(() => mockDriveDao.updateUserDrives(any(), any(),
           creationTimes: any(named: 'creationTimes'))).thenAnswer((_) async {});
 
@@ -375,18 +387,20 @@ void main() {
         cipherKey: SecretKey([1, 2, 3]),
       );
 
-      verify(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
+      verify(() => mockArweave.getUniqueUserDriveEntities(any(), any(),
+              resolvePrivateDriveKey: any(named: 'resolvePrivateDriveKey')))
           .called(2);
     });
 
     test('a failed fetch is not left behind for the next caller to join',
         () async {
       var calls = 0;
-      when(() => mockArweave.getUniqueUserDriveEntities(any(), any()))
+      when(() => mockArweave.getUniqueUserDriveEntities(any(), any(),
+              resolvePrivateDriveKey: any(named: 'resolvePrivateDriveKey')))
           .thenAnswer((_) async {
         calls++;
         if (calls == 1) throw Exception('gateway down');
-        return {};
+        return const UserDriveDiscovery(drives: {});
       });
       when(() => mockDriveDao.updateUserDrives(any(), any(),
           creationTimes: any(named: 'creationTimes'))).thenAnswer((_) async {});
@@ -410,10 +424,9 @@ void main() {
     });
 
     test('forceRefresh bypasses cache', () async {
-      when(() => mockArweave.getUniqueUserDriveEntities(
-            any(),
-            any(),
-          )).thenAnswer((_) async => {});
+      when(() => mockArweave.getUniqueUserDriveEntities(any(), any(),
+              resolvePrivateDriveKey: any(named: 'resolvePrivateDriveKey')))
+          .thenAnswer((_) async => const UserDriveDiscovery(drives: {}));
       when(() => mockDriveDao.updateUserDrives(any(), any(),
           creationTimes: any(named: 'creationTimes'))).thenAnswer((_) async {});
 
@@ -432,10 +445,9 @@ void main() {
         forceRefresh: true,
       );
 
-      verify(() => mockArweave.getUniqueUserDriveEntities(
-            any(),
-            any(),
-          )).called(2);
+      verify(() => mockArweave.getUniqueUserDriveEntities(any(), any(),
+              resolvePrivateDriveKey: any(named: 'resolvePrivateDriveKey')))
+          .called(2);
     });
   });
 

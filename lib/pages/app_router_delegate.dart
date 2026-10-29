@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:ardrive/app_shell.dart';
 import 'package:ardrive/authentication/ardrive_auth.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlock_session.dart';
+import 'package:ardrive/locked_drives/domain/drive_unlocker.dart';
 import 'package:ardrive/authentication/login/views/login_page.dart';
 import 'package:ardrive/blocs/activity/activity_cubit.dart';
 import 'package:ardrive/blocs/blocs.dart';
@@ -718,6 +720,17 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                               final driveDao = context.read<DriveDao>();
                               final linkedDriveId = driveId!;
 
+                              // One of the user's own private drives that
+                              // this session can't open. There is nothing to
+                              // attach: the page offers Unlock. A link that
+                              // carries the drive's key still attaches.
+                              if (sharedDriveKey == null &&
+                                  context
+                                      .read<DriveUnlockSession>()
+                                      .isLocked(linkedDriveId)) {
+                                return;
+                              }
+
                               attachDrive(
                                 context: context,
                                 driveId: driveId,
@@ -853,6 +866,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         userPreferencesRepository:
                             context.read<UserPreferencesRepository>(),
                         syncCubit: context.read<SyncCubit>(),
+                        unlockSession: context.read<DriveUnlockSession>(),
                       ),
                     ),
                     BlocProvider<PrivateDriveMigrationBloc>(
@@ -863,6 +877,7 @@ class AppRouterDelegate extends RouterDelegate<AppRoutePath>
                         crypto: ArDriveCrypto(),
                         turboUploadService: context.read<TurboUploadService>(),
                         arweave: context.read<ArweaveService>(),
+                        driveUnlocker: context.read<DriveUnlocker>(),
                       ),
                     ),
                   ],

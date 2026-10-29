@@ -17,7 +17,28 @@ enum DriveListSort { name, lastSynced, files, size, created }
 /// would fill the top of an ascending list with drives that have never been
 /// read, which is the opposite of what asking for the smallest is for.
 extension DriveListSortComparator on DriveListSort {
+  /// Locked drives sort after every other drive, in either direction: they
+  /// have no name, size or count to sort by, and the drives a reader can open
+  /// are what the order is for.
   int Function(DriveListItem, DriveListItem) comparator({
+    required bool ascending,
+  }) {
+    final compare = _comparator(ascending: ascending);
+
+    return (a, b) {
+      if (a.isLocked != b.isLocked) {
+        return a.isLocked ? 1 : -1;
+      }
+
+      if (a.isLocked) {
+        return a.id.compareTo(b.id);
+      }
+
+      return compare(a, b);
+    };
+  }
+
+  int Function(DriveListItem, DriveListItem) _comparator({
     required bool ascending,
   }) {
     int byName(DriveListItem a, DriveListItem b) =>

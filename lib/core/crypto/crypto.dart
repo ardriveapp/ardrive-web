@@ -53,6 +53,12 @@ class ArDriveCrypto {
   /// in Wander. If a v1 Drive is found, this will attempt to first find a stored
   /// v1 drive key on Arweave and decrypt it using v2 drive key. If not found,
   /// will try to use signature() if available.
+  ///
+  /// Built from [walletSignatureForDrive], [decryptStoredDriveSignature] and
+  /// [driveKeyFromSignature], which the unlock path calls one at a time so it
+  /// can reuse a signature across passwords. Known-answer tests in
+  /// `test/core/crypto/drive_key_derivation_test.dart` hold every one of them
+  /// to the keys this has always produced.
   Future<DriveKey> deriveDriveKey(
     Wallet wallet,
     String driveId,
@@ -60,56 +66,108 @@ class ArDriveCrypto {
     DriveSignatureType signatureType,
     DriveSignatureEntity? driveSignature,
   ) async {
-    final Uint8List walletSignature;
-    bool generated = true;
+    final info = utf8.encode(password);
 
     if (signatureType == DriveSignatureType.v1 && driveSignature != null) {
       // stored v1 drive signatures are encrypted with v2 drive key
       final driveKeyV2 = await deriveDriveKey(
           wallet, driveId, password, DriveSignatureType.v2, null);
 
-      walletSignature = await decrypt(driveSignature.data, driveKeyV2.key,
-          utils.decodeBase64ToBytes(driveSignature.cipherIv));
-      generated = false;
-    } else {
-      final message =
-          Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
+      final walletSignature =
+          await decryptStoredDriveSignature(driveSignature, driveKeyV2.key);
 
-      if (signatureType == DriveSignatureType.v1) {
-        logger.d('Signing with v1 signature (wallet.sign)');
-        try {
-          walletSignature = await wallet.sign(message);
-          logger.d('v1 signing successful');
-        } catch (e, stackTrace) {
-          logger.e('v1 signing failed', e, stackTrace);
-          rethrow;
-        }
-      } else if (signatureType == DriveSignatureType.v2) {
-        final owner = await wallet.getOwner();
-        final dataItem = DataItem.withBlobData(data: message, owner: owner);
-        dataItem.addTag('Action', 'Drive-Signature-V2');
-        try {
-          if (wallet is ArConnectWallet) {
-            logger.d('Signing with v2 signature (wallet.signDataItem)');
-            walletSignature = await wallet.signDataItem(dataItem);
-          } else {
-            logger.d('Signing with v2 signature (DataItem.sign)');
-            await dataItem.sign(ArweaveSigner(wallet));
-            walletSignature = utils.decodeBase64ToBytes(dataItem.signature);
-          }
-          logger.d('v2 signing successful');
-        } catch (e, stackTrace) {
-          logger.e('v2 signing failed', e, stackTrace);
-          throw Exception('Failed to sign data item: $e');
-        }
-      } else {
-        throw Exception('Invalid signature type: $signatureType');
-      }
+      return driveKeyFromSignature(walletSignature, info, generated: false);
     }
 
+    final walletSignature =
+        await walletSignatureForDrive(wallet, driveId, signatureType);
+
+    return driveKeyFromSignature(walletSignature, info, generated: true);
+  }
+
+  /// What a wallet signs to make a drive's key: `"drive"` and the drive ID's
+  /// 16 bytes.
+  Uint8List driveSignatureMessage(String driveId) =>
+      Uint8List.fromList(utf8.encode('drive') + Uuid.parse(driveId));
+
+  /// The wallet's signature for [driveId], the secret half of its key.
+  ///
+  /// v1 is `wallet.sign` over [driveSignatureMessage]; v2 is the signature of
+  /// an ANS-104 data item holding it, tagged `Action: Drive-Signature-V2`,
+  /// which is what Wander's `signDataItem` makes. Neither depends on the
+  /// password, which is why the unlock path can keep one per drive for the
+  /// session and try several passwords against it.
+  ///
+  /// Throws whatever the wallet throws, a cancelled prompt included.
+  Future<Uint8List> walletSignatureForDrive(
+    Wallet wallet,
+    String driveId,
+    DriveSignatureType signatureType,
+  ) async {
+    final message = driveSignatureMessage(driveId);
+
+    if (signatureType == DriveSignatureType.v1) {
+      logger.d('Signing with v1 signature (wallet.sign)');
+      try {
+        final signature = await wallet.sign(message);
+        logger.d('v1 signing successful');
+        return signature;
+      } catch (e, stackTrace) {
+        logger.e('v1 signing failed', e, stackTrace);
+        rethrow;
+      }
+    } else if (signatureType == DriveSignatureType.v2) {
+      final owner = await wallet.getOwner();
+      final dataItem = DataItem.withBlobData(data: message, owner: owner);
+      dataItem.addTag('Action', 'Drive-Signature-V2');
+      try {
+        if (wallet is ArConnectWallet) {
+          logger.d('Signing with v2 signature (wallet.signDataItem)');
+          final signature = await wallet.signDataItem(dataItem);
+          logger.d('v2 signing successful');
+          return signature;
+        } else {
+          logger.d('Signing with v2 signature (DataItem.sign)');
+          await dataItem.sign(ArweaveSigner(wallet));
+          logger.d('v2 signing successful');
+          return utils.decodeBase64ToBytes(dataItem.signature);
+        }
+      } catch (e, stackTrace) {
+        logger.e('v2 signing failed', e, stackTrace);
+        throw Exception('Failed to sign data item: $e');
+      }
+    } else {
+      throw Exception('Invalid signature type: $signatureType');
+    }
+  }
+
+  /// A v1 drive's wallet signature, out of the drive-signature record that
+  /// holds it encrypted under the drive's v2 key.
+  ///
+  /// Throws [SecretBoxAuthenticationError] when [driveKeyV2] is not the key
+  /// the record was written with, which for the right wallet means the wrong
+  /// password.
+  Future<Uint8List> decryptStoredDriveSignature(
+    DriveSignatureEntity driveSignature,
+    SecretKey driveKeyV2,
+  ) =>
+      decrypt(driveSignature.data, driveKeyV2,
+          utils.decodeBase64ToBytes(driveSignature.cipherIv));
+
+  /// HKDF-SHA256 of [walletSignature] with [info] - the password's bytes -
+  /// and no salt: the drive key every ArDrive app derives.
+  ///
+  /// [info] is bytes rather than the password so the unlock path can also try
+  /// the double-encoded form core-js, the CLI and desktop produce for a
+  /// non-ASCII password. See `drivePasswordInfos`.
+  Future<DriveKey> driveKeyFromSignature(
+    Uint8List walletSignature,
+    List<int> info, {
+    required bool generated,
+  }) async {
     final key = await hkdf.deriveKey(
       secretKey: SecretKey(walletSignature),
-      info: utf8.encode(password),
+      info: info,
       nonce: Uint8List(1),
     );
 

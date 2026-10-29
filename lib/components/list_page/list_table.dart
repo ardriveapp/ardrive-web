@@ -361,7 +361,12 @@ class ListTableRow extends StatelessWidget {
     this.onLongPress,
     this.chosen,
     this.onChoose,
+    this.selectable = true,
   });
+
+  /// False for a row that can't be ticked while the others can: its
+  /// checkbox's place stays, empty, so its columns line up with theirs.
+  final bool selectable;
 
   /// What a screen reader calls the row's button.
   final String semanticLabel;
@@ -442,11 +447,13 @@ class ListTableRow extends StatelessWidget {
                   visible: showsCheckbox,
                   // Its own target, so ticking is never mistaken for
                   // opening.
-                  checkbox: ArDriveCheckBox(
-                    key: checkboxKey,
-                    checked: selected!,
-                    onChange: (_) => onSelectedChanged?.call(),
-                  ),
+                  checkbox: selectable
+                      ? ArDriveCheckBox(
+                          key: checkboxKey,
+                          checked: selected!,
+                          onChange: (_) => onSelectedChanged?.call(),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
             Expanded(
@@ -457,7 +464,7 @@ class ListTableRow extends StatelessWidget {
                   child: ListSelectOrOpen(
                     onOpen: onOpen,
                     onChoose: onChoose,
-                    onLongPress: hasCheckbox ? onLongPress : null,
+                    onLongPress: hasCheckbox && selectable ? onLongPress : null,
                     child: Padding(
                       // The checkbox column already supplies the gutter on
                       // its side.
