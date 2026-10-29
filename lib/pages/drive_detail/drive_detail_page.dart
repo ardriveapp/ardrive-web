@@ -81,6 +81,12 @@ part 'components/drive_detail_folder_empty_card.dart';
 part 'components/drive_detail_unsynced_card.dart';
 part 'components/fs_entry_preview_widget.dart';
 
+/// The gap under a folder's heading on a wide screen, before whatever the
+/// folder shows: its table, or any empty, syncing or unsynced card. Set here
+/// once; the cards add none of their own above, so every state starts where
+/// the table does.
+const double explorerHeadingGap = ArDriveSpacing.xl;
+
 class DriveDetailPage extends StatefulWidget {
   final bool anonymouslyShowDriveDetail;
   final BuildContext context;
@@ -262,7 +268,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             // of it.
                             Expanded(
                               child: Padding(
-                                padding: EdgeInsets.only(right: 16),
+                                // No heading above this panel, so the gap
+                                // is to the top bar; the card has none of
+                                // its own.
+                                padding: EdgeInsets.only(top: 20, right: 16),
                                 child: DriveDetailSyncingCard(),
                               ),
                             ),
@@ -291,7 +300,10 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                             AppTopBar(),
                             Expanded(
                               child: Padding(
-                                padding: EdgeInsets.only(right: 16),
+                                // No heading above this panel, so the gap
+                                // is to the top bar; the card has none of
+                                // its own.
+                                padding: EdgeInsets.only(top: 20, right: 16),
                                 child: DriveDetailSyncingCard
                                     .driveListUnavailable(),
                               ),
@@ -426,7 +438,9 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                               drive: driveDetailState.drive,
                                               isOwner: isOwner,
                                             ),
-                                            const SizedBox(height: 30),
+                                            const SizedBox(
+                                              height: explorerHeadingGap,
+                                            ),
                                             Expanded(
                                               child: DriveDetailUnsyncedCard(
                                                 drive: driveDetailState.drive,
@@ -875,9 +889,7 @@ class _DriveDetailPageState extends State<DriveDetailPage> {
                                 ],
                               ),
                             ),
-                            const SizedBox(
-                              height: 30,
-                            ),
+                            const SizedBox(height: explorerHeadingGap),
                           ],
                           if (hasFiles || hasSubfolders)
                             Expanded(

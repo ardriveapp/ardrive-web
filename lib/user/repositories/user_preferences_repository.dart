@@ -19,6 +19,10 @@ abstract class UserPreferencesRepository {
   Future<void> saveUserHasHiddenItem(bool userHasHiddenDrive);
   Future<void> saveSyncAllDrivesOnLogin(bool syncAllDrivesOnLogin);
 
+  /// Which sidebar headings are folded away, by `NavSection` name. Kept per
+  /// device and dropped on logout, like the other per-user preferences.
+  Future<void> saveFoldedNavSections(Set<String> sections);
+
   /// Records that these drives have just been walked to the end.
   ///
   /// Called with every drive a finished sync covered, so an all-drives sync
@@ -70,6 +74,21 @@ const _driveLastSyncedAtKey = 'driveLastSyncedAt';
 /// migration fixtures stop at schema v19 and a `.drift` change would ship
 /// untested.
 const _syncHistoryKey = 'syncHistory';
+
+/// Where the folded sidebar headings are kept, as a JSON array of names.
+const _foldedNavSectionsKey = 'foldedNavSections';
+
+Set<String> _decodeFoldedNavSections(String? stored) {
+  if (stored == null || stored.isEmpty) return const {};
+  try {
+    final decoded = jsonDecode(stored);
+    // Unreadable reads as nothing folded: every heading open, the default.
+    if (decoded is! List) return const {};
+    return {...decoded.whereType<String>()};
+  } catch (_) {
+    return const {};
+  }
+}
 
 Map<String, DateTime> _decodeDriveLastSyncedAt(String? stored) {
   if (stored == null || stored.isEmpty) {
@@ -169,6 +188,8 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
       userHasHiddenDrive: _store!.getBool('userHasHiddenDrive') ?? false,
       syncAllDrivesOnLogin: syncAllDrivesOnLogin,
       driveLastSyncedAt: driveLastSyncedAt,
+      foldedNavSections:
+          _decodeFoldedNavSections(_store!.getString(_foldedNavSectionsKey)),
     );
 
     _userPreferencesController.sink.add(_currentUserPreferences!);
@@ -223,6 +244,16 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
       value: syncAllDrivesOnLogin,
       updateFunction: (value) =>
           _currentUserPreferences!.copyWith(syncAllDrivesOnLogin: value),
+    );
+  }
+
+  @override
+  Future<void> saveFoldedNavSections(Set<String> sections) async {
+    await _updatePreference(
+      key: _foldedNavSectionsKey,
+      value: jsonEncode(sections.toList()..sort()),
+      updateFunction: (_) => _currentUserPreferences!
+          .copyWith(foldedNavSections: Set.unmodifiable(sections)),
     );
   }
 
@@ -327,6 +358,8 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
     // wallet's syncs did, and the next user to log in on this device has no
     // business reading it.
     (await _getStore()).remove(_syncHistoryKey);
+    // How the last user arranged the sidebar is theirs, not the next one's.
+    (await _getStore()).remove(_foldedNavSectionsKey);
     // Note: syncAllDrivesOnLogin is NOT cleared - it's a global preference
     // that should persist across sessions and logins
 
@@ -341,6 +374,7 @@ class _UserPreferencesRepository implements UserPreferencesRepository {
       showHiddenFiles: false,
       userHasHiddenDrive: false,
       driveLastSyncedAt: const {},
+      foldedNavSections: const {},
       // Keep syncAllDrivesOnLogin unchanged
     );
 

@@ -3,6 +3,9 @@ import 'package:ardrive/arns/domain/arns_names.dart';
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_cubit.dart';
 import 'package:ardrive/arns/presentation/names/arns_names_cubit.dart';
 import 'package:ardrive/arns/presentation/names_page/names_page.dart';
+import 'package:ardrive/components/copy_button.dart';
+import 'package:ardrive/components/details_panel.dart';
+import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -169,8 +172,79 @@ void main() {
 
     expect(find.byType(ArNSNameDetailsPanel), findsOneWidget);
     expect(find.text('studio.ar.io'), findsWidgets);
-    expect(find.text('Renew'), findsOneWidget);
     expect(delegate.shownName, isNull, reason: 'a click only chooses');
+  });
+
+  Future<void> choose(WidgetTester tester, String name) async {
+    final pointer = await mouse(tester);
+    await click(tester, pointer, name);
+    await tester.pump(kDoubleTapTimeout + const Duration(milliseconds: 50));
+    await tester.pumpAndSettle();
+  }
+
+  Finder toolbarAction(String tooltip) => find.descendant(
+        of: find.byType(DetailsPanelToolbarFrame),
+        matching: find.ancestor(
+          of: find.byTooltip(tooltip),
+          matching: find.byType(ArDriveIconButton),
+        ),
+      );
+
+  /// The file details panel's shape: the actions are icon buttons in the
+  /// toolbar above the name; there are no buttons under the details.
+  testWidgets("the panel's actions are icon buttons in its toolbar",
+      (tester) async {
+    await pump(tester);
+    await choose(tester, 'studio');
+
+    expect(toolbarAction('Open'), findsOneWidget);
+    expect(toolbarAction('Renew'), findsOneWidget);
+    expect(
+      tester.getTopLeft(toolbarAction('Open')).dx,
+      lessThan(tester.getTopLeft(toolbarAction('Renew')).dx),
+    );
+    expect(
+      tester.getTopLeft(toolbarAction('Open')).dy,
+      lessThan(tester.getTopLeft(find.text('studio.ar.io').first).dy),
+      reason: 'above the name',
+    );
+    expect(
+      find.descendant(
+        of: find.byType(ArNSNameDetailsPanel),
+        matching: find.byType(ArDriveButtonNew),
+      ),
+      findsNothing,
+      reason: 'no buttons left under the details',
+    );
+
+    await tester.tap(toolbarAction('Open'));
+    await tester.pump();
+    expect(delegate.shownName, 'studio', reason: "Open opens the name's page");
+  });
+
+  testWidgets('a permanent name has nothing to renew', (tester) async {
+    await pump(tester);
+    await choose(tester, 'maya');
+
+    expect(toolbarAction('Open'), findsOneWidget);
+    expect(find.byTooltip('Renew'), findsNothing);
+  });
+
+  /// One label and value grid: every value ends on the same right edge,
+  /// the lease's status text included, which used to sit on the left.
+  testWidgets("the panel's values line up on the right", (tester) async {
+    await pump(tester);
+    await choose(tester, 'studio');
+
+    final panel = find.byType(ArNSNameDetailsPanel);
+    double right(Finder f) =>
+        tester.getTopRight(find.descendant(of: panel, matching: f).first).dx;
+    final lease = right(find.byType(ArDriveStatusText));
+    final undernames = right(find.text('1 of 10'));
+    final link = right(find.byType(CopyButton));
+
+    expect(lease, moreOrLessEquals(undernames, epsilon: 1));
+    expect(link, moreOrLessEquals(undernames, epsilon: 1));
   });
 
   testWidgets("a double-click opens the name's page", (tester) async {

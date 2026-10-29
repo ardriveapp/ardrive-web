@@ -97,6 +97,7 @@ void main() {
       bool retrying = false,
       String? mnemonic = _mnemonic,
       bool? breached = false,
+      bool fromSignUp = false,
     }) =>
         SecureYourWalletWidget(
           loginBloc: loginBloc,
@@ -105,6 +106,7 @@ void main() {
           isNewUser: isNewUser,
           showWalletCreated: true,
           retrying: retrying,
+          fromSignUp: fromSignUp,
           breachCheck: _FakeBreachCheck(breached),
         );
 
@@ -144,6 +146,22 @@ void main() {
       expect(find.byKey(const Key('suggestPasswordButton')), findsNothing);
       expect(continueEnabled(tester), isTrue);
     });
+
+    for (final isNewUser in [true, false]) {
+      testWidgets(
+          'a wallet chosen from Sign up gets the new-account rules '
+          '(${isNewUser ? 'no drives' : 'with public drives'})',
+          (tester) async {
+        // Wander, Phantom, Solflare or MetaMask chosen from "Create your
+        // account": a new ArDrive account, whatever the wallet holds.
+        await pump(tester,
+            dialog(mnemonic: null, isNewUser: isNewUser, fromSignUp: true));
+        expect(find.byKey(const Key('suggestPasswordButton')), findsOneWidget);
+        await enterBoth(tester, 'short');
+        expect(find.text('Use at least 12 characters.'), findsOneWidget);
+        expect(continueEnabled(tester), isFalse);
+      });
+    }
 
     testWidgets('says why it is asking again after a failed try',
         (tester) async {

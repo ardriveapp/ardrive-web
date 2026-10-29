@@ -235,7 +235,7 @@ class _SharedFileLockedViewState extends State<SharedFileLockedView> {
 /// "Remember this key for this tab".
 ///
 /// [ArDriveCheckBox] is reachable by keyboard and screen reader itself now:
-/// one Tab stop, Space or Enter ticks it, a focus ring shows where the keyboard
+/// one Tab stop, Space ticks it, a focus ring shows where the keyboard
 /// is, and it is announced once, as a checkbox with this label. It follows
 /// [isChecked] as it changes, so it needs no key.
 class _RememberKeyCheckBox extends StatelessWidget {

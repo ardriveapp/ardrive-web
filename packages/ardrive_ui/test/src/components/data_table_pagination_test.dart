@@ -161,7 +161,8 @@ void main() {
 
     testWidgets('has no footer when every row fits on the smallest page',
         (tester) async {
-      await pumpTable(tester, rows: 25);
+      // Tall enough to lay out all 25 rows at the list pages' row height.
+      await pumpTable(tester, rows: 25, height: 1500);
 
       expect(find.byType(PaginationFooter), findsNothing);
       expect(find.text('row 24'), findsOneWidget);

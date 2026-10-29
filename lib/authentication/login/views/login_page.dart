@@ -99,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
       create: (context) => _loginBloc,
       child: BlocConsumer<LoginBloc, LoginState>(
         listener: (context, loginState) {
-          if (loginState is! LoginLoading && loginState is! LoginInitial) {
+          if (gettingStartedReady(loginState)) {
             setState(() {
               didGettingStartedLoadedAlready = true;
             });
@@ -183,6 +183,16 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
   }
 }
 
+/// The page's outer margin, the same on every side for the bento and the
+/// sign-in panel, so their tops and bottoms line up; also the gap between
+/// them, the same as the bento's gap between its tiles.
+const _pageMargin = 8.0;
+
+/// Side by side, the page is the window's height, between 832 and 1024; a
+/// shorter window scrolls it, a taller one centres it.
+double _desktopHeight(BuildContext context) =>
+    MediaQuery.of(context).size.height.clamp(832, 1024);
+
 class _LargeDesktopView extends StatelessWidget {
   final LoginState loginState;
   final GlobalKey globalKey;
@@ -194,32 +204,26 @@ class _LargeDesktopView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
-
     return Material(
       color: ArDriveTheme.of(context).themeData.backgroundColor,
       child: SizedBox.expand(
         child: Center(
           child: SingleChildScrollView(
             child: Container(
-              height: height.clamp(832, 1024),
+              height: _desktopHeight(context),
               constraints: const BoxConstraints(
                 maxWidth: 1440,
               ),
+              padding: const EdgeInsets.all(_pageMargin),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(8, 8, 0, 8),
-                      child: TilesView(),
-                    ),
-                  ),
+                  const Expanded(child: TilesView()),
+                  const SizedBox(width: _pageMargin),
                   Expanded(
                     child: _roundedBorderContainer(
                       context: context,
-                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                      padding: EdgeInsets.zero,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
@@ -283,22 +287,18 @@ class _SmallDesktopView extends StatelessWidget {
       child: SizedBox.expand(
         child: Center(
           child: SingleChildScrollView(
-            child: SizedBox(
-              height: 832,
+            child: Container(
+              height: _desktopHeight(context),
+              padding: const EdgeInsets.all(_pageMargin),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(8, 8, 0, 8),
-                      child: TilesView(),
-                    ),
-                  ),
+                  const Expanded(child: TilesView()),
+                  const SizedBox(width: _pageMargin),
                   Expanded(
                     child: _roundedBorderContainer(
                       context: context,
-                      padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
+                      padding: EdgeInsets.zero,
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
@@ -510,6 +510,7 @@ void handleLoginState(BuildContext context, LoginState loginState) {
         isNewUser: loginState.isNewUser,
         showWalletCreated: loginState.showWalletCreated,
         retrying: loginState.retrying,
+        fromSignUp: loginState.fromSignUp,
         derivedEthWallet: loginState.derivedEthWallet,
         sourceWalletAddress: loginState.sourceWalletAddress);
     return;
@@ -591,6 +592,12 @@ void handleLoginState(BuildContext context, LoginState loginState) {
     );
   }
 }
+
+/// Whether the get-started link's spinner can give way to the panel: once
+/// the check for an account on this device is done. Sign up's choice is a
+/// [LoginInitial], so that state no longer means "still loading".
+@visibleForTesting
+bool gettingStartedReady(LoginState state) => state is! LoginLoading;
 
 /// Whether the sign-in panel redraws for [current]. Dialogs, loaders and
 /// transient states leave the panel as it is.
@@ -677,14 +684,24 @@ Widget loginPanelFor(LoginState loginState, LoginBloc loginBloc) {
       wallet: loginState.wallet,
     );
   } else if (loginState is LoginCreatingAccount) {
-    content = const CreatingAccountView(key: Key('creatingAccountView'));
+    content = CreatingAccountView(
+      key: const Key('creatingAccountView'),
+      noWalletFound: loginState.noWalletFound,
+    );
   } else if (loginState is LoginLoading || loginState is LoginLanding) {
     content = const LandingView(
       key: Key('landingPageView'),
     );
   } else {
+    // Sign up's choice, or Log in. Other states that land here keep the
+    // flow the bloc is in.
+    final signUp = loginState is LoginInitial
+        ? !loginState.existingUserFlow
+        : !loginBloc.existingUserFlow;
     content = LogInView(
       key: const Key('logInView'),
+      signUp: signUp,
+      backToLogIn: signUp && loginBloc.signUpFromLogIn,
       isArConnectAvailable: loginBloc.isArConnectAvailable,
       isMetamaskAvailable: loginBloc.isMetamaskAvailable,
       isSolanaAvailable: loginBloc.isSolanaAvailable,

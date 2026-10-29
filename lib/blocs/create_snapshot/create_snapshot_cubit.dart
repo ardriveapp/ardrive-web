@@ -541,8 +541,11 @@ class CreateSnapshotCubit extends Cubit<CreateSnapshotState> {
 
     bool sufficientBalanceToPayWithAR =
         profileState.user.walletBalance >= _costEstimateAr.totalCost;
+    // A zero Turbo estimate is the placeholder for a price Turbo did not
+    // give, never a price the balance covers.
     bool sufficientBalanceToPayWithTurbo =
-        _costEstimateTurbo.totalCost <= _turboBalance;
+        _costEstimateTurbo.totalCost > BigInt.zero &&
+            _costEstimateTurbo.totalCost <= _turboBalance;
 
     _sufficientArBalance = sufficientBalanceToPayWithAR;
     _sufficentCreditsBalance = sufficientBalanceToPayWithTurbo;

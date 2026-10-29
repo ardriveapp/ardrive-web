@@ -519,7 +519,12 @@ Widget _confirmDialog(
                           costEstimateTurbo: state.costEstimateTurbo,
                           costEstimateAr: state.costEstimateAr,
                           hasNoTurboBalance: state.hasNoTurboBalance,
-                          isTurboUploadPossible: true,
+                          // Without a price from Turbo there is no Turbo
+                          // option, rather than one that costs 0 credits.
+                          isTurboUploadPossible:
+                              (state.costEstimateTurbo?.totalCost ??
+                                      BigInt.zero) >
+                                  BigInt.zero,
                           arBalance: state.arBalance,
                           sufficientArBalance:
                               state.sufficientBalanceToPayWithAr,

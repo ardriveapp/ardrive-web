@@ -192,7 +192,11 @@ void main() {
   group("the explorer's table", () {
     late List<List<int>> selections;
 
-    Future<void> pumpTable(WidgetTester tester, {bool locked = false}) async {
+    Future<void> pumpTable(
+      WidgetTester tester, {
+      bool locked = false,
+      void Function(_Row row)? onRowOpen,
+    }) async {
       selections = [];
       tester.view.physicalSize = const Size(1200, 900);
       tester.view.devicePixelRatio = 1;
@@ -210,7 +214,7 @@ void main() {
               ]),
               rowsPerPageText: 'Rows per page',
               onChangeMultiSelecting: (_) {},
-              onRowOpen: (_) {},
+              onRowOpen: onRowOpen ?? (_) {},
               lockMultiSelect: locked,
               onSelectedRows: (boxes) => selections.add([
                 for (final box in boxes)
@@ -315,6 +319,25 @@ void main() {
       expect(selections, isEmpty, reason: 'Space selects nothing either');
     });
 
+    testWidgets(
+        'a long press while locked starts nothing, and taps still '
+        'choose rows', (tester) async {
+      final opened = <String>[];
+      await pumpTable(tester,
+          locked: true, onRowOpen: (row) => opened.add(row.id));
+
+      await tester.longPress(find.text('one').first);
+      await tester.pumpAndSettle();
+      expect(shown(tester), [false, false, false]);
+      opened.clear();
+
+      // On touch a tap opens; after the long press it went to a refused tick
+      // instead, and nothing happened.
+      await tester.tap(find.text('two').first);
+      await tester.pumpAndSettle();
+      expect(opened, ['two']);
+    });
+
     testWidgets('the row boxes are not Tab stops', (tester) async {
       await pumpTable(tester);
       final labels = <String?>[];
@@ -360,6 +383,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(shown(tester), [true, true, true]);
+    });
+
+    testWidgets('the headings and cells stay put as the boxes show',
+        (tester) async {
+      await pumpTable(tester);
+      double heading() => tester.getTopLeft(find.text('Name')).dx;
+      double cell() => tester.getTopLeft(find.text('one').first).dx;
+      final hidden = [heading(), cell()];
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+      expect([heading(), cell()], hidden, reason: 'nothing moves');
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
     });
 
     testWidgets("a row's content does not move when its box shows",

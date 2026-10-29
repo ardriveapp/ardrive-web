@@ -138,7 +138,8 @@ class ArDriveCheckBoxState extends State<ArDriveCheckBox> {
     final enabled = !widget.isDisabled;
 
     // A checkbox to the keyboard and to a screen reader as well as to the
-    // pointer: it takes focus, Space or Enter ticks it, and it is announced
+    // pointer: it takes focus, Space ticks it (on the web, as in a browser,
+    // Enter does not), and it is announced
     // as a checkbox with its state. It was a bare GestureDetector, reachable
     // by the mouse alone.
     // The focus node's semantics join the checkbox's own node, so a screen

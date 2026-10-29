@@ -189,7 +189,9 @@ class _DriveDetailSyncingCardState extends State<DriveDetailSyncingCard> {
     return ScreenTypeLayout.builder(
       mobile: (context) => content,
       desktop: (context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        // No top padding: whoever places the card sets the gap above it.
+        // Under a folder's heading that is the gap the table gets.
+        padding: const EdgeInsets.only(bottom: 20),
         child: SizedBox(
           height: MediaQuery.of(context).size.height * 0.8,
           child: ArDriveCard(

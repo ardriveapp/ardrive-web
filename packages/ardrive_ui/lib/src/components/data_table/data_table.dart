@@ -33,6 +33,10 @@ class TableRowWidget {
   final List<Widget> row;
 }
 
+/// The table's side margin, inside which the header, the rows' content and
+/// the page indicator sit. A row's fill reaches past it to the card's edges.
+const double _tablePadding = 16;
+
 class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
   final List<TableColumn> columns;
   final List<T> rows;
@@ -47,6 +51,10 @@ class ArDriveDataTable<T extends IndexedItem> extends StatefulWidget {
 
   /// The width of the [trailing] slot when [trailingWidth] is absent.
   static const double defaultTrailingWidth = 100;
+
+  /// A row's height: the list pages' (`ListTableRow`), 14 above and below a
+  /// 21 px line, so a row reads the same in the explorer as on Your drives.
+  static const double rowHeight = 49;
   final int Function(T a, T b) Function(int columnIndex)? sort;
   final List<T> Function(List<T> rows, int columnIndex, TableSort sortOrder)?
       sortRows;
@@ -806,7 +814,10 @@ class _ArDriveDataTableState<T extends IndexedItem>
         child: ArDriveCard(
           backgroundColor:
               ArDriveTheme.of(context).themeData.tableTheme.backgroundColor,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          // No side padding of its own: the rows reach the card's edges, so
+          // a highlighted row is as wide as the list pages' are. The header
+          // and the page indicator keep their 16.
+          contentPadding: EdgeInsets.zero,
           key: widget.key,
           content: Column(
             children: [
@@ -817,54 +828,61 @@ class _ArDriveDataTableState<T extends IndexedItem>
               const SizedBox(
                 height: 14,
               ),
-              Row(
-                children: [
-                  _masterMultiselectCheckBox(),
-                  Flexible(
-                    child: AnimatedPadding(
-                      duration: const Duration(milliseconds: 300),
-                      padding: getPadding(),
-                      child: Row(
-                        children: [
-                          ...columns,
-                          // 10 less than the trailing slot, as the 90 was
-                          // beside its 100.
-                          SizedBox(
-                            width: trailingSlot - 10,
-                          ),
-                          ArDriveSubmenu(
-                            alignmentOffset: const Offset(-150, 10),
-                            menuChildren: [
-                              for (int i = 0; i < _columns.length; i++)
-                                ArDriveSubmenuItem(
-                                    widget: Padding(
-                                  padding: EdgeInsets.only(
-                                      top: (i == 0) ? 16 : 8,
-                                      left: 16,
-                                      right: 16,
-                                      bottom:
-                                          (i == _columns.length - 1) ? 16 : 8),
-                                  child: ArDriveCheckBox(
-                                    isDisabled: !_columns[i].canHide,
-                                    title: _columns[i].title,
-                                    checked: _columns[i].isVisible,
-                                    titleStyle: ArDriveTypographyNew.of(context)
-                                        .paragraphLarge(
-                                      fontWeight: ArFontWeight.bold,
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _tablePadding,
+                ),
+                child: Row(
+                  children: [
+                    _masterMultiselectCheckBox(),
+                    Flexible(
+                      child: AnimatedPadding(
+                        duration: const Duration(milliseconds: 300),
+                        padding: getPadding(),
+                        child: Row(
+                          children: [
+                            ...columns,
+                            // 10 less than the trailing slot, as the 90 was
+                            // beside its 100.
+                            SizedBox(
+                              width: trailingSlot - 10,
+                            ),
+                            ArDriveSubmenu(
+                              alignmentOffset: const Offset(-150, 10),
+                              menuChildren: [
+                                for (int i = 0; i < _columns.length; i++)
+                                  ArDriveSubmenuItem(
+                                      widget: Padding(
+                                    padding: EdgeInsets.only(
+                                        top: (i == 0) ? 16 : 8,
+                                        left: 16,
+                                        right: 16,
+                                        bottom: (i == _columns.length - 1)
+                                            ? 16
+                                            : 8),
+                                    child: ArDriveCheckBox(
+                                      isDisabled: !_columns[i].canHide,
+                                      title: _columns[i].title,
+                                      checked: _columns[i].isVisible,
+                                      titleStyle:
+                                          ArDriveTypographyNew.of(context)
+                                              .paragraphLarge(
+                                        fontWeight: ArFontWeight.bold,
+                                      ),
+                                      onChange: (value) {
+                                        _toggleColumnVisibility(i);
+                                      },
                                     ),
-                                    onChange: (value) {
-                                      _toggleColumnVisibility(i);
-                                    },
-                                  ),
-                                ))
-                            ],
-                            child: ArDriveIcons.plus(),
-                          ),
-                        ],
+                                  ))
+                              ],
+                              child: ArDriveIcons.plus(),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               // And the same 6 beneath them before the first row, where the
               // gap was 25: four times the drives list, and the half of it a
@@ -875,6 +893,7 @@ class _ArDriveDataTableState<T extends IndexedItem>
               if (widget.headerDivider)
                 Container(
                   height: 1,
+                  margin: const EdgeInsets.symmetric(horizontal: _tablePadding),
                   color:
                       ArDriveTheme.of(context).themeData.colorTokens.strokeLow,
                 ),
@@ -895,15 +914,12 @@ class _ArDriveDataTableState<T extends IndexedItem>
                             key: _currentPage[index] == _scrollToRow
                                 ? _scrollToRowKey
                                 : null,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 5),
-                              child: _buildRowSpacing(
-                                _columns,
-                                widget.buildRow(_currentPage[index]).row,
-                                _currentPage[index],
-                                index,
-                                trailingSlot,
-                              ),
+                            child: _buildRowSpacing(
+                              _columns,
+                              widget.buildRow(_currentPage[index]).row,
+                              _currentPage[index],
+                              index,
+                              trailingSlot,
                             ),
                           ),
                         );
@@ -912,7 +928,12 @@ class _ArDriveDataTableState<T extends IndexedItem>
                   ),
                 ),
               ),
-              _pageIndicator(),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _tablePadding,
+                ),
+                child: _pageIndicator(),
+              ),
             ],
           ),
         ));
@@ -1130,13 +1151,14 @@ class _ArDriveDataTableState<T extends IndexedItem>
     );
   }
 
-  /// A row's card: selected, under the pointer, or neither. The card is
-  /// opaque, so a hover painted behind it would not show. A selected row
-  /// keeps its colour under the pointer.
+  /// A row's fill: selected, under the pointer, or none. The list pages'
+  /// rule: a row at rest is flat on the table, so only the rows that mean
+  /// something are filled. A selected row keeps its colour under the
+  /// pointer.
   Color _rowColour(BuildContext context, {required bool selected}) {
     final table = ArDriveTheme.of(context).themeData.tableTheme;
     if (selected) return table.selectedItemColor;
-    return _RowHover.of(context) ? table.hoverItemColor : table.cellColor;
+    return _RowHover.of(context) ? table.hoverItemColor : Colors.transparent;
   }
 
   /// The widest [ArDriveDataTable.trailingWidth] over every row, so the
@@ -1173,82 +1195,92 @@ class _ArDriveDataTableState<T extends IndexedItem>
           _onRowTapped(row);
         }
       },
-      onLongPress: () {
-        setState(() {
-          _isMultiSelectingWithLongPress = !_isMultiSelectingWithLongPress;
-        });
+      // Ignored while multi-select is locked: it put the table into
+      // selecting with no boxes to show for it, and every tap on a row then
+      // went to a tick that was refused.
+      onLongPress: widget.lockMultiSelect
+          ? null
+          : () {
+              setState(() {
+                _isMultiSelectingWithLongPress =
+                    !_isMultiSelectingWithLongPress;
+              });
 
-        if (widget.onChangeMultiSelecting != null) {
-          widget.onChangeMultiSelecting!(_isMultiSelecting);
-        }
-      },
+              if (widget.onChangeMultiSelecting != null) {
+                widget.onChangeMultiSelecting!(_isMultiSelecting);
+              }
+            },
       behavior: HitTestBehavior.opaque,
       // The row's long press starts selecting; a tooltip in a cell leaves it
       // to the row.
       child: ArDriveTooltipLongPressYields(
-        child: Row(
-          children: [
-            _multiSelectColumn(false, index: index, row: row),
-            Flexible(
-              // A Builder, so the card reads the hover of the row it is in:
-              // this method's own context is the table's.
-              child: Builder(
-                builder: (context) => ArDriveCard(
-                  key: ValueKey(row),
-                  backgroundColor: _rowColour(
-                    context,
-                    selected: (!_isMultiSelecting && _selectedItem == row) ||
-                        multiselect.selectedItems.contains(row),
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
-                  content: Row(
-                    children: [
-                      if (widget.leading != null)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 16),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: 40,
-                              maxHeight: 40,
-                            ),
-                            child: widget.leading!.call(row),
-                          ),
-                        ),
-                      ...List.generate(
-                        columns.length,
-                        (index) {
-                          if (!columns[index].isVisible) {
-                            return const SizedBox();
-                          }
-                          return Flexible(
-                            flex: columns[columns[index].index].size,
-                            child: ArDriveClickArea(
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: buildRow[columns[index].index],
+        // A Builder, so the fill reads the hover of the row it is in: this
+        // method's own context is the table's.
+        child: Builder(
+          builder: (context) => Container(
+            key: ValueKey(row),
+            constraints:
+                const BoxConstraints(minHeight: ArDriveDataTable.rowHeight),
+            padding: const EdgeInsets.symmetric(horizontal: _tablePadding),
+            color: _rowColour(
+              context,
+              selected: (!_isMultiSelecting && _selectedItem == row) ||
+                  multiselect.selectedItems.contains(row),
+            ),
+            child: Row(
+              children: [
+                _multiSelectColumn(false, index: index, row: row),
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    child: Row(
+                      children: [
+                        if (widget.leading != null)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 16),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: 40,
+                                maxHeight: 40,
                               ),
+                              child: widget.leading!.call(row),
                             ),
-                          );
-                        },
-                        growable: false,
-                      ),
-                      if (widget.trailing != null)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 20),
-                          child: Container(
-                            alignment: Alignment.center,
-                            height: 44,
-                            width: trailingSlot,
-                            child: widget.trailing!.call(row),
                           ),
+                        ...List.generate(
+                          columns.length,
+                          (index) {
+                            if (!columns[index].isVisible) {
+                              return const SizedBox();
+                            }
+                            return Flexible(
+                              flex: columns[columns[index].index].size,
+                              child: ArDriveClickArea(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: buildRow[columns[index].index],
+                                ),
+                              ),
+                            );
+                          },
+                          growable: false,
                         ),
-                    ],
+                        if (widget.trailing != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20),
+                            child: Container(
+                              alignment: Alignment.center,
+                              height: 44,
+                              width: trailingSlot,
+                              child: widget.trailing!.call(row),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

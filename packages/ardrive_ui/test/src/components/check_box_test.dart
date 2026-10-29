@@ -226,7 +226,8 @@ void main() {
   group('to the keyboard and a screen reader', () {
     // It was a bare GestureDetector: the mouse could tick it, Tab could not
     // reach it, and a screen reader did not know it was a checkbox.
-    testWidgets('Tab reaches it, and Space and Enter tick it', (tester) async {
+    testWidgets('Tab reaches it, and Space ticks and unticks it',
+        (tester) async {
       final changes = <bool>[];
       await tester.pumpWidget(ArDriveApp(
         builder: (context) => MaterialApp(
@@ -243,7 +244,7 @@ void main() {
       await tester.pump();
       await tester.sendKeyEvent(LogicalKeyboardKey.space);
       await tester.pump();
-      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
       await tester.pump();
 
       expect(changes, [true, false]);

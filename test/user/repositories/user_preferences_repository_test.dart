@@ -263,6 +263,8 @@ void main() {
           .thenAnswer((_) async => true);
       when(() => mockStore.remove('userHasHiddenDrive'))
           .thenAnswer((_) async => true);
+      when(() => mockStore.remove('foldedNavSections'))
+          .thenAnswer((_) async => true);
 
       await repository.clear();
 
@@ -274,6 +276,8 @@ void main() {
       // The record of what this wallet's syncs did goes with everything else
       // local: the next user to log in on this device has no business in it.
       verify(() => mockStore.remove('syncHistory')).called(1);
+      // How the last user arranged the sidebar is theirs.
+      verify(() => mockStore.remove('foldedNavSections')).called(1);
       // Verify syncAllDrivesOnLogin is NOT removed (should persist)
       verifyNever(() => mockStore.remove('syncAllDrivesOnLogin'));
 
@@ -283,6 +287,7 @@ void main() {
       expect(prefs.showHiddenFiles, false);
       expect(prefs.userHasHiddenDrive, false);
       expect(prefs.syncAllDrivesOnLogin, false);
+      expect(prefs.foldedNavSections, isEmpty);
     });
 
     test(
@@ -437,6 +442,50 @@ void main() {
         await repository.saveDrivesLastSynced(const []);
 
         verifyNever(() => mockStore.putString('driveLastSyncedAt', any()));
+      });
+    });
+
+    group('the folded sidebar headings', () {
+      test('are none for a store that has never held any', () async {
+        when(() => mockStore.getString('foldedNavSections')).thenReturn(null);
+
+        expect((await repository.load()).foldedNavSections, isEmpty);
+      });
+
+      test('read back what was stored', () async {
+        when(() => mockStore.getString('foldedNavSections'))
+            .thenReturn('["names","publicDrives"]');
+
+        expect(
+          (await repository.load()).foldedNavSections,
+          {'names', 'publicDrives'},
+        );
+      });
+
+      test('an unreadable value reads as none folded, not as a crash',
+          () async {
+        when(() => mockStore.getString('foldedNavSections'))
+            .thenReturn('not json at all');
+
+        expect((await repository.load()).foldedNavSections, isEmpty);
+      });
+
+      test('are saved, and said to whoever is watching', () async {
+        when(() => mockStore.getString('foldedNavSections')).thenReturn(null);
+        when(() => mockStore.putString('foldedNavSections', any()))
+            .thenAnswer((_) async => true);
+        await repository.load();
+        final next = repository.watch().first;
+
+        await repository.saveFoldedNavSections({'webPages', 'privateDrives'});
+
+        verify(
+          () => mockStore.putString(
+            'foldedNavSections',
+            '["privateDrives","webPages"]',
+          ),
+        ).called(1);
+        expect((await next).foldedNavSections, {'privateDrives', 'webPages'});
       });
     });
   });
