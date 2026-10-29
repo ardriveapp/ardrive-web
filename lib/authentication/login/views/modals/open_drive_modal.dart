@@ -160,6 +160,7 @@ class _OpenDriveModalState extends State<OpenDriveModal> {
                     obscureText: true,
                     showObfuscationToggle: true,
                     label: strings.openDriveKeyLabel,
+                    textStyle: ArDriveTypographyNew.of(context).code(),
                     onChanged: (value) =>
                         context.read<OpenDriveCubit>().keyChanged(value),
                     onFieldSubmitted: (_) => _submit(context, state),
