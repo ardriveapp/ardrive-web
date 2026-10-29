@@ -113,7 +113,7 @@ class _ThreeColumns extends StatelessWidget {
               SizedBox(width: slidesWidth, child: const _FeatureSlides()),
               const SizedBox(width: 8),
               Expanded(
-                child: _CostTile(loadPrice: loadPrice, showEquivalents: true),
+                child: _CostTile(loadPrice: loadPrice),
               ),
             ],
           ),
@@ -149,7 +149,7 @@ class _TwoColumns extends StatelessWidget {
               const Expanded(child: _FeatureSlides()),
               const SizedBox(width: 8),
               Expanded(
-                child: _CostTile(loadPrice: loadPrice, showEquivalents: false),
+                child: _CostTile(loadPrice: loadPrice, compact: true),
               ),
             ],
           ),
@@ -178,7 +178,7 @@ class _Stacked extends StatelessWidget {
         const SizedBox(height: 8),
         const SizedBox(height: 260, child: _FeatureSlides()),
         const SizedBox(height: 8),
-        _CostTile(loadPrice: loadPrice, showEquivalents: false),
+        _CostTile(loadPrice: loadPrice),
       ],
     );
   }
@@ -1026,23 +1026,22 @@ class _FeatureSlidesState extends State<_FeatureSlides> with _Stepper {
   }
 }
 
-/// "What it costs": the live price of 1 GB, paid once. Opens the pricing page.
+/// "What it costs", as a short bill: 1 GB saved for good at today's price, no
+/// subscription, free to try. The tile opens the price calculator.
 class _CostTile extends StatefulWidget {
-  const _CostTile({required this.loadPrice, required this.showEquivalents});
+  const _CostTile({required this.loadPrice, this.compact = false});
 
   final Future<double?> Function() loadPrice;
 
-  /// What a gigabyte holds, where there is room for it.
-  final bool showEquivalents;
+  /// The narrow tile of the two-column bento: smaller lines, and no room for
+  /// what a gigabyte holds.
+  final bool compact;
 
   @override
   State<_CostTile> createState() => _CostTileState();
 }
 
 class _CostTileState extends State<_CostTile> {
-  /// The width the price and the list need side by side.
-  static const _equivalentsFrom = 340.0;
-
   late final Future<double?> _price = widget.loadPrice();
 
   @override
@@ -1050,162 +1049,264 @@ class _CostTileState extends State<_CostTile> {
     final s = appLocalizationsOf(context);
     final colors = ArDriveTheme.of(context).themeData.colorTokens;
     final type = ArDriveTypographyNew.of(context);
-    final body = type.paragraphNormal(color: colors.textMid);
+    final compact = widget.compact;
+    const figures = [FontFeature.tabularFigures()];
+    final label = compact
+        ? type.paragraphNormal(color: colors.textMid)
+        : type.paragraphLarge(color: colors.textMid);
+    final value = (compact
+            ? type.paragraphNormal(
+                color: colors.textHigh, fontWeight: ArFontWeight.semiBold)
+            : type.paragraphLarge(
+                color: colors.textHigh, fontWeight: ArFontWeight.semiBold))
+        .copyWith(fontFeatures: figures);
+    final price = (compact
+            ? type.heading5(
+                color: colors.textHigh, fontWeight: ArFontWeight.book)
+            : type.heading4(
+                color: colors.textHigh, fontWeight: ArFontWeight.book))
+        .copyWith(fontFeatures: figures);
 
-    final price = FutureBuilder<double?>(
+    final bill = FutureBuilder<double?>(
       future: _price,
       builder: (context, snapshot) {
-        // A fixed-height line, so the tile doesn't move when the price lands.
-        const height = 36.0;
-        if (snapshot.connectionState != ConnectionState.done) {
-          return SizedBox(
-            height: height,
-            child: Align(
-              alignment: Alignment.centerLeft,
+        final loading = snapshot.connectionState != ConnectionState.done;
+        final usd = snapshot.data;
+        final lines = [
+          if (loading)
+            _BillLine(
+              label: s.bentoCostAmount,
+              labelStyle: label,
+              value: _PriceLoading(style: price),
+            )
+          // Left out when Turbo can't be reached.
+          else if (usd != null)
+            _BillLine(
+              key: const Key('bentoPrice'),
+              label: s.bentoCostAmount,
+              labelStyle: label,
+              value: Text('\$${usd.toStringAsFixed(2)}', style: price),
+            ),
+          _BillLine(
+            label: s.bentoCostSubscription,
+            labelStyle: label,
+            value: Text('\$0', style: value),
+          ),
+          _BillLine(
+            label: s.bentoCostToTry,
+            labelStyle: label,
+            value: Text(
+              s.bentoCostFree,
+              style: value.copyWith(color: colors.statusSuccessFg),
+            ),
+          ),
+        ];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final (i, line) in lines.indexed) ...[
+              if (i > 0) SizedBox(height: compact ? 8 : 12),
+              line,
+            ],
+          ],
+        );
+      },
+    );
+
+    return _Tile(
+      onTap: () => openUrl(url: Resources.priceCalculatorLink),
+      semanticsLabel: '${s.bentoCostTitle}. ${s.bentoSeePrices}',
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final bounded = constraints.hasBoundedHeight;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: bounded ? MainAxisSize.max : MainAxisSize.min,
+            children: [
+              Text(
+                s.bentoCostTitle,
+                style: type.heading6(
+                  color: colors.textHigh,
+                  fontWeight: ArFontWeight.semiBold,
+                ),
+              ),
+              SizedBox(height: compact ? 12 : 16),
+              bill,
+              // The footnote and the link sit at the foot of the tile.
+              if (bounded) const Spacer() else const SizedBox(height: 16),
+              if (!compact) ...[
+                Text(
+                  s.bentoCostHolds,
+                  key: const Key('bentoCostHolds'),
+                  style: type.paragraphSmall(color: colors.textLow),
+                ),
+                const SizedBox(height: 8),
+              ],
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    s.bentoSeePrices,
+                    style: type
+                        .paragraphNormal(
+                          color: colors.textLink,
+                          fontWeight: ArFontWeight.semiBold,
+                        )
+                        .copyWith(decoration: TextDecoration.underline),
+                  ),
+                  const SizedBox(width: 4),
+                  ArDriveIcons.newWindow(size: 14, color: colors.textLink),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// One line of the bill: a label, a dotted leader, and the value on the
+/// right, all on one baseline. A label too long for the line wraps, and the
+/// leader and the value stay on its first line.
+class _BillLine extends StatelessWidget {
+  const _BillLine({
+    super.key,
+    required this.label,
+    required this.labelStyle,
+    required this.value,
+  });
+
+  /// The shortest the leader gets before the label wraps.
+  static const _minLeader = 16.0;
+
+  final String label;
+  final TextStyle labelStyle;
+  final Widget value;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) => Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: math.max(
+                      0,
+                      constraints.maxWidth - _minLeader - 8,
+                    ),
+                  ),
+                  child: Text(label, style: labelStyle),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _Leader(style: labelStyle, color: colors.strokeMid),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        value,
+      ],
+    );
+  }
+}
+
+/// A dotted line just above [style]'s baseline: the leader between a bill
+/// line's label and its value.
+class _Leader extends StatelessWidget {
+  const _Leader({required this.style, required this.color});
+
+  final TextStyle style;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    // A space in the label's style gives the leader the label's height and
+    // baseline, so the row lines it up; the dots are drawn just above it.
+    final space = TextPainter(
+      text: TextSpan(
+        text: ' ',
+        style: DefaultTextStyle.of(context).style.merge(style),
+      ),
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final baseline =
+        space.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+    space.dispose();
+    return ExcludeSemantics(
+      child: Stack(
+        children: [
+          Text(' ', style: style),
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _LeaderPainter(color: color, y: baseline - 4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LeaderPainter extends CustomPainter {
+  _LeaderPainter({required this.color, required this.y});
+
+  final Color color;
+  final double y;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final dot = Paint()..color = color;
+    // 1.5 px dots, 1.5 px apart.
+    for (var x = 0.75; x <= size.width - 0.75; x += 3) {
+      canvas.drawCircle(Offset(x, y), 0.75, dot);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _LeaderPainter old) =>
+      old.color != color || old.y != y;
+}
+
+/// The price's place while it loads: a bar where the figure will be, on a line
+/// as tall as the figure, so the bill doesn't move when the price lands.
+class _PriceLoading extends StatelessWidget {
+  const _PriceLoading({required this.style});
+
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = ArDriveTheme.of(context).themeData.colorTokens;
+    return ExcludeSemantics(
+      child: Stack(
+        key: const Key('bentoPriceLoading'),
+        children: [
+          Opacity(opacity: 0, child: Text('\$00.00', style: style)),
+          Positioned.fill(
+            child: Center(
               child: Container(
-                key: const Key('bentoPriceLoading'),
-                width: 120,
-                height: 20,
+                height: 16,
                 decoration: BoxDecoration(
                   color: colors.strokeMid,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
             ),
-          );
-        }
-        final usd = snapshot.data;
-        if (usd == null) return const SizedBox.shrink();
-        return SizedBox(
-          height: height,
-          child: Text.rich(
-            TextSpan(children: [
-              TextSpan(
-                text: '\$${usd.toStringAsFixed(2)} ',
-                style: type
-                    .heading2(
-                  color: colors.textHigh,
-                  fontWeight: ArFontWeight.light,
-                )
-                    .copyWith(fontFeatures: const [
-                  FontFeature.tabularFigures(),
-                ]),
-              ),
-              TextSpan(
-                text: 'USD',
-                style: type.paragraphNormal(
-                  color: colors.textMid,
-                  fontWeight: ArFontWeight.semiBold,
-                ),
-              ),
-            ]),
-            key: const Key('bentoPrice'),
           ),
-        );
-      },
-    );
-
-    Widget equivalent(ArDriveIcon icon, String text) => Row(
-          children: [
-            icon,
-            const SizedBox(width: 8),
-            Text(text, style: body),
-          ],
-        );
-
-    return _Tile(
-      onTap: () => openUrl(url: Resources.priceCalculatorLink),
-      semanticsLabel: '${s.bentoCostTitle}. ${s.bentoSeePrices}',
-      child: LayoutBuilder(
-        builder: (context, constraints) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              s.bentoCostTitle,
-              style: type.heading6(
-                color: colors.textHigh,
-                fontWeight: ArFontWeight.semiBold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _FlexIfBounded(
-              bounded: constraints.hasBoundedHeight,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(s.bentoCostAmount, style: body),
-                        const SizedBox(height: 4),
-                        price,
-                        const SizedBox(height: 4),
-                        Text(s.bentoCostPaidOnce, style: body),
-                      ],
-                    ),
-                  ),
-                  if (widget.showEquivalents &&
-                      constraints.maxWidth >= _equivalentsFrom) ...[
-                    const SizedBox(width: 24),
-                    Container(
-                      padding: const EdgeInsets.only(left: 24),
-                      decoration: BoxDecoration(
-                        border:
-                            Border(left: BorderSide(color: colors.strokeLow)),
-                      ),
-                      child: Column(
-                        key: const Key('bentoEquivalents'),
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          equivalent(
-                            ArDriveIcons.image(size: 16, color: colors.iconMid),
-                            s.bentoPictures,
-                          ),
-                          const SizedBox(height: 8),
-                          equivalent(
-                            ArDriveIcons.file(size: 16, color: colors.iconMid),
-                            s.bentoDocuments,
-                          ),
-                          const SizedBox(height: 8),
-                          equivalent(
-                            ArDriveIcons.video(size: 16, color: colors.iconMid),
-                            s.bentoVideos,
-                          ),
-                          const SizedBox(height: 8),
-                          equivalent(
-                            ArDriveIcons.music(size: 16, color: colors.iconMid),
-                            s.bentoSongs,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  s.bentoSeePrices,
-                  style: type
-                      .paragraphNormal(
-                        color: colors.textLink,
-                        fontWeight: ArFontWeight.semiBold,
-                      )
-                      .copyWith(decoration: TextDecoration.underline),
-                ),
-                const SizedBox(width: 4),
-                ArDriveIcons.newWindow(size: 14, color: colors.textLink),
-              ],
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
