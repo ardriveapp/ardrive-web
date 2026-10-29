@@ -551,10 +551,7 @@ class ArNSNameDetailsPanel extends StatelessWidget {
         if (name.role == ArNSRole.controller)
           DetailsPanelItem(
             itemTitle: strings.arnsRoleHeading,
-            leading: Text(
-              strings.arnsController,
-              style: typography.paragraphNormal(color: colors.textMid),
-            ),
+            leading: DetailsPanelValueText(strings.arnsController),
           ),
         DetailsPanelItem(
           itemTitle: strings.arnsLeaseEndsHeading,
