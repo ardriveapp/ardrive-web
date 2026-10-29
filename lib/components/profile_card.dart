@@ -1,5 +1,6 @@
 import 'package:ardrive/arns/presentation/arns_wallet/arns_wallet_profile_row.dart';
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
@@ -848,8 +849,7 @@ class _ProfileCardState extends State<ProfileCard> {
 
                 // An address, so monospace, at its final width from the
                 // first frame: the face loads on demand.
-                final address = truncateString(state.user.displayAddress,
-                    offsetStart: 6, offsetEnd: 4);
+                final address = shortenId(state.user.displayAddress);
                 return SizedBox(
                   width: ArDriveMonospace.widthOf(address, 15,
                       textScaler: MediaQuery.textScalerOf(context)),
@@ -1430,10 +1430,10 @@ class ProfileCardHeader extends StatelessWidget {
         }
 
         final primaryName = _getPrimaryName(state, walletAddress);
-        final maxWidth = _calculateMaxWidth(primaryName, state);
-        final truncatedWalletAddress = getTruncatedWalletAddress(
-            primaryName, walletAddress,
-            isExpanded: isExpanded);
+        // The address's one short form, as every other place shows it.
+        final truncatedWalletAddress = shortenId(walletAddress);
+        final maxWidth = _calculateMaxWidth(
+            context, primaryName, truncatedWalletAddress, state);
         final tooltipMessage = primaryName.length > 20 ? primaryName : null;
         return ArDriveTooltip(
           message: tooltipMessage ?? '',
@@ -1461,17 +1461,31 @@ class ProfileCardHeader extends StatelessWidget {
       return state.primaryNameDetails.primaryName;
     }
 
-    return truncateString(walletAddress, offsetStart: 6, offsetEnd: 4);
+    return shortenId(walletAddress);
   }
 
-  double _calculateMaxWidth(String primaryName, ProfileNameState state) {
+  double _calculateMaxWidth(
+    BuildContext context,
+    String primaryName,
+    String address,
+    ProfileNameState state,
+  ) {
     if (state is! ProfileNameLoaded && !isExpanded) {
       return 200;
     }
 
-    double width = primaryName.length * 20;
+    // Never narrower than the address under the name: it scales down to fit,
+    // so a button sized to a short name squeezed it to about 6 px. The
+    // button's padding (10 a side), the avatar and its gap (34 + 8), the
+    // address at 12 px, and the close button when there is one (8 + 21).
+    final addressRow = 20 +
+        42 +
+        ArDriveMonospace.widthOf(address, 12,
+            textScaler: MediaQuery.textScalerOf(context)) +
+        (hasLogoutButton ? 29 : 0);
+    final forName = (primaryName.length * 20.0).clamp(110.0, 230.0);
 
-    return width.clamp(110, 230);
+    return math.max(forName, addressRow);
   }
 
   Widget? _buildProfileIcon(ProfileNameLoaded state) {
@@ -1685,35 +1699,6 @@ class ProfileCardHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-String getTruncatedWalletAddress(
-  String primaryName,
-  String walletAddress, {
-  bool isExpanded = false,
-}) {
-  if (primaryName.length > 20 || isExpanded) {
-    // replace the hyphen with a unicode minus to avoid truncation in the middle of the text
-    return truncateString(walletAddress.replaceAll('-', '−'),
-        offsetStart: 12, offsetEnd: 12);
-  }
-
-  var offsetStart = primaryName.length ~/ 2;
-  var offsetEnd = primaryName.length ~/ 2;
-
-  if (offsetStart < 6) {
-    offsetStart = 3;
-  }
-
-  if (offsetEnd < 6) {
-    offsetEnd = 3;
-  }
-
-  return truncateString(
-    walletAddress,
-    offsetStart: offsetStart,
-    offsetEnd: offsetEnd,
-  );
 }
 
 class _ArweaveWalletDisclosure extends StatefulWidget {

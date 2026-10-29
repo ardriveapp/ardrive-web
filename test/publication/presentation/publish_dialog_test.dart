@@ -157,6 +157,44 @@ void main() {
     });
   });
 
+  // It said "a few minutes" and named nothing, while the wait after an upload
+  // was nearer an hour (issue #2366).
+  testWidgets('blocked by changes says how many and that it takes an hour',
+      (tester) async {
+    await open(
+      tester,
+      const PublishState(
+        stage: PublishStage.blocked,
+        blocked: PublishBlock.pendingUploads,
+        pendingChanges: 3,
+      ),
+    );
+
+    expect(
+        find.text("3 recent changes to this drive aren't confirmed on "
+            'Arweave yet. You can publish once they are, usually within an '
+            'hour.'),
+        findsOneWidget);
+    expect(find.textContaining('a few minutes'), findsNothing);
+    expect(find.text('Close'), findsOneWidget);
+  });
+
+  testWidgets('blocked by one change says it is one', (tester) async {
+    await open(
+      tester,
+      const PublishState(
+        stage: PublishStage.blocked,
+        blocked: PublishBlock.pendingUploads,
+        pendingChanges: 1,
+      ),
+    );
+
+    expect(
+        find.text("1 recent change to this drive isn't confirmed on Arweave "
+            'yet. You can publish once it is, usually within an hour.'),
+        findsOneWidget);
+  });
+
   group('while publishing', () {
     final publishing = PublishState(
       stage: PublishStage.publishing,

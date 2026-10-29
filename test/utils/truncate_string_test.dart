@@ -9,6 +9,21 @@ void main() {
       expect(truncateString(input, offsetStart: 3, offsetEnd: 3), output);
     });
 
+    // Six and four everywhere: the profile button showed six and six and the
+    // publish dialog six and four for the same address (issue #2370).
+    test('shortenId keeps the first six characters and the last four', () {
+      expect(shortenId('iKryOeAbCdEfGhIjKlMnOpQrStUvWxYz0123ncoRjA'),
+          'iKryOe...oRjA');
+      expect(shortenId('0x1234567890abcdef1234567890abcdef12345678'),
+          '0x1234...5678');
+    });
+
+    test('shortenId leaves an ID no longer than its short form whole', () {
+      expect(shortenId('abcdefghijklm'), 'abcdefghijklm');
+      expect(shortenId('abc'), 'abc');
+      expect(shortenId('abcdefghijklmn'), 'abcdef...klmn');
+    });
+
     test(
       'throws when the sum of the offsets is bigger than the length of the text',
       () {

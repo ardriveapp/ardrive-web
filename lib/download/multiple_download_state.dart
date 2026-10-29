@@ -18,6 +18,18 @@ class MultipleDownloadInProgress extends MultipleDownloadState {
     required this.currentFileIndex,
   });
 
+  /// How many files the download has, as the confirmation counted them,
+  /// skipped ones included: after a skip the zip holds fewer. [files] also
+  /// holds the folder entries, which are not downloads.
+  int get fileCount => files.whereType<MultiDownloadFile>().length;
+
+  /// The file being fetched, counted among files from 1. On a folder entry,
+  /// the next file, and never more than [fileCount].
+  int get currentFileNumber => math.min(
+        files.take(currentFileIndex).whereType<MultiDownloadFile>().length + 1,
+        fileCount,
+      );
+
   @override
   List<Object> get props => [files, currentFileIndex];
 }
