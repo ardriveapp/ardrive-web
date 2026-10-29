@@ -38,15 +38,6 @@ class LoginShowBlockingDialog extends LoginState {
 
 class LoginCloseBlockingDialog extends LoginState {}
 
-class LoginTutorials extends LoginState {
-  const LoginTutorials(
-      {required this.wallet, this.mnemonic, required this.showWalletCreated});
-
-  final Wallet wallet;
-  final String? mnemonic;
-  final bool showWalletCreated;
-}
-
 class PromptPassword extends LoginState {
   const PromptPassword({
     this.mnemonic,
@@ -88,7 +79,7 @@ class CreateNewPassword extends LoginState {
       this.derivedEthWallet,
       this.sourceWalletAddress,
       this.mnemonic,
-      required this.showTutorials,
+      required this.isNewUser,
       required this.showWalletCreated});
 
   final String? mnemonic;
@@ -99,12 +90,11 @@ class CreateNewPassword extends LoginState {
   final String? sourceWalletAddress;
 
   /// Used to determine next screens to show on password success
-  final bool showTutorials;
+  final bool isNewUser;
   final bool showWalletCreated;
 
   @override
-  List<Object?> get props =>
-      [mnemonic, wallet, showTutorials, showWalletCreated];
+  List<Object?> get props => [mnemonic, wallet, isNewUser, showWalletCreated];
 }
 
 class LoginFailure extends LoginState {

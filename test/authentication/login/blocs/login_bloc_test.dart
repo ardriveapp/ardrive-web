@@ -141,7 +141,7 @@ void main() {
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
-              cnp.showTutorials == true;
+              cnp.isNewUser == true;
         })
       ],
     );
@@ -179,7 +179,7 @@ void main() {
         LoginLoadingIfUserAlreadyExists(),
         LoginLoadingIfUserAlreadyExistsSuccess(),
         predicate<CreateNewPassword>((cnp) {
-          return cnp.showTutorials == false &&
+          return cnp.isNewUser == false &&
               cnp.showWalletCreated == false &&
               cnp.mnemonic == null;
         })
@@ -529,7 +529,7 @@ void main() {
         bloc.add(CreatePassword(
             wallet: wallet,
             password: 'password',
-            showTutorials: false,
+            isNewUser: false,
             showWalletCreated: false));
         bloc.profileType = ProfileType.json;
       },
@@ -560,7 +560,7 @@ void main() {
         bloc.add(CreatePassword(
             wallet: wallet,
             password: 'password',
-            showTutorials: false,
+            isNewUser: false,
             showWalletCreated: false));
         bloc.profileType = ProfileType.json;
       },
@@ -593,7 +593,7 @@ void main() {
         bloc.add(CreatePassword(
           wallet: wallet,
           password: 'password',
-          showTutorials: false,
+          isNewUser: false,
           showWalletCreated: false,
         ));
       },
@@ -629,7 +629,7 @@ void main() {
           wallet: wallet,
           password: 'password',
           showWalletCreated: false,
-          showTutorials: false,
+          isNewUser: false,
         ));
         bloc.profileType = ProfileType.json;
       },
@@ -702,7 +702,7 @@ void main() {
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
-              cnp.showTutorials == false;
+              cnp.isNewUser == false;
         })
       ],
     );
@@ -734,7 +734,7 @@ void main() {
         predicate<CreateNewPassword>((cnp) {
           return cnp.showWalletCreated == false &&
               cnp.mnemonic == null &&
-              cnp.showTutorials == true;
+              cnp.isNewUser == true;
         })
       ],
     );
@@ -996,7 +996,7 @@ void main() {
         const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
-          return cnp.showTutorials == true && cnp.showWalletCreated == false;
+          return cnp.isNewUser == true && cnp.showWalletCreated == false;
         }),
       ],
     );
@@ -1025,7 +1025,7 @@ void main() {
         const TypeMatcher<LoginShowBlockingDialog>(),
         LoginCloseBlockingDialog(),
         predicate<CreateNewPassword>((cnp) {
-          return cnp.showTutorials == false && cnp.showWalletCreated == false;
+          return cnp.isNewUser == false && cnp.showWalletCreated == false;
         }),
       ],
     );

@@ -7,7 +7,6 @@ import 'package:ardrive/authentication/login/views/modals/blocking_modals.dart';
 import 'package:ardrive/authentication/login/views/modals/common.dart';
 import 'package:ardrive/authentication/login/views/modals/secure_your_wallet_modal.dart';
 import 'package:ardrive/authentication/login/views/tiles/tiles_view.dart';
-import 'package:ardrive/authentication/login/views/tutorials_view.dart';
 import 'package:ardrive/authentication/login/views/wallet_created_view.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/icon_theme_switcher.dart';
@@ -28,7 +27,6 @@ import 'package:ardrive/user/repositories/user_repository.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/logger.dart';
 import 'package:ardrive/utils/plausible_event_tracker/plausible_event_tracker.dart';
-import 'package:ardrive/utils/pre_cache_assets.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -150,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                 loginBloc: context.read<LoginBloc>(),
                 wallet: loginState.wallet,
                 mnemonic: loginState.mnemonic,
-                showTutorials: loginState.showTutorials,
+                isNewUser: loginState.isNewUser,
                 showWalletCreated: loginState.showWalletCreated,
                 derivedEthWallet: loginState.derivedEthWallet,
                 sourceWalletAddress: loginState.sourceWalletAddress);
@@ -164,8 +162,6 @@ class _LoginPageState extends State<LoginPage> {
             return;
           } else if (loginState is LoginCloseBlockingDialog) {
             Navigator.of(context).pop();
-          } else if (loginState is LoginTutorials) {
-            preCacheOnBoardingAssets(context);
           } else if (loginState is LoginFailure) {
             // TODO: Verify if the error is `NoConnectionException` and show an
             /// appropriate message after validating with UI/UX
@@ -235,12 +231,7 @@ class _LoginPageState extends State<LoginPage> {
         },
         builder: (context, loginState) {
           late Widget view;
-          if (loginState is LoginTutorials) {
-            view = TutorialsView(
-                wallet: loginState.wallet,
-                mnemonic: loginState.mnemonic,
-                showWalletCreated: loginState.showWalletCreated);
-          } else if (loginState is LoginDownloadGeneratedWallet) {
+          if (loginState is LoginDownloadGeneratedWallet) {
             view = WalletCreatedView(
                 mnemonic: loginState.mnemonic, wallet: loginState.wallet);
           } else {
@@ -561,7 +552,6 @@ Widget _buildContent(
     buildWhen: (previous, current) {
       final isFailure = current is LoginFailure;
       final isSuccess = current is LoginSuccess;
-      final isOnBoarding = current is LoginTutorials;
       final isLoading = current is LoginLoading ||
           current is LoginShowLoader ||
           current is LoginCloseBlockingDialog;
@@ -573,7 +563,6 @@ Widget _buildContent(
 
       return !(isFailure ||
           isSuccess ||
-          isOnBoarding ||
           isLoading ||
           isPasswordChecking ||
           isLoadingIfUserAlreadyExists);

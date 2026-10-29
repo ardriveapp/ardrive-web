@@ -24,7 +24,7 @@ class SecureYourWalletWidget extends StatefulWidget {
       this.derivedEthWallet,
       this.sourceWalletAddress,
       this.mnemonic,
-      required this.showTutorials,
+      required this.isNewUser,
       required this.showWalletCreated});
 
   final Wallet wallet;
@@ -32,7 +32,7 @@ class SecureYourWalletWidget extends StatefulWidget {
   final String? sourceWalletAddress;
   final String? mnemonic;
   final LoginBloc loginBloc;
-  final bool showTutorials;
+  final bool isNewUser;
   final bool showWalletCreated;
 
   @override
@@ -73,7 +73,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
   }
 
   String _getDescription() {
-    final isReturning = !widget.showTutorials;
+    final isReturning = !widget.isNewUser;
     final chainName = widget.sourceWalletAddress != null
         ? (widget.sourceWalletAddress!.startsWith('0x') ? 'Ethereum' : 'Solana')
         : null;
@@ -127,7 +127,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
               Align(
                 alignment: Alignment.topCenter,
                 child: Text(
-                  widget.showTutorials ? 'Secure your wallet' : 'Welcome back',
+                  widget.isNewUser ? 'Secure your wallet' : 'Welcome back',
                   style: typography.heading2(
                       color: colorTokens.textHigh,
                       fontWeight: ArFontWeight.bold),
@@ -309,7 +309,7 @@ class _SecureYourWalletWidgetState extends State<SecureYourWalletWidget> {
           wallet: widget.wallet,
           derivedEthWallet: widget.derivedEthWallet,
           mnemonic: widget.mnemonic,
-          showTutorials: widget.showTutorials,
+          isNewUser: widget.isNewUser,
           showWalletCreated: widget.showWalletCreated),
     );
   }
@@ -322,7 +322,7 @@ void showSecureYourPasswordDialog(
     EthereumProviderWallet? derivedEthWallet,
     String? sourceWalletAddress,
     String? mnemonic,
-    required bool showTutorials,
+    required bool isNewUser,
     required bool showWalletCreated}) {
   showArDriveDialog(context,
       barrierDismissible: false,
@@ -349,7 +349,7 @@ void showSecureYourPasswordDialog(
               derivedEthWallet: derivedEthWallet,
               sourceWalletAddress: sourceWalletAddress,
               mnemonic: mnemonic,
-              showTutorials: showTutorials,
+              isNewUser: isNewUser,
               showWalletCreated: showWalletCreated);
         },
       ));
