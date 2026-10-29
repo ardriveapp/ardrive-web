@@ -1,6 +1,10 @@
 import 'package:ardrive/download/download_utils.dart';
 import 'package:ardrive/download/multiple_download_bloc.dart';
 import 'package:ardrive/download/multiple_file_download_modal.dart';
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'package:ardrive_io/ardrive_io.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
@@ -77,6 +81,120 @@ void main() {
     testWidgets('ends on the last file', (tester) async {
       await pumpAt(tester, items.length - 1);
       expect(find.text('Downloading file 3 of 3'), findsOneWidget);
+    });
+  });
+
+  group('a finished download', () {
+    // Opens the dialog over a page, as the app does, finished with
+    // [skipped], and saves through [save].
+    Future<void> pumpFinished(
+      WidgetTester tester, {
+      required Future<void> Function(IOFile) save,
+      List<MultiDownloadItem> skipped = const [],
+    }) async {
+      final bloc = _MockMultipleDownloadBloc();
+      final finished = MultipleDownloadFinishedWithSuccess(
+        fileName: 'Drive.zip',
+        bytes: Uint8List.fromList([1, 2, 3]),
+        lastModified: DateTime(2026),
+        skippedFiles: skipped,
+      );
+      whenListen(
+        bloc,
+        Stream<MultipleDownloadState>.value(finished),
+        initialState: MultipleDownloadInProgress(
+          files: items,
+          currentFileIndex: items.length - 1,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ArDriveApp(
+          builder: (context) => MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) => Scaffold(
+                body: TextButton(
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (_) => BlocProvider<MultipleDownloadBloc>.value(
+                      value: bloc,
+                      child: MultipleFilesDownload(saveFile: save),
+                    ),
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('says the zip was saved and stays until Done', (tester) async {
+      final saving = Completer<void>();
+      final saved = <String>[];
+      await pumpFinished(tester, save: (file) {
+        saved.add(file.name);
+        return saving.future;
+      });
+
+      expect(find.text('Download complete'), findsOneWidget);
+      expect(find.text('Saved Drive.zip'), findsNothing,
+          reason: 'not before the browser has the file');
+
+      saving.complete();
+      await tester.pumpAndSettle();
+
+      expect(saved, ['Drive.zip']);
+      expect(find.text('Saved Drive.zip'), findsOneWidget);
+      expect(find.byType(MultipleFilesDownload), findsOneWidget,
+          reason: 'it no longer closes by itself');
+
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      expect(find.byType(MultipleFilesDownload), findsNothing);
+    });
+
+    testWidgets('a cancelled save says so and saves the same zip again',
+        (tester) async {
+      final saves = <String>[];
+      var cancel = true;
+      await pumpFinished(tester, save: (file) async {
+        saves.add(file.name);
+        // The browser's save picker, cancelled the first time.
+        if (cancel) throw Exception('cancelled');
+      });
+      await tester.pumpAndSettle();
+
+      expect(find.text('Drive.zip was not saved'), findsOneWidget);
+      expect(find.text('Saved Drive.zip'), findsNothing);
+
+      cancel = false;
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      expect(saves, ['Drive.zip', 'Drive.zip'],
+          reason: 'the same zip, not a second download');
+      expect(find.text('Saved Drive.zip'), findsOneWidget);
+      expect(find.text('Try again'), findsNothing);
+    });
+
+    testWidgets('with skipped files, says so and lists them', (tester) async {
+      await pumpFinished(
+        tester,
+        save: (_) async {},
+        skipped: [_file('Drive/a/1.txt')],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Download complete, 1 file skipped'), findsOneWidget);
+      expect(find.text('Saved Drive.zip'), findsOneWidget);
+      expect(find.textContaining('1.txt'), findsOneWidget);
     });
   });
 }

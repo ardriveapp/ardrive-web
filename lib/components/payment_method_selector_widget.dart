@@ -354,7 +354,7 @@ class _SourceWalletCreditsNoticeState extends State<SourceWalletCreditsNotice> {
       children: [
         Text(
           '${convertWinstonToLiteralString(widget.credits.balance)} credits are on your $chain '
-          'wallet ${truncateString(widget.credits.sourceAddress, offsetStart: 6, offsetEnd: 4)}.',
+          'wallet ${shortenId(widget.credits.sourceAddress)}.',
           style: typography.paragraphNormal(
             color: colorTokens.textHigh,
             fontWeight: ArFontWeight.semiBold,

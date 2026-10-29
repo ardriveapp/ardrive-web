@@ -67,11 +67,7 @@ class SnapshotListItem extends StatelessWidget {
                 ArDriveTooltip(
                   message: snapshot.txId,
                   child: ArDriveLink(
-                    text: truncateString(
-                      snapshot.txId,
-                      offsetStart: 4,
-                      offsetEnd: 4,
-                    ),
+                    text: shortenId(snapshot.txId),
                     // A transaction ID, so monospace.
                     style: typography.code(),
                     color: colorTokens.textHigh,
@@ -85,11 +81,7 @@ class SnapshotListItem extends StatelessWidget {
                 ArDriveTooltip(
                   message: snapshot.txId,
                   child: ArDriveIdText(
-                    truncateString(
-                      snapshot.txId,
-                      offsetStart: 4,
-                      offsetEnd: 4,
-                    ),
+                    shortenId(snapshot.txId),
                     style: typography.code(),
                   ),
                 ),

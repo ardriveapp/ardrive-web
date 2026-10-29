@@ -61,7 +61,11 @@ promptToDownloadMultipleFiles(
 class MultipleFilesDownload extends StatefulWidget {
   const MultipleFilesDownload({
     super.key,
+    this.saveFile,
   });
+
+  /// Hands the finished zip to the browser. Tests pass their own.
+  final Future<void> Function(IOFile file)? saveFile;
 
   @override
   State<MultipleFilesDownload> createState() => _MultipleFilesDownloadState();
@@ -69,6 +73,28 @@ class MultipleFilesDownload extends StatefulWidget {
 
 class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
   final _scrollController = ScrollController();
+
+  /// Whether the zip has been handed to the browser to save, so the dialog
+  /// can say so before the reader closes it.
+  bool _saved = false;
+
+  /// Whether the save failed or was cancelled at the browser's save picker.
+  /// The zip is kept in [_zip], so saving again doesn't download it again.
+  bool _saveFailed = false;
+  IOFile? _zip;
+
+  Future<void> _save(IOFile file) async {
+    try {
+      await (widget.saveFile ?? ArDriveIO().saveFile)(file);
+      if (!mounted) return;
+      setState(() {
+        _saved = true;
+        _saveFailed = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _saveFailed = true);
+    }
+  }
 
   /// Above this the confirmation adds that it will take a while.
   static const _largeDownload = 100 * 1024 * 1024;
@@ -149,19 +175,16 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
     return BlocListener<MultipleDownloadBloc, MultipleDownloadState>(
       listener: (context, state) async {
         if (state is MultipleDownloadFinishedWithSuccess) {
-          final ArDriveIO io = ArDriveIO();
-
           final file = await IOFile.fromData(
             state.bytes,
             name: state.fileName,
             lastModifiedDate: state.lastModified,
           );
 
-          io.saveFile(file).then((value) {
-            if (state.skippedFiles.isEmpty) {
-              Navigator.pop(context);
-            }
-          });
+          // It stays open on a done state rather than closing by itself,
+          // which left no word that the zip was saved.
+          _zip = file;
+          await _save(file);
         }
       },
       child: BlocBuilder<MultipleDownloadBloc, MultipleDownloadState>(
@@ -235,16 +258,28 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
               ],
             );
           } else if (state is MultipleDownloadFinishedWithSuccess) {
+            final strings = appLocalizationsOf(context);
             return ArDriveStandardModalNew(
               width: 408,
-              title: appLocalizationsOf(context)
-                  .multiDownloadCompleteWithSkippedFiles(
-                      state.skippedFiles.length),
+              title: strings.multiDownloadCompleteWithSkippedFiles(
+                  state.skippedFiles.length),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildFileList(state.skippedFiles, typography, colorTokens),
+                  if (_saved || _saveFailed)
+                    Text(
+                      _saved
+                          ? strings.multiDownloadSaved(state.fileName)
+                          : strings.multiDownloadNotSaved(state.fileName),
+                      style: typography.paragraphNormal(
+                        color: colorTokens.textMid,
+                      ),
+                    ),
+                  if ((_saved || _saveFailed) && state.skippedFiles.isNotEmpty)
+                    const SizedBox(height: ArDriveSpacing.sm),
+                  if (state.skippedFiles.isNotEmpty)
+                    _buildFileList(state.skippedFiles, typography, colorTokens),
                 ],
               ),
               actions: [
@@ -252,8 +287,13 @@ class _MultipleFilesDownloadState extends State<MultipleFilesDownload> {
                   action: () {
                     Navigator.of(context).pop(false);
                   },
-                  title: appLocalizationsOf(context).close,
+                  title: strings.doneEmphasized,
                 ),
+                if (_saveFailed && _zip != null)
+                  ModalAction(
+                    action: () => _save(_zip!),
+                    title: strings.tryAgainEmphasized,
+                  ),
               ],
             );
           } else if (state is MultipleDownloadFailure) {

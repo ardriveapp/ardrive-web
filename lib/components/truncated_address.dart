@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 class TruncatedAddress extends StatelessWidget {
   final String walletAddress;
   final double? fontSize;
-  final int offsetStart;
-  final int offsetEnd;
 
   /// Custom explorer URL. If null, defaults to Arweave viewblock.
   final String? explorerUrl;
@@ -16,8 +14,6 @@ class TruncatedAddress extends StatelessWidget {
     super.key,
     required this.walletAddress,
     this.fontSize,
-    this.offsetStart = 6,
-    this.offsetEnd = 4,
     this.explorerUrl,
   });
 
@@ -36,11 +32,7 @@ class TruncatedAddress extends StatelessWidget {
           openUrl(url: url);
         },
         child: Text(
-          truncateString(
-            walletAddress,
-            offsetStart: offsetStart,
-            offsetEnd: offsetEnd,
-          ),
+          shortenId(walletAddress),
           // An address, so monospace.
           style: typography.code(
             fontSize: fontSize,
