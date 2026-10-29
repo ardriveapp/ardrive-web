@@ -42,8 +42,7 @@ class _LandingViewState extends State<LandingView> {
               Align(
                 alignment: Alignment.topCenter,
                 child: Text(
-                  // FIXME: Add localization key
-                  'Welcome to ArDrive',
+                  appLocalizationsOf(context).landingWelcome,
                   textAlign: TextAlign.center,
                   style: typography.heading1(
                       color: colorTokens.textHigh,
@@ -51,16 +50,13 @@ class _LandingViewState extends State<LandingView> {
                 ),
               ),
               heightSpacing(),
-              //FIXME: Add localization key
-              Text('Are you an existing user or a new user?',
+              Text(appLocalizationsOf(context).landingTagline,
                   textAlign: TextAlign.center,
-                  style: typography.paragraphLarge(
-                      color: colorTokens.textLow,
-                      fontWeight: ArFontWeight.semiBold)),
-              const SizedBox(height: 72),
+                  style: typography.paragraphLarge(color: colorTokens.textMid)),
+              const SizedBox(height: 48),
               ArDriveButtonNew(
                   size: ArDriveButtonSize.large,
-                  text: 'Log in',
+                  text: appLocalizationsOf(context).logIn,
                   typography: typography,
                   maxWidth: double.maxFinite,
                   onPressed: () {
@@ -73,7 +69,7 @@ class _LandingViewState extends State<LandingView> {
               const SizedBox(height: 16),
               ArDriveButtonNew(
                   size: ArDriveButtonSize.large,
-                  text: 'Sign up',
+                  text: appLocalizationsOf(context).landingSignUp,
                   typography: typography,
                   maxWidth: double.maxFinite,
                   variant: ButtonVariant.primary,

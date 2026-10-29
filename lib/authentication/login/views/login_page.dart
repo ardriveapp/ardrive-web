@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:ardrive/authentication/ardrive_auth.dart';
 import 'package:ardrive/authentication/components/breakpoint_layout_builder.dart';
 import 'package:ardrive/authentication/login/blocs/login_bloc.dart';
@@ -296,10 +298,9 @@ class _LoginPageScaffoldState extends State<LoginPageScaffold> {
         globalKey: globalKey,
         loginState: widget.loginState,
       ),
-      tablet: (context) => _TabletView(
-        globalKey: globalKey,
-        loginState: widget.loginState,
-      ),
+      // No tablet layout: from the phone breakpoint up the panel and the
+      // bento sit side by side, and the bento reflows to its own width
+      // rather than dropping tiles.
       phone: (context) => _PhoneView(
         globalKey: globalKey,
         loginState: widget.loginState,
@@ -471,84 +472,6 @@ class _SmallDesktopView extends StatelessWidget {
   }
 }
 
-class _TabletView extends StatelessWidget {
-  final GlobalKey globalKey;
-  final LoginState loginState;
-
-  const _TabletView({
-    required this.globalKey,
-    required this.loginState,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height;
-
-    return Material(
-      color: ArDriveTheme.of(context).themeData.backgroundColor,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: SizedBox(
-                height: 266,
-                child: TilesView(),
-              ),
-            ),
-            SizedBox(
-              height: height < 1096 ? 800 : height - 298,
-              child: _roundedBorderContainer(
-                context: context,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Stack(
-                  children: [
-                    Center(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 16, 0, 0),
-                        child: _buildContent(
-                          context,
-                          loginState: loginState,
-                          globalKey: globalKey,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 24,
-                      top: 24,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SettingsSubmenu(
-                            child: ArDriveClickArea(
-                              tooltip: 'Advanced settings',
-                              child: Icon(
-                                Icons.settings,
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colorTokens
-                                    .iconLow,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          const IconThemeSwitcher(),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _PhoneView extends StatelessWidget {
   const _PhoneView({
     required this.globalKey,
@@ -568,47 +491,58 @@ class _PhoneView extends StatelessWidget {
             constraints: BoxConstraints(
               minHeight: constraints.maxHeight,
             ),
-            child: _roundedBorderContainer(
-              context: context,
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
-              child: SizedBox(
-                width: constraints.maxWidth,
-                height: 300,
-                child: Stack(
-                  children: [
-                    Center(
-                      child: _buildContent(
-                        context,
-                        loginState: loginState,
-                        globalKey: globalKey,
-                      ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      top: 0,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SettingsSubmenu(
-                            child: ArDriveClickArea(
-                              tooltip: 'Advanced settings',
-                              child: Icon(
-                                Icons.settings,
-                                color: ArDriveTheme.of(context)
-                                    .themeData
-                                    .colorTokens
-                                    .iconLow,
-                              ),
-                            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _roundedBorderContainer(
+                  context: context,
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+                  child: SizedBox(
+                    width: constraints.maxWidth,
+                    height: math.max(520, constraints.maxHeight - 16),
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: _buildContent(
+                            context,
+                            loginState: loginState,
+                            globalKey: globalKey,
                           ),
-                          const SizedBox(width: 16),
-                          const IconThemeSwitcher(),
-                        ],
-                      ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              SettingsSubmenu(
+                                child: ArDriveClickArea(
+                                  tooltip: 'Advanced settings',
+                                  child: Icon(
+                                    Icons.settings,
+                                    color: ArDriveTheme.of(context)
+                                        .themeData
+                                        .colorTokens
+                                        .iconLow,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              const IconThemeSwitcher(),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                // The whole bento, after the panel: on a phone the way in
+                // comes first.
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
+                  child: TilesView(),
+                ),
+              ],
             ),
           ),
         );
