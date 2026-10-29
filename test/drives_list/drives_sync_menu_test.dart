@@ -104,38 +104,38 @@ void main() {
       Portal(
         child: ArDriveTheme(
           themeData: lightTheme(),
-          child: MaterialApp(
-            builder: (context, child) => MediaQuery(
-              data: MediaQuery.of(context)
-                  .copyWith(textScaler: TextScaler.linear(textScale)),
-              child: child!,
-            ),
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
+          // Above the navigator, where the app provides them: the menu opens
+          // in the navigator's overlay and reads them from there.
+          child: MultiProvider(
+            providers: [
+              ChangeNotifierProvider<ActivityTracker>(
+                create: (_) => ActivityTracker(),
+              ),
+              BlocProvider<SyncCubit>.value(value: syncCubit),
+              BlocProvider<DrivesCubit>.value(value: drivesCubit),
+              BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
+              if (drivesList != null)
+                BlocProvider<DrivesListCubit>.value(value: drivesList),
             ],
-            supportedLocales: const [Locale('en', '')],
-            // The full resync confirmation is a dialog, and the app's
-            // dialogs report themselves to the activity tracker.
-            home: ChangeNotifierProvider<ActivityTracker>(
-              create: (_) => ActivityTracker(),
-              child: Scaffold(
-                body: MultiBlocProvider(
-                  providers: [
-                    BlocProvider<SyncCubit>.value(value: syncCubit),
-                    BlocProvider<DrivesCubit>.value(value: drivesCubit),
-                    BlocProvider<ProfileNameBloc>.value(value: profileNameBloc),
-                    if (drivesList != null)
-                      BlocProvider<DrivesListCubit>.value(value: drivesList),
-                  ],
-                  child: child ??
-                      const Align(
-                        alignment: Alignment.topRight,
-                        child: DrivesSyncMenu(),
-                      ),
-                ),
+            child: MaterialApp(
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(textScaler: TextScaler.linear(textScale)),
+                child: child!,
+              ),
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              supportedLocales: const [Locale('en', '')],
+              home: Scaffold(
+                body: child ??
+                    const Align(
+                      alignment: Alignment.topRight,
+                      child: DrivesSyncMenu(),
+                    ),
               ),
             ),
           ),
@@ -146,6 +146,8 @@ void main() {
     await tester.pumpWidget(host(textScale: textScale));
     await tester.pump();
     await tester.tap(find.byKey(DrivesSyncMenu.moreKey));
+    // The menu enters the navigator's overlay on the frame after the tap.
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
   }
 

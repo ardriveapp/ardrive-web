@@ -1,7 +1,7 @@
 import 'package:ardrive_ui/ardrive_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_portal/flutter_portal.dart';
+import 'package:flutter/rendering.dart';
 
 export 'package:flutter_portal/flutter_portal.dart'
     show Anchor, Aligned, AxisFlag, Filled;
@@ -327,6 +327,18 @@ class _ArDriveDropdownContentState extends State<_ArDriveDropdownContent>
   }
 }
 
+/// Shows [content] next to [child], placed by [anchor], while [visible].
+///
+/// The content goes in an [OverlayEntry] in the navigator's overlay, after the
+/// page, rather than in a portal under [child]. With the browser's
+/// accessibility tree on, the web engine stacks semantics nodes in tree
+/// order, and a portal's content sat in the tree where its button is: every
+/// row and panel after the button was stacked on top of the menu, so a mouse
+/// click on an item landed on what was behind it. In the overlay, the menu's
+/// nodes come last and so lie on top.
+///
+/// The content is built in the overlay, so it can read what's provided above
+/// the navigator but not a page's own providers; pass values in instead.
 class ArDriveOverlay extends StatefulWidget {
   const ArDriveOverlay({
     super.key,
@@ -337,6 +349,7 @@ class ArDriveOverlay extends StatefulWidget {
     this.visible,
     this.onVisibleChange,
     this.closeOnBarrierTap = true,
+    this.closeOnEscape,
   });
 
   final Widget child;
@@ -345,141 +358,267 @@ class ArDriveOverlay extends StatefulWidget {
   final Anchor anchor;
   final bool? visible;
   final Function(bool)? onVisibleChange;
+
+  /// Whether a click anywhere else closes it, through a barrier that takes
+  /// the click. Off for a menu that closes on its own terms, or a submenu
+  /// inside a menu that already has one.
   final bool closeOnBarrierTap;
+
+  /// Whether Escape closes it. Follows [closeOnBarrierTap] when not given.
+  final bool? closeOnEscape;
+
   @override
   State<ArDriveOverlay> createState() => _ArDriveOverlayState();
 }
 
 class _ArDriveOverlayState extends State<ArDriveOverlay> {
+  final _link = LayerLink();
+  OverlayEntry? _entry;
+  late bool _visible;
+
+  /// Whether another route, such as a dialog, is open over this one's page.
+  /// The entry belongs to no route, so the navigator would leave it above
+  /// the dialog, and its barrier would take the dialog's clicks: it goes
+  /// offstage, keeping its state, until the page is on top again.
+  bool _covered = false;
+
   @override
   void initState() {
     super.initState();
     _visible = widget.visible ?? false;
-    _updateVisibleState();
   }
 
   @override
-  void didUpdateWidget(oldWidget) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    _covered = route != null && !route.isCurrent;
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(ArDriveOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.visible != oldWidget.visible) {
-      setState(() {
-        _updateVisibleState();
-      });
+      _visible = widget.visible ?? false;
     }
+    _sync();
   }
 
-  void _updateVisibleState() {
-    if (widget.visible != null) {
-      _visible = widget.visible!;
-    } else {
-      _visible = false;
-    }
-  }
-
-  late bool _visible;
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.closeOnBarrierTap) {
-      return Barrier(
-        onClose: () {
-          setState(() {
-            _visible = !_visible;
-            widget.onVisibleChange?.call(_visible);
-          });
-        },
-        visible: _visible,
-        child: PortalTarget(
-          anchor: widget.anchor,
-          portalFollower: widget.content,
-          visible: _visible,
-          child: widget.child,
-        ),
-      );
-    }
-
-    return PortalTarget(
-      anchor: widget.anchor,
-      portalFollower: widget.content,
-      visible: _visible,
-      child: widget.child,
-    );
-  }
-}
-
-/// Closes what it covers on a click anywhere else, or on Escape.
-class Barrier extends StatefulWidget {
-  const Barrier({
-    super.key,
-    required this.onClose,
-    required this.visible,
-    required this.child,
-  });
-
-  final Widget child;
-  final VoidCallback onClose;
-  final bool visible;
-
-  @override
-  State<Barrier> createState() => _BarrierState();
-}
-
-class _BarrierState extends State<Barrier> {
-  @override
-  void initState() {
-    super.initState();
-    if (widget.visible) {
-      HardwareKeyboard.instance.addHandler(_onKey);
-    }
-  }
-
-  @override
-  void didUpdateWidget(Barrier oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.visible != oldWidget.visible) {
-      if (widget.visible) {
-        HardwareKeyboard.instance.addHandler(_onKey);
-      } else {
-        HardwareKeyboard.instance.removeHandler(_onKey);
-      }
+  /// Shows or hides the entry to match. It is built in another part of the
+  /// tree, which can't be marked dirty while this one builds, so it catches
+  /// up after the frame. A closed menu with no entry has nothing to catch up.
+  void _sync() {
+    if (_visible || _entry != null) {
+      _afterFrame(_visible ? _show : _hide);
     }
   }
 
   @override
   void dispose() {
-    HardwareKeyboard.instance.removeHandler(_onKey);
+    _hide();
     super.dispose();
   }
 
+  void _afterFrame(VoidCallback callback) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) callback();
+    });
+  }
+
+  void _show() {
+    final entry = _entry;
+    if (entry != null) {
+      entry.markNeedsBuild();
+      return;
+    }
+    if (widget.closeOnEscape ?? widget.closeOnBarrierTap) {
+      HardwareKeyboard.instance.addHandler(_onKey);
+    }
+    final newEntry = OverlayEntry(builder: _buildEntry);
+    _entry = newEntry;
+    Overlay.of(context).insert(newEntry);
+  }
+
+  void _hide() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
+    _entry?.remove();
+    _entry?.dispose();
+    _entry = null;
+  }
+
+  void _close() {
+    setState(() => _visible = false);
+    _hide();
+    widget.onVisibleChange?.call(false);
+  }
+
   /// The way out for a keyboard, and for a screen reader, which has no
-  /// barrier to press: see below.
+  /// barrier to press.
   bool _onKey(KeyEvent event) {
+    if (_covered) return false;
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
-      widget.onClose();
+      _close();
       return true;
     }
     return false;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return PortalTarget(
-      visible: widget.visible,
-      closeDuration: kThemeAnimationDuration,
-      // Out of the accessibility tree. It covers the whole screen and comes
-      // after what it covers, so with the tree on the browser put it on top:
-      // every click on a menu item or a link in the card landed on it, and
-      // only closed what was open.
-      portalFollower: ExcludeSemantics(
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onClose,
-        ),
-      ),
-      child: widget.child,
+  /// Where [ArDriveOverlay.child] is, in the overlay's coordinates.
+  Rect? _targetRect() {
+    final target = context.findRenderObject();
+    final overlayBox = Overlay.of(context).context.findRenderObject();
+    if (target is! RenderBox ||
+        !target.hasSize ||
+        !target.attached ||
+        overlayBox is! RenderBox) {
+      return null;
+    }
+    return target.localToGlobal(Offset.zero, ancestor: overlayBox) &
+        target.size;
+  }
+
+  Widget _buildEntry(BuildContext overlayContext) {
+    // Offstage while another route covers the page: not drawn, not clicked,
+    // not read by a screen reader, and back as it was when the page returns.
+    return Offstage(
+      offstage: _covered,
+      child: _buildLayers(),
     );
   }
+
+  Widget _buildLayers() {
+    return Stack(
+      children: [
+        if (widget.closeOnBarrierTap)
+          // Out of the accessibility tree: it covers the whole screen, and
+          // with the tree on the browser would put it over the menu.
+          Positioned.fill(
+            child: ExcludeSemantics(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _close,
+              ),
+            ),
+          ),
+        // Painted where the target is painted, so the menu moves with it when
+        // the page scrolls; placed within that by the anchor.
+        CompositedTransformFollower(
+          link: _link,
+          showWhenUnlinked: false,
+          child: _AnchoredFollower(
+            anchor: widget.anchor,
+            // Read here rather than while laying out, where another box's
+            // size can't be read. A resize or a new text scale rebuilds the
+            // entry, and the link above follows a scroll.
+            target: _targetRect(),
+            // Built in the overlay, the content would lose the text style,
+            // icon theme and Material it had under its button: the themes
+            // between the button and the overlay come with it, over a
+            // transparent Material for ink and expansion tiles.
+            child: Material(
+              type: MaterialType.transparency,
+              child: InheritedTheme.captureAll(
+                context,
+                widget.content,
+                to: Overlay.of(context).context,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CompositedTransformTarget(link: _link, child: widget.child);
+  }
+}
+
+/// Lays out its child by an [Anchor], relative to a target whose top-left is
+/// this box's origin (the [CompositedTransformFollower] above puts it there).
+class _AnchoredFollower extends SingleChildRenderObjectWidget {
+  const _AnchoredFollower({
+    required this.anchor,
+    required this.target,
+    required Widget child,
+  }) : super(child: child);
+
+  final Anchor anchor;
+
+  /// Where the target is in the overlay; null before it has been laid out.
+  final Rect? target;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderAnchoredFollower(anchor: anchor, target: target);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderAnchoredFollower renderObject,
+  ) {
+    renderObject
+      ..anchor = anchor
+      ..target = target;
+  }
+}
+
+class _RenderAnchoredFollower extends RenderShiftedBox {
+  _RenderAnchoredFollower({
+    required Anchor anchor,
+    required Rect? target,
+  })  : _anchor = anchor,
+        _target = target,
+        super(null);
+
+  Anchor _anchor;
+  set anchor(Anchor value) {
+    if (value == _anchor) return;
+    _anchor = value;
+    markNeedsLayout();
+  }
+
+  Rect? _target;
+  set target(Rect? value) {
+    if (value == _target) return;
+    _target = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void performLayout() {
+    // As big as the overlay, which is the space the anchor places within.
+    size = constraints.biggest;
+    final child = this.child;
+    if (child == null) return;
+
+    final target = _target;
+    final targetSize = target?.size ?? Size.zero;
+    final targetTopLeft = target?.topLeft ?? Offset.zero;
+
+    child.layout(
+      _anchor.getFollowerConstraints(
+        targetSize: targetSize,
+        theaterConstraints: BoxConstraints.loose(size),
+      ),
+      parentUsesSize: true,
+    );
+    (child.parentData! as BoxParentData).offset = _anchor.getFollowerOffset(
+      followerSize: child.size,
+      targetSize: targetSize,
+      // The overlay, relative to the target's top-left.
+      theaterRect: (Offset.zero & size).shift(-targetTopLeft),
+    );
+  }
+
+  // The menu can sit above or left of the target, outside this box's own
+  // bounds, so a click is tested against the child alone.
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) =>
+      hitTestChildren(result, position: position);
 }
 
 class ArDriveDropdownItem extends StatefulWidget {
