@@ -482,4 +482,61 @@ void main() {
         .toSet();
     expect(buttonTops, hasLength(1), reason: 'buttons at $buttonTops');
   });
+
+  /// The page sets the gap under a folder's heading once, the gap the table
+  /// gets; a card that added 20 of its own started that much lower than a
+  /// table would. Every empty or syncing state starts at the card's top.
+  group('on a computer, starts where the table does', () {
+    for (final (name, setup) in <(String, Future<void> Function(WidgetTester))>[
+      (
+        'a new user\'s drive',
+        (t) => pumpAt(t, const Size(1600, 1400), desktop: true),
+      ),
+      (
+        'an existing user\'s empty root',
+        (t) async {
+          withDrives([_drive('drive-a'), _drive('drive-b')]);
+          // The action cards' size in the test font, as the test above.
+          await pumpAt(t, const Size(1600, 1400),
+              textScale: 0.5, desktop: true);
+        },
+      ),
+      (
+        'an empty folder',
+        (t) async {
+          withDrives([_drive('drive-a'), _drive('drive-b')]);
+          await pumpAt(t, const Size(1600, 1400),
+              desktop: true, isRootFolder: false);
+        },
+      ),
+      (
+        'a drive the reader cannot write to',
+        (t) => pumpAt(t, const Size(1600, 1400),
+            desktop: true, canAddFiles: false),
+      ),
+      (
+        'a folder still syncing',
+        (t) async {
+          whenListen(syncCubit, syncStates.stream,
+              initialState: SyncInProgress(trigger: SyncTrigger.userInitiated));
+          await pumpAt(t, const Size(1600, 1400),
+              desktop: true, contentsStillArriving: true);
+        },
+      ),
+    ]) {
+      testWidgets(name, (tester) async {
+        await setup(tester);
+
+        // The outermost padding the card puts around itself.
+        final padding = tester.widget<Padding>(find
+            .descendant(
+              of: find.byType(DriveDetailFolderEmptyCard),
+              matching: find.byType(Padding),
+            )
+            .first);
+        expect(padding.padding.resolve(TextDirection.ltr).top, 0);
+        await unmount(tester);
+      });
+    }
+  });
 }
