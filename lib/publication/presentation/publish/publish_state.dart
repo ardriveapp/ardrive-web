@@ -78,6 +78,7 @@ class PublishState extends Equatable {
     required this.stage,
     this.blocked,
     this.blockedReason = '',
+    this.pendingChanges = 0,
     this.summary,
     this.title = '',
     this.description = '',
@@ -117,6 +118,10 @@ class PublishState extends Equatable {
   final bool namingStarted;
   final PublishBlock? blocked;
   final String blockedReason;
+
+  /// How many items wait on Arweave, when blocked by
+  /// [PublishBlock.pendingUploads].
+  final int pendingChanges;
   final PublicationSummary? summary;
 
   final String title;
@@ -164,6 +169,7 @@ class PublishState extends Equatable {
     PublishStage? stage,
     PublishBlock? blocked,
     String? blockedReason,
+    int? pendingChanges,
     PublicationSummary? summary,
     String? title,
     String? description,
@@ -193,6 +199,7 @@ class PublishState extends Equatable {
         stage: stage ?? this.stage,
         blocked: blocked ?? this.blocked,
         blockedReason: blockedReason ?? this.blockedReason,
+        pendingChanges: pendingChanges ?? this.pendingChanges,
         summary: summary ?? this.summary,
         title: title ?? this.title,
         description: description ?? this.description,
@@ -223,6 +230,7 @@ class PublishState extends Equatable {
         stage,
         blocked,
         blockedReason,
+        pendingChanges,
         summary,
         title,
         description,

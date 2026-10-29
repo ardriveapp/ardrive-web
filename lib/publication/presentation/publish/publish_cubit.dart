@@ -162,6 +162,7 @@ class PublishCubit extends Cubit<PublishState> {
           stage: PublishStage.blocked,
           blocked: block.$1,
           blockedReason: block.$2,
+          pendingChanges: _pendingChanges,
           summary: _contents?.summarize(),
         ));
         return;
@@ -244,9 +245,8 @@ class PublishCubit extends Cubit<PublishState> {
       scopeRootFolderId: _scopeRootFolderId,
     );
     final summary = _contents!.summarize();
-    if (summary.pendingFiles > 0 || await _pendingMetadata() > 0) {
-      return (PublishBlock.pendingUploads, '');
-    }
+    _pendingChanges = await _countPendingChanges();
+    if (_pendingChanges > 0) return (PublishBlock.pendingUploads, '');
     if (summary.isEmpty) return (PublishBlock.empty, '');
     return null;
   }
@@ -265,17 +265,35 @@ class PublishCubit extends Cubit<PublishState> {
     return false;
   }
 
-  Future<int> _pendingMetadata() async {
+  /// What the last check found waiting on Arweave, for the blocked dialog.
+  int _pendingChanges = 0;
+
+  /// How many items wait on Arweave before this can be published: the drive,
+  /// its folders and its files, each counted once however many of its
+  /// transactions wait.
+  ///
+  /// An item waits while a change to it anywhere in the drive (an upload, a
+  /// rename, a hide) has metadata the app still holds as pending, which a new
+  /// snapshot refuses (`unconfirmedMetadataCountSql`), or, for a file this
+  /// would show, while its latest upload is pending. Pending lasts until
+  /// `kRequiredTxConfirmationCount` (15) confirmations, so the wait is closer to an
+  /// hour than to minutes.
+  Future<int> _countPendingChanges() async {
     final db = _deps.driveDao.attachedDatabase;
-    final row = await db.customSelect(
-      'SELECT count(*) AS c FROM network_transactions n '
-      "WHERE n.status = 'pending' AND n.id IN ("
-      'SELECT metadataTxId FROM drive_revisions WHERE driveId = ?1 '
-      'UNION SELECT metadataTxId FROM folder_revisions WHERE driveId = ?1 '
-      'UNION SELECT metadataTxId FROM file_revisions WHERE driveId = ?1)',
+    String pendingIn(String table, String idColumn) =>
+        'SELECT r.$idColumn AS id FROM $table r '
+        'JOIN network_transactions n ON n.id = r.metadataTxId '
+        "WHERE r.driveId = ?1 AND n.status = 'pending'";
+    final rows = await db.customSelect(
+      '${pendingIn('drive_revisions', 'driveId')} '
+      'UNION ${pendingIn('folder_revisions', 'folderId')} '
+      'UNION ${pendingIn('file_revisions', 'fileId')}',
       variables: [Variable.withString(drive.id)],
-    ).getSingle();
-    return row.read<int>('c');
+    ).get();
+    return {
+      for (final row in rows) row.read<String>('id'),
+      ..._contents!.pendingFileIds,
+    }.length;
   }
 
   Future<PublishState> _prefillFrom(Publication p, PublishState s) async {
