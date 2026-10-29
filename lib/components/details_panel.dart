@@ -1614,10 +1614,29 @@ class DetailsPanelToolbar extends StatelessWidget {
     required ArDriveIcon icon,
     required VoidCallback onTap,
     String? tooltip,
-    double padding = 8,
-  }) {
+  }) =>
+      DetailsPanelToolbarAction(icon: icon, onTap: onTap, tooltip: tooltip);
+}
+
+/// One of a details panel's actions: an icon button in the toolbar above
+/// the title, named by its tooltip, in the row the file panel and the list
+/// pages' panels share. Sized [defaultIconSize].
+class DetailsPanelToolbarAction extends StatelessWidget {
+  const DetailsPanelToolbarAction({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    this.tooltip,
+  });
+
+  final ArDriveIcon icon;
+  final VoidCallback onTap;
+  final String? tooltip;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(right: padding),
+      padding: const EdgeInsets.only(right: 8),
       child: ArDriveIconButton(
         tooltip: tooltip,
         onPressed: onTap,

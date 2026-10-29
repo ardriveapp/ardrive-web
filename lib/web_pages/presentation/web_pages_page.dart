@@ -17,12 +17,12 @@ import 'package:ardrive/drives_list/presentation/open_drive_on_selection.dart';
 import 'package:ardrive/models/models.dart';
 import 'package:ardrive/pages/app_router_delegate.dart';
 import 'package:ardrive/pages/drive_detail/components/dropdown_item.dart';
-import 'package:ardrive/pages/drive_detail/components/hover_widget.dart';
 import 'package:ardrive/publication/presentation/publish_to_web.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/utils/app_localizations_wrapper.dart';
 import 'package:ardrive/utils/format_date.dart';
 import 'package:ardrive/utils/open_url.dart';
+import 'package:ardrive/utils/size_constants.dart';
 import 'package:ardrive/web_pages/domain/web_page.dart';
 import 'package:ardrive/web_pages/presentation/web_pages_cubit.dart';
 import 'package:ardrive_ui/ardrive_ui.dart';
@@ -331,11 +331,18 @@ const _pageFlex = 6;
 const _linkFlex = 5;
 const _updatedFlex = 3;
 
-/// A publication's or a deployment's icon.
+/// A publication's or a deployment's icon. The icon alone says which: a
+/// deployment's says so to a screen reader too, where a tag beside the name
+/// used to.
 Widget webPageIcon(BuildContext context, WebPage page, {double size = 20}) {
   final color = ArDriveTheme.of(context).themeData.colorTokens.textMid;
   return page.isDeployment
-      ? Icon(Icons.web_outlined, size: size, color: color)
+      ? Icon(
+          Icons.web_outlined,
+          size: size,
+          color: color,
+          semanticLabel: appLocalizationsOf(context).arnsDeployment,
+        )
       : ArDriveIcons.publishToWeb(size: size, color: color);
 }
 
@@ -372,9 +379,6 @@ class WebPageRow extends StatelessWidget {
       icon: webPageIcon(context, page),
       title: page.title,
       subtitle: webPageSource(context, page),
-      marks: [
-        if (page.isDeployment) ArDriveTag(text: strings.arnsDeployment),
-      ],
     );
     final updated = formatDate(page.updatedAt);
 
@@ -522,8 +526,10 @@ class WebPageMenu extends StatelessWidget {
   }
 }
 
-/// A web page's details beside the list: its link with copy and open, where
-/// it comes from, when it changed, and the menu's actions.
+/// A web page's details beside the list, in the file details panel's
+/// shape: its actions as icon buttons in the toolbar, in the row menu's
+/// order, then its name, then its link with copy, where it comes from and
+/// when it changed.
 class WebPageDetailsPanel extends StatelessWidget {
   const WebPageDetailsPanel({
     super.key,
@@ -542,27 +548,35 @@ class WebPageDetailsPanel extends StatelessWidget {
     final link = webPageLink(context, page);
     final actions = _WebPageActions(context, page, link);
 
-    Widget button(String text, VoidCallback onPressed) => ArDriveButtonNew(
-          text: text,
-          typography: typography,
-          variant: ButtonVariant.secondary,
-          size: ArDriveButtonSize.compact,
-          maxWidth: ArDriveButtonNew.fittedWidth(context, text, minWidth: 96),
-          onPressed: onPressed,
-        );
+    ArDriveIcon icon(IconData data) =>
+        ArDriveIcon(icon: data, size: defaultIconSize);
 
     return ListDetailsPanel(
       onClose: onClose,
       icon: webPageIcon(context, page, size: 24),
       title: page.title,
-      marks: [
-        if (page.isDeployment) ArDriveTag(text: strings.arnsDeployment),
-      ],
       toolbarActions: [
-        ArDriveIconButton(
+        DetailsPanelToolbarAction(
           tooltip: strings.publishOpenPage,
-          icon: const ArDriveIcon(icon: Icons.open_in_new, size: 20),
-          onPressed: actions.open,
+          icon: icon(Icons.open_in_new),
+          onTap: actions.open,
+        ),
+        if (actions.canUpdate)
+          DetailsPanelToolbarAction(
+            tooltip: strings.webPagesUpdatePage,
+            icon: publishToWebIcon(size: defaultIconSize),
+            onTap: actions.update,
+          ),
+        if (actions.canName)
+          DetailsPanelToolbarAction(
+            tooltip: actions.nameLabel,
+            icon: icon(arnsNameIcon),
+            onTap: actions.name,
+          ),
+        DetailsPanelToolbarAction(
+          tooltip: strings.webPagesOpenFolder,
+          icon: icon(Icons.folder_open_outlined),
+          onTap: actions.openFolder,
         ),
       ],
       details: [
@@ -597,12 +611,6 @@ class WebPageDetailsPanel extends StatelessWidget {
             style: typography.paragraphNormal(color: colors.textMid),
           ),
         ),
-      ],
-      actions: [
-        if (actions.canUpdate)
-          button(strings.webPagesUpdatePage, actions.update),
-        if (actions.canName) button(actions.nameLabel, actions.name),
-        button(strings.webPagesOpenFolder, actions.openFolder),
       ],
     );
   }
