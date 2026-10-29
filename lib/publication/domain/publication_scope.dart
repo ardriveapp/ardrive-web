@@ -186,6 +186,16 @@ class PublicationContents {
     );
   }
 
+  /// The files [summarize] counts as pending: in a folder the publication
+  /// shows, not hidden, with a latest upload not confirmed yet.
+  Iterable<String> get pendingFileIds => _files.values
+      .where((file) =>
+          !file.isHidden &&
+          showsFolder(file.parentFolderId) &&
+          fileStatusFromTransactions(file.metadataTx, file.dataTx) ==
+              TransactionStatus.pending)
+      .map((file) => file.id);
+
   bool _isListed(FileWithLatestRevisionTransactions file) {
     if (file.isHidden || !showsFolder(file.parentFolderId)) return false;
     final status = fileStatusFromTransactions(file.metadataTx, file.dataTx);
