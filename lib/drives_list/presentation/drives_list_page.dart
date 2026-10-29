@@ -209,6 +209,7 @@ class _DrivesListChrome extends StatelessWidget {
             DrivesListBody(
               chosenDriveId: chosenDriveId,
               onChoose: onChoose,
+              settingUpFirstDrive: FirstDrivePage.settingUp.value,
               state: state,
               // Selecting is how a drive is opened from anywhere on this route,
               // the sidebar included.
@@ -229,24 +230,29 @@ class _DrivesListChrome extends StatelessWidget {
               ),
             );
 
-        final body = bodyWith();
 
         // The list pages' shared chrome: on desktop a click on a drive opens
         // its details on the right, as a click on a row does in the
         // explorer; on a phone a tap opens the drive itself.
-        return ListPageChrome(
-          desktopChild: ListDetailsHost(
-            buildBody: ({chosenId, onChoose}) =>
-                bodyWith(chosenDriveId: chosenId, onChoose: onChoose),
-            panelFor: (context, id, close) =>
-                _drivePanel(context, state, drivesState, id, close),
-            pushesList: (width, panelWidth, textScale) => driveDetailsPushList(
-              width: width,
-              panelWidth: panelWidth,
-              textScale: textScale,
+        // Rebuilt when a new account's first drive starts or stops being
+        // set up: the list shows that instead of the half-made drive.
+        return ValueListenableBuilder<bool>(
+          valueListenable: FirstDrivePage.settingUp,
+          builder: (context, _, __) => ListPageChrome(
+            desktopChild: ListDetailsHost(
+              buildBody: ({chosenId, onChoose}) =>
+                  bodyWith(chosenDriveId: chosenId, onChoose: onChoose),
+              panelFor: (context, id, close) =>
+                  _drivePanel(context, state, drivesState, id, close),
+              pushesList: (width, panelWidth, textScale) =>
+                  driveDetailsPushList(
+                width: width,
+                panelWidth: panelWidth,
+                textScale: textScale,
+              ),
             ),
+            child: bodyWith(),
           ),
-          child: body,
         );
       },
     );
@@ -316,10 +322,15 @@ class DrivesListBody extends StatelessWidget {
     this.chosenDriveId,
     this.onChoose,
     this.buildEmpty,
+    this.settingUpFirstDrive = false,
   });
 
   /// What an account with no drives sees, in place of Getting started.
   final WidgetBuilder? buildEmpty;
+
+  /// A new account's first drive is listed but not ready yet: show
+  /// [buildEmpty], which says it is being set up, rather than the list.
+  final bool settingUpFirstDrive;
 
   /// The drive whose details are open beside the list, if any.
   final String? chosenDriveId;
@@ -367,7 +378,8 @@ class DrivesListBody extends StatelessWidget {
       return _DrivesListUnavailable(onTryAgain: onTryAgain);
     }
 
-    if (state is DrivesListEmpty) {
+    if (state is DrivesListEmpty ||
+        (buildEmpty != null && settingUpFirstDrive)) {
       return buildEmpty?.call(context) ?? const _DrivesListEmpty();
     }
 

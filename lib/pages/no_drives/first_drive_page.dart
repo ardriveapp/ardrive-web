@@ -52,6 +52,14 @@ class FirstDrivePage extends StatefulWidget {
   /// The waits before each further attempt after one fails.
   final List<Duration> retryDelays;
 
+  /// Whether the first drive is being made. It is in the drive list before
+  /// it is ready to open, so the list shows this page instead meanwhile.
+  static final settingUp = ValueNotifier(false);
+
+  /// Forgets this session's attempts, for tests.
+  @visibleForTesting
+  static void resetSession() => _FirstDrivePageState._failedThisSession.clear();
+
   @override
   State<FirstDrivePage> createState() => _FirstDrivePageState();
 }
@@ -72,6 +80,10 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
   /// which can swap this page for a new one mid-wait.
   static Future<FirstDriveOutcome>? _running;
 
+  /// Wallets whose drive could not be made in this session. Their request is
+  /// kept for the next load; trying again now would only repeat the failure.
+  static final _failedThisSession = <String>{};
+
   Future<void> _start() async {
     var running = _running;
 
@@ -80,7 +92,8 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
       final firstDrive = widget.firstDrive ?? FirstDrive();
       var owed = false;
 
-      if (profile is ProfileLoggedIn) {
+      if (profile is ProfileLoggedIn &&
+          !_failedThisSession.contains(profile.user.walletAddress)) {
         try {
           owed = await firstDrive.claim(profile.user.walletAddress);
         } catch (e, stackTrace) {
@@ -95,12 +108,16 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
         return;
       }
 
+      FirstDrivePage.settingUp.value = true;
       running = _running = _makeFirstDrive(
         attempt: widget.createFirstDrive(context),
         firstDrive: firstDrive,
         walletAddress: profile.user.walletAddress,
         retryDelays: widget.retryDelays,
-      ).whenComplete(() => _running = null);
+      ).whenComplete(() {
+        _running = null;
+        FirstDrivePage.settingUp.value = false;
+      });
     }
 
     setState(() => _stage = _Stage.creating);
@@ -136,7 +153,8 @@ class _FirstDrivePageState extends State<FirstDrivePage> {
 
     try {
       if (outcome == FirstDriveOutcome.failed) {
-        // Kept, so the next time this account has no drives it tries again.
+        // Kept, so the next time the app loads it tries again.
+        _failedThisSession.add(walletAddress);
         await firstDrive.release(walletAddress);
       } else {
         await firstDrive.done();

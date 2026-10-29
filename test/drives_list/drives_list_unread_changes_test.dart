@@ -217,4 +217,24 @@ void main() {
       lessThanOrEqualTo(phone.height),
     );
   });
+
+  testWidgets("a new account's half-made first drive is not listed",
+      (tester) async {
+    await tester.pumpWidget(
+      host(
+        DrivesListBody(
+          state: DrivesListLoaded(drives: [drive('my-files')]),
+          onOpenDrive: (_) {},
+          onTryAgain: () {},
+          settingUpFirstDrive: true,
+          buildEmpty: (_) => const Text('Setting up My files'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Setting up My files'), findsOneWidget);
+    expect(find.text('my-files'), findsNothing);
+  });
 }
+

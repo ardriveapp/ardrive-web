@@ -69,6 +69,7 @@ void main() {
   }
 
   setUp(() {
+    FirstDrivePage.resetSession();
     when(() => firstDrive.done()).thenAnswer((_) async {});
     when(() => firstDrive.release(any())).thenAnswer((_) async {});
   });
@@ -136,6 +137,30 @@ void main() {
     expect(find.text('Getting started'), findsOneWidget);
     verify(() => firstDrive.release('new-wallet')).called(1);
     verifyNever(() => firstDrive.done());
+
+    // Not again in this session: that would only repeat the failure.
+    await tester.pumpWidget(const SizedBox());
+    await pump(
+        tester,
+        (_) => () async {
+              asked++;
+              return FirstDriveOutcome.made;
+            });
+    expect(asked, 2);
+    expect(find.text('Getting started'), findsOneWidget);
+    verify(() => firstDrive.claim('new-wallet')).called(1);
+  });
+
+  testWidgets('says it is setting up while the drive is made', (tester) async {
+    when(() => firstDrive.claim('new-wallet')).thenAnswer((_) async => true);
+    final making = Completer<FirstDriveOutcome>();
+
+    await pump(tester, (_) => () => making.future);
+    expect(FirstDrivePage.settingUp.value, isTrue);
+
+    making.complete(FirstDriveOutcome.made);
+    await tester.pump();
+    expect(FirstDrivePage.settingUp.value, isFalse);
   });
 
   testWidgets('drops the request when it needs credits', (tester) async {
