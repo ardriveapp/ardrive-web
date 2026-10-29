@@ -718,8 +718,9 @@ class EntityActionsMenu extends StatelessWidget {
     final items = _getItems(item, context, withInfo, isFileRevision, isSyncing);
     final double height = isMobile(context) ? 44 : 48;
     return ArDriveDropdown(
+      // No maxHeight: the dropdown sizes itself from its items, counting a
+      // divider at its own height rather than a row's.
       height: height,
-      maxHeight: items.length * height,
       anchor: alignment,
       items: items,
       hasBorder: false,
