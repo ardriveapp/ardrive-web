@@ -18,8 +18,9 @@ class MultipleDownloadInProgress extends MultipleDownloadState {
     required this.currentFileIndex,
   });
 
-  /// How many files the zip will hold, as the confirmation counted them.
-  /// [files] also holds the folder entries, which are not downloads.
+  /// How many files the download has, as the confirmation counted them,
+  /// skipped ones included: after a skip the zip holds fewer. [files] also
+  /// holds the folder entries, which are not downloads.
   int get fileCount => files.whereType<MultiDownloadFile>().length;
 
   /// The file being fetched, counted among files from 1. On a folder entry,
