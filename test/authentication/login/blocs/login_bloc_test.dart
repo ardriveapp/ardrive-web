@@ -93,13 +93,7 @@ void main() {
         when(() => mockArDriveAuth.isExistingUser(any()))
             .thenAnswer((_) async => true);
       },
-      act: (bloc) async {
-        bloc.add(AddWalletFile(await IOFile.fromData(
-          Uint8List.fromList(getWalletString.codeUnits),
-          name: 'name',
-          lastModifiedDate: DateTime.now(),
-        )));
-      },
+      act: (bloc) => bloc.add(AddWalletFile(wallet)),
       expect: () => [
         LoginLoadingIfUserAlreadyExists(),
         LoginLoadingIfUserAlreadyExistsSuccess(),
@@ -132,13 +126,7 @@ void main() {
         when(() => mockArDriveAuth.isExistingUser(any()))
             .thenAnswer((_) async => false);
       },
-      act: (bloc) async {
-        bloc.add(AddWalletFile(await IOFile.fromData(
-          Uint8List.fromList(getWalletString.codeUnits),
-          name: 'name',
-          lastModifiedDate: DateTime.now(),
-        )));
-      },
+      act: (bloc) => bloc.add(AddWalletFile(wallet)),
       expect: () => [
         LoginLoadingIfUserAlreadyExists(),
         LoginLoadingIfUserAlreadyExistsSuccess(),
@@ -172,13 +160,7 @@ void main() {
         when(() => mockArDriveAuth.isExistingUser(any()))
             .thenAnswer((_) async => true);
       },
-      act: (bloc) async {
-        bloc.add(AddWalletFile(await IOFile.fromData(
-          Uint8List.fromList(getWalletString.codeUnits),
-          name: 'name',
-          lastModifiedDate: DateTime.now(),
-        )));
-      },
+      act: (bloc) => bloc.add(AddWalletFile(wallet)),
       expect: () => [
         LoginLoadingIfUserAlreadyExists(),
         LoginLoadingIfUserAlreadyExistsSuccess(),
@@ -189,6 +171,95 @@ void main() {
         })
       ],
     );
+
+    group('when a lookup fails', () {
+      LoginBloc quickBloc() => LoginBloc(
+            arDriveAuth: mockArDriveAuth,
+            arConnectService: mockArConnectService,
+            ethereumProviderService: mockEthereumProviderService,
+            solanaProviderService: mockSolanaProviderService,
+            turboUploadService: mockTurboUploadService,
+            arweaveService: mockArweaveService,
+            downloadService: mockDownloadService,
+            userRepository: mockUserRepository,
+            profileCubit: mockProfileCubit,
+            configService: mockConfigService,
+            walletLookupTimeout: const Duration(milliseconds: 50),
+          );
+
+      setUp(() {
+        when(() => mockConfigService.config).thenReturn(AppConfig(
+          allowedDataItemSizeForTurbo: 0,
+          stripePublishableKey: '',
+        ));
+      });
+
+      // The hang: the dialog said "Loading wallet details..." for ever.
+      blocTest<LoginBloc, LoginState>(
+        'a lookup that never answers closes the dialog with an error',
+        build: quickBloc,
+        setUp: () {
+          when(() => mockArDriveAuth.userHasPassword(any()))
+              .thenAnswer((_) => Completer<bool>().future);
+        },
+        act: (bloc) => bloc.add(AddWalletFile(wallet)),
+        wait: const Duration(milliseconds: 200),
+        expect: () => [
+          LoginLoadingIfUserAlreadyExists(),
+          LoginLoadingIfUserAlreadyExistsSuccess(),
+          isA<GatewayLoginFailure>(),
+          isA<LoginLoading>(),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'so does the drives lookup',
+        build: quickBloc,
+        setUp: () {
+          when(() => mockArDriveAuth.userHasPassword(any()))
+              .thenAnswer((_) async => false);
+          when(() => mockArDriveAuth.isExistingUser(any()))
+              .thenAnswer((_) => Completer<bool>().future);
+        },
+        act: (bloc) => bloc.add(AddWalletFile(wallet)),
+        wait: const Duration(milliseconds: 200),
+        expect: () => [
+          LoginLoadingIfUserAlreadyExists(),
+          LoginLoadingIfUserAlreadyExistsSuccess(),
+          isA<GatewayLoginFailure>(),
+          isA<LoginLoading>(),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'a lookup that throws closes the dialog with an error',
+        build: quickBloc,
+        setUp: () {
+          when(() => mockArDriveAuth.userHasPassword(any()))
+              .thenThrow(Exception('the gateway is down'));
+        },
+        act: (bloc) => bloc.add(AddWalletFile(wallet)),
+        expect: () => [
+          LoginLoadingIfUserAlreadyExists(),
+          LoginLoadingIfUserAlreadyExistsSuccess(),
+          isA<LoginFailure>(),
+          isA<LoginLoading>(),
+        ],
+      );
+
+      blocTest<LoginBloc, LoginState>(
+        'the wallet is not read from a file again',
+        build: quickBloc,
+        setUp: () {
+          when(() => mockArDriveAuth.userHasPassword(any()))
+              .thenAnswer((_) async => true);
+        },
+        act: (bloc) => bloc.add(AddWalletFile(wallet)),
+        verify: (_) {
+          verify(() => mockArDriveAuth.userHasPassword(wallet)).called(1);
+        },
+      );
+    });
   });
 
   group('LoginWithPassword', () {
@@ -429,6 +500,29 @@ void main() {
       expect: () => [
         LoginLoading(),
         const LoginLanding(),
+      ],
+    );
+
+    // Log in pressed on the welcome panel while the check was still
+    // running (the database opens slowly on a fresh load) went back to the
+    // welcome panel when the check finished.
+    blocTest<LoginBloc, LoginState>(
+      'a check that ends after Log in was pressed leaves Log in showing',
+      build: createBloc,
+      setUp: () {
+        when(() => mockArDriveAuth.isUserLoggedIn()).thenAnswer((_) =>
+            Future.delayed(const Duration(milliseconds: 50), () => false));
+      },
+      act: (bloc) async {
+        bloc.add(const CheckIfUserIsLoggedIn());
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        bloc.add(const SelectLoginFlow(existingUser: true));
+      },
+      wait: const Duration(milliseconds: 100),
+      expect: () => [
+        LoginLoading(),
+        isA<LoginInitial>()
+            .having((s) => s.existingUserFlow, 'existingUserFlow', true),
       ],
     );
   });
@@ -1915,9 +2009,84 @@ void main() {
       );
       expect(await bloc.validateAndReturnWalletFile(file), isNull);
     });
+
+    group('reading a chosen keyfile', () {
+      LoginBloc quickBloc() => LoginBloc(
+            arDriveAuth: mockArDriveAuth,
+            arConnectService: mockArConnectService,
+            ethereumProviderService: mockEthereumProviderService,
+            solanaProviderService: mockSolanaProviderService,
+            turboUploadService: mockTurboUploadService,
+            arweaveService: mockArweaveService,
+            downloadService: mockDownloadService,
+            userRepository: mockUserRepository,
+            profileCubit: mockProfileCubit,
+            configService: mockConfigService,
+            keyfileReadTimeout: const Duration(milliseconds: 50),
+          );
+
+      // What the browser did: a read that failed never finished.
+      test('a read that never finishes is unreadable, not a wait for ever',
+          () async {
+        final bloc = quickBloc();
+        addTearDown(bloc.close);
+        await expectLater(
+          bloc.validateAndReturnWalletFile(_UnreadableFile.stuck()),
+          throwsA(isA<KeyfileUnreadableException>()),
+        );
+      });
+
+      test('a read that fails is unreadable', () async {
+        final bloc = quickBloc();
+        addTearDown(bloc.close);
+        await expectLater(
+          bloc.validateAndReturnWalletFile(_UnreadableFile.failing()),
+          throwsA(isA<KeyfileUnreadableException>()),
+        );
+      });
+
+      test('a keyfile gives its wallet', () async {
+        final bloc = quickBloc();
+        addTearDown(bloc.close);
+        final file = await IOFile.fromData(
+          Uint8List.fromList(getWalletString.codeUnits),
+          name: 'key.json',
+          lastModifiedDate: DateTime.now(),
+        );
+        final read = await bloc.validateAndReturnWalletFile(file);
+        expect(await read!.getAddress(), await wallet.getAddress());
+      });
+
+      test('a file that is not text is not a keyfile, and is readable',
+          () async {
+        final bloc = quickBloc();
+        addTearDown(bloc.close);
+        final file = await IOFile.fromData(
+          Uint8List.fromList([0xff, 0xfe, 0x00]),
+          name: 'photo.jpg',
+          lastModifiedDate: DateTime.now(),
+        );
+        expect(await bloc.validateAndReturnWalletFile(file), isNull);
+      });
+    });
   });
 }
 
 class _MockFirstDrive extends Mock implements FirstDrive {}
 
 class _MockEthereumWallet extends Mock implements EthereumWallet {}
+
+/// A keyfile the browser can't read: its read fails, or never finishes.
+class _UnreadableFile extends Fake implements IOFile {
+  _UnreadableFile.stuck() : _read = (() => Completer<Uint8List>().future);
+  _UnreadableFile.failing()
+      : _read = (() => Future.error(Exception('NotReadableError')));
+
+  final Future<Uint8List> Function() _read;
+
+  @override
+  Future<Uint8List> readAsBytes() => _read();
+
+  @override
+  Future<String> readAsString() async => String.fromCharCodes(await _read());
+}

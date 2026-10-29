@@ -128,9 +128,14 @@ profile.
 ### 3. Log in
 
 ```bash
-node login.js           # new profile: Log in, Import wallet, keyfile, password
+node login.js           # new profile: Log in, Recovery phrase or keyfile, keyfile, password
 node login.js unlock    # profile already logged in: just the password
 ```
+
+`login.js` finds its buttons by their labels, read in a second tab with the
+accessibility tree on, and clicks them in `launch.js`'s tab, where the tree
+stays off. It prints how long the password took to appear after the keyfile
+was chosen, and fails if it doesn't appear within 90 seconds.
 
 The app asks for the password each time the browser starts, so after a
 restart use `unlock`. Check the last screenshot,

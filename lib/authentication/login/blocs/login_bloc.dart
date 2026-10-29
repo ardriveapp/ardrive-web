@@ -103,6 +103,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     WalletFromMnemonic? walletFromMnemonic,
     FirstDrive? firstDrive,
     Duration walletInjectionWait = const Duration(seconds: 1),
+    Duration keyfileReadTimeout = defaultKeyfileReadTimeout,
+    Duration walletLookupTimeout = defaultWalletLookupTimeout,
   })  : _arDriveAuth = arDriveAuth,
         _arConnectService = arConnectService,
         _ethereumProviderService = ethereumProviderService,
@@ -115,6 +117,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         _walletFromMnemonic = walletFromMnemonic ?? generateWalletFromMnemonic,
         _firstDrive = firstDrive ?? FirstDrive(),
         _walletInjectionWait = walletInjectionWait,
+        _keyfileReadTimeout = keyfileReadTimeout,
+        _walletLookupTimeout = walletLookupTimeout,
         super(LoginLoading()) {
     on<LoginEvent>(_onLoginEvent);
     _listenToWalletChange();
@@ -341,10 +345,33 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     }
   }
 
+  /// How long reading a chosen keyfile may take. A keyfile is a few KB and
+  /// reads at once; a read still going after this is stuck.
+  static const defaultKeyfileReadTimeout = Duration(seconds: 15);
+
+  /// How long the lookups for a chosen wallet (its password, its drives)
+  /// may take before the dialog closes with an error. GraphQL retries each
+  /// stalled attempt, so this bounds the whole step, not one request.
+  static const defaultWalletLookupTimeout = Duration(seconds: 45);
+
+  final Duration _keyfileReadTimeout;
+  final Duration _walletLookupTimeout;
+
+  /// The wallet in a chosen keyfile, or null if the file isn't a keyfile.
+  ///
+  /// Throws [KeyfileUnreadableException] if the file can't be read, or the
+  /// read doesn't finish within the keyfile read timeout.
   Future<Wallet?> validateAndReturnWalletFile(IOFile walletFile) async {
+    final Uint8List bytes;
     try {
-      final wallet =
-          Wallet.fromJwk(json.decode(await walletFile.readAsString()));
+      bytes = await walletFile.readAsBytes().timeout(_keyfileReadTimeout);
+    } catch (e) {
+      // Only the type: what failed is all that's needed here.
+      logger.w('Could not read the chosen keyfile: ${e.runtimeType}');
+      throw const KeyfileUnreadableException();
+    }
+    try {
+      final wallet = Wallet.fromJwk(json.decode(utf8.decode(bytes)));
 
       return wallet;
     } catch (e) {
@@ -368,22 +395,32 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       profileType = ProfileType.json;
       _sourceWalletAddress = null;
 
-      final wallet =
-          Wallet.fromJwk(json.decode(await event.walletFile.readAsString()));
+      final wallet = event.wallet;
 
-      if (await _arDriveAuth.userHasPassword(wallet)) {
-        emit(LoginLoadingIfUserAlreadyExistsSuccess());
+      // Both lookups ask the gateway. A stalled one closes the dialog with
+      // an error instead of spinning for ever.
+      final (hasPassword, hasDrives) = await () async {
+        if (await _arDriveAuth.userHasPassword(wallet)) {
+          return (true, true);
+        }
+        return (false, await _arDriveAuth.isExistingUser(wallet));
+      }()
+          .timeout(_walletLookupTimeout);
+
+      emit(LoginLoadingIfUserAlreadyExistsSuccess());
+      if (hasPassword) {
         emit(PromptPassword(wallet: wallet, showWalletCreated: false));
       } else {
-        final hasDrives = await _arDriveAuth.isExistingUser(wallet);
-        emit(LoginLoadingIfUserAlreadyExistsSuccess());
         emit(CreateNewPassword(
             wallet: wallet, isNewUser: !hasDrives, showWalletCreated: false));
       }
     } catch (e) {
       usingSeedphrase = false;
       emit(LoginLoadingIfUserAlreadyExistsSuccess());
-      if (e is AuthenticationGatewayException) {
+      if (e is TimeoutException) {
+        logger.w('Looking up the chosen wallet timed out');
+        emit(GatewayLoginFailure(e, _getGatewayUrl()));
+      } else if (e is AuthenticationGatewayException) {
         emit(GatewayLoginFailure(e, _getGatewayUrl()));
       } else {
         emit(LoginFailure(e));
@@ -619,6 +656,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         }
       }
       emit(const PromptPassword(alreadyLoggedIn: true));
+      return;
+    }
+
+    // The welcome panel shows while this check runs, and the check can be
+    // slow while the database opens. If Log in or Sign up was pressed in
+    // the meantime, that panel stays: the welcome panel isn't put back
+    // over it.
+    if (state is! LoginLoading) {
+      logger.d('A panel was chosen while checking for an account');
       return;
     }
 
@@ -1357,4 +1403,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 /// Cancel was pressed while a browser wallet was asked for something.
 class WalletLoginCancelled implements Exception {
   const WalletLoginCancelled();
+}
+
+/// A chosen keyfile couldn't be read: the read failed, or never finished.
+/// Not the same as a file that was read and isn't a keyfile.
+class KeyfileUnreadableException implements Exception {
+  const KeyfileUnreadableException();
 }

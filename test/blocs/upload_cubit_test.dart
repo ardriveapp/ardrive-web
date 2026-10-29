@@ -1213,7 +1213,56 @@ void main() {
         },
       );
     });
+
+    // A file chosen to upload as a manifest is read before anything is sent.
+    // If it can't be read any more, the form ends on a failure it can close.
+    blocTest<UploadCubit, UploadState>(
+      'a manifest file that can no longer be read fails the upload',
+      // The profile cubit mock is shared with the tests before this one.
+      setUp: () => clearInteractions(mockProfileCubit!),
+      build: () => getUploadCubitInstanceWith([
+        UploadFile(ioFile: _UnreadableFile(), parentFolderId: tRootFolderId),
+      ]),
+      seed: () {
+        final ready = _MockUploadReady();
+        when(() => ready.copyWith(
+            uploadFileAsCustomManifest:
+                any(named: 'uploadFileAsCustomManifest'))).thenReturn(ready);
+        return ready;
+      },
+      act: (cubit) async {
+        cubit.setIsUploadingCustomManifest(true);
+        await cubit.startUpload(uploadPlanForAr: _MockUploadPlan());
+      },
+      expect: () => [
+        isA<UploadFailure>()
+            .having((f) => f.error, 'error', UploadErrors.unknown),
+      ],
+      verify: (_) {
+        verifyNever(() => mockProfileCubit!.checkIfWalletMismatch());
+      },
+    );
   });
+}
+
+class _MockUploadReady extends Mock implements UploadReady {}
+
+class _MockUploadPlan extends Mock implements UploadPlan {}
+
+/// A chosen file the browser can no longer read.
+class _UnreadableFile extends Fake implements IOFile {
+  @override
+  String get name => 'manifest.json';
+
+  @override
+  String get path => 'manifest.json';
+
+  @override
+  DateTime get lastModifiedDate => DateTime(2026);
+
+  @override
+  Future<Uint8List> readAsBytes() =>
+      Future.error(Exception('NotReadableError'));
 }
 
 class _MockUploadController extends Mock implements UploadController {}

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ardrive/utils/exceptions.dart';
 import 'package:ardrive/utils/internet_checker.dart';
 import 'package:ardrive/utils/logger.dart';
@@ -16,10 +18,14 @@ import 'package:retry/retry.dart';
 /// On 429 or 5xx errors, falls back to Goldsky since most AR.IO gateways don't
 /// index ArDrive L2 data.
 class GraphQLRetry {
-  GraphQLRetry(this._client,
-      {required InternetChecker internetChecker, String? fallbackGraphqlUrl})
-      : _internetChecker = internetChecker,
-        _fallbackGraphqlUrl = fallbackGraphqlUrl ?? defaultFallbackGraphqlUrl;
+  GraphQLRetry(
+    this._client, {
+    required InternetChecker internetChecker,
+    String? fallbackGraphqlUrl,
+    Duration attemptTimeout = defaultAttemptTimeout,
+  })  : _internetChecker = internetChecker,
+        _fallbackGraphqlUrl = fallbackGraphqlUrl ?? defaultFallbackGraphqlUrl,
+        _attemptTimeout = attemptTimeout;
 
   /// Where a query goes when the primary endpoint will not serve it.
   ///
@@ -38,6 +44,20 @@ class GraphQLRetry {
   final ArtemisClient _client;
   final InternetChecker _internetChecker;
   final String _fallbackGraphqlUrl;
+  final Duration _attemptTimeout;
+
+  /// How long one attempt may take before it counts as failed, and is
+  /// retried or sent to the fallback like any other failure.
+  ///
+  /// Without it a request the gateway accepted and never answered waited for
+  /// ever: nothing below this sets a deadline, so no retry or fallback ever
+  /// ran. Every query here asks for at most 100 items. A sync page of a
+  /// drive's history from block 0 on turbo-gateway.com (measured 2026-10-29)
+  /// takes under a second as this app sends it, and up to about 9 seconds
+  /// with the fragments `fragmentFreeArtemisClient` removes. Twenty seconds
+  /// is twice the slow case, and short enough that a stall is retried while
+  /// the person is still waiting.
+  static const defaultAttemptTimeout = Duration(seconds: 20);
 
   /// Attempts against the *primary* endpoint before falling back.
   ///
@@ -131,6 +151,9 @@ class GraphQLRetry {
   /// does put a code in its message.
   @visibleForTesting
   static bool deservesFallback(Object error) {
+    // Attempts that never answered: another endpoint might.
+    if (error is TimeoutException) return true;
+
     final status = _statusCodeOf(error);
 
     if (status != null) {
@@ -171,7 +194,7 @@ class GraphQLRetry {
   }) {
     return retry(
       () async {
-        final response = await client.execute(query);
+        final response = await client.execute(query).timeout(_attemptTimeout);
         if (response.errors != null && response.errors!.isNotEmpty) {
           throw GraphQLException(response.errors);
         }

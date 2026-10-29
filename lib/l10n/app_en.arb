@@ -5594,6 +5594,8 @@
   "@phraseInvalid": {"description": "The recovery phrase isn't valid."},
   "keyfileInvalid": "That file isn't a keyfile. Choose the keyfile you saved.",
   "@keyfileInvalid": {"description": "The chosen file isn't a keyfile."},
+  "keyfileUnreadable": "Couldn't read that file. Try again.",
+  "@keyfileUnreadable": {"description": "The chosen keyfile couldn't be read, or reading it took too long."},
   "walletWaitTitle": "Approve in {wallet}",
   "@walletWaitTitle": {"description": "Title while a browser wallet is asked to approve. wallet is its name, such as Wander.", "placeholders": {"wallet": {"type": "String"}}},
   "walletWaitConnect": "{wallet} asks you to connect to ArDrive. Approve it there to continue.",
