@@ -65,6 +65,12 @@ class _ArDriveSubmenuState extends State<ArDriveSubmenu> {
 
   @override
   Widget build(BuildContext context) {
+    // While a dialog covers the page the menu is offstage, and a tap in the
+    // dialog is outside it: that must not close it, or it would be gone when
+    // the dialog closes.
+    final route = ModalRoute.of(context);
+    final covered = route != null && !route.isCurrent;
+
     return ArDriveOverlay(
       visible: _open,
       onVisibleChange: (visible) {
@@ -79,7 +85,7 @@ class _ArDriveSubmenuState extends State<ArDriveSubmenu> {
       ),
       content: TapRegion(
         groupId: this,
-        onTapOutside: (_) => _close(),
+        onTapOutside: covered ? null : (_) => _close(),
         child: _MenuPanel(
           items: widget.menuChildren,
           groupId: this,

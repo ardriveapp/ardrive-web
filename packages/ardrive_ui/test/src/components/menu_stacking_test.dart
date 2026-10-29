@@ -207,4 +207,36 @@ void main() {
     expect(find.text('ArNS wallet'), findsOneWidget,
         reason: 'the card comes back as it was');
   });
+
+  testWidgets('a tap in a dialog over an open ArDriveSubmenu leaves it open',
+      (tester) async {
+    late BuildContext pageContext;
+    await tester.pumpWidget(page(Builder(builder: (context) {
+      pageContext = context;
+      return ArDriveSubmenu(
+        menuChildren: [
+          ArDriveSubmenuItem(widget: const Text('New drive'), onClick: () {}),
+        ],
+        child: const SizedBox(width: 40, height: 40, child: Text('New')),
+      );
+    })));
+    await tester.tap(find.text('New'));
+    await tester.pumpAndSettle();
+
+    // Something else opens a dialog while the menu is open.
+    showDialog<void>(
+      context: pageContext,
+      builder: (context) => Center(
+        child: TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('New drive'), findsOneWidget);
+  });
 }
