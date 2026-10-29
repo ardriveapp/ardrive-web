@@ -9,6 +9,7 @@ import 'package:ardrive/blocs/hide/global_hide_bloc.dart';
 import 'package:ardrive/blocs/profile/profile_cubit.dart';
 import 'package:ardrive/components/app_version_widget.dart';
 import 'package:ardrive/components/copy_button.dart';
+import 'package:ardrive/components/nav_sections.dart';
 import 'package:ardrive/components/new_button/new_button.dart';
 import 'package:ardrive/components/web_nav_headings.dart';
 import 'package:ardrive/dev_tools/app_dev_tools.dart';
@@ -972,7 +973,7 @@ class _DriveSections extends StatefulWidget {
   State<_DriveSections> createState() => _DriveSectionsState();
 }
 
-class _DriveSectionsState extends State<_DriveSections> {
+class _DriveSectionsState extends State<_DriveSections> with FoldsNavSections {
   /// Carried by whichever tile is selected, so it can be scrolled to.
   final GlobalKey _selectedTileKey = GlobalKey();
 
@@ -1060,16 +1061,14 @@ class _DriveSectionsState extends State<_DriveSections> {
     );
   }
 
-  /// Which headings the reader has folded away. All open to begin with.
-  final Set<DriveScope> _collapsed = {};
-
   Widget _section(
     BuildContext context,
     DriveScope scope,
     Iterable<Drive> drives,
   ) {
     final state = widget.state;
-    final isExpanded = !_collapsed.contains(scope);
+    final section = NavSection.forScope(scope);
+    final isExpanded = !isFolded(section);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1081,11 +1080,7 @@ class _DriveSectionsState extends State<_DriveSections> {
           opensDrivesList: AppRouterDelegate.canShowDrivesList(
             context.watch<ProfileCubit>().state,
           ),
-          onToggle: () => setState(() {
-            if (!_collapsed.remove(scope)) {
-              _collapsed.add(scope);
-            }
-          }),
+          onToggle: () => toggleFolded(section),
         ),
         if (isExpanded)
           for (final drive in drives)
