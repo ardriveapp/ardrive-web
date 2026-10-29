@@ -270,9 +270,12 @@ void main() {
 
     expect(
       tester.getRect(list).bottom,
-      lessThanOrEqualTo(tester.getRect(find.byType(AppVersionWidget)).top),
-      reason: 'the list ends above the version, rather than over it',
+      lessThanOrEqualTo(tester.getRect(find.byType(Drawer)).bottom),
+      reason: 'the list ends inside the menu, rather than past it',
     );
+    // The version is in Help now, not at the foot of the menu.
+    expect(find.byType(AppVersionWidget), findsNothing);
+    expect(find.textContaining('Version'), findsNothing);
 
     await tester.scrollUntilVisible(find.text('drive-39'), 200,
         scrollable: list);

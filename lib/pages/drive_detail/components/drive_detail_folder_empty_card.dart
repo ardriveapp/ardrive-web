@@ -55,7 +55,9 @@ class _DriveDetailFolderEmptyCardState
         mobile: (context) => _ReadOnlyEmptyFolder(driveId: widget.driveId),
         // The same card the owner's empty folder sits in.
         desktop: (context) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
+          // No top padding: the page sets the gap under the folder's
+          // heading, the same one the table gets.
+          padding: const EdgeInsets.only(bottom: 20),
           child: SizedBox(
             height: MediaQuery.of(context).size.height * 0.8,
             child: ArDriveCard(
@@ -79,7 +81,8 @@ class _DriveDetailFolderEmptyCardState
           return Padding(
             padding: phone
                 ? const EdgeInsets.fromLTRB(16, 8, 16, 16)
-                : const EdgeInsets.symmetric(vertical: 20),
+                // The page sets the gap above, as it does the table's.
+                : const EdgeInsets.only(bottom: 20),
             child: _NewUserEmptyRootFolder(
               driveId: widget.driveId,
               parentFolderId: widget.parentFolderId,
@@ -118,7 +121,8 @@ class _DriveDetailFolderEmptyCardState
           );
         }, desktop: (context) {
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
+            // The page sets the gap above, as it does the table's.
+            padding: const EdgeInsets.only(bottom: 20),
             child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.8,
               child: ArDriveCard(

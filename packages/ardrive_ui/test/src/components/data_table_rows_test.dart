@@ -16,6 +16,20 @@ class _Row extends IndexedItem {
   List<Object?> get props => [id];
 }
 
+/// The fill of the row showing [id]: the row's own box, the one keyed by
+/// its row object, whose colour is the row's.
+Color rowFill(WidgetTester tester, String id) {
+  final box = find
+      .ancestor(
+        of: find.text(id),
+        matching: find.byWidgetPredicate(
+          (w) => w is Container && w.key is ValueKey<Object> && w.color != null,
+        ),
+      )
+      .first;
+  return tester.widget<Container>(box).color!;
+}
+
 void main() {
   group('ArDriveDataTable rows', () {
     late StateSetter setRows;
@@ -76,44 +90,39 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    /// The list pages' rule: a row at rest is flat on the table, and only
+    /// a hovered or selected row is filled. Every row used to be a filled
+    /// card, so the explorer always looked highlighted.
     testWidgets(
-        'paints rows in the table\'s cell colour, and the selected one'
+        'leaves rows at rest unfilled, and fills the selected one'
         ' in its selected colour', (tester) async {
       await pumpTable(tester, const [
         _Row(0, id: 'a', size: 640),
         _Row(1, id: 'b', size: 10),
       ]);
 
-      Color rowColour(String id) => tester
-          .widget<ArDriveCard>(find
-              .ancestor(of: find.text(id), matching: find.byType(ArDriveCard))
-              .first)
-          .backgroundColor!;
+      Color rowColour(String id) => rowFill(tester, id);
       final table =
           ArDriveTheme.of(tester.element(find.text('a'))).themeData.tableTheme;
 
-      expect(rowColour('a'), table.cellColor);
-      expect(rowColour('b'), table.cellColor);
+      expect(rowColour('a'), Colors.transparent);
+      expect(rowColour('b'), Colors.transparent);
 
       await tester.tap(find.text('a'));
       await tester.pumpAndSettle();
 
       expect(rowColour('a'), table.selectedItemColor);
-      expect(rowColour('b'), table.cellColor);
+      expect(rowColour('b'), Colors.transparent);
     });
 
-    testWidgets('shows hover on the row\'s card, selected or not',
+    testWidgets('fills a hovered row, selected or not',
         (tester) async {
       await pumpTable(tester, const [
         _Row(0, id: 'a', size: 640),
         _Row(1, id: 'b', size: 10),
       ]);
 
-      Color rowColour(String id) => tester
-          .widget<ArDriveCard>(find
-              .ancestor(of: find.text(id), matching: find.byType(ArDriveCard))
-              .first)
-          .backgroundColor!;
+      Color rowColour(String id) => rowFill(tester, id);
       final table =
           ArDriveTheme.of(tester.element(find.text('a'))).themeData.tableTheme;
 
@@ -124,7 +133,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(rowColour('b'), table.hoverItemColor);
-      expect(rowColour('a'), table.cellColor);
+      expect(rowColour('a'), Colors.transparent);
 
       await tester.tap(find.text('b'), kind: PointerDeviceKind.mouse);
       await tester.pumpAndSettle(kDoubleTapTimeout);
@@ -139,19 +148,47 @@ void main() {
       expect(rowColour('b'), table.selectedItemColor);
     });
 
-    test('a selected row looks different from the others in both themes', () {
+    test('a hovered or selected row stands out from the table in both themes',
+        () {
       for (final theme in [
         ArDriveThemeData(colorTokens: ArDriveColorTokens.darkMode()),
         lightTheme(),
       ]) {
-        expect(theme.tableTheme.selectedItemColor,
-            isNot(theme.tableTheme.cellColor),
+        final ground = theme.tableTheme.backgroundColor;
+        expect(theme.tableTheme.selectedItemColor, isNot(ground),
             reason: theme.name);
         final hover = theme.tableTheme.hoverItemColor;
-        expect(hover, isNot(theme.tableTheme.cellColor), reason: theme.name);
+        expect(hover, isNot(ground), reason: theme.name);
         expect(hover, isNot(theme.tableTheme.selectedItemColor),
             reason: theme.name);
       }
+    });
+
+    /// The list pages' geometry: rows meet with no gap between them, are
+    /// the list pages' height, and their fill reaches the table's edges.
+    testWidgets('rows are flat, as tall as the list pages\', edge to edge',
+        (tester) async {
+      await pumpTable(tester, const [
+        _Row(0, id: 'a', size: 640),
+        _Row(1, id: 'b', size: 10),
+      ]);
+      await tester.tap(find.text('a'));
+      await tester.pumpAndSettle();
+
+      Rect rowRect(String id) => tester.getRect(find
+          .ancestor(
+            of: find.text(id),
+            matching: find.byWidgetPredicate(
+              (w) => w is Container && w.key is ValueKey<Object>,
+            ),
+          )
+          .first);
+      final table = tester.getRect(find.byType(ArDriveDataTable<_Row>));
+
+      expect(rowRect('a').height, ArDriveDataTable.rowHeight);
+      expect(rowRect('b').top, rowRect('a').bottom, reason: 'no gap');
+      expect(rowRect('a').left, table.left);
+      expect(rowRect('a').right, table.right);
     });
 
     testWidgets('draws a row that changed while the number of rows did not',
