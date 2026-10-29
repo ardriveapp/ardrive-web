@@ -18,6 +18,7 @@ import 'package:ardrive/entities/profile_types.dart';
 import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/daos/drive_dao/drive_dao.dart';
 import 'package:ardrive/models/database/database.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/config/selected_gateway.dart';
 import 'package:ardrive/services/services.dart';
 import 'package:ardrive/turbo/services/payment_service.dart';
@@ -1054,6 +1055,95 @@ void main() {
       expect: () =>
           <UploadState>[UploadPreparationInitialized(), UploadWalletMismatch()],
     );
+
+    blocTest<UploadCubit, UploadState>(
+      'ends in a failure the form can close when Wander is unavailable and '
+      'the person cancels',
+      setUp: () {
+        // The mocks outlive each test: only this one's calls count.
+        clearInteractions(mockManifestRepository);
+        when(() => mockProfileCubit!.checkIfWalletMismatch()).thenThrow(
+          const ArConnectUnavailableException(
+            ArConnectUnavailableReason.noAnswer,
+          ),
+        );
+      },
+      build: () => getUploadCubitInstanceWith(tNoConflictingFiles),
+      act: (cubit) async {
+        await cubit.startUploadPreparation();
+        await cubit.prepareUploadPlanAndCostEstimates();
+      },
+      expect: () => <UploadState>[
+        UploadPreparationInitialized(),
+        UploadFailure(error: UploadErrors.unknown),
+      ],
+      verify: (_) {
+        verifyNever(() => mockManifestRepository.getManifestFilesInFolder(
+              folderId: any(named: 'folderId'),
+              driveId: any(named: 'driveId'),
+            ));
+      },
+    );
+
+    group('starting the upload', () {
+      Future<UploadPlan> plan() => UploadPlan.create(
+            useTurbo: false,
+            maxDataItemCount: 10,
+            fileV2UploadHandles: {},
+            fileDataItemUploadHandles: {},
+            folderDataItemUploadHandles: {},
+            turboUploadService: DontUseUploadService(),
+          );
+
+      blocTest<UploadCubit, UploadState>(
+        'on another wallet, says so and uploads nothing',
+        setUp: () {
+          clearInteractions(mockUploadRepository);
+          when(() => mockProfileCubit!.checkIfWalletMismatch())
+              .thenAnswer((_) async => true);
+        },
+        build: () => getUploadCubitInstanceWith(tNoConflictingFiles),
+        act: (cubit) async {
+          await cubit.startUploadPreparation();
+          await cubit.startUpload(uploadPlanForAr: await plan());
+        },
+        expect: () => <UploadState>[
+          UploadPreparationInitialized(),
+          UploadWalletMismatch(),
+        ],
+        verify: (_) {
+          verifyZeroInteractions(mockUploadRepository);
+        },
+      );
+
+      blocTest<UploadCubit, UploadState>(
+        'when Wander is unavailable and the person cancels, uploads nothing '
+        'and Upload works again',
+        setUp: () {
+          // The mocks outlive each test: only this one's calls count.
+          clearInteractions(mockProfileCubit);
+          clearInteractions(mockUploadRepository);
+          when(() => mockProfileCubit!.checkIfWalletMismatch()).thenThrow(
+            const ArConnectUnavailableException(
+              ArConnectUnavailableReason.noAnswer,
+            ),
+          );
+        },
+        build: () => getUploadCubitInstanceWith(tNoConflictingFiles),
+        act: (cubit) async {
+          await cubit.startUploadPreparation();
+          await cubit.startUpload(uploadPlanForAr: await plan());
+          // Pressed again: asks again rather than doing nothing.
+          await cubit.startUpload(uploadPlanForAr: await plan());
+        },
+        // Stays where Upload was pressed.
+        expect: () => <UploadState>[UploadPreparationInitialized()],
+        verify: (_) {
+          verify(() => mockProfileCubit!.checkIfWalletMismatch()).called(2);
+          verifyZeroInteractions(mockUploadRepository);
+        },
+      );
+    });
   });
 }
 

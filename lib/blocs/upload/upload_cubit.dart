@@ -15,6 +15,7 @@ import 'package:ardrive/manifest/domain/manifest_repository.dart';
 import 'package:ardrive/models/forms/cc.dart';
 import 'package:ardrive/models/forms/udl.dart';
 import 'package:ardrive/models/models.dart';
+import 'package:ardrive/services/arconnect/arconnect_prompt.dart';
 import 'package:ardrive/services/config/config.dart';
 import 'package:ardrive/services/config/config_service.dart';
 import 'package:ardrive/services/license/license.dart';
@@ -853,7 +854,17 @@ class UploadCubit extends Cubit<UploadState> {
   Future<void> prepareUploadPlanAndCostEstimates({
     UploadActions? uploadAction,
   }) async {
-    if (await _profileCubit.checkIfWalletMismatch()) {
+    final bool walletMismatch;
+    try {
+      walletMismatch = await _profileCubit.checkIfWalletMismatch();
+    } on ArConnectUnavailableException catch (e) {
+      // Wander couldn't be reached and the person chose Cancel. The form may
+      // be on its spinner, which can't be closed: a failure it can close.
+      logger.w('Could not check the wallet before preparing an upload: $e');
+      emit(UploadFailure(error: UploadErrors.unknown));
+      return;
+    }
+    if (walletMismatch) {
       emit(UploadWalletMismatch());
       return;
     }
@@ -986,7 +997,17 @@ class UploadCubit extends Cubit<UploadState> {
     logger.i('Starting upload...');
 
     //Check if the same wallet it being used before starting upload.
-    if (await _profileCubit.checkIfWalletMismatch()) {
+    final bool walletMismatch;
+    try {
+      walletMismatch = await _profileCubit.checkIfWalletMismatch();
+    } on ArConnectUnavailableException catch (e) {
+      // Wander couldn't be reached and the person chose Cancel. Nothing was
+      // sent: the form stays where Upload was pressed, and Upload works again.
+      logger.w('Could not check the wallet before an upload: $e');
+      _uploadIsInProgress = false;
+      return;
+    }
+    if (walletMismatch) {
       emit(UploadWalletMismatch());
       return;
     }
